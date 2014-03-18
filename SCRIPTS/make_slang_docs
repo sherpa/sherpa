@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+import sherpa.astro.ui as ui
+from sherpa.utils import get_func_usage
+
+funcs = [ func for func in dir(ui._session) if func[0] != '_']
+
+keys = ['SYNOPSIS','USAGE','DESCRIPTION','EXAMPLE','SEE ALSO',
+        'SYNTAX','Arguments:','Keyword Arguments:','Returns:']
+
+fp = open('../docs/sherpa.hlp', 'w')
+
+for func in funcs:
+
+    doc = eval('ui.'+func).__doc__
+
+    if doc is None:
+        continue
+
+    lines = doc.split('\n')
+
+    name =  lines.pop(0).strip()
+
+    if( name == '' ):
+        fp.write( lines.pop(0).strip() + '\n' )
+    else:
+        fp.write( name + '\n' )
+    
+    for line in lines:
+
+        if line.strip() in keys:
+            
+            if line.strip() == 'SYNTAX':
+                fp.write(' ' + 'USAGE\n' )
+                fp.write('           ' +
+                         get_func_usage( eval('ui.'+func) )[7:] + '\n\n' )
+            
+            fp.write( ' ' + line.strip() + '\n' )
+        
+        else:
+            fp.write( line.strip('\n') + '\n' )
+    
+    fp.write('\n')
+    fp.write('--------------------------------------------------------------')
+    fp.write('\n\n')
+   
+fp.close()

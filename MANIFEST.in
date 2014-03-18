@@ -1,0 +1,36 @@
+# Header files
+recursive-include sherpa/include *.hh
+
+# Test files
+recursive-include sherpa test_*.py
+
+# XSPEC module sources
+include sherpa/astro/xspec/src/*.cc
+
+# Region module sources
+include sherpa/astro/utils/src/_region.cc
+
+# WCS module sources
+include sherpa/astro/utils/src/_wcs.cc
+
+# Kdtree sources
+include sherpa/utils/src/_pykdtree.template.cc
+include sherpa/utils/src/gen-pykdtree.py
+
+# Sherpa optmethods test includes
+include sherpa/optmethods/tests/tstoptfct.hh
+include sherpa/optmethods/tests/tstopt.hh
+
+
+# Sherpa executable
+include sherpa/sherpa
+include sherpa/ipythonrc-sherpa
+include sherpa/sherpa_py
+include sherpa/sherpa.rc
+
+# Sherpa distutils
+#include _addons.py
+#include build_clib.py
+#include build_ext.py
+#include _fileLister.py
+#include install_lib.py

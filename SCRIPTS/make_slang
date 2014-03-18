@@ -1,0 +1,164 @@
+#!/usr/bin/env python
+
+import pysl
+import sherpa
+import sherpa.ui.utils
+import sherpa.astro.ui as ui
+
+
+outfile = file('/vobs/ASC_BUILD/src/pkg/sherpa/sherpa/slang/sherpa.sl',
+               'w')
+
+vparts = tuple(int(val) for val in sherpa.__versionstr__.split('.'))
+version_num = 10000*vparts[0] + 100*vparts[1] + vparts[2]
+
+exclude_funcs = ( 'calc_ftest', 'calc_mlr', 'get_xsabund', 'get_xscosmo',
+                  'get_xsxsect', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
+                  'rebin','histogram1d','histogram2d','gamma', 'lgam', 'erf',
+                  'igamc', 'igam', 'incbet')
+
+non_funcs = ('Data1D', 'Data1DInt','Data2D', 'Data2DInt', 'DataARF',
+             'DataRMF', 'DataPHA', 'DataIMG', 'Prior')
+
+print >> outfile, """\
+%
+%_SLANG_INSERT_SAO_COPYRIGHT_HERE_(2007)_
+%_SLANG_INSERT_GPL_LICENSE_HERE_
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% THIS IS A GENERATED FILE -- DO NOT EDIT!
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+require("pysl");
+
+py_import("pysl");  % Allow pickling of S-Lang objects
+py_import("sherpa.astro.ui");
+
+static variable _session = py.sherpa.astro.ui._session;
+
+#ifnexists SherpaErr
+new_exception("SherpaErr", RunTimeError, "Sherpa Err");
+#endif
+py2sl_errormap[py.sherpa.utils.err.SherpaErr] = SherpaErr;
+"""
+
+err_types = []
+for module in (sherpa.all, sherpa.ui.utils, sherpa.astro.all,
+               sherpa.astro.ui.utils):
+    for name in dir(module):
+        obj = getattr(module, name)
+        if ((type(obj) is type(Exception)) and
+            issubclass(obj, sherpa.utils.err.SherpaErr) and
+            (obj is not sherpa.utils.err.SherpaErr) and
+            (obj not in err_types)):
+            err_types.append(obj)
+            print >> outfile, """\
+#ifnexists Sherpa%s
+new_exception("Sherpa%s", SherpaErr, "Sherpa %s");
+#endif
+py2sl_errormap[py.%s.%s] = Sherpa%s;
+""" % (obj.__name__, obj.__name__, obj.__name__.replace('Err', ' Err'),
+       obj.__module__, obj.__name__, obj.__name__)
+
+print >> outfile, """\
+
+#if (_slang_version >= 20101)
+%Return all the qualifiers in a struct
+private define _sherpa_get_qualifiers (kwstruct);
+private define _sherpa_get_qualifiers (kwstruct)
+{
+ if( kwstruct == NULL )
+    return NULL;
+  variable ii, name;
+  variable kwnames = get_struct_field_names(kwstruct);
+  variable kwargs = Struct_Type[2 * length(kwnames)];
+  ii = 0;
+  foreach (kwnames)
+  {
+     name = ();
+     kwargs[ii] = struct{value=name};
+     ii = ii + 1;
+     kwargs[ii] = struct{value=get_struct_field(kwstruct, name)};
+     ii = ii + 1;
+   }
+ return kwargs;
+}
+#endif
+
+"""
+
+for name in dir(ui):
+    obj = getattr(ui, name)
+
+    if abs(pysl.is_defined(name)) == 1:
+        nameclass = 'static '
+    else:
+        nameclass = ''
+
+    if isinstance(obj, sherpa.ui.utils.ModelWrapper) or name in non_funcs:
+        print >> outfile, """\
+%svariable %s = py.sherpa.astro.ui.%s;
+        """ % (nameclass, name, name)
+    elif callable(obj):
+        print >> outfile, """\
+%sdefine %s() {
+#if (_slang_version >= 20101)
+    variable kwargs = _sherpa_get_qualifiers(__qualifiers());
+#else
+    variable kwargs = NULL;
+#endif
+    variable args = __pop_args(_NARGS);
+        """ % (nameclass, name)
+
+        if not name in exclude_funcs:
+            if sherpa.utils.get_num_args( obj )[1] > 0:
+                print >> outfile, '''\
+    if( _NARGS == 0 ) {
+       () = fprintf(stderr, "%s", "%s");
+       return;
+    }
+    ''' % ( '%s\\n', sherpa.utils.get_func_usage( obj ) )
+        
+        print >> outfile, """\
+    %% Interface from S-lang keyword args to PySL keyword args
+    if( kwargs == NULL ) {
+        py_call(py.sherpa.astro.ui.%s, __push_args(args));
+        return;
+    }
+    else {
+        py_call(py.sherpa.astro.ui.%s, __push_args(args),
+                PY_KW,  __push_args(kwargs));
+    }
+}
+        """ % (name, name)
+    
+
+print >> outfile, """\
+%% The autoassign function must be declared public (i.e. global) so that it
+%% can be pickled by save()
+public define _sherpa_assign_model_to_global(name, model) {
+    model;
+    eval(sprintf("variable %%s = ();", name), "Global");
+    model.name = sprintf("%%s.%%s",
+                         strlow(py_call(py.type, model).__name__),
+                         name);
+}
+
+set_model_autoassign_func(&_sherpa_assign_model_to_global);
+
+%% create access to help file
+$1 = path_concat (path_dirname (__FILE__), "help/sherpa.hlp");
+if (NULL != stat_file ($1))
+  add_doc_file ($1);
+  
+variable _sherpa_version = %d;
+variable _sherpa_version_string = "%s";
+
+#ifexists provide
+provide("sherpa");
+#endif""" % (version_num, sherpa.__versionstr__)
+
+outfile.close()
