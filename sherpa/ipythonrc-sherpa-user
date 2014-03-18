@@ -1,0 +1,6 @@
+# Include default Sherpa application profile
+# DO NOT REMOVE THE NEXT LINE -- EVER!
+include ipythonrc-sherpa
+#***************************************************************************
+# Add user customizations (if any) below this line:
+#***************************************************************************

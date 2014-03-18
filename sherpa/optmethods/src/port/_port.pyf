@@ -1,0 +1,92 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module port__user__routines 
+interface port_user_interface
+   subroutine dmnfbusrfct(n,x,nf,fval,uiparm,urparm,ufparm)
+     use ufparm__user_interface
+     integer depend(x),intent(hide) :: n=len(x)
+     double precision dimension(n) :: x
+     integer intent(inout) :: nf
+     double precision intent(out) :: fval
+     integer dimension(n), intent(in) :: uiparm
+     double precision dimension(n), intent(in) :: urparm
+     external ufparm
+   end subroutine dmnfbusrfct
+   subroutine dn2fbusrfct(m,n,x,nf,fvec,uiparm,urparm,ufparm)
+     use ufparm__user_interface
+     integer depend(fvec),intent(hide) :: m=len(fvec)
+     integer depend(x),intent(hide) :: n=len(x)
+     double precision dimension(n) :: x
+     integer intent(inout) :: nf
+     double precision dimension(m),intent(out) :: fvec
+     integer dimension(n), intent(in) :: uiparm
+     double precision dimension(n), intent(in) :: urparm
+     external ufparm
+   end subroutine dn2fbusrfct
+end interface
+end python module port__user__routines
+python module _port
+interface
+   subroutine mydmnfb(n,x,bounds,rfctol,afctol,partol,maxfev,nfev,fval,ierr,iprint,dmnfbusrfct,lv,liv,scalefactor,uiparm,urparm,v,iv,errdpptri,covarerr)
+     use port__user__routines
+     integer depend(x), intent(hide) :: n=len(x)
+     double precision dimension(n),intent(inout) :: x
+     double precision dimension(2,n),depend(n),intent(in) :: bounds
+     double precision intent(in) :: rfctol
+     double precision intent(in) :: afctol
+     double precision intent(in) :: partol
+     integer intent(in) :: maxfev
+     integer intent(out) :: nfev
+     double precision intent(out) :: fval
+     integer intent(out) :: ierr
+     integer intent(in) :: iprint
+     external dmnfbusrfct
+     integer depend(n), intent(hide) :: lv=512+n*(n+32)
+     integer depend(n), intent(hide) :: liv=512+4*n
+     double precision dimension(n),depend(n),intent(hide) :: scalefactor
+     integer dimension(n),depend(n),intent(hide) :: uiparm
+     double precision dimension(n),depend(n),intent(hide) :: urparm
+     double precision dimension(lv),depend(lv),intent(hide) :: v
+     double precision dimension(liv),depend(liv),intent(hide) :: iv
+     integer intent(out) :: errdpptri
+     double precision dimension(n),depend(n),intent(out) :: covarerr
+   end subroutine mydmnfb
+   subroutine mydn2fb(m,n,x,bounds,rfctol,afctol,partol,maxfev,nfev,fval,ierr,iprint,dn2fbusrfct,lv,liv,scalefactor,uiparm,urparm,v,iv)
+     use port__user__routines
+     integer intent(in) :: m
+     integer depend(x), intent(hide) :: n=len(x)
+     double precision dimension(n),intent(inout) :: x
+     double precision dimension(2,n),depend(n),intent(in) :: bounds
+     double precision intent(in) :: rfctol
+     double precision intent(in) :: afctol
+     double precision intent(in) :: partol
+     integer intent(in) :: maxfev
+     integer intent(out) :: nfev
+     double precision intent(out) :: fval
+     integer intent(out) :: ierr
+     integer intent(in) :: iprint
+     external dn2fbusrfct
+     integer depend(n), intent(hide) :: lv=105+n*(m+2*n+21)+2*m
+     integer depend(n), intent(hide) :: liv=82+4*n
+     double precision dimension(n),depend(n),intent(hide) :: scalefactor
+     integer dimension(n),depend(n),intent(hide) :: uiparm
+     double precision dimension(n),depend(n),intent(hide) :: urparm
+     double precision dimension(lv),depend(lv),intent(hide) :: v
+     double precision dimension(liv),depend(liv),intent(hide) :: iv
+   end subroutine mydn2fb
+end interface 
+end python module _port
+python module ufparm__user_interface
+interface ufparm__user_interface
+   subroutine ufparm(n,x,uiparm,urparm)
+     integer depend(x),intent(hide) :: n=len(x)
+     double precision dimension(n) :: x
+     integer dimension(n), intent(in) :: uiparm
+     double precision dimension(n), intent(in) :: urparm
+   end subroutine ufparm
+end interface
+end python module ufparm__user_interface
+
+! This file was auto-generated with f2py (version:2_3048).
+! See http://cens.ioc.ee/projects/f2py2e/

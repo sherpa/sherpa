@@ -1,0 +1,51 @@
+# SHERPA_VERSION 4.4.1
+[options]
+# Plotting packages available- pylab, chips
+plot_pkg   : chips
+
+# IO packages available- pyfits, crates
+io_pkg     : crates
+
+[statistics]
+# If true, use truncation value in Cash, C-stat
+truncate   : True
+
+# Truncation value for Cash, C-stat (ignored if
+# truncate option is False)
+trunc_value: 1.0e-25
+
+[verbosity]
+# Sherpa Chatter level
+# a non-zero value will
+# display full error traceback
+level      : 0
+# NumPy arrays have a threshold size print option, such that when an
+# array greater than that size is converted to a string, for printing,
+# only the first few and last few elements are shown.  If the array is
+# smaller than the threshold size, all the elements are printed out.
+# (This setting makes no change to the actual array, but merely
+# governs how the array is represented when a copy of the array is
+# converted to a string.)  
+#
+# The default threshold size is 1000.  Here, the threshold size is
+# changed to a much larger value as Sherpa often deals with large
+# arrays.
+arraylength: 1000000
+
+[parallel]
+# Integral number of cores to use for all parallel operations
+# 'None' indicates that all available cores will be used.
+# Fewer than 2 will turn off parallel processing.
+numcores : None
+
+[chips]
+# If the plotting package is chips, set Sherpa-specific
+# preferences here.  If plotting package is anything else,
+# this section is completely ignored.  These preferences
+# go into effect the first time a Sherpa plot function
+# is called (*not* when Sherpa is started; chips is not
+# imported until the first plot is made).
+
+window.height          : 6
+window.width           : 8
+window.units           : inches

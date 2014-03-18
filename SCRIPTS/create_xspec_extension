@@ -1,0 +1,199 @@
+#!/usr/bin/env python
+
+import sys
+import string
+
+modeldat = file(sys.argv[1])
+
+valid_chars = string.ascii_letters + string.digits + '_'
+
+classes = ''
+func_protos = ''
+func_specs = ''
+
+while True:
+    line = modeldat.readline()
+    if not line:
+        break
+    if not line.strip():
+        continue
+
+    lineparts = line.split()
+    if len(lineparts) != 7:
+        lineparts.pop()
+    modelname, npars, elo, ehi, funcname, modeltype, flag = lineparts
+    npars = int(npars)
+
+    if (funcname.startswith('F_') or funcname.startswith('c_') or
+        (modeltype not in ('add', 'mul'))):
+        while npars > 0:
+            line = modeldat.readline()
+            if line.strip():
+                npars -= 1
+        else:
+            continue
+
+    if modeltype == 'add':
+        baseclass = 'Additive'
+    elif modeltype == 'mul':
+        baseclass = 'Multiplicative'
+    else:
+        raise RuntimeError("bad model type: '%s'" % modeltype)
+
+    baseclass = 'XS%sModel' % baseclass
+    
+    classes += (("\n\n" +
+                 "class XS%s(%s):\n\n" +
+                 "    calc = _xspec.%s\n\n" +
+                 "    def __init__(self, name='%s'):\n") %
+                (modelname, baseclass, funcname, modelname.lower()))
+
+    all_parnames = []
+
+    for i in xrange(npars):
+        line = ''
+        while not line.strip():
+            line = modeldat.readline()
+
+        raw_parts = line.split()
+        parts = []
+        while raw_parts:
+            p = raw_parts.pop(0)
+            if p.startswith('"'):
+                while (p == '"') or (not p.endswith('"')):
+                    p += ' ' + raw_parts.pop(0)
+                p = p.strip('"')
+                p = p.strip()
+            parts.append(p)
+
+        orig_parname = parts[0]
+        parname = []
+        for l in orig_parname:
+            if l == '@':
+                parname.append('At')
+            elif l in valid_chars:
+                parname.append(l)
+        parname = ''.join(parname)
+        if parname == 'break':
+            parname = 'break_'
+        all_parnames.append(parname)
+
+        classes += ("        self.%s = Parameter(name, '%s', " %
+                    (parname, parname))
+
+        if orig_parname[0] == '*':
+
+            #
+            # Scale parameter
+            #
+
+            units, val = parts[1:3]
+            classes += val
+            if units:
+                classes += ", units='%s'" % units
+            classes += ", alwaysfrozen=True"
+
+        elif orig_parname[0] == '$':
+
+            #
+            # Switch parameter
+            #
+
+            if len(parts) == 8:
+                units = parts.pop(1)
+            else:
+                units = ''
+
+            if len(parts) == 2:
+                val = parts[1]
+                hardmin = '0'
+                softmin = '0'
+                softmax = '1'
+                hardmax = '1'
+            elif len(parts) == 3:
+                val = parts[2]
+                hardmin = '0'
+                softmin = '0'
+                softmax = '1'
+                hardmax = '1'
+            else:
+                val, hardmin, softmin, softmax, hardmax = parts[1:6]
+
+            classes += ("%s, %s, %s, %s, %s" %
+                        (val, softmin, softmax, hardmin, hardmax))
+            if units:
+                classes += ", '%s'" % units
+
+            classes += ", alwaysfrozen=True"
+
+        else:
+
+            #
+            # Normal parameter
+            #
+
+            units, val, hardmin, softmin, softmax, hardmax, delta = parts[1:]
+
+            if float(val) < float(softmin):
+                val = softmin
+            elif float(val) > float(softmax):
+                val = softmax
+
+            # Make hard limits of most models -hugeval, hugeval
+            # Maximum possible hard limits needed for confidence limits
+            hardmin = "0.0"
+            hardmax = "hugeval"
+            if float(softmin) < 0.0:
+                hardmin = "-hugeval"
+
+            classes += ("%s, %s, %s, %s, %s" %
+                        (val, softmin, softmax, hardmin, hardmax))
+            if units:
+                classes += ", '%s'" % units
+            if float(delta) < 0.0:
+                if not units:
+                    classes += ", frozen=True"
+                else:
+                    classes += ", True"
+
+        classes += ")\n"
+
+    if modeltype == 'add':
+        npars += 1
+        all_parnames.append('norm')
+        classes += ("        self.norm = Parameter(name, 'norm', 1.0, 0.0, " +
+                    "1.0e24, 0.0, hugeval)\n")
+
+    classes += "        %s.__init__(self, name" % baseclass
+
+    if npars > 0:
+        all_parnames = ['self.' + p for p in all_parnames]
+        classes += ", (" + ', '.join(all_parnames)
+        if npars == 1:
+            classes += ","
+        classes += ")"
+
+    classes += ")\n"
+    
+    if funcname.startswith('C_'):
+        modellang = '_C'
+        func_protos += (('void %s(const double* energy, int nFlux, ' +
+                         'const double* params, int spectrumNumber, ' +
+                         'double* flux, double* fluxError, ' +
+                         'const char* initStr);\n') % funcname)
+    else:
+        modellang = ''
+        func_protos += (('void %s_(float* ear, int* ne, float* param, ' +
+                         'int* ifl, float* photar, float* photer);\n') %
+                        funcname)
+
+    if modeltype == 'add':
+        funcqual = '_NORM'
+    else:
+        funcqual = ''
+    func_specs += ('  XSPECMODELFCT%s%s( %s, %d ),\n' %
+                   (modellang, funcqual, funcname, npars))
+
+print classes
+print func_protos
+print func_specs
