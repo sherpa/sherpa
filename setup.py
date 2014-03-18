@@ -2,7 +2,7 @@
 #_PYTHON_INSERT_GPL_LICENSE_HERE_
 
 
-## This is a useless line added to test the GH/CC buffer setup
+## This is a useless line EDITED to test the GH/CC buffer setup
 
 import sys
 import os
