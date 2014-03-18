@@ -1,6 +1,9 @@
 #_PYTHON_INSERT_SAO_COPYRIGHT_HERE_(2007)_
 #_PYTHON_INSERT_GPL_LICENSE_HERE_
 
+
+## This is a useless line added to test the GH/CC buffer setup
+
 import sys
 import os
 import platform
