@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE cxchelptopics SYSTEM "CXCHelp.dtd">
+<cxchelptopics>
+  <ENTRY context="group" key="grpBinWidth" refkeywords="BIN_WIDTH grp group numchans grpwidth width tabstops" seealsogroups="group-api">
+    <SYNOPSIS>
+      Group an array into a set of equal-width groups (by group width).
+    </SYNOPSIS>
+
+    <SYNTAX>
+      <LINE>
+	grpBinWidth( Integer_Type numChans, Integer_Type grpWidth )
+      </LINE>
+      <LINE>
+	grpBinWidth( Integer_Type numChans, Integer_Type grpWidth,
+	PyArray_Type tabStops )
+      </LINE>
+      <LINE />
+      <LINE>
+	Returns: ( PyArray_Type grouping, PyArray_Type quality )
+      </LINE>
+    </SYNTAX>
+
+    <ADDRESS><URL>grpbinwidth.html</URL></ADDRESS>
+    <ADDRESS><URL>http://cxc.harvard.edu/ciao/ahelp/grpbinwidth.html</URL></ADDRESS>
+    <DESC>
+      <PARA>
+	This function returns the grouping and quality arrays
+	that represent an array of numChans elements
+	in which the groups are each grpWidth elements wide.
+	The optional parameter tabStops is an array
+	which lists those elements that should be ignored.
+      </PARA>
+      <PARA>
+	This function provides the same functionality
+	as the BIN_WIDTH option of dmgroup.
+	The grpNumBins() function allows you to fix
+	the number of groups rather than the width
+	of each group.
+      </PARA>
+
+<PARA>
+        The group module is not available by default; to use it in a
+        Python program, it must be loaded using the Python
+         import function:
+      </PARA>
+<VERBATIM>  from group import *, or import group</VERBATIM>
+
+    </DESC>
+
+    <QEXAMPLELIST>
+
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpBinwidth( 10, 2 );</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    This example calculates the grouping and quality arrays
+	    that represent an array of 10 elements in which each
+	    group has a width of 2 elements.
+	  </PARA>
+	</DESC>
+
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; x = numpy.arange(0.5, 6.0, 0.05)</LINE>
+	  <LINE>&gt;&gt;&gt; y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpBinWidth( y.size, 10 )</LINE>
+	  <LINE>&gt;&gt;&gt; ysum = grpGetGroupSum( y, g )</LINE>
+	  <LINE>&gt;&gt;&gt; nchan = grpGetChansPerGroup( g )</LINE>
+	  <LINE>&gt;&gt;&gt; i = numpy.where( g == 1 )</LINE>
+	  <LINE>&gt;&gt;&gt; yavg = ysum[i] / nchan[i]</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    Here we take the function
+	    <EQUATION>y = 3 + 30 * exp( -(x-2)^2 / 0.1 )</EQUATION>
+	    and group it so that each group contains 10 elements.
+	  </PARA>
+	  <PARA>
+	    If we had filtered the data array to only contain
+	    elements with a quality value - as returned by
+	    grpBinWidth() - of 0, then we could have avoided the
+	    call to grpGetChansPerGroup() since this is
+	    set to 10 by grpBinWidth().
+	  </PARA>
+	</DESC>
+
+      </QEXAMPLE>
+      <QEXAMPLE>
+	<DESC>
+	  <PARA>
+	    To see more examples of optional parameters and keywords
+	    in the parameter list, please see
+	    ahelp grpadaptive
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+    </QEXAMPLELIST>
+
+    <BUGS>
+      <PARA>
+        See the
+        <HREF link="http://cxc.harvard.edu/ciao/bugs/group.html">bugs page
+          for the group library</HREF>
+        on the CIAO website for an up-to-date listing of known bugs.
+      </PARA>
+    </BUGS>
+
+    <VERSION>CIAO 4.5</VERSION>
+    <LASTMODIFIED>December 2012</LASTMODIFIED>
+
+  </ENTRY>
+</cxchelptopics>

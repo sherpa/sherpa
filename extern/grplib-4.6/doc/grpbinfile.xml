@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE cxchelptopics SYSTEM "CXCHelp.dtd">
+<cxchelptopics>
+  <ENTRY context="group" key="grpBinFile" refkeywords="BIN_FILE grp group binfile bin file" seealsogroups="group-api">
+    <SYNOPSIS>
+      Group an array using the grouping applied to another dataset.
+    </SYNOPSIS>
+    <SYNTAX>
+      <LINE>
+	grpBinFile( PyArray_Type axisArray, PyArray_Type fAxisArray,
+	PyArray_Type fGroupingCol, PyArray_Type fQualCol )
+      </LINE>
+      <LINE>
+	grpBinFile( PyArray_Type axisArray, PyArray_Type fAxisArray,
+	PyArray_Type fGroupingCol, PyArray_Type fQualCo, PyArray_Type tabStops )
+      </LINE>
+      <LINE />
+      <LINE>
+	Returns: ( PyArray_Type grouping, PyArray_Type quality )
+      </LINE>
+    </SYNTAX>
+
+    <ADDRESS><URL>grpbinfile.html</URL></ADDRESS>
+    <ADDRESS><URL>http://cxc.harvard.edu/ciao/ahelp/grpbinfile.html</URL></ADDRESS>
+    <DESC>
+      <PARA>
+	This function allows you to calculate the grouping information
+	needed to group the input data (the axisArray array)
+	to match the grouping of another dataset (the
+	fAxisArray, fGroupingCol, and fQualCol arrays
+	which can be read from a file).
+	Often you can apply the grouping information directly - i.e.
+	call
+	<EQUATION>grpGetGroupSum( axisArray, fGroupingCol )</EQUATION>
+	rather than grpBinFile() - unless
+	the two datasets do not have the same set of axis values.
+	An example of this is when different binning factors are
+	used to create spectra, e.g.
+	calling dmextract with
+	<EQUATION>[bin pha=1:4096:4]</EQUATION>
+	and
+	<EQUATION>[bin pha=1:4096:1]</EQUATION>
+	To apply the grouping calculated from one of these
+	spectra to the other one requires the use of grpBinFile().
+      </PARA>
+      <PARA>
+	This function provides the same functionality
+	as the BIN_FILE option of dmgroup.
+      </PARA>
+
+<PARA>
+        The group module is not available by default; to use it in a
+        Python program, it must be loaded using the Python
+         import function:
+      </PARA>
+<VERBATIM>  from group import *, or import group</VERBATIM>
+
+    </DESC>
+
+    <QEXAMPLELIST>
+
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; ( grp, qual ) = grpBinFile( spec2, spec1, spec1GROUPING, spec1QUALITY )</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    The grpBinFile() routine is used to calculate the
+	    grouping and quality arrays and apply the grouping from one
+	    spectrum to another.
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+      <QEXAMPLE>
+	<DESC>
+	  <PARA>
+	    To see more examples of optional parameters and keywords
+	    in the parameter list, please see
+	    ahelp grpadaptive
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+    </QEXAMPLELIST>
+
+    <BUGS>
+      <PARA>
+        See the
+        <HREF link="http://cxc.harvard.edu/ciao/bugs/group.html">bugs page
+          for the group library</HREF>
+        on the CIAO website for an up-to-date listing of known bugs.
+      </PARA>
+    </BUGS>
+
+    <VERSION>CIAO 4.5</VERSION>
+    <LASTMODIFIED>December 2012</LASTMODIFIED>
+
+  </ENTRY>
+</cxchelptopics>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE cxchelptopics SYSTEM "CXCHelp.dtd">
+<cxchelptopics>
+  <ENTRY context="group" key="grpBin" refkeywords="BIN grp group  countsarray numcounts maxlength tabstops" seealsogroups="group-api">
+    <SYNOPSIS>
+      Group an array using low and high boundaries.
+    </SYNOPSIS>
+    <SYNTAX>
+      <LINE>
+	grpBin( PyArray_Type axisArray, PyArray_Type binLowArray, PyArray_Type binHighArray )
+      </LINE>
+      <LINE>
+	grpBin( PyArray_Type axisArray, PyArray_Type binLowArray, PyArray_Type binHighArray,
+	PyArray_Type tabStops )
+      </LINE>
+      <LINE />
+      <LINE>
+	Returns: ( PyArray_Type grouping, PyArray_Type quality )
+      </LINE>
+    </SYNTAX>
+
+    <ADDRESS><URL>grpbin.html</URL></ADDRESS>
+    <ADDRESS><URL>http://cxc.harvard.edu/ciao/ahelp/grpbin.html</URL></ADDRESS>
+    <DESC>
+
+      <PARA>
+	This function returns the grouping and quality arrays
+	for a set of groups defined by the low (binLowArray)
+	and high (binHighArray) boundaries when applied to
+	the axis values of the data (axisArray).
+	The optional parameter tabStops is an array of those
+	elements that should be ignored.
+      </PARA>
+      <PARA>
+	This function provides the same functionality
+	as the BIN option of dmgroup.
+      </PARA>
+
+      <PARA>
+        The group module is not available by default; to use it in a
+        Python program, it must be loaded using the Python
+         import function:
+      </PARA>
+<VERBATIM>  from group import *, or import group</VERBATIM>
+
+    </DESC>
+
+    <QEXAMPLELIST>
+
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE> (g,q) = grpBin( x, xl, xh )</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    This example calculates the grouping and quality arrays
+	    that represent the input data (here the contents of the x
+	    array) after it has been grouped using the group
+	    boundaries specified by the xl and xh arrays.
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; x = numpy.arange(0.5, 6.0, 0.05)</LINE>
+	  <LINE>&gt;&gt;&gt; y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</LINE>
+	  <LINE>&gt;&gt;&gt; xl = numpy.array([ 0.5, 1.0, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 3.0, 3.5 ])</LINE>
+	  <LINE>&gt;&gt;&gt; xh = numpy.array([ 1.0, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 3.0, 3.5, 6.0 ])</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpBin( x, xl, xh )</LINE>
+	  <LINE>&gt;&gt;&gt; ysum = grpGetGroupSum( y, g )</LINE>
+	  <LINE>&gt;&gt;&gt; nchan = grpGetChansPerGroup( g )</LINE>
+	  <LINE>&gt;&gt;&gt; i = numpy.where( g == 1 )</LINE>
+	  <LINE>&gt;&gt;&gt; yavg = ysum[i] / nchan[i]</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    Here we take the function
+	    <EQUATION>y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</EQUATION>
+	    and apply an irregular set of group boundaries,
+	    specified by the xl and xh arrays.
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+    </QEXAMPLELIST>
+
+    <BUGS>
+      <PARA>
+        See the
+        <HREF link="http://cxc.harvard.edu/ciao/bugs/group.html">bugs page
+          for the group library</HREF>
+        on the CIAO website for an up-to-date listing of known bugs.
+      </PARA>
+    </BUGS>
+
+    <VERSION>CIAO 4.5</VERSION>
+    <LASTMODIFIED>December 2012</LASTMODIFIED>
+
+  </ENTRY>
+</cxchelptopics>

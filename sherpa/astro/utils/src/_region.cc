@@ -4,11 +4,9 @@
 #include "sherpa/extension.hh"
 #include <sstream>
 #include <iostream>
-#include <string>
 
 extern "C" {
   #include "cxcregion.h"
-  #include "ascdm.h"
   void init_region();
 }
 
@@ -76,11 +74,10 @@ static regRegion* parse_string( char* str, int fileflag ) {
   
   regRegion *reg = NULL;
 
-  std::string input(str);
   if( fileflag )
-    input = "region(" + input + ")";
-
-  reg = dmRegParse( (char*)input.c_str() );
+    reg = regReadAsciiRegion( str, 0 ); // Verbosity set to 0
+  else
+    reg = regParse( str );
  
   return reg;
 }
@@ -213,51 +210,9 @@ static PyObject* region_mask( PyObject* self, PyObject* args )
   return Py_BuildValue((char*)"ON", region, mask.return_new_ref());
 }
 
-/*
-static PyObject* region_parse( PyObject* self, PyObject* args )
-{
-
-  int fileflag = 1;
-  char* str = NULL;
-  PyObject *cobj = NULL;
-  PyRegion *region = NULL;
-  regRegion *reg = NULL;
-
-  if ( !PyArg_ParseTuple( args, (char*)"s|i", &str, &fileflag))
-    return NULL;
-
-  reg = parse_string( str, fileflag );
-
-  if ( NULL == reg) {
-    PyErr_SetString( PyExc_TypeError,
-		     (char*)"unable to parse region string successfully" );
-    return NULL;
-  }
-
-  // In order to pass in regRegion* as a Python argument, use void* trick
-  cobj = PyCObject_FromVoidPtr((void*)reg, NULL);
-
-  region = (PyRegion*) pyRegion_new( &pyRegion_Type,
-				     Py_BuildValue((char*)"(O)", cobj ),
-				     NULL );
-
-  Py_XINCREF(region);
-
-  return (PyObject*)region;
-
-}
-*/
-
 static PyMethodDef RegionFcts[] = {
-
   { (char*)"region_mask", (PyCFunction)region_mask,
     METH_VARARGS, (char*)"Create a region using CXC region lib" },
-
-  /*
-    { (char*)"region_parse", (PyCFunction)region_parse,
-    METH_VARARGS, (char*)"Parse and create a region using CXC region lib" },
-  */
-
   { NULL, NULL, 0, NULL }
   
 };
