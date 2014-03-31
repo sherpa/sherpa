@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE cxchelptopics SYSTEM "CXCHelp.dtd">
+<cxchelptopics>
+  <ENTRY context="group" key="grpNumCounts" refkeywords="NUM_CTS grp group number num count counts countsarray numcounts maxlength tabstops" seealsogroups="group-api">
+    <SYNOPSIS>
+      Group an array by the number of counts per group.
+    </SYNOPSIS>
+    <SYNTAX>
+
+      <LINE>
+	grpNumCounts( PyArray_Type countsArray, Double_Type numCounts )
+      </LINE>
+      <LINE>
+	grpNumCounts( PyArray_Type countsArray, Double_Type numCounts,
+	Integer_Type maxLength )
+      </LINE>
+      <LINE>
+	grpNumCounts( PyArray_Type countsArray, Double_Type numCounts,
+	Integer_Type maxLength, PyArray_Type tabStops )
+      </LINE>
+      <LINE />
+      <LINE>
+	Returns: ( PyArray_Type grouping, PyArray_Type quality )
+      </LINE>
+
+    </SYNTAX>
+
+    <ADDRESS><URL>grpnumcounts.html</URL></ADDRESS>
+    <ADDRESS><URL>http://cxc.harvard.edu/ciao/ahelp/grpnumcounts.html</URL></ADDRESS>
+    <DESC>
+      <PARA>
+	This function returns the grouping and quality arrays
+	that represent the input data (countsArray) after
+	it has been grouped so that each group contains
+	at least numCounts counts.
+	The optional parameters maxLength and tabStops
+	represent the maximum number of elements
+	that can be combined and an array representing those
+	elements that should be ignored respectively.
+      </PARA>
+      <PARA>
+	This function provides the same functionality
+	as the NUM_CTS option of dmgroup.
+      </PARA>
+
+      <PARA>
+        The group module is not available by default; to use it in a
+        Python program, it must be loaded using the Python
+         import function:
+      </PARA>
+<VERBATIM>  from group import *, or import group</VERBATIM>
+
+      <PARA>
+        In addition, in order to create arrays, the Python module numpy must
+        be loaded using the Python import function:
+      </PARA>
+<VERBATIM>  import numpy</VERBATIM>
+
+    </DESC>
+
+    <QEXAMPLELIST>
+      <QEXAMPLE>
+	<SYNTAX>
+		<LINE>&gt;&gt;&gt; (g,q) = grpNumCounts( y, 20 )</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    This example calculates the grouping and quality arrays
+	    that represent the input data (here the contents of the y
+	    array) after it has been grouped to at least 20 counts per
+	    group.
+	  </PARA>
+	</DESC>
+
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<SYNTAX>
+
+	  <LINE>&gt;&gt;&gt; x = numpy.arange(0.5, 6.0, 0.05)</LINE>
+	  <LINE>&gt;&gt;&gt; y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpNumCounts( y, 15 )</LINE>
+	  <LINE>&gt;&gt;&gt; ysum = grpGetGroupSum( y, g )</LINE>
+	  <LINE>&gt;&gt;&gt; nchan = grpGetChansPerGroup( g )</LINE>
+	  <LINE>&gt;&gt;&gt; i = numpy.where( g == 1 )</LINE>
+	  <LINE>&gt;&gt;&gt; yavg = ysum[i] / nchan[i]</LINE>
+
+	</SYNTAX>
+
+	<DESC>
+
+	  <PARA>
+	    Here we take the function
+	    <EQUATION>y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</EQUATION>
+	    and group it by 15 counts per group.
+	  </PARA>
+
+	  <PARA>
+	    In this example we have ignored the quality array; the
+	    last group (corresponding to the last 3 elements of
+	    the x and y arrays) has a quality value of 2, indicating
+	    that the total number of counts for the group
+	    (9) is less than 15.
+	  </PARA>
+	</DESC>
+
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<DESC>
+	  <PARA>
+	    To see more examples of optional parameters and keywords
+	    in the parameter list, please see
+	    ahelp grpadaptive
+	  </PARA>
+	</DESC>
+	</QEXAMPLE>
+
+    </QEXAMPLELIST>
+
+    <BUGS>
+      <PARA>
+        See the
+        <HREF link="http://cxc.harvard.edu/ciao/bugs/group.html">bugs page
+          for the group library</HREF>
+        on the CIAO website for an up-to-date listing of known bugs.
+      </PARA>
+    </BUGS>
+
+    <VERSION>CIAO 4.5</VERSION>
+    <LASTMODIFIED>December 2012</LASTMODIFIED>
+
+  </ENTRY>
+</cxchelptopics>

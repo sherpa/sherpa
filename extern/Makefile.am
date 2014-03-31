@@ -1,0 +1,13 @@
+SUBDIRS = fftw-3.3.3 grplib-4.6 region-4.6
+
+all-local:
+	cd wcssubs-3.8.7 && make && cd -
+
+install-exec-local : wcssubs-3.8.7/libwcs.a
+	cp wcssubs-3.8.7/libwcs.a $(libdir)
+
+uninstall-local:
+	rm -f $(libdir)/libwcs.a
+
+clean-local:
+	rm -f wcssubs-3.8.7/*.a wcssubs-3.8.7/*.o

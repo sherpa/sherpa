@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE cxchelptopics SYSTEM "CXCHelp.dtd">
+<cxchelptopics>
+  <ENTRY context="group" key="grpGetChansPerGroup" refkeywords="grp group get number of bin bins channels channel chans" seealsogroups="group-api">
+    <SYNOPSIS>
+      Calculate the number of channels (elements) in each group.
+    </SYNOPSIS>
+    <SYNTAX>
+      <LINE>
+	PyArray_Type chanspergrp = grpGetChansPerGroup( PyArray_Type grouping )
+      </LINE>
+    </SYNTAX>
+
+    <ADDRESS><URL>grpgetchanspergroup.html</URL></ADDRESS>
+    <ADDRESS><URL>http://cxc.harvard.edu/ciao/ahelp/grpgetchanspergroup.html</URL></ADDRESS>
+    <DESC>
+      <PARA>
+	This function returnes the number of channels (i.e. elements)
+	in each group.
+	The return value is an array whose length equals
+	that of the input data (the dataArray argument)
+	and each element within a group contains the same value.
+	As an example,
+	<EQUATION>grpGetChansPerGroup( [1,-1,1,-1,1,1] )</EQUATION>
+	will return the array
+	<EQUATION>[2,2,2,2,1,1]</EQUATION>
+	since the groups consist of the first two elements,
+	then the next two elements, with the last two elements
+	being un-grouped.
+      </PARA>
+
+<PARA>
+        The group module is not available by default; to use it in a
+        Python program, it must be loaded using the Python
+         import function:
+      </PARA>
+<VERBATIM>  from group import *, or import group</VERBATIM>
+
+    </DESC>
+
+    <QEXAMPLELIST>
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; nchan = grpGetChansPerGroup( grp )</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    The nchan array will contain the number of elements
+	    in each group, as given in the grouping scheme
+	    stored in the grp array.
+	    The nchan array will have the same size as the grp
+	    array. The following code shows
+	    you how you can convert nchan into an array in
+	    which each element corresponds to one group.
+	  </PARA>
+	  <PARA>
+	    <SYNTAX>
+   	    <LINE>&gt;&gt;&gt; i = numpy.where( grp == 1 );</LINE>
+	      <LINE>&gt;&gt;&gt; nelem = nchan[i];</LINE>
+	    </SYNTAX>
+	  </PARA>
+	  <PARA>
+	    Here we created an array i whose elements correspond
+	    to those elements in the grp array with a value of 1
+	    (this marks the start of a group). The nelem array is
+	    then created by using this array to extract the
+	    corresponding elements from the ncham array.
+	    It could have been written in one line as:
+	  </PARA>
+	  <PARA>
+	    <SYNTAX>
+	    	<LINE>&gt;&gt;&gt; nelem = nchan[ numpy.where( grp == 1 ) ];</LINE>
+	    </SYNTAX>
+	  </PARA>
+	</DESC>
+
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; x = numpy.arange(0.5, 6.0, 0.05)</LINE>
+	  <LINE>&gt;&gt;&gt; y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</LINE>
+	  <LINE>&gt;&gt;&gt; ( grp, qual ) = grpNumCounts( y, 15 )</LINE>
+	  <LINE>&gt;&gt;&gt; ysum = grpGetGroupSum( y, grp )</LINE>
+	  <LINE>&gt;&gt;&gt; nchan = grpGetChansPerGroup( grp )</LINE>
+	  <LINE>&gt;&gt;&gt; i = numpy.where( grp == 1, qual, grp )</LINE>
+	  <LINE>&gt;&gt;&gt; j = numpy.where(i == 0)</LINE>
+
+	  <LINE>&gt;&gt;&gt; xstart = x[j]</LINE>
+	  <LINE>&gt;&gt;&gt; yavg = ysum[j] / nchan[j]</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    Here we take the function
+	    <EQUATION>y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</EQUATION>
+	    and group it by 15 counts per group.
+	    We then filter the summed array (ysum) so that it
+	    corresponds to only those elements at the start
+	    of a group - the
+	    <EQUATION>grp == 1</EQUATION>
+	    condition - and for which the quality flag is "good" -
+	    which is given by
+	    <EQUATION>qual == 1</EQUATION>
+	    This array is divided by the number of elements in each
+	    group to calculate the average value in the group.
+	    Note that the xstart array gives the start position of each
+	    group.
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+      <QEXAMPLE>
+	<DESC>
+	  <PARA>
+	    To see more examples of optional parameters and keywords
+	    in the parameter list, please see
+	    ahelp grpadaptive
+	  </PARA>
+	</DESC>
+	</QEXAMPLE>
+
+
+    </QEXAMPLELIST>
+
+    <BUGS>
+      <PARA>
+        See the
+        <HREF link="http://cxc.harvard.edu/ciao/bugs/group.html">bugs page
+          for the group library</HREF>
+        on the CIAO website for an up-to-date listing of known bugs.
+      </PARA>
+    </BUGS>
+
+    <VERSION>CIAO 4.5</VERSION>
+    <LASTMODIFIED>December 2012</LASTMODIFIED>
+
+  </ENTRY>
+</cxchelptopics>

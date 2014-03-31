@@ -4,7 +4,13 @@
 import sys
 import os
 import platform
+import setuptools
 from numpy.distutils.core import setup, Extension
+
+
+
+extern_inc='extern/include'
+extern_lib='extern/lib'
 
 ###############################################################################
 #
@@ -17,19 +23,19 @@ from numpy.distutils.core import setup, Extension
 # Set defaults
 #
 
-conf = {
-    'cfitsio_lib': 'cfitsio',
-    'cfitsio_library_dir': None,
-    'xspec_library_dir': None,
-    'reg_library_dir': None,
-    'reg_include_dir': None,
-    'fftw_library_dir' : '/usr/lib',
-    'fftw_include_dir' : '/usr/include',
-    'wcs_library_dir' : None,
-    'wcs_include_dir' : None,
-    'fortran_lib' : None,
-    'fortran_library_dir' : None
-    }
+# conf = {
+#     'cfitsio_lib': 'cfitsio',
+#     'cfitsio_library_dir': None,
+#     'xspec_library_dir': None,
+#     'reg_library_dir': None,
+#     'reg_include_dir': None,
+#     'fftw_library_dir' : '/usr/lib',
+#     'fftw_include_dir' : '/usr/include',
+#     'wcs_library_dir' : None,
+#     'wcs_include_dir' : None,
+#     'fortran_lib' : None,
+#     'fortran_library_dir' : None
+#     }
 
 #
 # To store f2py temp files somewhere they can be easily removed,
@@ -60,7 +66,7 @@ except OSError, e:
 while ((len(sys.argv) > 1) and (sys.argv[1].count('=') == 1) and
        (not sys.argv[1].startswith('--'))):
     var, val = sys.argv.pop(1).split('=')
-    
+
     if var not in conf:
         sys.stderr.write("error: '%s' is not a valid configuration variable\n"
                          % var)
@@ -143,7 +149,7 @@ SunFCompiler.get_libraries = get_libraries
 # can get the g2c library.
 #
 if platform.system() == 'Darwin':
-    needf90 = True 
+    needf90 = True
     from numpy.distutils.fcompiler.gnu import GnuFCompiler
     GnuFCompiler.old_get_libraries = GnuFCompiler.get_libraries
     GnuFCompiler.old_get_library_dirs = GnuFCompiler.get_library_dirs
@@ -182,7 +188,7 @@ if platform.system() == 'Darwin':
             if '/sw/lib' not in dirs:
                 dirs.append('/sw/lib')
             if '/opt/local/lib' not in dirs:
-                dirs.append('/opt/local/lib') 
+                dirs.append('/opt/local/lib')
         return dirs
 
     GnuFCompiler.get_libraries = get_libraries_gnuf
@@ -266,7 +272,7 @@ def get_deps(deps):
         if next not in alldeps:
             alldeps.add(next)
             deps.update(header_deps[next])
-    
+
     return [sherpa_inc[0] + '/sherpa/' + d + '.hh' for d in alldeps]
 
 
@@ -277,7 +283,7 @@ def get_deps(deps):
 #
 ###############################################################################
 
-    
+
 clibs = [
 
     ('sherpa',
@@ -317,11 +323,11 @@ extension_modules = [
               depends=get_deps(['model_extension', 'models'])),
 
 ##################################optmethods###################################
-    
+
     # sherpa.optmethods._minpack
     Extension('sherpa.optmethods._minpack',
               ['sherpa/optmethods/src/minpack/_minpack.pyf',
-               'sherpa/optmethods/src/minpack/covar.f',               
+               'sherpa/optmethods/src/minpack/covar.f',
                'sherpa/optmethods/src/minpack/lmdif.f',
                'sherpa/optmethods/src/minpack/mylmdif.f']),
 
@@ -343,7 +349,7 @@ extension_modules = [
 ##               depends=(get_deps(['myArray', 'extension']) +
 ##                        ['sherpa/optmethods/src/chokkan/lbfgs.h'])),
 
-##     # powell: bobyqa & newuoa 
+##     # powell: bobyqa & newuoa
 ##     Extension('sherpa.optmethods._powell',
 ##               ['sherpa/optmethods/src/powell/_powell.pyf',
 ##                'sherpa/optmethods/src/powell/altmov.f',
@@ -387,7 +393,7 @@ extension_modules = [
 ##                        'sherpa/optmethods/src/StoGo/Local.hh',
 ##                        'sherpa/optmethods/src/StoGo/Global.hh'])),
 
- 
+
 ###############################################################################
 
     # sherpa.optmethods._saoopt
@@ -395,7 +401,7 @@ extension_modules = [
               ['sherpa/optmethods/src/_saoopt.cc',
                'sherpa/optmethods/src/Simplex.cc'],
               sherpa_inc + ['sherpa/utils/src/gsl'],
-              libraries=(cpp_libs + ['sherpa']),              
+              libraries=(cpp_libs + ['sherpa']),
               depends=(get_deps(['myArray', 'extension']) +
                        ['sherpa/include/sherpa/fcmp.hh',
                         'sherpa/include/sherpa/MersenneTwister.h',
@@ -488,12 +494,12 @@ extension_modules = [
                'sherpa/utils/src/tcd/tcdPixelArith.c',
                'sherpa/utils/src/tcd/tcdTransform.c',
                'sherpa/utils/src/_psf.cc'],
-              sherpa_inc + ['sherpa/utils/src/tcd', conf['fftw_include_dir']],
-              library_dirs=[conf['fftw_library_dir']],
+              sherpa_inc + ['sherpa/utils/src/tcd', extern_inc],
+              library_dirs=[extern_lib],
               libraries=(cpp_libs + ['fftw3']),
               depends=(get_deps(['extension', 'utils'])+
                        ['sherpa/utils/src/tcd/tcd.h'])),
-    
+
     # sherpa.utils.integration
     Extension('sherpa.utils.integration',
               ['sherpa/utils/src/gsl/err.c',
@@ -537,80 +543,91 @@ extension_modules = [
               libraries=(cpp_libs + ['sherpa']),
               depends=(get_deps(['extension', 'utils', 'astro/utils'])+
                        ['sherpa/utils/src/gsl/fcmp.h'])),
-    
+
     ]
 
 #
 # WCS module (optional)
 #
 
-if (conf['wcs_library_dir'] is not None and
-    conf['wcs_include_dir'] is not None):
-    extension_modules.append(
+# if (conf['wcs_library_dir'] is not None and
+#     conf['wcs_include_dir'] is not None):
+extension_modules.append(
         # sherpa.astro.utils._wcs
         Extension('sherpa.astro.utils._wcs',
                   ['sherpa/astro/utils/src/_wcs.cc'],
-                  sherpa_inc + [conf['wcs_include_dir']],
-                  library_dirs=[conf['wcs_library_dir']],
+                  sherpa_inc + [extern_inc],
+                  library_dirs=[extern_lib],
                   libraries=(cpp_libs + ['wcs']),
                   depends=get_deps(['extension'])),
-        
+
+        )
+
+extension_modules.append(
+        # sherpa.astro.utils._region
+        Extension('sherpa.astro.utils._region',
+                  ['sherpa/astro/utils/src/_region.cc'],
+                  sherpa_inc + [extern_inc],
+                  library_dirs=reg_lib_dirs,
+                  libraries=(cpp_libs +
+                             ['region', 'wcs']),
+                  depends=get_deps(['extension'])),
         )
 
 #
 # Region module (optional)
 #
 
-if (conf['reg_library_dir'] is not None and
-    conf['reg_include_dir'] is not None and 
-    conf['wcs_library_dir'] is not None and
-    conf['wcs_include_dir'] is not None):
-
-    reg_lib_dirs = [conf['reg_library_dir'], conf['wcs_library_dir']]
-    if conf['cfitsio_library_dir'] is not None:
-        reg_lib_dirs.append(conf['cfitsio_library_dir'])
-
-    extension_modules.append(
-        # sherpa.astro.utils._region
-        Extension('sherpa.astro.utils._region',
-                  ['sherpa/astro/utils/src/_region.cc'],
-                  sherpa_inc + [conf['reg_include_dir'], conf['wcs_include_dir']],
-                  library_dirs=reg_lib_dirs,
-                  libraries=(cpp_libs +
-                             ['region', 'ascdm', conf['cfitsio_lib'], 'wcs']),
-                  depends=get_deps(['extension'])),
-        )
-
+# if (conf['reg_library_dir'] is not None and
+#     conf['reg_include_dir'] is not None and
+#     conf['wcs_library_dir'] is not None and
+#     conf['wcs_include_dir'] is not None):
 #
-# XSPEC module (optional)
+#     reg_lib_dirs = [conf['reg_library_dir'], conf['wcs_library_dir']]
+#     if conf['cfitsio_library_dir'] is not None:
+#         reg_lib_dirs.append(conf['cfitsio_library_dir'])
 #
+#     extension_modules.append(
+#         # sherpa.astro.utils._region
+#         Extension('sherpa.astro.utils._region',
+#                   ['sherpa/astro/utils/src/_region.cc'],
+#                   sherpa_inc + [conf['reg_include_dir'], conf['wcs_include_dir']],
+#                   library_dirs=reg_lib_dirs,
+#                   libraries=(cpp_libs +
+#                              ['region', 'ascdm', conf['cfitsio_lib'], 'wcs']),
+#                   depends=get_deps(['extension'])),
+#         )
 
-if conf['xspec_library_dir'] is not None:
-    import numpy.distutils.fcompiler
-    fc = numpy.distutils.fcompiler.new_fcompiler(requiref90=needf90)
-    fc.customize()
-    
-    xspec_libs = (cpp_libs +
-                  ['XSFunctions', 'XSModel', 'XSUtil', 'XS',
-                   'CCfits', conf['cfitsio_lib']] +
-                  fc.get_libraries())
-
-    xspec_library_dirs = (fc.get_library_dirs() +
-                          [conf['xspec_library_dir']])
-        
-    if conf['cfitsio_library_dir'] is not None:
-        xspec_library_dirs.append(conf['cfitsio_library_dir'])
-
-    extension_modules.append(
-        # sherpa.astro.xspec._xspec
-        Extension('sherpa.astro.xspec._xspec',
-                  ['sherpa/astro/xspec/src/_xspec.cc'],
-                  sherpa_inc,
-                  library_dirs=xspec_library_dirs,
-                  runtime_library_dirs=xspec_library_dirs,
-                  libraries=xspec_libs,
-                  depends=(get_deps(['astro/xspec_extension'])))
-        )
+# #
+# # XSPEC module (optional)
+# #
+#
+# if conf['xspec_library_dir'] is not None:
+#     import numpy.distutils.fcompiler
+#     fc = numpy.distutils.fcompiler.new_fcompiler(requiref90=needf90)
+#     fc.customize()
+#
+#     xspec_libs = (cpp_libs +
+#                   ['XSFunctions', 'XSModel', 'XSUtil', 'XS',
+#                    'CCfits', conf['cfitsio_lib']] +
+#                   fc.get_libraries())
+#
+#     xspec_library_dirs = (fc.get_library_dirs() +
+#                           [conf['xspec_library_dir']])
+#
+#     if conf['cfitsio_library_dir'] is not None:
+#         xspec_library_dirs.append(conf['cfitsio_library_dir'])
+#
+#     extension_modules.append(
+#         # sherpa.astro.xspec._xspec
+#         Extension('sherpa.astro.xspec._xspec',
+#                   ['sherpa/astro/xspec/src/_xspec.cc'],
+#                   sherpa_inc,
+#                   library_dirs=xspec_library_dirs,
+#                   runtime_library_dirs=xspec_library_dirs,
+#                   libraries=xspec_libs,
+#                   depends=(get_deps(['astro/xspec_extension'])))
+#         )
 
 
 
@@ -620,9 +637,9 @@ if conf['xspec_library_dir'] is not None:
 #
 ###############################################################################
 
-# CIAO 4.6 release, Sherpa package 1
+# CIAO 4.6 release, Sherpa package 2
 setup(name='sherpa',
-      version='4.6.1',
+      version='4.6.2',
       author='Smithsonian Astrophysical Observatory / Chandra X-Ray Center',
       author_email='cxchelp@head.cfa.harvard.edu',
       url='http://cxc.harvard.edu/sherpa/',
@@ -647,7 +664,8 @@ setup(name='sherpa',
                 'sherpa.astro.sim',
                 'sherpa.astro.ui',
                 'sherpa.astro.utils',
-                'sherpa.astro.xspec'],
+#                'sherpa.astro.xspec',
+                ],
       package_data={'sherpa': ['include/sherpa/*.hh',
                                'include/sherpa/astro/*.hh',
                                'tests/test_*.py'],
@@ -667,7 +685,8 @@ setup(name='sherpa',
                     'sherpa.astro.sim': ['tests/test_*.py'],
                     'sherpa.astro.ui': ['tests/test_*.py'],
                     'sherpa.astro.utils': ['tests/test_*.py'],
-                    'sherpa.astro.xspec': ['tests/test_*.py']},
+#                    'sherpa.astro.xspec': ['tests/test_*.py'],
+                    },
       libraries=clibs,
       ext_modules=extension_modules,
       data_files=[('sherpa', ['sherpa/sherpa.rc']),
