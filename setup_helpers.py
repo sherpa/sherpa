@@ -8,6 +8,7 @@
 ###############################################################################
 
 from numpy.distutils.command.build import build
+from numpy.distutils.command.install import install
 from distutils.command.clean import clean
 from subprocess import call
 from multiprocessing import cpu_count
@@ -45,19 +46,30 @@ def get_deps(deps):
 
     return [sherpa_inc[0] + '/sherpa/' + d + '.hh' for d in alldeps]
 
+def build_sherpa():
+    prefix=os.getcwd()
+    os.chdir('extern')
+    call(['./configure','--disable-shared','--prefix='+prefix+'/build'])
+    call(['make', '-j'+str(cpu_count()+1), 'install'])
+    os.chdir(prefix)
+
+def clean_sherpa():
+    prefix = os.getcwd()
+    os.chdir('extern')
+    call(['make', 'distclean'])
+    os.chdir(prefix)
+
 class sherpa_build(build):
     def run(self):
-        prefix=os.getcwd()
-        os.chdir('extern')
-        call(['./configure','--disable-shared','--prefix='+prefix+'/build'])
-        call(['make', '-j'+str(cpu_count()+1), 'install'])
-        os.chdir(prefix)
+        build_sherpa()
         build.run(self)
 
 class sherpa_clean(clean):
     def run(self):
         clean.run(self)
-        prefix = os.getcwd()
-        os.chdir('extern')
-        call(['make', 'distclean'])
-        os.chdir(prefix)
+        clean_sherpa()
+
+class sherpa_install(install):
+    def run(self):
+        build_sherpa()
+        install.run(self)

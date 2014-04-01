@@ -4,7 +4,7 @@
 import setuptools
 from numpy.distutils.core import setup, Extension
 
-from setup_helpers import get_deps, sherpa_inc, sherpa_build, sherpa_clean
+from setup_helpers import get_deps, sherpa_inc, sherpa_build, sherpa_clean, sherpa_install
 
 
 # FIXME THIS SECTION IS TEMPORARY AND PART OF IT WILL PROBABLY BE MOVED TO SETUP.CFG
@@ -68,12 +68,13 @@ package_data={'sherpa': ['include/sherpa/*.hh',
                     'sherpa.astro.sim': ['tests/test_*.py'],
                     'sherpa.astro.ui': ['tests/test_*.py'],
                     'sherpa.astro.utils': ['tests/test_*.py'],
-                    '' : ['build/dir/group.so']
                     }
 
 meta['package_data'] = package_data
 
-data_files=[('sherpa', ['sherpa/sherpa.rc']),]
+data_files=[('sherpa', ['sherpa/sherpa.rc']),
+            ('', ['build/lib/group.so']),
+            ]
 
 meta['data_files'] = data_files
 
@@ -85,12 +86,27 @@ if build_xspec:
 #Extensions
 #####
 
+clibs = [
+
+    ('sherpa',
+     {'sources': ['sherpa/utils/src/gsl/fcmp.c'],
+      'sourceDir' : 'sherpa/utils',
+      'libs' : [],
+      'libdirs' : [],
+      'include_dirs': ['sherpa/utils/src'],
+      'headerExportDir' : [],
+      })
+    ]
+
+meta['libraries'] = clibs
+
 estmethods = Extension('sherpa.estmethods._est_funcs',
               ['sherpa/estmethods/src/estutils.cc',
                'sherpa/estmethods/src/info_matrix.cc',
                'sherpa/estmethods/src/projection.cc',
                'sherpa/estmethods/src/estwrappers.cc'],
               (sherpa_inc + ['sherpa/utils/src/gsl']),
+              libraries=(['sherpa']),
               depends=(get_deps(['extension', 'utils']) +
                        ['sherpa/estmethods/src/estutils.hh',
                         'sherpa/estmethods/src/info_matrix.hh',
@@ -113,6 +129,7 @@ utils = Extension('sherpa.utils._utils',
                'sherpa/utils/src/_utils.cc'],
               sherpa_inc + ['sherpa/utils/src/cephes',
                             'sherpa/utils/src/gsl'],
+              libraries=(['sherpa']),
               depends=(get_deps(['extension', 'utils'])+
                        ['sherpa/utils/src/gsl/fcmp.h',
                         'sherpa/utils/src/cephes/cephes.h']))
@@ -126,6 +143,7 @@ saoopt = Extension('sherpa.optmethods._saoopt',
               ['sherpa/optmethods/src/_saoopt.cc',
                'sherpa/optmethods/src/Simplex.cc'],
               sherpa_inc + ['sherpa/utils/src/gsl'],
+              libraries=(['sherpa']),
               depends=(get_deps(['myArray', 'extension']) +
                        ['sherpa/include/sherpa/fcmp.hh',
                         'sherpa/include/sherpa/MersenneTwister.h',
@@ -210,6 +228,7 @@ pileup = Extension('sherpa.astro.utils._pileup',
 astro_utils = Extension('sherpa.astro.utils._utils',
               ['sherpa/astro/utils/src/_utils.cc'],
               (sherpa_inc + ['sherpa/utils/src/gsl']),
+              libraries=(['sherpa']),
               depends=(get_deps(['extension', 'utils', 'astro/utils'])+
                        ['sherpa/utils/src/gsl/fcmp.h']))
 
@@ -231,7 +250,7 @@ psf = Extension('sherpa.utils._psf',
               library_dirs=[extern_lib],
               libraries=['fftw3'],
               depends=(get_deps(['extension', 'utils'])+
-                       ['sherpa/utils/src/tcd/tcd.h']))
+                       ['sherpa/utils/src/tcd/tcd.h',]))
 
 wcs = Extension('sherpa.astro.utils._wcs',
                   ['sherpa/astro/utils/src/_wcs.cc'],
@@ -239,6 +258,14 @@ wcs = Extension('sherpa.astro.utils._wcs',
                   library_dirs=[extern_lib],
                   libraries=['wcs'],
                   depends=get_deps(['extension']))
+
+region = Extension('sherpa.astro.utils._region',
+                  ['sherpa/astro/utils/src/_region.cc'],
+                  sherpa_inc + [extern_inc],
+                  library_dirs=[extern_lib],
+                  libraries=(['region', 'wcs']),
+                  depends=get_deps(['extension']))
+
 
 ####
 # FORTRAN EXTENSIONS
@@ -267,6 +294,7 @@ meta['ext_modules'] = [estmethods,
                astro_utils,
                psf,
                wcs,
+               region,
                minpack,
                minim,
 
@@ -275,6 +303,7 @@ meta['ext_modules'] = [estmethods,
 meta['cmdclass'] = {
                     'build': sherpa_build,
                     'clean' : sherpa_clean,
+                    'install' : sherpa_install,
                     }
 
 setup(**meta)
