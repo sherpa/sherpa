@@ -68,7 +68,7 @@ package_data={'sherpa': ['include/sherpa/*.hh',
                     'sherpa.astro.sim': ['tests/test_*.py'],
                     'sherpa.astro.ui': ['tests/test_*.py'],
                     'sherpa.astro.utils': ['tests/test_*.py'],
-
+                    '' : ['build/dir/group.so']
                     }
 
 meta['package_data'] = package_data
@@ -243,10 +243,11 @@ wcs = Extension('sherpa.astro.utils._wcs',
 ####
 # FORTRAN EXTENSIONS
 ####
-minpack = Extension('sherpa.models._modelfcts',
-              ['sherpa/models/src/_modelfcts.cc'],
-              sherpa_inc,
-              depends=get_deps(['model_extension', 'models']))
+minpack = Extension('sherpa.optmethods._minpack',
+              ['sherpa/optmethods/src/minpack/_minpack.pyf',
+               'sherpa/optmethods/src/minpack/covar.f',
+               'sherpa/optmethods/src/minpack/lmdif.f',
+               'sherpa/optmethods/src/minpack/mylmdif.f'])
 
 minim =  Extension('sherpa.optmethods._minim',
               ['sherpa/optmethods/src/_minim.pyf',
@@ -264,6 +265,11 @@ meta['ext_modules'] = [estmethods,
                astro_modelfcts,
                pileup,
                astro_utils,
+               psf,
+               wcs,
+               minpack,
+               minim,
+
                ]
 
 meta['cmdclass'] = {
