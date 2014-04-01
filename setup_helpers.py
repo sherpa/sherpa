@@ -9,7 +9,7 @@
 
 from numpy.distutils.command.build import build
 from distutils.command.clean import clean
-from subprocess import call, check_output
+from subprocess import call
 from multiprocessing import cpu_count
 import os
 
@@ -45,9 +45,6 @@ def get_deps(deps):
 
     return [sherpa_inc[0] + '/sherpa/' + d + '.hh' for d in alldeps]
 
-def process_output(line):
-    print(line)
-
 class sherpa_build(build):
     def run(self):
         prefix=os.getcwd()
@@ -62,5 +59,5 @@ class sherpa_clean(clean):
         clean.run(self)
         prefix = os.getcwd()
         os.chdir('extern')
-        call(['make', 'clean'])
+        call(['make', 'distclean'])
         os.chdir(prefix)
