@@ -1,4 +1,4 @@
-prefix=/usr/local
+prefix=/data/scialg/staff/olaurino/sas/sherpa.git/build
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
