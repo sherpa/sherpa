@@ -1,3 +1,0 @@
-libgrp_la-stub_dserr.lo: stub_dserr.c stub_dserr.h
-
-stub_dserr.h:
