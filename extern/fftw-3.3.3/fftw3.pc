@@ -1,4 +1,4 @@
-prefix=/Users/olaurino/Documents/Projects/PythonProjects/sherpa.git/build
+prefix=/usr/local
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include

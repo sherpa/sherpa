@@ -4,7 +4,8 @@ all-local:
 	cd wcssubs-3.8.7 && make && cd -
 
 install-exec-local : wcssubs-3.8.7/libwcs.a
-	cp wcssubs-3.8.7/libwcs.a $(libdir)
+	cp wcssubs-3.8.7/libwcs.a $(libdir); \
+	cp wcssubs-3.8.7/wcs.h $(incdir)
 
 uninstall-local:
 	rm -f $(libdir)/libwcs.a
