@@ -50,7 +50,7 @@ def build_sherpa():
     prefix=os.getcwd()
     os.chdir('extern')
     call(['./configure','--disable-shared','--prefix='+prefix+'/build'])
-    call(['make', '-j'+str(cpu_count()+1), 'install'])
+    call(['make', 'CFLAGS=-fPIC','-j'+str(cpu_count()+1), 'install'])
     os.chdir(prefix)
 
 def clean_sherpa():

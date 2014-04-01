@@ -7,7 +7,7 @@ install-exec-local : wcssubs-3.8.7/libwcs.a
 	cp wcssubs-3.8.7/libwcs.a $(libdir); \
 	cp wcssubs-3.8.7/wcs.h $(includedir); \
 	cp wcssubs-3.8.7/wcslib.h $(includedir); \
-	cp wcssubs-3.8.7/fitshead.h $(includedir); \
+	cp wcssubs-3.8.7/fitshead.h $(includedir);
 
 uninstall-local:
 	rm -f $(libdir)/libwcs.a $(includedir)/wcs.h
