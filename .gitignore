@@ -36,3 +36,6 @@ nosetests.xml
 .pydevproject
 .spyderproject
 /.settings
+
+**/autom4te.cache
+**/aclocal.m4
