@@ -22,6 +22,8 @@ meta = {
         'license' : 'GNU GPL v3',
         'long_description' : 'Modeling and fitting package for scientific data analysis',
         'platforms' : 'Linux, Mac OS X',
+        'install_requires' : ['numpy', 'pyfits', 'matplotlib'],
+
         }
 
 
