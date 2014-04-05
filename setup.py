@@ -1,10 +1,10 @@
 #_PYTHON_INSERT_SAO_COPYRIGHT_HERE_(2014)_
 #_PYTHON_INSERT_GPL_LICENSE_HERE_
 
-import setuptools
+#import setuptools
 from numpy.distutils.core import setup, Extension
 
-from setup_helpers import get_deps, sherpa_inc, sherpa_build, sherpa_clean, sherpa_install
+from setup_helpers import get_deps, sherpa_inc, build, clean, install, sdist
 
 
 # FIXME THIS SECTION IS TEMPORARY AND PART OF IT WILL PROBABLY BE MOVED TO SETUP.CFG
@@ -303,9 +303,10 @@ meta['ext_modules'] = [estmethods,
                ]
 
 meta['cmdclass'] = {
-                    'build': sherpa_build,
-                    'clean' : sherpa_clean,
-                    'install' : sherpa_install,
+                    'build': build,
+                    'clean' : clean,
+                    'install' : install,
+                    'sdist' : sdist,
                     }
 
 setup(**meta)
