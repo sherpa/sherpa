@@ -7,9 +7,10 @@
 #
 ###############################################################################
 
-from numpy.distutils.command.build import build
-from numpy.distutils.command.install import install
-from distutils.command.clean import clean
+from numpy.distutils.command.build import build as _build
+from numpy.distutils.command.install import install as _install
+from numpy.distutils.command.sdist import sdist as _sdist
+from distutils.command.clean import clean as _clean
 from subprocess import call
 from multiprocessing import cpu_count
 import os
@@ -51,26 +52,39 @@ def build_sherpa():
     os.chdir('extern')
     call(['./configure','--disable-shared','--prefix='+prefix+'/build'])
     out = call(['make', 'CFLAGS=-fPIC','-j'+str(cpu_count()+1), 'install'])
-    os.chdir(prefix)
     if out != 0: exit(out)
+    open('built', 'w').close()
+    os.chdir(prefix)
 
 def clean_sherpa():
     prefix = os.getcwd()
     os.chdir('extern')
+    call(['make', 'uninstall'])
     call(['make', 'distclean'])
+    try:
+        os.remove('built')
+    except:
+        pass
     os.chdir(prefix)
 
-class sherpa_build(build):
+class build(_build):
     def run(self):
-        build_sherpa()
-        build.run(self)
+        if not os.path.exists('extern/built'):
+            build_sherpa()
+        _build.run(self)
 
-class sherpa_clean(clean):
+class clean(_clean):
     def run(self):
-        clean.run(self)
+        _clean.run(self)
         clean_sherpa()
 
-class sherpa_install(install):
+class install(_install):
     def run(self):
-        build_sherpa()
-        install.run(self)
+        if not os.path.exists('extern/built'):
+            build_sherpa()
+        _install.run(self)
+
+class sdist(_sdist):
+    def run(self):
+        clean_sherpa()
+        _sdist.run(self)
