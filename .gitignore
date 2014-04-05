@@ -37,5 +37,9 @@ nosetests.xml
 .spyderproject
 /.settings
 
+# Autotools
 **/autom4te.cache
 **/aclocal.m4
+
+# Python MANIFEST
+MANIFEST

@@ -50,7 +50,7 @@ def get_deps(deps):
 def build_sherpa():
     prefix=os.getcwd()
     os.chdir('extern')
-    call(['./configure','--disable-shared','--prefix='+prefix+'/build'])
+    call(['/bin/bash','configure','--disable-shared','--prefix='+prefix+'/build'])
     out = call(['make', 'CFLAGS=-fPIC','-j'+str(cpu_count()+1), 'install'])
     if out != 0: exit(out)
     open('built', 'w').close()
