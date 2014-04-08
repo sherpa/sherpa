@@ -75,9 +75,9 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 libwcs_la_LIBADD =
 am_libwcs_la_OBJECTS = cel.lo distort.lo fitsfile.lo hget.lo hput.lo \
 	iget.lo imhfile.lo imio.lo lin.lo platepos.lo poly.lo proj.lo \
-	sph.lo tnxpos.lo zpxpos.lo wcs.lo wcsinit.lo wcsinit.lo \
-	wcscon.lo wcslib.lo wcstrig.lo worldpos.lo dateutil.lo \
-	fileutil.lo dsspos.lo
+	sph.lo tnxpos.lo zpxpos.lo wcs.lo wcsinit.lo wcscon.lo \
+	wcslib.lo wcstrig.lo worldpos.lo dateutil.lo fileutil.lo \
+	dsspos.lo
 libwcs_la_OBJECTS = $(am_libwcs_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -267,7 +267,7 @@ include_HEADERS = $(WCS)/wcslib.h $(WCS)/wcs.h $(WCS)/fitshead.h
 libwcs_la_SOURCES = $(WCS)/cel.c $(WCS)/distort.c $(WCS)/fitsfile.c $(WCS)/hget.c $(WCS)/hput.c \
 	$(WCS)/iget.c $(WCS)/imhfile.c $(WCS)/imio.c $(WCS)/lin.c $(WCS)/platepos.c $(WCS)/poly.c \
 	$(WCS)/proj.c $(WCS)/sph.c $(WCS)/tnxpos.c $(WCS)/zpxpos.c $(WCS)/wcs.c $(WCS)/wcsinit.c \
-	$(WCS)/wcsinit.c $(WCS)/wcscon.c $(WCS)/wcslib.c $(WCS)/wcstrig.c $(WCS)/worldpos.c \
+	$(WCS)/wcscon.c $(WCS)/wcslib.c $(WCS)/wcstrig.c $(WCS)/worldpos.c \
 	$(WCS)/dateutil.c $(WCS)/fileutil.c $(WCS)/dsspos.c \
 	$(WCS)/wcslib.h $(WCS)/wcs.h $(WCS)/fitshead.h $(WCS)/fitfile.h
 
