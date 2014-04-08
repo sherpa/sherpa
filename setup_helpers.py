@@ -258,6 +258,17 @@ group = Extension('group',
               depends=['extern/grplib-4.6/python/pygrplib.h']
              )
 
+def clean_sherpa():
+    prefix = os.getcwd()
+    os.chdir('extern')
+    call(['make', 'uninstall'])
+    call(['make', 'distclean'])
+    try:
+        os.remove('built')
+    except:
+        pass
+    os.chdir(prefix)
+
 def build_sherpa(configure):
     prefix=os.getcwd()
     os.chdir('extern')
@@ -268,6 +279,33 @@ def build_sherpa(configure):
     if out != 0: exit(out)
     open('built', 'w').close()
     os.chdir(prefix)
+
+class build(_build):
+    def run(self):
+        if not os.path.exists('extern/built'):
+            configure = self.get_finalized_command('sherpa_config', True).build_configure()
+            self.warn('built configure string' + str(configure))
+            build_sherpa(configure)
+        _build.run(self)
+
+class install(_install):
+    def run(self):
+        if not os.path.exists('extern/built'):
+            configure = self.get_finalized_command('sherpa_config', True).build_configure()
+            self.warn('built configure string' + str(configure))
+            build_sherpa(configure)
+        _install.run(self)
+
+class clean(_clean):
+    def run(self):
+        _clean.run(self)
+        clean_sherpa()
+
+class sdist(_sdist):
+    def run(self):
+        clean_sherpa()
+        self.get_finalized_command('sherpa_config', True).build_configure()
+        _sdist.run(self)
 
 
 
@@ -306,17 +344,6 @@ def setup(*args, **kwargs):
     packages = kwargs['packages']
     package_data = kwargs['package_data']
 
-    def clean_sherpa():
-        prefix = os.getcwd()
-        os.chdir('extern')
-        call(['make', 'uninstall'])
-        call(['make', 'distclean'])
-        try:
-            os.remove('built')
-        except:
-            pass
-        os.chdir(prefix)
-
     class sherpa_config(Command):
         description = "Configure Sherpa build options. If in doubt, ignore this command and stick to defaults. See setup.cfg for more information."
         user_options = [
@@ -352,7 +379,7 @@ def setup(*args, **kwargs):
             pass
 
         def build_configure(self):
-            configure = ['/bin/bash','configure','--disable-shared','--prefix='+os.getcwd()+'/build']
+            configure = ['./configure','--disable-shared','--prefix='+os.getcwd()+'/build']
             if self.fftw != 'local':
                 configure.append('--enable-fftw')
             ext_modules.append(build_psf_ext(*self._build_lib_arrays('fftw')))
@@ -375,34 +402,6 @@ def setup(*args, **kwargs):
             include_dirs = getattr(self, libname+'_include_dirs').split(' ')
             libraries = getattr(self, libname+'_libraries').split(' ')
             return [library_dirs, include_dirs, libraries]
-
-
-    class build(_build):
-        def run(self):
-            if not os.path.exists('extern/built'):
-                configure = self.get_finalized_command('sherpa_config', True).build_configure()
-                self.warn('built configure string' + str(configure))
-                build_sherpa(configure)
-            _build.run(self)
-
-    class clean(_clean):
-        def run(self):
-            _clean.run(self)
-            clean_sherpa()
-
-    class install(_install):
-        def run(self):
-            if not os.path.exists('extern/built'):
-                configure = self.get_finalized_command('sherpa_config', True).build_configure()
-                self.warn('built configure string' + str(configure))
-                build_sherpa(configure)
-            _install.run(self)
-
-    class sdist(_sdist):
-        def run(self):
-            clean_sherpa()
-            self.get_finalized_command('sherpa_config', True).build_configure()
-            _sdist.run(self)
 
     kwargs['ext_modules'] = ext_modules
 
