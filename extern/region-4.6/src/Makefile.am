@@ -14,9 +14,6 @@ libregion_la_SOURCES = \
         regparser.c        \
 	reglexer.c
 
-IOSRCS = region_write.c region_read.c region_type.c
-IOINC_FILES = regionio.h
-
 INC_FILES = cxcregion.h 
 PKG_FILES = cxcregion.pc
 
@@ -40,36 +37,5 @@ reglexer.c: reglexer.l
 clean-local:
 	-rm -f regparser.c reglexer.c *.o regparser.h regparser.tab.c regparser.tab.h
 
-
-test1: test.c $(LIB)
-	  cc test.c -L. -lregion -lm -g -o test1
-
-test2: test_2.c $(LIB)
-	  cc test_2.c -L. -lregion -lm -g -o test2
-
-test3: test3.c $(LIB)
-	  cc test3.c -L. -lregion -lm -g -o test3
-
-
-$(PKG_FILES): $(LIB_FILES)
-	@echo
-	\rm -f $@
-	@echo Building $@
-	@echo prefix=$(ASCDS_BLD_INSTALL)       > $@
-	@echo exec_prefix=$$\{prefix}	       >> $@
-	@echo libdir=$$\{exec_prefix}/lib      >> $@
-	@echo includedir=$$\{prefix}/include   >> $@
-	@echo				       >> $@     
-	@echo Name: cxcregion                  >> $@             
-	@echo Description: CXC Region Library  >> $@
-	@echo Version:                         >> $@
-	@echo Requires:                        >> $@
-	@echo Libs: -L$$\{libdir} -lregion $(MATHLIBS)  >> $@
-	@echo Cflags: -I$$\{includedir}        >> $@
-
-announce1:
-	@echo " /-------------------------------------"
-	@echo " | Building region library"
-	@echo " \-------------------------------------"
-	@echo
+EXTRA_DIST = *.h reglexer.c.tmp reglexer.l regparser.y 
 
