@@ -2,6 +2,7 @@
 graft extern
 
 include setup_helpers.py
+include sdist.py
 
 # Header files
 recursive-include sherpa/include *.hh
@@ -26,7 +27,7 @@ include sherpa/utils/src/gen-pykdtree.py
 include sherpa/optmethods/tests/tstoptfct.hh
 include sherpa/optmethods/tests/tstopt.hh
 
-recursive-include build *.c
+#recursive-include build *.c
 
 # Sherpa executable
 include sherpa/sherpa
