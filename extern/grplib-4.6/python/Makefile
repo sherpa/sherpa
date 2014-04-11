@@ -15,6 +15,18 @@
 
 
 
+#install-exec-local: group.so
+#	cp -f group.so $(libdir)/
+#
+#uninstall-local:
+#	rm -f $(libdir)/group.so
+#
+#group.so : 
+#	python setup.py build_ext --inplace
+#
+#clean-local:
+#	rm -rf group.so build
+
 pkgdatadir = $(datadir)/libgrp
 pkgincludedir = $(includedir)/libgrp
 pkglibdir = $(libdir)/libgrp
@@ -167,9 +179,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign python/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu python/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign python/Makefile
+	  $(AUTOMAKE) --gnu python/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -262,7 +274,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-local mostlyclean-am
+clean-am: clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -f Makefile
@@ -286,7 +298,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-exec-local
+install-exec-am:
 
 install-html: install-html-am
 
@@ -324,33 +336,21 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-local
+uninstall-am:
 
 .MAKE: install-am install-strip
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
-	clean-local distclean distclean-generic distclean-libtool \
-	distdir dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-exec-local \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
-	ps ps-am uninstall uninstall-am uninstall-local
+	distclean distclean-generic distclean-libtool distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am
 
-#install-exec-local: group.so
-#	cp -f group.so $(libdir)/
-
-#uninstall-local:
-#	rm -f $(libdir)/group.so
-
-#group.so : 
-#	python setup.py build_ext --inplace
-
-#clean-local:
-#	rm -rf group.so build
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
