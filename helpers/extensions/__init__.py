@@ -1,31 +1,7 @@
-#_PYTHON_INSERT_SAO_COPYRIGHT_HERE_(2007)_
+#_PYTHON_INSERT_SAO_COPYRIGHT_HERE_(2014)_
 #_PYTHON_INSERT_GPL_LICENSE_HERE_
 
-###
-# Check that numpy is installed and with a good version
-###
-try:
-    import imp
-    imp.find_module('numpy')
-except ImportError:
-    import sys
-    print >>sys.stderr, (
-            "You need to install NUMPY in order to build Sherpa\n"
-            "Other dependencies will be automatically installed\n"
-            "Please install NUMPY (e.g. pip install numpy) and try again."
-            )
-    sys.exit(2)
-
-import setuptools
-from numpy.distutils.command.build import build as _build
-from numpy.distutils.command.install import install as _install
-from sdist import sdist as _sdist
-from numpy.distutils.core import Command, Extension, setup as _setup
-from distutils.command.clean import clean as _clean
-from subprocess import call
-from multiprocessing import cpu_count
-import os
-
+from numpy.distutils.core import Extension
 
 # Include directory for Sherpa headers
 sherpa_inc = ['sherpa/include', 'sherpa/utils/src']
@@ -94,6 +70,27 @@ def build_region_ext(library_dirs, include_dirs, libraries):
                   library_dirs=library_dirs,
                   libraries=(libraries),
                   depends=get_deps(['extension']))
+
+def build_xspec_ext(library_dirs, include_dirs, libraries):
+    return Extension('sherpa.astro.xspec._xspec',
+                  ['sherpa/astro/xspec/src/_xspec.cc'],
+                  sherpa_inc + include_dirs,
+                  library_dirs=library_dirs,
+                  runtime_library_dirs=library_dirs,
+#                  extra_link_args=['-static'],
+                  libraries=libraries,
+                  depends=(get_deps(['astro/xspec_extension'])))
+
+def build_ext(name, library_dirs, include_dirs, libraries):
+    func = globals().get('build_'+name+'_ext')
+    return func(library_dirs, include_dirs, libraries)
+
+
+def build_lib_arrays(command, libname):
+            library_dirs = getattr(command, libname+'_lib_dirs').split(' ')
+            include_dirs = getattr(command, libname+'_include_dirs').split(' ')
+            libraries = getattr(command, libname+'_libraries').split(' ')
+            return [library_dirs, include_dirs, libraries]
 
 ###
 # Static Extensions
@@ -258,74 +255,7 @@ group = Extension('group',
               depends=['extern/grplib-4.6/python/pygrplib.h']
              )
 
-def clean_sherpa():
-    prefix = os.getcwd()
-    os.chdir('extern')
-    call(['make', 'uninstall'])
-    call(['make', 'distclean'])
-    try:
-        os.remove('built')
-    except:
-        pass
-    os.chdir(prefix)
-
-def build_sherpa(configure):
-    prefix=os.getcwd()
-    os.chdir('extern')
-    out = call(configure)
-    if out != 0: exit(out)
-    cflags = '-fPIC'
-    out = call(['make', 'CFLAGS='+cflags,'-j'+str(cpu_count()+1), 'install'])
-    if out != 0: exit(out)
-    open('built', 'w').close()
-    os.chdir(prefix)
-
-class build(_build):
-    def run(self):
-        if not os.path.exists('extern/built'):
-            configure = self.get_finalized_command('sherpa_config', True).build_configure()
-            self.warn('built configure string' + str(configure))
-            build_sherpa(configure)
-        _build.run(self)
-
-class install(_install):
-    def run(self):
-        if not os.path.exists('extern/built'):
-            configure = self.get_finalized_command('sherpa_config', True).build_configure()
-            self.warn('built configure string' + str(configure))
-            build_sherpa(configure)
-        _install.run(self)
-
-class clean(_clean):
-    def run(self):
-        _clean.run(self)
-        clean_sherpa()
-
-class sdist(_sdist):
-    def run(self):
-        clean_sherpa()
-        self.get_finalized_command('sherpa_config', True).build_configure()
-        _sdist.run(self)
-
-
-
-def setup(*args, **kwargs):
-
-    kwargs['libraries'] = [
-
-        ('sherpa',
-         {'sources': ['sherpa/utils/src/gsl/fcmp.c'],
-          'sourceDir' : 'sherpa/utils',
-          'libs' : [],
-          'libdirs' : [],
-          'include_dirs': ['sherpa/utils/src'],
-          'headerExportDir' : [],
-          })
-        ]
-
-
-
-    ext_modules = [group,
+static_ext_modules = [group,
                    estmethods,
                    utils,
                    modelfcts,
@@ -339,84 +269,4 @@ def setup(*args, **kwargs):
                    astro_utils,
                    minpack,
                    minim,
-                   ]
-
-    packages = kwargs['packages']
-    package_data = kwargs['package_data']
-
-    class sherpa_config(Command):
-        description = "Configure Sherpa build options. If in doubt, ignore this command and stick to defaults. See setup.cfg for more information."
-        user_options = [
-                        ('fftw', None, "Whether Sherpa should build the embedded fftw3 library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
-                        ('fftw-include-dirs', None, "Where the fftw3 headers are located, if fftw is 'local'"),
-                        ('fftw-lib-dirs', None, "Where the fftw3 libraries are located, if fftw is 'local'"),
-                        ('fftw-libraries', None, "Name of the libraries that should be linked as fftw3"),
-                        ('region', None, "Whether Sherpa should build the embedded region library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
-                        ('region-include-dirs', None, "Where the region headers are located, if region is 'local'"),
-                        ('region-lib-dirs', None, "Where the region libraries are located, if region is 'local'"),
-                        ('region-libraries', None, "Name of the libraries that should be linked as region"),
-                        ('wcs-include-dirs', None, "Where the wcs subroutines headers are located"),
-                        ('wcs-lib-dirs', None, "Where the wcs subroutines libraries are located"),
-                        ('wcs-libraries', None, "Name of the libraries that should be linked as wcs"),
-                        ('with-xspec', None, "Whether sherpa must build the XSPEC module (default False)")
-                        ]
-
-        def initialize_options(self):
-            self.fftw=None
-            self.fftw_include_dirs='build/include'
-            self.fftw_lib_dirs='build/lib'
-            self.fftw_libraries='fftw3'
-            self.region=None
-            self.region_include_dirs='build/include'
-            self.region_lib_dirs='build/lib'
-            self.region_libraries='region'
-            self.wcs_include_dirs='build/include'
-            self.wcs_lib_dirs='build/lib'
-            self.wcs_libraries='wcs'
-            self.with_xspec=False
-
-        def finalize_options(self):
-            pass
-
-        def build_configure(self):
-            configure = ['./configure','--disable-shared','--prefix='+os.getcwd()+'/build']
-            if self.fftw != 'local':
-                configure.append('--enable-fftw')
-            ext_modules.append(build_psf_ext(*self._build_lib_arrays('fftw')))
-            ext_modules.append(build_wcs_ext(*self._build_lib_arrays('wcs')))
-            ld1, inc1, l1 = self._build_lib_arrays('wcs')
-            if self.region != 'local':
-                configure.append('--enable-region')
-            ld2, inc2, l2 = self._build_lib_arrays('region')
-            ld, inc, l = (ld1+ld2, inc1+inc2, l1+l2)
-            ext_modules.append(build_region_ext(ld, inc, l))
-
-            if self.with_xspec:
-                packages.append('sherpa.astro.xspec')
-                package_data['sherpa.astro.xspec': ['tests/test_*.py']]
-
-            return configure
-
-        def _build_lib_arrays(self, libname):
-            library_dirs = getattr(self, libname+'_lib_dirs').split(' ')
-            include_dirs = getattr(self, libname+'_include_dirs').split(' ')
-            libraries = getattr(self, libname+'_libraries').split(' ')
-            return [library_dirs, include_dirs, libraries]
-
-    kwargs['ext_modules'] = ext_modules
-
-    kwargs['cmdclass'] = {
-                    'build': build,
-                    'clean' : clean,
-                    'install' : install,
-                    'sdist' : sdist,
-                    'sherpa_config' : sherpa_config,
-                    }
-
-#     kwargs['entry_points'] = {
-#                              "distutils.setup.keywords": [
-#                                                           "install_requires       = setuptools.dist:check_requirements",
-#                              ]
-#                              }
-
-    return _setup(*args, **kwargs)
+                ]

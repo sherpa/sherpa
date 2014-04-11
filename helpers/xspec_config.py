@@ -1,0 +1,64 @@
+#_PYTHON_INSERT_SAO_COPYRIGHT_HERE_(2014)_
+#_PYTHON_INSERT_GPL_LICENSE_HERE_
+
+from numpy.distutils.core import Command
+from extensions import build_ext, build_lib_arrays
+
+class xspec_config(Command):
+        description = "Configure XSPEC Models external module (optional) "
+        user_options = [
+                        ('with-xspec', None, "Whether sherpa must build the XSPEC module (default False)"),
+                        ('xspec-lib-dirs', None, "Where the xspec libraries are located, if with-xspec is True"),
+                        ('xspec-libraries', None, "Name of the libraries that should be linked for xspec"),
+                        ('cfitsio-lib-dirs', None, "Where the cfitsio libraries are located, if with-xspec is True"),
+                        ('cfitsio-libraries', None, "Name of the libraries that should be linked for cfitsio"),
+                        ('ccfits-lib-dirs', None, "Where the CCfits libraries are located, if with-xspec is True"),
+                        ('ccfits-libraries', None, "Name of the libraries that should be linked for CCfits"),
+                        ('gfortran-lib-dirs', None, "Where the gfortran libraries are located, if with-xspec is True"),
+                        ('gfortran-libraries', None, "Name of the libraries that should be linked for gfortran"),
+                        ]
+
+        def initialize_options(self):
+            self.with_xspec = False
+            self.xspec_include_dirs = ''
+            self.xspec_lib_dirs = 'XSFunctions XSModel XSUtil XS'
+            self.xspec_libraries = ''
+            self.cfitsio_include_dirs = ''
+            self.cfitsio_lib_dirs = ''
+            self.cfitsio_libraries = 'cfitsio'
+            self.ccfits_include_dirs = ''
+            self.ccfits_lib_dirs = ''
+            self.ccfits_libraries = 'CCfits'
+            self.gfortran_include_dirs = ''
+            self.gfortran_lib_dirs = ''
+            self.gfortran_libraries = 'gfortran'
+
+        def finalize_options(self):
+            pass
+
+        def run(self):
+            package = 'sherpa.astro.xspec'
+            dist_packages = self.distribution.packages
+            dist_data = self.distribution.package_data
+
+            if self.with_xspec:
+                if package not in dist_packages:
+                    dist_packages.append('sherpa.astro.xspec')
+
+                if not dist_data.has_key(package):
+                    dist_data[package] = ['tests/test_*.py']
+
+                ld1, inc1, l1 = build_lib_arrays(self, 'xspec')
+                ld2, inc2, l2 = build_lib_arrays(self, 'cfitsio')
+                ld3, inc3, l3 = build_lib_arrays(self, 'ccfits')
+                ld4, inc4, l4 = build_lib_arrays(self, 'gfortran')
+
+                ld, inc, l = (ld1 + ld2 + l3 + ld4, inc1 + inc2 + inc3 + inc4, l1 + l2 + l3 + l4)
+
+                self.distribution.ext_modules.append(build_ext('xspec', ld, inc, l))
+
+            else:
+                if package in dist_packages:
+                    dist_packages.remove(package)
+                if dist_data.has_key(package):
+                    del dist_data[package]

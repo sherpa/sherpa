@@ -1,10 +1,28 @@
 #_PYTHON_INSERT_SAO_COPYRIGHT_HERE_(2014)_
 #_PYTHON_INSERT_GPL_LICENSE_HERE_
 
-from setup_helpers import setup
+###
+# Check that numpy is installed and with a good version
+###
+try:
+    import imp
+    imp.find_module('numpy')
+except ImportError:
+    import sys
+    print >>sys.stderr, (
+            "You need to install NUMPY in order to build Sherpa\n"
+            "Other dependencies will be automatically installed\n"
+            "Please install NUMPY (e.g. pip install numpy) and try again."
+            )
+    sys.exit(2)
 
+import os
+import setuptools
+from numpy.distutils.core import setup
 
-# COMMON METADATA
+from helpers.extensions import static_ext_modules
+from helpers import commands
+
 meta = {
         'name' : 'sherpa',
         'version' : '4.7b1',
@@ -19,7 +37,7 @@ meta = {
 
         }
 
-meta['packages'] = packages=['sherpa',
+meta['packages'] = ['sherpa',
                 'sherpa.estmethods',
                 'sherpa.image',
                 'sherpa.models',
@@ -36,6 +54,7 @@ meta['packages'] = packages=['sherpa',
                 'sherpa.astro.sim',
                 'sherpa.astro.ui',
                 'sherpa.astro.utils',
+                'sherpa.astro.xspec',
                 ]
 
 meta['package_data'] = {'sherpa': ['include/sherpa/*.hh',
@@ -57,10 +76,28 @@ meta['package_data'] = {'sherpa': ['include/sherpa/*.hh',
                     'sherpa.astro.sim': ['tests/test_*.py'],
                     'sherpa.astro.ui': ['tests/test_*.py'],
                     'sherpa.astro.utils': ['tests/test_*.py'],
+#                    'sherpa.astro.xspec' : ['tests/test_*.py'],
                     }
 
-meta['data_files'] = data_files = [('sherpa', ['sherpa/sherpa.rc']),
-#            ('', ['build/lib/group.so']),
+meta['data_files'] = [('sherpa', ['sherpa/sherpa.rc']),
             ]
 
+meta['libraries'] = [
+
+        ('sherpa',
+         {'sources': ['sherpa/utils/src/gsl/fcmp.c'],
+          'sourceDir' : 'sherpa/utils',
+          'libs' : [],
+          'libdirs' : [],
+          'include_dirs': ['sherpa/utils/src'],
+          'headerExportDir' : [],
+          })
+        ]
+
+meta['ext_modules'] = static_ext_modules
+meta['cmdclass'] = commands
+
+
+
 setup(**meta)
+
