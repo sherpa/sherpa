@@ -34,7 +34,7 @@ meta = {
         'long_description' : 'Modeling and fitting package for scientific data analysis',
         'platforms' : 'Linux, Mac OS X',
         'install_requires' : ['numpy', 'pyfits', 'matplotlib'],
-
+	'long_description' : open('README.md', 'rt').read()
         }
 
 meta['packages'] = ['sherpa',
