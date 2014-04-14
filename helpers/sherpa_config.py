@@ -21,6 +21,7 @@ class sherpa_config(Command):
                         ('wcs-include-dirs', None, "Where the wcs subroutines headers are located"),
                         ('wcs-lib-dirs', None, "Where the wcs subroutines libraries are located"),
                         ('wcs-libraries', None, "Name of the libraries that should be linked as wcs"),
+                        ('disable-group', None, "Build the group Python module"),
                         ]
 
         def initialize_options(self):
@@ -35,6 +36,7 @@ class sherpa_config(Command):
             self.wcs_include_dirs='build/include'
             self.wcs_lib_dirs='build/lib'
             self.wcs_libraries='wcs'
+            self.disable_group=False
 
         def finalize_options(self):
             pass
@@ -51,6 +53,16 @@ class sherpa_config(Command):
             ld2, inc2, l2 = build_lib_arrays(self, 'region')
             ld, inc, l = (ld1+ld2, inc1+inc2, l1+l2)
             self.distribution.ext_modules.append(build_ext('region', ld, inc, l))
+
+            if self.disable_group:
+                to_remove = None
+                for mod in self.distribution.ext_modules:
+                    if mod.name == 'group':
+                        to_remove = mod
+                if to_remove is not None:
+                    self.distribution.ext_modules.remove(to_remove)
+                    self.warn('Removing Group module from list of extension modules')
+
             self.warn('built configure string' + str(configure))
 
             return configure
