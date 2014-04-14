@@ -1,5 +1,7 @@
 graft extern
 
+include README.md
+
 recursive-include helpers *.py
 
 # Header files
