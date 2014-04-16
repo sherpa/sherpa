@@ -20,8 +20,6 @@
       </LINE>
     </SYNTAX>
 
-    <ADDRESS><URL>grpbinfile.html</URL></ADDRESS>
-    <ADDRESS><URL>http://cxc.harvard.edu/ciao/ahelp/grpbinfile.html</URL></ADDRESS>
     <DESC>
       <PARA>
 	This function allows you to calculate the grouping information
@@ -93,8 +91,7 @@
       </PARA>
     </BUGS>
 
-    <VERSION>CIAO 4.5</VERSION>
-    <LASTMODIFIED>December 2012</LASTMODIFIED>
+    <LASTMODIFIED>December 2013</LASTMODIFIED>
 
   </ENTRY>
 </cxchelptopics>

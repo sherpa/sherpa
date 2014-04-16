@@ -27,8 +27,6 @@
       </LINE>
     </SYNTAX>
 
-    <ADDRESS><URL>grpadaptivesnr.html</URL></ADDRESS>
-    <ADDRESS><URL>http://cxc.harvard.edu/ciao/ahelp/grpadaptivesnr.html</URL></ADDRESS>
     <DESC>
       <PARA>
 	This function returns the grouping and quality arrays
@@ -122,8 +120,7 @@
       </PARA>
     </BUGS>
 
-    <VERSION>CIAO 4.5</VERSION>
-    <LASTMODIFIED>December 2012</LASTMODIFIED>
+    <LASTMODIFIED>December 2013</LASTMODIFIED>
 
   </ENTRY>
 </cxchelptopics>

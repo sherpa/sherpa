@@ -207,7 +207,7 @@ top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libgrp.la
 include_HEADERS = grplib.h
 libgrp_la_SOURCES = grplib.c grp_priv.c stub_dserr.c stub_dserr.h
-libgrp_la_CFLAGS = -DSTUB_ERROR_LIB=1
+@CIAO_FALSE@libgrp_la_CFLAGS = -DSTUB_ERROR_LIB=1
 EXTRA_DIST = *.h
 all: all-am
 
@@ -557,6 +557,11 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 	tags uninstall uninstall-am uninstall-includeHEADERS \
 	uninstall-libLTLIBRARIES
 
+
+@CIAO_TRUE@announce1:
+@CIAO_TRUE@	@echo "   /----------------------------------------------------------\  "
+@CIAO_TRUE@	@echo "   |                    Building grp library                  |  "
+@CIAO_TRUE@	@echo "   \----------------------------------------------------------/  "
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

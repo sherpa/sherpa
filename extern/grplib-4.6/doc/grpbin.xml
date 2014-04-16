@@ -19,8 +19,6 @@
       </LINE>
     </SYNTAX>
 
-    <ADDRESS><URL>grpbin.html</URL></ADDRESS>
-    <ADDRESS><URL>http://cxc.harvard.edu/ciao/ahelp/grpbin.html</URL></ADDRESS>
     <DESC>
 
       <PARA>
@@ -96,8 +94,7 @@
       </PARA>
     </BUGS>
 
-    <VERSION>CIAO 4.5</VERSION>
-    <LASTMODIFIED>December 2012</LASTMODIFIED>
+    <LASTMODIFIED>December 2013</LASTMODIFIED>
 
   </ENTRY>
 </cxchelptopics>
