@@ -14,18 +14,6 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
-
-#install-exec-local: group.so
-#	cp -f group.so $(libdir)/
-#
-#uninstall-local:
-#	rm -f $(libdir)/group.so
-#
-#group.so : 
-#	python setup.py build_ext --inplace
-#
-#clean-local:
-#	rm -rf group.so build
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -167,6 +155,20 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+@CIAO_TRUE@MK_TOP = ../../..
+@CIAO_TRUE@PYMODULE = group
+@CIAO_TRUE@PY_MODULE_FILES = $(PYMODULE).so
+@CIAO_TRUE@INSTALL_PYMODULE = $(PY_MODULE_FILES:%=$(PYTHON_DIR)/%)
+@CIAO_TRUE@LOCAL_INC = \
+@CIAO_TRUE@        -I. -I$(PYTHON)/include/python$(PYTHONVER) \
+@CIAO_TRUE@        -I../src \
+@CIAO_TRUE@        -I$(NUMPY)/lib/python$(PYTHONVER)/site-packages/numpy/core/include
+
+@CIAO_TRUE@LOCAL_LIB = #-L$(PYTHON)/lib -lpython$(PYTHONVER)
+@CIAO_TRUE@MAKECLEAN = $(PYMODULE).so pygrplib.o
+@CIAO_TRUE@SLOCPAGE = Libdev
+@CIAO_TRUE@SLOCEST = 
+@CIAO_TRUE@SLOCITEM = py$(PYMODULE)
 all: all-am
 
 .SUFFIXES:
@@ -351,6 +353,19 @@ uninstall-am:
 	maintainer-clean-generic mostlyclean mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am
 
+@CIAO_TRUE@include $(MK_TOP)/Makefile.master
+@CIAO_TRUE@include $(MK_TOP)/include/Makefile.scidev
+
+@CIAO_TRUE@include $(MK_TOP)/Makefile.all
+
+# -------------------------------------
+@CIAO_TRUE@$(PYMODULE).so:  pygrplib.o
+@CIAO_TRUE@          $(CCC) $(BUNDLEFLAG) $(DYN_FLAG) -o $@ pygrplib.o $(LFLAGS) $(LOCAL_LIB) $(GRPLIB) $(ERRLIBS)
+
+@CIAO_TRUE@announce1:
+@CIAO_TRUE@	@echo "   /-------------------------------------------------------\ "
+@CIAO_TRUE@	@echo "   |           Building $(PYMODULE) python module  "
+@CIAO_TRUE@	@echo "   \-------------------------------------------------------/ "
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

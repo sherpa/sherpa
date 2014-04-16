@@ -11,8 +11,6 @@
       </LINE>
     </SYNTAX>
 
-    <ADDRESS><URL>grpgetgroupsum.html</URL></ADDRESS>
-    <ADDRESS><URL>http://cxc.harvard.edu/ciao/ahelp/grpgetgroupsum.html</URL></ADDRESS>
     <DESC>
       <PARA>
 	This function applies the grouping information from
@@ -137,8 +135,7 @@
       </PARA>
     </BUGS>
 
-    <VERSION>CIAO 4.5</VERSION>
-    <LASTMODIFIED>December 2012</LASTMODIFIED>
+    <LASTMODIFIED>December 2013</LASTMODIFIED>
 
   </ENTRY>
 </cxchelptopics>

@@ -20,4 +20,15 @@ AC_CHECK_HEADERS([float.h stdlib.h])
 # Checks for library functions.
 AC_CHECK_FUNCS([pow sqrt])
 
-AC_OUTPUT(Makefile src/Makefile python/Makefile)
+AC_ARG_ENABLE([ciao],
+[ --enable-ciao Build for CIAO ],
+[ case "${enableval}" in
+  yes) 
+	ciao=true 
+	AC_OUTPUT(python/Makefile doc/Makefile) ;;
+  no) ciao=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-ciao]) ;;
+  esac], [ciao=false])
+AM_CONDITIONAL([CIAO], [test x$ciao = xtrue])
+
+AC_OUTPUT(Makefile src/Makefile)
