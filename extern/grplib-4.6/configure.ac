@@ -2,10 +2,16 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT(libgrp, 4.5, olaurino@cfa.harvard.edu)
-AM_INIT_AUTOMAKE(libgrp, 4.5)
+AC_INIT(libgrp, 4.6, olaurino@cfa.harvard.edu)
+
+AM_INIT_AUTOMAKE(libgrp, 4.6)
+
+AC_CONFIG_MACRO_DIR([m4])
 
 LT_INIT
+
+AM_PATH_PYTHON([2.7])
+AX_PYTHON_DEVEL([>'2.7' <'3.0'])
 
 # Checks for programs.
 AC_PROG_CC
@@ -20,15 +26,13 @@ AC_CHECK_HEADERS([float.h stdlib.h])
 # Checks for library functions.
 AC_CHECK_FUNCS([pow sqrt])
 
-AC_ARG_ENABLE([ciao],
-[ --enable-ciao Build for CIAO ],
+AC_ARG_ENABLE([stuberrorlib],
+[ --enable-stuberrorlib Build without liberr support  ],
 [ case "${enableval}" in
-  yes) 
-	ciao=true 
-	AC_OUTPUT(python/Makefile doc/Makefile) ;;
+  yes) ciao=true ;; 
   no) ciao=false ;;
-  *) AC_MSG_ERROR([bad value ${enableval} for --enable-ciao]) ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-suberrorlib]) ;;
   esac], [ciao=false])
 AM_CONDITIONAL([CIAO], [test x$ciao = xtrue])
 
-AC_OUTPUT(Makefile src/Makefile)
+AC_OUTPUT(Makefile src/Makefile doc/Makefile python/Makefile)
