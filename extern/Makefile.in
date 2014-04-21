@@ -14,8 +14,6 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
-
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -36,10 +34,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 subdir = .
-DIST_COMMON = $(am__configure_deps) $(include_HEADERS) \
-	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/configure COPYING INSTALL config.guess \
-	config.sub depcomp install-sh ltmain.sh missing
+DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in $(top_srcdir)/configure COPYING INSTALL \
+	config.guess config.sub depcomp install-sh ltmain.sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -49,51 +46,8 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
-am__install_max = 40
-am__nobase_strip_setup = \
-  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
-am__nobase_strip = \
-  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
-am__nobase_list = $(am__nobase_strip_setup); \
-  for p in $$list; do echo "$$p $$p"; done | \
-  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
-  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
-    if (++n[$$2] == $(am__install_max)) \
-      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
-    END { for (dir in files) print dir, files[dir] }'
-am__base_list = \
-  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
-  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
-LTLIBRARIES = $(lib_LTLIBRARIES)
-libwcs_la_LIBADD =
-am_libwcs_la_OBJECTS = cel.lo distort.lo fitsfile.lo hget.lo hput.lo \
-	iget.lo imhfile.lo imio.lo lin.lo platepos.lo poly.lo proj.lo \
-	sph.lo tnxpos.lo zpxpos.lo wcs.lo wcsinit.lo wcscon.lo \
-	wcslib.lo wcstrig.lo worldpos.lo dateutil.lo fileutil.lo \
-	dsspos.lo
-libwcs_la_OBJECTS = $(am_libwcs_la_OBJECTS)
-DEFAULT_INCLUDES = -I.@am__isrc@
-depcomp = $(SHELL) $(top_srcdir)/depcomp
-am__depfiles_maybe = depfiles
-am__mv = mv -f
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-CCLD = $(CC)
-LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
-SOURCES = $(libwcs_la_SOURCES)
-DIST_SOURCES = $(libwcs_la_SOURCES)
+SOURCES =
+DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -101,7 +55,6 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	install-pdf-recursive install-ps-recursive install-recursive \
 	installcheck-recursive installdirs-recursive pdf-recursive \
 	ps-recursive uninstall-recursive
-HEADERS = $(include_HEADERS)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
@@ -259,22 +212,12 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = $(fftw) grplib-4.6 $(region)
-WCS = wcssubs-3.8.7
+SUBDIRS = $(fftw) grplib-4.6 $(region) wcssubs
+WCS = wcssubs
 EXTRA_DIST = $(WCS)
-lib_LTLIBRARIES = libwcs.la
-include_HEADERS = $(WCS)/wcslib.h $(WCS)/wcs.h $(WCS)/fitshead.h
-libwcs_la_SOURCES = $(WCS)/cel.c $(WCS)/distort.c $(WCS)/fitsfile.c $(WCS)/hget.c $(WCS)/hput.c \
-	$(WCS)/iget.c $(WCS)/imhfile.c $(WCS)/imio.c $(WCS)/lin.c $(WCS)/platepos.c $(WCS)/poly.c \
-	$(WCS)/proj.c $(WCS)/sph.c $(WCS)/tnxpos.c $(WCS)/zpxpos.c $(WCS)/wcs.c $(WCS)/wcsinit.c \
-	$(WCS)/wcscon.c $(WCS)/wcslib.c $(WCS)/wcstrig.c $(WCS)/worldpos.c \
-	$(WCS)/dateutil.c $(WCS)/fileutil.c $(WCS)/dsspos.c \
-	$(WCS)/wcslib.h $(WCS)/wcs.h $(WCS)/fitshead.h $(WCS)/fitfile.h
-
 all: all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
 am--refresh:
 	@:
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -309,259 +252,6 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
-install-libLTLIBRARIES: $(lib_LTLIBRARIES)
-	@$(NORMAL_INSTALL)
-	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"
-	@list='$(lib_LTLIBRARIES)'; test -n "$(libdir)" || list=; \
-	list2=; for p in $$list; do \
-	  if test -f $$p; then \
-	    list2="$$list2 $$p"; \
-	  else :; fi; \
-	done; \
-	test -z "$$list2" || { \
-	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(libdir)'"; \
-	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(libdir)"; \
-	}
-
-uninstall-libLTLIBRARIES:
-	@$(NORMAL_UNINSTALL)
-	@list='$(lib_LTLIBRARIES)'; test -n "$(libdir)" || list=; \
-	for p in $$list; do \
-	  $(am__strip_dir) \
-	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(libdir)/$$f'"; \
-	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(libdir)/$$f"; \
-	done
-
-clean-libLTLIBRARIES:
-	-test -z "$(lib_LTLIBRARIES)" || rm -f $(lib_LTLIBRARIES)
-	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
-	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
-	  test "$$dir" != "$$p" || dir=.; \
-	  echo "rm -f \"$${dir}/so_locations\""; \
-	  rm -f "$${dir}/so_locations"; \
-	done
-libwcs.la: $(libwcs_la_OBJECTS) $(libwcs_la_DEPENDENCIES) 
-	$(LINK) -rpath $(libdir) $(libwcs_la_OBJECTS) $(libwcs_la_LIBADD) $(LIBS)
-
-mostlyclean-compile:
-	-rm -f *.$(OBJEXT)
-
-distclean-compile:
-	-rm -f *.tab.c
-
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cel.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dateutil.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/distort.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dsspos.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fileutil.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fitsfile.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hget.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hput.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/iget.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imhfile.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imio.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/platepos.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/poly.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proj.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sph.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tnxpos.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wcs.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wcscon.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wcsinit.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wcslib.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wcstrig.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/worldpos.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zpxpos.Plo@am__quote@
-
-.c.o:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c $<
-
-.c.obj:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
-
-.c.lo:
-@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-cel.lo: $(WCS)/cel.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cel.lo -MD -MP -MF $(DEPDIR)/cel.Tpo -c -o cel.lo `test -f '$(WCS)/cel.c' || echo '$(srcdir)/'`$(WCS)/cel.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/cel.Tpo $(DEPDIR)/cel.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/cel.c' object='cel.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cel.lo `test -f '$(WCS)/cel.c' || echo '$(srcdir)/'`$(WCS)/cel.c
-
-distort.lo: $(WCS)/distort.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT distort.lo -MD -MP -MF $(DEPDIR)/distort.Tpo -c -o distort.lo `test -f '$(WCS)/distort.c' || echo '$(srcdir)/'`$(WCS)/distort.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/distort.Tpo $(DEPDIR)/distort.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/distort.c' object='distort.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o distort.lo `test -f '$(WCS)/distort.c' || echo '$(srcdir)/'`$(WCS)/distort.c
-
-fitsfile.lo: $(WCS)/fitsfile.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT fitsfile.lo -MD -MP -MF $(DEPDIR)/fitsfile.Tpo -c -o fitsfile.lo `test -f '$(WCS)/fitsfile.c' || echo '$(srcdir)/'`$(WCS)/fitsfile.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/fitsfile.Tpo $(DEPDIR)/fitsfile.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/fitsfile.c' object='fitsfile.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o fitsfile.lo `test -f '$(WCS)/fitsfile.c' || echo '$(srcdir)/'`$(WCS)/fitsfile.c
-
-hget.lo: $(WCS)/hget.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hget.lo -MD -MP -MF $(DEPDIR)/hget.Tpo -c -o hget.lo `test -f '$(WCS)/hget.c' || echo '$(srcdir)/'`$(WCS)/hget.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/hget.Tpo $(DEPDIR)/hget.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/hget.c' object='hget.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hget.lo `test -f '$(WCS)/hget.c' || echo '$(srcdir)/'`$(WCS)/hget.c
-
-hput.lo: $(WCS)/hput.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hput.lo -MD -MP -MF $(DEPDIR)/hput.Tpo -c -o hput.lo `test -f '$(WCS)/hput.c' || echo '$(srcdir)/'`$(WCS)/hput.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/hput.Tpo $(DEPDIR)/hput.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/hput.c' object='hput.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hput.lo `test -f '$(WCS)/hput.c' || echo '$(srcdir)/'`$(WCS)/hput.c
-
-iget.lo: $(WCS)/iget.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT iget.lo -MD -MP -MF $(DEPDIR)/iget.Tpo -c -o iget.lo `test -f '$(WCS)/iget.c' || echo '$(srcdir)/'`$(WCS)/iget.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/iget.Tpo $(DEPDIR)/iget.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/iget.c' object='iget.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o iget.lo `test -f '$(WCS)/iget.c' || echo '$(srcdir)/'`$(WCS)/iget.c
-
-imhfile.lo: $(WCS)/imhfile.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT imhfile.lo -MD -MP -MF $(DEPDIR)/imhfile.Tpo -c -o imhfile.lo `test -f '$(WCS)/imhfile.c' || echo '$(srcdir)/'`$(WCS)/imhfile.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/imhfile.Tpo $(DEPDIR)/imhfile.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/imhfile.c' object='imhfile.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o imhfile.lo `test -f '$(WCS)/imhfile.c' || echo '$(srcdir)/'`$(WCS)/imhfile.c
-
-imio.lo: $(WCS)/imio.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT imio.lo -MD -MP -MF $(DEPDIR)/imio.Tpo -c -o imio.lo `test -f '$(WCS)/imio.c' || echo '$(srcdir)/'`$(WCS)/imio.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/imio.Tpo $(DEPDIR)/imio.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/imio.c' object='imio.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o imio.lo `test -f '$(WCS)/imio.c' || echo '$(srcdir)/'`$(WCS)/imio.c
-
-lin.lo: $(WCS)/lin.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lin.lo -MD -MP -MF $(DEPDIR)/lin.Tpo -c -o lin.lo `test -f '$(WCS)/lin.c' || echo '$(srcdir)/'`$(WCS)/lin.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/lin.Tpo $(DEPDIR)/lin.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/lin.c' object='lin.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lin.lo `test -f '$(WCS)/lin.c' || echo '$(srcdir)/'`$(WCS)/lin.c
-
-platepos.lo: $(WCS)/platepos.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT platepos.lo -MD -MP -MF $(DEPDIR)/platepos.Tpo -c -o platepos.lo `test -f '$(WCS)/platepos.c' || echo '$(srcdir)/'`$(WCS)/platepos.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/platepos.Tpo $(DEPDIR)/platepos.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/platepos.c' object='platepos.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o platepos.lo `test -f '$(WCS)/platepos.c' || echo '$(srcdir)/'`$(WCS)/platepos.c
-
-poly.lo: $(WCS)/poly.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT poly.lo -MD -MP -MF $(DEPDIR)/poly.Tpo -c -o poly.lo `test -f '$(WCS)/poly.c' || echo '$(srcdir)/'`$(WCS)/poly.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/poly.Tpo $(DEPDIR)/poly.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/poly.c' object='poly.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o poly.lo `test -f '$(WCS)/poly.c' || echo '$(srcdir)/'`$(WCS)/poly.c
-
-proj.lo: $(WCS)/proj.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT proj.lo -MD -MP -MF $(DEPDIR)/proj.Tpo -c -o proj.lo `test -f '$(WCS)/proj.c' || echo '$(srcdir)/'`$(WCS)/proj.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/proj.Tpo $(DEPDIR)/proj.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/proj.c' object='proj.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o proj.lo `test -f '$(WCS)/proj.c' || echo '$(srcdir)/'`$(WCS)/proj.c
-
-sph.lo: $(WCS)/sph.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sph.lo -MD -MP -MF $(DEPDIR)/sph.Tpo -c -o sph.lo `test -f '$(WCS)/sph.c' || echo '$(srcdir)/'`$(WCS)/sph.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/sph.Tpo $(DEPDIR)/sph.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/sph.c' object='sph.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sph.lo `test -f '$(WCS)/sph.c' || echo '$(srcdir)/'`$(WCS)/sph.c
-
-tnxpos.lo: $(WCS)/tnxpos.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tnxpos.lo -MD -MP -MF $(DEPDIR)/tnxpos.Tpo -c -o tnxpos.lo `test -f '$(WCS)/tnxpos.c' || echo '$(srcdir)/'`$(WCS)/tnxpos.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/tnxpos.Tpo $(DEPDIR)/tnxpos.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/tnxpos.c' object='tnxpos.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tnxpos.lo `test -f '$(WCS)/tnxpos.c' || echo '$(srcdir)/'`$(WCS)/tnxpos.c
-
-zpxpos.lo: $(WCS)/zpxpos.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zpxpos.lo -MD -MP -MF $(DEPDIR)/zpxpos.Tpo -c -o zpxpos.lo `test -f '$(WCS)/zpxpos.c' || echo '$(srcdir)/'`$(WCS)/zpxpos.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/zpxpos.Tpo $(DEPDIR)/zpxpos.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/zpxpos.c' object='zpxpos.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zpxpos.lo `test -f '$(WCS)/zpxpos.c' || echo '$(srcdir)/'`$(WCS)/zpxpos.c
-
-wcs.lo: $(WCS)/wcs.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT wcs.lo -MD -MP -MF $(DEPDIR)/wcs.Tpo -c -o wcs.lo `test -f '$(WCS)/wcs.c' || echo '$(srcdir)/'`$(WCS)/wcs.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/wcs.Tpo $(DEPDIR)/wcs.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/wcs.c' object='wcs.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o wcs.lo `test -f '$(WCS)/wcs.c' || echo '$(srcdir)/'`$(WCS)/wcs.c
-
-wcsinit.lo: $(WCS)/wcsinit.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT wcsinit.lo -MD -MP -MF $(DEPDIR)/wcsinit.Tpo -c -o wcsinit.lo `test -f '$(WCS)/wcsinit.c' || echo '$(srcdir)/'`$(WCS)/wcsinit.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/wcsinit.Tpo $(DEPDIR)/wcsinit.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/wcsinit.c' object='wcsinit.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o wcsinit.lo `test -f '$(WCS)/wcsinit.c' || echo '$(srcdir)/'`$(WCS)/wcsinit.c
-
-wcscon.lo: $(WCS)/wcscon.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT wcscon.lo -MD -MP -MF $(DEPDIR)/wcscon.Tpo -c -o wcscon.lo `test -f '$(WCS)/wcscon.c' || echo '$(srcdir)/'`$(WCS)/wcscon.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/wcscon.Tpo $(DEPDIR)/wcscon.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/wcscon.c' object='wcscon.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o wcscon.lo `test -f '$(WCS)/wcscon.c' || echo '$(srcdir)/'`$(WCS)/wcscon.c
-
-wcslib.lo: $(WCS)/wcslib.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT wcslib.lo -MD -MP -MF $(DEPDIR)/wcslib.Tpo -c -o wcslib.lo `test -f '$(WCS)/wcslib.c' || echo '$(srcdir)/'`$(WCS)/wcslib.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/wcslib.Tpo $(DEPDIR)/wcslib.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/wcslib.c' object='wcslib.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o wcslib.lo `test -f '$(WCS)/wcslib.c' || echo '$(srcdir)/'`$(WCS)/wcslib.c
-
-wcstrig.lo: $(WCS)/wcstrig.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT wcstrig.lo -MD -MP -MF $(DEPDIR)/wcstrig.Tpo -c -o wcstrig.lo `test -f '$(WCS)/wcstrig.c' || echo '$(srcdir)/'`$(WCS)/wcstrig.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/wcstrig.Tpo $(DEPDIR)/wcstrig.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/wcstrig.c' object='wcstrig.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o wcstrig.lo `test -f '$(WCS)/wcstrig.c' || echo '$(srcdir)/'`$(WCS)/wcstrig.c
-
-worldpos.lo: $(WCS)/worldpos.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT worldpos.lo -MD -MP -MF $(DEPDIR)/worldpos.Tpo -c -o worldpos.lo `test -f '$(WCS)/worldpos.c' || echo '$(srcdir)/'`$(WCS)/worldpos.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/worldpos.Tpo $(DEPDIR)/worldpos.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/worldpos.c' object='worldpos.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o worldpos.lo `test -f '$(WCS)/worldpos.c' || echo '$(srcdir)/'`$(WCS)/worldpos.c
-
-dateutil.lo: $(WCS)/dateutil.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT dateutil.lo -MD -MP -MF $(DEPDIR)/dateutil.Tpo -c -o dateutil.lo `test -f '$(WCS)/dateutil.c' || echo '$(srcdir)/'`$(WCS)/dateutil.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/dateutil.Tpo $(DEPDIR)/dateutil.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/dateutil.c' object='dateutil.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o dateutil.lo `test -f '$(WCS)/dateutil.c' || echo '$(srcdir)/'`$(WCS)/dateutil.c
-
-fileutil.lo: $(WCS)/fileutil.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT fileutil.lo -MD -MP -MF $(DEPDIR)/fileutil.Tpo -c -o fileutil.lo `test -f '$(WCS)/fileutil.c' || echo '$(srcdir)/'`$(WCS)/fileutil.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/fileutil.Tpo $(DEPDIR)/fileutil.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/fileutil.c' object='fileutil.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o fileutil.lo `test -f '$(WCS)/fileutil.c' || echo '$(srcdir)/'`$(WCS)/fileutil.c
-
-dsspos.lo: $(WCS)/dsspos.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT dsspos.lo -MD -MP -MF $(DEPDIR)/dsspos.Tpo -c -o dsspos.lo `test -f '$(WCS)/dsspos.c' || echo '$(srcdir)/'`$(WCS)/dsspos.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/dsspos.Tpo $(DEPDIR)/dsspos.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(WCS)/dsspos.c' object='dsspos.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o dsspos.lo `test -f '$(WCS)/dsspos.c' || echo '$(srcdir)/'`$(WCS)/dsspos.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -571,26 +261,6 @@ clean-libtool:
 
 distclean-libtool:
 	-rm -f libtool config.lt
-install-includeHEADERS: $(include_HEADERS)
-	@$(NORMAL_INSTALL)
-	test -z "$(includedir)" || $(MKDIR_P) "$(DESTDIR)$(includedir)"
-	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(includedir)'"; \
-	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(includedir)" || exit $$?; \
-	done
-
-uninstall-includeHEADERS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	test -n "$$files" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(includedir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(includedir)" && rm -f $$files
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.
@@ -904,12 +574,9 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(LTLIBRARIES) $(HEADERS)
+all-am: Makefile
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"; do \
-	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
-	done
 install: install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
@@ -937,15 +604,13 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-recursive
 
-clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	mostlyclean-am
+clean-am: clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
-distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-libtool distclean-tags
+distclean-am: clean-am distclean-generic distclean-libtool \
+	distclean-tags
 
 dvi: dvi-recursive
 
@@ -959,13 +624,13 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-includeHEADERS
+install-data-am:
 
 install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
-install-exec-am: install-libLTLIBRARIES
+install-exec-am:
 
 install-html: install-html-recursive
 
@@ -990,14 +655,12 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-recursive
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool
+mostlyclean-am: mostlyclean-generic mostlyclean-libtool
 
 pdf: pdf-recursive
 
@@ -1007,30 +670,38 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
+uninstall-am:
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) ctags-recursive \
 	install-am install-strip tags-recursive
 
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
 	all all-am am--refresh check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libtool ctags ctags-recursive dist \
-	dist-all dist-bzip2 dist-gzip dist-lzma dist-shar dist-tarZ \
-	dist-xz dist-zip distcheck distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags \
-	distcleancheck distdir distuninstallcheck dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am \
-	install-includeHEADERS install-info install-info-am \
-	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	clean-libtool ctags ctags-recursive dist dist-all dist-bzip2 \
+	dist-gzip dist-lzma dist-shar dist-tarZ dist-xz dist-zip \
+	distcheck distclean distclean-generic distclean-libtool \
+	distclean-tags distcleancheck distdir distuninstallcheck dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs installdirs-am \
+	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-recursive uninstall uninstall-am \
-	uninstall-includeHEADERS uninstall-libLTLIBRARIES
+	tags tags-recursive uninstall uninstall-am
 
+
+#lib_LTLIBRARIES = libwcs.la
+
+#include_HEADERS = $(WCS)/wcslib.h $(WCS)/wcs.h $(WCS)/fitshead.h
+
+#libwcs_la_SOURCES = $(WCS)/cel.c $(WCS)/distort.c $(WCS)/fitsfile.c $(WCS)/hget.c $(WCS)/hput.c \
+#	$(WCS)/iget.c $(WCS)/imhfile.c $(WCS)/imio.c $(WCS)/lin.c $(WCS)/platepos.c $(WCS)/poly.c \
+#	$(WCS)/proj.c $(WCS)/sph.c $(WCS)/tnxpos.c $(WCS)/zpxpos.c $(WCS)/wcs.c $(WCS)/wcsinit.c \
+#	$(WCS)/wcscon.c $(WCS)/wcslib.c $(WCS)/wcstrig.c $(WCS)/worldpos.c \
+#	$(WCS)/dateutil.c $(WCS)/fileutil.c $(WCS)/dsspos.c \
+#	$(WCS)/wcslib.h $(WCS)/wcs.h $(WCS)/fitshead.h $(WCS)/fitfile.h
 
 #all-local:
 #	cd wcssubs-3.8.7 && make && cd -

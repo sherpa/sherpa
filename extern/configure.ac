@@ -24,6 +24,6 @@ AS_IF([test "x$enable_region" = "xyes"], [
   AC_SUBST(region, region-4.6)
 ])
 
-AC_CONFIG_SUBDIRS([grplib-4.6])
+AC_CONFIG_SUBDIRS([grplib-4.6 wcssubs])
 
 AC_OUTPUT([Makefile])

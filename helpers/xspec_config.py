@@ -21,8 +21,8 @@ class xspec_config(Command):
         def initialize_options(self):
             self.with_xspec = False
             self.xspec_include_dirs = ''
-            self.xspec_lib_dirs = 'XSFunctions XSModel XSUtil XS'
-            self.xspec_libraries = ''
+            self.xspec_lib_dirs = ''
+            self.xspec_libraries = 'XSFunctions XSModel XSUtil XS'
             self.cfitsio_include_dirs = ''
             self.cfitsio_lib_dirs = ''
             self.cfitsio_libraries = 'cfitsio'

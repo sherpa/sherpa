@@ -52,6 +52,7 @@ def build_psf_ext(library_dirs, include_dirs, libraries):
               sherpa_inc + ['sherpa/utils/src/tcd'] + include_dirs,
               library_dirs=library_dirs,
               libraries=libraries,
+#              extra_link_args = ['-static'],
               depends=(get_deps(['extension', 'utils'])+
                        ['sherpa/utils/src/tcd/tcd.h',]))
 
@@ -61,6 +62,7 @@ def build_wcs_ext(library_dirs, include_dirs, libraries):
                   sherpa_inc + include_dirs,
                   library_dirs=library_dirs,
                   libraries=libraries,
+#                  extra_link_args = ['-static'],
                   depends=get_deps(['extension']))
 
 def build_region_ext(library_dirs, include_dirs, libraries):
@@ -69,6 +71,7 @@ def build_region_ext(library_dirs, include_dirs, libraries):
                   sherpa_inc + include_dirs,
                   library_dirs=library_dirs,
                   libraries=(libraries),
+#                  extra_link_args = ['-static'],
                   depends=get_deps(['extension']))
 
 def build_xspec_ext(library_dirs, include_dirs, libraries):
@@ -247,15 +250,16 @@ minim =  Extension('sherpa.optmethods._minim',
 ### GROUP
 ####
 
-group = Extension('group',
-              ['extern/grplib-4.6/python/pygrplib.c'],
-              ['extern/grplib-4.6/src'],
-              library_dirs=['extern/grplib-4.6/src/.libs/'],
-              libraries=['grp'],
-              depends=['extern/grplib-4.6/python/pygrplib.h']
-             )
+# group = Extension('group',
+#               ['extern/grplib-4.6/python/pygrplib.c'],
+#               ['extern/grplib-4.6/src'],
+#               library_dirs=['extern/grplib-4.6/src/.libs/'],
+#               libraries=['grp'],
+#               depends=['extern/grplib-4.6/python/pygrplib.h']
+#              )
 
-static_ext_modules = [group,
+static_ext_modules = [
+#                   group,
                    estmethods,
                    utils,
                    modelfcts,

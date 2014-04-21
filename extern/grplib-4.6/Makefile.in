@@ -125,6 +125,7 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 GREP = @GREP@
+GROUP_CFLAGS = @GROUP_CFLAGS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -226,9 +227,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+ACLOCAL_AMFLAGS = -Im4
 SUBDIRS = src python doc
 DIST_SUBDIRS = $(SUBDIRS)
-ACLOCAL_AMFLAGS = -I m4
 all: all-recursive
 
 .SUFFIXES:

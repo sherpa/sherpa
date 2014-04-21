@@ -72,12 +72,8 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libgrp_la_LIBADD =
-am_libgrp_la_OBJECTS = libgrp_la-grplib.lo libgrp_la-grp_priv.lo \
-	libgrp_la-stub_dserr.lo
+am_libgrp_la_OBJECTS = grplib.lo grp_priv.lo stub_dserr.lo
 libgrp_la_OBJECTS = $(am_libgrp_la_OBJECTS)
-libgrp_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libgrp_la_CFLAGS) \
-	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -121,6 +117,7 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 GREP = @GREP@
+GROUP_CFLAGS = @GROUP_CFLAGS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -224,7 +221,6 @@ top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libgrp.la
 include_HEADERS = grplib.h
 libgrp_la_SOURCES = grplib.c grp_priv.c stub_dserr.c stub_dserr.h
-@CIAO_FALSE@libgrp_la_CFLAGS = -DSTUB_ERROR_LIB=1
 EXTRA_DIST = *.h
 all: all-am
 
@@ -292,7 +288,7 @@ clean-libLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libgrp.la: $(libgrp_la_OBJECTS) $(libgrp_la_DEPENDENCIES) 
-	$(libgrp_la_LINK) -rpath $(libdir) $(libgrp_la_OBJECTS) $(libgrp_la_LIBADD) $(LIBS)
+	$(LINK) -rpath $(libdir) $(libgrp_la_OBJECTS) $(libgrp_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -300,9 +296,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrp_la-grp_priv.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrp_la-grplib.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrp_la-stub_dserr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grp_priv.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grplib.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stub_dserr.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -324,27 +320,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-libgrp_la-grplib.lo: grplib.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrp_la_CFLAGS) $(CFLAGS) -MT libgrp_la-grplib.lo -MD -MP -MF $(DEPDIR)/libgrp_la-grplib.Tpo -c -o libgrp_la-grplib.lo `test -f 'grplib.c' || echo '$(srcdir)/'`grplib.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libgrp_la-grplib.Tpo $(DEPDIR)/libgrp_la-grplib.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='grplib.c' object='libgrp_la-grplib.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrp_la_CFLAGS) $(CFLAGS) -c -o libgrp_la-grplib.lo `test -f 'grplib.c' || echo '$(srcdir)/'`grplib.c
-
-libgrp_la-grp_priv.lo: grp_priv.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrp_la_CFLAGS) $(CFLAGS) -MT libgrp_la-grp_priv.lo -MD -MP -MF $(DEPDIR)/libgrp_la-grp_priv.Tpo -c -o libgrp_la-grp_priv.lo `test -f 'grp_priv.c' || echo '$(srcdir)/'`grp_priv.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libgrp_la-grp_priv.Tpo $(DEPDIR)/libgrp_la-grp_priv.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='grp_priv.c' object='libgrp_la-grp_priv.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrp_la_CFLAGS) $(CFLAGS) -c -o libgrp_la-grp_priv.lo `test -f 'grp_priv.c' || echo '$(srcdir)/'`grp_priv.c
-
-libgrp_la-stub_dserr.lo: stub_dserr.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrp_la_CFLAGS) $(CFLAGS) -MT libgrp_la-stub_dserr.lo -MD -MP -MF $(DEPDIR)/libgrp_la-stub_dserr.Tpo -c -o libgrp_la-stub_dserr.lo `test -f 'stub_dserr.c' || echo '$(srcdir)/'`stub_dserr.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libgrp_la-stub_dserr.Tpo $(DEPDIR)/libgrp_la-stub_dserr.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stub_dserr.c' object='libgrp_la-stub_dserr.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrp_la_CFLAGS) $(CFLAGS) -c -o libgrp_la-stub_dserr.lo `test -f 'stub_dserr.c' || echo '$(srcdir)/'`stub_dserr.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -574,11 +549,6 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 	tags uninstall uninstall-am uninstall-includeHEADERS \
 	uninstall-libLTLIBRARIES
 
-
-@CIAO_TRUE@announce1:
-@CIAO_TRUE@	@echo "   /----------------------------------------------------------\  "
-@CIAO_TRUE@	@echo "   |                    Building grp library                  |  "
-@CIAO_TRUE@	@echo "   \----------------------------------------------------------/  "
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

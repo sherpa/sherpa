@@ -70,7 +70,8 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pyexecdir)"
 LTLIBRARIES = $(pyexec_LTLIBRARIES)
 group_la_LIBADD =
-am_group_la_OBJECTS = group_la-pygrplib.lo
+am_group_la_OBJECTS = group_la-pygrplib.lo group_la-grplib.lo \
+	group_la-grp_priv.lo group_la-stub_dserr.lo
 group_la_OBJECTS = $(am_group_la_OBJECTS)
 group_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(group_la_CFLAGS) $(CFLAGS) \
@@ -117,6 +118,7 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 GREP = @GREP@
+GROUP_CFLAGS = @GROUP_CFLAGS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -218,9 +220,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pyexec_LTLIBRARIES = group.la
-group_la_SOURCES = pygrplib.c pygrplib.h
-group_la_CFLAGS = -I../src $(PYTHON_CPPFLAGS)
+group_la_SOURCES = pygrplib.c pygrplib.h ../src/grplib.c ../src/grp_priv.c ../src/stub_dserr.c ../src/stub_dserr.h
 group_la_LDFLAGS = -avoid-version -module
+@CIAO_FALSE@group_la_CFLAGS = -DSTUB_ERROR_LIB=1 -I../src $(PYTHON_CPPFLAGS)
+@CIAO_TRUE@group_la_CFLAGS = -I../src $(PYTHON_CPPFLAGS) $(GROUP_CFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -295,7 +298,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/group_la-grp_priv.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/group_la-grplib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/group_la-pygrplib.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/group_la-stub_dserr.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -324,6 +330,27 @@ group_la-pygrplib.lo: pygrplib.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pygrplib.c' object='group_la-pygrplib.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(group_la_CFLAGS) $(CFLAGS) -c -o group_la-pygrplib.lo `test -f 'pygrplib.c' || echo '$(srcdir)/'`pygrplib.c
+
+group_la-grplib.lo: ../src/grplib.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(group_la_CFLAGS) $(CFLAGS) -MT group_la-grplib.lo -MD -MP -MF $(DEPDIR)/group_la-grplib.Tpo -c -o group_la-grplib.lo `test -f '../src/grplib.c' || echo '$(srcdir)/'`../src/grplib.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/group_la-grplib.Tpo $(DEPDIR)/group_la-grplib.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/grplib.c' object='group_la-grplib.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(group_la_CFLAGS) $(CFLAGS) -c -o group_la-grplib.lo `test -f '../src/grplib.c' || echo '$(srcdir)/'`../src/grplib.c
+
+group_la-grp_priv.lo: ../src/grp_priv.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(group_la_CFLAGS) $(CFLAGS) -MT group_la-grp_priv.lo -MD -MP -MF $(DEPDIR)/group_la-grp_priv.Tpo -c -o group_la-grp_priv.lo `test -f '../src/grp_priv.c' || echo '$(srcdir)/'`../src/grp_priv.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/group_la-grp_priv.Tpo $(DEPDIR)/group_la-grp_priv.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/grp_priv.c' object='group_la-grp_priv.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(group_la_CFLAGS) $(CFLAGS) -c -o group_la-grp_priv.lo `test -f '../src/grp_priv.c' || echo '$(srcdir)/'`../src/grp_priv.c
+
+group_la-stub_dserr.lo: ../src/stub_dserr.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(group_la_CFLAGS) $(CFLAGS) -MT group_la-stub_dserr.lo -MD -MP -MF $(DEPDIR)/group_la-stub_dserr.Tpo -c -o group_la-stub_dserr.lo `test -f '../src/stub_dserr.c' || echo '$(srcdir)/'`../src/stub_dserr.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/group_la-stub_dserr.Tpo $(DEPDIR)/group_la-stub_dserr.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/stub_dserr.c' object='group_la-stub_dserr.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(group_la_CFLAGS) $(CFLAGS) -c -o group_la-stub_dserr.lo `test -f '../src/stub_dserr.c' || echo '$(srcdir)/'`../src/stub_dserr.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -532,47 +559,6 @@ uninstall-am: uninstall-pyexecLTLIBRARIES
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-pyexecLTLIBRARIES
 
-
-#group_la_LIBADD = ../src/libgrp.la
-
-#if CIAO
-
-#MK_TOP = ../../..
-#include $(MK_TOP)/Makefile.master
-#include $(MK_TOP)/include/Makefile.scidev
-
-#PYMODULE        = group
-
-#PY_MODULE_FILES = $(PYMODULE).so
-
-#INSTALL_PYMODULE= $(PY_MODULE_FILES:%=$(PYTHON_DIR)/%)
-
-#LOCAL_INC       = \
-#        -I. -I$(PYTHON)/include/python$(PYTHONVER) \
-#        -I../src \
-#        -I$(NUMPY)/lib/python$(PYTHONVER)/site-packages/numpy/core/include
-
-#LOCAL_LIB       = #-L$(PYTHON)/lib -lpython$(PYTHONVER)
-#MAKECLEAN       = $(PYMODULE).so pygrplib.o
-
-#SLOCPAGE=Libdev
-#SLOCEST=
-#SLOCITEM=py$(PYMODULE)
-
-#include $(MK_TOP)/Makefile.all
-
-# -------------------------------------
-#$(PYMODULE).so:  pygrplib.o
-#          $(CCC) $(BUNDLEFLAG) $(DYN_FLAG) -o $@ pygrplib.o $(LFLAGS) $(LOCAL_LIB) $(GRPLIB) $(ERRLIBS)
-
-#announce1:
-#	@echo "   /-------------------------------------------------------\ "
-#	@echo "   |           Building $(PYMODULE) python module  "
-#	@echo "   \-------------------------------------------------------/ "
-
-#else
-
-#endif
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
