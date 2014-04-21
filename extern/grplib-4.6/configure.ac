@@ -29,10 +29,13 @@ AC_CHECK_FUNCS([pow sqrt])
 AC_ARG_ENABLE([stuberrorlib],
 [ --enable-stuberrorlib Build without liberr support  ],
 [ case "${enableval}" in
-  yes) ciao=true ;; 
-  no) ciao=false ;;
+  yes) ciao=false ;;
+  no) ciao=true ;;
   *) AC_MSG_ERROR([bad value ${enableval} for --enable-suberrorlib]) ;;
-  esac], [ciao=false])
+  esac], [ciao=true])
 AM_CONDITIONAL([CIAO], [test x$ciao = xtrue])
 
+AC_ARG_VAR(GROUP_CFLAGS, [Additional flags to be pass to the grouping library])
+
 AC_OUTPUT(Makefile src/Makefile doc/Makefile python/Makefile)
+
