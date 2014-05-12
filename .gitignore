@@ -43,3 +43,7 @@ nosetests.xml
 
 # Python MANIFEST
 MANIFEST
+
+# VIM temporary files
+*~
+
