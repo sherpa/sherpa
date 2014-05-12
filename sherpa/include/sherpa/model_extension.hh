@@ -42,7 +42,7 @@ protected:
 
 namespace sherpa { namespace models {
 
-  int integrand_1d_cb(double *xptr, int len, void* params) {
+  static  int integrand_1d_cb(double *xptr, int len, void* params) {
       
     DoubleArray x;
     DoubleArray res;
@@ -79,7 +79,7 @@ namespace sherpa { namespace models {
   
   }
 
-  int py_integrated_1d(const double xlo, const double xhi, double &val,
+  static int py_integrated_1d(const double xlo, const double xhi, double &val,
 		       FunctionWithParams<DoubleArray> *funcAndPars,
 		       int errflag, double epsabs, double epsrel,
 		       unsigned int maxeval, std::ostringstream& err)

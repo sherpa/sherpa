@@ -128,8 +128,6 @@ static region make_region(const hypercube *h)
      region R;
      R.h = make_hypercube(h->dim, h->data, h->data + h->dim);
      R.splitDim = 0;
-     R.ee.err=0;
-     R.ee.val=0;
      return R;
 }
 
@@ -705,9 +703,7 @@ int adapt_integrate(integrand f, void *fdata,
      rule *r;
      hypercube h;
      esterr ee;
-     ee.err=0;
-     ee.val=0;
-
+     
      if (dim == 0) { /* trivial integration */
 	  ee.val = f(0, xmin, fdata);
 	  ee.err = 0;

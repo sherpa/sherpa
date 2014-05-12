@@ -347,7 +347,8 @@ static int convert_results (pileup_kernel_t *k, double* vals,
    double *results;
    double *energies;
    unsigned int num;
-   double *enlo, *enhi, *s_den;
+   double *enlo, *enhi;
+//   double *s_den;
    double de;
 
 
@@ -358,7 +359,7 @@ static int convert_results (pileup_kernel_t *k, double* vals,
    if (NULL == (enlo = XMALLOC (3*num, double)))
      return -1;
    enhi = enlo + num;
-   s_den = enhi + num;
+//   s_den = enhi + num;
 
    de = k->de;
    energies = k->energies;

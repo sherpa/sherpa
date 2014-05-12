@@ -35,7 +35,6 @@ static PyMethodDef ModelFcts[] = {
   MODELFCT2D( const2d, 1 ),
   MODELFCT2D( delta2d, 3 ),
   MODELFCT2D_NOINT( gauss2d, 6 ),
-  MODELFCT2D_NOINT( sigmagauss2d, 6 ),
   MODELFCT2D_NOINT( ngauss2d, 6 ),
   MODELFCT2D( poly2d, 9 ),
   

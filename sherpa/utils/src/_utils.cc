@@ -2,6 +2,7 @@
 //_C++_INSERT_GPL_LICENSE_HERE_
 #include "sherpa/extension.hh"
 #include "sherpa/utils.hh"
+#include "sherpa/fcmp.hh"
 #include <cmath>
 #include <vector>
 #include <limits>
@@ -11,7 +12,7 @@
 extern "C" {
 
 #include "cephes.h"
-#include "fcmp.h"
+  //#include "fcmp.h"
 
   void init_utils();
 
@@ -660,7 +661,7 @@ PyObject* neville( PyObject* self, PyObject* args )
 }
 
 
-PyObject* sao_arange( PyObject* self, PyObject* args )
+static PyObject* sao_arange( PyObject* self, PyObject* args )
 {
   
   double start, stop, step = 1.0;
@@ -673,7 +674,7 @@ PyObject* sao_arange( PyObject* self, PyObject* args )
   
   int count = 0;
   double bin = start;
-  while( _sao_fcmp(bin, stop, eps) < 0 ) {
+  while( sao_fcmp(bin, stop, eps) < 0 ) {
     bin = start + double(count)*step;
     arr.push_back(bin);
     ++count;
@@ -733,10 +734,10 @@ static PyMethodDef UtilsFcts[] = {
 
   // This function determines whether x and y are approximately equal
   // to a relative accuracy epsilon.
-  FCTSPEC(gsl_fcmp, _sherpa_fcmp< _gsl_fcmp >), 
+  FCTSPEC(gsl_fcmp, _sherpa_fcmp< gsl_fcmp >), 
 
   //Same as gsl_fcmp, but also handles the case where one of the args is 0.
-  FCTSPEC(sao_fcmp, _sherpa_fcmp< _sao_fcmp >),
+  FCTSPEC(sao_fcmp, _sherpa_fcmp< sao_fcmp >),
 
   //Rebin to new grid
   { (char*) "rebin", (PyCFunction)(rebin<SherpaFloatArray, SherpaFloat>), METH_VARARGS,

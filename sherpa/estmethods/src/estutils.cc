@@ -5,7 +5,7 @@
 
 #include "estutils.hh"
 #include "sherpa/utils.hh"
-#include "fcmp.h"
+#include "sherpa/fcmp.hh"
 
 // These are utility functions used by the Sherpa methods
 // for estimating parameter uncertainties.  The most important
@@ -38,7 +38,7 @@ int neville( int n, const double *x, const double *y, double xinterp,
 // maximum.  This helper function checks for that.  Make sure
 // hard minimum and hard maximum are passed to this function!
 
-int at_param_space_bound(double* par, 
+static int at_param_space_bound(double* par, 
 			 const double hardmin, 
 			 const double hardmax) throw()
 {
@@ -85,7 +85,7 @@ void set_value_from_step(double* par, const double parmin,
   set_value(par, parmin, parmax, *par);
 }
 
-double get_stat(double* new_min_stat, double* new_min_parval, 
+static double get_stat(double* new_min_stat, double* new_min_parval, 
 		const int parnum, const double* pars, 
 		const double* pars_mins, const double* pars_maxs,
 		const int numpars, double (*fcn)(double*, int))
@@ -303,7 +303,7 @@ est_return_code get_onesided_interval(double* pars,
   // always be greater than minimum anyway).
 
   if (remin > 0.0 &&
-      _sao_fcmp(min_stat, new_min_stat, remin) > 0 &&
+      sao_fcmp(min_stat, new_min_stat, remin) > 0 &&
       pars[parnum] < pars_maxs[parnum] &&
       pars[parnum] > pars_mins[parnum]) {
     pars[parnum] = new_min_parval;

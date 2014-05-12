@@ -134,7 +134,7 @@ inline bool operator==(RECORD_2dL const& A, RECORD_2dL const& B) {
     return A.data == B.data && A.point[0] == B.point[0] && A.point[1] == B.point[1] ;
 }
 
-std::ostream& operator<<(std::ostream& out, RECORD_2dL const& T)
+static std::ostream& operator<<(std::ostream& out, RECORD_2dL const& T)
 {
     return out << '(' << T.point[0] << ',' << T.point[1] << '|' << T.data << ')';
 }
@@ -707,7 +707,7 @@ inline bool operator==(RECORD_3dL const& A, RECORD_3dL const& B) {
     return A.data == B.data && A.point[0] == B.point[0] && A.point[1] == B.point[1] && A.point[2] == B.point[2] ;
 }
 
-std::ostream& operator<<(std::ostream& out, RECORD_3dL const& T)
+static std::ostream& operator<<(std::ostream& out, RECORD_3dL const& T)
 {
     return out << '(' << T.point[0] << ',' << T.point[1] << ',' << T.point[2] << '|' << T.data << ')';
 }
@@ -1286,7 +1286,7 @@ inline bool operator==(RECORD_4dL const& A, RECORD_4dL const& B) {
     return A.data == B.data && A.point[0] == B.point[0] && A.point[1] == B.point[1] && A.point[2] == B.point[2] && A.point[3] == B.point[3] ;
 }
 
-std::ostream& operator<<(std::ostream& out, RECORD_4dL const& T)
+static std::ostream& operator<<(std::ostream& out, RECORD_4dL const& T)
 {
     return out << '(' << T.point[0] << ',' << T.point[1] << ',' << T.point[2] << ',' << T.point[3] << '|' << T.data << ')';
 }
@@ -1871,7 +1871,7 @@ inline bool operator==(RECORD_5dL const& A, RECORD_5dL const& B) {
     return A.data == B.data && A.point[0] == B.point[0] && A.point[1] == B.point[1] && A.point[2] == B.point[2] && A.point[3] == B.point[3] && A.point[4] == B.point[4] ;
 }
 
-std::ostream& operator<<(std::ostream& out, RECORD_5dL const& T)
+static std::ostream& operator<<(std::ostream& out, RECORD_5dL const& T)
 {
     return out << '(' << T.point[0] << ',' << T.point[1] << ',' << T.point[2] << ',' << T.point[3] << ',' << T.point[4] << '|' << T.data << ')';
 }
@@ -2462,7 +2462,7 @@ inline bool operator==(RECORD_6dL const& A, RECORD_6dL const& B) {
     return A.data == B.data && A.point[0] == B.point[0] && A.point[1] == B.point[1] && A.point[2] == B.point[2] && A.point[3] == B.point[3] && A.point[4] == B.point[4] && A.point[5] == B.point[5] ;
 }
 
-std::ostream& operator<<(std::ostream& out, RECORD_6dL const& T)
+static std::ostream& operator<<(std::ostream& out, RECORD_6dL const& T)
 {
     return out << '(' << T.point[0] << ',' << T.point[1] << ',' << T.point[2] << ',' << T.point[3] << ',' << T.point[4] << ',' << T.point[5] << '|' << T.data << ')';
 }
@@ -3059,7 +3059,7 @@ inline bool operator==(RECORD_7dL const& A, RECORD_7dL const& B) {
     return A.data == B.data && A.point[0] == B.point[0] && A.point[1] == B.point[1] && A.point[2] == B.point[2] && A.point[3] == B.point[3] && A.point[4] == B.point[4] && A.point[5] == B.point[5] && A.point[6] == B.point[6] ;
 }
 
-std::ostream& operator<<(std::ostream& out, RECORD_7dL const& T)
+static std::ostream& operator<<(std::ostream& out, RECORD_7dL const& T)
 {
     return out << '(' << T.point[0] << ',' << T.point[1] << ',' << T.point[2] << ',' << T.point[3] << ',' << T.point[4] << ',' << T.point[5] << ',' << T.point[6] << '|' << T.data << ')';
 }
@@ -3662,7 +3662,7 @@ inline bool operator==(RECORD_8dL const& A, RECORD_8dL const& B) {
     return A.data == B.data && A.point[0] == B.point[0] && A.point[1] == B.point[1] && A.point[2] == B.point[2] && A.point[3] == B.point[3] && A.point[4] == B.point[4] && A.point[5] == B.point[5] && A.point[6] == B.point[6] && A.point[7] == B.point[7] ;
 }
 
-std::ostream& operator<<(std::ostream& out, RECORD_8dL const& T)
+static std::ostream& operator<<(std::ostream& out, RECORD_8dL const& T)
 {
     return out << '(' << T.point[0] << ',' << T.point[1] << ',' << T.point[2] << ',' << T.point[3] << ',' << T.point[4] << ',' << T.point[5] << ',' << T.point[6] << ',' << T.point[7] << '|' << T.data << ')';
 }
@@ -4271,7 +4271,7 @@ inline bool operator==(RECORD_9dL const& A, RECORD_9dL const& B) {
     return A.data == B.data && A.point[0] == B.point[0] && A.point[1] == B.point[1] && A.point[2] == B.point[2] && A.point[3] == B.point[3] && A.point[4] == B.point[4] && A.point[5] == B.point[5] && A.point[6] == B.point[6] && A.point[7] == B.point[7] && A.point[8] == B.point[8] ;
 }
 
-std::ostream& operator<<(std::ostream& out, RECORD_9dL const& T)
+static std::ostream& operator<<(std::ostream& out, RECORD_9dL const& T)
 {
     return out << '(' << T.point[0] << ',' << T.point[1] << ',' << T.point[2] << ',' << T.point[3] << ',' << T.point[4] << ',' << T.point[5] << ',' << T.point[6] << ',' << T.point[7] << ',' << T.point[8] << '|' << T.data << ')';
 }
@@ -4886,7 +4886,7 @@ inline bool operator==(RECORD_10dL const& A, RECORD_10dL const& B) {
     return A.data == B.data && A.point[0] == B.point[0] && A.point[1] == B.point[1] && A.point[2] == B.point[2] && A.point[3] == B.point[3] && A.point[4] == B.point[4] && A.point[5] == B.point[5] && A.point[6] == B.point[6] && A.point[7] == B.point[7] && A.point[8] == B.point[8] && A.point[9] == B.point[9] ;
 }
 
-std::ostream& operator<<(std::ostream& out, RECORD_10dL const& T)
+static std::ostream& operator<<(std::ostream& out, RECORD_10dL const& T)
 {
     return out << '(' << T.point[0] << ',' << T.point[1] << ',' << T.point[2] << ',' << T.point[3] << ',' << T.point[4] << ',' << T.point[5] << ',' << T.point[6] << ',' << T.point[7] << ',' << T.point[8] << ',' << T.point[9] << '|' << T.data << ')';
 }
@@ -5506,6 +5506,7 @@ static PyMethodDef module_methods[] = {
 #ifndef PyMODINIT_FUNC	// declarations for DLL import/export
 #define PyMODINIT_FUNC void
 #endif
+PyMODINIT_FUNC init_pykdtree(void);
 PyMODINIT_FUNC
 init_pykdtree(void)
 { 

@@ -2598,17 +2598,22 @@ namespace tstoptfct {
   // f( origin ) = 0.0
   //
 
+
+/*
   // 
   // quintic( 2, 2,..., 2, -0.402627941 ) = 0.0
   // quintic( -1, -1,..., -1, -0.402627941 ) = 0.0
   // or any permutation of (2, 2,..., 2, -1, -1, ..., -1, -0.402627941)
-  void quintic( int npar, double* x, double& fval, int& ierr ) {
+  static void quintic( int npar, double* x, double& fval, int& ierr ) {
 
     fval = 0.0;
     for ( int ii = 0; ii < npar; ++ii )
       fval += std::fabs( ((((x[ii]-3)*x[ii]+4)*x[ii]+2)*x[ii]-10)*x[ii] - 4 );
 
   }
+
+*/
+
   template< typename Real >
   void quinticInit( int npar, Real& answer, Real* x, Real* lo,
 		    Real* hi, Real low=-1.0e3, Real high=1.0e3 ) {

@@ -67,7 +67,7 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
             args.append(col.astype(SherpaFloat))
         except ValueError, e:
 	    if require_floats:
-		raise ValueError("The file %s could not be loaded, probably due to incorrect file format" % (filename,))
+		raise ValueError("The file %s could not be loaded, probably because it contained spurious data and/or strings" % (filename,))
             args.append(col)
 
     names = [name.strip(bad_chars) for name in raw_names if name != '']

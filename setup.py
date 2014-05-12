@@ -91,22 +91,8 @@ meta['package_data'] = {'sherpa': ['include/sherpa/*.hh',
 meta['data_files'] = [('sherpa', ['sherpa/sherpa.rc']),
             ]
 
-meta['libraries'] = [
-
-        ('sherpa',
-         {'sources': ['sherpa/utils/src/gsl/fcmp.c'],
-          'sourceDir' : 'sherpa/utils',
-          'libs' : [],
-          'libdirs' : [],
-          'include_dirs': ['sherpa/utils/src'],
-          'headerExportDir' : [],
-          })
-        ]
-
 meta['ext_modules'] = static_ext_modules
 meta['cmdclass'] = commands
-
-
 
 setup(**meta)
 

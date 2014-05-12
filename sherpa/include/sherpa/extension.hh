@@ -21,6 +21,7 @@ typedef int (*converter)( PyObject*, void* );
 #define CONVERTME(arg) ((converter) sherpa::convert_to_contig_array<arg>)
 
 #define SHERPAMOD(name, fctlist) \
+PyMODINIT_FUNC init##name(void);\
 PyMODINIT_FUNC \
 init##name(void) \
 { \

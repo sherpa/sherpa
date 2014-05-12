@@ -4,7 +4,7 @@
 #define __sherpa_astro_utils_hh__
 
 #include "sherpa/extension.hh"
-#include "fcmp.h"
+#include "sherpa/fcmp.hh"
 #include <cstdlib>
 #include <cfloat>
 #include <map>
@@ -388,23 +388,23 @@ namespace sherpa { namespace astro { namespace utils {
   }
 
 
-  double interpolate( double x, double x0, double x1,
+  static double interpolate( double x, double x0, double x1,
 		      double y0, double y1, double tol ) {
     double m;
     
-    if( 0 == _sao_fcmp( x1, x0, tol ) )
+    if( 0 == sao_fcmp( x1, x0, tol ) )
       m = 0.0;
     else
       m = ( y1 - y0 ) / ( x1 - x0 );
 
-    if( 0 == _sao_fcmp( x, x0, tol ) &&
-	0 == _sao_fcmp( x, x1, tol ) )
+    if( 0 == sao_fcmp( x, x0, tol ) &&
+	0 == sao_fcmp( x, x1, tol ) )
       return ((y0 + y1)/2.0);
     
-    if( 0 == _sao_fcmp( x, x0, tol ) )
+    if( 0 == sao_fcmp( x, x0, tol ) )
       return y0;
     
-    if( 0 == _sao_fcmp( x, x1, tol ) )
+    if( 0 == sao_fcmp( x, x1, tol ) )
       return y1;
     
     else 
@@ -422,7 +422,7 @@ namespace sherpa { namespace astro { namespace utils {
 
     for( jj = 0; jj < len_rmf; ++jj ) {
 
-      switch ( _sao_fcmp( rmf_lo[ jj ], arf_lo[ ii ], tol ) ) {
+      switch ( sao_fcmp( rmf_lo[ jj ], arf_lo[ ii ], tol ) ) {
 	
       case 0:
 	// case where rmf_lo[ jj ] == arf_lo[ ii ]
@@ -437,7 +437,7 @@ namespace sherpa { namespace astro { namespace utils {
       case 1:
 	// case where rmf_lo[ jj ] > arf_lo[ ii ]
 	int res;
-	while( (res = _sao_fcmp( rmf_lo[ jj ], arf_lo[ ii ], tol )) == 1 ) {
+	while( (res = sao_fcmp( rmf_lo[ jj ], arf_lo[ ii ], tol )) == 1 ) {
 	  ii++;	  
 	  if( ii == len_arf )
 	    return EXIT_SUCCESS;
@@ -469,7 +469,7 @@ namespace sherpa { namespace astro { namespace utils {
 	break;	
 	
       default:
-      	// rmf_lo[ jj ] < arf_lo[ ii ] or _sao_fcmp failed
+      	// rmf_lo[ jj ] < arf_lo[ ii ] or sao_fcmp failed
 	return EXIT_FAILURE;
 	
       }
