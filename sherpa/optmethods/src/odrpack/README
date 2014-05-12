@@ -1,0 +1,173 @@
+Installation Instructions for
+ ODRPACK95 1.00 -- Software for Weighted Orthogonal Distance Regression
+
+
+ Direct questions to
+
+      Layne T. Watson
+      Department of Computer Science (0106)
+      Virginia Polytechnic Institute and State University
+      Blacksburg, VA 24061
+
+      e-mail:  ltw@cs.vt.edu
+      phone:   (540) 231-7540
+
+
+
+
+ *** FILES INCLUDED
+
+ The ODRPACK95 distribution contains several Fortran source files (
+ *.f), a make file (makefile), a user's guide (guide.ps),
+ a readme file (readme), a change log (changes), and some
+ input data (data?.dat) for some example problems (drive?.f).
+ The default make target builds ODRPACK95, compiles the example and
+ test problems (test.f), and runs the example and test problems.
+ The files containing the results of the examples and tests are named
+ like the source files that generated them with a .out extension.
+ Some BLAS/LINPACK routines are used by ODRPACK95 and are contained in 
+ lpkbls.f in case the user's system does not already have the BLAS/LINPACK
+ routines installed.  The user or installer must manually select usage of
+ a local BLAS/LINPACK package or the routines in lpkbls.f by editing
+ makefile.  Lastly, the file real_precision.f contains
+ a Fortran KIND definition for the real precision to use (IEEE 64-bit
+ arithmetic is the default, note that changing the REAL KIND will require
+ compatible BLAS and LINPACK).
+
+
+ *** INTRODUCTION
+
+ ODRPACK95 is a portable collection of Fortran subprograms for fitting
+ a model to data.  It is designed primarily for instances when the
+ explanatory as well as the response variables have significant errors,
+ implementing a highly efficient algorithm for solving the weighted
+ orthogonal distance regression problem, i.e., for minimizing the sum
+ of the squares of the weighted orthogonal distances between each data
+ point and the curve described by the model equation.  It can also
+ be used to solve the ordinary least squares problem where all of the
+ errors are attributed to the observations of the dependent variable.
+ File CHANGES identifies how the current version of ODRPACK95 differs from
+ earlier releases.
+
+ ODRPACK95 is written in Fortran as defined in the 1997 standard
+ (ISO/IEC 1539-1 1997), commonly called Fortran 95.
+
+
+ *** INSTALLING ODRPACK95
+
+ The following describes the necessary steps for installing ODRPACK95.
+ On most UNIX systems, simply invoking the command
+
+    make
+
+ will result in the creation of object files containing the ODRPACK95
+ code, and the execution of all of the test problems.  On other systems,
+ the installer will need to proceed with the installation "by hand" or by
+ editting the supplied makefile.
+
+
+ Step 1:  Select ODRPACK95 Code Necessary for Installation on the Target System
+
+ The code for ODRPACK95 is separated into three sections to facilitate
+ installation.  These three sections are in files odr.f, lpkbls.f,
+ and real_precision.f.
+
+   *  File odr.f includes all subprograms written especially for
+      ODRPACK95.  The module ODRPACK95 with the user callable ODR
+      subprogram is listed first, followed by the remaining subprograms
+      listed in alphabetical order.  The code in these files should not
+      require any modification unless the installer wishes to customize
+      the user callable subprograms.
+
+   *  File lpkbls.f includes the subprograms used by ODRPACK95
+      from the public domain packages LINPACK and BLAS, also listed in
+      alphabetical order.  The installer can use local versions of these
+      packages if available.  This would be particularly beneficial
+      if the installer's machine has specially optimized versions of
+      LINPACK or BLAS.
+
+   *  File real_precision.f includes the definition of the REAL type format used
+      throughout odr.f and lpkbls.f.  The user may change the REAL type format
+      in this file to suit their needs.  Again, if the installer already has a
+      version of real_precision.f, then they may wish to use their version.
+
+ Each ODRPACK95 subprogram follows the SLATEC Source File Format and provides a
+ standardized prologue describing the purpose of the subprogram and what other
+ subprograms are called, an alphabetical list of all variables referenced by
+ the subprogram and how they are used, as well as comments explaining the major
+ sections of the code.  Furthermore, each ODRPACK95 subprogram begins with a
+ comment line consisting of an asterisk followed immediately by the subprogram
+ name, i.e., *name.
+
+
+ Step 2.  Compile ODRPACK95 Code
+
+ Edit the supplied makefile to specify the command for your compiler and any
+ options you wish to use.  Then run the make command.
+
+ ODRPACK95 code conforms to the ISO/IEC 1539-1 1997 full Fortran standard
+ and has been successfully installed and tested on the following platforms and
+ compilers:
+
+    Architecture    Compiler                Operating System
+    -------------------------------------------------------------
+    Intel Xeon      G95 06-23-2006          Linux 2.6.16 (FC4)
+    Intel Itanium   Intel Fortran 95 8.1    Linux 2.6.4
+    AMD Athlon      Lahey/Fujitsu 95 6.20a  Linux 2.6.14 (FC4)   
+    Sun Sparc       Sun Fortran 95 6.2      SunOS 5.8
+    PowerPC         IBM Fortran 95          Mac OS X
+    PowerPC         Absoft v9.2             Mac OS X
+
+
+
+ Step 3.  Test ODRPACK
+
+ The ODRPACK95 supplied software includes drivers and data sets for
+ running ODRPACK95.  There are four drivers for the code.
+
+   *  Files drive1.f, drive2.f, and drive3.f each contain simple programs
+      that users can modify to form their own ODRPACK95 drivers.  The data
+      necessary to run these drivers are in files data1.dat, data2.dat
+      and data3.dat; the reports generated by these drivers are shown
+      in the Reference Guide (file guide.ps), Section 2.C.
+
+      The names of the data file specified in the "OPEN" statement in these
+      drivers are "DATA1", "DATA2", and "DATA3", respectively.  The data file
+      name and/or the file name specified in the "OPEN" statement might have to
+      be changed in order for the drivers to run properly on the target
+      machine.
+
+   *  File test.f contains a driver that exercises ODRPACK95's main
+      features and can be used to verify that the installation was completed
+      successfully.  The ODRPACK95 output generated by test.f when run on an
+      Intel Xeon Workstation running Linux is listed in file test.txt.  No 
+      data files are required for this driver.
+
+      This program calls the ODRPACK95 user callable subprogram several
+      times, with each call testing one or more features of the package.
+      The results of each call are automatically compared to the results
+      obtained by the authors with ODRPACK95 run on an Intel Xeon.
+      The ODRPACK95 reports generated by this driver are written to
+      files REPORT and SUMMARY.  (When using ODRPACK95's makefile, both
+      REPORT and SUMMARY are copied to file test.out after execution
+      of test.f.) By running this demonstration program and then
+      comparing file REPORT with test.txt, the installer can easily
+      ascertain whether the package is performing as it should.
+
+      If the REPORT files indicate that the results generated by the target
+      machine disagree significantly with the expected results, the installer
+      should attempt to determine why.  The most common cause of
+      disagreement between the computed results and the expected results is
+      compiler "bugs".
+
+      We suggest that the problem be investigated before accepting a
+      questionable installation as adequate.  If you are unable to find
+      the cause of the reported disagreement, please feel free to contact
+      the developers at the address given above.
+
+
+ Step 4.  Distribute ODRPACK95 documentation
+
+ The ODRPACK95 User's Reference Guide is supplied in PostScript format
+ in file guide.ps.  The ODRPACK95 documentation can be reproduced and
+ distributed as necessary for local users.

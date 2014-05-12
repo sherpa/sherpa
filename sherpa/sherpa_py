@@ -1,0 +1,160 @@
+#!/bin/bash
+#_SH_INSERT_SAO_COPYRIGHT_HERE_(2007,2012)_
+#_SH_INSERT_GPL_LICENSE_HERE_
+#
+# If the users has never used IPython before, create the IPython
+# directory and copy everything over by hand (so the user doesn't
+# have to go through the initial setup)
+#
+# I do this because I haven't found a way to have IPython
+# *silently* create the .ipython directory or populate it with the
+# configuration files--I would rather do that than hunt around
+# and copy files over by hand.
+#
+# Now we look for the IPYTHONDIR value to create and read profiles
+# from there; only assume ${HOME}/.ipython if IPYTHONDIR is not set.
+
+# This is a work around so that this script works in the development branch
+case $ASCDS_INSTALL in
+   "/vobs/ASC_BUILD"* ) OTS_DIR=$ASCDS_INSTALL/ots/ ;;
+   *)OTS_DIR=$ASCDS_INSTALL/ots/ ;;
+esac
+
+if [ -n "$HOME" ]
+then
+
+    # determine the ipython resource directory
+    if [ -n "${IPYTHONDIR}" ]
+    then
+       IPY_DIR=${IPYTHONDIR}
+    else
+       IPY_DIR=${HOME}/.ipython
+    fi
+
+    # Find latest python dir; look for soft link, then 2.7 down to 2.4
+    ASCDS_OTS_PY_DIR=""
+    if [ -d $OTS_DIR/lib/python ]
+    then
+	ASCDS_OTS_PY_DIR=$OTS_DIR/lib/python
+    elif [ -d $OTS_DIR/lib/python2.7 ]
+    then
+	ASCDS_OTS_PY_DIR=$OTS_DIR/lib/python2.7
+    elif [ -d $OTS_DIR/lib/python2.6 ]
+    then
+	ASCDS_OTS_PY_DIR=$OTS_DIR/lib/python2.6
+    elif [ -d $OTS_DIR/lib/python2.5 ]
+    then
+	ASCDS_OTS_PY_DIR=$OTS_DIR/lib/python2.5
+    elif [ -d $OTS_DIR/lib/python2.4 ]
+    then
+	ASCDS_OTS_PY_DIR=$OTS_DIR/lib/python2.4
+    else
+	ASCDS_OTS_PY_DIR=""
+    fi
+
+    ASCDS_PY_DIR=""
+    if [ -d ${ASCDS_INSTALL}/lib/python ]
+    then
+	ASCDS_PY_DIR=${ASCDS_INSTALL}/lib/python
+    elif [ -d ${ASCDS_INSTALL}/lib/python2.7 ]
+    then
+	ASCDS_PY_DIR=${ASCDS_INSTALL}/lib/python2.7
+    elif [ -d ${ASCDS_INSTALL}/lib/python2.6 ]
+    then
+	ASCDS_PY_DIR=${ASCDS_INSTALL}/lib/python2.6
+    elif [ -d ${ASCDS_INSTALL}/lib/python2.5 ]
+    then
+	ASCDS_PY_DIR=${ASCDS_INSTALL}/lib/python2.5
+    elif [ -d ${ASCDS_INSTALL}/lib/python2.4 ]
+    then
+	ASCDS_PY_DIR=${ASCDS_INSTALL}/lib/python2.4
+    else
+	ASCDS_PY_DIR=""
+    fi
+
+    # add any missing files to the ipython resource directory
+    if [ ! -d ${IPY_DIR} ]
+    then
+        mkdir ${IPY_DIR} 
+	chmod 755 ${IPY_DIR}
+    fi
+
+    IPY_DIR_PROFILE=${IPY_DIR}/profile_sherpa
+    CONFIG_DIR=${ASCDS_PY_DIR}/site-packages/sherpa/
+
+    # create a profile if one doesn't exist
+    if [ ! -d ${IPY_DIR_PROFILE} ]
+    then
+        ipython profile create sherpa 2>/dev/null
+        cp ${CONFIG_DIR}/ipython_config.py ${IPY_DIR}/profile_sherpa/
+        chmod 444 ${IPY_DIR_PROFILE}/ipython_config.py
+        cp ${CONFIG_DIR}/00-sherpa_startup.py ${IPY_DIR}/profile_sherpa/startup
+        chmod 444 ${IPY_DIR_PROFILE}/startup/00-sherpa_startup.py
+    elif [ $# -eq 0 ]; then
+        # if not in batch mode and have ipythonrc-sherpa, check its version
+        localver=`grep SHERPA_VERSION ${IPY_DIR_PROFILE}/ipython_config.py | sed 's/# SHERPA_VERSION//' | sed 's/ //g'`
+        sysver=`grep SHERPA_VERSION ${CONFIG_DIR}/ipython_config.py | sed 's/# SHERPA_VERSION//' | sed 's/ //g'`
+        if [ "x$localver"  = "x" ]; then
+           localver=0
+        fi
+        if [ "x$sysver"  = "x" ]; then
+           sysver=0
+        fi
+	if [ "$localver" -lt "$sysver" ] && [ "$sysver" -gt 0 ]; then
+           echo ""
+           echo " ATTENTION: Out of date IPython profile for Sherpa found in:"
+	   echo "            ${IPY_DIR_PROFILE}"
+	   echo ""
+	   if [ "$localver" -eq 0 ]; then
+              localver="unknown"
+           fi
+           echo "            Local version ($localver) vs latest ($sysver)."
+           printf "            Update to latest? [Y/N] :"
+           stty raw
+           ANSWER=`dd bs=1 count=1 2>/dev/null`
+           stty -raw
+           echo ""     # print newline
+	   case "$ANSWER" in
+	      [yY] ) 
+                     mv ${IPY_DIR_PROFILE}/ipython_config.py ${IPY_DIR_PROFILE}/ipython_config_`date "+%Y%m%d.%H:%M:%S"`.py
+                     cp -f ${CONFIG_DIR}/ipython_config.py ${IPY_DIR_PROFILE}
+                     chmod 444 ${IPY_DIR_PROFILE}/ipython_config.py
+                     cp -f ${CONFIG_DIR}/00-sherpa_startup.py ${IPY_DIR_PROFILE}/startup/
+                     chmod 444 ${IPY_DIR_PROFILE}/startup/00-sherpa_startup.py
+		     echo ""
+		     echo "            Updated: ${IPY_DIR_PROFILE}/ipython_config.py"
+		     echo "";;
+
+
+	       *)
+		     echo ""
+                     echo "            Profile NOT updated."
+                     echo "";;
+           esac
+	fi
+    fi
+
+# If the user doesn't have a local .sherpa.rc file, copy it 
+    if [ ! -f ${HOME}/.sherpa.rc ]
+    then
+        if [ -f ${ASCDS_PY_DIR}/site-packages/sherpa/sherpa.rc ]
+        then
+	   cp ${ASCDS_PY_DIR}/site-packages/sherpa/sherpa.rc ${HOME}/.sherpa.rc
+	   chmod 644 ${HOME}/.sherpa.rc
+        else
+          echo "Warning: .sherpa.rc file could not be found."
+        fi
+    fi
+
+# If the user doesn't have a local .chips.rc file, copy it 
+    if [ ! -f ${HOME}/.chips.rc ]
+    then
+        if [ -f ${ASCDS_INSTALL}/config/chips/.chips.rc ]
+        then
+	   cp ${ASCDS_INSTALL}/config/chips/.chips.rc ${HOME}/.chips.rc
+	   chmod 644 ${HOME}/.chips.rc
+        else
+          echo "Warning: .chips.rc file could not be found."
+        fi
+    fi
+fi

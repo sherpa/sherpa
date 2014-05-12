@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+import os
+import pydoc
+import sys
+
+import sherpa.all
+import sherpa.astro.all
+import sherpa.astro.xspec
+
+sys.argv.extend(['-w', ('/vobs/ASC_BUILD/src/pkg/sherpa/sherpa/build/' +
+                        'lib.linux-i686-2.4')])
+
+os.chdir('/stage/ascds_extra/staff/UDF/UI/sherpa/Documentation/API')
+pydoc.cli()
