@@ -105,7 +105,7 @@ estmethods = Extension('sherpa.estmethods._est_funcs',
                'sherpa/estmethods/src/projection.cc',
                'sherpa/estmethods/src/estwrappers.cc'],
               (sherpa_inc + ['sherpa/utils/src/gsl']),
-              libraries=(['sherpa']),
+#              libraries=(['sherpa']),
               depends=(get_deps(['extension', 'utils']) +
                        ['sherpa/estmethods/src/estutils.hh',
                         'sherpa/estmethods/src/info_matrix.hh',
@@ -128,7 +128,7 @@ utils = Extension('sherpa.utils._utils',
                'sherpa/utils/src/_utils.cc'],
               sherpa_inc + ['sherpa/utils/src/cephes',
                             'sherpa/utils/src/gsl'],
-              libraries=(['sherpa']),
+#              libraries=(['sherpa']),
               depends=(get_deps(['extension', 'utils'])+
                        ['sherpa/utils/src/gsl/fcmp.h',
                         'sherpa/utils/src/cephes/cephes.h']))
@@ -142,7 +142,7 @@ saoopt = Extension('sherpa.optmethods._saoopt',
               ['sherpa/optmethods/src/_saoopt.cc',
                'sherpa/optmethods/src/Simplex.cc'],
               sherpa_inc + ['sherpa/utils/src/gsl'],
-              libraries=(['sherpa']),
+#              libraries=(['sherpa']),
               depends=(get_deps(['myArray', 'extension']) +
                        ['sherpa/include/sherpa/fcmp.hh',
                         'sherpa/include/sherpa/MersenneTwister.h',
@@ -227,7 +227,7 @@ pileup = Extension('sherpa.astro.utils._pileup',
 astro_utils = Extension('sherpa.astro.utils._utils',
               ['sherpa/astro/utils/src/_utils.cc'],
               (sherpa_inc + ['sherpa/utils/src/gsl']),
-              libraries=(['sherpa']),
+#              libraries=(['sherpa']),
               depends=(get_deps(['extension', 'utils', 'astro/utils'])+
                        ['sherpa/utils/src/gsl/fcmp.h']))
 
