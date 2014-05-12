@@ -20,11 +20,11 @@
 
  Description: see fcmp.h and README files.
 */
-template< typename Real >
-int fcmp( Real x1, Real x2, Real epsilon ) {
+template< typename Real1, typename Real2, typename Real3 >
+int gsl_fcmp( Real1 x1, Real2 x2, Real3 epsilon ) {
   int exponent;
-  Real delta;
-  Real difference;
+  Real3 delta;
+  Real1 difference;
   
   /* Get exponent(max(fabs(x1), fabs(x2))) and store it in exponent. */
 
@@ -62,14 +62,14 @@ int fcmp( Real x1, Real x2, Real epsilon ) {
     return 0;  /* x1 == x2 */
 }
 
-template< typename Real >
-int sao_fcmp( const Real x1, const Real x2, const Real epsilon ) {
+template< typename Real1, typename Real2, typename Real3 >
+int sao_fcmp( const Real1 x1, const Real2 x2, const Real3 epsilon ) {
 
   if ( x1 == x2 ) {
     // might as well start at the simplest comparison... 
     return 0;
-  } else if ( static_cast< Real>( 0 ) == x1 || 
-	      static_cast< Real >( 0 ) == x2 ) {
+  } else if ( static_cast< Real1 >( 0 ) == x1 || 
+	      static_cast< Real2 >( 0 ) == x2 ) {
 
     // x1 || x2 is 0 so the following substraction is kosher
     if ( fabs( x1 - x2 ) < epsilon )
@@ -83,7 +83,7 @@ int sao_fcmp( const Real x1, const Real x2, const Real epsilon ) {
 
   } else {
 
-    return fcmp( x1, x2, epsilon );
+    return gsl_fcmp( x1, x2, epsilon );
 
   }
 

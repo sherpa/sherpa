@@ -23,7 +23,7 @@ static void lmdif_callback_func( int mfct, int npar, double* xpars,
     return;
   }
 
-  PyObject* rv = PyObject_CallFunction( py_fcn, "N", pars_array.new_ref() );
+  PyObject* rv = PyObject_CallFunction( py_fcn, (char*)"N", pars_array.new_ref() );
   if ( NULL == rv ) {
     ierr = EXIT_FAILURE;
     return;
@@ -594,6 +594,7 @@ static PyMethodDef WrapperFcts[] = {
   { NULL, NULL, 0, NULL }
 
 };
+
 SHERPAMOD(_saoopt, WrapperFcts)
 //*****************************************************************************
 //

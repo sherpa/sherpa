@@ -3,6 +3,8 @@
 #ifndef __sherpa_array_hh__
 #define __sherpa_array_hh__
 
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
@@ -31,7 +33,7 @@ namespace sherpa {
     {
       return init( PyArray_New( &PyArray_Type, ndim,
 				const_cast< npy_intp* >( dims ), ArrayType,
-				NULL, cdata, 0, NPY_CARRAY, NULL ) );
+				NULL, cdata, 0, NPY_ARRAY_CARRAY, NULL ) );
     }
 
     int from_obj( PyObject* obj, bool contiguous=false );
@@ -66,12 +68,12 @@ namespace sherpa {
 
     int get_ndim() const
     {
-      return PyArray_NDIM( array );
+      return PyArray_NDIM( (PyArrayObject*) array );
     }
 
     const npy_intp* get_dims() const
     {
-      return PyArray_DIMS( array );
+      return PyArray_DIMS( (PyArrayObject*) array );
     }
 
     const CType& operator[]( npy_intp index ) const
@@ -106,7 +108,7 @@ namespace sherpa {
     bool decref = false;
 
     if ( PyArray_Check( obj ) &&
-	 !PyArray_CanCastSafely( PyArray_TYPE( obj ), ArrayType ) ) {
+	 !PyArray_CanCastSafely( PyArray_TYPE(  (PyArrayObject*) obj ), ArrayType ) ) {
 
       // Force downcasting (e.g double->float)
       obj = PyArray_CastToType( (PyArrayObject*)obj,
@@ -117,7 +119,7 @@ namespace sherpa {
 
     int rv = init
       ( PyArray_FROMANY( obj, ArrayType, 0, 0,
-			 ( contiguous ? NPY_CARRAY : NPY_BEHAVED ) ) );
+			 ( contiguous ? NPY_ARRAY_CARRAY : NPY_ARRAY_BEHAVED ) ) );
 
     if ( decref ) {
       Py_XDECREF( obj );
@@ -134,7 +136,7 @@ namespace sherpa {
     if ( NULL == new_array )
       return EXIT_FAILURE;
 
-    if ( PyArray_NDIM( new_array ) > 1 ) {
+    if ( PyArray_NDIM(  (PyArrayObject*) new_array ) > 1 ) {
 
       PyErr_SetString( PyExc_TypeError,
 		       (char*)"array must have 0 or 1 dimensions" );
@@ -146,14 +148,14 @@ namespace sherpa {
     Py_XDECREF( array );
     array = new_array;
 
-    data = PyArray_BYTES( array );
+    data = PyArray_BYTES(  (PyArrayObject*) array );
 
-    if ( 0 == PyArray_NDIM( array ) )
+    if ( 0 == PyArray_NDIM(  (PyArrayObject*) array ) )
       stride = 0;
     else
-      stride = PyArray_STRIDE( array, 0 );
+      stride = PyArray_STRIDE(  (PyArrayObject*) array, 0 );
 
-    size = PyArray_SIZE( array );
+    size = PyArray_SIZE( (PyArrayObject*) array );
 
     return EXIT_SUCCESS;
 

@@ -16,7 +16,7 @@ __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
            'Gauss1D', 'Log', 'Log10', 'LogParabola', 'NormGauss1D', 'Poisson',
            'Polynom1D', 'PowLaw1D', 'Scale1D', 'Sin', 'Sqrt', 'StepHi1D',
            'StepLo1D', 'Tan', 'Box2D', 'Const2D', 'Delta2D', 'Gauss2D', 
-           'SigmaGauss2D',
+#           'SigmaGauss2D',
            'NormGauss2D', 'Polynom2D', 'Scale2D', 'UserModel', 'TableModel',
            'Integrate1D')
 
@@ -627,25 +627,25 @@ class Gauss2D(ArithmeticModel):
         kwargs['integrate']=bool_cast(self.integrate)
         return _modelfcts.gauss2d(*args, **kwargs)
 
-class SigmaGauss2D(Gauss2D):
+#class SigmaGauss2D(Gauss2D):
 
-    def __init__(self, name='sigmagauss2d'):
-        self.sigma_a = Parameter(name, 'sigma_a', 10, tinyval, hard_min=tinyval)
-        self.sigma_b = Parameter(name, 'sigma_b', 10, tinyval, hard_min=tinyval)
-        self.xpos = Parameter(name, 'xpos', 0)
-        self.ypos = Parameter(name, 'ypos', 0)
-        self.theta = \
-            Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi, \
-                          -2*numpy.pi, 4*numpy.pi, 'radians', frozen=True)
-        self.ampl = Parameter(name, 'ampl', 1)
-        ArithmeticModel.__init__(self, name,
-                                 (self.sigma_a, self.sigma_b, self.xpos,
-                                  self.ypos, self.theta, self.ampl))
-        self.cache = 0
-
-    def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
-        return _modelfcts.sigmagauss2d(*args, **kwargs)
+#    def __init__(self, name='sigmagauss2d'):
+#        self.sigma_a = Parameter(name, 'sigma_a', 10, tinyval, hard_min=tinyval)
+#        self.sigma_b = Parameter(name, 'sigma_b', 10, tinyval, hard_min=tinyval)
+#        self.xpos = Parameter(name, 'xpos', 0)
+#        self.ypos = Parameter(name, 'ypos', 0)
+#        self.theta = \
+#            Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi, \
+#                          -2*numpy.pi, 4*numpy.pi, 'radians', frozen=True)
+#        self.ampl = Parameter(name, 'ampl', 1)
+#        ArithmeticModel.__init__(self, name,
+#                                 (self.sigma_a, self.sigma_b, self.xpos,
+#                                  self.ypos, self.theta, self.ampl))
+#        self.cache = 0
+#
+#    def calc(self, *args, **kwargs):
+#        kwargs['integrate']=bool_cast(self.integrate)
+#        return _modelfcts.sigmagauss2d(*args, **kwargs)
 
 
 class NormGauss2D(ArithmeticModel):

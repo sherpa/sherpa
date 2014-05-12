@@ -326,7 +326,7 @@ static PyObject* _wrap_info_matrix( PyObject* self, PyObject* args )
 
   PyObject* info_obj = NULL;
   if ( NULL == ( info_obj = PyArray_New( &PyArray_Type, 2, dims,
-					 NPY_DOUBLE, NULL, NULL, 0, NPY_CARRAY,
+					 NPY_DOUBLE, NULL, NULL, 0, NPY_ARRAY_CARRAY,
 					 NULL ) ) )
     return NULL;
 
@@ -335,7 +335,7 @@ static PyObject* _wrap_info_matrix( PyObject* self, PyObject* args )
 					&(pars_maxs[0]), int( nelem ),
 					&(pars_hardmins[0]), int( nelem ),
 					&(pars_hardmaxs[0]), int( nelem ),
-					static_cast< double* >( PyArray_DATA( info_obj ) ),
+					static_cast< double* >( PyArray_DATA( (PyArrayObject*) info_obj ) ),
 					int( nelem ), int( nelem ),
 					sigma,
 					eps,

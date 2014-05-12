@@ -6,7 +6,8 @@
 #include <iostream>
 
 extern "C" {
-  #include "cxcregion.h"
+#include "cxcregion.h"
+#include <string>
   void init_region();
 }
 
@@ -56,13 +57,13 @@ static void pyRegion_dealloc(PyRegion* reg) {
     if( reg->region )
       regFree( reg->region );
   }
-  
+
   PyObject_Del( reg );
 }
 
 static PyObject* pyRegion_str(PyRegion* reg) {
   regRegion *region = reg->region;
-  
+
   if( !region )
     return PyString_FromString((char*)"");
 
@@ -71,14 +72,15 @@ static PyObject* pyRegion_str(PyRegion* reg) {
 
 
 static regRegion* parse_string( char* str, int fileflag ) {
-  
-  regRegion *reg = NULL;
 
+  regRegion *reg = NULL;
+  std::string input(str);
   if( fileflag )
-    reg = regReadAsciiRegion( str, 0 ); // Verbosity set to 0
+      input = "region(" + input + ")";
+  	  reg = regReadAsciiRegion( (char*)input.c_str() , 0 ); // Verbosity set to 0
   else
-    reg = regParse( str );
- 
+	  reg = regParse( (char*)input.c_str() );
+
   return reg;
 }
 
@@ -107,22 +109,22 @@ static PyTypeObject pyRegion_Type = {
   0,                             // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, //tp_flags  DO NOT REMOVE
   (char*)"PyRegion object, reg = Region('Circle(256,256,25)')",      // tp_doc, __doc__
-  0,		                 // tp_traverse 
-  0,		                 // tp_clear 
-  0,		                 // tp_richcompare 
-  0,		                 // tp_weaklistoffset 
+  0,		                 // tp_traverse
+  0,		                 // tp_clear
+  0,		                 // tp_richcompare
+  0,		                 // tp_weaklistoffset
   0,		                 // tp_iter, __iter__
-  0,		                 // tp_iternext 
+  0,		                 // tp_iternext
   0,                             // tp_methods
-  0,                             // tp_members 
-  0,                             // tp_getset 
-  0,                             // tp_base 
+  0,                             // tp_members
+  0,                             // tp_getset
+  0,                             // tp_base
   0,                             // tp_dict, __dict__
-  0,                             // tp_descr_get 
-  0,                             // tp_descr_set 
-  0,                             // tp_dictoffset 
+  0,                             // tp_descr_get
+  0,                             // tp_descr_set
+  0,                             // tp_dictoffset
   0,                             // tp_init, __init__
-  0,                             // tp_alloc 
+  0,                             // tp_alloc
   pyRegion_new,                  // tp_new
 };
 
@@ -138,7 +140,7 @@ static PyObject* region_mask( PyObject* self, PyObject* args )
   PyObject *cobj = NULL;
   PyRegion *region = NULL;
   regRegion *reg = NULL;
-  
+
   if ( !PyArg_ParseTuple( args, (char*)"OsO&O&ii",
 			  &reg_obj,
 			  &str,
@@ -181,13 +183,13 @@ static PyObject* region_mask( PyObject* self, PyObject* args )
     if( tmp ) regFree( tmp );
   }
 
-  // If possible, append the new region string to the stack  
+  // If possible, append the new region string to the stack
   if( reg_obj != Py_None ) {
     region = (PyRegion*)(reg_obj);
     regRegion *tmp = reg;
 
     reg = regCombineRegion( region->region, tmp );
-    
+
     if ( NULL == reg) {
       PyErr_SetString( PyExc_TypeError,
 		       (char*)"unable to combine regions successfully" );
@@ -210,29 +212,72 @@ static PyObject* region_mask( PyObject* self, PyObject* args )
   return Py_BuildValue((char*)"ON", region, mask.return_new_ref());
 }
 
+
+/*
+static PyObject* region_parse( PyObject* self, PyObject* args )
+{
+
+  int fileflag = 1;
+  char* str = NULL;
+  PyObject *cobj = NULL;
+  PyRegion *region = NULL;
+  regRegion *reg = NULL;
+
+  if ( !PyArg_ParseTuple( args, (char*)"s|i", &str, &fileflag))
+    return NULL;
+
+  reg = parse_string( str, fileflag );
+
+  if ( NULL == reg) {
+    PyErr_SetString( PyExc_TypeError,
+		     (char*)"unable to parse region string successfully" );
+    return NULL;
+  }
+
+  // In order to pass in regRegion* as a Python argument, use void* trick
+  cobj = PyCObject_FromVoidPtr((void*)reg, NULL);
+
+  region = (PyRegion*) pyRegion_new( &pyRegion_Type,
+				     Py_BuildValue((char*)"(O)", cobj ),
+				     NULL );
+
+  Py_XINCREF(region);
+
+  return (PyObject*)region;
+
+}
+*/
+
 static PyMethodDef RegionFcts[] = {
+
   { (char*)"region_mask", (PyCFunction)region_mask,
     METH_VARARGS, (char*)"Create a region using CXC region lib" },
+
+  /*
+    { (char*)"region_parse", (PyCFunction)region_parse,
+    METH_VARARGS, (char*)"Parse and create a region using CXC region lib" },
+  */
+
   { NULL, NULL, 0, NULL }
-  
+
 };
 
 #ifndef PyMODINIT_FUNC	// declarations for DLL import/export
 #define PyMODINIT_FUNC void
 #endif
-PyMODINIT_FUNC 
-init_region(void) 
-{ 
+PyMODINIT_FUNC
+init_region(void)
+{
 
   PyObject *m;
-  
+
   if (PyType_Ready(&pyRegion_Type) < 0)
     return;
 
   import_array();
-  
+
   m = Py_InitModule3((char*)"_region", RegionFcts, NULL);
-  
+
   if (m == NULL)
     return;
 

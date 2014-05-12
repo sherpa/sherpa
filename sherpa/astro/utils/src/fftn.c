@@ -220,7 +220,7 @@ static int factor [NFACTOR];
 /*}}}*/
 
 /*{{{ fft_free() */
-void
+static void
 JDMfft_free (void)
 {
    SpaceAlloced = MaxPermAlloced = 0;
@@ -301,6 +301,13 @@ factorize (int nPass, int * kt)
 }
 
 /*}}}*/
+
+
+extern int JDMfftn (int ndim, int *dims, double * Re, double * Im,
+		                    int iSign, double scaling);
+
+extern int JDMfftnf (int ndim, int *dims, float * Re, float * Im,
+		                                    int iSign, double scaling);
 
 /* defines for double */
 #define REAL		double
