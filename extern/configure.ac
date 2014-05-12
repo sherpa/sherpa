@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.63])
 
-AC_INIT(sherpa-dependencies, 4.7, olaurino@cfa.harvard.edu)
+AC_INIT(sherpa-dependencies, 4.7, cxchelp@head.cfa.harvard.edu)
 AM_INIT_AUTOMAKE(foreign)
 
 LT_INIT
@@ -24,6 +24,14 @@ AS_IF([test "x$enable_region" = "xyes"], [
   AC_SUBST(region, region-4.6)
 ])
 
-AC_CONFIG_SUBDIRS([grplib-4.6 wcssubs])
+AS_IF([test "x$enable_group" = "xyes"], [
+  AC_CONFIG_SUBDIRS([grplib-4.6])
+  AC_SUBST(grplib, grplib-4.6)
+])
+
+AS_IF([test "x$enable_wcs" = "xyes"], [
+  AC_CONFIG_SUBDIRS([wcssubs])
+  AC_SUBST(wcssubs, wcssubs)
+])
 
 AC_OUTPUT([Makefile])

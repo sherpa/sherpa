@@ -181,6 +181,7 @@ docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 fftw = @fftw@
+grplib = @grplib@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -212,8 +213,9 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = $(fftw) grplib-4.6 $(region) wcssubs
-WCS = wcssubs
+wcssubs = @wcssubs@
+SUBDIRS = $(fftw) $(grplib) $(region) $(wcssubs)
+WCS = $(wcssubs)
 EXTRA_DIST = $(WCS)
 all: all-recursive
 

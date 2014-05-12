@@ -7,7 +7,7 @@ if CIAO
 group_la_CFLAGS = -I../src $(PYTHON_CPPFLAGS) $(GROUP_CFLAGS)
 
 else
-group_la_CFLAGS = -DSTUB_ERROR_LIB=1 -I../src $(PYTHON_CPPFLAGS)
+group_la_CFLAGS = -DSTUB_ERROR_LIB=1 -I../src $(PYTHON_CPPFLAGS) $(GROUP_CFLAGS)
 
 endif
 

@@ -38,6 +38,7 @@ subdir = python
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/AX_PYTHON_DEVEL.m4 \
+	$(top_srcdir)/m4/ax_python_numpy.m4 \
 	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
 	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
 	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
@@ -136,6 +137,7 @@ MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
+NUMPY_INCLUDEDIR = @NUMPY_INCLUDEDIR@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OTOOL = @OTOOL@
@@ -222,7 +224,7 @@ top_srcdir = @top_srcdir@
 pyexec_LTLIBRARIES = group.la
 group_la_SOURCES = pygrplib.c pygrplib.h ../src/grplib.c ../src/grp_priv.c ../src/stub_dserr.c ../src/stub_dserr.h
 group_la_LDFLAGS = -avoid-version -module
-@CIAO_FALSE@group_la_CFLAGS = -DSTUB_ERROR_LIB=1 -I../src $(PYTHON_CPPFLAGS)
+@CIAO_FALSE@group_la_CFLAGS = -DSTUB_ERROR_LIB=1 -I../src $(PYTHON_CPPFLAGS) $(GROUP_CFLAGS)
 @CIAO_TRUE@group_la_CFLAGS = -I../src $(PYTHON_CPPFLAGS) $(GROUP_CFLAGS)
 all: all-am
 

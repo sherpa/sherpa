@@ -18,6 +18,7 @@ class sherpa_config(Command):
                         ('region-include-dirs', None, "Where the region headers are located, if region is 'local'"),
                         ('region-lib-dirs', None, "Where the region libraries are located, if region is 'local'"),
                         ('region-libraries', None, "Name of the libraries that should be linked as region"),
+                        ('wcs', None, "Whether Sherpa should build the embedded wcs library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
                         ('wcs-include-dirs', None, "Where the wcs subroutines headers are located"),
                         ('wcs-lib-dirs', None, "Where the wcs subroutines libraries are located"),
                         ('wcs-libraries', None, "Name of the libraries that should be linked as wcs"),
@@ -38,6 +39,7 @@ class sherpa_config(Command):
             self.region_include_dirs=None
             self.region_lib_dirs=None
             self.region_libraries='region'
+            self.wcs=None
             self.wcs_include_dirs=None
             self.wcs_lib_dirs=None
             self.wcs_libraries='wcs'
@@ -95,7 +97,11 @@ class sherpa_config(Command):
 #                    self.warn('Removing Group module from list of extension modules')
 
             if not self.disable_group:
+                configure.append('--enable-group')
                 self.distribution.data_files.append(('', [self.group_location,]))
+
+            if self.wcs != 'local':
+                configure.append('--enable-wcs')
 
             self.warn('built configure string' + str(configure))
 

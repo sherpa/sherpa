@@ -17,7 +17,16 @@ except ImportError:
     sys.exit(2)
 
 import os
-import setuptools
+
+try:
+    import setuptools
+except:
+    import sys
+    print >>sys.stderr, (
+            "WARNING\n"
+            "Could not import setuptools.\n"
+            "This might lead to an incomplete installation\n"
+            )
 from numpy.distutils.core import setup
 
 from helpers.extensions import static_ext_modules
