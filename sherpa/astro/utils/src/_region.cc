@@ -75,11 +75,12 @@ static regRegion* parse_string( char* str, int fileflag ) {
 
   regRegion *reg = NULL;
   std::string input(str);
-  if( fileflag )
+  if( fileflag ) {
       input = "region(" + input + ")";
   	  reg = regReadAsciiRegion( (char*)input.c_str() , 0 ); // Verbosity set to 0
-  else
+  } else {
 	  reg = regParse( (char*)input.c_str() );
+  }
 
   return reg;
 }
