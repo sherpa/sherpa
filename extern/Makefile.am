@@ -1,7 +1,7 @@
 
-SUBDIRS = $(fftw) grplib-4.6 $(region) wcssubs
+SUBDIRS = $(fftw) $(grplib) $(region) $(wcssubs)
 
-WCS = wcssubs
+WCS = $(wcssubs)
 
 EXTRA_DIST = $(WCS)
 

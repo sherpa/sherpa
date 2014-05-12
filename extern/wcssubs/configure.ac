@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.63])
 
-AC_INIT(wcssubs, 4.7b1, olaurino@cfa.harvard.edu)
+AC_INIT(wcssubs, 4.7b1, cxchelp@head.cfa.harvard.edu)
 AM_INIT_AUTOMAKE(foreign)
 
 LT_INIT
