@@ -109,3 +109,7 @@ def test(level=1, verbosity=1, datadir=None):
     import sherpa.astro.all
     from sherpa.utils import SherpaTest
     SherpaTest().test(level, verbosity, datadir)
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions

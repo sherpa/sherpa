@@ -1,0 +1,2 @@
+_version.py export-subst
+sherpa/_version.py export-subst

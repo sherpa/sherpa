@@ -30,11 +30,17 @@ except:
 from numpy.distutils.core import setup
 
 from helpers.extensions import static_ext_modules
-from helpers import commands
+#from helpers import commands
+
+import versioneer
+versioneer.versionfile_source = 'sherpa/_version.py'
+versioneer.versionfile_build = 'sherpa/_version.py'
+versioneer.tag_prefix = ''
+versioneer.parentdir_prefix = 'sherpa-'
 
 meta = {
         'name' : 'sherpa',
-        'version' : '4.7b1',
+        'version' : versioneer.get_version(),
         'author' : 'Smithsonian Astrophysical Observatory / Chandra X-Ray Center',
         'author_email' : 'cxchelp@head.cfa.harvard.edu',
         'url' : 'http://cxc.harvard.edu/sherpa/',
@@ -92,7 +98,7 @@ meta['data_files'] = [('sherpa', ['sherpa/sherpa.rc']),
             ]
 
 meta['ext_modules'] = static_ext_modules
-meta['cmdclass'] = commands
+meta['cmdclass'] = versioneer.get_cmdclass()
 
 setup(**meta)
 

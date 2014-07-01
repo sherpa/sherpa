@@ -1,5 +1,7 @@
 graft extern
 
+include versioneer.py
+
 include README.md
 
 recursive-include helpers *.py
