@@ -4,7 +4,9 @@
 AC_PREREQ([2.63])
 
 AC_INIT(sherpa-dependencies, 4.7, cxchelp@head.cfa.harvard.edu)
-AM_INIT_AUTOMAKE(foreign)
+AM_INIT_AUTOMAKE([foreign])
+
+AC_CONFIG_MACRO_DIR([m4])
 
 LT_INIT
 
@@ -24,10 +26,16 @@ AS_IF([test "x$enable_region" = "xyes"], [
   AC_SUBST(region, region-4.6)
 ])
 
+AC_ARG_ENABLE([group],
+  AS_HELP_STRING([--enable-group], [Build group module shipped with Sherpa]))
+
 AS_IF([test "x$enable_group" = "xyes"], [
   AC_CONFIG_SUBDIRS([grplib-4.6])
   AC_SUBST(grplib, grplib-4.6)
 ])
+
+AC_ARG_ENABLE([wcssubs],
+  AS_HELP_STRING([--enable-wcssubs], [Build wcssubs library shipped with Sherpa]))
 
 AS_IF([test "x$enable_wcs" = "xyes"], [
   AC_CONFIG_SUBDIRS([wcssubs])

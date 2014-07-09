@@ -79,8 +79,10 @@ build_triplet = @build@
 host_triplet = @host@
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(top_srcdir)/configure $(am__configure_deps) compile \
-	config.guess config.sub depcomp install-sh missing ltmain.sh
+	$(top_srcdir)/configure $(am__configure_deps) \
+	$(top_srcdir)/../compile $(top_srcdir)/../config.guess \
+	$(top_srcdir)/../config.sub $(top_srcdir)/../install-sh \
+	$(top_srcdir)/../ltmain.sh $(top_srcdir)/../missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/AX_PYTHON_DEVEL.m4 \
 	$(top_srcdir)/m4/ax_python_numpy.m4 \
@@ -323,7 +325,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -Im4
-SUBDIRS = src python doc
+SUBDIRS = src doc
 DIST_SUBDIRS = $(SUBDIRS)
 all: all-recursive
 

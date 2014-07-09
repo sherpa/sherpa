@@ -4,7 +4,7 @@
 AC_PREREQ([2.63])
 AC_INIT(libgrp, 4.6, cxchelp@head.cfa.harvard.edu)
 
-AM_INIT_AUTOMAKE(libgrp, 4.6)
+AM_INIT_AUTOMAKE([foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -41,5 +41,5 @@ AM_CONDITIONAL([CIAO], [test x$ciao = xtrue])
 
 AC_ARG_VAR(GROUP_CFLAGS, [Additional flags to be pass to the grouping library])
 
-AC_OUTPUT(Makefile src/Makefile doc/Makefile python/Makefile)
+AC_OUTPUT(Makefile src/Makefile doc/Makefile)
 
