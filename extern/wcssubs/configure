@@ -595,6 +595,7 @@ PACKAGE_STRING='wcssubs 4.7b1'
 PACKAGE_BUGREPORT='cxchelp@head.cfa.harvard.edu'
 PACKAGE_URL=''
 
+ac_unique_file="wcssubs-3.8.7/hget.c"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -2717,6 +2718,9 @@ END
     as_fn_error $? "Your 'rm' program is bad, sorry." "$LINENO" 5
   fi
 fi
+
+
+
 
 case `pwd` in
   *\ * | *\	*)
@@ -7806,6 +7810,10 @@ _lt_linker_boilerplate=`cat conftest.err`
 $RM -r conftest*
 
 
+## CAVEAT EMPTOR:
+## There is no encapsulation within the following macros, do not change
+## the running order or otherwise move them around unless you know exactly
+## what you are doing...
 if test -n "$compiler"; then
 
 lt_prog_compiler_no_builtin_flag=

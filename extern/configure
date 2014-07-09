@@ -767,6 +767,8 @@ with_sysroot
 enable_libtool_lock
 enable_fftw
 enable_region
+enable_group
+enable_wcssubs
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1412,6 +1414,8 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-fftw           Build fftw library shipped with Sherpa
   --enable-region         Build region library shipped with Sherpa
+  --enable-group          Build group module shipped with Sherpa
+  --enable-wcssubs        Build wcssubs library shipped with Sherpa
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2731,6 +2735,8 @@ END
     as_fn_error $? "Your 'rm' program is bad, sorry." "$LINENO" 5
   fi
 fi
+
+
 
 case `pwd` in
   *\ * | *\	*)
@@ -7820,6 +7826,10 @@ _lt_linker_boilerplate=`cat conftest.err`
 $RM -r conftest*
 
 
+## CAVEAT EMPTOR:
+## There is no encapsulation within the following macros, do not change
+## the running order or otherwise move them around unless you know exactly
+## what you are doing...
 if test -n "$compiler"; then
 
 lt_prog_compiler_no_builtin_flag=
@@ -11397,6 +11407,12 @@ if test "x$enable_region" = "xyes"; then :
 
 fi
 
+# Check whether --enable-group was given.
+if test "${enable_group+set}" = set; then :
+  enableval=$enable_group;
+fi
+
+
 if test "x$enable_group" = "xyes"; then :
 
   subdirs="$subdirs grplib-4.6"
@@ -11405,6 +11421,12 @@ if test "x$enable_group" = "xyes"; then :
 
 
 fi
+
+# Check whether --enable-wcssubs was given.
+if test "${enable_wcssubs+set}" = set; then :
+  enableval=$enable_wcssubs;
+fi
+
 
 if test "x$enable_wcs" = "xyes"; then :
 

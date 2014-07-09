@@ -2,6 +2,7 @@
 
 WCS = wcssubs-3.8.7
 
+ACLOCAL_AMFLAGS = -I m4
 
 lib_LTLIBRARIES = libwcs.la
 

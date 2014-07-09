@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS = foreign
 
 ACLOCAL_AMFLAGS = -Im4
 
-SUBDIRS = src python doc
+SUBDIRS = src doc
 
 DIST_SUBDIRS = $(SUBDIRS)
 
