@@ -45,7 +45,7 @@ class sherpa_config(Command):
             self.wcs_libraries='wcs'
             self.group_location=None
             self.disable_group=False
-            self.configure='--enable-stuberrorlib --disable-shared --enable-shared=libgrp'
+            self.configure='--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp'
             self.group_cflags=None
 
         def finalize_options(self):

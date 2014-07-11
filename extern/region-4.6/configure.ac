@@ -9,6 +9,8 @@ AC_INIT([region], [4.6], [cxchelp@head.cfa.harvard.edu])
 AC_CONFIG_SRCDIR([src/region_create.c])
 AM_INIT_AUTOMAKE
 
+AM_MAINTAINER_MODE([enable])
+
 # Checks for programs.
 AC_PROG_CC
 
