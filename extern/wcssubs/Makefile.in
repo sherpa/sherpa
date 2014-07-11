@@ -341,7 +341,7 @@ libwcs_la_SOURCES = $(WCS)/cel.c $(WCS)/distort.c $(WCS)/fitsfile.c $(WCS)/hget.
 	$(WCS)/proj.c $(WCS)/sph.c $(WCS)/tnxpos.c $(WCS)/zpxpos.c $(WCS)/wcs.c $(WCS)/wcsinit.c \
 	$(WCS)/wcscon.c $(WCS)/wcslib.c $(WCS)/wcstrig.c $(WCS)/worldpos.c \
 	$(WCS)/dateutil.c $(WCS)/fileutil.c $(WCS)/dsspos.c \
-	$(WCS)/wcslib.h $(WCS)/wcs.h $(WCS)/fitshead.h $(WCS)/fitfile.h
+	$(WCS)/wcslib.h $(WCS)/wcs.h $(WCS)/fitshead.h $(WCS)/fitsfile.h
 
 all: all-am
 
