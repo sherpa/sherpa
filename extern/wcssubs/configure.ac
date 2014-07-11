@@ -7,6 +7,8 @@ AC_INIT(wcssubs, 4.7b1, cxchelp@head.cfa.harvard.edu)
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([wcssubs-3.8.7/hget.c])
 
+AM_MAINTAINER_MODE([enable])
+
 AC_CONFIG_MACRO_DIR([m4])
 
 LT_INIT

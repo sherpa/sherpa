@@ -6,6 +6,8 @@ AC_INIT(libgrp, 4.6, cxchelp@head.cfa.harvard.edu)
 
 AM_INIT_AUTOMAKE([foreign])
 
+AM_MAINTAINER_MODE([enable])
+
 AC_CONFIG_MACRO_DIR([m4])
 
 LT_INIT
