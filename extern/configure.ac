@@ -8,6 +8,8 @@ AM_INIT_AUTOMAKE([foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
 
+AM_MAINTAINER_MODE([enable])
+
 LT_INIT
 
 AC_ARG_ENABLE([fftw],
