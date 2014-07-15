@@ -18,6 +18,7 @@ AC_ARG_ENABLE([fftw],
 AS_IF([test "x$enable_fftw" = "xyes"], [
   AC_CONFIG_SUBDIRS([fftw-3.3.4])
   AC_SUBST(fftw, fftw-3.3.4)
+  touch fftw-3.3.4/doc/fftw3.info
 ])
 
 AC_ARG_ENABLE([region],
