@@ -239,12 +239,14 @@ minpack = Extension('sherpa.optmethods._minpack',
                'sherpa/optmethods/src/minpack/covar.f',
                'sherpa/optmethods/src/minpack/lmdif.f',
                'sherpa/optmethods/src/minpack/mylmdif.f',
-               ])
+               ],
+		extra_link_args=['-static-libgfortran'])
 
 minim =  Extension('sherpa.optmethods._minim',
               ['sherpa/optmethods/src/_minim.pyf',
                'sherpa/optmethods/src/minim.f',
-               'sherpa/optmethods/src/syminv.f'])
+               'sherpa/optmethods/src/syminv.f'],
+		extra_link_args=['-static-libgfortran'])
 
 ####
 ### GROUP
