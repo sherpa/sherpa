@@ -6,19 +6,22 @@ build:
  number: 2
 
  entry_points:
-  - sherpa_test = 'sherpa:clitest'
+  - sherpa_test = sherpa:clitest
 
 requirements:
  build:
   - python 2.7.*
   - numpy 1.8.*
   - setuptools
+  - gcc # [linux]
 
  run:
   - python 2.7.*
   - numpy 1.8.*
   - matplotlib
   - setuptools
+  - ds9
+  - xpa
   - pyfits
 
 about:
