@@ -23,6 +23,7 @@ requirements:
   - ds9
   - xpa
   - pyfits
+  - gcc # [linux]
 
 about:
  home: http://cxc.cfa.harvard.edu/sherpa/
