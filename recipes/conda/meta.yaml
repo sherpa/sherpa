@@ -13,17 +13,11 @@ requirements:
   - python 2.7.*
   - numpy 1.8.*
   - setuptools
-  - gcc # [linux]
 
  run:
   - python 2.7.*
   - numpy 1.8.*
-  - matplotlib
   - setuptools
-  - ds9
-  - xpa
-  - pyfits
-  - gcc # [linux]
 
 about:
  home: http://cxc.cfa.harvard.edu/sherpa/

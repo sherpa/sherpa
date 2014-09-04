@@ -12,7 +12,8 @@ case $OSTYPE in
         make install
         touch built
         cd ..
-        export LDFLAGS="-undefined dynamic_lookup"
+        unset CFLAGS
+        unset LDFLAGS
         ;;
 
     linux*)
@@ -20,8 +21,5 @@ case $OSTYPE in
         ;;
 
 esac
-
-unset CFLAGS
-unset LDFLAGS
 
 python setup.py install --prefix=$PREFIX
