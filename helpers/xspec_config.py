@@ -43,7 +43,7 @@ class xspec_config(Command):
 
             if self.with_xspec:
                 if package not in dist_packages:
-                    dist_packages.append('sherpa.astro.xspec')
+                    dist_packages.append(package)
 
                 if not dist_data.has_key(package):
                     dist_data[package] = ['tests/test_*.py']
