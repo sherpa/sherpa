@@ -70,11 +70,11 @@ void diskm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* p
 void disko_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void diskpbb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsdiskpn_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void xeq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void xeq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsxpdec_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void ezdiskbb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsgaul_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void xnneq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void xnneq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void grad_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsgrbm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void C_kerrbb(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
@@ -86,8 +86,8 @@ void xslorz_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void xsmeka_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsmekl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsmkcf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xneq(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void xshock_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void C_xneq(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+//void xshock_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void nsa_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void nsagrav_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void nsatmos_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -100,26 +100,26 @@ void C_xspexriv(const double* energy, int nFlux, const double* params, int spect
 void xsp1tr_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void C_powerLaw(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsposm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void xneqs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void xneqs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsrays_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xredge_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsrefsch_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void xsedov_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void xsedov_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void srcut_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void sresc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsstep_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvape_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbrmv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void xseq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void xsnneq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void xseq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void xsnneq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvmek_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvmkl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvmcf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xsneq(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void xsshock_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void xsneqs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void C_xsneq(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+//void xsshock_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void xsneqs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvrys_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void xssedov_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+/void xssedov_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszbod_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszbrm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszgau_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -133,7 +133,7 @@ void xsdust_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void xsedge_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsabsc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsexp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void xsgabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void xsgabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xshecu_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xshrfl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsntch_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -788,11 +788,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( disko, 5 ),
   XSPECMODELFCT_NORM( diskpbb, 3 ),
   XSPECMODELFCT_NORM( xsdiskpn, 3 ),
-  XSPECMODELFCT_NORM( xeq, 4 ),
+//  XSPECMODELFCT_NORM( xeq, 4 ),
   XSPECMODELFCT_NORM( xsxpdec, 2 ),
   XSPECMODELFCT_NORM( ezdiskbb, 2 ),
   XSPECMODELFCT_NORM( xsgaul, 3 ),
-  XSPECMODELFCT_NORM( xnneq, 6 ),
+//  XSPECMODELFCT_NORM( xnneq, 6 ),
   XSPECMODELFCT_NORM( grad, 7 ),
   XSPECMODELFCT_NORM( xsgrbm, 4 ),
   XSPECMODELFCT_C_NORM( C_kerrbb, 10 ),
@@ -804,8 +804,8 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( xsmeka, 5 ),
   XSPECMODELFCT_NORM( xsmekl, 6 ),
   XSPECMODELFCT_NORM( xsmkcf, 6 ),
-  XSPECMODELFCT_C_NORM( C_xneq, 5 ),
-  XSPECMODELFCT_NORM( xshock, 7 ),
+//  XSPECMODELFCT_C_NORM( C_xneq, 5 ),
+//  XSPECMODELFCT_NORM( xshock, 7 ),
   XSPECMODELFCT_NORM( nsa, 5 ),
   XSPECMODELFCT_NORM( nsagrav, 4 ),
   XSPECMODELFCT_NORM( nsatmos, 5 ),
@@ -818,26 +818,26 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( xsp1tr, 11 ),
   XSPECMODELFCT_C_NORM( C_powerLaw, 2 ),
   XSPECMODELFCT_NORM( xsposm, 1 ),
-  XSPECMODELFCT_NORM( xneqs, 6 ),
+//  XSPECMODELFCT_NORM( xneqs, 6 ),
   XSPECMODELFCT_NORM( xsrays, 4 ),
   XSPECMODELFCT_NORM( xredge, 3 ),
   XSPECMODELFCT_NORM( xsrefsch, 14 ),
-  XSPECMODELFCT_NORM( xsedov, 6 ),
+//  XSPECMODELFCT_NORM( xsedov, 6 ),
   XSPECMODELFCT_NORM( srcut, 3 ),
   XSPECMODELFCT_NORM( sresc, 3 ),
   XSPECMODELFCT_NORM( xsstep, 3 ),
   XSPECMODELFCT_NORM( xsvape, 16 ),
   XSPECMODELFCT_NORM( xsbrmv, 3 ),
-  XSPECMODELFCT_NORM( xseq, 15 ),
-  XSPECMODELFCT_NORM( xsnneq, 18 ),
+//  XSPECMODELFCT_NORM( xseq, 15 ),
+//  XSPECMODELFCT_NORM( xsnneq, 18 ),
   XSPECMODELFCT_NORM( xsvmek, 18 ),
   XSPECMODELFCT_NORM( xsvmkl, 19 ),
   XSPECMODELFCT_NORM( xsvmcf, 19 ),
-  XSPECMODELFCT_C_NORM( C_xsneq, 17 ),
-  XSPECMODELFCT_NORM( xsshock, 19 ),
-  XSPECMODELFCT_NORM( xsneqs, 18 ),
+//  XSPECMODELFCT_C_NORM( C_xsneq, 17 ),
+// XSPECMODELFCT_NORM( xsshock, 19 ),
+//  XSPECMODELFCT_NORM( xsneqs, 18 ),
   XSPECMODELFCT_NORM( xsvrys, 15 ),
-  XSPECMODELFCT_NORM( xssedov, 18 ),
+//  XSPECMODELFCT_NORM( xssedov, 18 ),
   XSPECMODELFCT_NORM( xszbod, 3 ),
   XSPECMODELFCT_NORM( xszbrm, 3 ),
   XSPECMODELFCT_NORM( xszgau, 4 ),
@@ -851,7 +851,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT( xsedge, 2 ),
   XSPECMODELFCT( xsabsc, 1 ),
   XSPECMODELFCT( xsexp, 3 ),
-  XSPECMODELFCT( xsgabs, 3 ),
+//  XSPECMODELFCT( xsgabs, 3 ),
   XSPECMODELFCT( xshecu, 2 ),
   XSPECMODELFCT( xshrfl, 8 ),
   XSPECMODELFCT( xsntch, 3 ),
