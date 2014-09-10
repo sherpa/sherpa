@@ -119,7 +119,7 @@ void xsvmcf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 //void xsshock_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 //void xsneqs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvrys_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-/void xssedov_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+//void xssedov_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszbod_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszbrm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszgau_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
