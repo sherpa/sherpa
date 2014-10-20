@@ -949,6 +949,23 @@ namespace sherpa { namespace models {
 
   }
 
+  template <typename DataType, typename ConstArrayType>
+  inline int sigmagauss2d_point( const ConstArrayType& p,
+				 DataType x0, DataType x1, DataType& val ) {
+  
+    register DataType r = 0.0;
+    
+    if ( 0 == p[0] || 0 == p[1] )
+      return EXIT_FAILURE;
+  
+    if( EXIT_SUCCESS != sherpa::utils::sigmaradius2(p, x0, x1, r)) {
+      return EXIT_FAILURE;
+    }
+    val = p[5]*EXP(-r/2.0);
+    return EXIT_SUCCESS;
+
+  }
+
 
   // FIXME: work the analytic part of this back in
   /*
