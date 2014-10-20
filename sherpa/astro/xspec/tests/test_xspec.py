@@ -88,6 +88,11 @@ class test_xspec(SherpaTestCase):
 
         self.assertAlmostEqual(y_m, y2_m)
 
+    def test_xsxset_get(self):
+	# TEST CASE #1 Case insentitive keys
+	xs.set_xsxset('fooBar', 'somevalue')
+	self.assertEqual('somevalue', xs.get_xsxset('Foobar'))
+
 
 if __name__ == '__main__':
 
