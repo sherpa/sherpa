@@ -8,8 +8,7 @@ from sherpa.utils import guess_amplitude, param_apply_limits
 from sherpa.astro.utils import get_xspec_position
 from sherpa.astro.xspec._xspec import get_xschatter, get_xsabund, get_xscosmo, \
      get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, set_xsxsect, \
-     get_xsversion, get_xsxset
-
+     get_xsversion
 
 # Wrap the XSET function in Python, so that we can keep a record of
 # the strings the user sent as specific XSPEC model strings (if any) during
@@ -17,7 +16,17 @@ from sherpa.astro.xspec._xspec import get_xschatter, get_xsabund, get_xscosmo, \
 # See:
 # http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
 modelstrings = {}
+
+def get_xsxset(name):
+    '''
+    Wrapper function for ensuring keys are case insensitive.
+    '''
+    name = name.upper()
+    return sherpa.astro.xspec._xspec.get_xsxset(name)
+
 def set_xsxset(name, value):
+    # convert name to upper case
+    name = name.upper()
     sherpa.astro.xspec._xspec.set_xsxset(name, value)
     if (get_xsxset(name) != ""):
         modelstrings[name] = get_xsxset(name)
