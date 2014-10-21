@@ -19,5 +19,8 @@ group_la_CFLAGS = -DSTUB_ERROR_LIB=1 $(PYTHON_CPPFLAGS) $(GROUP_CFLAGS)
 endif
 
 
-EXTRA_DIST = *.h
+EXTRA_DIST = \
+dserror_database.h  dserror_global.h      dserror_ptinstrument.h    dserror_structs.h    grp_priv.h  stub_dserr.h\
+dserror_funcs.h     dserror_ptanalysis.h  dserror_ptnonsi.h         dserror_trace_fct.h  liberr.h\
+dserror_general.h   dserror_ptdmtools.h   dserror_signal_handler.h  grplib.h             pygrplib.h
 

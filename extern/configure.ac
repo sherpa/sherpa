@@ -45,4 +45,13 @@ AS_IF([test "x$enable_wcs" = "xyes"], [
   AC_SUBST(wcssubs, wcssubs)
 ])
 
+AC_ARG_ENABLE([stk],
+  AS_HELP_STRING([--enable-stk], [Build stack library shipped with Sherpa]))
+
+AS_IF([test "x$enable_stk" = "xyes"], [
+  AC_CONFIG_SUBDIRS([stklib-4.6])
+  AC_SUBST(stklib, stklib-4.6)
+])
+
+
 AC_OUTPUT([Makefile])
