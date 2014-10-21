@@ -18,7 +18,7 @@ trunc_value: 1.0e-25
 # Sherpa Chatter level
 # a non-zero value will
 # display full error traceback
-level      : 0
+level      : 10000
 # NumPy arrays have a threshold size print option, such that when an
 # array greater than that size is converted to a string, for printing,
 # only the first few and last few elements are shown.  If the array is
