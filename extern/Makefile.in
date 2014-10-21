@@ -304,6 +304,7 @@ region = @region@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
+stklib = @stklib@
 subdirs = @subdirs@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
@@ -312,7 +313,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 wcssubs = @wcssubs@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = $(fftw) $(grplib) $(region) $(wcssubs)
+SUBDIRS = $(fftw) $(grplib) $(region) $(stklib) $(wcssubs)
 WCS = $(wcssubs)
 EXTRA_DIST = $(WCS)
 all: all-recursive

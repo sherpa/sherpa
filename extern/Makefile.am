@@ -1,7 +1,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = $(fftw) $(grplib) $(region) $(wcssubs)
+SUBDIRS = $(fftw) $(grplib) $(region) $(stklib) $(wcssubs)
 
 WCS = $(wcssubs)
 

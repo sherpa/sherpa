@@ -37,5 +37,6 @@ reglexer.c: reglexer.l
 clean-local:
 	-rm -f regparser.c reglexer.c *.o regparser.h regparser.tab.c regparser.tab.h
 
-EXTRA_DIST = *.h reglexer.c.tmp reglexer.l regparser.y 
+EXTRA_DIST = cxcregion.h  region_priv.h  regpar.h  regparser.h\
+	  regparser.tab.h reglexer.c.tmp reglexer.l regparser.y 
 
