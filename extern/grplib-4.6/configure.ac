@@ -43,5 +43,5 @@ AM_CONDITIONAL([CIAO], [test x$ciao = xtrue])
 
 AC_ARG_VAR(GROUP_CFLAGS, [Additional flags to be pass to the grouping library])
 
-AC_OUTPUT(Makefile src/Makefile doc/Makefile)
+AC_OUTPUT(Makefile src/Makefile python/Makefile doc/Makefile)
 
