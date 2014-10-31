@@ -12,6 +12,7 @@ recursive-include sherpa/include *.hh
 
 # Test files
 recursive-include sherpa test_*.py
+include sherpa/tests/*
 
 # XSPEC module sources
 include sherpa/astro/xspec/src/*.cc

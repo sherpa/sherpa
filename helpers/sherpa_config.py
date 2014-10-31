@@ -24,6 +24,8 @@ class sherpa_config(Command):
                         ('wcs-libraries', None, "Name of the libraries that should be linked as wcs"),
                         ('group-location', None, "Location of the group  python module"),
                         ('disable-group', None, "Disable the group module install"),
+                        ('stk-location', None, "Location of the stack library python module"),
+                        ('disable-stk', None, "Disable the stack library module install"),
                         ('install-dir', None, "Directory where external dependencies must be installed (--prefix)"),
                         ('configure', None, "Additional configure flags for the external dependencies"),
                         ('group-cflags', None, "Additional cflags for building the grouping library"),
@@ -46,9 +48,11 @@ class sherpa_config(Command):
             self.wcs_libraries='wcs'
             self.group_location=None
             self.disable_group=False
-            self.configure='--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp'
+            self.configure='--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib'
             self.group_cflags=None
             self.extra_fortran_link_flags=None
+            self.stk_location=None
+            self.disable_stk=False
 
         def finalize_options(self):
             if self.fftw_include_dirs is None:
@@ -72,6 +76,9 @@ class sherpa_config(Command):
             if self.group_location is None:
                 self.group_location=self.install_dir+'/lib/python2.7/site-packages/group.so'
 
+            if self.stk_location is None:
+                self.stk_location=self.install_dir+'/lib/python2.7/site-packages/stk.so'
+
         def build_configure(self):
             configure = ['./configure', '--prefix='+self.install_dir, '--with-pic']
             if self.group_cflags is not None:
@@ -80,6 +87,7 @@ class sherpa_config(Command):
                 configure.extend(self.configure.split(' '))
             if self.fftw != 'local':
                 configure.append('--enable-fftw')
+
             self.distribution.ext_modules.append(build_ext('psf', *build_lib_arrays(self, 'fftw')))
             self.distribution.ext_modules.append(build_ext('wcs', *build_lib_arrays(self, 'wcs')))
             ld1, inc1, l1 = build_lib_arrays(self, 'wcs')
@@ -98,6 +106,10 @@ class sherpa_config(Command):
             if not self.disable_group:
                 configure.append('--enable-group')
                 self.distribution.data_files.append(('', [self.group_location,]))
+
+            if not self.disable_stk:
+                configure.append('--enable-stk')
+                self.distribution.data_files.append(('', [self.stk_location,]))
 
             if self.wcs != 'local':
                 configure.append('--enable-wcs')
