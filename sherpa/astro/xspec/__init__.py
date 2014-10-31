@@ -2936,7 +2936,7 @@ class XSheilin(XSMultiplicativeModel):
     _calc =  _xspec.xsphei
 
     def __init__(self, name='heilin'):
-        self.nHeI = Parameter(name, 'nHeI', 10.e-5, 0.0, 1.e6, 0.0, 1.0e6, '10^22 atoms / cm^2')
+        self.nHeI = Parameter(name, 'nHeI', 1.e-5, 0.0, 1.e6, 0.0, 1.0e6, '10^22 atoms / cm^2')
         self.b = Parameter(name, 'b', 10.0, 1.0, 1.0e5, 1.0, 1.0e6, units='km/s')
         self.redshift = Parameter(name, 'redshift', 0.0, -1.0e-3, 1.0e5, -1.0e-3, 1.0e5)
         XSMultiplicativeModel.__init__(self, name, (self.nHei, self.b, self.redshift))
