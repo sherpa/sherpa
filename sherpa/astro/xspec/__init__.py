@@ -2885,7 +2885,7 @@ class XSagauss(XSAdditiveModel):
 
     def __init__(self, name='agauss'):
         self.LineE = Parameter(name, 'LineE', 10.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
-        self.Sigma = Parameter(name, 'Signa', 1.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
+        self.Sigma = Parameter(name, 'Sigma', 1.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.LineE, self.Sigma, self.norm))
 
@@ -2895,7 +2895,7 @@ class XSzagauss(XSAdditiveModel):
 
     def __init__(self, name='zagauss'):
         self.LineE = Parameter(name, 'LineE', 10.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
-        self.Sigma = Parameter(name, 'Signa', 1.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
+        self.Sigma = Parameter(name, 'Sigma', 1.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
         self.Redshift = Parameter(name, 'Redshift', 0., -0.999, 10.0, -0.999, 10.0, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.LineE, self.Sigma, self.Redshift, self.norm))
