@@ -1,11 +1,11 @@
 //_C++_INSERT_SAO_COPYRIGHT_HERE_(2007)_
 //_C++_INSERT_GPL_LICENSE_HERE_
 
-#include <iostream>
-#include <stdexcept>
-
 #include <sherpa/extension.hh>
 #include <sherpa/functor.hh>
+
+#include <iostream>
+#include <stdexcept>
 
 #include "DifEvo.hh"
 #include "NelderMead.hh"
