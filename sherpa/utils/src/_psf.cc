@@ -1,11 +1,11 @@
 //_C++_INSERT_SAO_COPYRIGHT_HERE_(2007)_
 //_C++_INSERT_GPL_LICENSE_HERE_
+#include <sherpa/extension.hh>
 #include <cmath>
 #include <cfloat>
 #include <vector>
 #include <sstream>
 #include <iostream>
-#include <sherpa/extension.hh>
 
 extern "C" {
 
