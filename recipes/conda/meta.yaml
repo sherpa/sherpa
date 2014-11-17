@@ -1,9 +1,9 @@
 package:
  name: sherpa
- version: "4.7b1"
+ version: "4.7b3"
 
 build:
- number: 2
+ number: 1
 
  entry_points:
   - sherpa_test = sherpa:clitest

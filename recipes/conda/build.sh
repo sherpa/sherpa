@@ -7,7 +7,7 @@ case $OSTYPE in
         export CFLAGS="-isysroot /Developer/SDKs/MacOSX10.5.sdk"
         export LDFLAGS="-m64"
         cd extern
-        ./configure --enable-fftw --enable-region --enable-group --enable-wcs --prefix=$PREFIX --disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp
+        ./configure --enable-fftw --enable-region --enable-group --enable-wcs --enable-stk --prefix=$PREFIX --disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp
         make
         make install
         touch built
