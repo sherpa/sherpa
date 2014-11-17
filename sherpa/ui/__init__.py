@@ -16,6 +16,7 @@ __all__ = ['calc_mlr', 'calc_ftest','Data1D', 'Data1DInt',
 
 _session = utils.Session()
 _session._add_model_types(sherpa.models.basic)
+_session._add_model_types(sherpa.models.template)
 # To get PSFModel in list of models -- doesn't inherit from ArithmeticModel
 _session._add_model_types(sherpa.instrument, baselist=(sherpa.models.Model,))
 __all__.extend(_session._export_names(globals()))

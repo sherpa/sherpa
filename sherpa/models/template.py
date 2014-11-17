@@ -8,7 +8,7 @@ from basic import TableModel
 import numpy, operator
 from sherpa.utils.err import ModelErr
 
-__all__ = ('create_template_model', 'TemplateModel', 'KNNInterpolator')
+__all__ = ('create_template_model', 'TemplateModel', 'KNNInterpolator', 'Template')
 
 
 
