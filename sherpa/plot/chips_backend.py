@@ -349,7 +349,11 @@ def begin():
             overrides = config.items('chips')
             for item in overrides:
                 chips.set_preference(item[0], item[1])
-            chips.add_window() # Have Sherpa talk to its own
+            # OL: No apparent reason to call add_window() here.
+            # ChIPS is smart enough to open a window if none are available,
+            # plus this code only gets executed if the user has a [chips] section in sherpa.rc
+            # which is the exception rather than the rule.
+            # chips.add_window() # Have Sherpa talk to its own
                                # chips window
         except NoSectionError:
             chips.unlock()

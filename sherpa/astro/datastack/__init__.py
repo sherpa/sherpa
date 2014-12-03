@@ -85,6 +85,7 @@ if _plot_pkg == 'pylab':
     import matplotlib.pyplot as plt
 elif _plot_pkg == 'chips':
     import pychips
+    from sherpa.plot import chips_backend
 else:
     raise ValueError('Unknown plot package {0}'.format(_plot_pkg))
 
@@ -594,6 +595,14 @@ class DataStack(object):
             :param kwargs: plot function named (keyword) arguments
             :rtype: None
             """
+            # FIXME We need to make sure ChIPS is initialized.
+            # As a hack, we just call begin() and end() on the chips backend
+            # To make sure the backend is initialized before we start creating windows.
+            if _plot_pkg == 'chips':
+                try:
+                    chips_backend.begin()
+                finally:
+                    chips_backend.end()
             for dataset in self.filter_datasets():
                 if _plot_pkg == 'chips':
                     try:
