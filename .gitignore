@@ -1,4 +1,3 @@
-
 *.py[cod]
 
 # C extensions
@@ -37,6 +36,7 @@ nosetests.xml
 .pydevproject
 .spyderproject
 /.settings
+.idea
 
 # Autotools
 **/autom4te.cache

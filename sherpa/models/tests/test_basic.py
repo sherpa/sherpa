@@ -52,4 +52,4 @@ class test_basic(SherpaTestCase):
                 self.assert_(out.dtype.type is SherpaFloat)
                 self.assertEqual(out.shape, x.shape)
 
-        self.assertEqual(count, 31)
+        self.assertEqual(count, 32)

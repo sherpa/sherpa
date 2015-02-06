@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE cxchelptopics SYSTEM "CXCHelp.dtd">
+<cxchelptopics>
+  <ENTRY context="group" key="grpGetGrpNum" refkeywords="grp group get num calculate" seealsogroups="group-api">
+    <SYNOPSIS>
+      Calculate the group number for each element in the array.
+    </SYNOPSIS>
+    <SYNTAX>
+    	<LINE>
+      Integer_Type grpnum = grpGetGrpNum( PyArray_Type grouping )
+      </LINE>
+    </SYNTAX>
+
+    <DESC>
+
+      <PARA>
+	This function calculates which group each element in
+	the input array belongs to, where the groups are numbered from
+	1.
+	The return value is an array whose length equals
+	that of the input data (the grouping argument)
+	and each element within a group contains the same value.
+	As an example,
+	<EQUATION>grpGetGroupNum( numpy.array([1,-1,1,-1,1,1]) )</EQUATION>
+	will return the array
+	<EQUATION>array([1,1,2,2,3,4])</EQUATION>
+	since the groups consist of the first two elements,
+	then the next two elements, with the last two elements
+	being un-grouped.
+      </PARA>
+
+
+      <PARA>
+        The group module is not available by default; to use it in a
+        Python program, it must be loaded using the Python
+         import function:
+      </PARA>
+<VERBATIM>  from group import *, or import group</VERBATIM>
+
+      <PARA>
+        In addition, in order to create arrays, the Python module numpy must
+        be loaded using the Python import function:
+      </PARA>
+<VERBATIM>  import numpy</VERBATIM>
+
+    </DESC>
+
+    <QEXAMPLELIST>
+      <QEXAMPLE>
+	<SYNTAX>
+		<LINE>&gt;&gt;&gt; igrp = grpGetGroupNum( grp )</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    The igrp array will contain the group number for
+	    each element of the input array, for the
+	    grouping scheme stored in the grp array,
+	    and has the same size as the grp array.
+	  </PARA>
+	</DESC>
+
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; x = numpy.arange(0.5, 6.0, 0.05)</LINE>
+	  <LINE>&gt;&gt;&gt; y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</LINE>
+	  <LINE>&gt;&gt;&gt; ( grp, qual ) = grpNumCounts( y, 15 )</LINE>
+	  <LINE>&gt;&gt;&gt; yavg = grpGetGroupSum( y, grp ) / grpGetChansPerGroup( grp )</LINE>
+	  <LINE>&gt;&gt;&gt; igrp = grpGetGroupNum( grp )</LINE>
+	  <LINE>&gt;&gt;&gt; i = numpy.where( grp == 1, qual, grp )</LINE>
+	  <LINE>&gt;&gt;&gt; j = numpy.where(i == 0)</LINE>
+
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    Here we take the function
+	    <EQUATION>y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</EQUATION>
+	    and group it by 15 counts per group.
+	  </PARA>
+
+	</DESC>
+
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<DESC>
+	  <PARA>
+	    To see more examples of optional parameters and keywords
+	    in the parameter list, please see
+	    ahelp grpadaptive
+	  </PARA>
+	</DESC>
+	</QEXAMPLE>
+
+    </QEXAMPLELIST>
+
+    <BUGS>
+      <PARA>
+        See the
+        <HREF link="http://cxc.harvard.edu/ciao/bugs/group.html">bugs page
+          for the group library</HREF>
+        on the CIAO website for an up-to-date listing of known bugs.
+      </PARA>
+    </BUGS>
+
+    <LASTMODIFIED>December 2013</LASTMODIFIED>
+
+  </ENTRY>
+</cxchelptopics>

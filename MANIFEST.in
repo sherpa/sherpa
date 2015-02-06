@@ -1,8 +1,20 @@
+graft extern
+graft recipes
+
+include versioneer.py
+
+include README.md
+
+recursive-include helpers *.py
+
 # Header files
 recursive-include sherpa/include *.hh
 
 # Test files
 recursive-include sherpa test_*.py
+include sherpa/tests/*
+include sherpa/astro/datastack/tests/*
+include sherpa/astro/datastack/tests/data/*
 
 # XSPEC module sources
 include sherpa/astro/xspec/src/*.cc
@@ -21,16 +33,10 @@ include sherpa/utils/src/gen-pykdtree.py
 include sherpa/optmethods/tests/tstoptfct.hh
 include sherpa/optmethods/tests/tstopt.hh
 
-
 # Sherpa executable
 include sherpa/sherpa
 include sherpa/ipythonrc-sherpa
 include sherpa/sherpa_py
 include sherpa/sherpa.rc
 
-# Sherpa distutils
-#include _addons.py
-#include build_clib.py
-#include build_ext.py
-#include _fileLister.py
-#include install_lib.py
+

@@ -1,0 +1,26 @@
+package:
+ name: sherpa
+ version: "4.7b1"
+
+build:
+ number: 2
+
+ entry_points:
+  - sherpa_test = sherpa:clitest
+
+requirements:
+ build:
+  - python 2.7.*
+  - numpy 1.8.*
+  - setuptools
+
+ run:
+  - python 2.7.*
+  - numpy 1.8.*
+  - setuptools
+
+about:
+ home: http://cxc.cfa.harvard.edu/sherpa/
+ summary: Sherpa is the CIAO modeling and fitting application. It enables the user to construct complex models from simple definitions and fit those models to data, using a variety of statistics and optimization methods
+ license: GPLv3
+

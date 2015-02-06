@@ -18,7 +18,7 @@ class test_plot(SherpaTestCase):
                             bin_lo = numpy.arange(0.1, 10, 0.1),
                             bin_hi = numpy.arange(0.2, 10.1, 0.1) )
         self.data.units="energy"
-        self.src = PowLaw1D('p1')*XSphabs('abs1')
+        self.src = PowLaw1D('p1')*AbsorptionGaussian('abs1')
 
     def tearDown(self):
         logger.setLevel(self.old_level)

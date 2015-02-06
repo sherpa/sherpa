@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE cxchelptopics SYSTEM "CXCHelp.dtd">
+<cxchelptopics>
+<ENTRY context="group" key="group" refkeywords="bin module rebin regrid interface library Python python import require load" seealsogroups="group-api">
+    <SYNOPSIS>
+      Provides the Python interface to the CXC grouping library
+    </SYNOPSIS>
+    <DESC>
+      <PARA>
+	The group module is the interface between the Python interpreter
+	and the CXC group library (see "ahelp dmgroup"), which bins
+	data based on various user-selected rules.  This document
+	provides an overview of the features of the group module, and
+	shows how to use it in a Python program. Detailed descriptions
+	of each function are provided by individual ahelp pages.
+      </PARA>
+      <PARA>
+	The group module is not available by default; to use it in
+	a Python program, it must be loaded using the Python import
+	function, by saying one of:
+      </PARA>
+<VERBATIM>
+from group import *
+import group
+</VERBATIM>
+
+      <PARA title="Functions provided by the module">
+	The following functions are provided by the module; use
+	"ahelp &lt;function&gt;" to get a detailed description
+	of a function:
+      </PARA>
+
+      <TABLE>
+	<ROW><DATA>Function</DATA><DATA>Description</DATA></ROW>
+        <ROW><DATA>grpNumCounts</DATA><DATA>Group by the number of counts</DATA></ROW>
+        <ROW><DATA>grpNumBins</DATA><DATA>Group by the number of input bins</DATA></ROW>
+        <ROW><DATA>grpBinWidth</DATA><DATA>Group by the bin width</DATA></ROW>
+        <ROW><DATA>grpSnr</DATA><DATA>Group by the signal-to-noise value</DATA></ROW>
+        <ROW><DATA>grpAdaptive</DATA><DATA>Adaptive binning based on the number of counts</DATA></ROW>
+        <ROW><DATA>grpAdaptiveSnr</DATA><DATA>Adaptive binning based on the signal-to-noise value</DATA></ROW>
+        <ROW><DATA>grpMinSlope</DATA><DATA>Ensure the gradient is below a value</DATA></ROW>
+        <ROW><DATA>grpMaxSlope</DATA><DATA>Ensure the gradient is above a value</DATA></ROW>
+        <ROW><DATA>grpBin</DATA><DATA>Select the individual bin edges</DATA></ROW>
+        <ROW><DATA>grpBinFile</DATA><DATA>Read the grouping information from a file</DATA></ROW>
+        <ROW><DATA>grpGetGroupSum</DATA><DATA>Group an array</DATA></ROW>
+        <ROW><DATA>grpGetChansPerGroup</DATA><DATA>Calculate the size of each grouped element</DATA></ROW>
+        <ROW><DATA>grpGetGrpNum</DATA><DATA>Calculate the element numbering in the given grouping scheme</DATA></ROW>
+      </TABLE>
+
+      <PARA title="Purpose">
+         The group module is intended to take an array of counts and
+         group it, summing certain adjacent bins to increase the overall
+         signal to noise.  The available routines can group bins until
+         each bin has a minimum number of counts (grpNumCounts), or
+         until there are a fixed number of bins (grpNumBins), or
+         simply group a fixed number of bins together (grpBinWidth).
+         More complex grouping algorithms exist to bin data adaptively
+         until a minimum signal to noise ratio is met, as well as
+         other methods.  
+      </PARA>
+
+      <PARA title="Optional Parameters">
+         Some parameters are optional; these are shown in the function
+         calls listed in the individual ahelp pages inside []s.  Any optional parameter can be
+         omitted; if you want to use the default for one optional parameter
+         but set an optional parameter that follows it, simply use a keyword
+         in front of the included optional parameter.  
+      </PARA>
+
+      <PARA title="Function output">
+	Most of the grouping functions output two arrays, a grouping
+	array and a quality array.  The grouping array is a vector
+	the same length as the data to be grouped.  The grouping
+	vector is 1 at the start of a new "grouped" bin and
+	-1 at a continuation.  A grouping array of
+	<EQUATION>[ 1, -1, 1, -1, 1, -1 ]</EQUATION>
+	indicates that a 6 element array will be grouped into
+	3 groups, each containing 2 elements.
+	The quality array is the same length, with
+	values of 0 to indicate good data, 5 to indicate data omitted
+	by the user in the grouping call (i.e., within a tabStop), or 2
+	to indicate data without enough channels to make a complete
+	bin (i.e., the 13th channel in a 13-element array binned by
+	3s).
+	For the complete definition of these two arrays,
+	see the <HREF link="http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/">OGIP Memo
+         OGIP/92-007</HREF>
+       </PARA>
+    </DESC>
+
+    <QEXAMPLELIST>
+      <QEXAMPLE>
+	<DESC>
+	  <PARA>
+	    Given the following:
+	  </PARA>
+	  <PARA>
+	    <SYNTAX>
+	      <LINE>&gt;&gt;&gt; from group import *</LINE>
+	      <LINE>&gt;&gt;&gt; import numpy as np</LINE>
+	      <LINE>&gt;&gt;&gt; ChanArr = np.arange(1, 1025, 1)</LINE>
+	      <LINE>&gt;&gt;&gt; CountArr = 5 + 3 * np.sin(ChanArr/100)</LINE>
+	    </SYNTAX>
+	  </PARA>
+	  <PARA>
+	    we can group to get at least 5 counts per bin, with a
+	    maximum of 10 channels binned together by saying
+	  </PARA>
+	  <PARA>
+	    <SYNTAX>
+	      <LINE>&gt;&gt;&gt; (grpArr1, QualArr1) = grpNumCounts(CountArr, 5, 10)</LINE>
+	    </SYNTAX>
+	  </PARA>
+	  <PARA>
+	    or group the input vector into 150 bins
+	  </PARA>
+	  <PARA>
+	    <SYNTAX>
+	      <LINE>&gt;&gt;&gt; (grpArr2, QualArr2) = grpNumBins(1024, 150)</LINE>
+	      <LINE>#   (CIAO): WARNING: More groups produced than requested.</LINE>
+	    </SYNTAX>
+	  </PARA>
+	  <PARA>
+	    where the error message indicates that not all input elements could be
+	    fit into the requested scheme (these "excess" elements are indicated with
+	    a quality value of 2 in the QualArr2 array).
+	  </PARA>
+
+	  <PARA>
+	    Once a grouping scheme has been created - in this example the
+	    grpArr1 scheme created above - we can apply it
+	    to create the grouped data using grpGetGroupSum():
+	  </PARA>
+	  <PARA>
+	    <SYNTAX>
+	      <LINE>&gt;&gt;&gt; GrpCount1 = grpGetGroupSum(CountArr, grpArr1)</LINE>
+	    </SYNTAX>
+	  </PARA>
+	  <PARA>
+	    Here we extract the left-edge of each grouped bin as x1 and the
+	    corresponding grouped value as y1
+	  </PARA>
+	  <PARA>
+	    <SYNTAX>
+	      <LINE>&gt;&gt;&gt; f = grpArr1 == 1</LINE>
+	      <LINE>&gt;&gt;&gt; x1 = ChanArr[f]</LINE>
+	      <LINE>&gt;&gt;&gt; y1 = GrpCount1[f]</LINE>
+	    </SYNTAX>
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+    </QEXAMPLELIST>
+
+    <BUGS>
+      <PARA>
+        See the
+        <HREF link="http://cxc.harvard.edu/ciao/bugs/group.html">bugs page
+          for the group library</HREF>
+        on the CIAO website for an up-to-date listing of known bugs.
+      </PARA>
+    </BUGS>
+
+    <LASTMODIFIED>December 2013</LASTMODIFIED>
+
+  </ENTRY>
+</cxchelptopics>

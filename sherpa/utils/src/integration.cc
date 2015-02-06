@@ -1,10 +1,10 @@
 //_C++_INSERT_SAO_COPYRIGHT_HERE_(2007)_
 //_C++_INSERT_GPL_LICENSE_HERE_
 #define _INTEGRATIONMODULE
+#include <Python.h>
 #include "sherpa/integration.hh"
 #include <iostream>
 #include <limits>
-#include <Python.h>
 #include "gsl_errno.h"
 #include "gsl_integration.h"
 #include "adapt_integrate.h"

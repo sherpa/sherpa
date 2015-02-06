@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE cxchelptopics SYSTEM "CXCHelp.dtd">
+<cxchelptopics>
+  <ENTRY context="group" key="grpMinSlope" refkeywords="MIN_SLOPE grp group min slope gradient maxlength tabstops" seealsogroups="group-api">
+    <SYNOPSIS>
+      Group an array so that its absolute gradient is below a user-defined limit.
+    </SYNOPSIS>
+    <SYNTAX>
+
+      <LINE>
+	grpMinSlope( PyArray_Type axisArray, PyArray_Type dataArray, Double_Type slope )
+      </LINE>
+      <LINE>
+	grpMinSlope( PyArray_Type axisArray, PyArray_Type dataArray, Double_Type slope,
+	Integer_Type maxLength )
+      </LINE>
+      <LINE>
+	grpMinSlope( PyArray_Type axisArray, PyArray_Type dataArray, Double_Type slope,
+	Integer_Type maxLength, Array_Type tabStops )
+      </LINE>
+      <LINE />
+      <LINE>
+	Returns: ( PyArray_Type grouping, PyArray_Type quality )
+      </LINE>
+
+    </SYNTAX>
+
+    <DESC>
+
+      <PARA>
+	In this routine, groups are created when the absolute value of
+	the slope of the input data (the axisArray and binArray
+	arguments) is more than the threshold value (the slope
+	argument).  The slope is calculated as
+	<EQUATION>delta[dataArray] / delta[axisArray]</EQUATION>
+      </PARA>
+      <PARA>
+	The optional parameters maxLength and tabStops
+	represent the maximum number of elements
+	that can be combined and an array representing those
+	elements that should be ignored respectively.
+      </PARA>
+      <PARA>
+	This function provides the same functionality
+	as the MIN_SLOPE option of dmgroup.
+      </PARA>
+
+      <PARA>
+        The group module is not available by default; to use it in a
+        Python program, it must be loaded using the Python
+         import function:
+      </PARA>
+<VERBATIM>  from group import *, or import group</VERBATIM>
+
+      <PARA>
+        In addition, in order to create arrays, the Python module numpy must
+        be loaded using the Python import function:
+      </PARA>
+<VERBATIM>  import numpy</VERBATIM>
+
+    </DESC>
+
+    <QEXAMPLELIST>
+      <QEXAMPLE>
+	<SYNTAX>
+		<LINE>&gt;&gt;&gt; (g,q) = grpMinSlope( x, y, 2 )</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    This example calculates the grouping and quality arrays
+	    that represent the input data (here the contents of the x
+	    and y arrays) in groups in which the slope is less than 2.
+	  </PARA>
+	</DESC>
+
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<SYNTAX>
+
+	  <LINE>&gt;&gt;&gt; x = numpy.arange(1,11)</LINE>
+	  <LINE>&gt;&gt;&gt; y = numpy.array([1, 2, 10, 1, 1, 20, 40, 80, 20, 2 ])</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpMinSlope( x, y, 2 )</LINE>
+	  <LINE>&gt;&gt;&gt; ysum = grpGetGroupSum( y, g )</LINE>
+	  <LINE>&gt;&gt;&gt; nchan = grpGetChansPerGroup( g )</LINE>
+	  <LINE>&gt;&gt;&gt; i = numpy.where( g == 1 )</LINE>
+	  <LINE>&gt;&gt;&gt; yavg = ysum[i] / nchan[i]</LINE>
+
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    Here we take a dataset that is essentially flat,
+	    except for one point, and group it so that the
+	    resulting groups differ by a slope of no more
+	    than 2.
+	  </PARA>
+	</DESC>
+
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<DESC>
+	  <PARA>
+	    To see more examples of optional parameters and keywords
+	    in the parameter list, please see
+	    ahelp grpadaptive
+	  </PARA>
+	</DESC>
+	</QEXAMPLE>
+
+    </QEXAMPLELIST>
+
+    <BUGS>
+      <PARA>
+        See the
+        <HREF link="http://cxc.harvard.edu/ciao/bugs/group.html">bugs page
+          for the group library</HREF>
+        on the CIAO website for an up-to-date listing of known bugs.
+      </PARA>
+    </BUGS>
+
+    <LASTMODIFIED>December 2013</LASTMODIFIED>
+
+  </ENTRY>
+</cxchelptopics>

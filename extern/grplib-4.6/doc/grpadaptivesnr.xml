@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE cxchelptopics SYSTEM "CXCHelp.dtd">
+<cxchelptopics>
+  <ENTRY context="group" key="grpAdaptiveSnr" refkeywords="ADAPTIVE_SNR grp group adapt snr signal noise count counts countsarray numcounts maxlength tabstops errorcol" seealsogroups="group-api">
+    <SYNOPSIS>
+      Adaptively group an array by signal to noise.
+    </SYNOPSIS>
+    <SYNTAX>
+      <LINE>
+	grpAdaptiveSnr( PyArray_Type countsArray, Double_Type snr )
+      </LINE>
+      <LINE>
+	grpAdaptiveSnr( PyArray_Type countsArray, Double_Type snr,
+	Integer_Type maxLength )
+      </LINE>
+      <LINE>
+	grpAdaptiveSnr( PyArray_Type countsArray, Double_Type snr,
+	Integer_Type maxLength, Array_Type tabStops )
+      </LINE>
+      <LINE>
+	grpAdaptiveSnr( PyArray_Type countsArray, Double_Type snr,
+	Integer_Type maxLength, PyArray_Type tabStops, PyArray_Type errorCol )
+      </LINE>
+      <LINE />
+      <LINE>
+	Returns: ( PyArray_Type grouping, PyArray_Type quality )
+      </LINE>
+    </SYNTAX>
+
+    <DESC>
+      <PARA>
+	This function returns the grouping and quality arrays
+	that represent the input data (countsArray) after
+	it has been adaptively grouped so that the signal to noise
+	of each group is at least equal to the snr parameter.
+	The optional parameters maxLength and tabStops
+	represent the maximum number of elements
+	that can be combined into a group and an array representing those
+	elements that should be ignored respectively.
+	The errorCol array gives the error for each element of
+	the original array: if it is not supplied then
+	the error is taken to be the square root of the
+	element value.
+      </PARA>
+      <PARA>
+	This function provides the same functionality
+	as the ADAPTIVE_SNR option of dmgroup.
+      </PARA>
+
+      <PARA>
+        The group module is not available by default; to use it in a
+        Python program, it must be loaded using the Python
+         import function:
+      </PARA>
+<VERBATIM>  from group import *, or import group</VERBATIM>
+
+    </DESC>
+
+    <QEXAMPLELIST>
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpAdaptiveSnr( y, 5 )</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    This example calculates the grouping and quality arrays
+	    that represent the input data (here the contents of the y
+	    array) after it has been adaptively grouped to have a signal to noise of
+	    at least 5 per group.
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; x = numpy.arange(0.5, 6.0, 0.05)</LINE>
+	  <LINE>&gt;&gt;&gt; y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpAdaptiveSnr( y, 5 );</LINE>
+	  <LINE>&gt;&gt;&gt; ysum = grpGetGroupSum( y, g );</LINE>
+	  <LINE>&gt;&gt;&gt; nchan = grpGetChansPerGroup( g );</LINE>
+	  <LINE>&gt;&gt;&gt; i = numpy.where( g == 1 )</LINE>
+	  <LINE>&gt;&gt;&gt; yavg = ysum[i] / nchan[i];</LINE>
+	</SYNTAX>
+	<DESC>
+	  <PARA>
+	    Here we take the function
+	    <EQUATION> y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 ))</EQUATION>
+	    and adaptively group it so that the signal-to-noise of the
+	    group is at least 5.
+	  </PARA>
+	  <PARA>
+	    Unlike the simple grouping done by grpSnr() - where
+	    only the end element(s) may have non-zero quality values - the
+	    adaptive grouping scheme can create
+	    groups with non-zero quality anywhere in the array.
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<DESC>
+	  <PARA>
+	    To see more examples of optional parameters and keywords
+	    in the parameter list, please see
+	    ahelp grpadaptive
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+    </QEXAMPLELIST>
+
+    <BUGS>
+      <PARA>
+        See the
+        <HREF link="http://cxc.harvard.edu/ciao/bugs/group.html">bugs page
+          for the group library</HREF>
+        on the CIAO website for an up-to-date listing of known bugs.
+      </PARA>
+    </BUGS>
+
+    <LASTMODIFIED>December 2013</LASTMODIFIED>
+
+  </ENTRY>
+</cxchelptopics>

@@ -104,8 +104,23 @@ def test(level=1, verbosity=1, datadir=None):
     (including the discipline-specific ones)
     
     """
-
-    import sherpa.all
-    import sherpa.astro.all
+    # import sherpa.all
+    # import sherpa.astro.all
     from sherpa.utils import SherpaTest
     SherpaTest().test(level, verbosity, datadir)
+
+def clitest():
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option("-l", "--level", dest="level",
+                  help="Test Level", default=1)
+    parser.add_option("-v", "--verbosity", dest="verbosity",
+                  help="Test Verbosity", default=1)
+    parser.add_option("-d", "--datadir", dest="datadir",
+                  help="Test Level", default=None)
+    (options, _) = parser.parse_args()
+    test(options.level, options.verbosity, options.datadir)
+
+from ._version import get_versions
+#__version__ = get_versions()['version']
+del get_versions
