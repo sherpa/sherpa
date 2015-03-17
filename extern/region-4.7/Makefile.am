@@ -1,0 +1,11 @@
+AUTOMAKE_OPTIONS = foreign
+
+ACLOCAL_AMFLAGS = -I m4 
+
+if STANDALONE
+SUBDIRS = src
+else
+SUBDIRS = src regtest
+endif
+
+DIST_SUBDIRS = $(SUBDIRS)
