@@ -97,7 +97,7 @@ class sherpa_config(Command):
                 self.stk_location=self.install_dir+'/lib/python2.7/site-packages/stk.so'
 
         def build_configure(self):
-            configure = ['./configure', '--prefix='+self.install_dir, '--with-pic']
+            configure = ['./configure', '--prefix='+self.install_dir, '--with-pic', '--enable-standalone']
             if self.group_cflags is not None:
                 configure.append('GROUP_CFLAGS="'+self.group_cflags+'"')
             if self.configure != 'None':
