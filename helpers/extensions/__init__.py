@@ -200,16 +200,16 @@ statfcts = Extension('sherpa.stats._statfcts',
               sherpa_inc,
               depends=get_deps(['stat_extension', 'stats']))
 
-pykdtree = Extension('sherpa.utils._pykdtree',
-              ['sherpa/utils/src/_pykdtree.cc'],
-              sherpa_inc + ['sherpa/utils/src'],
-              depends=(get_deps([]) +
-                       ['sherpa/utils/src/kdtree++/allocator.hpp',
-                        'sherpa/utils/src/kdtree++/function.hpp',
-                        'sherpa/utils/src/kdtree++/iterator.hpp',
-                        'sherpa/utils/src/kdtree++/kdtree.hpp',
-                        'sherpa/utils/src/kdtree++/region.hpp',
-                        'sherpa/utils/src/kdtree++/node.hpp']))
+#pykdtree = Extension('sherpa.utils._pykdtree',
+#              ['sherpa/utils/src/_pykdtree.cc'],
+#              sherpa_inc + ['sherpa/utils/src'],
+#              depends=(get_deps([]) +
+#                       ['sherpa/utils/src/kdtree++/allocator.hpp',
+#                        'sherpa/utils/src/kdtree++/function.hpp',
+#                        'sherpa/utils/src/kdtree++/iterator.hpp',
+#                        'sherpa/utils/src/kdtree++/kdtree.hpp',
+#                        'sherpa/utils/src/kdtree++/region.hpp',
+#                        'sherpa/utils/src/kdtree++/node.hpp']))
 
 integration = Extension('sherpa.utils.integration',
               ['sherpa/utils/src/gsl/err.c',
@@ -289,7 +289,7 @@ static_ext_modules = [
                    saoopt,
                    tstoptfct,
                    statfcts,
-                   pykdtree,
+#                   pykdtree,
                    integration,
                    astro_modelfcts,
                    pileup,
