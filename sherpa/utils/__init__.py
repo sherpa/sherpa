@@ -222,6 +222,23 @@ class SherpaTestCase(numpytest.NumpyTestCase):
         self.assert_(numpy.all(sao_fcmp(first, second, tol)), msg)
 
 
+def needs_xspec(meth):
+    """
+    Decorator for tests requiring the xspec extension, similar to needs_data.
+
+    :param meth:
+    :return:
+    """
+    def new_meth(self):
+        try:
+            from sherpa.astro import xspec
+        except:
+            return
+        return meth(self)
+    new_meth.__name__ = meth.__name__
+    return new_meth
+
+
 def needs_data(meth):
     """
 

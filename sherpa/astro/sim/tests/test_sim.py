@@ -21,13 +21,12 @@
 import logging
 import os
 import os.path
-from sherpa.utils import SherpaTest, SherpaTestCase, needs_data
+from sherpa.utils import SherpaTest, SherpaTestCase, needs_data, needs_xspec
 import sherpa.astro.sim as sim
 
 from sherpa.astro.instrument import Response1D
 from sherpa.astro.io import read_pha
 from sherpa.astro.data import DataPHA
-from sherpa.astro.xspec import XSwabs, XSpowerlaw
 from sherpa.fit import Fit
 from sherpa.stats import Cash, CStat
 from sherpa.optmethods import NelderMead
@@ -40,6 +39,10 @@ logger = logging.getLogger('sherpa')
 class test_sim(SherpaTestCase):
 
     def setUp(self):
+        try:
+            from sherpa.astro.xspec import XSwabs, XSpowerlaw
+        except:
+            return
         #self.startdir = os.getcwd()
         self.old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.CRITICAL)
@@ -69,9 +72,10 @@ class test_sim(SherpaTestCase):
 
     def tearDown(self):
         #os.chdir(self.startdir)
-        logger.setLevel(self.old_level)
+        if hasattr(self,'old_level'):
+            logger.setLevel(self.old_level)
 
-
+    @needs_xspec
     @needs_data
     def test_pragbayes_simarf(self):
         datadir = SherpaTestCase.datadir
@@ -101,7 +105,7 @@ class test_sim(SherpaTestCase):
         #     print 'param: ', str(params.std(1))
         #     raise
 
-
+    @needs_xspec
     @needs_data
     def test_pragbayes_pcaarf(self):
         datadir = SherpaTestCase.datadir
