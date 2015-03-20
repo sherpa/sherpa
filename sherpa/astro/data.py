@@ -582,7 +582,7 @@ class DataPHA(Data1DInt):
                 elo, ehi, lookuptable = compile_energy_grid(energylist)
             elif (not energylist or
                   ( len(energylist) == 1 and
-                    energylist[0] == (None,None) )):
+                    numpy.equal(energylist[0], None).any() )):
                 raise DataErr('noenergybins', 'Response')
             else:
                 elo, ehi = energylist[0]

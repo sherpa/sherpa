@@ -393,7 +393,7 @@ class DataSimulFit(Data):
 
         if no_staterror:
             total_staterror = None
-        elif None in total_staterror:
+        elif numpy.any([numpy.equal(array, None).any() for array in total_staterror]):
             raise DataErr('staterrsimulfit')
         else:
             total_staterror = numpy.concatenate(total_staterror)
