@@ -3,6 +3,9 @@
 #include "sherpa/stat_extension.hh"
 #include "sherpa/stats.hh"
 
+extern "C" {
+	void init_statfcts();
+}
 
 static PyMethodDef StatFcts[] = {
 

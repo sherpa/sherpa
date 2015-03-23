@@ -27,6 +27,11 @@ struct est_return_code {
   int nfits;
 };
 
+
+static double get_stat(double* new_min_stat, double* new_min_parval,
+               const int parnum, const double* pars,
+               const double* pars_mins, const double* pars_maxs,
+               const int numpars, double (*fcn)(double*, int));
 int neville( int n, const double *x, const double *y, double xinterp,
 	     double& answer ) throw();
 int at_param_space_bound(const double par, 
