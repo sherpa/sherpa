@@ -24,7 +24,7 @@ est_return_code info_matrix(double* original_pars, const int op_size,
 			    const double remin,
 			    double (*fcn)(double*, int)) throw()
 {
-    int iter = 5;
+    int iter = 3;
     int i,j,k;
     int numpars = op_size;
     est_return_code status;
