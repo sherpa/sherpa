@@ -171,13 +171,13 @@ def _require_col(hdu, name, dtype=SherpaFloat, fix_type=False):
 
 def _require_tbl_col(hdu, name, dtype=SherpaFloat, fix_type=False):
     col = _try_tbl_col(hdu, name, dtype, fix_type)
-    if len(col) > 0 and col[0]==None:
+    if len(col) > 0 and col[0] is None:
         raise IOErr('reqcol', name, hdu._file.name)
     return col
 
 def _require_vec(hdu, name, size=2, dtype=SherpaFloat, fix_type=False):
     col = _try_vec(hdu, name, size, dtype, fix_type)
-    if None in list(col):
+    if numpy.equal(col, None).any():
         raise IOErr('reqcol', name, hdu._file.name)
     return col
 
