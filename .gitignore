@@ -48,3 +48,5 @@ MANIFEST
 # VIM temporary files
 *~
 
+# Ipython notebooks
+.ipynb_checkpoints
