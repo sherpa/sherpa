@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2007,2014  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007,2014,2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -87,13 +87,15 @@ def get_include():
 def get_config():
     "Get the path for the installed Sherpa configuration file"
 
+    filename = "sherpa-standalone.rc"
+
     home_dir = None
     config = None
 
     # If NOSHERPARC is set, read in system config file
     # ignore any user config file
     if (os.environ.has_key('NOSHERPARC') == True):
-        return os.path.join(os.path.dirname(__file__), 'sherpa.rc')
+        return os.path.join(os.path.dirname(__file__), filename)
     
     # If SHERPARC is set, read in config file from there,
     # and ignore default location
@@ -105,13 +107,13 @@ def get_config():
     # SHERPARC was not set, so look for .sherpa.rc in default
     # location, which is user's home directory.
     home_dir = os.environ.get('HOME')
-    config = os.path.join(home_dir, '.sherpa.rc')
+    config = os.path.join(home_dir, '.'+filename)
 
     if os.path.isfile(config):
         return config
 
     # If no user config file is set, fall back to system config file
-    return os.path.join(os.path.dirname(__file__), 'sherpa.rc')
+    return os.path.join(os.path.dirname(__file__), filename)
 
     
 def test(level=1, verbosity=1, datadir=None):

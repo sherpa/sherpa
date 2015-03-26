@@ -34,5 +34,5 @@ include sherpa/sherpa
 include sherpa/ipythonrc-sherpa
 include sherpa/sherpa_py
 include sherpa/sherpa.rc
-
+include sherpa/sherpa-standalone.rc
 
