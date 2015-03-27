@@ -4,6 +4,8 @@ graft recipes
 include versioneer.py
 
 include README.md
+include COPYRIGHT
+include LICENSE
 
 recursive-include helpers *.py
 

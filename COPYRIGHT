@@ -1,0 +1,66 @@
+Original Sherpa and CIAO code is
+Copyright (c) 2004-2015 Smithsonian Astrophysical Observatory
+
+Sherpa includes, redistributes, and/or links against third party software in
+its original form or modified according to its license terms.
+Copyright for third party software belongs to the original authors.
+
+The original copyright notice and license terms were included in the
+appropriate source code files according to the terms of the licenses
+under which they were originally released.
+
+We include below the list of codes that Sherpa includes, redistributes,
+and/or links against. If you think the information below contains any errors
+please contact us at cxchelp [at] head.cfa.harvard.edu
+
+To the best of the Sherpa authors knowledge, all the licenses for the software
+listed below are compatible with the GPLv3 license, and in compliance with
+their licenses Sherpa is released under the terms of the GPLv3 license.
+
+GNU Scientific Library, various authors, released under the terms of the
+GNU General Public Licence v2+
+
+Pileup, rebin_histogram, by John E. Davis, for the
+Massachusetts Institute of Technology, release under the terms of the
+GNU General Public License v2+
+
+adapt_integrate, by Steven G. Johnson, based on GNU GSL by Brian Gough
+and HIntLib by Rudolf Schuerer, all distributed under the terms of the
+GNU General Publice License v2+
+
+fftn, various authors, is released under the terms of the GPL
+license.
+
+pyfits, various authors, released under the terms of the BSD license:
+see http://www.stsci.edu/institute/software_hardware/pyfits
+
+numpy, various authors, released under the terms of the 3-clause
+BSD license, see http://www.numpy.org/
+
+matplotlib, various authors, release under the terms of the
+PSF license, see http://matplotlib.org/
+
+wcssubs, by Jessica Mink for the Smithsonian Astrophysical
+Observatory. The code may be derived from other authors, full
+information is available in the extern/wcssubs/ directory
+of this archive. wcssubs is released under the terms of the
+LGPLv2.1+ license.
+
+fftw3, various authors, released under the terms of the GPLv2+
+license.
+
+Xspec 12 was developed by Keith Arnaud, Ben Dorman, and Craig Gordon,
+HEASARC Software Development, Astrophysics Science Divsion,
+Code 660.1, NASA/GSFC, Greenbelt MD 20771
+
+libgfortran, various authors, is released under the terms of the
+GPLv3 license, with the GCC Runtime Library Exception.
+
+minim.f and syminv, various authors, are released in the public domain.
+
+cephes library, various authors, is released under the terms of the
+GPLv3+ license.
+
+minpack was developed by the University of Chicago, as Operator of
+Argonne National Laboratory, under the terms described at:
+http://netlib.org/minpack/disclaimer
