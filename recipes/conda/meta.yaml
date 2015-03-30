@@ -1,6 +1,6 @@
 package:
  name: sherpa
- version: "4.7b3"
+ version: "4.7rc1"
 
 build:
  number: 1
