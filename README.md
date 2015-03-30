@@ -75,10 +75,11 @@ Anaconda-powered environment, not the full Anaconda distribution.
 If you have Anaconda already installed on your system you can use it to seamlessly
 install Sherpa.
 
-First you need to add the Chandra X-Ray Center's channel to your configuration,
+First you need to add the Sherpa channel to your configuration,
 and then install Sherpa:
-$ conda config --add channels https://conda.binstar.org/cxc
-$ conda install sherpa
+
+    $ conda config --add channels https://conda.binstar.org/sherpa
+    $ conda install sherpa
 
 To test that your installation works, just type:
 
