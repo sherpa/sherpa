@@ -1,3 +1,8 @@
+__We are currently in the process of migrating the Sherpa development over to GitHub. While you are welcome to take a look,
+please take into account that the migration is not done yet, and some changes may be necessary in the next few weeks.
+On the other hand, you should be able to build, run, and test the code. Just be aware that the GitHub repository
+itself might be subject to change during the next few weeks, while we double check everything.__
+
 Sherpa
 ======
 Sherpa is a modeling and fitting application for Python. It contains a powerful language for combining simple models
