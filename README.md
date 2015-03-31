@@ -136,7 +136,7 @@ Add the CXC conda repositories to your configuration:
 
 Create a new environment and install Sherpa:
 
-    $ conda create -n sherpa sherpa=4.7sa
+    $ conda create -n sherpa sherpa=4.7
 
 The above command will download and install Sherpa and its dependencies in an
 isolated environment, so that Sherpa will not interfere with your System's
