@@ -33,7 +33,7 @@ Source installation is available for platforms incompatible with the binary
 builds, or for users wanting to customize the way Sherpa is built and installed.
 
 If you are in doubt about which installation to perform, you should try
-with the Conda installation (#1 and #2).
+with the Conda installation (sections 1a and #1b).
 
 
 1. Binary installation (Anaconda)
@@ -126,7 +126,7 @@ Add miniconda to your PATH:
 You may add these lines to your shell's startup script, e.g. `$HOME/.bash_profile`
 for BASH or `$HOME/.cshrc` for TCSH.
 
-Add the CXC conda repositories to your configuration:
+Add the Sherpa conda repositories to your configuration:
 
     $ conda config --add channels https://conda.binstar.org/sherpa
 
