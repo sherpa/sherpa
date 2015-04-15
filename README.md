@@ -98,8 +98,7 @@ Sherpa environment every time you want.
 
 The instructions cover both TCSH and BASH. However, Anaconda only supports
 BASH, so we recommend that you start a BASH session before installing and
-using Sherpa through Anaconda. However, we have tested the TCSH commands and
-we verified that all Sherpa tests pass when Sherpa is set up from TCSH.
+using Sherpa through Anaconda.
 
 Download the Miniconda (a minimal distribution of Anaconda) installer for your
 platform:
