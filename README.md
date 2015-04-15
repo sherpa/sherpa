@@ -208,8 +208,9 @@ You can clone the Sherpa repository with:
 
     $ git clone https://github.com/sherpa/sherpa
 
-The most stable code is available in the `master` branch. The main development
-code, which is unstable, is available in the `develop` branch. Other, even less
+The most stable code is available in the `stable` branch. The main development
+code, which is unstable, is available in the `master` branch. New features
+and bug fixes or other, even less
 stable versions of the code may be available in other branches.
 
 Custom source build
