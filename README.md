@@ -3,7 +3,7 @@ Sherpa
 ======
 Sherpa is a modeling and fitting application for Python. It contains a powerful language for combining simple models
 into complex expressions that can be fit to the data using a variety of statistics and optimization methods.
-It is easily extensible to include user models, statistics and optimization methods.
+It is easily extensible to include user models, statistics, and optimization methods.
 
 What can you do with Sherpa?
 
@@ -12,8 +12,8 @@ What can you do with Sherpa?
 - build complex model expressions
 - import and use your own models
 - use appropriate statistics for modeling Poisson or Gaussian data
-- import the new statistics, with priors if required by analysis
-- visualize a parameter space with simulations or using 1D/2D cuts of the parameter space
+- import new statistics, with priors if required by analysis
+- visualize the parameter space with simulations or using 1D/2D cuts of the parameter space
 - calculate confidence levels on the best fit model parameters
 - choose a robust optimization method for the fit: Levenberg-Marquardt, Nelder-Mead Simplex or Monte Carlo/Differential Evolution.
 - For detailed documentation see: [http://cxc.harvard.edu/sherpa](http://cxc.harvard.edu/sherpa)
@@ -228,7 +228,7 @@ with optimization flags specific for some system or architecture.
 In order to make Sherpa build its modules against a local `fftw` library, users
 need to change the default Sherpa build configuration as follows.
 
-First, make sure you download the Sherpa source tar ball, or get the source
+First, make sure you download the Sherpa source tarball, or get the source
 code from GitHub:
 
     $ git clone https://github.com/sherpa/sherpa.git
@@ -270,7 +270,7 @@ Additionaly, you will need to point Sherpa to the `libgfortran` shared library.
 These dependencies are required to build `XSPEC` itself, so they are assumed to
 be present on the system where you want to build Sherpa with `XSPEC` support.
 
-First, download the Sherpa source tar ball or get the source code from GitHub:
+First, download the Sherpa source tarball or get the source code from GitHub:
 
     $ git clone https://github.com/sherpa/sherpa.git
     $ cd sherpa
