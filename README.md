@@ -1,13 +1,9 @@
-__We are currently in the process of migrating the Sherpa development over to GitHub. While you are welcome to take a look,
-please take into account that the migration is not done yet, and some changes may be necessary in the next few weeks.
-On the other hand, you should be able to build, run, and test the code. Just be aware that the GitHub repository
-itself might be subject to change during the next few weeks, while we double check everything.__
 
 Sherpa
 ======
 Sherpa is a modeling and fitting application for Python. It contains a powerful language for combining simple models
 into complex expressions that can be fit to the data using a variety of statistics and optimization methods.
-It is easily extensible to include user models, statistics and optimization methods.
+It is easily extensible to include user models, statistics, and optimization methods.
 
 What can you do with Sherpa?
 
@@ -16,8 +12,8 @@ What can you do with Sherpa?
 - build complex model expressions
 - import and use your own models
 - use appropriate statistics for modeling Poisson or Gaussian data
-- import the new statistics, with priors if required by analysis
-- visualize a parameter space with simulations or using 1D/2D cuts of the parameter space
+- import new statistics, with priors if required by analysis
+- visualize the parameter space with simulations or using 1D/2D cuts of the parameter space
 - calculate confidence levels on the best fit model parameters
 - choose a robust optimization method for the fit: Levenberg-Marquardt, Nelder-Mead Simplex or Monte Carlo/Differential Evolution.
 - For detailed documentation see: [http://cxc.harvard.edu/sherpa](http://cxc.harvard.edu/sherpa)
@@ -37,7 +33,7 @@ Source installation is available for platforms incompatible with the binary
 builds, or for users wanting to customize the way Sherpa is built and installed.
 
 If you are in doubt about which installation to perform, you should try
-with the Conda installation (#1 and #2).
+with the Conda installation (sections 1a and #1b).
 
 
 1. Binary installation (Anaconda)
@@ -102,8 +98,7 @@ Sherpa environment every time you want.
 
 The instructions cover both TCSH and BASH. However, Anaconda only supports
 BASH, so we recommend that you start a BASH session before installing and
-using Sherpa through Anaconda. However, we have tested the TCSH commands and
-we verified that all Sherpa tests pass when Sherpa is set up from TCSH.
+using Sherpa through Anaconda.
 
 Download the Miniconda (a minimal distribution of Anaconda) installer for your
 platform:
@@ -130,7 +125,7 @@ Add miniconda to your PATH:
 You may add these lines to your shell's startup script, e.g. `$HOME/.bash_profile`
 for BASH or `$HOME/.cshrc` for TCSH.
 
-Add the CXC conda repositories to your configuration:
+Add the Sherpa conda repositories to your configuration:
 
     $ conda config --add channels https://conda.binstar.org/sherpa
 
@@ -213,8 +208,9 @@ You can clone the Sherpa repository with:
 
     $ git clone https://github.com/sherpa/sherpa
 
-The most stable code is available in the `master` branch. The main development
-code, which is unstable, is available in the `develop` branch. Other, even less
+The most stable code is available in the `stable` branch. The main development
+code, which is unstable, is available in the `master` branch. New features
+and bug fixes or other, even less
 stable versions of the code may be available in other branches.
 
 Custom source build
@@ -232,7 +228,7 @@ with optimization flags specific for some system or architecture.
 In order to make Sherpa build its modules against a local `fftw` library, users
 need to change the default Sherpa build configuration as follows.
 
-First, make sure you download the Sherpa source tar ball, or get the source
+First, make sure you download the Sherpa source tarball, or get the source
 code from GitHub:
 
     $ git clone https://github.com/sherpa/sherpa.git
@@ -274,7 +270,7 @@ Additionaly, you will need to point Sherpa to the `libgfortran` shared library.
 These dependencies are required to build `XSPEC` itself, so they are assumed to
 be present on the system where you want to build Sherpa with `XSPEC` support.
 
-First, download the Sherpa source tar ball or get the source code from GitHub:
+First, download the Sherpa source tarball or get the source code from GitHub:
 
     $ git clone https://github.com/sherpa/sherpa.git
     $ cd sherpa
