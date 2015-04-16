@@ -189,7 +189,7 @@ The prerequisites for building from source are:
  - Python: `setuptools`, `numpy`
  - System: `gcc`, `g++`, `gfortran`, `make`, `flex`, `bison`
 
-At present it is suggested that Sherpa be built with Python 2.7.
+The current Sherpa code base only works with Python 2.7.
 
 It is *highly* recommended that [`matplotlib`](http://matplotlib.org/)
 be installed, as this is used to create graphical output (although the
@@ -238,16 +238,13 @@ To test that your installation of Sherpa is working, type:
 
     $ sherpa_test
 
-which will run a small test suite (the location of this script depends
-on where the installation step chose). Note that the test may report
-several `WARNING` lines and failed attempts to load modules. These 
-messages are expected - as these are from tests of some of the optional
-packages within Sherpa - and what is important is that the test ends
-with an
-
-    OK
-
-message.
+which will run a small test suite (the script may not be in your path,
+depending on where the installation step chose to install Sherpa).
+Note that the test may report several `WARNING` lines and failed
+attempts to load modules. These messages are expected - as some of the
+tests require optional packages to be installed alongside
+Sherpa. These warnings may be ignored, as long as the test ends with
+an `OK` message.
 
 Custom source build
 ===================
