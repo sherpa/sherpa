@@ -9,6 +9,9 @@ The Versioneer
 * https://github.com/warner/python-versioneer
 * Brian Warner
 * License: Public Domain
+
+* Updated by Omar Laurino for the Chandra X-Ray Center
+
 * Compatible With: python2.6, 2.7, 3.2, 3.3, 3.4, and pypy
 * [![Latest Version]
 (https://pypip.in/version/versioneer/badge.svg?style=flat)
@@ -286,9 +289,10 @@ import os
 import re
 import subprocess
 import sys
-from distutils.command.build import build as _build
-from distutils.command.sdist import sdist as _sdist
 from distutils.core import Command
+from helpers import commands
+_sdist = commands['sdist']
+_build = commands['build']
 
 # these configuration settings will be overridden by setup.py after it
 # imports us
@@ -1034,13 +1038,13 @@ class cmd_update_files(Command):
 
 
 def get_cmdclass():
-    cmds = {'version': cmd_version,
-            'versioneer': cmd_update_files,
-            'build': cmd_build,
-            'sdist': cmd_sdist,
-            }
-    if 'cx_Freeze' in sys.modules:  # cx_freeze enabled?
-        cmds['build_exe'] = cmd_build_exe
-        del cmds['build']
+    commands['version'] = cmd_version
+    commands['update_files'] = cmd_update_files
+    commands['build'] = cmd_build
+    commands['sdist'] = cmd_sdist
 
-    return cmds
+    if 'cx_Freeze' in sys.modules:  # cx_freeze enabled?
+        commands['build_exe'] = cmd_build_exe
+        del commands['build']
+    return commands
+
