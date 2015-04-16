@@ -350,3 +350,14 @@ These options include:
 The `setup.cfg` file in the Sherpa source distribution contains more information
 about these options.
 
+History
+=======
+
+Sherpa is developed by the
+[Chandra X-ray Observatory](http://chandra.harvard.edu/) to provide
+fitting and modelling capabilities to the
+[CIAO](http://cxc.harvard.edu/ciao/) analysis package. It has been
+released onto
+[GitHub](https://github.com/sherpa/sherpa) under the
+GNU General Public Licence, version 3 for users to extend (whether
+to other areas of Astronomy or in other domains).
