@@ -58,7 +58,7 @@ Source installation is available for platforms incompatible with the binary
 builds, or for users wanting to customize the way Sherpa is built and installed.
 
 If you are in doubt about which installation to perform, you should try
-with the Conda installation (sections 1a and #1b).
+with the Conda installation (sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch)).
 
 
 1. Binary installation (Anaconda)
@@ -79,14 +79,14 @@ Binary installation
 -------------------
 
 If you already have Anaconda installed on your system, you can just follow the
-easy steps in section 1a.
+easy steps in section [1a](#1a-anaconda).
 
-If you don't have Anaconda you can follow the instructions in section 1b,
+If you don't have Anaconda you can follow the instructions in section [1b](#1b-starting-from-scratch),
 or you can install Anaconda from:
 [https://store.continuum.io/cshop/anaconda/](https://store.continuum.io/cshop/anaconda/)
-and then refer to section 1a.
+and then refer to section [1a](#1a-anaconda).
 
-Notice that section 1b. only provides instructions on how to install a minimal
+Notice that section [1b](#1b-starting-from-scratch). only provides instructions on how to install a minimal
 Anaconda-powered environment, not the full Anaconda distribution.
 
 
