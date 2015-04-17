@@ -1,3 +1,24 @@
+<!-- TOC *generated with [DocToc](https://github.com/thlorenz/doctoc)* -->
+**Table of Contents**
+
+- [Sherpa](#sherpa)
+- [How To Install Sherpa](#how-to-install-sherpa)
+  - [Binary installation](#binary-installation)
+    - [1a. Anaconda](#1a-anaconda)
+    - [1b. Starting from scratch](#1b-starting-from-scratch)
+  - [Source Build](#source-build)
+    - [2a. Extract the source tarball](#2a-extract-the-source-tarball)
+    - [2b. Get the code from the GitHub repository](#2b-get-the-code-from-the-github-repository)
+    - [2c. Build Sherpa](#2c-build-sherpa)
+    - [2d. Testing the build](#2d-testing-the-build)
+- [Custom source build](#custom-source-build)
+  - [FFTW library](#fftw-library)
+  - [XSPEC](#xspec)
+  - [Other customization options](#other-customization-options)
+- [History](#history)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 Sherpa
 ======
@@ -37,7 +58,7 @@ Source installation is available for platforms incompatible with the binary
 builds, or for users wanting to customize the way Sherpa is built and installed.
 
 If you are in doubt about which installation to perform, you should try
-with the Conda installation (sections 1a and #1b).
+with the Conda installation (sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch)).
 
 
 1. Binary installation (Anaconda)
@@ -58,14 +79,14 @@ Binary installation
 -------------------
 
 If you already have Anaconda installed on your system, you can just follow the
-easy steps in section 1a.
+easy steps in section [1a](#1a-anaconda).
 
-If you don't have Anaconda you can follow the instructions in section 1b,
+If you don't have Anaconda you can follow the instructions in section [1b](#1b-starting-from-scratch),
 or you can install Anaconda from:
 [https://store.continuum.io/cshop/anaconda/](https://store.continuum.io/cshop/anaconda/)
-and then refer to section 1a.
+and then refer to section [1a](#1a-anaconda).
 
-Notice that section 1b. only provides instructions on how to install a minimal
+Notice that section [1b](#1b-starting-from-scratch). only provides instructions on how to install a minimal
 Anaconda-powered environment, not the full Anaconda distribution.
 
 
