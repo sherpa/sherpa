@@ -1,3 +1,24 @@
+<!-- TOC *generated with [DocToc](https://github.com/thlorenz/doctoc)* -->
+**Table of Contents**
+
+- [Sherpa](#sherpa)
+- [How To Install Sherpa](#how-to-install-sherpa)
+  - [Binary installation](#binary-installation)
+    - [1a. Anaconda](#1a-anaconda)
+    - [1b. Starting from scratch](#1b-starting-from-scratch)
+  - [Source Build](#source-build)
+    - [2a. Extract the source tarball](#2a-extract-the-source-tarball)
+    - [2b. Get the code from the GitHub repository](#2b-get-the-code-from-the-github-repository)
+    - [2c. Build Sherpa](#2c-build-sherpa)
+    - [2d. Testing the build](#2d-testing-the-build)
+- [Custom source build](#custom-source-build)
+  - [FFTW library](#fftw-library)
+  - [XSPEC](#xspec)
+  - [Other customization options](#other-customization-options)
+- [History](#history)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 Sherpa
 ======
