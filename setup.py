@@ -54,6 +54,7 @@ from helpers.extensions import static_ext_modules
 
 import versioneer
 
+versioneer.VCS='git'
 versioneer.versionfile_source = 'sherpa/_version.py'
 versioneer.versionfile_build = 'sherpa/_version.py'
 versioneer.tag_prefix = ''
