@@ -1,9 +1,13 @@
 
 Sherpa
 ======
+
 Sherpa is a modeling and fitting application for Python. It contains a powerful language for combining simple models
 into complex expressions that can be fit to the data using a variety of statistics and optimization methods.
 It is easily extensible to include user models, statistics, and optimization methods.
+It provides a high-level User Interface for interactive data-analysis work,
+such as within an IPython notebook, and it can also be used as a library
+component, providing fitting and modeling capabilities to an application.
 
 What can you do with Sherpa?
 
@@ -38,15 +42,14 @@ with the Conda installation (sections 1a and #1b).
 
 1. Binary installation (Anaconda)
 
-2. Source build from source tarball
-
-3. Source build from the GitHub repository
+2. Source build (from a source tarball or the GitHub repository)
 
 Source builds can be customized, for instance:
 
-- to point to a local build of the FFTW library
+- to point to a local build of the [FFTW library](http://www.fftw.org/)
 
-- to build the `XSPEC` extension
+- to build the [`XSPEC`](https://heasarc.gsfc.nasa.gov/xanadu/xspec/)
+  extension to provide many common Astronomical X-ray spectral models 
 
 These and other customization options are descibed below.
 
@@ -181,49 +184,82 @@ terminal or deactivate the Sherpa environment.
 Source Build
 ------------
 
-
-### 2. Build from source tarball
-
-If you donwloaded the Sherpa source tarball, you can build it by:
-
-    $ tar xf sherpa-<version>.tar.gz
-    $ cd sherpa-<version>
-    $ python setup.py install
-
-Prerequisites:
+The prerequisites for building from source are:
 
  - Python: `setuptools`, `numpy`
  - System: `gcc`, `g++`, `gfortran`, `make`, `flex`, `bison`
 
+The current Sherpa code base only works with Python 2.7.
+
+It is *highly* recommended that [`matplotlib`](http://matplotlib.org/)
+be installed, as this is used to create graphical output (although the
+code can be built and used without this package), and
+[`ipython`](http://ipython.org/), which is for interactive analysis.
+Data I/O requires the [`pyfits`](http://www.stsci.edu/institute/software_hardware/pyfits) 
+package.
+
 The instructions on how to set up the prerequisites vary from system to system,
 and even on the same system there may be multiple ways of setting up the requirements.
 
-To test that your installation of Sherpa is working, type:
+There are two ways to download the source code:
 
-    $ sherpa_test
+ - as a source tarball
 
-### 3. Get the code from the GitHub repository
+ - directly from GitHub as a git repository
+
+### 2a. Extract the source tarball
+
+If you donwloaded the Sherpa source tarball, you can extract it by:
+
+    $ tar xf sherpa-<version>.tar.gz
+    $ cd sherpa-<version>
+
+### 2b. Get the code from the GitHub repository
 
 You can clone the Sherpa repository with:
 
     $ git clone https://github.com/sherpa/sherpa
+    $ cd sherpa
 
 The most stable code is available in the `stable` branch. The main development
 code, which is unstable, is available in the `master` branch. New features
 and bug fixes or other, even less
 stable versions of the code may be available in other branches.
 
+### 2c. Build Sherpa
+
+Once the code is available, it can be built and installed with:
+
+    $ python setup.py install
+
+### 2d. Testing the build
+
+To test that your installation of Sherpa is working, type:
+
+    $ sherpa_test
+
+which will run a small test suite (the script may not be in your path,
+depending on where the installation step chose to install Sherpa).
+Note that the test may report several `WARNING` lines and failed
+attempts to load modules. These messages are expected - as some of the
+tests require optional packages to be installed alongside
+Sherpa. These warnings may be ignored, as long as the test ends with
+an `OK` message.
+
 Custom source build
 ===================
+
+There are several options for customizing the Sherpa build.
 
 FFTW library
 ------------
 
-Sherpa ships with the `fftw` library source code and builds it as part of its
-own build process by default. However, users might want to point Sherpa to
-their own version of the library. This might be required because the
-performance of this library can be significantly increased by compiling it
-with optimization flags specific for some system or architecture.
+Sherpa ships with the [`fftw`](http://www.fftw.org/) library source
+code and builds it as part of its own build process by
+default. However, users might want to point Sherpa to their own
+version of the library. This might be required because the performance
+of this library can be significantly increased by compiling it with
+optimization flags specific for some system or architecture.
 
 In order to make Sherpa build its modules against a local `fftw` library, users
 need to change the default Sherpa build configuration as follows.
@@ -260,9 +296,10 @@ Then, build Sherpa in the standard way:
 XSPEC
 -----
 
-Sherpa does not support `XSPEC` models by default. However, it is possible to
-instruct Sherpa to build its `XSPEC` extension module by changing the
-build configuration options.
+Sherpa does not support
+[`XSPEC`](https://heasarc.gsfc.nasa.gov/xanadu/xspec/) models by
+default. However, it is possible to instruct Sherpa to build its
+`XSPEC` extension module by changing the build configuration options.
 
 You may need to build `XSPEC` yourself, and in any case to  point Sherpa to existing
 binary libraries for `XSPEC`, `cfitsio`, and `CCfits`.
@@ -296,9 +333,10 @@ Then, build Sherpa in the standard way:
 Other customization options
 ---------------------------
 
-Sherpa supports other build configuration options that are required to support
-Sherpa build in specific environments, for instance when building the CIAO
-analysis package. These options include:
+Sherpa supports other build configuration options that are required to
+support Sherpa build in specific environments, for instance when
+building the [CIAO analysis system](http://cxc.harvard.edu/ciao/). 
+These options include:
 
 - building Sherpa against a local version of the `CIAO` `region` and `group`
   libraries
@@ -309,4 +347,14 @@ analysis package. These options include:
 The `setup.cfg` file in the Sherpa source distribution contains more information
 about these options.
 
+History
+=======
 
+Sherpa is developed by the
+[Chandra X-ray Observatory](http://chandra.harvard.edu/) to provide
+fitting and modelling capabilities to the
+[CIAO](http://cxc.harvard.edu/ciao/) analysis package. It has been
+released onto
+[GitHub](https://github.com/sherpa/sherpa) under the
+GNU General Public Licence, version 3 for users to extend (whether
+to other areas of Astronomy or in other domains).
