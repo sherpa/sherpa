@@ -37,7 +37,7 @@ class test_more_ui(SherpaTestCase):
         os.chdir(os.path.join(self.datadir, 'ciao4.3', name))
         execfile(scriptname, {}, self.locals)
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
         self.img = self.datadir + '/img.fits'
         self.pha = self.datadir + '/threads/simultaneous/pi2286.fits'
@@ -46,7 +46,7 @@ class test_more_ui(SherpaTestCase):
         logger.setLevel(logging.ERROR)
 
     #bug 12784
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_filter_nan(self):
         self.run_thread('filternan')
         self.assertFalse(numpy.isnan(ui.get_fit_results().statval))

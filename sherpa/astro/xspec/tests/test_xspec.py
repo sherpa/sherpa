@@ -83,7 +83,7 @@ class test_xspec(SherpaTestCase):
                 error('XS%s model evaluation failed' % model)
                 raise
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_set_analysis_wave_fabrizio(self):
         rmf = self.datadir + '/ciao4.3/fabrizio/Data/3c273.rmf'
         arf = self.datadir + '/ciao4.3/fabrizio/Data/3c273.arf'
