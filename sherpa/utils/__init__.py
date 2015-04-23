@@ -29,6 +29,7 @@ from types import FunctionType as function
 from types import MethodType as instancemethod
 import string
 import sys
+import importlib
 import numpy
 import numpy.random
 import numpytest
@@ -255,6 +256,19 @@ def needs_data(meth):
         meth(self)
     new_meth.__name__ = meth.__name__
     return new_meth
+
+
+def has_package_from_list(*packages):
+    """
+    Returns True if at least one of the ``packages`` args is importable.
+    """
+    for package in packages:
+        try:
+            importlib.import_module(package)
+            return True
+        except ImportError:
+            pass
+    return False
 
 
 class SherpaTest(numpytest.NumpyTest):
