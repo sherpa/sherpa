@@ -17,10 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import unittest
 import logging
 import os
 import os.path
-from sherpa.utils import SherpaTestCase, needs_data
+from sherpa.utils import SherpaTestCase, test_data_missing
 import sherpa.astro.ui as ui
 from sherpa.astro.data import DataPHA
 

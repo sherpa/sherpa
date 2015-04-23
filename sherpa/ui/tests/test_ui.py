@@ -18,7 +18,8 @@
 #
 
 
-from sherpa.utils import SherpaTest, SherpaTestCase, needs_data
+import unittest
+from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
 from sherpa.models import ArithmeticModel, Parameter
 from sherpa.utils.err import ModelErr
 import sherpa.ui as ui

@@ -20,7 +20,8 @@
 import os
 import unittest
 
-from sherpa.utils import SherpaTest, SherpaTestCase, needs_data, has_package_from_list
+import unittest
+from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing, has_package_from_list
 import sherpa.astro.ui as ui
 import numpy
 import logging

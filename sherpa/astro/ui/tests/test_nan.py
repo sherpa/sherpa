@@ -19,7 +19,8 @@
 
 
 
-from sherpa.utils import SherpaTest, SherpaTestCase, needs_data
+import unittest
+from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
 import sherpa.astro.ui as ui
 import logging
 import os
