@@ -18,10 +18,11 @@
 #
 
 
+import unittest
 import logging
 import os
 import os.path
-from sherpa.utils import SherpaTest, SherpaTestCase, needs_data, needs_xspec
+from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing, needs_xspec
 import sherpa.astro.sim as sim
 
 from sherpa.astro.instrument import Response1D

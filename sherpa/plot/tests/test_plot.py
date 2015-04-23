@@ -17,10 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import unittest
 import numpy
 from sherpa.all import *
 #FIXME change from full import 
-from sherpa.utils import SherpaTestCase, needs_data
+from sherpa.utils import SherpaTestCase, test_data_missing
 
 
 _datax = numpy.array(

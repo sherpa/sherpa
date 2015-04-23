@@ -18,9 +18,10 @@
 #
 
 
+import unittest
 from sherpa.models import TableModel, Gauss1D
 from sherpa.models.template import TemplateModel, create_template_model
-from sherpa.utils import SherpaTest, SherpaTestCase, needs_data
+from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
 from sherpa.utils.err import ModelErr
 from sherpa import ui
 import numpy, logging, os
