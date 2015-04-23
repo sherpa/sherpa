@@ -28,25 +28,25 @@ class test_sherpa(SherpaTestCase):
         incdir = os.path.join(sherpa.get_include(), 'sherpa')
         self.assert_(os.path.isdir(incdir))
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
 	self.agn2 = self.datadir + '/ciao4.3/faulty_load_data/agn2'
 	self.agn2_fixed = self.datadir + '/ciao4.3/faulty_load_data/agn2_fixed'
 	self.template_idx = self.datadir + '/ciao4.3/faulty_load_data/table.txt'
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_not_reading_header_without_comment(self):
 	self.assertRaises(ValueError, ui.load_data, self.agn2)
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_reading_floats(self):
 	ui.load_data(self.agn2_fixed)
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_reading_strings(self):
 	ui.load_data(self.template_idx, require_floats=False)
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_require_float(self):
 	self.assertRaises(ValueError, ui.load_data, self.agn2)
 

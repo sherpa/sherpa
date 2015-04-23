@@ -25,7 +25,7 @@ import logginglogger = logging.getLogger("sherpa")
 
 class test_ui(SherpaTestCase):
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
         self.ascii = self.datadir + '/threads/ascii_table/sim.poisson.1.dat'
         self.fits = self.datadir + '/1838_rprofile_rmid.fits'
@@ -42,14 +42,14 @@ class test_ui(SherpaTestCase):
         ui.dataspace1d(1,1000,dstype=ui.Data1D)
 
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_ascii(self):
         ui.load_ascii(1, self.ascii)
         ui.load_ascii(1, self.ascii, 2)
         ui.load_ascii(1, self.ascii, 2, ("col2", "col1"))
 
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_table(self):
         ui.load_table(1, self.fits)
         ui.load_table(1, self.fits, 3)
@@ -59,44 +59,44 @@ class test_ui(SherpaTestCase):
 
 
     # Test table model
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_table_model_ascii_table(self):
         ui.load_table_model('tbl', self.singledat)
         ui.load_table_model('tbl', self.doubledat)
 
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_table_model_fits_table(self):
         ui.load_table_model('tbl', self.singletbl)
         ui.load_table_model('tbl', self.doubletbl)
 
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_table_model_fits_image(self):
         ui.load_table_model('tbl', self.img)
 
 
     # Test user model
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_user_model_ascii_table(self):
         ui.load_user_model(self.func, 'mdl', self.singledat)
         ui.load_user_model(self.func, 'mdl', self.doubledat)
 
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_user_model_fits_table(self):
         ui.load_user_model(self.func, 'mdl', self.singletbl)
         ui.load_user_model(self.func, 'mdl', self.doubletbl)
 
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_filter_ascii(self):
         ui.load_filter(self.filter_single_int_ascii)
         ui.load_filter(self.filter_single_int_ascii, ignore=True)
 
 
     # Test load_filter
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_filter_table(self):
         ui.load_filter(self.filter_single_int_table)
         ui.load_filter(self.filter_single_int_table, ignore=True)
@@ -105,7 +105,7 @@ class test_ui(SherpaTestCase):
         ui.load_filter(self.filter_single_log_table, ignore=True)
 
 class test_more_ui(SherpaTestCase):
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
         self.img = self.datadir + '/img.fits'
 	self.pha = self.datadir + '/threads/simultaneous/pi2286.fits'
@@ -113,7 +113,7 @@ class test_more_ui(SherpaTestCase):
 	logger.setLevel(logging.ERROR)
 
     #bug #12732
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_string_model_with_rmf(self):
 	ui.load_pha("foo", self.pha)
 	ui.load_rmf("foo", self.rmf)
@@ -131,14 +131,14 @@ class test_more_ui(SherpaTestCase):
 
 
 class test_image_12578(SherpaTestCase):
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
         self.img = self.datadir + '/img.fits'
 	logger.setLevel(logging.ERROR)
 	ui.clean()
     
     #bug #12578
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_set_coord_bad_coord(self):
 	from sherpa.utils.err import IdentifierErr, DataErr
 
@@ -211,13 +211,13 @@ class test_psf_ui(SherpaTestCase):
     
 class test_stats_ui(SherpaTestCase):
 
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
         self.data = self.datadir + '/threads/chi2/SWIFTJ0840.1+2946.pha.gz'
 	ui.clean()
 
     #bugs #11400, #13297, #12365    
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_chi2(self):
 
 	#Case 1: first ds has no error, second has, chi2-derived (chi2gehrels) statistic

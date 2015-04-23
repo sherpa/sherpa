@@ -76,7 +76,7 @@ class test_sim(SherpaTestCase):
             logger.setLevel(self.old_level)
 
     @needs_xspec
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_pragbayes_simarf(self):
         datadir = SherpaTestCase.datadir
         if datadir is None:
@@ -106,7 +106,7 @@ class test_sim(SherpaTestCase):
         #     raise
 
     @needs_xspec
-    @needs_data
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_pragbayes_pcaarf(self):
         datadir = SherpaTestCase.datadir
         if datadir is None:
