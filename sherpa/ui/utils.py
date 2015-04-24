@@ -1801,43 +1801,81 @@ class Session(NoNewAttributesAfterInit):
         """
         return type(self.get_stat()).__name__.lower()
 
+    ### Ahelp ingest: 2015-04-24 DJB
+    ### DOC-TODO: remove the list of supported methods once the
+    ### relevant documenation has been updated.
     def set_stat(self, stat):
-        """
-        set_stat
+        """Set the statistical method.
 
-        SYNOPSIS
-           Set the current Sherpa statistic by name
+        Changes the method used to evaluate the fit statistic, that is
+        the numerical measure that determines how closely the model
+        represents the data.
 
-        SYNTAX
+        Parameters
+        ----------
+        stat : str
+           The name of the statistic (case is not important). The
+           `list_stats` function returns the list of supported values.
 
-        Arguments:
-           name       - name of statistic
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `stat` argument is not recognized.
 
-        Returns:
-           None
+        See Also
+        --------
+        calc_stat : Calculate the statistic value for a dataset.
+        get_stat_name : Return the current statistic method.
+        list_stats : List the supported fit statistics.
 
-        DESCRIPTION
-           Available statistics include
+        Notes
+        -----
+        The available statistics include:
 
-           * 'chi2constvar'  \chi^2 with constant variance computed
-                             from the counts data.
+        `chi2constvar`
+           \chi^2 with constant variance computed from the counts
+           data.
 
-           * 'chi2modvar'    \chi^2 with model amplitude variance.
+        `chi2modvar`
+           \chi^2 with model amplitude variance.
 
-           * 'chi2gehrels'   \chi^2 with gehrels method (Sherpa default).
+        `chi2gehrels`
+           \chi^2 with gehrels method [1]_. This is the default method.
 
-           * 'chi2datavar'   \chi^2 with data variance.
+        `chi2datavar`
+           \chi^2 with data variance.
 
-           * 'chi2xspecvar'  \chi^2 with data variance (XSPEC-style,
-                             variance = 1.0 if data less than or equal to 0.0).
+        `chi2xspecvar`
+           \chi^2 with data variance (XSPEC-style,
+           variance = 1.0 if data less than or equal to 0.0).
 
-           * 'cstat'         CStat - A maximum likelihood function
-                             (XSPEC implementation of Cash).
+        `cash`
+           A maximum likelihood function [2]_.
 
-           * 'cash'          Cash  - A maximum likelihood function.
+        `cstat`
+           A maximum likelihood function
+           (the XSPEC implementation of the Cash function) [3]_.
 
-        SEE ALSO
-           list_stats, get_stat, get_stat_name
+        References
+        ----------
+
+        .. [1] Gehrels, N. "Confidence limits for small numbers of
+        events in astrophysical data", ApJ, vol 303,
+        p. 336-346 (1986).
+        http://adsabs.harvard.edu/abs/1986ApJ...303..336G
+
+        .. [2] Cash, W. "Parameter estimation in astronomy through
+        application of the likelihood ratio", ApJ, vol 228,
+        p. 939-947 (1979).
+        http://adsabs.harvard.edu/abs/1979ApJ...228..939C
+
+        .. [3] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
+
+        Examples
+        --------
+
+        >>> set_stat('cash')
+
         """
         if isinstance(stat, basestring):
             stat = self._get_stat_by_name(stat)
