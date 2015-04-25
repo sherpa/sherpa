@@ -1444,26 +1444,28 @@ class Session(NoNewAttributesAfterInit):
         """
         return type(self.get_method()).__name__.lower()
 
+    ### Ahelp ingest: 2015-04-25 DJB
     def set_method(self, meth):
-        """
-        set_method
+        """Set the optimization method.
 
-        SYNOPSIS
-           Set the Sherpa optimization method by name
+        Changes the optimization method used during model fitting,
+        that is the method used to minimize the statistic value.
 
-        SYNTAX
+        Parameters
+        ----------
+        meth : str
+           The name of the metod (case is not important). The
+           `list_methods` function returns the list of supported values.
 
-        Arguments:
-           name       - name of opt method
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `meth` argument is not recognized.
 
-        Returns:
-           None
-
-        DESCRIPTION
-
-        SEE ALSO
-           list_methods, get_method, get_method_name, get_method_opt,
-           set_method_opt
+        See Also
+        --------
+        get_method_name : Return the current optimization method.
+        list_methods : List the supported optimization methods.
         """
         if isinstance(meth, basestring):
             meth = self._get_method_by_name(meth)
