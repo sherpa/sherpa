@@ -1445,6 +1445,8 @@ class Session(NoNewAttributesAfterInit):
         return type(self.get_method()).__name__.lower()
 
     ### Ahelp ingest: 2015-04-25 DJB
+    ### DOC-TODO: remove the list of supported methods once the
+    ### relevant documenation has been updated.
     def set_method(self, meth):
         """Set the optimization method.
 
@@ -1466,6 +1468,50 @@ class Session(NoNewAttributesAfterInit):
         --------
         get_method_name : Return the current optimization method.
         list_methods : List the supported optimization methods.
+
+        Notes
+        -----
+        The available methods include:
+
+        `levmar`
+           The Levenberg-Marquardt method is an interface to the
+           MINPACK subroutine lmdif to find the local minimum of
+           nonlinear least squares functions of several variables by a
+           modification of the Levenberg-Marquardt algorithm [1]_.
+
+        `moncar`
+           The implementation of the moncar method is based on [2]_.
+
+        `neldermead`
+           The implementation of the Nelder Mead Simplex direct search
+           is based on [3]_.
+
+        `simplex`
+           This is another name for `neldermead`.
+
+        References
+        ----------
+
+        .. [1] J.J. More, "The Levenberg Marquardt algorithm:
+           implementation and theory," in Lecture Notes in Mathematics
+           630: Numerical Analysis, G.A. Watson (Ed.), Springer-Verlag:
+           Berlin, 1978, pp.105-116. 
+
+        .. [2] Storn, R. and Price, K. "Differential Evolution: A
+           Simple and Efficient Adaptive Scheme for Global Optimization
+           over Continuous Spaces." J. Global Optimization 11, 341-359,
+           1997. 
+
+        .. [3] Jeffrey C. Lagarias, James A. Reeds, Margaret H. Wright,
+           Paul E. Wright "Convergence Properties of the Nelder-Mead
+           Simplex Algorithm in Low Dimensions", SIAM Journal on
+           Optimization,Vol. 9, No. 1 (1998), pages 112-147.
+
+        Examples
+        --------
+
+        >>> set_method('neldermead')
+
         """
         if isinstance(meth, basestring):
             meth = self._get_method_by_name(meth)
