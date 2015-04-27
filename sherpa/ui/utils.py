@@ -6401,28 +6401,45 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_estmethod_opt('covariance', name)
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def get_conf_opt(self, name=None):
-        """
-        get_conf_opt
+        """Return one or all of the options for the confidence interval
+        method.
 
-        SYNOPSIS
-           Return a confidence option by name
+        This is a helper function since the options can also
+        be read directly using the object returned by `get_conf`.
 
-        SYNTAX
+        Parameters
+        ----------
+        name : str, optional
+           If not given, a dictionary of all the options are returned.
+           When given, the individual value is returned.
+            
+        Returns
+        -------
+        value : dictionary or value
+           
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
 
-        Arguments:
-           name       - confidence option name
+        See Also
+        --------
+        conf : Estimate confidence intervals for fit parameters.
+        get_conf : Return the conf estimation object.
+        set_conf_opt : Set an option of the conf estimation object.
 
-        Returns:
-           confidence option value
+        Examples
+        --------
 
-        DESCRIPTION
-           If given no argument, returns dictionary of all options
-           that govern how confidence is run.  If given the name
-           of an option, returns the value of that option.
+        >>> get_conf_opt('verbose')
+        False
 
-        SEE ALSO
-           conf, set_conf_opt
+        >>> copts = get_conf_opt()
+        >>> copts['verbose']
+        False
+
         """
         return self._get_estmethod_opt('confidence', name)
     
