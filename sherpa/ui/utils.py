@@ -292,26 +292,25 @@ class Session(NoNewAttributesAfterInit):
 
         return allnames
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def clean(self):
-        """
-        clean
+        """Clear out the current Sherpa session.
 
-        SYNOPSIS
-           Clear all stored session data
+        The `clean` function removes all data sets and model
+        assignments, and restores the default settings for the
+        optimisation and fit statistic.
 
-        SYNTAX
+        See Also
+        --------
+        save : Save the current Sherpa session to a file.
+        restore : Load in a Sherpa session from a file.
+        save_all : Save the Sherpa session as an ASCII file.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           None
+        >>> clean()
 
-        DESCRIPTION
-           Clear all stored session data from internal structure.
-
-        SEE ALSO
-           save, restore
         """
         # Make version, version string names and formats identical
         # between Python and S-Lang interfaces.
