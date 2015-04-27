@@ -8733,7 +8733,17 @@ class Session(sherpa.ui.utils.Session):
 
     ### Ahelp ingest: 2015-04-27 DJB
     def save_all(self, outfile=None, clobber=False):
-        """
+        """Save the information about the current session to a text file.
+
+        This differs to the `save` command in that the output is human
+        readable. Three consequences are:
+
+         1. numeric values may not be recorded to their full precision
+
+         2. data sets are not included in the file
+
+         3. some settings and values may not be recorded.
+
         Parameters
         ----------
         outfile : str, optional
@@ -8754,8 +8764,33 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        sherpa.ui.utils.save : Save the current Sherpa session to a file.
-        sherpa.ui.utils.restore : Load in a Sherpa session from a file.
+        save : Save the current Sherpa session to a file.
+        restore : Load in a Sherpa session from a file.
+
+        Notes
+        -----
+
+        Items which are not saved include:
+
+        - user models
+
+        - any optional keywords to comands such as `load_data`
+          or `load_pha`
+
+        - only a subset of Sherpa commands are saved.
+
+        Examples
+        --------
+
+        Write the current Sherpa session to the screen:
+
+        >>> save_all()
+
+        Save the session to the file 'fit.sherpa', overwriting
+        it if it already exists:
+
+        >>> save_all('fit.sherpa', clobber=True)
+
         """
 
         # TODO:
