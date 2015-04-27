@@ -470,6 +470,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         clean : Clear all stored session data.
         restore : Load in a Sherpa session from a file.
+        save_all : Save the Sherpa session as an ASCII file.
 
         Notes
         -----
@@ -506,28 +507,51 @@ class Session(NoNewAttributesAfterInit):
         finally:
             fout.close()
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def restore(self, filename='sherpa.save'):
-        """
-        restore
+        """Load in a Sherpa session from a file.
 
-        SYNOPSIS
-           Restore a previous Sherpa session from a pickled file
+        Parameters
+        ----------
+        filename : str, optional
+           The name of the file to read the results from. The default
+           is `sherpa.save`.
 
-        SYNTAX
+        Raises
+        ------
+        IOError
+           If `filename` does not exist.
 
-        Arguments:
-           filename   - name of saved file
-                        default = 'sherpa.save'           
+        See Also
+        --------
+        clean : Clear all stored session data.
+        save : Save the current Sherpa session to a file.
 
-        Returns:
-           None
+        Notes
+        -----
 
-        DESCRIPTION
-           Restore previous Sherpa session information from a pickled file
-           for continued use.
+        The input to `restore` must have been created with the `save`
+        command. This is a binary file, which may not be portable
+        between versions of Sherpa, but is platform independent. A
+        warning message may be created if a file saved by an older
+        (or newer) version of Sherpa is loaded. An example of such
+        a message is
 
-        SEE ALSO
-           save, clean
+        WARNING: Could not determine whether the model is discrete.
+        This probably means that you have restored a session saved with a previous version of Sherpa.
+        Falling back to assuming that the model is continuous.
+
+        Examples
+        --------
+
+        Load in the Sherpa session from `sherpa.save`.
+
+        >>> restore()
+
+        Load in the session from the given file:
+
+        >>> restore('/data/m31/setup.sherpa')
+
         """
         _check_type(filename, basestring, 'filename', 'a string')
 
