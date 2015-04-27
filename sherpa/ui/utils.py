@@ -1456,7 +1456,7 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         meth : str
-           The name of the metod (case is not important). The
+           The name of the method (case is not important). The
            `list_methods` function returns the list of supported values.
 
         Raises
