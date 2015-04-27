@@ -4022,6 +4022,11 @@ class Session(sherpa.ui.utils.Session):
            The Y axis of plots is multiplied by Energy^factor or
            Wavelength^factor befire display. The default is `0`.
 
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the `id` argument is not recognized.
+
         See Also
         --------
         get_analysis : Return the analysis setting for a data set.
@@ -4079,6 +4084,11 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         quantity : { 'channel', 'energy', 'wavelength' }
+
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the `id` argument is not recognized.
 
         See Also
         --------
