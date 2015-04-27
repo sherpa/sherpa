@@ -1909,43 +1909,31 @@ class Session(NoNewAttributesAfterInit):
         _check_type(name, basestring, 'name', 'a string')
         return self._get_stat_by_name(name)
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def get_stat_name(self):
-        """
-        get_stat_name
+        """Return the name of the current fit statistic.
 
-        SYNOPSIS
-           Return the current Sherpa statistic by name
+        Returns
+        -------
+        name : str
+           The name of the current fit statistic method, in lower
+           case.
 
-        SYNTAX
+        See Also
+        --------
+        get_stat : Return a fit statistic.
+        set_stat : Set the fit statistic.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           statistic name
+        >>> get_method_name()
+        'chi2gehrels'
 
-        DESCRIPTION
-           Available statistics include
+        >>> set_stat('cash')
+        >>> get_stat_name()
+        'cash'
 
-           * 'chi2constvar'  \chi^2 with constant variance computed
-                             from the counts data.
-
-           * 'chi2modvar'    \chi^2 with model amplitude variance.
-
-           * 'chi2gehrels'   \chi^2 with gehrels method (Sherpa default).
-
-           * 'chi2datavar'   \chi^2 with data variance.
-
-           * 'chi2xspecvar'  \chi^2 with data variance (XSPEC-style,
-                             variance = 1.0 if data less than or equal to 0.0).
-
-           * 'cstat'         CStat - A maximum likelihood function
-                             (XSPEC implementation of Cash).
-
-           * 'cash'          Cash  - A maximum likelihood function.
-
-        SEE ALSO
-           list_stats, get_stat, set_stat
         """
         return type(self.get_stat()).__name__.lower()
 
