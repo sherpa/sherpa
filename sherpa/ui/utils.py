@@ -3974,9 +3974,8 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         show : { 'all', '1d', '2d', 'xspec' }, optional
-           What type of model should be returned. The
-           default is 'all'. An unrecognized value is
-           treated as 'all'.
+           What type of model should be returned. The default is
+           'all'. An unrecognized value is treated as 'all'.
 
         Returns
         -------
@@ -6477,28 +6476,39 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_estmethod_opt('covariance', name, val)
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def set_conf_opt(self, name, val):
-        """
-        set_conf_opt
-        
-        SYNOPSIS
-           Set a confidence option by name
-        
-        SYNTAX
-        
-        Arguments:
-           name       - confidence option name
-           val        - confidence option value
-        
-        Returns:
-           None
-        
-        DESCRIPTION
-           For the named confidence option, set that option to the new
-           value.
-        
-        SEE ALSO
-           conf, get_conf_opt
+        """Set an option for the confidence interval method.
+
+        This is a helper function since the options can also
+        be set directly using the object returned by `get_conf`.
+
+        Parameters
+        ----------
+        name : str
+           The name of the option to set. The `get_conf`
+           routine can be used to find out valid values for 
+           this argument.
+
+        val :
+           The new value for the option.
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
+
+        See Also
+        --------
+        conf : Estimate confidence intervals for fit parameters.
+        get_conf : Return the conf estimation object.
+        get_conf_opt : Return one or all options of the conf estimation object.
+
+        Examples
+        --------
+
+        >>> set_conf_opt('parallel', False)
+
         """
         self._set_estmethod_opt('confidence', name, val)
 
