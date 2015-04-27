@@ -866,8 +866,52 @@ def dataspace2d(dim):
 
     return x0, x1, y, shape
 
-
+### Ahelp ingest: 2015-04-27 DJB
 def histogram1d( x, x_lo, x_hi ):
+    """Create a 1D histogram from a binned grid (`x_lo`, `xhi`)
+    and array of samples (`x`).
+
+    See the NumPy `histogram` routine for a version with more options.
+
+    Parameters
+    ----------
+    x : sequence of numbers
+       The array of samples
+    x_lo : sequence of numbers
+       The lower-edges of each bin.
+    x_hi : sequence of numbers
+       The upper-edges of each bin, which must be the same size
+       as `x_lo`.
+
+    Returns
+    -------
+    y : NumPy array
+       The number of samples in each histogram bin defined by
+       the `x_lo` and `x_hi` arrays.
+
+    Examples
+    --------
+
+    A simple example, calculating the histogram of 1000 values
+    randomly distributed over [0,1).
+
+    >>> x = np.random.random(1000)
+    >>> edges = np.arange(0, 1.1, 0.1)
+    >>> xlo = edges[:-1]
+    >>> xhi = edges[1:]
+    >>> y = histogram1d(x, xlo, xhi)
+
+    Given a list of samples (`vals`), bin them up so that
+    they can be used as the dependent axis (the value to
+    be fitted) in a Sherpa data set:
+
+    >>> dataspace1d(0.1, 10, 0.1)
+    >>> (lo, hi) = get_indep()
+    >>> n = histogram1d(vals, lo, hi)
+    >>> set_dep(n)
+
+    """
+
     x_lo = numpy.asarray(x_lo)
     x_hi = numpy.asarray(x_hi)
 
@@ -876,8 +920,45 @@ def histogram1d( x, x_lo, x_hi ):
 
     return hist1d( numpy.asarray(x), x_lo, x_hi )
 
-
+### Ahelp ingest: 2015-04-27 DJB
 def histogram2d( x, y, x_grid, y_grid ):
+    """Create 21D histogram from a binned grid (`x_grid`, `y_grid`)
+    and array of samples (`x`, and `y`).
+
+    See the NumPy `histogram2d` routine for a version with more options.
+
+    Parameters
+    ----------
+    x : sequence of numbers
+       The array of samples (X coordinate)
+    y : sequence of numbers
+       The array of samples (Y coordinate), which must have the same
+       size as the `x` sequence.
+    x_grid : sequence of numbers
+       The X bin edges.
+    y_grid : sequence of numbers
+       The Y bin edges.
+
+    Returns
+    -------
+    y : NumPy array
+       The number of samples in each histogram bin defined by
+       the `x_grid` and `y_grid` arrays.
+
+    Examples
+    --------
+
+    Given a list of coordinates (`xvals`, `yvals`), bin
+    them up so that they match the 5 by 10 pixel image
+    data space. In this case the X grid is [1,2,...,5]
+    and the Y grid is [1,2,..,10].
+
+    >>> dataspace2d([5, 10])
+    >>> (xgrid, ygrid) = get_axes()
+    >>> n = histogram2d(xvals, yvals, xgrid, ygrid)
+    >>> set_dep(n)
+
+    """
     x_grid = numpy.asarray(x_grid)
     y_grid = numpy.asarray(y_grid)
 
