@@ -1563,26 +1563,45 @@ class Session(NoNewAttributesAfterInit):
         if optname not in self._current_method.config:
             raise ArgumentErr('badopt', optname, self.get_method_name())
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def get_method_opt(self, optname=None):
-        """
-        get_method_opt
+        """Return one or all of the options for the current optimization
+        method.
 
-        SYNOPSIS
-           Return a Sherpa optimization method option by name
+        This is a helper function since the optimization options can also
+        be set directly using the object returned by `get_method`.
 
-        SYNTAX
+        Parameters
+        ----------
+        optname : str, optional
+           If not given, a dictionary of all the options are returned.
+           When given, the individual value is returned.
+            
+        Returns
+        -------
+        value : dictionary or value
+           
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `optname` argument is not recognized.
 
-        Arguments:
-           name       - opt method option name
+        See Also
+        --------
+        get_method : Return an optimization method.
+        set_method : Change the optimization method.
+        set_method_opt : Change an option of the current optimization method.
 
-        Returns:
-           opt method option value
+        Examples
+        --------
 
-        DESCRIPTION
+        >>> get_method_opt('maxfev') == None
+        True
 
-        SEE ALSO
-           list_methods, get_method, get_method_name, set_method,
-           set_method_opt
+        >>> mopts = get_method_opt()
+        >>> mopts['maxfev'] == None
+        True
+
         """
         if optname is None:
             return self._current_method.config
