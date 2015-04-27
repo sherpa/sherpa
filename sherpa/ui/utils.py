@@ -304,7 +304,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         save : Save the current Sherpa session to a file.
         restore : Load in a Sherpa session from a file.
-        save_all : Save the Sherpa session as an ASCII file.
+        sherpa.astro.ui.utils.save_all : Save the Sherpa session as an ASCII file.
 
         Examples
         --------
@@ -469,7 +469,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         clean : Clear all stored session data.
         restore : Load in a Sherpa session from a file.
-        save_all : Save the Sherpa session as an ASCII file.
+        sherpa.astro.ui.utils.save_all : Save the Sherpa session as an ASCII file.
 
         Notes
         -----

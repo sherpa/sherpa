@@ -111,7 +111,26 @@ class Session(sherpa.ui.utils.Session):
         sherpa.ui.utils.Session.__setstate__(self, state)
 
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def clean(self):
+        """Clear out the current Sherpa session.
+
+        The `clean` function removes all data sets and model
+        assignments, and restores the default settings for the
+        optimisation and fit statistic.
+
+        See Also
+        --------
+        save : Save the current Sherpa session to a file.
+        restore : Load in a Sherpa session from a file.
+        save_all : Save the Sherpa session as an ASCII file.
+
+        Examples
+        --------
+
+        >>> clean()
+
+        """
         self._pileup_models     = {}
         self._background_models = {}
         self._background_sources = {}
@@ -159,33 +178,55 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['bkgdelchi']=self._bkgdelchiplot
         self._plot_types['bkgchisqr']=self._bkgchisqrplot
 
+    ### Ahelp ingest: 2015-04-27 DJB
     # Add ability to save attributes sepcific to the astro package.
     # Save XSPEC module settings that need to be restored.
     def save(self, filename='sherpa.save', clobber=False):
-        """
-        save
+        """Save the current Sherpa session to a file.
 
-        SYNOPSIS
-           Save the current Sherpa session to a pickled file
+        Parameters
+        ----------
+        filename : str, optional
+           The name of the file to write the results to. The default
+           is `sherpa.save`.
 
-        SYNTAX
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting.
 
-        Arguments:
-           filename   - name of save file
-                        default = 'sherpa.save'           
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           clobber    - clobber the file if it exists
-                        default = False
+        See Also
+        --------
+        clean : Clear all stored session data.
+        restore : Load in a Sherpa session from a file.
+        save_all : Save the Sherpa session as an ASCII file.
 
-        Returns:
-           None
+        Notes
+        -----
 
-        DESCRIPTION
-           Save the current Sherpa session information to a pickled file
-           to be restored for future use.
+        The current Sherpa session is saved using the Python `pickle`
+        module. The output is a binary file, which may not be portable
+        between versions of Sherpa, but is platform independent, and
+        contains all the data. This means that files created by `save`
+        can be sent to collaborators to share results.
 
-        SEE ALSO
-           restore, clean
+        Examples
+        --------
+
+        Save the current session to the file `sherpa.save`.
+
+        >>> save()
+
+        Save the current session to the file `bestfit.sherpa`,
+        overwriting any existing version of the file.
+
+        >>> save('bestfit.sherpa', clobber=True)
+
         """
         if (hasattr(sherpa.astro, "xspec")):
             self._xspec_state = sherpa.astro.xspec.get_xsstate()
@@ -193,28 +234,51 @@ class Session(sherpa.ui.utils.Session):
             self._xspec_state = None
         sherpa.ui.utils.Session.save(self, filename, clobber)
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def restore(self, filename='sherpa.save'):
-        """
-        restore
+        """Load in a Sherpa session from a file.
 
-        SYNOPSIS
-           Restore a previous Sherpa session from a pickled file
+        Parameters
+        ----------
+        filename : str, optional
+           The name of the file to read the results from. The default
+           is `sherpa.save`.
 
-        SYNTAX
+        Raises
+        ------
+        IOError
+           If `filename` does not exist.
 
-        Arguments:
-           filename   - name of saved file
-                        default = 'sherpa.save'           
+        See Also
+        --------
+        clean : Clear all stored session data.
+        save : Save the current Sherpa session to a file.
 
-        Returns:
-           None
+        Notes
+        -----
 
-        DESCRIPTION
-           Restore previous Sherpa session information from a pickled file
-           for continued use.
+        The input to `restore` must have been created with the `save`
+        command. This is a binary file, which may not be portable
+        between versions of Sherpa, but is platform independent. A
+        warning message may be created if a file saved by an older
+        (or newer) version of Sherpa is loaded. An example of such
+        a message is
 
-        SEE ALSO
-           save, clean
+        WARNING: Could not determine whether the model is discrete.
+        This probably means that you have restored a session saved with a previous version of Sherpa.
+        Falling back to assuming that the model is continuous.
+
+        Examples
+        --------
+
+        Load in the Sherpa session from `sherpa.save`.
+
+        >>> restore()
+
+        Load in the session from the given file:
+
+        >>> restore('/data/m31/setup.sherpa')
+
         """
         sherpa.ui.utils.Session.restore(self, filename)
         if (hasattr(sherpa.astro, "xspec")):
@@ -8667,7 +8731,32 @@ class Session(sherpa.ui.utils.Session):
     # Session Text Save Function
     ###########################################################################
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def save_all(self, outfile=None, clobber=False):
+        """
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
+
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
+
+        See Also
+        --------
+        sherpa.ui.utils.save : Save the current Sherpa session to a file.
+        sherpa.ui.utils.restore : Load in a Sherpa session from a file.
+        """
 
         # TODO:
         #
