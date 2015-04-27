@@ -3988,63 +3988,68 @@ class Session(sherpa.ui.utils.Session):
         #return data.response_ids
         return data._responses.keys()
 
+    ### Ahelp ingest: 2015-04-27 DJB
+    ### DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
+    ### DOC-TODO: should the arguments be renamed to better match optional
+    ###           nature of the routine (e.g. can call set_analysis('energy'))?
     #@loggable(with_id=True, with_keyword='quantity')
     def set_analysis(self, id, quantity=None, type='rate', factor=0):
-        """
-        set_analysis
+        """Set the units used when fitting and displaying spectral data.
 
-        SYNOPSIS
-           Set the quantities for analysis of a PHA data set by data id
+        The set_analysis command sets the units for spectral
+        analysis. Note that in order to change the units of a data set
+        from 'channel' to 'energy' or 'wavelength', the appropriate
+        ARF and RMF instrument response files must be loaded for that
+        data set. The `type` and `factor` arguments control how
+        the data is plotted.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           If only one argument is given then this is taken to be the
+           quantity argument (in which case, the change is made to
+           all data sets). If multiple arguments are given then this
+           is the identifier for the data set to change.
 
-        Arguments:
-           id        - data id
-                       default = all data ids
+        quantity : { 'channel', 'chan', 'bin', 'energy', 'ener', 'wavelength', 'wave' }
+           The units to use for the analysis.
+        
+        type : { 'rate', 'counts' }, optional
+           The units to use on the Y axis of plots. The default
+           is 'rate'.
 
-           quantity  - string identifying the quantity
+        factor : int, optional
+           The Y axis of plots is multiplied by Energy^factor or
+           Wavelength^factor befire display. The default is `0`.
 
-           type      - string identifying the plot quantity
-                       default = 'rate'
+        See Also
+        --------
+        get_analysis : Return the analysis setting for a data set.
 
-           factor    - integer identifying the number of times the independent
-                       axis is multiplied to the dependent axis.
-                       default = 0
+        Examples
+        --------
 
-        Returns:
-           None
+        Set all loaded data sets to use wavelength for any future
+        fitting or display.
 
-        DESCRIPTION
-           Set the quantity for analysis of a Sherpa DataPHA dataset
-           by data id.  Choices for the analysis quantity include channel,
-           wavelength, and energy.
+        >>> set_analysis('wave')
 
-           Alias
-           * 'channel' or 'chan' or 'bin'
+        Set the data set with an identifier of `2` to use energy
+        units.
 
-           * 'energy' or 'ener'
+        >>> set_analysis(2, 'energy')
 
-           * 'wavelength' or 'wave'
+        Set data set 1 to use channel units. Plots will use a Y
+        axis of count/bin rather than the default count/s/bin.
 
-           The plot quantity choices include rate and counts.
+        >>> set_analysis(1, 'bin', 'counts')
 
-        EXAMPLE
-           * To set the analysis quantity to wavelength for all datasets
+        Set data set 1 to use energy units. Plots of this data set
+        will display keV on the X axis and counts keV (i.e.
+        counts/keV * keV^2) in the Y axis.
 
-             sherpa> set_analysis('wave')
+        >>> set_analysis(1, 'energy', 'counts', 2)
 
-           * To set the analysis quantity to channel for a single dataset
-
-             sherpa> set_analysis(2, 'chan')
-
-           * To achieve the following plots units for the 1 data set
-             x units: keV
-             y units: Counts X keV^2
-
-             sherpa> set_analysis(1, 'ener', 'counts', 2)
-
-        SEE ALSO
-           get_analysis
         """
         if quantity is None:
             id, quantity = quantity, id
