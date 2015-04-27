@@ -1812,43 +1812,35 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def list_stats(self):
-        """
-        list_stats
+        """List the fit statistics.
 
-        SYNOPSIS
-           List statistics available in Sherpa
+        Returns
+        -------
+        stat : list of str
+           A list of the names that can be used with
+           `set_stat`.
 
-        SYNTAX
+        See Also
+        --------
+        get_stat_name : Return the name of the current statistical method.
+        set_stat : Set the statistical method.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           list of available stats
+        >>> list_stats()
+        ['cash',
+         'chi2',
+         'chi2constvar',
+         'chi2datavar',
+         'chi2gehrels',
+         'chi2modvar',
+         'chi2xspecvar',
+         'cstat',
+         'leastsq']
 
-        DESCRIPTION
-           Available statistics include
-
-           * 'chi2constvar'  \chi^2 with constant variance computed
-                             from the counts data.
-
-           * 'chi2modvar'    \chi^2 with model amplitude variance.
-
-           * 'chi2gehrels'   \chi^2 with gehrels method (Sherpa default).
-
-           * 'chi2datavar'   \chi^2 with data variance.
-
-           * 'chi2xspecvar'  \chi^2 with data variance (XSPEC-style,
-                             variance = 1.0 if data less than or equal to 0.0).
-
-           * 'cstat'         CStat - A maximum likelihood function
-                             (XSPEC implementation of Cash).
-
-           * 'cash'          Cash  - A maximum likelihood function.
-
-        SEE ALSO
-           get_stat, get_stat_name, set_stat
         """
         keys = self._stats.keys()[:]
         keys.sort()
@@ -1974,42 +1966,49 @@ class Session(NoNewAttributesAfterInit):
         -----
         The available statistics include:
 
+        `cash`
+           A maximum likelihood function [1]_.
+
+        `chi2`
+           \chi^2 statistic using the supplied error values.
+
         `chi2constvar`
            \chi^2 with constant variance computed from the counts
            data.
 
-        `chi2modvar`
-           \chi^2 with model amplitude variance.
-
-        `chi2gehrels`
-           \chi^2 with gehrels method [1]_. This is the default method.
-
         `chi2datavar`
            \chi^2 with data variance.
+
+        `chi2gehrels`
+           \chi^2 with gehrels method [2]_. This is the default method.
+
+        `chi2modvar`
+           \chi^2 with model amplitude variance.
 
         `chi2xspecvar`
            \chi^2 with data variance (XSPEC-style,
            variance = 1.0 if data less than or equal to 0.0).
 
-        `cash`
-           A maximum likelihood function [2]_.
-
         `cstat`
            A maximum likelihood function
            (the XSPEC implementation of the Cash function) [3]_.
 
+        `leastsq`
+           The least-squares statisic (the error is not used in
+           this statistic).
+
         References
         ----------
 
-        .. [1] Gehrels, N. "Confidence limits for small numbers of
-        events in astrophysical data", ApJ, vol 303,
-        p. 336-346 (1986).
-        http://adsabs.harvard.edu/abs/1986ApJ...303..336G
-
-        .. [2] Cash, W. "Parameter estimation in astronomy through
+        .. [1] Cash, W. "Parameter estimation in astronomy through
         application of the likelihood ratio", ApJ, vol 228,
         p. 939-947 (1979).
         http://adsabs.harvard.edu/abs/1979ApJ...228..939C
+
+        .. [2] Gehrels, N. "Confidence limits for small numbers of
+        events in astrophysical data", ApJ, vol 303,
+        p. 336-346 (1986).
+        http://adsabs.harvard.edu/abs/1986ApJ...303..336G
 
         .. [3] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
 
