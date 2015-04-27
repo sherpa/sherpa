@@ -1253,38 +1253,44 @@ class Session(NoNewAttributesAfterInit):
                 funcs.append(func)
         return funcs
         
+    ### Ahelp ingest: 2015-04-27 DJB
     def list_functions(self, outfile=None, clobber=False):
-        """
-        list_functions
+        """Display the functions provided by Sherpa.
 
-        SYNOPSIS
-           List all available Sherpa functions
+        Unlike the other `list_` commands, this does not
+        return an array. Instead it acts like the `show_`
+        family of commands. 
 
-        SYNTAX
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
 
-        Arguments:
-           outfile    - name of saved file
-                        default = None
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-           clobber    - overwrite outfile if exists
-                        default = False
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-        Returns:
-           None
+        See Also
+        --------
+        show_all : Displays the current state of the current session.
 
-        DESCRIPTION
-           List all available Sherpa functions from currrent Sherpa namespace.
+        Notes
+        -----
 
-              list_functions()
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If 
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-              list_functions("funcs.txt")
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, show_all
         """
         funcs_list = self.get_functions()
         funcs = ''
