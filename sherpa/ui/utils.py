@@ -6267,47 +6267,117 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._estmethods['covariance']
 
+    ### Ahelp ingest: 2015-04-27 DJB
+    ### DOC-TODO: how best to document the settings?
+    ### DOC-TODO: have I got soft_limits described correctly?
+    ### DOC-TODO: when verbose=True how is extra output displayed?
+    ###           stdout, stderr, sherpa logging?
     def get_conf(self):
-        """
-        get_conf
+        """Return the confidence-interval estimation object.
 
-        SYNOPSIS
-           Access current conf estimation method object
+        Returns
+        -------
+        conf : object
+           
+        See Also
+        --------
+        conf : Estimate confidence intervals for fit parameters.
+        get_conf_opt : Return one or all of the options for the confidence interval method.
+        set_conf_opt : Set an option of the conf estimation object.
 
-        SYNTAX
+        Notes
+        -----
+        The attributes of the confidence-interval object include:
 
-        Arguments:
-           None
+        `eps`
+           The precision of the calculated limits. The default is
+           `0.01`.
+        
+        `fast`
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
 
-        Returns:
-           Current conf estimation method object
+        `max_rstat`
+           If the reduced chi square is larger than this value, do not
+           use (only used with hci-square statistics). The default is
+           `3`.
 
-        DESCRIPTION
-           Estimation method objects include the following attributes:
+        `maxiters`
+           The maximum number of iterations allowed when bracketing
+           limits, before stopping for that parameter. The default is
+           `200`.
 
-           * sigma                      - default = 1
+        `maxfits`
+           The maximum number of re-fits allowed (that is, when the
+           `remin` filter is met). The default is `5`.
 
-           * eps                        - default = 0.01
+        `numcores`
+           The number of computer cores to use when evaluating results
+           in parallel. This is only used if `parallel` is `True`.
+           The default is to use all cores.
 
-           * maxiters                   - default = 200
+        `openinterval`
+           How the `conf` method should cope with intervals that do
+           not converge (that is, when the `maxiters` limit has been
+           reached). The default is `False`.
 
-           * remin                      - default = 0.01
+        `parallel`
+           If there is more than one free parameter then the results
+           can be evaluated in parallel, to reduce the time required.
+           The default is `True`.
 
-           * maxfits                    - default = 5
-                      
-           * max_rstat                  - default = 3
+        `remin`
+           The minimum difference in statistic value for a new fit
+           location to be considered better than the current best fit
+           (which starts out as the starting location of the fit at
+           the time `conf` is called). The default is `0.01`.
 
-           * soft_limits                - default = False
+        `sigma`
+           What is the error limit being calculated. The default is
+           `1`.
 
-           * fast                       - default = True
+        `soft_limits`
+           Should the search be restricted to the soft limits of the
+           parameters (`True`), or can parameter values go out all the
+           way to the hard limits if necessary (`False`).  The default
+           is `False`
 
-           * tol                        - default = 0.2
+        `tol`
+           The tolerance for the fit. The default is `0.2`.
 
-           * verbose                    - default = False           
+        `verbose`
+           Should extra information be displayed during fitting?
+           The default is `False`.
+
+        Examples
+        --------
+
+        >>> print(get_conf())
+        name         = confidence
+        numcores     = 8
+        verbose      = False
+        openinterval = False
+        max_rstat    = 3
+        maxiters     = 200
+        soft_limits  = False
+        eps          = 0.01
+        fast         = False
+        maxfits      = 5
+        remin        = 0.01
+        tol          = 0.2
+        sigma        = 1
+        parallel     = True
+
+        Change the `remin` field of the `conf` method to 0.05.
+
+        >>> conf = get_conf()
+        >>> conf.remin = 0.05
 
         SEE ALSO
            conf, proj, covar, get_covar_results, get_conf_results,
            get_proj_results, get_covar
+
         """
         return self._estmethods['confidence']
 
@@ -6427,7 +6497,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         conf : Estimate confidence intervals for fit parameters.
-        get_conf : Return the conf estimation object.
+        get_conf : Return the confidence-interval estimation object.
         set_conf_opt : Set an option of the conf estimation object.
 
         Examples
