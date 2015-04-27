@@ -1434,7 +1434,7 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         name : str, optional
-           If not given, the current method is used, otherwise
+           If not given, the current method is returned, otherwise
            it should be one of the names returned by the
            `list_methods` function.
 
@@ -1867,43 +1867,42 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr('badstat', name)
         return stat
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def get_stat(self, name=None):
-        """
-        get_stat
+        """Return a fit statisic.
 
-        SYNOPSIS
-           Return a Sherpa statistic by name
+        Parameters
+        ----------
+        name : str, optional
+           If not given, the current fit statistic is returned, otherwise
+           it should be one of the names returned by the
+           `list_stats` function.
 
-        SYNTAX
+        Returns
+        -------
+        stat : object
+           An object representing the fit statistic.
 
-        Arguments:
-           name       - name of statistic
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
 
-        Returns:
-           statistic
+        See Also
+        --------
+        get_stat_name : Return the name of the current fit statistic.
+        list_stats : List the fit statistics.
+        set_stat : Change the fit statistic.
 
-        DESCRIPTION
-           Available statistics include
+        Examples
+        --------
 
-           * 'chi2constvar'  \chi^2 with constant variance computed
-                             from the counts data.
+        >>> stat = ui.stat()
+        >>> stat
+        Chi Squared with Gehrels variance
+        >>> stat.name
+        'chi2gehrels'
 
-           * 'chi2modvar'    \chi^2 with model amplitude variance.
-
-           * 'chi2gehrels'   \chi^2 with gehrels method (Sherpa default).
-
-           * 'chi2datavar'   \chi^2 with data variance.
-
-           * 'chi2xspecvar'  \chi^2 with data variance (XSPEC-style,
-                             variance = 1.0 if data less than or equal to 0.0).
-
-           * 'cstat'         CStat - A maximum likelihood function
-                             (XSPEC implementation of Cash).
-
-           * 'cash'          Cash  - A maximum likelihood function.
-
-        SEE ALSO
-           list_stats, get_stat_name, set_stat
         """
         if name is None:
             return self._current_stat
