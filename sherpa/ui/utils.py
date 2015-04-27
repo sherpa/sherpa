@@ -1394,27 +1394,54 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr('badmethod', name)
         return meth
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def get_method(self, name=None):
-        """
-        get_method
+        """Return an optimization method.
 
-        SYNOPSIS
-           Return the Sherpa optimization method by name
+        Parameters
+        ----------
+        name : str, optional
+           If not given, the current method is used, otherwise
+           it should be one of the names returned by the
+           `list_methods` function.
 
-        SYNTAX
+        Returns
+        -------
+        method : object
+           An object representing the optimization method.
 
-        Arguments:
-           name       - name of opt method
-                        default = default method
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
 
-        Returns:
-           Sherpa opt method
+        See Also
+        --------
+        get_method_opt : Get the options for the current optimization method.
+        list_methods : List the supported optimization methods.
+        set_method : Change the optimization method.
+        set_method_opt : Change an option of the current optimization method.
 
-        DESCRIPTION
+        Examples
+        --------
 
-        SEE ALSO
-           list_methods, get_method_name, set_method, get_method_opt,
-           set_method_opt
+        The fields of the object returned by `get_method` can be
+        used to view or change the method options.
+
+        >>> method = ui.get_method()
+        >>> print(method.name)
+        levmar
+        >>> print(method)
+        name    = levmar
+        ftol    = 1.19209289551e-07
+        xtol    = 1.19209289551e-07
+        gtol    = 1.19209289551e-07
+        maxfev  = None
+        epsfcn  = 1.19209289551e-07
+        factor  = 100.0
+        verbose = 0
+        >>> method.maxfev = 5000
+
         """
         if name is None:
             return self._current_method
@@ -1466,7 +1493,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_method_name : Return the current optimization method.
+        get_method_name : Return the name of the current optimization method.
         list_methods : List the supported optimization methods.
 
         Notes
