@@ -3967,27 +3967,37 @@ class Session(NoNewAttributesAfterInit):
             _argument_type_error('func', 'a function or other callable object')
         self._model_autoassign_func = func
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def list_models(self, show="all"):
-        """
-        list_models
+        """List the available model types.
 
-        SYNOPSIS
-           List the available Sherpa model types
+        Parameters
+        ----------
+        show : { 'all', '1d', '2d', 'xspec' }, optional
+           What type of model should be returned. The
+           default is 'all'. An unrecognized value is
+           treated as 'all'.
 
-        SYNTAX
+        Returns
+        -------
+        models : list of str
 
-        Arguments:
-           show  -  filter list by keywords "all", "xspec", "1d", and "2d"
-                    default = "all"
+        See Also
+        --------
+        create_model_components : Create a model component.
+        list_model_components : List the current model components.
 
-        Returns:
-           list of available model types
+        Examples
+        --------
 
-        DESCRIPTION
+        >>> models = list_models()
+        >>> models[0:5]
+        ['absorptionedge',
+         'absorptiongaussian',
+         'absorptionlorentz',
+         'absorptionvoigt',
+         'accretiondisk']
 
-        SEE ALSO
-           list_model_components, create_model_component,
-           delete_model_component
         """
         keys = self._model_types.keys()[:]
         keys.sort()
