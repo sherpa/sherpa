@@ -1380,26 +1380,27 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def list_methods(self):
-        """
-        list_methods
+        """List the optimization methods.
 
-        SYNOPSIS
-           List the available optimization methods in Sherpa
+        Returns
+        -------
+        methods : list of str
+           A list of the names that can be used with
+           `set_method`.
 
-        SYNTAX
+        See Also
+        --------
+        get_method_name : Return the name of the current optimization method.
+        set_method : Set the optimization method.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           list of methods
+        >>> list_methods()
+        ['gridsearch', 'levmar', 'moncar', 'neldermead', 'simplex']
 
-        DESCRIPTION
-
-        SEE ALSO
-           get_method, get_method_name, set_method, get_method_opt,
-           set_method_opt
         """
         keys = self._methods.keys()[:]
         keys.sort()
@@ -1505,8 +1506,11 @@ class Session(NoNewAttributesAfterInit):
     def set_method(self, meth):
         """Set the optimization method.
 
-        Changes the optimization method used during model fitting,
-        that is the method used to minimize the statistic value.
+        The primary task of Sherpa is to fit a model M(p) to a set of
+        observed data, where the vector p denotes the model
+        parameters. An optimization method is one that is used to
+        determine the vector of model parameter values, p0, for which
+        the chosen fit statistic is minimized.
 
         Parameters
         ----------
@@ -1523,6 +1527,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         get_method_name : Return the name of the current optimization method.
         list_methods : List the supported optimization methods.
+        set_stat : Set the fit statistic.
 
         Notes
         -----
