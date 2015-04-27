@@ -4065,34 +4065,27 @@ class Session(sherpa.ui.utils.Session):
             self._get_pha_data(id).set_analysis(quantity, type, factor) 
 
 
+    ### Ahelp ingest: 2015-04-27 DJB
+    ### DOC-TODO: docs need to be added to sherpa.astro.data.get_analysis
     def get_analysis(self, id=None):
-        """
-        get_analysis
+        """Return the units used when fitting spectral data.
 
-        SYNOPSIS
-           Get the current quantity for analysis of a PHA data set by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to query. If not given then the default
+           identifier is used, as set by `set_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        quantity : { 'channel', 'energy', 'wavelength' }
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        get_default_id : Return the default data set identifier. 
+        set_analysis : Change the analysis setting.
+        set_default_id : Change the default data set identifier. 
 
-        Returns:
-           string identifying the quantity
-
-        DESCRIPTION
-           Get the quantity for analysis of a Sherpa DataPHA dataset
-           by data id.  Return values include channel, wavelength, or energy.
-
-           * 'channel' or 'chan' or 'bin'
-
-           * 'energy' or 'ener'
-
-           * 'wavelength' or 'wave'
-
-        SEE ALSO
-           set_analysis
         """
         return self._get_pha_data(id).get_analysis()
 
