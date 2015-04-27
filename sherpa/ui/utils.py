@@ -6674,47 +6674,100 @@ class Session(NoNewAttributesAfterInit):
         else:
             return self._covariance_results
 
+    ### Ahelp ingest: 2015-04-27 DJB
+    ### DOC_TODO: what is the best description for nfits?
     def get_conf_results(self):
-        """
-        get_conf_results
+        """Return the results of the last `conf` run.
 
-        SYNOPSIS
-           Access confidence estimation results object
-
-        SYNTAX
-
-        Arguments:
-           None
-
-        Returns:
-           Conf estimation results object
-
-        DESCRIPTION
-           Access results from the last time confidence was run.  The results
-           include the following attributes:
-
-           * datasets                        - Data sets in fit
+        Returns
+        -------
+        results : object
            
-           * methodname                      - Estimation method name
+        Raises
+        ------
+        sherpa.utils.err.SessionErr
+           If no `conf` call has been made.
 
-           * fitname                         - Fitting method name
+        See Also
+        --------
+        conf : Estimate confidence intervals for fit parameters.
+        get_conf_opt : Return one or all of the options for the confidence interval method.
+        set_conf_opt : Set an option of the conf estimation object.
 
-           * statname                        - Statistic name
+        Notes
+        -----
+        The fields of the object include:
 
-           * sigma                           - Change in statistic
+        `datasets`
+           A tuple of the data sets used in the analysis.
 
-           * parnames                        - Model parameter names
+        `methodname`
+           This will be `confidence`.
 
-           * parvals                         - Model parameter fit values
+        `iterfitname`
+           The name of the iterated-fit method used, if any.
 
-           * parmins                         - Model parameter minimum values
+        `fitname`
+           The name of the optimization method used.
 
-           * parmaxes                        - Model parameter maximum values
+        `statname`
+           The name of the fit statistic used.
 
-           * warnings                        - Warning messages
+        `sigma`
+           The `sigma` value used to calculate the confidence
+           intervals.
 
-        SEE ALSO
-           conf, proj, covar, get_conf, get_proj, get_covar_results, get_covar
+        `percent`
+           The percentage of the signal contained within the
+           confidence intervals (calculated from the `sigma`
+           value assuming a normal distribution).
+
+        `parnames`
+           A tuple of the parameter names included in the analysis.
+
+        `parvals`
+           A tuple of the best-fit parameter values, in the same
+           order as `parnames`.
+
+        `parmins`
+           A tuple of the lower error bounds, in the same
+           order as `parnames`.
+
+        `parmaxes`
+           A tuple of the upper error bounds, in the same
+           order as `parnames`.
+
+        `nfits`
+
+
+        Examples
+        --------
+
+        >>> res = get_conf_results()
+        >>> print(res)
+        datasets    = (1,)
+        methodname  = confidence
+        iterfitname = none
+        fitname     = levmar
+        statname    = chi2gehrels
+        sigma       = 1
+        percent     = 68.2689492137
+        parnames    = ('p1.gamma', 'p1.ampl')
+        parvals     = (2.1585155113403327, 0.00022484014787994827)
+        parmins     = (-0.082785567348122591, -1.4825550342799376e-05)
+        parmaxes    = (0.083410634144100104, 1.4825550342799376e-05)
+        nfits       = 13
+
+        The following converts the above into a dictionary where the
+        keys are the parameter names and the values are the tuple
+        (best-fit value, lower-limit, upper-limit):
+        
+        >>> pvals1 = zip(res.parvals, res.parmins, res.parmaxes)
+        >>> pvals2 = [(v, v+l, v+h) for (v,l,h) in pvals1]
+        >>> dres = dict(zip(res.parnames, pvals2))
+        >>> dres['p1.gamma']
+        (2.1585155113403327, 2.07572994399221, 2.241926145484433)
+
         """
         if self._confidence_results == None:
             raise SessionErr('noaction', "confidence")
