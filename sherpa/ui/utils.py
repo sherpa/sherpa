@@ -1448,26 +1448,37 @@ class Session(NoNewAttributesAfterInit):
         _check_type(name, basestring, 'name', 'a string')
         return self._get_method_by_name(name)
 
+    ### Ahelp ingest: 2015-04-27 DJB
+    ### DOC-TODO: is this guaranteed to be the same as get_method().name
+    ###           or get_method().name.lower() and, if so, shouldn't this be
+    ###           how it is coded?
     def get_method_name(self):
-        """
-        get_method_name
+        """Return the name of current Sherpa optimization method.
 
-        SYNOPSIS
-           Return the name of current Sherpa optimization method
+        Returns
+        -------
+        name : str
+           The name of the current optimization method, in lower
+           case. This may not match the value sent to `set_method`
+           because some methods can be set by multiple names.
 
-        SYNTAX
+        See Also
+        --------
+        get_method : Return an optimization method.
+        get_method_opt : Get the options for the current optimization method.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           name
+        >>> get_method_name()
+        'levmar'
 
-        DESCRIPTION
+        The 'neldermead' method can also be referred to as 'simplex':
 
-        SEE ALSO
-           list_methods, get_method, set_method, get_method_opt,
-           set_method_opt
+        >>> set_method('simplex')
+        >>> get_method_name()
+        'neldermead'
+
         """
         return type(self.get_method()).__name__.lower()
 
