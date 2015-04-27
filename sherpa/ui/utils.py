@@ -6876,64 +6876,192 @@ class Session(NoNewAttributesAfterInit):
         """
         self._covariance_results = self._est_errors(args, 'covariance')
     
+    ### Ahelp ingest: 2015-04-27 DJB
+    ### DOC-TODO: include screen output of conf() ?
+    ### DOC-TODO: this is a function that doesn't really match the normal
+    ###           Python parameter rules
     def conf(self, *args):
-        """
-        conf
+        """Estimate the confidence intervals for parameters using the
+        confidence method.
 
-        SYNOPSIS
-           Estimate confidence intervals for selected thawed parameters
+        The `conf` command computes confidence interval bounds for the
+        specified model parameters in the dataset.  A given
+        parameter's value is varied along a grid of values while the
+        values of all the other thawed parameters are allowed to float
+        to new best-fit values. The `get_conf` and `set_conf_opt`
+        commands can be used to configure the error analysis; an
+        example being changing the 'sigma' field to `1.6` (i.e. 90%)
+        from its default value of `1`.  The output from the routine is
+        displayed on screen, and the `get_conf_results` routine can be
+        used to retrieve the results.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The `id` and `otherids` arguments determine which data set
+           or data sets are fit. If not given, all data sets which
+           have a defined source model are used.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        parameters : optional
+           The default is to calculate the confidence limits on all
+           thawed parameters of the model, or models, for all the
+           data sets. The evaluation can be restricted by listing
+           the parameters to use. Note that each parameter should be
+           given as a separate argument, rather than as a list.
+           For example `conf(g1.ampl, g1.sigma)`.
 
-           otherids  - Other Sherpa data ids
+        See Also
+        --------
+        covar : Estimate the confidence intervals using the covariance method.
+        get_conf : Return the confidence-interval estimation object.
+        get_conf_results : Return the results of the last `conf` run.
+        int_proj : Plot the statisitic value as a single parameter is varied.
+        reg_proj : Plot the statistic value as two parameters are varied.
+        set_conf_opt : Set an option of the conf estimation object.
 
-           pars      - Sherpa model parameters
+        Notes
+        -----
 
-        Returns:
-           Formatted estimation results output
+        The `conf` command is different to `covar`, in that in that
+        all other thawed parameters are allowed to float to new
+        best-fit values, instead of being fixed to the initial
+        best-fit values as they are in `covar`.  While `conf` is more
+        general (e.g. allowing the user to examine the parameter space
+        away from the best-fit point), it is in the strictest sense no
+        more accurate than `covar` for determining confidence
+        intervals.
 
-        DESCRIPTION
-           Confidence interval bounds are determined for each selected
-           parameter in turn. A given parameter's value is varied along a grid
-           of values while the values of all the other nominally thawed
-           parameters are allowed to float to new best-fit values (compare to
-           covar, where the values of all the other nominally thawed parameters
-           remain fixed to their best-fit values). This method of estimating
-           confidence interval bounds gives truly accurate results only in
-           special cases:
+        An estimated confidence interval is accurate if and only if:
 
-           An estimated confidence interval is accurate if and only if:
+        1. the chi^2 or logL surface in parameter space is
+           approximately shaped like a multi-dimensional paraboloid,
+           and
 
-           1. the chi^2 or logL surface in parameter space is approximately
-              shaped like a multi-dimensional paraboloid, and
-           2. the best-fit point is sufficiently far from parameter space
-              boundaries.
+        2. the best-fit point is sufficiently far from parameter space
+           boundaries.
 
-           One may determine if these conditions hold, for example, by plotting
-           the fit statistic as a function of each parameter's values (the
-           curve should approximate a parabola) and by examining contour plots
-           of the fit statistics made by varying the values of two parameters
-           at a time (the contours should be elliptical, and parameter space
-           boundaries should be no closer than approximately 3 sigma from the
-           best-fit point).
+        One may determine if these conditions hold, for example, by
+        plotting the fit statistic as a function of each parameter's
+        values (the curve should approximate a parabola) and by
+        examining contour plots of the fit statistics made by varying
+        the values of two parameters at a time (the contours should be
+        elliptical, and parameter space boundaries should be no closer
+        than approximately 3 sigma from the best-fit point). The
+        `int_proj` and `reg_proj` commands may be used for this.
 
-           If no arguments are given this function, it is assumed that the
-           data id is the default data id, and that limits should be computed
-           for all thawed parameters.
+        If either of the conditions given above does not hold, then
+        the output from `conf` may be meaningless except to give an
+        idea of the scale of the confidence intervals. To accurately
+        determine the confidence intervals, one would have to
+        reparameterize the model, use Monte Carlo simulations, or
+        Bayesian methods.
 
-           If arguments are given, each argument is examined to see if it
-           is a Sherpa model parameter.  If model parameters are given, it
-           is assumed that limits for only those parameters should be
-           computed.  Any argument that is not a model parameter is assumed
-           to be a data id.
+        As the calculation can be computer intensive, the default
+        behavior is to use all available CPU cores to speed up the
+        analysis. This can be changed be varying the `numcores` option
+        - or setting `parallel` to `False` - either with
+        `set_conf_opt` or `get_conf`.
 
-        SEE ALSO
-           covar, get_conf, get_proj, get_covar, get_covar_results,
-           get_conf_results, get_proj_results
+        As `conf` estimates intervals for each parameter
+        independently, the relationship between sigma and the change
+        in statistic value delta_S can be particularly simple: sigma =
+        the square root of delta_S for statistics sampled from the
+        chi-square distribution and for the Cash statistic, and is
+        approximately equal to the square root of (2 * delta_S) for
+        fits based on the general log-likelihood. The default setting
+        is to calculate the one-sigma interval, which can be changed
+        with the `sigma` option to `set_conf_opt` or `get_conf`.
+
+        The limit calculated by `conf` is basically a 1-dimensional
+        root in the translated coordinate system (translated by the
+        value of the statistic at the minimum plus sigma^2).  The
+        Taylor series expansion of the multi-dimensional function at
+        the minimum is:
+
+        f(x + dx) ~ f(x) + grad( f(x) )^T dx + dx^T Hessian( f(x) ) dx + ...
+
+        where x is understood to be the n-dimensional vector
+        representing the free parameters to be fitted and the
+        super-script 'T' is the transpose of the row-vector. At or
+        near the minimum, the gradient of the function is zero or
+        negligible, respectively. So the leading term of the expansion
+        is quadratic.  The best root finding algorithm for a curve
+        which is approximately parabolic is Muller's method [1]_.
+        Muller's method is a generalization of the secant method [2]_:
+        the secant method is an iterative root finding method that
+        approximates the function by a straight line through two
+        points, whereas Muller's method is an iterative root finding
+        method that approxmiates the function by a quadratic
+        polynomial through three points.
+
+        Three data points are the minimum input to Muller's root
+        finding method. The first point to be submitted to the
+        Muller's root finding method is the point at the minimum. To
+        strategically choose the other two data points, the confidence
+        function uses the output from covariance as the second data
+        point. To generate the third data points for the input to
+        Muller's root finding method, the secant root finding method
+        is used since it only requires two data points to generate the
+        next best approximation of the root.
+
+        However, there are cases where `conf` cannot locate the root
+        even though the root is bracketed within an interval (perhaps
+        due to the bad resolution of the data). In such cases, when
+        the option `openinterval` is set to `False` (which is the
+        default), the routine will print a warning message about not
+        able to find the root within the set tolerance and the
+        function will return the average of the open interval which
+        brackets the root. If `openinterval` is set to `True` then
+        `conf` will print the minimal open interval which brackets the
+        root (not to be confused with the lower and upper bound of the
+        confidence interval). The most accurate thing to do is to
+        return an open interval where the root is localized/bracketed
+        rather then the average of the open interval (since the
+        average of the interval is not a root within the specified
+        tolerance).
+
+        References
+        ----------
+
+        .. [1] Muller, David E., "A Method for Solving Algebraic
+               Equations Using an Automatic Computer," MTAC, 10
+               (1956), 208-215.
+
+        .. [2] Numerical Recipes in Fortran, 2nd edition, 1986, Press
+               et al., p. 347
+
+        Examples
+        --------
+
+        Evaluate confidence intervals for all thawed parameters in all
+        data sets with an associated source model. The results are
+        then stored in the variable `res`.
+
+        >>> conf()
+        >>> res = get_conf_results()
+
+        Only evaluate the parametes associated with data set 2.
+
+        >>> conf(2)
+
+        Only evaluate the intervals for the `pos.xpos` and `pos.ypos`
+        parameters:
+
+        >>> conf(pos.xpos, pos.ypos)
+
+        Change the limits to be 1.6 sigma (90%) rather than the default
+        1 sigma.
+
+        >>> get_conf().sigma = 1.6
+        >>> conf()
+
+        Only evaluate the `clus.kt` parameter for the data sets with
+        identifiers "obs1", "obs5", and "obs6". This will still use
+        the 1.6 sigma setting from the previous run.
+
+        >>> conf("obs1", ["obs5","obs6"], clus.kt)
+
         """
         self._confidence_results = self._est_errors(args, 'confidence')
 

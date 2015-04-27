@@ -3992,6 +3992,8 @@ class Session(sherpa.ui.utils.Session):
     ### DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
     ### DOC-TODO: should the arguments be renamed to better match optional
     ###           nature of the routine (e.g. can call set_analysis('energy'))?
+    ### DOC-TODO: this is a function that doesn't really match the normal
+    ###           Python parameter rules
     #@loggable(with_id=True, with_keyword='quantity')
     def set_analysis(self, id, quantity=None, type='rate', factor=0):
         """Set the units used when fitting and displaying spectral data.
