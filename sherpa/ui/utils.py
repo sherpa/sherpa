@@ -650,40 +650,49 @@ class Session(NoNewAttributesAfterInit):
             covar_str += self.get_covar_results().format() + '\n\n'
         return covar_str
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def show_stat(self, outfile=None, clobber=False):
-        """
-        show_stat
+        """Display the current fit statistic.
 
-        SYNOPSIS
-           Show the current Sherpa statistic
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
 
-        SYNTAX
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           outfile   - filename to capture the output
-                      default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           clobber  - overwrite outfile if exists
-                      default = False
+        See Also
+        --------
+        get_stat : Return a fit-statistic method.
+        show_all : Displays the current state of the current session.
 
-        Returns:
-           None
+        Notes
+        -----
 
-        DESCRIPTION
-           Show the current Sherpa fit statistic.
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If 
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-           Examples:
-              show_stat()
+        Examples
+        --------
 
-              show_stat("sherpa.stat", True)
+        >>> set_stat('cash')
+        >>> show_stat()
+        Statistic: Cash
+        Maximum likelihood function
 
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_model,
-           show_conf, show_proj, show_data, show_covar
         """
         all = ''
         all += self._get_show_stat()
