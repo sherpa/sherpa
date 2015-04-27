@@ -446,31 +446,52 @@ class Session(NoNewAttributesAfterInit):
         self._srccompimage = sherpa.image.ComponentSourceImage()
 
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def save(self, filename='sherpa.save', clobber=False):
-        """
-        save
+        """Save the current Sherpa session to a file.
 
-        SYNOPSIS
-           Save the current Sherpa session to a pickled file
+        Parameters
+        ----------
+        filename : str, optional
+           The name of the file to write the results to. The default
+           is `sherpa.save`.
 
-        SYNTAX
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting.
 
-        Arguments:
-           filename   - name of save file
-                        default = 'sherpa.save'           
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           clobber    - clobber the file if it exists
-                        default = False
+        See Also
+        --------
+        clean : Clear all stored session data.
+        restore : Load in a Sherpa session from a file.
 
-        Returns:
-           None
+        Notes
+        -----
 
-        DESCRIPTION
-           Save the current Sherpa session information to a pickled file
-           to be restored for future use.
+        The current Sherpa session is saved using the Python `pickle`
+        module. The output is a binary file, which may not be portable
+        between versions of Sherpa, but is platform independent, and
+        contains all the data. This means that files created by `save`
+        can be sent to collaborators to share results.
 
-        SEE ALSO
-           restore, clean
+        Examples
+        --------
+
+        Save the current session to the file `sherpa.save`.
+
+        >>> save()
+
+        Save the current session to the file `bestfit.sherpa`,
+        overwriting any existing version of the file.
+
+        >>> save('bestfit.sherpa', clobber=True)
+
         """
         
         _check_type(filename, basestring, 'filename', 'a string')
