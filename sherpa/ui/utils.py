@@ -1569,7 +1569,7 @@ class Session(NoNewAttributesAfterInit):
         method.
 
         This is a helper function since the optimization options can also
-        be set directly using the object returned by `get_method`.
+        be read directly using the object returned by `get_method`.
 
         Parameters
         ----------
@@ -1608,27 +1608,42 @@ class Session(NoNewAttributesAfterInit):
         self._check_method_opt(optname)
         return self._current_method.config[optname]
 
+    ### Ahelp ingest: 2015-04-27 DJB
     def set_method_opt(self, optname, val):
-        """
-        set_method_opt
+        """Set an option for the current optimization method.
 
-        SYNOPSIS
-           Set a Sherpa optimization method option by name
+        This is a helper function since the optimization options can also
+        be set directly using the object returned by `get_method`.
 
-        SYNTAX
+        Parameters
+        ----------
+        optname : str
+           The name of the option to set. The `get_method`
+           and `get_method_opt` routines can be used to find
+           out valid values for this argument.
 
-        Arguments:
-           name       - opt method option name
-           val        - opt method option value
+        val :
+           The new value for the option.
 
-        Returns:
-           None
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `optname` argument is not recognized.
 
-        DESCRIPTION
+        See Also
+        --------
+        get_method : Return an optimization method.
+        get_method_opt : Return one or all options of the current optimization method.
+        set_method : Change the optimization method.
 
-        SEE ALSO
-           list_methods, get_method, get_method_name, set_method,
-           get_method_opt
+        Examples
+        --------
+
+        Change the maxfev parameter for the current optimizer
+        to 2000.
+
+        >>> set_method_opt('maxfev', 2000)
+
         """
         self._check_method_opt(optname)
         self._current_method.config[optname] = val
