@@ -2837,6 +2837,7 @@ class Session(NoNewAttributesAfterInit):
         self._data.pop(id, None)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def dataspace1d(self, start, stop, step=1, numbins=None, 
                     id=None, dstype=sherpa.data.Data1DInt):
         """
@@ -2903,6 +2904,7 @@ class Session(NoNewAttributesAfterInit):
         self.set_data(id, dstype('dataspace1d', *args))
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def dataspace2d(self, dims, id=None, dstype=sherpa.data.Data2D):
         """
         dataspace2d
@@ -3108,6 +3110,7 @@ class Session(NoNewAttributesAfterInit):
                                            colkeys=colkeys, dstype=dstype,
                                            sep=sep, comment=comment, require_floats=require_floats))
 
+    # DOC-NOTE: also in sherpa.astro.utils
     ##@loggable(with_id = True)
     def load_arrays(self, id, *args):
         """
@@ -8913,19 +8916,163 @@ class Session(NoNewAttributesAfterInit):
                 plot.histo_prefs[item] = value
 
 
+    ### Ahelp ingest: 2015-04-28 DJB
+    ### DOC-TODO: list of valid plottype should probably be displayed
+    ###           in a different manner
     def set_xlog(self, plottype="all"):
+        """New plots will display a logarithmically-scaled X axis.
+
+        This setting only affects plots created after the call to
+        `set_xlog`.
+
+        Parameters
+        ----------
+        plottype : { 'all', 'arf', 'bkg', 'bkgchisqr', 'bkgdelchi',
+           'bkgfit', 'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
+           'chisqr', 'data', 'delchi', 'fit', 'kernel', 'model',
+           'psf', 'ratio', 'resid', 'source' }, optional
+           The type of plot that is to use a log-scaled X axis.  The
+           default is 'all'.
+
+        See Also
+        --------
+        set_xlinear : New plots will display a linear X axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
+
+        Examples
+        --------
+
+        Use a logarithmic scale for the X axis of `data` plots:
+
+        >>> set_xlog('data')
+        >>> plot('data', 'arf')
+
+        All plots use a logarithmic scale for the X axis.
+
+        >>> set_xlog()
+        >>> plot_fit()
+
+        """
         self._set_plot_item(plottype, 'xlog', True)
 
 
+    ### Ahelp ingest: 2015-04-28 DJB
+    ### DOC-TODO: list of valid plottype should probably be displayed
+    ###           in a different manner
     def set_ylog(self, plottype="all"):
+        """New plots will display a logarithmically-scaled Y axis.
+
+        This setting only affects plots created after the call to
+        `set_ylog`.
+
+        Parameters
+        ----------
+        plottype : { 'all', 'arf', 'bkg', 'bkgchisqr', 'bkgdelchi',
+           'bkgfit', 'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
+           'chisqr', 'data', 'delchi', 'fit', 'kernel', 'model',
+           'psf', 'ratio', 'resid', 'source' }, optional
+           The type of plot that is to use a log-scaled Y axis.  The
+           default is 'all'.
+
+        See Also
+        --------
+        set_xlog : New plots will display a logarithmically-scaled x axis.
+        set_ylinear : New plots will display a linear Y axis.
+
+        Examples
+        --------
+
+        Use a logarithmic scale for the Y axis of `data` plots:
+
+        >>> set_ylog('data')
+        >>> plot('data', 'arf')
+
+        All plots use a logarithmic scale for the Y axis.
+
+        >>> set_ylog()
+        >>> plot_fit()
+
+        """
         self._set_plot_item(plottype, 'ylog', True)
 
 
+    ### Ahelp ingest: 2015-04-28 DJB
+    ### DOC-TODO: list of valid plottype should probably be displayed
+    ###           in a different manner
     def set_xlinear(self, plottype="all"):
+        """New plots will display a linear X axis.
+
+        This setting only affects plots created after the call to
+        `set_xlinear`.
+
+        Parameters
+        ----------
+        plottype : { 'all', 'arf', 'bkg', 'bkgchisqr', 'bkgdelchi',
+           'bkgfit', 'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
+           'chisqr', 'data', 'delchi', 'fit', 'kernel', 'model',
+           'psf', 'ratio', 'resid', 'source' }, optional
+           The type of plot that is to use a linear X axis.  The
+           default is 'all'.
+
+        See Also
+        --------
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+
+        Examples
+        --------
+
+        Use a linear X axis for 'data' plots:
+
+        >>> set_xlinear('data')
+        >>> plot('data', 'arf')
+
+        All plots use a linear scale for the X axis.
+
+        >>> set_xlinear()
+        >>> plot_fit()
+
+        """
         self._set_plot_item(plottype, 'xlog', False)
 
 
+    ### Ahelp ingest: 2015-04-28 DJB
+    ### DOC-TODO: list of valid plottype should probably be displayed
+    ###           in a different manner
     def set_ylinear(self, plottype="all"):
+        """New plots will display a linear Y axis.
+
+        This setting only affects plots created after the call to
+        `set_ylinear`.
+
+        Parameters
+        ----------
+        plottype : { 'all', 'arf', 'bkg', 'bkgchisqr', 'bkgdelchi',
+           'bkgfit', 'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
+           'chisqr', 'data', 'delchi', 'fit', 'kernel', 'model',
+           'psf', 'ratio', 'resid', 'source' }, optional
+           The type of plot that is to use a linear Y axis.  The
+           default is 'all'.
+
+        See Also
+        --------
+        set_xlinear : New plots will display a linear X axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
+
+        Examples
+        --------
+
+        Use a linear Y axis for 'data' plots:
+
+        >>> set_ylinear('data')
+        >>> plot('data', 'arf')
+
+        All plots use a linear scale for the Y axis.
+
+        >>> set_ylinear()
+        >>> plot_fit()
+
+        """
         self._set_plot_item(plottype, 'ylog', False)
 
 

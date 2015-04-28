@@ -539,6 +539,7 @@ class Session(sherpa.ui.utils.Session):
     # Data
     ###########################################################################
 
+    # DOC-NOTE: also in sherpa.utils
     #@loggable(with_id=True, with_name='load_data')
     def dataspace1d(self, start, stop, step=1, numbins=None,
                     id=None, bkg_id=None, dstype=sherpa.data.Data1DInt):
@@ -629,6 +630,7 @@ class Session(sherpa.ui.utils.Session):
             self.set_data(id, dstype('dataspace1d', *args, **kwargs))
 
 
+    # DOC-NOTE: also in sherpa.utils
     def dataspace2d(self, dims, id=None, dstype=sherpa.astro.data.DataIMG):
         """
         dataspace2d
@@ -708,6 +710,7 @@ class Session(sherpa.ui.utils.Session):
             dataset = sherpa.io.read_arrays(*args)
         return dataset
 
+    # DOC-NOTE: also in sherpa.astro.utils
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_arrays(self, id, *args):
         """
