@@ -5577,7 +5577,15 @@ class Session(NoNewAttributesAfterInit):
         Fix the `pos` parameter of `g2` to be 2.3 more than the `pos`
         parameter of the `g1` model.
 
+        >>> gauss1d.g1
+        >>> gauss1d.g2
+        >>> g1.pos = 12.2
         >>> link(g2.pos, g1.pos + 2.3)
+        >>> g2.pos.val
+        14.5
+        >>> g1.pos = 12.1
+        >>> g2.pos.val
+        14.399999999999999
 
         """
         par = self._check_par(par)
@@ -5585,26 +5593,32 @@ class Session(NoNewAttributesAfterInit):
             val = self._eval_model_expression(val, 'parameter link')
         par.link = val
 
+    ### Ahelp ingest: 2015-04-28 DJB
     def unlink(self, par):
-        """
-        unlink
+        """Unlink a parameter value.
 
-        SYNOPSIS
-           Unlink a parameter
+        Remove any parameter link - created by `link` - for the
+        parameter. The parameter value is reset to the value it
+        had before `link` was called.
 
-        SYNTAX
+        Parameters
+        ----------
+        par :
+           The parameter to unlink. If the parameter is not linked
+           then nothing happens.
 
-        Arguments:
-           par       - Sherpa parameter to be unlinked
+        See Also
+        --------
+        freeze : Fix model parameters so they are not changed by a fit.
+        link : Link a parameter to a value.
+        set_par : Set a parameter value.
+        thaw : Allow model parameters to be varied during a fit.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Unlink a Sherpa parameter. See link for more information.
+        >>> unlink(bgnd.ampl)
 
-        SEE ALSO
-           freeze, thaw, link
         """
         par = self._check_par(par)
         par.unlink()
