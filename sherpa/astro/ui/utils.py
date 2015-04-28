@@ -4164,40 +4164,84 @@ class Session(sherpa.ui.utils.Session):
         """
         return self._get_pha_data(id).get_analysis()
 
+    ### Ahelp ingest: 2015-04-28 DJB
+    ### DOC-TODO: docs need to be added to sherpa.astro.data.set_coord
+    ### DOC-TODO: this is a function that doesn't really match the normal
+    ###           Python parameter rules
+    ### DOC-TODO: how best to document the wcssubs support?
     #@loggable(with_id=True, with_keyword='coord')
     def set_coord(self, id, coord=None):
-        """
-        set_coord
+        """Set the coordinate system to use for image analysis.
 
-        SYNOPSIS
-           Set the coordinate system by data id
+        The default coordinate system - that is, the mapping between
+        pixel position and coordinate value, for images (2D data sets)
+        is 'logical'. This function can change this setting, so that
+        model parameters can be fit using other systems. This setting
+        is also used by the `notice2d` and `ignore2d` series of
+        commands.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           The data set to change. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        coord : { 'logical', 'image', 'physical', 'world', 'wcs' }
+           The coordinate system to use. The 'image' option is the
+           same as 'logical', and 'wcs' the same as 'world'.  The
+           'physical' and 'world' options are only available for
+           installations built with the optional `wcssubs` package.
 
-           coord     - string keyword identifying coordinate system
+        See Also
+        --------
+        get_coord : Get the coordinate system used for image analysis.
+        guess : Estimate the parameter values and ranges given the loaded data.
+        ignore2d : Exclude a spatial region from an image.
+        notice2d : Include a spatial region of an image.
 
-        Returns:
-           None
+        Notes
+        -----
+        Any limits or values already set for model parameters, such as
+        with `guess`, may need to be changed after changing the
+        coordinate system.
 
-        DESCRIPTION
-           Set the coordinate system of a Sherpa DataIMG dataset
-           by data id.  Choices include logical, physical, and world
-           coordinates.  Alias for logical is image.  Alias for world
-           is wcs.
+        The 'logical' system is one in which the center of the
+        lower-left pixel has coordinates `(1,1)` and the center of the
+        top-right pixel has coordinates `(nx,ny)`, for a `nx`
+        (columns) by `ny` (rows) pixel image. The pixels have a side
+        of length `1`, so the first pixel covers the range `x=0.5` to
+        `x=1.5` and `y=0.5` to `y=1.5`.
 
-           * 'logical' or 'image'
+        The 'physical' and 'world' coordinate systems rely on FITS
+        World Coordinate System (WCS) standard [1]_. The 'physical'
+        system refers to a linear transformation, with possible
+        offset, of the 'logical' system. The 'world' system refers to
+        the mapping to a celestial coordinate system.
 
-           * 'physical'
+        Support for the 'physical' and 'world' coordinate systems
+        relies on the optional `wcssubs` package. This can be checked
+        for by
 
-           * 'world' or 'wcs'
+        >>> import sherpa.astro.utils._wcs
 
-        SEE ALSO
-           notice2d, notice2d_id, notice2d_image, ignore2d, ignore2d_id,
-           ignore2d_image, get_coord
+        References
+        ----------
+
+        .. [1] http://fits.gsfc.nasa.gov/fits_wcs.html
+
+        Examples
+        --------
+
+        Change the coordinate system of the default data set to
+        the world system ('wcs' is a synonym for 'world').
+
+        >>> set_coord('wcs')
+
+        Change the data set with the id of 'm82' to use the
+        physical coordinate system.
+
+        >>> set_coord('m82', 'physical')
+
         """
         if coord is None:
             id, coord = coord, id
@@ -4216,7 +4260,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_coord(self, id=None):
-        """
+        """Get the coordinate system used for image analysis.
+
         get_coord
 
         SYNOPSIS
@@ -4323,7 +4368,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def notice2d(self, val=None):
-        """
+        """Include a spatial region of an image.
+
         notice2d
 
         SYNOPSIS
@@ -4359,7 +4405,8 @@ class Session(sherpa.ui.utils.Session):
             d.notice2d(val, False)
 
     def ignore2d(self, val=None):
-        """
+        """Exclude a spatial region from an image.
+
         ignore2d
 
         SYNOPSIS
