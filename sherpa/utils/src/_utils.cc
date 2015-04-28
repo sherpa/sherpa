@@ -709,6 +709,11 @@ static PyObject* sao_arange( PyObject* self, PyObject* args )
   return result.return_new_ref();
 }
 
+// for documentation
+#define SEEALSODOC "See also\n--------\n"
+#define NOTESDOC "Notes\n-----\n"
+#define REFERENCESDOC "References\n----------\n"
+#define EXAMPLESDOC "Examples\n--------\n"
 
 static PyMethodDef UtilsFcts[] = {
 
@@ -724,11 +729,65 @@ static PyMethodDef UtilsFcts[] = {
   
   // Compliment of incomplete gamma function
   { (char*) "igamc", (PyCFunction) igamc, METH_VARARGS,
-    (char*) " Calculate the compliment of the incomplete Gamma (upper) function [a>0; x>0]\n\nExample:\nsherpa> igamc( a, x )"},
+    (char*) "igamc(a,x)\n\n"
+            "Calculate the complement of the regularized incomplete Gamma function\n"
+            "(upper) when a>0 and x>0. The arguments (`a` and `x`) can either be\n"
+            "scalar values or arrays.\n\n"
+            "The function is defined using the regularized incomplete Gamma function -\n"
+            "igam(a,x) - and the Gamma function - gamma(a) - as\n\n"
+            "igamc(a,x) = 1 - igam(a,x)\n"
+            "           = 1/gamma(a) Int_x^Inf e^(-t) t^(a-1) dt\n\n"
+            SEEALSODOC
+            "gamma : The Gamma function.\n"
+            "igam  : The incomplete Gamma function (upper).\n\n"
+            NOTESDOC
+            "In this implementation, which is provided by the Cephes Math Library [1]_,\n"
+            "both arguments must be positive. The integral is evaluated by either a\n"
+            "power series or continued fraction expansion, depending on the relative\n"
+            "values of a and x. Using IEEE arithmetic, the relative errors are\n\n"
+            "========  ======  ========  =======  =======\n"
+            " domain   domain  # trials   peak      rms\n"
+            "========  ======  ========  =======  =======\n"
+            "0.5,100   0,100   200000    1.9e-14  1.7e-15\n"
+            "0.01,0.5  0,100   200000    1.4e-13  1.6e-15\n"
+            "========  ======  ========  =======  =======\n\n"
+            REFERENCESDOC "\n"
+            ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
+            "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
+            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n\n"
+            EXAMPLESDOC "\n"
+            ">>> igamc(1, 2)\n0.1353352832366127\n\n"
+            ">>> igamc([1,1], [2,3])\narray([ 0.13533528,  0.04978707])\n\n"},
 
   // Incomplete gamma function
   { (char*) "igam", (PyCFunction) igam, METH_VARARGS,
-    (char*) " Calculate the incomplete Gamma (lower) function [a>0; x>0]\n\nExample:\nsherpa> igam( a, x )"},
+    (char*) "igam(a,x)\n\n"
+            "Calculate the regularized incomplete Gamma function (lower) when\n"
+            "a>0 and x>0. The arguments (`a` and `x`) can either be scalar\n"
+            "values or arrays.\n\n"
+            "The function is defined using the complete Gamma function - gamma(a) - as\n\n"
+            "igam(a,x) = 1/gamma(a) Int_0^x e^(-t) t^(a^-1) dt\n\n"
+            SEEALSODOC
+            "gamma : The Gamma function.\n"
+            "igamc : The compliment of the incomplete Gamma function (upper).\n\n"
+            NOTESDOC
+            "In this implementation, which is provided by the Cephes Math Library [1]_,\n"
+            "both arguments must be positive. The integral is evaluated by either a\n"
+            "power series or continued fraction expansion, depending on the relative\n"
+            "values of a and x. Using IEEE arithmetic, the relative errors are\n\n"
+            "======  ========  =======  =======\n"
+            "domain  # trials   peak      rms\n"
+            "======  ========  =======  =======\n"
+            "0,30    200000    3.6e-14  2.9e-15\n"
+            "0,100   300000    9.9e-14  1.5e-14\n"
+            "======  ========  =======  =======\n\n"
+            REFERENCESDOC "\n"
+            ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
+            "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
+            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n\n"
+            EXAMPLESDOC "\n"
+            ">>> igam(1, 2)\n0.8646647167633873\n\n"
+            ">>> igam([1,1], [2,3])\narray([ 0.86466472,  0.95021293])\n\n"},
 
   // Incomplete beta function
   
