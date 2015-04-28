@@ -5519,31 +5519,66 @@ class Session(NoNewAttributesAfterInit):
         for p in par:
             self._freeze_thaw_par_or_model(p, 'thaw')
 
+    ### Ahelp ingest: 2015-04-28 DJB
     def link(self, par, val):
-        """
-        link
+        """Link a parameter to a value.
 
-        SYNOPSIS
-           Link a parameter with an associated value
+        A parameter can be linked to another parameter value, or
+        function of that value, rather than be an independent value.
+        As the linked-to values change, the parameter value will
+        change.
 
-        SYNTAX
+        Parameters
+        ----------
+        par :
+           The parameter to link.
+        val :
+           The value - wihch can be a numeric value or a function
+           of other model parameters, to set `par` to.
 
-        Arguments:
-           par       - Sherpa parameter to be linked
+        See Also
+        --------
+        freeze : Fix model parameters so they are not changed by a fit.
+        set_par : Set a parameter value.
+        thaw : Allow model parameters to be varied during a fit.
+        unlink : Unlink a parameter value.
 
-           val       - value
+        Notes
+        -----
 
-        Returns:
-           None
+        The `link` attribute of the parameter is set to match the
+        mathematical expression used for `val`.
 
-        DESCRIPTION
-           Link a Sherpa parameter with a value.  Linked parameters will
-           assume this value during the fit.
+        For a parameter value to be varied during a fit, it must be
+        part of one of the source expressions involved in the fit.
+        So, in the following, the `src1.xpos` parameter will not
+        be varied because the `src2` model - from which it takes
+        its value - is not included in the source expression of any
+        of the data sets being fit.
 
-           Note: linked values may be variable or static.
+        >>> set_source(1, gauss1d.src1)
+        >>> gauss1d.src2
+        >>> link(src1.xpos, src2.xpos)
+        >>> fit(1)
 
-        SEE ALSO
-           freeze, thaw, unlink
+        One way to work around this is to include the model but
+        with zero signal: for example
+
+        >>> set_source(1, gauss1d.src1 + 0 * gauss1d.src2)
+
+        Examples
+        --------
+
+        The `fwhm` parameter of the `g2` model is set to be the same as
+        the `fwhm` parameter of the `g1` model.
+
+        >>> link(g2.fwhm, g1.fwhm)
+
+        Fix the `pos` parameter of `g2` to be 2.3 more than the `pos`
+        parameter of the `g1` model.
+
+        >>> link(g2.pos, g1.pos + 2.3)
+
         """
         par = self._check_par(par)
         if isinstance(val, basestring):
