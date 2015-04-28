@@ -5174,63 +5174,141 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_adapt_snr(min, maxLength, tabStops, errorCol)
 
+    ### Ahelp ingest: 2015-04-28 DJB
     #@loggable(with_id=True)
     def subtract(self, id=None):
-        """
-        subtract
+        """Subtract the background estimate from a data set.
 
-        SYNOPSIS
-           Subtract background counts
+        The `subtract` function performs a channel-by-channel
+        subtraction of the background estimate from the data. After
+        this command, anything that uses the data set - such as a
+        plot, fit, or error analysis - will use the subtracted
+        data. Models should be re-fit if `subtract` is called.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
-     
-        Returns:
-           None
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+        sherpa.utils.err.DataErr
+           If the data set is already subtracted.
 
-        DESCRIPTION
-           Subtract background counts from total counts according
-           to the following equation:
-           
-           Measured = Total  - Back  * Data Exposure * Data Area
-           Counts     Counts   Counts  Back Exposure   Back Area
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        unsubtract : Undo any background subtraction for the data set.
 
-        SEE ALSO
-           unsubtract        
+        Notes
+        -----
+        Unlike X-Spec [1]_, Sherpa does not automatically subtract
+        the background estimate from the data.
+
+        Background subtraction can only be performed when data and
+        background are of the same length.  If the data and background
+        are ungrouped, both must have same number of channels.  If
+        they are grouped, data and background can start with different
+        numbers of channels, but must have the same number of groups
+        after grouping.
+
+        The equation for the subtraction is:
+
+           src_counts - bg_counts * (src_exposure * src_backscal)
+                                    -----------------------------
+                                     (bg_exposure * bg_backscal)
+
+        where src_exposure and bg_exposure are the source and
+        background exposure times, and src_backscal and bg_backscal
+        are the source and background backscales.  The backscale, read
+        from the `BACKSCAL` header keyword of the PHA file [2]_, is
+        the ratio of data extraction area to total detector area.
+
+        The `subtracted` field of a dataset is set to `True` when
+        the background is subtracted.
+
+        References
+        ----------
+
+        .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecSpectralFitting.html
+
+        .. [2] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node5.html
+
+        Examples
+        --------
+
+        Background subtract the default data set.
+
+        >>> subtract()
+        >>> get_data().subtracted
+        True
+
+        Remove the background from the data set labelled 'src':
+
+        >>> subtract('src')
+        >>> get_data('src').subtracted
+        True
+
         """
         if (self._get_pha_data(id).subtracted is True):
             raise DataErr('subtractset', 'data set', str(self._fix_id(id)), 'True')
         self._get_pha_data(id).subtract()
 
+    ### Ahelp ingest: 2015-04-28 DJB
     #@loggable(with_id=True)
     def unsubtract(self, id=None):
-        """
-        unsubtract
+        """Undo any background subtraction for the data set.
 
-        SYNOPSIS
-           Ignore subtraction of background counts
+        The `unsubtract` function undoes any changes made by
+        `subtract`. After this command, anything that uses the data
+        set - such as a plot, fit, or error analysis - will use the
+        original data values. Models should be re-fit if `subtract` is
+        called.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+        sherpa.utils.err.DataErr
+           If the data set does not have its background subtracted.
 
-        Returns:
-           None
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        subtract : Subtract the background estimate from a data set.
 
-        DESCRIPTION
-           Ignore subtraction of background counts total counts
-           according to the following equation:
-           
-           Measured = Total  - Back  * Data Exposure * Data Area
-           Counts     Counts   Counts  Back Exposure   Back Area
+        Notes
+        -----
+        The `subtracted` field of a dataset is set to `False` when
+        the background is not subtracted.
 
-        SEE ALSO
-           unsubtract
+        Examples
+        --------
+
+        Remove the background subtraction from the default data set.
+
+        >>> subtract()
+        >>> get_data().subtracted
+        False
+
+        Remove the background subtraction from the data set labelled
+        'src':
+
+        >>> subtract('src')
+        >>> get_data('src').subtracted
+        False
+
         """
         if (self._get_pha_data(id).subtracted is False):
             raise DataErr('subtractset', 'data set', str(self._fix_id(id)), 'False')
