@@ -5943,6 +5943,13 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
+
         The `guess` function can reduce the time required to fit a
         data set by moving the parameters closer to a realistic
         solution. It can also be useful because it can set bounds on
@@ -5952,13 +5959,6 @@ class Session(NoNewAttributesAfterInit):
         but `guess` simplifies this, at least for those parameters
         that are supported. Instrument models - such as an ARF and
         RMF - should be set up *before* calling `guess`.
-
-        The function does not follow the normal Python standards for
-        parameter use, since it is designed for easy interactive use.
-        When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
-        respectively.
 
         Examples
         --------

@@ -4056,8 +4056,6 @@ class Session(sherpa.ui.utils.Session):
     ### DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
     ### DOC-TODO: should the arguments be renamed to better match optional
     ###           nature of the routine (e.g. can call set_analysis('energy'))?
-    ### DOC-TODO: this is a function that doesn't really match the normal
-    ###           Python parameter rules
     #@loggable(with_id=True, with_keyword='quantity')
     def set_analysis(self, id, quantity=None, type='rate', factor=0):
         """Set the units used when fitting and displaying spectral data.
@@ -4096,6 +4094,15 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         get_analysis : Return the analysis setting for a data set.
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `quantity` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `quantity` parameters,
+        respectively.
 
         Examples
         --------
@@ -4166,8 +4173,6 @@ class Session(sherpa.ui.utils.Session):
 
     ### Ahelp ingest: 2015-04-28 DJB
     ### DOC-TODO: docs need to be added to sherpa.astro.data.set_coord
-    ### DOC-TODO: this is a function that doesn't really match the normal
-    ###           Python parameter rules
     ### DOC-TODO: how best to document the wcssubs support?
     #@loggable(with_id=True, with_keyword='coord')
     def set_coord(self, id, coord=None):
@@ -4201,9 +4206,16 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `coord` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `coord` parameters,
+        respectively.
+
         Any limits or values already set for model parameters, such as
-        with `guess`, may need to be changed after changing the
-        coordinate system.
+        those made by `guess`, may need to be changed after changing
+        the coordinate system.
 
         The 'logical' system is one in which the center of the
         lower-left pixel has coordinates `(1,1)` and the center of the
