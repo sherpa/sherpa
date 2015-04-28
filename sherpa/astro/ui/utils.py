@@ -4145,7 +4145,7 @@ class Session(sherpa.ui.utils.Session):
         ----------
         id : int or str, optional
            The data set to query. If not given then the default
-           identifier is used, as set by `set_default_id`.
+           identifier is used, as returned by `get_default_id`.
 
         Returns
         -------
@@ -4160,7 +4160,6 @@ class Session(sherpa.ui.utils.Session):
         --------
         get_default_id : Return the default data set identifier. 
         set_analysis : Change the analysis setting.
-        set_default_id : Change the default data set identifier. 
 
         """
         return self._get_pha_data(id).get_analysis()
@@ -8336,8 +8335,8 @@ class Session(sherpa.ui.utils.Session):
            means that the upper range of the data set is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
-           (`None`) means that the default identifier, as set by
-           `set_default_id`, is used.
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
         bkg_id : int or string, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
@@ -8353,6 +8352,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         calc_model_sum : Calculate the convolved model signal.
         calc_source_sum : Calculate the un-convolved model signal.
+        get_default_id : Return the default data set identifier.
         set_source : Set the source model expression.
 
         References

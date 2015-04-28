@@ -5890,41 +5890,79 @@ class Session(NoNewAttributesAfterInit):
         else:
             return self._fit_results
 
+    ### Ahelp ingest: 2015-04-28 DJB
     def guess(self, id=None, model=None, limits=True, values=True):
-        """
-        guess
+        """Estimate the parameter values and ranges given the loaded data.
 
-        SYNOPSIS
-           Guess the parameters values of model from the data
+        The `guess` function can change the parameter values and
+        limits to match the loaded data. This is generally limited to
+        changing the amplitude and position parameters (sometimes just
+        the values and sometimes just the limits). The parameters that
+        are changed depend on the type of model.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : str or int, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model :
+           Change the parameters of this model component. If `None`,
+           then the source expression is assumed to consist of a single
+           component, and that component is used.
+        limits : bool
+           Should the parameter limits be changed? The default is `True`.
+        values : bool
+           Should the parameter values be changed? The default is `True`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        reset : Reset the model parameters to their default settings.
+        set_par : Set a parameter value.
 
-           model     - Sherpa model to perform guess
-                       default = None
+        Notes
+        -----
+        The `guess` function can reduce the time required to fit a
+        data set by moving the parameters closer to a realistic
+        solution. It can also be useful because it can set bounds on
+        the parameter values based on the data: for instance, many
+        two-dimensional models will limit their `xpos` and `ypos`
+        values to lie within the data area. This can be done manually,
+        but `guess` simplifies this, at least for those parameters
+        that are supported. Instrument models - such as an ARF and
+        RMF - should be set up *before* calling `guess`.
 
-        Returns:
-           None
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-        DESCRIPTION
-           Guess works only for single, non-composite models
+        Examples
+        --------
 
-           Examples:
-              set_model(powlaw1d.p1)
-              guess()
+        Since the source expression contains only one component,
+        `guess` can be called with no arguments:
 
-              set_model("src", powlaw1d.p1)
-              guess("src")
+        >>> set_source(polynom1d.poly)
+        >>> guess()
 
-              set_model(powlaw1d.p1*gauss1d.g1)
-              guess(g1)
-              guess(p1)
+        In this case, `guess` is called on each component separately.
 
-        SEE ALSO
-           set_model, fit
+        >>> set_source(gauss1d.line + powlaw1d.cont)
+        >>> guess(line)
+        >>> guess(cont)
+
+        In this example, the values of the `src` model component are
+        guessed from the "src" data set, whereas the `bgnd` component
+        is guessed from the "bgnd" data set.
+
+        >>> set_source("src", gauss2d.src + const2d.bgnd)
+        >>> set_source("bgnd", bgnd)
+        >>> guess("src", src)
+        >>> guess("bgnd", bgnd)
+
         """
         if model is None:
             id, model = model, id
@@ -7021,8 +7059,6 @@ class Session(NoNewAttributesAfterInit):
     
     ### Ahelp ingest: 2015-04-27 DJB
     ### DOC-TODO: include screen output of conf() ?
-    ### DOC-TODO: this is a function that doesn't really match the normal
-    ###           Python parameter rules
     def conf(self, *args):
         """Estimate the confidence intervals for parameters using the
         confidence method.
@@ -7065,6 +7101,11 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with multiple `ids` or `parameters` values, the
+        order is unimportant, since any argument that is not defined
+        as a model parameter is assumed to be a data id.
 
         The `conf` command is different to `covar`, in that in that
         all other thawed parameters are allowed to float to new
