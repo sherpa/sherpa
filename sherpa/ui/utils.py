@@ -1383,53 +1383,74 @@ class Session(NoNewAttributesAfterInit):
         _check_type(item, itemtype, itemname, itemdesc)
         itemdict[id] = item
 
+    ### Ahelp ingest: 2015-04-28 DJB
     def get_default_id(self):
-        """
-        get_default_id
+        """Return the default data set identifier.
 
-        SYNOPSIS
-           Return the default Sherpa data id
+        The Sherpa data id ties data, model, fit, and plotting
+        information into a data set easily referenced by id. The
+        default identifier, used by many commands, is returned by this
+        command and can be changed by `set_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        id : int or str
+           The default data set identifier used by certain Sherpa
+           functions when an identifier is not given, or set to
+           `None`.
 
-        Arguments:
-           None
+        See Also
+        --------
+        list_data_ids : List the loaded data sets.
+        set_default_id : Set the default data set identifier.
 
-        Returns:
-           Sherpa data id
+        Notes
+        -----
+        The default Sherpa data set identifier is the integer
+        `1`.
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
-
-        SEE ALSO
-           set_default_id, list_data_ids
         """
         return self._default_id
 
+    ### Ahelp ingest: 2015-04-28 DJB
     def set_default_id(self, id):
-        """
-        set_default_id
+        """Set the default data set identifier.
 
-        SYNOPSIS
-           Set the default Sherpa data id
+        The Sherpa data id ties data, model, fit, and plotting
+        information into a data set easily referenced by id. The
+        default identifier, used by many commands, is changed by this
+        command. The current setting can be found by using
+        `get_default_id`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           The default data set identifier to be used by certain
+           Sherpa functions when an identifier is not given, or set to
+           `None`.
 
-        Arguments:
-           id         - new Sherpa data id
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        list_data_ids : List the loaded data sets.
 
-        Returns:
-           None
+        Notes
+        -----
+        The default Sherpa data set identifier is the integer
+        `1`.
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        Examples
+        --------
 
-        SEE ALSO
-           get_default_id, list_data_ids
+        After the following, many commands, such as `set_source`, will
+        use `src` as the default data set identifier:
+
+        >>> set_default_id('src')
+
+        Restore the default data set identifier.
+
+        >>> set_default_id(1)
+
         """
         self._default_id = self._fix_id(id)
 
