@@ -710,12 +710,12 @@ static PyObject* sao_arange( PyObject* self, PyObject* args )
 }
 
 // for documentation
-#define SEEALSODOC "See also\n--------\n"
-#define NOTESDOC "Notes\n-----\n"
-#define REFERENCESDOC "References\n----------\n"
-#define EXAMPLESDOC "Examples\n--------\n"
-#define PARAMETERSDOC "Parameters\n----------\n"
-#define RETURNSDOC "Returns\n-------\n"
+#define SEEALSODOC "\nSee also\n--------\n"
+#define NOTESDOC "\nNotes\n-----\n"
+#define REFERENCESDOC "\nReferences\n----------\n"
+#define EXAMPLESDOC "\nExamples\n--------\n"
+#define PARAMETERSDOC "\nParameters\n----------\n"
+#define RETURNSDOC "\nReturns\n-------\n"
 
 static PyMethodDef UtilsFcts[] = {
 
@@ -732,7 +732,7 @@ static PyMethodDef UtilsFcts[] = {
             "The test significance is defined as the integral of p(T) from the\n"
             "observed value of T to infinity. The significance quantifies the\n"
             "probability that one would select the more complex model when in\n"
-            "fact the null hypothesis is correct. See also `calc_mlr`.\n\n"
+            "fact the null hypothesis is correct. See also `calc_mlr`.\n"
             PARAMETERSDOC
             "dof1 : int\n"
             "   degrees of freedom of the simple model\n"
@@ -741,15 +741,15 @@ static PyMethodDef UtilsFcts[] = {
             "dof2 : int\n"
             "   degrees of freedom of the complex model\n"
             "stat2 : number\n"
-            "   best-fit chi-square statistic value of the complex model\n\n"
+            "   best-fit chi-square statistic value of the complex model\n"
             RETURNSDOC
             "sig : number\n"
             "   The significance, or p-value. A standard threshold for\n"
             "   selecting the more complex model is significance < 0.05 (the\n"
-            "   '95% criterion' of statistics).\n\n"
+            "   '95% criterion' of statistics).\n"
             SEEALSODOC
             "calc_mlr : Calculate the maximum-likelihood ratio test.\n"
-            "incbet  : Calculate the incomplete Beta function.\n\n"
+            "incbet  : Calculate the incomplete Beta function.\n"
             NOTESDOC
             "The F test uses the ratio of the reduced chi2, which follows\n"
             "the F-distribution, (stat1/dof1)/(stat2/dof2). The incomplete\n"
@@ -762,7 +762,7 @@ static PyMethodDef UtilsFcts[] = {
             " - those normal distributions are not truncated by parameter space\n"
             "   boundaries;\n"
             " - the best-fit statistics are sampled from the chi-square\n"
-            "   distribution.\n\n"
+            "   distribution.\n"
             EXAMPLESDOC "\n"
             "In this example, the simple model has 5 degrees of freedom and\n"
             "a chi-square statistic of 7.73, while the complex model has 8\n"
@@ -777,34 +777,41 @@ static PyMethodDef UtilsFcts[] = {
   { (char*) "calc_mlr", (PyCFunction) mlr, METH_VARARGS,
     (char*) " Calculate the Maximum Likelihood Ratio test\n\nExample:\nsherpa> calc_mlr( <delta_dof>, <delta_stat> )"},
   
-  // Compliment of incomplete gamma function
+  // Complement of incomplete gamma function
   { (char*) "igamc", (PyCFunction) igamc, METH_VARARGS,
     (char*) "igamc(a,x)\n\n"
-            "Calculate the complement of the regularized incomplete Gamma function\n"
-            "(upper) when a>0 and x>0. The arguments (`a` and `x`) can either be\n"
-            "scalar values or arrays.\n\n"
-            "The function is defined using the regularized incomplete Gamma function -\n"
-            "igam(a,x) - and the Gamma function - gamma(a) - as\n\n"
+            "Calculate the complement of the regularized incomplete Gamma\n"
+            "function (upper).\n\n"
+            "The function is defined using the regularized incomplete Gamma\n"
+            "function - igam(a,x) - and the Gamma function - gamma(a) - as\n\n"
             "igamc(a,x) = 1 - igam(a,x)\n"
-            "           = 1/gamma(a) Int_x^Inf e^(-t) t^(a-1) dt\n\n"
+            "           = 1/gamma(a) Int_x^Inf e^(-t) t^(a-1) dt\n"
+            PARAMETERSDOC
+            "a : scalar or array\n"
+            "   a > 0\n"
+            "x : scalar or array\n"
+            "   x > 0\n"
+            RETURNSDOC
+            "val : scalar or array\n"
             SEEALSODOC
             "gamma : The Gamma function.\n"
-            "igam  : The incomplete Gamma function (upper).\n\n"
+            "igam  : The incomplete Gamma function (upper).\n"
             NOTESDOC
-            "In this implementation, which is provided by the Cephes Math Library [1]_,\n"
-            "both arguments must be positive. The integral is evaluated by either a\n"
-            "power series or continued fraction expansion, depending on the relative\n"
-            "values of a and x. Using IEEE arithmetic, the relative errors are\n\n"
+            "In this implementation, which is provided by the Cephes Math\n"
+            "Library [1]_, both arguments must be positive. The integral is\n"
+            "evaluated by either a power series or continued fraction expansion,\n"
+            "depending on the relative values of a and x. Using IEEE arithmetic,\n"
+            "the relative errors are\n\n"
             "========  ======  ========  =======  =======\n"
             " domain   domain  # trials   peak      rms\n"
             "========  ======  ========  =======  =======\n"
             "0.5,100   0,100   200000    1.9e-14  1.7e-15\n"
             "0.01,0.5  0,100   200000    1.4e-13  1.6e-15\n"
-            "========  ======  ========  =======  =======\n\n"
+            "========  ======  ========  =======  =======\n"
             REFERENCESDOC "\n"
             ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
             "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
-            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n\n"
+            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n"
             EXAMPLESDOC "\n"
             ">>> igamc(1, 2)\n0.1353352832366127\n\n"
             ">>> igamc([1,1], [2,3])\narray([ 0.13533528,  0.04978707])\n\n"},
@@ -812,29 +819,36 @@ static PyMethodDef UtilsFcts[] = {
   // Incomplete gamma function
   { (char*) "igam", (PyCFunction) igam, METH_VARARGS,
     (char*) "igam(a,x)\n\n"
-            "Calculate the regularized incomplete Gamma function (lower) when\n"
-            "a>0 and x>0. The arguments (`a` and `x`) can either be scalar\n"
-            "values or arrays.\n\n"
-            "The function is defined using the complete Gamma function - gamma(a) - as\n\n"
-            "igam(a,x) = 1/gamma(a) Int_0^x e^(-t) t^(a^-1) dt\n\n"
+            "Calculate the regularized incomplete Gamma function (lower).\n\n"
+            "The function is defined using the complete Gamma function -\n"
+            "gamma(a) - as\n\n"
+            "igam(a,x) = 1/gamma(a) Int_0^x e^(-t) t^(a^-1) dt\n"
+            PARAMETERSDOC
+            "a : scalar or array\n"
+            "   a > 0\n"
+            "x : scalar or array\n"
+            "   x > 0\n"
+            RETURNSDOC
+            "val : scalar or array\n"
             SEEALSODOC
             "gamma : The Gamma function.\n"
-            "igamc : The compliment of the incomplete Gamma function (upper).\n\n"
+            "igamc : The complement of the incomplete Gamma function (upper).\n"
             NOTESDOC
-            "In this implementation, which is provided by the Cephes Math Library [1]_,\n"
-            "both arguments must be positive. The integral is evaluated by either a\n"
-            "power series or continued fraction expansion, depending on the relative\n"
-            "values of a and x. Using IEEE arithmetic, the relative errors are\n\n"
+            "In this implementation, which is provided by the Cephes Math\n"
+            "Library [1]_, both arguments must be positive. The integral is\n"
+            "evaluated by either a power series or continued fraction expansion,\n"
+            "depending on the relative values of a and x. Using IEEE arithmetic,\n"
+            "the relative errors are\n\n"
             "======  ========  =======  =======\n"
             "domain  # trials   peak      rms\n"
             "======  ========  =======  =======\n"
             "0,30    200000    3.6e-14  2.9e-15\n"
             "0,100   300000    9.9e-14  1.5e-14\n"
-            "======  ========  =======  =======\n\n"
+            "======  ========  =======  =======\n"
             REFERENCESDOC "\n"
             ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
             "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
-            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n\n"
+            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n"
             EXAMPLESDOC "\n"
             ">>> igam(1, 2)\n0.8646647167633873\n\n"
             ">>> igam([1,1], [2,3])\narray([ 0.86466472,  0.95021293])\n\n"},
@@ -842,16 +856,62 @@ static PyMethodDef UtilsFcts[] = {
   // Incomplete beta function
   
   { (char*) "incbet", (PyCFunction) incbet, METH_VARARGS,
-    (char*) " Calculate the incomplete Beta function [a>0; b>0; 0<=x<=1]\n\nExample:\nsherpa> incbet( a, b, x )"},
+    (char*) "incbet(a,b,x)\n\n"
+            "Calculate the incomplete Beta function\n\n"
+            "The function is defined as\n"
+            "sqrt(a+b)/(sqrt(a) sqrt(b)) Int_0^x t^(a-1) (1-t)^(b-1) dt\n"
+            "and the integral from x to 1 can be obtained using the relation\n"
+            "1 - incbet(a, b, x) = incbet(b, a, 1-x)\n"
+            PARAMETERSDOC
+            "a : scalar or array\n"
+            "   a > 0\n"
+            "b : scalar or array\n"
+            "   b > 0\n"
+            "x : scalar or array\n"
+            "   0 <= x <= 1\n"
+            RETURNSDOC
+            "val : scalar or array\n"
+            SEEALSODOC
+            "calc_ftest : Compare two models using the F test.\n"
+            NOTESDOC
+            "In this implementation, which is provided by the Cephes Math\n"
+            "Library [1]_, the integral is evaluated by a continued fraction\n"
+            "expansion or, when b*x is small, by a power series.\n\n"
+            "Using IEEE arithmetic, the relative errors are (tested uniformly\n"
+            "distributed random points (a,b,x) with a and b in 'domain' and\n"
+            "x between 0 and 1):\n\n"
+            "========  ========  =======  =======\n"
+            " domain   # trials   peak      rms\n"
+            "========  ========  =======  =======\n"
+            "0,5       10000     6.9e-15  4.5e-16\n"
+            "0,85      250000    2.2e-13  1.7e-14\n" // DOC-TODO: is 25000 correct here?
+            "0,1000    30000     5.3e-12  6.3e-13\n"
+            "0,1000    250000    9.3e-11  7.1e-12\n" // DOC-TODO: is 25000 correct here?
+            "0,100000  10000     8.7e-10  4.8e-11\n"
+            "========  ========  =======  =======\n\n"
+            "Outputs smaller than the IEEE gradual underflow threshold were\n"
+            "excluded from these statistics.\n"
+            REFERENCESDOC "\n"
+            ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
+            "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
+            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n"
+            EXAMPLESDOC "\n"
+            ">>> incbet(0.3, 0.6, 0.5)\n0.68786273145845922\n\n"
+            ">>> incbet([0.3,0.3], [0.6,0.7], [0.5,0.4])\n"
+            "array([ 0.68786273,  0.67356524])\n\n"},
   
   // Gamma function
   { (char*) "gamma", (PyCFunction) gamma, METH_VARARGS,
     (char*) "gamma(z)\n\n"
-            "Calculate the Gamma function in the range [-171 <= z <= 171.6].\n"
-            "The argument can either be a scalar value or an array.\n\n"
+            "Calculate the Gamma function.\n"
+            PARAMETERSDOC
+            "z : scalar or array\n"
+            "   -171 <= z <- 171.6\n"
+            RETURNSDOC
+            "val : scalar or array\n"
             SEEALSODOC
             "lgam : The log of the Gamma function.\n"
-            "igam : The incomplete Gamma function.\n\n"
+            "igam : The incomplete Gamma function.\n"
             NOTESDOC
             "This implementation is provided by the Cephes Math Library [1]_.\n"
             "Arguments |x| >= 34 are reduced by recurrence and the function\n"
@@ -867,11 +927,11 @@ static PyMethodDef UtilsFcts[] = {
             "33,171.6  20000     2.3e-15  3.2e-16\n"
             "========  ========  =======  =======\n\n"
             "Errors for arguments outside the test range will be larger owing\n"
-            "to amplification by the exponential function.\n\n"
+            "to amplification by the exponential function.\n"
             REFERENCESDOC "\n"
             ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
             "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
-            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n\n"
+            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n"
             EXAMPLESDOC "\n"
             ">>> gamma(2.3)\n1.1667119051981603\n\n"
             ">>> gamma([2.3,1.9])\narray([ 1.16671191,  0.96176583])\n\n"},
@@ -880,10 +940,14 @@ static PyMethodDef UtilsFcts[] = {
   { (char*) "lgam", (PyCFunction) lgam, METH_VARARGS,
     (char*) "lgam(z)\n\n"
             "Calculate the log (base e) of the Gamma function.\n"
-            "The argument can either be a scalar value or an array.\n\n"
+            PARAMETERSDOC
+            "z : scalar or array\n"
+            "   0 <= z <= 2.556348e305\n"
+            RETURNSDOC
+            "val : scalar or array\n"
             SEEALSODOC
             "gamma : The Gamma function.\n"
-            "igam : The incomplete Gamma function.\n\n"
+            "igam : The incomplete Gamma function.\n"
             NOTESDOC
             "This implementation is provided by the Cephes Math Library [1]_.\n"
             "For arguments greater than 13, the logarithm of the Gamma function\n"
@@ -892,11 +956,10 @@ static PyMethodDef UtilsFcts[] = {
             "between -33 and +33 are reduced by recurrence to the interval [2,3]\n"
             "of a rational approximation. The cosecant reflection formula is\n"
             "employed for arguments less than -33.\n\n"
-            "The routine is defined over the range 0 <= z <= 2.556348e305.\n\n"
             "Relative errors are\n\n"
-            "===============  ========  =======  =======\n\n"
+            "===============  ========  =======  =======\n"
             "    domain       # trials   peak      rms\n"
-            "===============  ========  =======  =======\n\n"
+            "===============  ========  =======  =======\n"
             "0,3              28000     5.4e-16  1.1e-16\n"
             "2.718,2.556e305  40000     3.5e-16  8.3e-17\n"
             "===============  ========  =======  =======\n\n"
@@ -905,15 +968,15 @@ static PyMethodDef UtilsFcts[] = {
             "The following test used the relative error criterion, though at\n"
             "certain points the relative error could be much higher than\n"
             "indicated.\n\n"
-            "=======  ========  =======  =======\n\n"
+            "=======  ========  =======  =======\n"
             "domain   # trials   peak      rms\n"
-            "=======  ========  =======  =======\n\n"
+            "=======  ========  =======  =======\n"
             "-200,-4  10000     4.8e-16  1.3e-16\n"
-            "=======  ========  =======  =======\n\n"
+            "=======  ========  =======  =======\n"
             REFERENCESDOC "\n"
             ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
             "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
-            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n\n"
+            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n"
             EXAMPLESDOC "\n"
             ">>> lgam(104.56)\n380.21387239435785\n\n"
             ">>> lgam([104.56,2823.4])\narray([   380.21387239,  19607.42734396])\n\n"},
