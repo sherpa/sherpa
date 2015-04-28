@@ -828,7 +828,45 @@ static PyMethodDef UtilsFcts[] = {
   
   // Log gamma function
   { (char*) "lgam", (PyCFunction) lgam, METH_VARARGS,
-    (char*) " Calculate the log of the Gamma function\n\nExample:\nsherpa> lgam( x )"},
+    (char*) "lgam(z)\n\n"
+            "Calculate the log (base e) of the Gamma function.\n"
+            "The argument can either be a scalar value or an array.\n\n"
+            SEEALSODOC
+            "gamma : The Gamma function.\n"
+            "igam : The incomplete Gamma function.\n\n"
+            NOTESDOC
+            "This implementation is provided by the Cephes Math Library [1]_.\n"
+            "For arguments greater than 13, the logarithm of the Gamma function\n"
+            "is approximated by the logarithmic version of Stirling's formula\n"
+            "using a polynomial approximation of degree 4. Arguments\n"
+            "between -33 and +33 are reduced by recurrence to the interval [2,3]\n"
+            "of a rational approximation. The cosecant reflection formula is\n"
+            "employed for arguments less than -33.\n\n"
+            "The routine is defined over the range 0 <= z <= 2.556348e305.\n\n"
+            "Relative errors are\n\n"
+            "===============  ========  =======  =======\n\n"
+            "    domain       # trials   peak      rms\n"
+            "===============  ========  =======  =======\n\n"
+            "0,3              28000     5.4e-16  1.1e-16\n"
+            "2.718,2.556e305  40000     3.5e-16  8.3e-17\n"
+            "===============  ========  =======  =======\n\n"
+            "The error criterion was relative when the function magnitude was\n"
+            "greater than one but absolute when it was less than one.\n\n"
+            "The following test used the relative error criterion, though at\n"
+            "certain points the relative error could be much higher than\n"
+            "indicated.\n\n"
+            "=======  ========  =======  =======\n\n"
+            "domain   # trials   peak      rms\n"
+            "=======  ========  =======  =======\n\n"
+            "-200,-4  10000     4.8e-16  1.3e-16\n"
+            "=======  ========  =======  =======\n\n"
+            REFERENCESDOC "\n"
+            ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
+            "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
+            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n\n"
+            EXAMPLESDOC "\n"
+            ">>> lgam(104.56)\n380.21387239435785\n\n"
+            ">>> lgam([104.56,2823.4])\narray([   380.21387239,  19607.42734396])\n\n"},
 
   // Error Function
   FCTSPEC(erf, erf),
