@@ -1056,7 +1056,25 @@ static PyMethodDef UtilsFcts[] = {
 
   //Rebin to new grid
   { (char*) "rebin", (PyCFunction)(rebin<SherpaFloatArray, SherpaFloat>), METH_VARARGS,
-    (char*) "integrate from: (x0lo, x0hi, x0) to: (x1lo, x1hi) yielding => ty\n\nExample:\nsherpa> rebin( x0, x0lo, x0hi, x1lo, x1hi )"},
+    (char*) "rebin(y0, x0lo, x0hi, x1lo, x1hi)\n\n"
+            "Rebin a histogram.\n"
+            PARAMETERSDOC
+            "y0 : sequence of numbers\n"
+            "   The Y values of the histogram to rebin.\n"
+            "x0lo : sequence of numbers\n"
+            "   The lower edges of the X values to rebin. This must match\n"
+            "   the size of `y0`.\n"
+            "x0hi : sequence of numbers\n"
+            "   The upper edges of the X values to rebin. This must match\n"
+            "   the size of `y0`.\n"
+            "x1lo : sequence of numbers\n"
+            "   The lower edges of the X values of the output histogram.\n"
+            "x1hi : sequence of numbers\n"
+            "   The upper edges of the X values of the output histogram.\n"
+            "   This must match the size of `x1lo`.\n"
+            RETURNSDOC
+            "yout : NumPy array of numbers\n"
+            "   The re-binned Y values (same size as `x1lo`).\n"},
 
   //Histogram1d 
   { (char*) "hist1d",(PyCFunction)(histogram1d<SherpaFloatArray, SherpaFloat, IntArray, int>), METH_VARARGS, (char*) " create 1D histogram\n\nExample:\nsherpa> histogram1d( x, xlo, xhi )"},
