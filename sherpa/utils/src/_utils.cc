@@ -796,7 +796,35 @@ static PyMethodDef UtilsFcts[] = {
   
   // Gamma function
   { (char*) "gamma", (PyCFunction) gamma, METH_VARARGS,
-    (char*) " Calculate the Gamma function [-170<=x<=171]\n\nExample:\nsherpa> gamma( x )"},
+    (char*) "gamma(z)\n\n"
+            "Calculate the Gamma function in the range [-171 <= z <= 171.6].\n"
+            "The argument can either be a scalar value or an array.\n\n"
+            SEEALSODOC
+            "lgam : The log of the Gamma function.\n"
+            "igam : The incomplete Gamma function.\n\n"
+            NOTESDOC
+            "This implementation is provided by the Cephes Math Library [1]_.\n"
+            "Arguments |x| >= 34 are reduced by recurrence and the function\n"
+            "approximated by a rational function of degree 6/7 in the interval\n"
+            "(2,3). Large arguments are handled by Stirling's formula. Large\n"
+            "negative arguments are made positive using a reflection formula.\n"
+            "Relative errors are\n\n"
+            "========  ========  =======  =======\n"
+            " domain   # trials   peak      rms\n"
+            "========  ========  =======  =======\n"
+            "-170,33   20000     2.3e-15  3.3e-16\n"
+            "-33,33    20000     9.4e-16  2.2e-16\n"
+            "33,171.6  20000     2.3e-15  3.2e-16\n"
+            "========  ========  =======  =======\n\n"
+            "Errors for arguments outside the test range will be larger owing\n"
+            "to amplification by the exponential function.\n\n"
+            REFERENCESDOC "\n"
+            ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
+            "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
+            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n\n"
+            EXAMPLESDOC "\n"
+            ">>> gamma(2.3)\n1.1667119051981603\n\n"
+            ">>> gamma([2.3,1.9])\narray([ 1.16671191,  0.96176583])\n\n"},
   
   // Log gamma function
   { (char*) "lgam", (PyCFunction) lgam, METH_VARARGS,
