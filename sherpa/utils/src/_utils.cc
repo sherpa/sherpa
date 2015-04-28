@@ -915,7 +915,6 @@ static PyMethodDef UtilsFcts[] = {
             ">>> igam([1,1], [2,3])\narray([ 0.86466472,  0.95021293])\n\n"},
 
   // Incomplete beta function
-  
   { (char*) "incbet", (PyCFunction) incbet, METH_VARARGS,
     (char*) "incbet(a,b,x)\n\n"
             "Calculate the incomplete Beta function\n\n"
@@ -1069,7 +1068,26 @@ static PyMethodDef UtilsFcts[] = {
 			  SherpaFloat, int, npy_intp>)),
 
   //neville
-  { (char*) "neville",(PyCFunction)(neville<SherpaFloatArray, SherpaFloat>), METH_VARARGS, (char*) " neville interpolation\n\nExample:\nsherpa> yout = neville(xout, xin, yin)"},
+  { (char*) "neville",(PyCFunction)(neville<SherpaFloatArray, SherpaFloat>), METH_VARARGS, 
+    (char*) "neville(xout, xin, yin)\n\n"
+            "Polynomial interpolation using Neville's method [1]_.\n"
+            PARAMETERSDOC
+            "xout : sequence of numbers\n"
+            "   The X values to interpolate the `xin`, `yin` values onto.\n"
+            "xin : sequence of numbers\n"
+            "   The X values to be interpolated.\n"
+            "yin : sequence of numbers\n"
+            "   The Y values to be interpolated (must be the same size as `xin`).\n"
+            RETURNSDOC
+            "yout : NumPy array of numbers\n"
+            "   The interpolated Y values (same size as `xout`).\n"
+            REFERENCESDOC "\n"
+            ".. [1] http://en.wikipedia.org/wiki/Neville%27s_algorithm\n"
+            EXAMPLESDOC "\n"
+            ">>> x = [1.2, 3.4, 4.5, 5.2]\n"
+            ">>> y = [12.2, 14.4, 16.8, 15.5]\n"
+            ">>> xgrid = np.linspace(2, 5, 5)\n"
+            ">>> ygrid = neville(xgrid, x, y)\n\n"},
 
   FCTSPEC(sao_arange, sao_arange),
   
