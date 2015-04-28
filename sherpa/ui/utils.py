@@ -4195,39 +4195,56 @@ class Session(NoNewAttributesAfterInit):
         self._model_components[name] = cls(name)
         #self._add_model_component(cls(name))
 
+    ### Ahelp ingest: 2015-04-28 DJB
     def reset(self, model=None, id=None):
-        """
-        reset
+        """Reset the model parameters to their default settings.
 
-        SYNOPSIS
-           Resets model parameter values to defaults
+        The `reset` function restores the parameter values to the
+        default value set by `guess` or to the user-defined default.
+        If the user set initial model values or soft limits -
+        e.g. either with `set_par` or by using parameter prompting
+        via `paramprompt` - then `reset` will restore these values
+        and limits even after `guess` or `fit` has been called.
 
-        SYNTAX
+        Parameters
+        ----------
+        model : optional
+           The model component or expression to reset. The default
+           is to use all source expressions.
+        id : int or string, optional
+           The data set to use. The default is to use all
+           data sets with a source expression.
 
-        Arguments:
-           name       - model instance
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        guess : Set model parameters to values matching the data. 
+        paramprompt : Control how parameter values are set.
+        set_par : Set a parameter value.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Resets model parameter values to defaults or user defined defaults.
+        The following examples assume that the source model has been
+        set using:
 
-           Example 1:
-               reset( get_model() )
+        >>> set_source(powlaw1d.pl * xsphabs.gal)
 
-           Example 2:
-               powlaw1d.p1
-               beta1d.b1
-               reset( p1*b1 )
+        Fit the model and then reset the values of both components
+        (`pl` and `gal`):
 
-           Example 3:
-               beta1d.b1
-               reset( b1 )
+        >>> fit()
+        >>> reset()
 
-        SEE ALSO
-           list_models, list_model_components,
-           delete_model_component
+        Reset just the parameters of the `pl` model component:
+
+        >>> reset(pl)
+
+        Reset all the components of the source expression for data
+        set 2.
+
+        >>> reset(get_source(2))
+
         """
         ids = [id]
         if id is None:
