@@ -714,13 +714,63 @@ static PyObject* sao_arange( PyObject* self, PyObject* args )
 #define NOTESDOC "Notes\n-----\n"
 #define REFERENCESDOC "References\n----------\n"
 #define EXAMPLESDOC "Examples\n--------\n"
+#define PARAMETERSDOC "Parameters\n----------\n"
+#define RETURNSDOC "Returns\n-------\n"
 
 static PyMethodDef UtilsFcts[] = {
 
   // F-Test
   //FCTSPEC(calc_ftest, ftest),
   { (char*) "calc_ftest", (PyCFunction) ftest, METH_VARARGS,
-    (char*) " Calculate the significance using the F test\n\nExample:\nsherpa> calc_ftest( <dof_1>, <stat_1>, <dof_2>, <stat_2> )"},
+    (char*) "calc_ftest(dof1, stat1, dof2, stat2)\n\n"
+            "Compare two models using the F test.\n\n"
+            "The F-test is a model comparison test; that is, it is a test\n"
+            "used to select from two competing models which best describes\n"
+            "a particular data set. A model comparison test statistic, T,\n"
+            "is created from the best-fit statistics of each fit; as with all\n"
+            "statistics, it is sampled from a probability distribution p(T).\n"
+            "The test significance is defined as the integral of p(T) from the\n"
+            "observed value of T to infinity. The significance quantifies the\n"
+            "probability that one would select the more complex model when in\n"
+            "fact the null hypothesis is correct. See also `calc_mlr`.\n\n"
+            PARAMETERSDOC
+            "dof1 : int\n"
+            "   degrees of freedom of the simple model\n"
+            "stat1 : number\n"
+            "   best-fit chi-square statistic value of the simple model\n"
+            "dof2 : int\n"
+            "   degrees of freedom of the complex model\n"
+            "stat2 : number\n"
+            "   best-fit chi-square statistic value of the complex model\n\n"
+            RETURNSDOC
+            "sig : number\n"
+            "   The significance, or p-value. A standard threshold for\n"
+            "   selecting the more complex model is significance < 0.05 (the\n"
+            "   '95% criterion' of statistics).\n\n"
+            SEEALSODOC
+            "calc_mlr : Calculate the maximum-likelihood ratio test.\n"
+            "incbet  : Calculate the incomplete Beta function.\n\n"
+            NOTESDOC
+            "The F test uses the ratio of the reduced chi2, which follows\n"
+            "the F-distribution, (stat1/dof1)/(stat2/dof2). The incomplete\n"
+            "Beta function is used to calculate the integral of the tail of\n"
+            "the F-distribution.\n\n"
+            "The F test should only be used when:\n\n"
+            " - the simpler of the two models is nested within the other;\n"
+            "   that is, one can obtain the simpler model by setting the extra\n"
+            "   parameters of the more complex model (often to zero or one);\n"
+            " - those normal distributions are not truncated by parameter space\n"
+            "   boundaries;\n"
+            " - the best-fit statistics are sampled from the chi-square\n"
+            "   distribution.\n\n"
+            EXAMPLESDOC "\n"
+            "In this example, the simple model has 5 degrees of freedom and\n"
+            "a chi-square statistic of 7.73, while the complex model has 8\n"
+            "degrees of freedom and a chi-square statistic of 8.94. The\n"
+            "F test does not provide any evidence that the complex model\n"
+            "is a better fit to the data than the simple model since the\n"
+            "result is much larger than 0.\n\n"
+            ">>> calc_ftest(5, 7.73, 8, 8.94)\n0.32480691622314933\n\n"},
   
   // Maximum likelihood ratio
   //FCTSPEC(calc_mlr, mlr),
