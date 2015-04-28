@@ -5434,53 +5434,86 @@ class Session(NoNewAttributesAfterInit):
                 if not p.alwaysfrozen:
                     getattr(p, action)()
 
+    ### Ahelp ingest: 2015-04-28 DJB
+    ### DOC-TODO: is this the best way to document the arguments?
     def freeze(self, *args):
-        """
-        freeze
+        """Fix model parameters so they are not changed by a fit.
 
-        SYNOPSIS
-           Freeze a list of parameters
+        If called with no arguments, then all parameters
+        of models in source expressions are frozen. The
+        arguments can be parameters or models (in which case
+        all parameters of the model are frozen).
 
-        SYNTAX
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        link : Link a parameter value to an associated value.
+        thaw : Allow model parameters to be varied during a fit.
+        unlink : Unlink a parameter value.
 
-        Arguments:
-           args      - list of Sherpa parameters
+        Examples
+        --------
 
-        Returns:
-           None
+        Fix the FWHM parameter of the line model (in this case a
+        `gauss1d` model) so that it will not be varied in the fit.
 
-        DESCRIPTION
-           Freeze a list of Sherpa parameters.  Frozen parameters will not
-           vary during a fit.
+        >>> set_source(const1d.bgnd + gauss1d.line)
+        >>> line.fwhm = 2.1
+        >>> freeze(line.fwhm)
+        >>> fit()
 
-        SEE ALSO
-           thaw, link, unlink
+        Freeze all parameters of the line model and then re-fit:
+
+        >>> freeze(line)
+        >>> fit()
+
+        Freeze the nh parameter of the gal model and the abund
+        parameter of the src model:
+
+        >>> freeze(gal.nh, src.abund)
+
         """
         par = list(args)
         for p in par:
             self._freeze_thaw_par_or_model(p, 'freeze')
 
+    ### Ahelp ingest: 2015-04-28 DJB
+    ### DOC-TODO: is this the best way to document the arguments?
     def thaw(self, *args):
-        """
-        thaw
+        """Allow model parameters to be varied during a fit.
 
-        SYNOPSIS
-           Thaw a list of parameters
+        If called with no arguments, then all parameters
+        of models in source expressions are thawed. The
+        arguments can be parameters or models (in which case
+        all parameters of the model are thawed).
 
-        SYNTAX
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        freeze : Fix model parameters so they are not changed by a fit.
+        link : Link a parameter value to an associated value.
+        unlink : Unlink a parameter value.
 
-        Arguments:
-           args      - list of Sherpa parameters
+        Examples
+        --------
 
-        Returns:
-           None
+        Ensure that the FWHM parameter of the line model (in this case a
+        `gauss1d` model) will be varied in any fit.
 
-        DESCRIPTION
-           Thaw a list of Sherpa parameters.  Thawed parameters will vary
-           during a fit.
+        >>> set_source(const1d.bgnd + gauss1d.line)
+        >>> thaw(line.fwhm)
+        >>> fit()
 
-        SEE ALSO
-           freeze, link, unlink
+        Thaw all parameters of the line model and then re-fit:
+
+        >>> thaw(line)
+        >>> fit()
+
+        Thaw the nh parameter of the gal model and the abund
+        parameter of the src model:
+
+        >>> thaw(gal.nh, src.abund)
+
         """
         par = list(args)
         for p in par:
