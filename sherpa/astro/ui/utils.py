@@ -8316,44 +8316,79 @@ class Session(sherpa.ui.utils.Session):
                                                     samples, modelcomponent,
                                                     confidence )
 
+    ### Ahelp ingest: 2015-04-28 DJB
     def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None):
-        """
-        eqwidth
+        """Calculate the equivalent width of an emission or absorption line.
 
-        SYNOPSIS
-           Get equivalent width
+        Parameters
+        ----------
+        src :
+           The continuum model (this may contain multiple components).
+        combo :
+           The continuum plus line (absorption or emission) model.
+        lo : optional
+           The lower limit for the calculation (the units are set by
+           `set_analysis` for the data set). The default value (`None`)
+           means that the lower range of the data set is used.
+        hi : optional
+           The upper limit for the calculation (the units are set by
+           `set_analysis` for the data set). The default value (`None`)
+           means that the upper range of the data set is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as set by
+           `set_default_id`, is used.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
 
-        SYNTAX
+        Returns
+        -------
+        width : number
+           The equivalent width [1]_ in the appropriate units (as given
+           by `set_analysis`).
 
-        Arguments:
-           src      - continuum, type Sherpa model
+        See Also
+        --------
+        calc_model_sum : Calculate the convolved model signal.
+        calc_source_sum : Calculate the un-convolved model signal.
+        set_source : Set the source model expression.
 
-           combo    - continuum plus emission line, type Sherpa model
+        References
+        ----------
 
-           id       - data id
-                      default = default data id
-                      
-           lo       - lower bin boundry
-                      default = None
+        .. [1] http://en.wikipedia.org/wiki/Equivalent_width
 
-           hi       - upper bin boundry
-                      default = None
+        Examples
+        --------
 
-           bkg_id   - bkg id
-                      default = default bkg id
+        Set a source model (a powerlaw for the continuum and a
+        gaussian for the line), fit it, and then evaluate the
+        equivalent width of the line. The example assumes that
+        this is a PHA data set, with an associated response,
+        so that the analysis can be done in wavelength units. 
 
-        Returns:
-           eqwidth value
+        >>> set_source(powlaw1d.cont + gauss1d.line)
+        >>> set_analysis('wavelength')
+        >>> fit()
+        >>> eqwidth(cont, cont+line)
+        2.1001988282497308
 
-        DESCRIPTION
-           Compute the equivalent width of an emission or
-           absorption line in a source or background dataset
-           by data id or background id.
+        The calculation is restricted to the range 20 to 20
+        Angstroms.
 
-        SEE ALSO
-           calc_model_sum, calc_data_sum, calc_energy_flux, calc_photon_flux,
-           calc_source_sum
+        >>> eqwidth(cont, cont+line, lo=20, hi=24)
+        1.9882824973082310
+
+        The calculation is done for the background model of
+        data set 2, over the range 0.5 to 2 (the units of this
+        are whatever the analysis setting for this data set id).
         
+        >>> set_bkg_source(2, const1d.flat + gauss1d.bline)
+        >>> eqwidth(flat, flat+bline, id=2, bkg_id=1, lo=0.5, hi=2)
+        0.45494599793003426
+
         """
         data = self.get_data(id)
         if bkg_id is not None:
