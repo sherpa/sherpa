@@ -4160,12 +4160,14 @@ class Session(sherpa.ui.utils.Session):
 
         Raises
         ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
            If the `id` argument is not recognized.
 
         See Also
         --------
-        get_default_id : Return the default data set identifier. 
+        get_default_id : Return the default data set identifier.
         set_analysis : Change the analysis setting.
 
         """
@@ -4271,38 +4273,33 @@ class Session(sherpa.ui.utils.Session):
            self._get_img_data(id).set_coord(coord)
 
 
+    ### Ahelp ingest: 2015-04-28 DJB
+    ### DOC-TODO: docs need to be added to sherpa.astro.data.get_coord
     def get_coord(self, id=None):
         """Get the coordinate system used for image analysis.
 
-        get_coord
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to query. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        SYNOPSIS
-           Get the coordinate system by data id
+        Returns
+        -------
+        coord : { 'logical', 'physical', 'world' }
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain image data.
+        sherpa.utils.err.IdentifierErr
+           If the `id` argument is not recognized.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        set_coord : Set the coordinate system to use for image analysis.
 
-        Returns:
-           Coord
-
-        DESCRIPTION
-           Get the coordinate system of a Sherpa DataIMG dataset
-           by data id.  Return values include logical, physical, and world
-           coordinates.  Alias for logical is image.  Alias for world
-           is wcs.
-
-           * 'logical'
-
-           * 'physical'
-
-           * 'world'
-
-        SEE ALSO
-           notice2d, notice2d_id, notice2d_image, ignore2d, ignore2d_id,
-           ignore2d_image, set_coord
         """
         return self._get_img_data(id).coord
 
