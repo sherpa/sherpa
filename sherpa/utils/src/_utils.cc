@@ -802,7 +802,7 @@ static PyMethodDef UtilsFcts[] = {
             "delta_dof : int\n"
             "   change in the number of degrees of freedom\n"
             "delta_stat : number\n"
-            "   change in the best-fit chi-square statistic value\n"
+            "   change in the best-fit statistic value\n"
             RETURNSDOC
             "sig : number\n"
             "   The significance, or p-value. A standard threshold for\n"
@@ -822,8 +822,8 @@ static PyMethodDef UtilsFcts[] = {
             "   extra parameters must be Gaussian);\n"
             " - those normal distributions are not truncated by parameter space\n"
             "   boundaries;\n"
-            " - the best-fit statistics are sampled from the chi-square\n"
-            "   distribution.\n\n"
+            " - the best-fit statistics for each fit are sampled from the\n"
+            "   chi-square distribution.\n\n"
             "See Protassov et al. 2002 [1]_ for more discussion.\n"
             REFERENCESDOC "\n"
             ".. [1] Protassov et al., Statistics, Handle with Care: Detecting\n"
@@ -832,10 +832,10 @@ static PyMethodDef UtilsFcts[] = {
             "       http://adsabs.harvard.edu/abs/2002ApJ...571..545P\n"
             EXAMPLESDOC "\n"
             "In this example, the more-complex model has 2 extra degrees of\n"
-            "freedom and a chi-square statistic value that is larger by 3.7.\n"
-            "The MLR test does not provide any evidence that the complex model\n"
-            "is a better fit to the data than the simple model since the\n"
-            "result is much larger than 0.\n\n"
+            "freedom and a statistic value that is larger by 3.7. The MLR test\n"
+            "does not provide any evidence that the complex model is a better\n"
+            "fit to the data than the simple model since the result is much\n"
+            "larger than 0.\n\n"
             ">>> calc_mlr(2, 3.7)\n0.15723716631362761\n\n"},
   
   // Complement of incomplete gamma function
