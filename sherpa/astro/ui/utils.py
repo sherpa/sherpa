@@ -3696,33 +3696,53 @@ class Session(sherpa.ui.utils.Session):
         resp_id = self._get_pha_data(id).primary_response_id
         self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def load_multi_arfs(self, id, filenames, resp_ids=None):
-        """Load multiple ARDS for a PHA data set.
+        """Load multiple ARFs for a PHA data set.
 
-        load_multi_arfs
+        A grating observation - such as a Chandra HETG data set - may
+        require multiple responses. This function lets the multiple
+        ARFs for such a data set be loaded with one command. The
+        `load_arf` function can instead be used to load them in
+        individually.
 
-        SYNOPSIS
-           Loads multiple ARF data files by id and resp_id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        filenames : iterable of str
+           An array of file names.
+        resp_ids : iterable of int or str
+           The identifiers for the ARF within this data set.
+           The length should match the filenames argument.
 
-        SYNTAX
+        See Also
+        --------
+        load_arf : Load an ARF from a file and add it to a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with two arguments, they are assumed to be
+        `filenames` and `resp_ids`, and three positional arguments
+        means `id`, `filenames`, and `resp_ids`.
 
-           filenames - list of ARF files
+        Examples
+        --------
 
-           resp_ids  - list of response ids
+        Load two ARFs into the default data set, using response ids of
+        `1` and `2` for `m1.arf` and `p1.arf` respectively:
 
-        Returns:
-           Load a list of FITS files containing ancillary response data given
-           a list of filenames by data id and a list of response ids. 
+        >>> arfs = ['m1.arf', 'p1.arf']
+        >>> load_multi_arfs(arfs, [1,2])
 
-        DESCRIPTION
-           None
+        Load in the ARFs to the data set with the identifier
+        `lowstate`:
 
-        SEE ALSO
-           set_arf, get_arf, unpack_arf, load_arf
+        >>> load_multi_arfs('lowstate', arfs, [1,2])
+
         """
 ##         if type(filenames) not in (list, tuple):
 ##             raise ArgumentError('Filenames must be contained in a list')
