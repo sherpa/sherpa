@@ -3432,9 +3432,8 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         id : int or str, optional
-           The data set containing the source expression. If not given
-           then the default identifier is used, as returned by
-           `get_default_id`.
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
         arf :
            An ARF, such as returned by `get_arf` or `unpack_arf`.
         resp_id : int or str, optional
@@ -3447,6 +3446,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         get_arf : Return the ARF associated with a PHA data set.
+        load_arf : Load an ARF from a file and add it to a PHA data set.
         load_pha : Load a file as a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
         set_rmf : Set the RMF for use by a PHA data set.
@@ -3723,37 +3723,71 @@ class Session(sherpa.ui.utils.Session):
         return rmf
 
 
+    ### Ahelp ingest: 2015-04-29 DJB
+    ### DOC-TODO: add an example of a grating/multiple response
     def set_rmf(self, id, rmf=None, resp_id=None, bkg_id=None):
-        """
-        set_rmf
+        """Set the RMF for use by a PHA data set.
 
-        SYNOPSIS
-           Set an RMF dataset by data id and response id
+        Set the effective area curve for a PHA data set, or its
+        background.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        arf :
+           An ARF, such as returned by `get_arf` or `unpack_arf`.
+        resp_id : int or str, optional
+           The identifier for the ARF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set this to identify the ARF as being for use with the
+           background.
 
-        Arguments:
-           id        - dataset id
-                       default = default data id
+        See Also
+        --------
+        get_rmf : Return the RMF associated with a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        load_rmf : Load an RMF from a file and add it to a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        unpack_rmf : Read in an RMF from a file.
 
-           arf       - Sherpa DataRMF dataset
-                       see get_rmf for more info
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `rmf` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `rmf` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           resp_id   - response id, if multiple responses exist
-                       default = default response id
+        If a PHA data set has an associated RMF - either from when the
+        data was loaded or explicitly with the `set_rmf` function -
+        then the model fit to the data will include the efect of the
+        RMF when the model is created with `set_model` or
+        `set_source`. In this case the `get_source` function returns
+        the user model, and `get_model` the model that is fit to the
+        data (i.e. it includes any response information; that is the
+        ARF and RMF, if set). To include the RMF explicitly, use
+        `set_full_model`.
 
-           bkg_id    - background id, if background response(s) exist
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Copy the RMF from the default data set to data set `2`:
 
-        DESCRIPTION
-           Set a dataset containing response matrix data
-           by a data id and a response id.
+        >>> rmf1 = get_rmf()
+        >>> set_rmf(2, rmf1)
 
-        SEE ALSO
-           get_rmf, unpack_rmf, load_rmf
+        Read in an RMF from the file 'bkg.rmf' and set it as the
+        RMF for the background model of data set "core":
+
+        >>> rmf = unpack_rmf('bkg.rmf')
+        >>> set_rmf('core', rmf, bkg_id=1)
+
         """
         if rmf is None:
             id, rmf = rmf, id
