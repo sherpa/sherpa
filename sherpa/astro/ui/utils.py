@@ -4240,29 +4240,31 @@ class Session(sherpa.ui.utils.Session):
         bkg.plot_fac = data.plot_fac
 
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def list_bkg_ids(self, id=None):
-        """
-        list_bkg_ids
+        """List all the background identifiers for a data set.
 
-        SYNOPSIS
-           List the available Sherpa background ids for a data set by data id
+        A PHA data set can contain multiple background datasets, each
+        identified by an integer or string. This function returns a
+        list of these identifiers for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to query. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Returns
+        -------
+        ids : array of int or str
+           The identifiers for the backround data sets for the data
+           set. In many cases this will just be `[1]`.
 
-        Returns:
-           list of background ids
+        See Also
+        --------
+        list_response_ids : List all the response identifiers of a data set.
+        load_bkg : Load the background of a PHA data set.
 
-        DESCRIPTION
-           The Sherpa background id ties background data sets to a source data
-           set easily referenced by data id.  The id can be a user
-           defined string or integer.
-
-        SEE ALSO
-           get_bkg, set_bkg
         """
         #return self._get_pha_data(id).background_ids
         return self._get_pha_data(id)._backgrounds.keys()
@@ -4289,6 +4291,12 @@ class Session(sherpa.ui.utils.Session):
         ids : array of int or str
            The identifiers for the response information for the data
            set. In many cases this will just be `[1]`.
+
+        See Also
+        --------
+        list_bkg_ids : List all the background identifiers for a data set.
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
 
         """
         data = self._get_pha_data(id)
