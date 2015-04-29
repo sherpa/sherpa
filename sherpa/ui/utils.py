@@ -7512,56 +7512,109 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._dataplot)
         return self._dataplot
 
+    ### Ahelp ingest: 2015-04-29 DJB
+    ### DOC-TODO: discussion of preferences needs better handling
+    ###           of how it interacts with the chosen plot backend.
     def get_data_plot_prefs(self):
-        """
-        get_data_plot_prefs
+        """Return the preferences for plot_data.
 
-        SYNOPSIS
-           Return data plot preferences
+        Returns
+        -------
+        prefs : dictionary
+           Changing the values of this dictionary will change
+           any new data plots. This dictionary will be empty
+           if no plot backend is available.
 
-        SYNTAX
-
-        Arguments:
-           None
-
-        Returns:
-           Dictionary of data plot preferences
-
-        DESCRIPTION
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - False
-                 symbolsize     - 3
-                 symbolstyle    - 4
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Examples:
-
-               get_data_plot_prefs()
-           {'errstyle': 'line', 'symbolfill': False, 'symbolstyle': 4,
-            'linestyle': 0, 'symbolsize': 3, 'yerrorbars': True}
-
-               get_data_plot_prefs()['xlog']=True
-
-               get_data_plot_prefs()
-           {'errstyle': 'line', 'symbolfill': False, 'symbolstyle': 4,
-            'xlog': True, 'linestyle': 0, 'symbolsize': 3, 'yerrorbars': True}
+        See Also
+        --------
+        plot_data : Plot the data values.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
 
-        SEE ALSO
-           plot_data, get_data_plot
+        Notes
+        -----
+        The meaning of the fields depend on the chosen plot backend.
+        A value of `None` means to use the default value for that
+        attribute, unless indicated otherwise. These preferences
+        are used by the following commands: `plot_data`, `plot_bkg`,
+        `plot_rato`, and the "fit" variants, such as `plot_fit`,
+        `plot_fit_resid`, and `plot_bkg_fit`.
+
+        `errcolor`
+           The color to draw error bars. The default is `None`.
+
+        `errstyle`
+           How to draw errors. The default is `line`.
+
+        `errthickness`
+           What thickness of line to draw error bars. The default is
+           `None`.
+
+        `linecolor`
+           What color to use for the line connecting the data points.
+           The default is `None`.
+
+        `linestyle`
+           How should the line connecting the data points be drawn.
+           The default is `0`, which means no line is drawn.
+
+        `linethickness`
+           What thickness should be used to draw the line connecting
+           the data points. The default is `None`.
+
+        `ratioline`
+           Should a horizontal line be drawn at y=1?  The default is
+           `False`.
+
+        `symbolcolor`
+           What color to draw the symbol representing the data points.
+           The default is `None`.
+
+        `symbolfill`
+           Should the symbol be drawn filled? The default is `False`.
+
+        `symbolsize`
+           What size is the symbol drawn. The default is `3`.
+
+        `symbolstyle`
+
+           What style is used for the symbols. The default is `4`
+           which means `circle` for the ChIPS back end.
+
+        `xaxis`
+           The default is `False`
+
+        `xerrorbars`
+           Should error bars be drawn for the X axis. The default is
+           `False`.
+
+        `xlog`
+           Should the X axis be drawn with a logarithmic scale? The
+           default is `False`. This field can also be changed with the
+           `set_xlog` and `set_xlinear` functions.
+
+        `yerrorbars`
+           Should error bars be drawn for the Y axis. The default is
+           `True`.
+
+        `ylog`
+           Should the Y axis be drawn with a logarithmic scale? The
+           default is `False`. This field can also be changed with the
+           `set_ylog` and `set_ylinear` functions.
+
+        Examples
+        --------
+
+        After these commands, any data plot will use a green symbol
+        and not display Y error bars.
+
+        >>> prefs = get_data_plot_prefs()
+        >>> prefs['symbolcolor'] = 'green'
+        >>> prefs['yerrorbars'] = False
+
         """
         return self._dataplot.plot_prefs
 
@@ -9067,6 +9120,9 @@ class Session(NoNewAttributesAfterInit):
     ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: how to describe optional plot types
     ### DOC-TODO: should we add plot_order
+    ### DOC-TODO: how to list information/examples about the backends?
+    ###           have some introductory text, but prob. need a link
+    ###           to more information
     def plot(self, *args):
         """Create one or more plot types.
 
@@ -9168,6 +9224,13 @@ class Session(NoNewAttributesAfterInit):
 
         See the documentation for the individual routines for
         information on how to configure the plots.
+
+        The plot capabilities depend on what plotting backend, if any,
+        is installed. If there is none available, a warning message
+        will be displayed when `sherpa.ui` or `sherpa.astro.ui` is
+        imported, and the `plot` set of commands will not create any
+        plots. The choice of back end is made by changing the
+        `options.plot_pkg` setting in the Sherpa configuration file.
 
         Examples
         --------
