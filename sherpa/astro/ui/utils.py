@@ -5075,35 +5075,78 @@ class Session(sherpa.ui.utils.Session):
         data.group()
 
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def set_grouping(self, id, val=None, bkg_id=None):
         """Apply a set of grouping flags to a PHA data set.
 
-        set_grouping
+        A group is indicated by a sequence of flag values starting
+        with `1` and then `-1` for all the channels in the group,
+        following [1]_.  Setting the grouping column automatically
+        turns on the grouping flag for that data set.
 
-        SYNOPSIS
-           Apply user defined grouping flags by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        val : array of int
+           This must be an array of quality values of the same length
+           as the data array.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_grouping : Return the grouping flags for a PHA data set.
+        group : Turn on the grouping for a PHA data set.
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_quality : Apply a set of quality flags to a PHA data set.
+        ungroup : Turn off the grouping for a PHA data set.
 
-           val       - properly sized integer array of grouping flags
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-           bkg_id    - background id
-                       default = default bkg id
+        References
+        ----------
 
-        Returns:
-           None
+        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
+               Format",
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
-        DESCRIPTION
-           Override native grouping flags (if available) of Sherpa
-           DataPHA dataset by data id or background by bkg id to user
-           a user defined array of integers.           
+        Examples
+        --------
 
-        SEE ALSO
-           ungroup, group
+        Copy the grouping array from data set 2 into the default data
+        set:
+
+        >>> grp = get_data(2).grouping
+        >>> set_grouping(grp)
+
+        Copy the grouping from data set "src1" to the source and
+        background data sets of "src2":
+
+        >>> grp = get_data("src1").grouping
+        >>> set_grouping("src2", grp)
+        >>> set_grouping("src2", grp, bkg_id=1)
+
         """
         if val is None:
             id, val = val, id
@@ -5204,7 +5247,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_quality(self, id=None, bkg_id=None):
-        """
+        """Return the grouping flags for a PHA data set.
+
         get_quality
 
         SYNOPSIS
