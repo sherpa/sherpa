@@ -7488,37 +7488,58 @@ class Session(sherpa.ui.utils.Session):
     plot_model.__doc__ = sherpa.ui.utils.Session.plot_model.__doc__
 
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def plot_arf(self, id=None, resp_id=None, **kwargs):
-        """
-        plot_arf
+        """Plot the ARF associated with a data set.
 
-        SYNOPSIS
-           Plot ancillary response data
+        Display the effective area curve from the ARF
+        component of a PHA data set.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set with an ARF. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           Which ARF to use in the case that multiple ARFs are
+           associated with a data set. The default is `None`,
+           which means the first one.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_data`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
 
-           resp_id  - response id, if multiple response exist
-                      default  = default response id
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
 
-           replot   - replot calculated arrays
-                      default = False
+        Examples
+        --------
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        Plot the ARF for the default data set:
 
-        Returns:
-           None
+        >>> plot_arf()
 
-        DESCRIPTION
-           Visualize the ancillary response (effective area) in a 1D plot by
-           data id or response id.
+        Plot the ARF from data set 1 and overplot
+        the ARF from data set 2:
 
-        SEE ALSO
-           plot_data, plot_source, plot_bkg, plot_model
+        >>> plot_arf(1)
+        >>> plot_arf(2, overplot=True)
+
+        Plot the ARFs labelled "arf1" and "arf2" for the
+        "src" data set:
+
+        >>> plot_arf("src", "arf1")
+        >>> plot_arf("src", "arf2", overplot=True)
+
         """
         arf = self._get_pha_data(id).get_arf(resp_id)
         if arf is None:
