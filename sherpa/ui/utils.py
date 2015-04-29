@@ -4535,6 +4535,7 @@ class Session(NoNewAttributesAfterInit):
                     else:
                         break
 
+    # DOC-NOTE: also in sherpa.astro.utils
     ##@loggable(with_id=True, with_keyword='model')
     def set_full_model(self, id, model=None):
         """
@@ -4596,7 +4597,7 @@ class Session(NoNewAttributesAfterInit):
         fit : Fit one or more data sets.
         freeze : Fix model parameters so they are not changed by a fit.
         integrate1d : Integrate 1D source expressions.
-        set_bkg_model : Set the background model expression for a data set.
+        sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
         show_model : Display the source model expression for a data set.
         thaw : Allow model parameters to be varied during a fit.

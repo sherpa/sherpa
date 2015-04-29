@@ -5555,6 +5555,8 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
     # Models
     ###########################################################################
+
+    # DOC-NOTE: also in sherpa.utils
     #@loggable(with_id=True, with_keyword='model')
     def set_full_model(self, id, model=None):
         sherpa.ui.utils.Session.set_full_model(self, id, model)
@@ -5898,37 +5900,84 @@ class Session(sherpa.ui.utils.Session):
 
         self._runparamprompt(model.pars)
 
+    ### Ahelp ingest: 2015-04-29 DJB
+    ### DOC-TODO: should probably explain more about how backgrounds are fit?
     #@loggable(with_id=True, with_keyword='model')
     def set_bkg_model(self, id, model=None, bkg_id=None):
-        """
-        set_bkg_model
+        """Set the background model expression for a data set.
 
-        SYNOPSIS
-           Set a Sherpa background source model by data id
-           and bkg id
+        The background emission can be fit by a model, defined by the
+        `set_bkg_model` call, rather than subtracted from the data.
+        If the background is subtracted then the background model is
+        ignored when fitting the data.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : str or sherpa.models.Model object
+           This defines the model used to fit the data. It can be a
+           Python expression or a string version of it.
+        bkg_id : int or str, optional
+           The identifier for the background of the data set, in
+           cases where multiple backgrounds are provided.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        delete_model : Delete the model expression from a data set.
+        fit : Fit one or more data sets.
+        integrate1d : Integrate 1D source expressions.
+        set_model : Set the model expression for a data set.
+        set_bkg_full_model : Define the convolved background model expression for a data set.
+        show_bkg_model : Display the background model expression for a data set.
 
-           model     - Sherpa bkg source model
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-           bkg_id    - bkg id, if multiple bkgs exist
-                       default = default bkg id
+        The emission defined by the background model expression is
+        included in the fit to the source dataset, scaling by exposure
+        time and area size (given by the ratio of the background to
+        source `BACKSCAL` values). That is, if `src_model` and
+        `bkg_model` represent the source and background model
+        expressions set by calls to `set_model` and `set_bkg_model`
+        respectively, the source data is fit by `src_model + scale *
+        bkg_model`, where `scale` is the scaling factor.
 
-        Returns:
-           None
+        PHA data sets will automatically apply the instrumental
+        response (ARF and RMF) to the background expression. For some
+        cases this is not useful - for example, when different
+        responses should be applied to different model components - in
+        which case `set_bkg_full_model` should be used instead.
 
-        DESCRIPTION
-           Add a Sherpa background source model to the list 
-           of current background source models by data id 
-           and background id.
+        Examples
+        --------
 
-        SEE ALSO
-           get_bkg_source, delete_bkg_model, set_bkg_full_model,
-           set_bkg_source
+        The background is model by a gaussian line (`gauss1d` model
+        component called `bline`) together with an absorbed polynomial
+        (the `bgnd` component). The absorbing component (`gal`) is
+        also used in the source expression.
+
+        >>> set_model(xsphabs.gal*powlaw1d.pl)
+        >>> set_bkg_model(gauss1d.bline + gal*polynom1d.bgnd)
+
+        In this example, the default data set has two background
+        estimates, so models are set for both components. The same
+        model is applied to both, except that the relative
+        normalisations are allowed to vary (by inclusion of the
+        `scale` component).
+
+        >>> bmodel = xsphabs.gabs * powlaw1d.pl
+        >>> set_bkg_model(2, bmodel)
+        >>> set_bkg_model(2, bmodel * const1d.scale, bkg_id=2)
+
         """
         if model is None:
             id, model = model, id
