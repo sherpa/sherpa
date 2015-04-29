@@ -4258,7 +4258,14 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        Over-writing existing components.
+        This function can over-write an existing component. If the
+        over-written component is part of a source expression - as set
+        by `set_model` - then the model evaluation will still use the
+        old model definition (and be able to change the fit
+        parameters), but direct access to its parameters is not
+        possible since the name now refers to the new component (this
+        is true using direct access, such as `mname.parname`, or with
+        `set_par`).
 
         Examples
         --------
