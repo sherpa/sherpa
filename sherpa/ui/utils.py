@@ -4106,7 +4106,8 @@ class Session(NoNewAttributesAfterInit):
         return keys
 
     def list_model_components(self):
-        """
+        """List the names of all the model components.
+
         list_model_components
 
         SYNOPSIS
@@ -4353,26 +4354,22 @@ class Session(NoNewAttributesAfterInit):
         except:
             raise ArgumentErr('badexpr', typestr, sys.exc_info()[1])
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def list_model_ids(self):
-        """
-        list_model_ids
+        """List of all the data sets with a source expression.
 
-        SYNOPSIS
-           List the Sherpa session model ids
+        Returns
+        -------
+        ids : list of int or str
+           The identifiers for all the data sets which have a source
+           expression set by `set_model` or `set_source`.
 
-        SYNTAX
+        See Also
+        --------
+        list_data_ids : List the identifiers for the loaded data sets.
+        list_model_components : List the names of all the model components.
+        set_model : Set the source model expression for a data set.
 
-        Arguments:
-           None
-
-        Returns:
-           list of model ids
-
-        DESCRIPTION
-           List all the current active Sherpa session model ids.
-
-        SEE ALSO
-           get_model, set_model, delete_model, get_model_type, get_model_pars
         """
         keys = self._models.keys()[:]
         keys.extend(self._sources.keys()[:])
