@@ -8917,8 +8917,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     ### Ahelp ingest: 2015-04-28 DJB
-    ### DOC-TODO: list of valid plottype should probably be displayed
-    ###           in a different manner
     def set_xlog(self, plottype="all"):
         """New plots will display a logarithmically-scaled X axis.
 
@@ -8927,15 +8925,14 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        plottype : { 'all', 'arf', 'bkg', 'bkgchisqr', 'bkgdelchi',
-           'bkgfit', 'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
-           'chisqr', 'data', 'delchi', 'fit', 'kernel', 'model',
-           'psf', 'ratio', 'resid', 'source' }, optional
-           The type of plot that is to use a log-scaled X axis.  The
-           default is 'all'.
+        plottype : optional
+           The type of plot that is to use a log-scaled X axis. The
+           options are the same as accepted by `plot`, together with
+           the 'all' option (which is the default setting).
 
         See Also
         --------
+        plot : Create one or more plot types.
         set_xlinear : New plots will display a linear X axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
@@ -8957,8 +8954,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     ### Ahelp ingest: 2015-04-28 DJB
-    ### DOC-TODO: list of valid plottype should probably be displayed
-    ###           in a different manner
     def set_ylog(self, plottype="all"):
         """New plots will display a logarithmically-scaled Y axis.
 
@@ -8967,15 +8962,14 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        plottype : { 'all', 'arf', 'bkg', 'bkgchisqr', 'bkgdelchi',
-           'bkgfit', 'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
-           'chisqr', 'data', 'delchi', 'fit', 'kernel', 'model',
-           'psf', 'ratio', 'resid', 'source' }, optional
-           The type of plot that is to use a log-scaled Y axis.  The
-           default is 'all'.
+        plottype : optional
+           The type of plot that is to use a log-scaled X axis. The
+           options are the same as accepted by `plot`, together with
+           the 'all' option (which is the default setting).
 
         See Also
         --------
+        plot : Create one or more plot types.
         set_xlog : New plots will display a logarithmically-scaled x axis.
         set_ylinear : New plots will display a linear Y axis.
 
@@ -8997,8 +8991,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     ### Ahelp ingest: 2015-04-28 DJB
-    ### DOC-TODO: list of valid plottype should probably be displayed
-    ###           in a different manner
     def set_xlinear(self, plottype="all"):
         """New plots will display a linear X axis.
 
@@ -9007,15 +8999,14 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        plottype : { 'all', 'arf', 'bkg', 'bkgchisqr', 'bkgdelchi',
-           'bkgfit', 'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
-           'chisqr', 'data', 'delchi', 'fit', 'kernel', 'model',
-           'psf', 'ratio', 'resid', 'source' }, optional
-           The type of plot that is to use a linear X axis.  The
-           default is 'all'.
+        plottype : optional
+           The type of plot that is to use a log-scaled X axis. The
+           options are the same as accepted by `plot`, together with
+           the 'all' option (which is the default setting).
 
         See Also
         --------
+        plot : Create one or more plot types.
         set_xlog : New plots will display a logarithmically-scaled X axis.
         set_ylinear : New plots will display a linear Y axis.
 
@@ -9037,8 +9028,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     ### Ahelp ingest: 2015-04-28 DJB
-    ### DOC-TODO: list of valid plottype should probably be displayed
-    ###           in a different manner
     def set_ylinear(self, plottype="all"):
         """New plots will display a linear Y axis.
 
@@ -9047,15 +9036,14 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        plottype : { 'all', 'arf', 'bkg', 'bkgchisqr', 'bkgdelchi',
-           'bkgfit', 'bkgmodel', 'bkgratio', 'bkgresid', 'bkgsource',
-           'chisqr', 'data', 'delchi', 'fit', 'kernel', 'model',
-           'psf', 'ratio', 'resid', 'source' }, optional
-           The type of plot that is to use a linear Y axis.  The
-           default is 'all'.
+        plottype : optional
+           The type of plot that is to use a log-scaled X axis. The
+           options are the same as accepted by `plot`, together with
+           the 'all' option (which is the default setting).
 
         See Also
         --------
+        plot : Create one or more plot types.
         set_xlinear : New plots will display a linear X axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
 
@@ -9076,48 +9064,138 @@ class Session(NoNewAttributesAfterInit):
         self._set_plot_item(plottype, 'ylog', False)
 
 
+    ### Ahelp ingest: 2015-04-29 DJB
+    ### DOC-TODO: how to describe optional plot types
+    ### DOC-TODO: should we add plot_order
     def plot(self, *args):
-        """
-        plot
+        """Create one or more plot types.
 
-        SYNOPSIS
-           Send a combination plot to the visualizer
+        The plot function creates one or more plots, depending on the
+        arguments it is sent: a plot type, followed by an optional
+        data set identifier, and this can be repeated. If no data set
+        identifier is given for a plot type, the default identifier -
+        as returned by `get_default_id` - is used.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           The data set does not support the requested plot type.
 
-        Arguments:
-           plot0       - string of first plot type
+        See Also
+        ---------
+        get_default_id : Return the default data set identifier.
+        sherpa.astro.ui.set_analysis : Set the units used when fitting and displaying spectral data.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           id0         - Sherpa data id
-                         default = default data id
+        Notes
+        -----
+        The supported plot types depend on the data set type, and
+        include the following list. There are also individual
+        functions, with `plot_` prepended to the plot type, such as
+        `plot_data` (the `bkg` variants use a prefix of
+        `plot_bkg_`). There are also several multiple-plot commands
+        (e.g. `plot_fit_resid`).
 
-           ...
+        `arf`
+           The ARF for the data set (only for `DataPHA` dataset).
 
-           plotn       - string of nth plot type
+        `bkg`
+           The background.
 
-           idn         - Sherpa data id
-                         default = default data id
+        `bkgchisqr`
+           The chi-squared statistic calculated for each bin when
+           fitting the background.
 
-        Returns:
-           None
+        `bkgdelchi`
+           The residuals for each bin, calculated as (data-model)
+           divided by the error, for the background.
 
-        DESCRIPTION
-           Visualize multiple plots by Sherpa data ids.
+        `bkgfit`
+           The data (as points) and the convolved model (as a line),
+           for the background data set.
 
-           Applicable types include: 'data', 'model', 'fit', 'resid',
-                                     'ratio', 'delchi', 'chisqr','psf'
+        `bkgmodel`
+           The convolved background model.
 
-           Example 1:
+        `bkgratio`
+           The residuals for each bin, calculated as data/model,
+           for the background data set.
 
-               plot('data', 'model')
+        `bkgresid`
+           The residuals for each bin, calculated as (data-model),
+           for the background data set.
 
-           Example 2: using ids
+        `bkgsource`
+           The un-convolved background model.
 
-               plot('data', 1, 'model', 1)
+        `chisqr`
+           The chi-squared statistic calculated for each bin.
 
-        SEE ALSO
-           plot_data, plot_model, plot_fit, plot_resid, plot_ratio,
-           plot_delchi, plot_chisqr
+        `data`
+           The data (which may be background subtracted).
+
+        `delchi`
+           The residuals for each bin, calculated as (data-model)
+           divided by the error.
+
+        `fit`
+           The data (as points) and the convolved model (as a line).
+ 
+        `kernel`
+           The PSF kernel associated with the data set.
+
+        `model`
+           The convolved model.
+
+        `psf`
+           The unfiltered PSF kernel associated with the data set.
+
+        `ratio`
+           The residuals for each bin, calculated as data/model.
+
+        `resid`
+           The residuals for each bin, calculated as (data-model).
+
+        `source`
+           The un-convolved model.
+
+        The plots can be specialized for a particular data type,
+        such as the `set_analysis` command controlling the units
+        used for PHA data sets.
+
+        See the documentation for the individual routines for
+        information on how to configure the plots.
+
+        Examples
+        --------
+
+        Plot the data for the default data set. This is the same as
+        `plot_data`.
+
+        >>> plot("data")
+
+        Plot the data for data set 2.
+
+        >>> plot("data", 2)
+
+        Plot the data and ARF for the default data set, in two
+        seaparate plots.
+
+        >>> plot("data", "arf")
+
+        Plot the fit (data and model) for data sets 1 and 2, in two
+        separate plots.
+
+        >>> plot("fit", 1, "fit", 2)
+
+        Plot the fit (data and model) for data sets "fit" and "jet",
+        in two separate plots.
+
+        >>> plot("fit", "nucleus", "fit", "jet")
+
         """
         self._multi_plot(args)        
 
