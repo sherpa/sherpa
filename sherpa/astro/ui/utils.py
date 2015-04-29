@@ -3965,33 +3965,59 @@ class Session(sherpa.ui.utils.Session):
         resp_id = self._get_pha_data(id).primary_response_id
         return self.get_rmf(id, resp_id, bkg_id)
 
+    ### Ahelp ingest: 2015-04-29 DJB
+    ### DOC-TODO: how to describe I/O backend support?
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     #@loggable(with_id=True, with_keyword='arg')
     def load_bkg_rmf(self, id, arg=None):
-        """
-        load_bkg_rmf
+        """Load an RMF from a file and add it to the background of a
+        PHA data set.
 
-        SYNOPSIS
-           Loads bkg RMF data by id using default bkg_id and default resp_id
+        Load in the RMF to the background of the given data set. It
+        is only for use when there is only one background component,
+        and one response, for the source. For multiple backgrounds
+        or responses, use `load_rmf`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        arg :
+           Identify the RMF: a file name, or a data structure
+           representing the data to use, as used by the I/O
+           backend in use by Sherpa: a `RMFCrateDataset` for
+           crates, as used by CIAO, or an AstroPy `HDUList` object.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        load_rmf : Load an RMF from a file and add it to a PHA data set.
+        load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
 
-           arg       - filename with path of RMF file
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Load a FITS file containing response matrix data given
-           a filename by data id and response id or read data from a RMFCrate
-           object or a PyFITS HDUList object into a Sherpa background dataset
-           by data id and default response id and default background id.
+        Use the contents of the file 'bkg.rmf' as the RMF for the
+        background of the default data set.
 
-        SEE ALSO
-           get_bkg_rmf, set_rmf, unpack_rmf
+        >>> load_bkg_rmf('bkg.rmf')
+
+        Set 'core_bkg.rmf' as the RMF for the background of data set
+        'core':
+
+        >>> load_bkg_arf('core', 'core_bkg.rmf')
+
         """
         if arg is None:
             id, arg = arg, id
