@@ -4105,27 +4105,56 @@ class Session(NoNewAttributesAfterInit):
 
         return keys
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def list_model_components(self):
         """List the names of all the model components.
 
-        list_model_components
+        Models are created either directly - by using the form
+        `mname.mid`, where `mname` is the name of the model, such as
+        `gauss1d`, and `mid` is the name of the component - or with
+        the `create_model_component` function, which accepts `mname`
+        and `mid` as separate arguments. This function returns all the
+        `mid` values that have been created.
 
-        SYNOPSIS
-           List the Sherpa model components of active models
+        Returns
+        -------
+        ids : list of str
+           The identifiers for all the model components that have been
+           created. They do not need to be associated with a source
+           expression (i.e. they do not need to have been included in
+           a call to `set_model`).
 
-        SYNTAX
+        See Also
+        --------
+        create_model_component : Create a model component.
+        delete_model_component : Delete a model component.
+        list_models : List the available model types.
+        list_model_ids : List of all the data sets with a source expression.
+        set_model : Set the source model expression for a data set.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           list of available model components
+        The `gal` and `pl` models are created - as versions
+        of the `xsphabs` and `powlaw1d` model types - which means
+        that the list of model components returned as `mids` will
+        contain both strings.
 
-        DESCRIPTION
+        >>> set_model(xsphabs.gal * powlaw1d.pl)
+        >>> mids = list_model_components()
+        >>> 'gal' in mids
+        True
+        >>> 'pl' in mids
+        True
 
-        SEE ALSO
-           list_models, create_model_component,
-           delete_model_component
+        The model component does not need to be included as
+        part of a source expression for it to be included in
+        the output of this function:
+
+        >>> create_model_component('gauss2d', 'gsrc')
+        >>> 'gsrc' in list_model_components()
+        True
+
         """
         keys = self._model_components.keys()[:]
         keys.sort()
