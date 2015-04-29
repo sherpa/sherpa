@@ -8511,7 +8511,7 @@ class Session(sherpa.ui.utils.Session):
         calc_model_sum : Calculate the convolved model signal.
         calc_source_sum : Calculate the un-convolved model signal.
         get_default_id : Return the default data set identifier.
-        set_source : Set the source model expression.
+        set_model : Set the source model expression.
 
         References
         ----------

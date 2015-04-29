@@ -2819,7 +2819,7 @@ class Session(NoNewAttributesAfterInit):
     ### DOC-TODO: this does not delete the source expression;
     ###           is this intended or a bug?
     def delete_data(self, id=None):
-        """Detete a data set by identifier.
+        """Delete a data set by identifier.
 
         The data set, and any associated structures - such as the ARF
         and RMF for PHA data sets - are removed.
@@ -2834,6 +2834,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         clean : Clear all stored session data.
         copy_data : Copy a data set to a new identifier.
+        delete_model : Delete the model expression from a data set.
         get_default_id : Return the default data set identifier.
         list_data_ids : List the identifiers for the loaded data sets.
 
@@ -4620,28 +4621,41 @@ class Session(NoNewAttributesAfterInit):
     set_source = set_model
 
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def delete_model(self, id=None):
-        """
-        delete_model
+        """Delete the model expression for a data set.
 
-        SYNOPSIS
-           Delete a Sherpa model by model id
+        This removes the model expression, created by `set_model`,
+        for a data set. It does not delete the components of the
+        expression.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id         - id of model
-                        default = default model id
+        See Also
+        --------
+        clean : Clear all stored session data.
+        delete_data : Delete a data set by identifier.
+        get_default_id : Return the default data set identifier.
+        set_model : Set the source model expression.
+        show_model : Display the source model expression for a data set.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Delete a Sherpa model from the list of currently active models by
-           model id.
+        Remove the model expression for the default data set:
 
-        SEE ALSO
-           list_model_ids, set_model, get_model, get_model_type, get_model_pars
+        >>> delete_model()
+
+        Remove the model expression for the data set with the
+        identifier called 'src':
+
+        >>> delete_model('src')
+
         """
         id = self._fix_id(id)
         self._models.pop(id, None)
