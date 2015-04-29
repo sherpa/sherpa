@@ -473,7 +473,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-
         The current Sherpa session is saved using the Python `pickle`
         module. The output is a binary file, which may not be portable
         between versions of Sherpa, but is platform independent, and
@@ -4572,32 +4571,116 @@ class Session(NoNewAttributesAfterInit):
                        'a model object or model expression string')
         self._runparamprompt(model.pars)
 
+    ### Ahelp ingest: 2015-04-29 DJB
+    ### DOC-TODO: the .cache value appears to default to 5
     ##@loggable(with_id=True, with_keyword="model")
     def set_model(self, id, model=None):
-        """
-        set_model
+        """Set the source model expression for a data set.
 
-        SYNOPSIS
-           Set a Sherpa source model by model id
+        The function is available as both `set_model` and
+        `set_source`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : str or sherpa.models.Model object
+           This defines the model used to fit the data. It can be a
+           Python expression or a string version of it.
 
-        Arguments:
-           id         - model id
-                        default = default model id
+        See Also
+        --------
+        delete_model : Delete the model expression from a data set.
+        fit : Fit one or more data sets.
+        freeze : Fix model parameters so they are not changed by a fit.
+        integrate1d : Integrate 1D source expressions.
+        set_bkg_model : Set the background model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+        show_model : Display the source model expression for a data set.
+        thaw : Allow model parameters to be varied during a fit.
 
-           model      - Sherpa model
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-        Returns:
-           None
+        PHA data sets will automatically apply the instrumental
+        response (ARF and RMF) to the source expression. For some
+        cases this is not useful - for example, when different
+        responses should be applied to different model components - in
+        which case `set_full_model` should be used instead.
 
-        DESCRIPTION
-           Add a Sherpa source model to the list of current active 
-           Sherpa source models by model id.
+        Model caching is available via the model `cache` attribute. A
+        non-zero value for this attribute means that the results of
+        evaluating the model will be cached if all the parameters are
+        frozen, which may lead to a reduction in the time taken to
+        evaluate a fit. A zero value turns off the cacheing.  The
+        default setting for X-Spec and 1D analytic models is that
+        `cache` is `5`, but `0` for the 2D analytic models.
 
-        SEE ALSO
-           list_model_ids, get_model, delete_model, get_model_type,
-           get_model_pars        
+        The `integrate1d` model can be used to apply a numerical
+        integration to an arbitrary model expression.
+
+        Examples
+        --------
+
+        Create an instance of the `powlaw1d` model type, called `pl`,
+        and use it as the model for the default data set.
+
+        >>> set_model(polynom1d.pl)
+
+        Create a model for the default dataset which is the `xsphabs`
+        model multiplied by the sum of an `xsapec` and `powlaw1d`
+        models (the model components are identified by the labels
+        `gal`, `clus`, and `pl`).
+
+        >>> set_model(xsphabs.gal * (xsapec.clus + powlaw1d.pl))
+
+        Repeat the previous example, using a string to define the
+        model expression:
+
+        >>> set_model('xsphabs.gal * (xsapec.clus + powlaw1d.pl)')
+
+        Use the same model component (`src`, a `gauss2d` model)
+        for the two data sets ('src1' and 'src2').
+
+        >>> set_model('src1',  gauss2d.src + const2d.bgnd1)
+        >>> set_model('src2', src + const2d.bgnd2)
+
+        Share an expression - in this case three gaussian lines -
+        between three data sets. The normalization of this line
+        complex is allowed to vary in data sets 2 and 3 (the `norm2`
+        and `norm3` components of the `const1d` model), and each data
+        set has a separate `polynom1d` component (`bgnd1`, `bgnd2`,
+        and `bgnd3`). The `c1` parameters of the `polynom1d` model
+        components are thawed and then linked together (to reduce the
+        number of free parameters):
+
+        >>> lines = gauss1d.l1 + gauss1d.l2 + gauss1d.l3
+        >>> set_model(1, lines + polynom1d.bgnd1)
+        >>> set_model(2, lines * const1d.norm2 + polynom1d.bgnd2)
+        >>> set_model(3, lines * const1d.norm3 + polynom1d.bgnd3)
+        >>> thaw(bgnd1.c1, bgnd2.c1, bgnd3.c1)
+        >>> link(bgnd2.c2, bgnd1.c1)
+        >>> link(bgnd3.c3, bgnd1.c1)
+
+        For this expression, the `gal` component is frozen, so it is
+        not varied in the fit. The `cache` attribute is set to a
+        non-zero value to ensure that it is cached during a fit (this
+        is actually the default value for this model so it not
+        normally needed).
+
+        >>> set_model(xsphabs.gal * (xsapec.clus + powlaw1d.pl))
+        >>> gal.nh = 0.0971
+        >>> freeze(gal)
+        >>> gal.cache = 1
+
         """
         if model is None:
             id, model = model, id
@@ -4641,7 +4724,7 @@ class Session(NoNewAttributesAfterInit):
         clean : Clear all stored session data.
         delete_data : Delete a data set by identifier.
         get_default_id : Return the default data set identifier.
-        set_model : Set the source model expression.
+        set_model : Set the source model expression for a data set.
         show_model : Display the source model expression for a data set.
 
         Examples
@@ -5603,7 +5686,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-
         The `link` attribute of the parameter is set to match the
         mathematical expression used for `val`.
 
