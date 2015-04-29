@@ -4226,27 +4226,50 @@ class Session(NoNewAttributesAfterInit):
         return self._get_model_component(name, require=True)
 
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def create_model_component(self, typename=None, name=None):
-        """
-        create_model_component
+        """Create a model component.
 
-        SYNOPSIS
-           Create a new Sherpa model component
+        Model components created by this function are set to their
+        default values. Components can also be created directly using
+        the syntax `typename.name`, such as in calls to `set_model`,
+        when using the default model auto assignment setting (see
+        `set_model_autoassign_func`).
 
-        SYNTAX
+        Parameters
+        ----------
+        typename : str
+           The name of the model. This should match an entry from the
+           return value of `list_models`, and defines the type of
+           model.
+        name : str
+           The name used to refer to this instance, or component,
+           of the model. A Python variable will be created with this
+           name that can be used to inspect and change the model
+           parameters, as well as use it in model expressions.
 
-        Arguments:
-           typename   - name of component type
-           name       - component label
+        See Also
+        --------
+        delete_model_component : Delete a model component.
+        list_models : List the available model types.
+        list_model_components : List the names of all the model components.
+        set_model : Set the source model expression for a data set.
+        set_model_autoassign_func :
 
-        Returns:
-           None
+        Notes
+        -----
+        Over-writing existing components.
 
-        DESCRIPTION
+        Examples
+        --------
 
-        SEE ALSO
-           list_models, list_model_components,
-           delete_model_component
+        Create an instance of the `powlaw1d` model called `pl`,
+        and then freeze its `gamma` parameter to 2.6.
+
+        >>> create_model_component("powlaw1d", "pl")
+        >>> pl.gamma = 2.6
+        >>> freeze(pl.gamma)
+
         """
 
         # If user mistakenly passes an actual model reference,
