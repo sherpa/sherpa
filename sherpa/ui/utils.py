@@ -1401,7 +1401,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        list_data_ids : List the loaded data sets.
+        list_data_ids : List the identifiers for the loaded data sets.
         set_default_id : Set the default data set identifier.
 
         Notes
@@ -1432,7 +1432,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_default_id : Return the default data set identifier.
-        list_data_ids : List the loaded data sets.
+        list_data_ids : List the identifiers for the loaded data sets.
 
         Notes
         -----
@@ -2099,28 +2099,35 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def list_data_ids(self):
-        """
-        list_data_ids
+        """List the identifiers for the loaded data sets.
 
-        SYNOPSIS
-           List the available Sherpa data ids
+        Returns
+        -------
+        ids : list of int or str
+           A list of the data set identifiers that have been created
+           by commands like `load_data` and `load_arrays`.
 
-        SYNTAX
+        See Also
+        --------
+        delete_data : Delete a data set by identifier.
+        load_arrays : Create a data set from arrays of data.
+        load_data : Create a data set from a file.
 
-        Arguments:
-           None
-          
-        Returns:
-           list of data ids
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        In this case only one data set has been loaded:
 
-        SEE ALSO
-           set_default_id, get_default_id
+        >>> list_data_ids()
+        [1]
+
+        Two data sets have been loaded, using string identifiers:
+
+        >>> list_data_ids()
+        ['nucleus', 'jet']
+
         """
         keys = self._data.keys()[:]
         keys.sort()
