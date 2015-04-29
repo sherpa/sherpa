@@ -3009,6 +3009,7 @@ class Session(NoNewAttributesAfterInit):
         _check_type(filename, basestring, 'filename', 'a string')
         return readfunc(filename, *args, **kwargs)
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def unpack_arrays(self, *args):
         """
         unpack_arrays

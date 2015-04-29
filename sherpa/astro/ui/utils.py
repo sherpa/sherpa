@@ -672,6 +672,7 @@ class Session(sherpa.ui.utils.Session):
         self.set_data(id, dataset)
 
 
+    # DOC-NOTE: also in sherpa.utils
     def unpack_arrays(self, *args):
         """
         unpack_arrays
@@ -3420,37 +3421,71 @@ class Session(sherpa.ui.utils.Session):
         return arf
 
 
+    ### Ahelp ingest: 2015-04-29 DJB
+    ### DOC-TODO: add an example of a grating/multiple response
     def set_arf(self, id, arf=None, resp_id=None, bkg_id=None):
-        """
-        set_arf
+        """Set the ARF for use by a PHA data set.
 
-        SYNOPSIS
-           Set an ARF dataset by data id and response id
+        Set the effective area curve for a PHA data set, or its
+        background.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        arf :
+           An ARF, such as returned by `get_arf` or `unpack_arf`.
+        resp_id : int or str, optional
+           The identifier for the ARF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set this to identify the ARF as being for use with the
+           background.
 
-        Arguments:
-           id        - dataset id
-                       default = default data id
+        See Also
+        --------
+        get_arf : Return the ARF associated with a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_rmf : Set the RMF for use by a PHA data set.
+        unpack_arf : Read in an ARF from a file.
 
-           arf       - Sherpa DataARF dataset
-                       see get_arf for more info
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arf` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arf` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           resp_id   - response id, if multiple responses exist
-                       default = default response id
+        If a PHA data set has an associated ARF - either from when the
+        data was loaded or explicitly with the `set_arf` function -
+        then the model fit to the data will include the efect of the
+        ARF when the model is created with `set_model` or
+        `set_source`. In this case the `get_source` function returns
+        the user model, and `get_model` the model that is fit to the
+        data (i.e. it includes any response information; that is the
+        ARF and RMF, if set). To include the ARF explicitly, use
+        `set_full_model`.
 
-           bkg_id    - background id, if background response(s) exist
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Copy the ARF from the default data set to data set `2`:
 
-        DESCRIPTION
-           Set a dataset containing ancillary response data
-           by a data id and a response id.
+        >>> arf1 = get_arf()
+        >>> set_arf(2, arf1)
 
-        SEE ALSO
-           get_arf, unpack_arf, load_arf
+        Read in an ARF from the file 'bkg.arf' and set it as the
+        ARF for the background model of data set "core":
+
+        >>> arf = unpack_arf('bkg.arf')
+        >>> set_arf('core', arf, bkg_id=1)
+
         """
         if arf is None:
             id, arf = arf, id
