@@ -7463,51 +7463,63 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._splitplot
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def get_data_plot(self, id=None):
-        """
-        get_data_plot
+        """Return the data used by plot_data.
 
-        SYNOPSIS
-           Return a Sherpa data plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        data : object
+           An object representing the data used to create the plot by
+           `plot_data`. The relationship between the returned values
+           and the values in the data set depend on the data type. For
+           example PHA data are plotted in units controlled by
+           `set_analysis`, but are stored as channels and counts, and
+           may have been grouped and the background estimate removed.
 
-        Arguments:
-           id        - Sherpa data id
+        See Also
+        --------
+        get_data_plot_prefs : Return the preferences for plot_data.
+        get_default_id : Return the default data set identifier.
+        plot_data : Plot the data values.
 
-        Returns:
-           Sherpa DataPlot object
+        Notes
+        -----
+        The fields of the returned object include:
 
-        DESCRIPTION
-           The Sherpa data plot object holds references to various
-           plot preferences and data arrays.
+        `x`
+           The X axis values (the independent variable).
 
-           Attributes:
-              title        - title of plot, read-only
+        `y`
+           The Y axis values (the dependent variable).
 
-              xlabel       - x axis label, read-only
+        `yerr`
+           The error values, if any, on the dependent variable.
 
-              ylabel       - y axis label, read-only
+        `xerr`
+           The error values, if any, on the independent variable.
+           This indicates the bin size but is displayed as an
+           error.
 
-              x            - independent variable array
+        `xlabel`
+           The label used for the X axis.
 
-              y            - dependent variable array
+        `ylabel`
+           The label used for the Y axis.
 
-              yerr         - dependent variable uncertainties array
+        `title`
+           The label used for the plot title.
 
-              xerr         - bin size array
+        `plot_prefs`
+           A copy of the current plot preferences (see
+           `get_data_plot_prefs`).
 
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_data
         """
         self._prepare_plotobj(id, self._dataplot)
         return self._dataplot
