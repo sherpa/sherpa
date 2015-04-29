@@ -3563,6 +3563,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         get_arf : Return the ARF associated with a PHA data set.
         load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
+        load_multi_arfs : Load multiple ARDS for a PHA data set.
         load_pha : Load a file as a PHA data set.
         load_rmf : Load an RMF from a file and add it to a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
@@ -3635,34 +3636,59 @@ class Session(sherpa.ui.utils.Session):
         resp_id = self._get_pha_data(id).primary_response_id
         return self.get_arf(id, resp_id, bkg_id)
 
+    ### Ahelp ingest: 2015-04-29 DJB
+    ### DOC-TODO: how to describe I/O backend support?
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     #@loggable(with_id=True, with_keyword='arg')
     def load_bkg_arf(self, id, arg=None):
-        """Load an ARF from a file and add it to the background of a PHA data set.
+        """Load an ARF from a file and add it to the background of a
+        PHA data set.
 
-        load_bkg_arf
+        Load in the ARF to the background of the given data set. It
+        is only for use when there is only one background component,
+        and one response, for the source. For multiple backgrounds
+        or responses, use `load_arf`.
 
-        SYNOPSIS
-           Loads bkg ARF data by id and default bkg_id and default resp_id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        arg :
+           Identify the ARF: a file name, or a data structure
+           representing the data to use, as used by the I/O
+           backend in use by Sherpa: a `TABLECrate` for
+           crates, as used by CIAO, or an AstroPy HDUList object.
 
-        SYNTAX
+        See Also
+        --------
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_bkg_rmf : Load an RMF from a file and add it to the background of a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           arg       - filename with path | ARFCrate obj | PyFITS HDUList obj
+        Examples
+        --------
 
-        Returns:
-           None
+        Use the contents of the file 'bkg.arf' as the ARF for the
+        background of the default data set.
 
-        DESCRIPTION
-           Load a FITS file containing ancillary response data given a filename
-           by data id and response id or read data from a ARFCrate object or
-           PyFITS HDUList object into a Sherpa dataset by data id and default
-           background id and default response id.
+        >>> load_bkg_arf('bkg.arf')
 
-        SEE ALSO
-           get_arf, set_arf, unpack_arf
+        Set 'core_bkg.arf' as the ARF for the background of data set
+        'core':
+
+        >>> load_bkg_arf('core', 'core_bkg.arf')
+
         """
         if arg is None:
             id, arg = arg, id
@@ -3671,7 +3697,8 @@ class Session(sherpa.ui.utils.Session):
         self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
 
     def load_multi_arfs(self, id, filenames, resp_ids=None):
-        """
+        """Load multiple ARDS for a PHA data set.
+
         load_multi_arfs
 
         SYNOPSIS
