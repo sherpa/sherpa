@@ -3720,6 +3720,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_multi_rmfs : Load multiple RMFs for a PHA data set.
 
         Notes
         -----
@@ -4085,32 +4086,54 @@ class Session(sherpa.ui.utils.Session):
         resp_id = self._get_pha_data(id).primary_response_id
         self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def load_multi_rmfs(self, id, filenames, resp_ids=None):
-        """
-        load_multi_rmfs
+        """Load multiple RMFs for a PHA data set.
 
-        SYNOPSIS
-           Loads multiple RMF data files by id and resp_id
+        A grating observation - such as a Chandra HETG data set - may
+        require multiple responses. This function lets the multiple
+        RMFs for such a data set be loaded with one command. The
+        `load_rmf` function can instead be used to load them in
+        individually.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        filenames : iterable of str
+           An array of file names.
+        resp_ids : iterable of int or str
+           The identifiers for the RMF within this data set.
+           The length should match the filenames argument.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        load_multi_arfs : Load multiple ARFs for a PHA data set.
 
-           filenames - list of RMF files
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with two arguments, they are assumed to be
+        `filenames` and `resp_ids`, and three positional arguments
+        means `id`, `filenames`, and `resp_ids`.
 
-           resp_ids   - list of response ids
+        Examples
+        --------
 
-        Returns:
-           Load a list of FITS files containing response data given
-           a list of filenames by data id and a list of response ids. 
+        Load two RMFs into the default data set, using response ids of
+        `1` and `2` for `m1.rmf` and `p1.rmf` respectively:
 
-        DESCRIPTION
-           None
+        >>> rmfs = ['m1.rmf', 'p1.rmf']
+        >>> load_multi_rmfs(rmfs, [1,2])
 
-        SEE ALSO
-           set_rmf, get_rmf, unpack_rmf, load_rmf
+        Load in the RMFs to the data set with the identifier
+        `lowstate`:
+
+        >>> load_multi_rmfs('lowstate', rmfs, [1,2])
+
         """
 ##         if type(filenames) not in (list, tuple):
 ##             raise ArgumentError('Filenames must be contained in a list')
