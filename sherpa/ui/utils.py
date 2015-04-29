@@ -5926,7 +5926,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : str or int, optional
+        id : int or str, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         model :
@@ -9199,33 +9199,53 @@ class Session(NoNewAttributesAfterInit):
         """
         self._multi_plot(args)        
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def plot_data(self, id=None, **kwargs):
-        """
-        plot_data
+        """Plot the data values.
 
-        SYNOPSIS
-           Send a data plot to the visualizer
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_data`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        See Also
+        --------
+        get_data_plot : Return the data used by plot_data.
+        get_data_plot_prefs : Return the preferences for plot_data.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        sherpa.astro.ui.set_analysis : Set the units used when fitting and displaying spectral data.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Examples
+        --------
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Plot the data from the default data set:
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        >>> plot_data()
 
-        Returns:
-           None
+        Plot the data from data set 1:
 
-        DESCRIPTION
-           Visualize a dataset by Sherpa data id.
+        >>> plot_data(1)
 
-        SEE ALSO
-           get_data_plot, plot_model, plot_fit, plot_fit_resid, plot_fit_delchi
+        Plot the data from data set labelled "jet" and then overplot
+        the "core" data set. The `set_xlog` command is used to select
+        a logarithmic scale for the X axis.
+
+        >>> set_xlog("data")
+        >>> plot_data("jet")
+        >>> plot_data("core", overplot=True)
+
         """
         self._plot(id, self._dataplot, **kwargs)
     
