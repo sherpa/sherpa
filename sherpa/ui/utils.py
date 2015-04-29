@@ -2815,30 +2815,43 @@ class Session(NoNewAttributesAfterInit):
         data = copy.deepcopy(data)
         self.set_data(toid, data)
 
+    ### Ahelp ingest: 2015-04-29 DJB
+    ### DOC-TODO: this does not delete the source expression;
+    ###           is this intended or a bug?
     def delete_data(self, id=None):
-        """
-        delete_data
+        """Detete a data set by identifier.
 
-        SYNOPSIS
-           Delete a dataset by data id
+        The data set, and any associated structures - such as the ARF
+        and RMF for PHA data sets - are removed.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to delete. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id         - Sherpa data id
-                        default = default data id
+        See Also
+        --------
+        clean : Clear all stored session data.
+        copy_data : Copy a data set to a new identifier.
+        get_default_id : Return the default data set identifier.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-        Returns:
-           None
+        Notes
+        -----
+        The source expression is not removed by this function.
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        Examples
+        --------
 
-        SEE ALSO
-           list_data_ids, get_data, set_data, copy_data,
-           read_data, load_data
+        Delete the data from the default data set:
+
+        >>> delete_data()
+
+        Delete the data set identified as 'src':
+
+        >>> delete_data('src')
+
         """
         id = self._fix_id(id)
         self._data.pop(id, None)
