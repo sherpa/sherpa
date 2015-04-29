@@ -4950,7 +4950,8 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True)
     def group(self, id=None, bkg_id=None):
-        """
+        """Turn on the grouping for a PHA data set.
+
         group
 
         SYNOPSIS
@@ -5161,33 +5162,81 @@ class Session(sherpa.ui.utils.Session):
 
         return data.quality
 
+    ### Ahelp ingest: 2015-04-29 DJB
     #@loggable(with_id=True)
     def ungroup(self, id=None, bkg_id=None):
-        """
-        ungroup
+        """Turn off the grouping for a PHA data set.
 
-        SYNOPSIS
-           Turn grouping OFF
+        A PHA data set can be grouped either because it contains
+        grouping information [1]_, which is automatically applied when
+        the data is read in with `load_pha` or `load_data`, or because
+        the `group` set of routines has been used to dynamically
+        re-group the data. The `ungroup` function removes this
+        grouping (however it was created).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to ungroup the background associated with the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+        sherpa.utils.err.DataErr
+           If the data set is not grouped.
 
-           bkg_id    - background id
-                       default = default bkg id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        group : Turn on the grouping for a PHA data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        PHA data is often grouped to improve the signal to noise of
+        the data, by decreasing the number of bins, so that a
+        chi-square statistic can be used when fitting the data.  After
+        calling `ungroup`, anything that uses the data set - such as a
+        plot, fit, or error analysis - will use the original data
+        values. Models should be re-fit if `ungroup` is called; this
+        may require a change of statistic depending on the counts per
+        channel in the spectrum.
 
-        DESCRIPTION
-           Set grouping boolean to False in a Sherpa DataPHA
-           dataset by data id or background by bkg id utilizing
-           native grouping flags.
+        The grouping is implemented by separate arrays to the main
+        data - the information is stored in the `grouping` and
+        `quality` arrays of the PHA data set - so that a data set
+        can be grouped and ungrouped many times, without losing
+        information.
 
-        SEE ALSO
-           set_grouping, group
+        The `grouped` field of a PHA data set is set to `False` when
+        the data is not grouped.
+
+        References
+        ----------
+
+        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
+               Format",
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+        Examples
+        --------
+
+        Ungroup the data in the default data set:
+
+        >>> ungroup()
+        >>> get_data().grouped
+        False
+
+        Ungroup the first background component of the 'core' data set:
+
+        >>> ungroup('core', bkg_id=1)
+        >>> get_bkg('core', bkg_id=1).grouped
+        False
+
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
@@ -5599,8 +5648,8 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The `subtracted` field of a dataset is set to `False` when
-        the background is not subtracted.
+        The `subtracted` field of a PHA data set is set to `False`
+        when the background is not subtracted.
 
         Examples
         --------
