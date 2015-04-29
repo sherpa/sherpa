@@ -4267,32 +4267,29 @@ class Session(sherpa.ui.utils.Session):
         #return self._get_pha_data(id).background_ids
         return self._get_pha_data(id)._backgrounds.keys()
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def list_response_ids(self, id=None, bkg_id=None):
-        """
-        list_response_ids
+        """List all the response identifiers of a data set.
 
-        SYNOPSIS
-           List the available Sherpa response ids for a data set by data id
+        A PHA data set can contain multiple responses, that is,
+        pairs of ARF and RMF, each of which has an identifier.
+        This function returns a list of these identifiers
+        for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to query. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Set this to identify the background component to query.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
-        
-           bkg_id    - Sherpa background id
-                       default = None
+        Returns
+        -------
+        ids : array of int or str
+           The identifiers for the response information for the data
+           set. In many cases this will just be `[1]`.
 
-        Returns:
-           list of response ids
-
-        DESCRIPTION
-           The Sherpa response id ties ARF and RMF data sets to a source or
-           background data set easily referenced by data id or background id.
-           The id can be a user defined string or integer.
-
-        SEE ALSO
-           get_arf, set_arf, get_rmf, set_rmf, load_arf, load_rmf
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
