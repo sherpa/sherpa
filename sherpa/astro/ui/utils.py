@@ -4948,34 +4948,106 @@ class Session(sherpa.ui.utils.Session):
         else:
             self.set_bkg(id, bkgsets, bkg_id)
 
+    ### Ahelp ingest: 2015-04-29 DJB
     #@loggable(with_id=True)
     def group(self, id=None, bkg_id=None):
         """Turn on the grouping for a PHA data set.
 
-        group
+        A PHA data set can be grouped either because it contains
+        grouping information [1]_, which is automatically applied when
+        the data is read in with `load_pha` or `load_data`, or because
+        the `group` set of routines has been used to dynamically
+        re-group the data. The `ungroup` function removes this
+        grouping (however it was created). The `group` function
+        re-applies this grouping. The grouping scheme can be
+        changed dynamically, using the `group_xxx` series of
+        routines.
 
-        SYNOPSIS
-           Turn grouping ON
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+        sherpa.utils.err.DataErr
+           If the data set is already grouped.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
+        ungroup : Turn off the grouping for a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        PHA data is often grouped to improve the signal to noise of
+        the data, by decreasing the number of bins, so that a
+        chi-square statistic can be used when fitting the data.  After
+        calling `group`, anything that uses the data set - such as a
+        plot, fit, or error analysis - will use the grouped data
+        values. Models should be re-fit if `group` is called; the
+        increase in the signal of the bins may mean that a chi-square
+        statistic can now be used.
 
-        Returns:
-           None
+        The grouping is implemented by separate arrays to the main
+        data - the information is stored in the `grouping` and
+        `quality` arrays of the PHA data set - so that a data set can
+        be grouped and ungrouped many times, without losing
+        information. The `group` command does not create this
+        information; this is either created by modifying the PHA file
+        before it is read in, or by using the `group_xxx` routines
+        once the data has been loaded.
 
-        DESCRIPTION
-           Set grouping boolean to True in a Sherpa DataPHA
-           dataset by data id or background dataset by bkg id
-           utilizing native grouping flags.
+        The `grouped` field of a PHA data set is set to `True` when
+        the data is grouped.
 
-        SEE ALSO
-           set_grouping, ungroup
+        References
+        ----------
+
+        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
+               Format",
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+        Examples
+        --------
+
+        Group the data in the default data set:
+
+        >>> group()
+        >>> get_data().grouped
+        True
+
+        Group the first background component of the 'core' data set:
+
+        >>> group('core', bkg_id=1)
+        >>> get_bkg('core', bkg_id=1).grouped
+        True
+
+        The data is fit using the ungrouped data, and then plots of
+        the data and best-fit, and the residuals, are created. The
+        first plot uses the ungrouped data, and the second plot uses
+        the grouped data.
+
+        >>> ungroup()
+        >>> fit()
+        >>> plot_fit_resid()
+        >>> group()
+        >>> plot_fit_resid()
+
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
@@ -5004,7 +5076,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def set_grouping(self, id, val=None, bkg_id=None):
-        """
+        """Apply a set of grouping flags to a PHA data set.
+
         set_grouping
 
         SYNOPSIS
@@ -5084,7 +5157,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def set_quality(self, id, val=None, bkg_id=None):
-        """
+        """Apply a set of quality flags to a PHA data set.
+
         set_quality
 
         SYNOPSIS
@@ -5170,7 +5244,7 @@ class Session(sherpa.ui.utils.Session):
         A PHA data set can be grouped either because it contains
         grouping information [1]_, which is automatically applied when
         the data is read in with `load_pha` or `load_data`, or because
-        the `group` set of routines has been used to dynamically
+        the `group_xxx` set of routines has been used to dynamically
         re-group the data. The `ungroup` function removes this
         grouping (however it was created).
 
@@ -5214,6 +5288,10 @@ class Session(sherpa.ui.utils.Session):
 
         The `grouped` field of a PHA data set is set to `False` when
         the data is not grouped.
+
+        If subtracting the background estimate from a data set, the
+        grouping applied to the source data set is used for both
+        source and background data sets.
 
         References
         ----------
