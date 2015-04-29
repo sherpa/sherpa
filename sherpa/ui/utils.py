@@ -4363,26 +4363,43 @@ class Session(NoNewAttributesAfterInit):
             model.reset()
 
 
+    ### Ahelp ingest: 2015-04-29 DJB
     def delete_model_component(self, name):
-        """
-        delete_model_component
+        """Delete a model component.
 
-        SYNOPSIS
-           Delete a Sherpa model component from active models
+        Parameters
+        ----------
+        name : str
+           The name used to refer to this instance, or component, of
+           the model. The corresponding Python variable will be
+           deleted by this function.
 
-        SYNTAX
+        See Also
+        --------
+        create_model_component : Create a model component.
+        delete_model : Delete the model expression for a data set.
+        list_models : List the available model types.
+        list_model_components : List the names of all the model components.
+        set_model : Set the source model expression for a data set.
+        set_model_autoassign_func :
 
-        Arguments:
-           name       - component label
+        Notes
+        -----
+        It is an error to try to delete a component that is part of a
+        model expression - i.e. included as part of an expression in a
+        `set_model` or `set_source` call. In such a situation, use the
+        `delete_model` function to remove the source expression before
+        calling `delete_model_component`.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
+        If a model instance called `pl` has been created - e.g. by
+        `create_model_component('powlaw1d', 'pl') - then the
+        following will remove it:
 
-        SEE ALSO
-           list_models, list_model_components,
-           create_model_component        
+        >>> delete_model_component('pl')
+
         """
         _check_type(name, basestring, 'name', 'a string')
         mod = self._model_components.pop(name, None)
