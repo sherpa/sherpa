@@ -10424,8 +10424,54 @@ class Session(NoNewAttributesAfterInit):
         return self._cdfplot
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
+    ### DOC-TODO: what does xlabel do?
+    ### DOC-TODO: is clearwindow a ChIPS-only setting?
     def plot_trace(self, points, name="x", xlabel="x", 
                    replot=False, overplot=False, clearwindow=True ):
+        """Create a trace plot of row number versus value.
+
+        Dispay a plot of the `points` array values (Y axis) versus row
+        number (X axis). This can be useful to view how a value
+        changes, such as the value of a parameter returned by
+        `get_draws`.
+
+        Parameters
+        ----------
+        points : array
+           The values to plot on the Y axis.
+        name : str, optional
+           The label to use on the Y axis and as part of the plot
+           title.
+        xlabel : str, optional
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_trace`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
+
+        See Also
+        --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
+
+        Examples
+        --------
+
+        Plot the trace of the 500 elements in the `x` array:
+
+        >>> mu, sigma = 100, 15
+        >>> x = mu + sigma * np.random.randn(500)
+        >>> plot_trace(x)
+
+        Use "ampl" as the Y axis label:
+
+        >>> plot_trace(ampl, name='ampl')
+
+        """
 
         if not sherpa.utils.bool_cast(replot):
             self._traceplot.prepare(points, xlabel, name)
