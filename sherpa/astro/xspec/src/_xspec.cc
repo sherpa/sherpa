@@ -797,34 +797,294 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 
 }
 
+// for documentation
+#define SEEALSODOC "\nSee also\n--------\n"
+#define NOTESDOC "\nNotes\n-----\n"
+#define REFERENCESDOC "\nReferences\n----------\n"
+#define EXAMPLESDOC "\nExamples\n--------\n"
+#define PARAMETERSDOC "\nParameters\n----------\n"
+#define RETURNSDOC "\nReturns\n-------\n"
+
 static PyMethodDef XSpecMethods[] = {
   { (char*)"get_xsversion", (PyCFunction)get_version, METH_NOARGS,
-    (char*)"Get XSPEC version string." },
+    (char*) "get_xsversion()\n\n"
+            RETURNSDOC
+            "version : str\n"
+            "   The version of the X-Spec model library used\n"
+            "   by Sherpa [1]_.\n"
+            REFERENCESDOC "\n"
+            ".. [1] http://heasarc.nasa.gov/docs/xanadu/xspec/\n"
+            EXAMPLESDOC "\n"
+            ">>> get_xscosmo()\n'12.8.2e'\n\n"},
 
   { (char*)"get_xschatter", (PyCFunction)get_chatter, METH_NOARGS,
-    (char*)"Get XSPEC chatter level." },
+    (char*) "get_xschatter()\n\n"
+            RETURNSDOC
+            "chatter : int\n"
+            "   The chatter setting used by the X-Spec routines.\n"
+            SEEALSODOC
+            "set_xschatter : Set the X-Spec chatter level.\n"
+            EXAMPLESDOC "\n"
+            ">>> get_xschatter()\n0\n\n"},
   { (char*)"set_xschatter", (PyCFunction)set_chatter, METH_VARARGS,
-    (char*)"Set XSPEC chatter level." },
+    (char*) "set_xschatter(level)\n\n"
+            "Set the chatter setting used by the X-Spec routines\n"
+            "for determining what information gets printed to the\n"
+            "screen. It is equivalent to the X-Spec `chatter`\n"
+            "command [1]_.\n"
+            PARAMETERSDOC
+            "level : int\n"
+            "   The higher the `level`, the more screen output will\n"
+            "   be created by X-Spec routines. A value of `0` hides\n"
+            "   most information while `25` will generate a lot of\n"
+            "   debug output.\n"
+            SEEALSODOC
+            "get_xschatter : Return the X-Spec chatter setting.\n"
+            NOTESDOC
+            "The default `chatter` setting used by Sherpa is `0`, which\n"
+            "is lower than - so, creates less screen output - the\n"
+            "default value used by X-Spec (`10`).\n\n"
+            "There is no way to change the X-Spec \"log chatter\"\n"
+            "setting.\n"
+            REFERENCESDOC "\n"
+            ".. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSchatter.html\n"
+            "       Note that this may refer to a newer version than the\n"
+            "       compiled version used by Sherpa; use `get_xsversion` to\n"
+            "       check.\n\n"
+            EXAMPLESDOC "\n"
+            "Set the chatter level to the default used by X-Spec:\n\n"
+            ">>> set_xschatter(10)\n\n"},
 
   { (char*)"get_xsabund", (PyCFunction)get_abund, METH_VARARGS,
-    (char*)"Get XSPEC solar abundance." },
+    (char*) "get_xsabund(element=None)\n\n"
+            "Return the X-Spec abundance setting or elemental abundance.\n\n"
+            PARAMETERSDOC
+            "element : str, optional\n"
+            "   When not given, the abundance table name is returned.\n"
+            "   If a string, then it must be an element name from:\n"
+            "   'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',\n"
+            "   'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',\n"
+            "   'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni',\n"
+            "   'Cu', 'Zn'. Case is important.\n"
+            RETURNSDOC
+            "val : str or float\n"
+            "   When `element` is `None`, the abundance table name is\n"
+            "   returned (see `set_xsabund`); the string 'file' is\n"
+            "   used when the abundances were read from a file. A\n"
+            "   numeric value is returned when an element name is\n"
+            "   given. This value is the elemental abundance relative\n"
+            "   to `H`.\n"
+            SEEALSODOC
+            "set_xsabund : Set the X-Spec abundance table.\n"
+            EXAMPLESDOC "\n"
+            "Return the current abundance setting, which in this case\n"
+            "is `angr`, the default value for X-Spec:\n\n"
+            ">>> get_xsabund()\n'angr'\n\n"
+            "The `set_xsabund` function has been used to read in the\n"
+            "abundances from a file, so the routine now returns the\n"
+            "string 'file':\n\n"
+            ">>> set_xsabund('abund.dat')\n"
+            ">>> get_xsabund()\n'file'\n\n"
+            ">>> get_xsabund('He')\n0.09769999980926514\n\n"},
   { (char*)"set_xsabund", (PyCFunction)set_abund, METH_VARARGS,
-    (char*)"Set XSPEC solar abundance." },
+    (char*) "set_xsabund(abundance)\n\n"
+            "Set the abundance table used in the X-Spec plasma emission and\n"
+            "photoelectric absorption models. It is equivalent to the X-Spec\n"
+            "`abund` command [1]_.\n"
+            PARAMETERSDOC
+            "abundance : str\n"
+            "   A file name, format described below, or one of the\n"
+            "   pre-defined names listed below.\n"
+            SEEALSODOC
+            "get_xsabund : Return the X-Spec abundance setting or elemental abundance.\n"
+            "get_xsversion : Return the version of X-Spec used by this module.\n"
+            "set_xschatter : Control the screen output of X-Spec functions and models.\n"
+            NOTESDOC
+            "The pre-defined abundance tables are:\n\n"
+            " - `angr`, from [2]_\n"
+            " - `aspl`, from [3]_\n"
+            " - `feld`, from [4]_, except for elements not listed which\n"
+            "   are given `grsa` abundances\n"
+            " - `aneb`, from [5]_\n"
+            " - `grsa`, from [6]_\n"
+            " - `wilm`, from [7]_, except for elements not listed which\n"
+            "   are given zero abundance\n"
+            " - `lodd`, from [8]_\n\n"
+            "The values for these tables are given at [1]_.\n\n"
+            "Data files should be in ASCII format, containing a single\n"
+            "numeric (floating-point) column of the abundance values,\n"
+            "relative to Hydrogen.\n\n"
+            "The screen output of this function is controlled by the\n"
+            "X-Spec chatter setting (`set_xschatter`).\n"
+            REFERENCESDOC "\n"
+            ".. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSabund.html\n"
+            "       Note that this may refer to a newer version than the\n"
+            "       compiled version used by Sherpa; use `get_xsversion` to\n"
+            "       check.\n\n"
+            ".. [2] Anders E. & Grevesse N. (1989, Geochimica et\n"
+            "       Cosmochimica Acta 53, 197)\n"
+            "       http://adsabs.harvard.edu/abs/1989GeCoA..53..197A\n\n"
+            ".. [3] Asplund M., Grevesse N., Sauval A.J. & Scott P.\n"
+            "       (2009, ARAA, 47, 481)\n"
+            "       http://adsabs.harvard.edu/abs/2009ARA%26A..47..481A\n\n"
+            ".. [4] Feldman U.(1992, Physica Scripta 46, 202)\n"
+            "       http://adsabs.harvard.edu/abs/1992PhyS...46..202F\n\n"
+            ".. [5] Anders E. & Ebihara (1982, Geochimica et Cosmochimica\n"
+            "       Acta 46, 2363)\n"
+            "       http://adsabs.harvard.edu/abs/1982GeCoA..46.2363A\n\n"
+            ".. [6] Grevesse, N. & Sauval, A.J. (1998, Space Science\n"
+            "       Reviews 85, 161)\n"
+            "       http://adsabs.harvard.edu/abs/1998SSRv...85..161G\n\n"
+            ".. [7] Wilms, Allen & McCray (2000, ApJ 542, 914)\n"
+            "       http://adsabs.harvard.edu/abs/2000ApJ...542..914W\n\n"
+            ".. [8] Lodders, K (2003, ApJ 591, 1220)\n"
+            "       http://adsabs.harvard.edu/abs/2003ApJ...591.1220L\n\n"
+            EXAMPLESDOC "\n"
+            ">>> set_xsabund('lodd')\n"
+            " Solar Abundance Vector set to lodd:  Lodders, K. ApJ 591, 1220 (2003)\n\n"
+            ">>> set_xsabund('abund.dat')\n"
+            " Solar Abundance Vector set to file:  User defined abundance vector / no description specified\n\n"},
 
   { (char*)"set_xscosmo", (PyCFunction)set_cosmo, METH_VARARGS,
-    (char*)"Set XSPEC cosmology settings (H0, q0, L0)." },
+    (char*) "set_xscosmo(h0, q0, l0)\n\n"
+            "Set the cosmological parameters (H_0, q_0, lambda_0) used\n"
+            "by X-Spec.\n It is equivalent to the X-Spec\n"
+            "`cosmo` command [1]_. The default values are:\n"
+            "h0=70, q0=0, l0=0.73\n"
+            PARAMETERSDOC
+            "h0 : number\n"
+            "   The Hubble constant in km/s/Mpc.\n"
+            "q0 : number\n"
+            "   The deceleration parameter.\n"
+            "l0 : number\n"
+            "   The cosmological constant. If this is non-zero\n"
+            "   then the q0 parameter is ignored and the Universe\n"
+            "   is assumed to be flat.\n"
+            SEEALSODOC
+            "get_xscosmo : Return the X-Spec cosmology settings.\n"
+            "get_xsversion : Return the version of X-Spec used by this module.\n"
+            REFERENCESDOC "\n"
+            ".. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XScosmo.html\n"
+            "       Note that this may refer to a newer version than the\n"
+            "       compiled version used by Sherpa; use `get_xsversion` to\n"
+            "       check.\n\n"
+            EXAMPLESDOC "\n"
+            ">>> set_xscosmo(73, 0, 0.73)\n"},
   { (char*)"get_xscosmo", (PyCFunction)get_cosmo, METH_NOARGS,
-    (char*)"Get XSPEC cosmology settings (H0, q0, L0)." },
+    (char*) "get_xscosmo()\n\n"
+            "Return the X-Spec cosmology settings.\n"
+            RETURNSDOC
+            "(h0,q0,l0) :\n"
+            "   The Hubble constant, in km/s/Mpc, the deceleration\n"
+            "   parameter, and the cosmological constant.\n"
+            SEEALSODOC
+            "set_xscosmo : Set the X-Spec cosmology settings.\n"
+            EXAMPLESDOC "\n"
+            ">>> get_xscosmo()\n(70.0, 0.0, 0.7300000190734863)\n\n"},
 
   { (char*)"get_xsxsect", (PyCFunction)get_cross, METH_NOARGS,
-    (char*)"Get XSPEC photoelectric cross-section." },
+    (char*) "get_xsxsect()\n\n"
+            "Return the name of the X-Spec photoelectric absorption\n"
+            "cross-sections setting.\n"
+            RETURNSDOC
+            "val : str\n"
+            "   The value of the photoelectric absorption setting:\n"
+            "   one of 'bcmc', 'obcm', and 'vern'.\n"
+            SEEALSODOC
+            "set_xsxsect : Set the X-Spec photoelectric absorption cross-sections.\n"
+            EXAMPLESDOC "\n"
+            ">>> get_xsxsect()\n'bcmc'\n\n"},
   { (char*)"set_xsxsect", (PyCFunction)set_cross, METH_VARARGS,
-    (char*)"Set XSPEC photoelectric cross-section." },
+    (char*) "set_xsxsect(name)\n\n"
+            "Set the X-Spec photoelectric absorption cross-sections\n"
+            "setting, which changes the cross-sections used by all\n"
+            "X-Spec absorption models *except* for `xswabs`. It is\n"
+            "equivalent to the X-Spec `xsect` command [1]_.\n"
+            PARAMETERSDOC
+            "name : { 'bcmc', 'obcm', 'vern' }\n"
+            "   The options are: 'bcmc' from [2]_ with a new\n"
+            "   He cross-section based on [3]_; 'obcm' which is,\n"
+            "   the same as 'bcmc', but with the He cross-section\n"
+            "   from [2]_, or 'vern' [4_].\n"
+            SEEALSODOC
+            "get_xsxsect : Return the name of the X-Spec photoelectric absorption cross-sections.\n"
+            "get_xsversion : Return the version of X-Spec used by this module.\n"
+            "set_xschatter : Control the screen output of X-Spec functions and models.\n"
+            NOTESDOC
+            "The screen output of this function is controlled by the\n"
+            "X-Spec chatter setting (`set_xschatter`).\n"
+            REFERENCESDOC "\n"
+            ".. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSxsect.html\n"
+            "       Note that this may refer to a newer version than the\n"
+            "       compiled version used by Sherpa; use `get_xsversion` to\n"
+            "       check.\n\n"
+            ".. [2] Balucinska-Church & McCammon (1992; Ap.J.400, 699).\n"
+            "       http://adsabs.harvard.edu/abs/1992ApJ...400..699B\n\n"
+            ".. [3] Yan, M., Sadeghpour, H. R., Dalgarno, A. 1998,\n"
+            "       Ap.J. 496, 1044\n"
+            "       http://adsabs.harvard.edu/abs/1998ApJ...496.1044Y\n\n"
+            ".. [4] Verner et. al., 1996, Ap.J., 465, 487.\n"
+            "       http://adsabs.harvard.edu/abs/1996ApJ...465..487V\n\n"
+            EXAMPLESDOC "\n"
+            ">>> set_xsxsect('vern')\n"
+            " Cross Section Table set to vern:  Verner, Ferland, Korista, and Yakovlev 1996\n\n"},
 
   { (char*)"set_xsxset", (PyCFunction)set_xset, METH_VARARGS,
-    (char*)"Set XSPEC XSET <string name> <string value>" },
+    (char*) "set_xsxset(name, value)\n\n"
+            "Set variables used by X-Spec models. It is equivalent to the\n"
+            "X-Spec `xset` command [1]_, but only for setting the model\n"
+            "database settings. See `set_xsabund`, `set_xscosmo`, and\n"
+            "`set_xsxsect` for the other settings.\n"
+            PARAMETERSDOC
+            "name : str\n"
+            "   The name of the setting. It is case insensitive, and\n"
+            "   is converted to upper case. There is no check that the\n"
+            "   name is valid.\n"
+            "value : str\n"
+            "   The new value of the setting. It must be given as a\n"
+            "   string.\n"
+            SEEALSODOC
+            "get_xsxset : Return the value of X-Spec model settings.\n"
+            "get_xsversion : Return the version of X-Spec used by this module.\n"
+            "set_xsabund : Set the X-Spec abundance table.\n"
+            "set_xschatter : Set the X-Spec chatter level.\n"
+            "set_xscosmo : Set the X-Spec cosmology settings.\n"
+            "set_xsxsect : Set the X-Spec photoelectric absorption cross-sections.\n"
+            NOTESDOC
+            "The available settings are listed at [1]_. Not all the\n"
+            "X-Spec model types are supported by Sherpa - for instance\n"
+            "X-Spec \"mixing models\" - so changing some of these settings\n"
+            "will make no difference. The X-Spec chatter setting can be\n"
+            "increased with `set_xschatter` if it is not clear if\n"
+            "a setting is being used.\n"
+            REFERENCESDOC "\n"
+            ".. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSabund.html\n"
+            "       Note that this may refer to a newer version than the\n"
+            "       compiled version used by Sherpa; use `get_xsversion` to\n"
+            "       check.\n\n"
+            EXAMPLESDOC "\n"
+	    ">>> set_xsxset('NEIVERS', '2.0')\n\n"
+	    ">>> set_xsxset('NEIAPECROOT', '/data/spectral/modelData/APEC_nei_v11')\n\n"
+            ">>> set_xsxset('POW_EMIN', '0.5')\n"
+            ">>> set_xsxset('POW_EMAX', '2.0')\n\n"},
   { (char*)"get_xsxset", (PyCFunction)get_xset, METH_VARARGS,
-    (char*)"Get XSPEC XSET <string name>" },
+    (char*) "get_xsxset(name)\n\n"
+            "Return the X-Spec model setting.\n\n"
+            PARAMETERSDOC
+            "name : str\n"
+            "   The name of the setting, which is case insensitive.\n"
+            "   There is no check that the name is valid.\n"
+            RETURNSDOC
+            "val : str\n"
+            "   Returns the value set by a previous call to `set_xsxset`\n"
+            "   or the empty string, if not set.\n"
+            SEEALSODOC
+            "set_xsxset : Set an X-Spec model setting.\n"
+            NOTESDOC "\n"
+            "Due to the way X-Spec model settings work, `get_xsxset`\n"
+            "will only return a value if it has previously been set\n"
+            "with a call to `set_xsxset`. There is no way to retrive\n"
+            "the default value of a setting.\n\n"},
 
   XSPECMODELFCT_NORM( xsaped, 4 ),
   XSPECMODELFCT_NORM( xsbape, 5 ),
