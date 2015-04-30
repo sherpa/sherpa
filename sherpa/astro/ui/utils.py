@@ -5193,32 +5193,46 @@ class Session(sherpa.ui.utils.Session):
                 data.grouping = numpy.asarray(val, SherpaInt)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def get_grouping(self, id=None, bkg_id=None):
         """Return the grouping array for a PHA data set.
 
-        get_grouping
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set if the grouping flags should be taken from a background
+           associated with the data set.
 
-        SYNOPSIS
-           Retrieve the grouping flags by data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-        SYNTAX
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_quality : Return the quality array for a PHA data set.
+        ignore_bad : Exclude channels marked as bad in a PHA data set.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Examples
+        --------
 
-           bkg_id    - background id
-                       default = default bkg id
+        Copy the grouping array from the default data set to data set
+        2:
 
-        Returns:
-           grouping flags array
+        >>> grp1 = get_grouping()
+        >>> set_grouping(2, grp1)
 
-        DESCRIPTION
-           Obtain the native grouping flags (if available) of a Sherpa
-           DataPHA dataset by data id or background by bkg id.
+        Return the grouping array of the background component labelled
+        2 for the 'histate' data set:
 
-        SEE ALSO
-           ungroup, group, load_grouping, set_grouping
+        >>> grp = get_grouping('histate', bkg_id=2)
+
         """
 
         data = self._get_pha_data(id)
@@ -5314,7 +5328,7 @@ class Session(sherpa.ui.utils.Session):
 
     ### Ahelp ingest: 2015-04-30 DJB
     def get_quality(self, id=None, bkg_id=None):
-        """Return the grouping flags for a PHA data set.
+        """Return the quality flags for a PHA data set.
 
         Parameters
         ----------
