@@ -10395,7 +10395,7 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         points : array
-           The values used to create the probaility density function.
+           The values used to create the probability density function.
         name : str, optional
            The label to use as part of the plot title.
         xlabel : str, optional
@@ -10423,9 +10423,9 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> mu, sigma = 100, 15
-        >>> x = mu + sigma * np.random.randn(500)
-        >>> plot_pdf(x, bins=15)
+        >>> mu, sigma, n = 100, 15, 500
+        >>> x = np.random.normal(loc=mu, scale=sigma, size=n)
+        >>> plot_pdf(x, bins=25)
 
         >>> plot_pdf(x, normed=False, xlabel="mu", name="Simulations")
 
@@ -10447,8 +10447,49 @@ class Session(NoNewAttributesAfterInit):
         return self._pdfplot
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def plot_cdf(self, points, name="x", xlabel="x", 
                  replot=False, overplot=False, clearwindow=True ):
+        """Plot the cumulative density function of an array of values.
+
+        Create and plot the cumulative density function (CDF) of
+        the input array. Median and upper- and lower- quartiles
+        are marked on the plot.
+
+        Parameters
+        ----------
+        points : array
+           The values used to create the cumulative density function.
+        name : str, optional
+           The label to use as part of the plot title.
+        xlabel : str, optional
+           The label for the X and part of the Y axes.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_pdf`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
+
+        See Also
+        --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
+        plot_pdf : Plot the probability density function of an array.
+        plot_scatter : Create a scatter plot.
+
+        Examples
+        --------
+
+        >>> mu, sigma, n = 100, 15, 500
+        >>> x = np.random.normal(loc=mu, scale=sigma, size=n)
+        >>> plot_cdf(x)
+
+        >>> plot_cdf(x, xlabel="x pos", name="Simulations")
+
+        """
 
         if not sherpa.utils.bool_cast(replot):
             self._cdfplot.prepare(points, xlabel, name)
