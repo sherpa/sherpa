@@ -10417,6 +10417,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_draws : Run the pyBLoCXS MCMC algorithm.
+        get_pdf_plot : Return the data used to plot the last PDF.
         plot_cdf : Plot the cumulative density function of an array.
         plot_scatter : Create a scatter plot.
 
@@ -10444,6 +10445,20 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_pdf_plot(self):
+        """Return the data used to plot the last PDF.
+
+        Returns
+        -------
+        plot : sherpa.plot.PDFPlot instance
+           An object containing the data used by the last call to
+           `plot_pdf`. The fields will be `None` if the function
+           has not been called.
+
+        See Also
+        --------
+        plot_pdf : Plot the probability density function of an array.
+
+        """
         return self._pdfplot
 
 
@@ -10476,6 +10491,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        get_cdf_plot : Return the data used to plot the last CDF.
         get_draws : Run the pyBLoCXS MCMC algorithm.
         plot_pdf : Plot the probability density function of an array.
         plot_scatter : Create a scatter plot.
@@ -10505,6 +10521,20 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_cdf_plot(self):
+        """Return the data used to plot the last CDF.
+
+        Returns
+        -------
+        plot : sherpa.plot.CDFPlot instance
+           An object containing the data used by the last call to
+           `plot_cdf`. The fields will be `None` if the function
+           has not been called.
+
+        See Also
+        --------
+        plot_cdf : Plot the cumulative density function of an array.
+
+        """
         return self._cdfplot
 
 
@@ -10541,6 +10571,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_draws : Run the pyBLoCXS MCMC algorithm.
+        get_trace_plot : Return the data used to plot the last trace.
         plot_cdf : Plot the cumulative density function of an array.
         plot_pdf : Plot the probability density function of an array.
         plot_scatter : Create a scatter plot.
@@ -10574,6 +10605,20 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_trace_plot(self):
+        """Return the data used to plot the last trace.
+
+        Returns
+        -------
+        plot : sherpa.plot.TracePlot instance
+           An object containing the data used by the last call to
+           `plot_trace`. The fields will be `None` if the function
+           has not been called.
+
+        See Also
+        --------
+        plot_trace : Create a trace plot of row number versus value.
+
+        """
         return self._traceplot
 
 
@@ -10607,6 +10652,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        get_scatter_plot : Return the data used to plot the last scatter plot.
         plot_trace : Create a trace plot of row number versus value.
 
         Examples
@@ -10638,6 +10684,20 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_scatter_plot(self):
+        """Return the data used to plot the last scatter plot.
+
+        Returns
+        -------
+        plot : sherpa.plot.ScatterPlot instance
+           An object containing the data used by the last call to
+           `plot_scatter`. The fields will be `None` if the function
+           has not been called.
+
+        See Also
+        --------
+        plot_scatter : Create a scatter plot.
+
+        """
         return self._scatterplot
 
 
