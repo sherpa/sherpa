@@ -254,20 +254,59 @@ class MCMC(NoNewAttributesAfterInit):
         return self.__samplers.keys()
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def set_sampler(self, sampler):
-        """
-        Set the sampler type for use within pyblocxs
+        """Set the pyBLoCXS sampler.
 
-        `sampler`   String indicating sampler type, default="MetropolisMH" or
-                    class of type Sampler.
+        The sampler determines the type of jumping rule to
+        be used when running the MCMC analysis.
 
-        returns None
+        Parameters
+        ----------
+        sampler : str or sherpa.sim.Sampler instance
+           When a string, the name of the sampler to use (case
+           insensitive). The supported options are given by the
+           `list_samplers` function.
 
-        Example:
+        See Also
+        --------
+        list_samplers : List the pyBLoCXS samplers.
+        set_sampler : Set the pyBLoCXS sampler.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
 
-        set_sampler("MH")
+        Notes
+        -----
+        The jumping rules are:
 
-        set_sampler(MH)
+        MH
+           The 'MH' option refers to the Metropolis-Hastings rule,
+           which always jumps from the best-fit location.
+
+        MetropolisMH
+           This is the Metropolis with Metropolis-Hastings algorithm,
+           that jumps from the best-fit with probability 'p_M',
+           otherwise it jumps from the last accepted jump. The
+           value of `p_M` can be changed using `set_sampler_opt`.
+
+        PragBayes
+           This is used when the effective area calibration
+           uncertainty is to be included in the calculation. At each
+           nominal MCMC iteration, a new calibration product is
+           generated, and a series of N (the `nsubiters` option) MCMC
+           sub-iteration steps are carried out, choosing between
+           Metropolis and Metropolis-Hastings types of samplers with
+           probability `p_M`.  Only the last of these sub-iterations
+           are kept in the chain.  The `nsubiters` and `p_M` values
+           can be changed using `set_sampler_opt`.
+
+        FullBayes
+           Another sampler for use when including uncertainties due
+           to the effective area.
+
+        Examples
+        --------
+
+        >>> set_sampler('metropolismh')
 
         """
         if isinstance(sampler, basestring):
