@@ -1088,7 +1088,8 @@ class Session(sherpa.ui.utils.Session):
         self.set_data(id, self.unpack_image(arg, coord, dstype))
 
     def unpack_pha(self, arg, use_errors=False):
-        """
+        """Read in a PHA data set from a file.
+
         unpack_pha
 
         SYNOPSIS
@@ -4155,7 +4156,8 @@ class Session(sherpa.ui.utils.Session):
             self.load_rmf(id, filename, resp_id)
         
     def get_bkg(self, id=None, bkg_id=None):
-        """
+        """Return the background for a PHA data set.
+
         get_bkg
 
         SYNOPSIS
@@ -4189,36 +4191,60 @@ class Session(sherpa.ui.utils.Session):
                                 str(self._fix_id(id)))
         return bkg
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def set_bkg(self, id, bkg=None, bkg_id=None):
+        """Set the background for a PHA data set.
+
+        The background can either be fit with a model - using
+        `set_bkg_model` - or removed from the data before fitting,
+        using `subtract`.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg :
+           A PHA data set, such as returned by `get_data` or
+           `unpack_pha`.
+        bkg_id : int or str, optional
+           The identifier for this background, which is needed if
+           there are multiple background estimates for the source.
+
+        See Also
+        --------
+        get_bkg : Return the background for a PHA data set.
+        load_bkg : Load the background from a file and add it to a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_bkg_model : Set the background model expression for a data set.
+        subtract : Subtract the background estimate from a data set.
+        unpack_pha : Read in a PHA data set from a file.
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `bkg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `bkg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
+        Examples
+        --------
+
+        Copy the background from the default data set to data set `2`:
+
+        >>> bkg1 = get_bkg()
+        >>> set_bkg(2, bkg1)
+
+        Read in the PHA data from the file 'bkg.pi' and set it as the
+        second background component of data set "core":
+
+        >>> bkg = unpack_pha('bkg.pi')
+        >>> set_bkg('core', bkg, bkg_id=2)
+
         """
-        set_bkg
-
-        SYNOPSIS
-           Set a background PHA dataset by data id and 
-           background id
-
-        SYNTAX
-
-        Arguments:
-           id        - dataset id
-                       default = default data id
-
-           bkg       - Sherpa DataPHA dataset
-                       see get_bkg for more info
-
-           bkg_id    - background id, if multiple bkgs exist
-                       default = default background id
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Set a dataset containing background PHA data
-           by a data id and a background id.
-
-        SEE ALSO
-           get_bkg, unpack_bkg, load_bkg
-         """
         if bkg is None:
             id, bkg = bkg, id
         data = self._get_pha_data(id)
@@ -4906,7 +4932,8 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True, with_keyword='arg')
     def load_bkg(self, id, arg=None, use_errors=False, bkg_id=None):
-        """
+        """Load the background from a file and add it to a PHA data set.
+
         load_bkg
 
         SYNOPSIS
