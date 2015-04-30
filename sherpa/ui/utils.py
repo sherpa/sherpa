@@ -7539,12 +7539,73 @@ class Session(NoNewAttributesAfterInit):
     #
     # DOC-TODO: should this use functools.wraps or something similar,
     #           to avoid copying the docs?
+    # DOC-TODO: integrate the existing pyblocks python documentation - e.g.
+    #           http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
     ###########################################################################
 
 
     ### Ahelp ingest: 2015-04-30 DJB
     def set_sampler_opt(self, opt, value):
         """Set an option for the current pyBLoCXS sampler.
+
+        Parameters
+        ----------
+        opt : str
+           The option to change. Use `get_sampler` to view the
+           available options for the current sampler.
+        value :
+           The value for the option.
+
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_prior: Set the prior function to use with a parameter.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Notes
+        -----
+        The options depend on the sampler [1]_. The options include:
+
+        `defaultprior`
+           Set to `False` when the default prior (flat, between the
+           parameter's soft limits) should not be used. Use
+           `set_prior` to set the form of the prior for each
+           parameter.
+
+        `inv`
+           A bool, or array of bools, to indicate which parameter is
+           on the inverse scale.
+
+        `log`
+           A bool, or array of bools, to indicate which parameter is
+           on the logarithm (natural log) scale.
+
+        `original`
+           A bool, or array of bools, to indicate which parameter is
+           on the original scale.
+
+        `p_M`
+           The proportion of jumps generatd by the Metropolis
+           jumping rule.
+
+        `priorshape`
+           An array of bools indicating which parameters have a
+           user-defined prior functions set with `set_prior`.
+
+        `scale`
+           Multiply the output of `covar` by this factor and
+           use the result as the scale of the t-distribution.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+
+        Examples
+        --------
+
+        >>> set_sampler_opt('scale', 3)
+
         """
         self._pyblocxs.set_sampler_opt(opt, value)
 
@@ -7610,13 +7671,14 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
         list_samplers : List the pyBLoCXS samplers.
         set_sampler : Set the pyBLoCXS sampler.
         set_sampler_opt : Set an option for the current pyBLoCXS sampler.
 
         Notes
         -----
-        The jumping rules are:
+        The jumping rules are [1]_:
 
         MH
            The 'MH' option refers to the Metropolis-Hastings rule,
@@ -7642,6 +7704,11 @@ class Session(NoNewAttributesAfterInit):
         FullBayes
            Another sampler for use when including uncertainties due
            to the effective area.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
 
         Examples
         --------
@@ -7677,12 +7744,12 @@ class Session(NoNewAttributesAfterInit):
     def set_prior(self, par, prior):
         """Set the prior function to use with a parameter.
 
-        The pyBLoCXS Markov Chain Monte Carlo (MCMC) algorithm
+        The pyBLoCXS Markov Chain Monte Carlo (MCMC) algorithm [1]_
         supports Bayesian Low-Count X-ray Spectral analysis. By
-        default, a flat prior is used for each parameter in the
-        fit, varying between its soft minimum and maximum values.
-        The `set_prior` function is used to change the form of
-        the prior for a parameter.
+        default, a flat prior is used for each parameter in the fit,
+        varying between its soft minimum and maximum values.  The
+        `set_prior` function is used to change the form of the prior
+        for a parameter.
 
         Parameters
         ----------
@@ -7695,8 +7762,14 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
         get_prior : Set the prior function to use with a parameter.
         set_sampler : Set the pyBLoCXS sampler.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
 
         Examples
         --------

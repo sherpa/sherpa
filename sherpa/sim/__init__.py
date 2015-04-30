@@ -176,12 +176,12 @@ class MCMC(NoNewAttributesAfterInit):
     def set_prior(self, par, prior):
         """Set the prior function to use with a parameter.
 
-        The pyBLoCXS Markov Chain Monte Carlo (MCMC) algorithm
+        The pyBLoCXS Markov Chain Monte Carlo (MCMC) algorithm [1]_
         supports Bayesian Low-Count X-ray Spectral analysis. By
-        default, a flat prior is used for each parameter in the
-        fit, varying between its soft minimum and maximum values.
-        The `set_prior` function is used to change the form of
-        the prior for a parameter.
+        default, a flat prior is used for each parameter in the fit,
+        varying between its soft minimum and maximum values.  The
+        `set_prior` function is used to change the form of the prior
+        for a parameter.
 
         Parameters
         ----------
@@ -194,8 +194,14 @@ class MCMC(NoNewAttributesAfterInit):
 
         See Also
         --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
         get_prior : Set the prior function to use with a parameter.
         set_sampler : Set the pyBLoCXS sampler.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
 
         Examples
         --------
@@ -270,13 +276,14 @@ class MCMC(NoNewAttributesAfterInit):
 
         See Also
         --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
         list_samplers : List the pyBLoCXS samplers.
         set_sampler : Set the pyBLoCXS sampler.
         set_sampler_opt : Set an option for the current pyBLoCXS sampler.
 
         Notes
         -----
-        The jumping rules are:
+        The jumping rules are [1]_:
 
         MH
            The 'MH' option refers to the Metropolis-Hastings rule,
@@ -302,6 +309,11 @@ class MCMC(NoNewAttributesAfterInit):
         FullBayes
            Another sampler for use when including uncertainties due
            to the effective area.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
 
         Examples
         --------
@@ -399,18 +411,68 @@ class MCMC(NoNewAttributesAfterInit):
         return self._get_sampler_opt(opt)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def set_sampler_opt(self, opt, value):
-        """
-        Set the sampler configuration option for use within pyblocxs
+        """Set an option for the current pyBLoCXS sampler.
 
-        `opt`     String indicating option
-        `value`   Option value
+        Parameters
+        ----------
+        opt : str
+           The option to change. Use `get_sampler` to view the
+           available options for the current sampler.
+        value :
+           The value for the option.
 
-        returns None
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_prior: Set the prior function to use with a parameter.
+        set_sampler : Set the pyBLoCXS sampler.
 
-        Example:
+        Notes
+        -----
+        The options depend on the sampler [1]_. The options include:
 
-        set_sampler_opt("log", True)
+        `defaultprior`
+           Set to `False` when the default prior (flat, between the
+           parameter's soft limits) should not be used. Use
+           `set_prior` to set the form of the prior for each
+           parameter.
+
+        `inv`
+           A bool, or array of bools, to indicate which parameter is
+           on the inverse scale.
+
+        `log`
+           A bool, or array of bools, to indicate which parameter is
+           on the logarithm (natural log) scale.
+
+        `original`
+           A bool, or array of bools, to indicate which parameter is
+           on the original scale.
+
+        `p_M`
+           The proportion of jumps generatd by the Metropolis
+           jumping rule.
+
+        `priorshape`
+           An array of bools indicating which parameters have a
+           user-defined prior functions set with `set_prior`.
+
+        `scale`
+           Multiply the output of `covar` by this factor and
+           use the result as the scale of the t-distribution.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+
+        Examples
+        --------
+
+        >>> set_sampler_opt('scale', 3)
+
 
         """
         self._set_sampler_opt(opt, value)
