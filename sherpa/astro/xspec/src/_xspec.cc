@@ -1072,14 +1072,14 @@ static PyMethodDef XSpecMethods[] = {
             "Return the X-Spec model setting.\n\n"
             PARAMETERSDOC
             "name : str\n"
-            "   The name of the setting, which is case insensitive.\n"
-            "   There is no check that the name is valid.\n"
+            "   The name of the setting. There is no check that\n"
+            "   the name is valid.\n"
             RETURNSDOC
             "val : str\n"
             "   Returns the value set by a previous call to `set_xsxset`\n"
             "   or the empty string, if not set.\n"
             SEEALSODOC
-            "set_xsxset : Set an X-Spec model setting.\n"
+            "set_xsxset : Set a X-Spec model setting.\n"
             NOTESDOC "\n"
             "Due to the way X-Spec model settings work, `get_xsxset`\n"
             "will only return a value if it has previously been set\n"
