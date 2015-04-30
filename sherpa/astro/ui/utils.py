@@ -1394,6 +1394,7 @@ class Session(sherpa.ui.utils.Session):
         get_quality : Return the quality array for a PHA data set.
         ignore_bad : Exclude channels marked as bad in a PHA data set.
         load_grouping : Load the grouping scheme from a file and add to a PHA data set.
+        save_quality: Save the quality array to a file.
         set_quality : Apply a set of quality flags to a PHA data set.
 
         Notes
@@ -3144,45 +3145,76 @@ class Session(sherpa.ui.utils.Session):
                                      ['CHANNEL', 'GROUPS'], ascii, clobber)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def save_quality(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
-        """
-        save_quality
+        """Save the quality array to a file.
 
-        SYNOPSIS
-           Write PHA quality flags by id
+        The output is a two-column file, containing the channel and
+        quality columns from the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the quality array should be taken from the
+           background associated with the data set.
+        ascii : bool, optional
+           If `False` then the data is written to a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        get_quality : Return the quality array for a PHA data set.
+        load_quality : Load the quality array from a file and add to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        The quality column is labelled as 'GROUPS' rather than
+        'QUALITY'.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Save the channel and quality columns from the default data
+        set to the file 'quality.dat' as an ASCII file:
 
-        DESCRIPTION
-           Write PHA quality flags to a FITS file or ASCII file from a
-           Sherpa dataset by id.
+        >>> save_quality('quality.dat')
 
-        EXAMPLE
+        Over-write the 'qual.fits' file, if it exists, and write
+        out the quality array from the 'jet' data set, as a FITS
+        format file:
 
-           save_quality(1, "quality.fits")
+        >>> save_quality('jet', 'qual.fits', ascii=False, clobber=True)
 
-           save_quality(1, "quality.out", ascii=True)
-
-        SEE ALSO
-           save_image, save_data, save_table
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -3197,6 +3229,7 @@ class Session(sherpa.ui.utils.Session):
         if d.quality is None or not numpy.iterable(d.quality):
             raise sherpa.utils.err.DataErr('noquality', id)
 
+        # BUG: TODO: change 'GROUPS' to 'QUALITY'
         sherpa.astro.io.write_arrays(filename, [d.channel, d.quality],
                                      ['CHANNEL', 'GROUPS'], ascii, clobber)
 
@@ -9573,7 +9606,6 @@ class Session(sherpa.ui.utils.Session):
            If not given the results are displayed to the screen,
            otherwise it is taken to be the name of the file to
            write the results to.
-
         clobber : bool, optional
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
