@@ -113,22 +113,55 @@ class MCMC(NoNewAttributesAfterInit):
         self.__dict__.update(state)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
+    ### DOC-TODO: include examples once this returns something useful
+    ### TODO: this should really return a dict, not a string
     def list_priors(self):
-        """
-        List the dictionary of currently set prior functions for the set
-        of thawed Sherpa model parameters
+        """Return the priors set for model parameters, if any.
+
+        Returns
+        -------
+        priors : string
+           A string representation of the dictionary mapping between
+           parameters (keys) and priot functions (values).
+
+        See Also
+        --------
+        get_prior : Return the prior function for a parameter.
+        set_prior : Set the prior function to use with a parameter.
 
         """
         return str(self.priors)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def get_prior(self, par):
-        """
-        Get the prior function set for the input Sherpa parameter
+        """Return the prior function for a parameter.
 
-        `par`    Sherpa model parameter
+        Parameters
+        ----------
+        par : sherpa.models.parameter.Parameter
+           A parameter of a model instance.
 
-        returns associated prior function
+        Returns
+        -------
+        prior :
+           The function or parameter instance set by
+           a previous call to `set_prior`.
+
+        Raises
+        ------
+        ValueError
+           If a prior has not been set for the parameter.
+
+        See Also
+        --------
+        set_prior : Set the prior function to use with a parameter.
+
+        Examples
+        --------
+
+        >>> pfunc = get_prior(bgnd.c0)
 
         """
         prior = self.priors.get(par.fullname, None)
@@ -138,18 +171,59 @@ class MCMC(NoNewAttributesAfterInit):
         return prior
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
+    ### DOC-TODO: should set_sampler_opt be mentioned here?
     def set_prior(self, par, prior):
-        """
-        Set the prior function for an associated input Sherpa parameter
+        """Set the prior function to use with a parameter.
 
-        `par`    Sherpa model parameter
-        `prior`  function pointer to run as prior on associated parameter
+        The pyBLoCXS Markov Chain Monte Carlo (MCMC) algorithm
+        supports Bayesian Low-Count X-ray Spectral analysis. By
+        default, a flat prior is used for each parameter in the
+        fit, varying between its soft minimum and maximum values.
+        The `set_prior` function is used to change the form of
+        the prior for a parameter.
 
-        returns None
+        Parameters
+        ----------
+        par : sherpa.models.parameter.Parameter instance
+           A parameter of a model instance.
+        prior : function or sherpa.models.model.Model instance
+           The function to use for a prior. It must accept a
+           single argument and return a value of the same size
+           as the input.
 
-        Example:
+        See Also
+        --------
+        get_prior : Set the prior function to use with a parameter.
+        set_sampler : Set the pyBLoCXS sampler.
 
-        set_prior(abs1.nh, inverse2)
+        Examples
+        --------
+
+        Set the prior for the `kT` parameter of the `therm` instance
+        to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
+        keV:
+
+        >>> create_model_component('xsapec', 'therm')
+        >>> create_model_component('gauss1d', 'p_temp')
+        >>> p_temp.pos = 1.7
+        >>> p.temo_fwhm = 0.35
+        >>> set_prior(therm.kT, p_temp)
+
+        Create a function (`lognorm`) and use it as the prior the the
+        `nH` parameter of the `abs1` instance:
+
+        >>> create_model_component('xsphabs', 'abs1')
+        >>> def lognorm(x):
+           # center on 10^20 cm^2 with a sigma of 0.5
+           sigma = 0.5
+           x0 = 20
+           # nH is in units of 10^-22 so convert
+           dx = np.log10(x) + 22 - x0
+           norm = sigma / np.sqrt(2 * np.pi)
+           return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
+
+        >>> set_prior(abs1.nH, lognorm)
 
         """
         self.priors[par.fullname] = prior

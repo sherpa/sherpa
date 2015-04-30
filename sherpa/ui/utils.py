@@ -7536,6 +7536,9 @@ class Session(NoNewAttributesAfterInit):
 
     ###########################################################################
     # PyBLoCXS routines for Markov Chain Monte Carlo
+    #
+    # DOC-TODO: should this use functools.wraps or something similar,
+    #           to avoid copying the docs?
     ###########################################################################
 
 
@@ -7549,18 +7552,119 @@ class Session(NoNewAttributesAfterInit):
         return self._pyblocxs.get_sampler_name()
         
     def set_sampler(self, sampler):
+        """Set the pyBLoCXS sampler.
+        """
         self._pyblocxs.set_sampler(sampler)
 
     def get_sampler(self):
         return self._pyblocxs.get_sampler()
 
+    ### Ahelp ingest: 2015-04-30 DJB
+    ### DOC-TODO: should set_sampler_opt be mentioned here?
     def set_prior(self, par, prior):
+        """Set the prior function to use with a parameter.
+
+        The pyBLoCXS Markov Chain Monte Carlo (MCMC) algorithm
+        supports Bayesian Low-Count X-ray Spectral analysis. By
+        default, a flat prior is used for each parameter in the
+        fit, varying between its soft minimum and maximum values.
+        The `set_prior` function is used to change the form of
+        the prior for a parameter.
+
+        Parameters
+        ----------
+        par : sherpa.models.parameter.Parameter instance
+           A parameter of a model instance.
+        prior : function or sherpa.models.model.Model instance
+           The function to use for a prior. It must accept a
+           single argument and return a value of the same size
+           as the input.
+
+        See Also
+        --------
+        get_prior : Set the prior function to use with a parameter.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        Set the prior for the `kT` parameter of the `therm` instance
+        to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
+        keV:
+
+        >>> create_model_component('xsapec', 'therm')
+        >>> create_model_component('gauss1d', 'p_temp')
+        >>> p_temp.pos = 1.7
+        >>> p.temo_fwhm = 0.35
+        >>> set_prior(therm.kT, p_temp)
+
+        Create a function (`lognorm`) and use it as the prior the the
+        `nH` parameter of the `abs1` instance:
+
+        >>> create_model_component('xsphabs', 'abs1')
+        >>> def lognorm(x):
+           # center on 10^20 cm^2 with a sigma of 0.5
+           sigma = 0.5
+           x0 = 20
+           # nH is in units of 10^-22 so convert
+           dx = np.log10(x) + 22 - x0
+           norm = sigma / np.sqrt(2 * np.pi)
+           return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
+
+        >>> set_prior(abs1.nH, lognorm)
+
+        """
         self._pyblocxs.set_prior(par, prior)
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def get_prior(self, par):
+        """Return the prior function for a parameter.
+
+        Parameters
+        ----------
+        par : sherpa.models.parameter.Parameter
+           A parameter of a model instance.
+
+        Returns
+        -------
+        prior :
+           The function or parameter instance set by
+           a previous call to `set_prior`.
+
+        Raises
+        ------
+        ValueError
+           If a prior has not been set for the parameter.
+
+        See Also
+        --------
+        set_prior : Set the prior function to use with a parameter.
+
+        Examples
+        --------
+
+        >>> pfunc = get_prior(bgnd.c0)
+
+        """
         return self._pyblocxs.get_prior(par)
 
+    ### Ahelp ingest: 2015-04-30 DJB
+    ### DOC-TODO: include examples once this returns something useful
     def list_priors(self):
+        """Return the priors set for model parameters, if any.
+
+        Returns
+        -------
+        priors : string
+           A string representation of the dictionary mapping between
+           parameters (keys) and priot functions (values).
+
+        See Also
+        --------
+        get_prior : Return the prior function for a parameter.
+        set_prior : Set the prior function to use with a parameter.
+
+        """
         return self._pyblocxs.list_priors()
 
     def list_samplers(self):
