@@ -6256,7 +6256,8 @@ class Session(NoNewAttributesAfterInit):
         return f.calc_chisqr()
 
     def fit(self, id=None, *otherids, **kwargs):
-        """
+        """Fit a model to one or more data sets.
+
         fit
 
         SYNOPSIS
@@ -6487,135 +6488,195 @@ class Session(NoNewAttributesAfterInit):
     #
     ## Sampling functions
     #
+    ### DOC-TODO: This copies from sherpa/sim/sample.py, so can
+    ###           functools/... be used to share docstrings?
+    ###           Unfortunately not quite a direct copy, so hard
+    ###           to see how to do
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def normal_sample(self, num=1, sigma=1, correlate=True,
                       id=None, otherids=(), numcores=None):
-        """
-        normal_sample
+        """Sample the fit statistic by taking the parameter values
+        from a normal distribution.
 
-        SYNOPSIS
-           Samples the current thawed parameter from a uni-variate or
-           multi-variate normal distribution and computes the current
-           statistic value on the set.
+        For each iteration (sample), change the thawed parameters by
+        drawing values from a uni- or multi-variate normal (Gaussian)
+        distribution, and calculate the fit statistic.
 
-        SYNTAX
+        Parameters
+        ----------
+        num : int, optional
+           The number of samples to use (default is `1`).
+        sigma : number, optional
+           The width of the normal distribution (the default
+           is `1`).
+        correlate : bool, optional
+           Should a multi-variate normal be used, with parameters
+           set by the covariance matrix (`True`) or should a
+           uni-variate normal be used (`False`)?
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        otherids : sequence of int or str, optional
+           For when multiple source expressions are being used.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-
-           num         - Number of samples to calculate
-                         default = 1
-
-           sigma       - Spread of the normal distribution
-                         default = 1
-
-           correlate   - If True, sample from multi-variate normal using 
-                         covariance; if False, sample from uni-variate normal.
-                         default = True
-
-           id          - Sherpa data id
-                         default = default data id
-
-           otherids    - List of other Sherpa data ids
-                         default = ()
-
-           numcores    - Number of cpus to use to calculate the statistic
-                         default = number of detected cpus
-
-        Returns:
+        Returns
+        -------
+        samples :
            A NumPy array table with the first column representing the
-           statistic and subsequent columns as the parameters.
+           statistic and later columns the parameters used.
 
-        DESCRIPTION
-           
+        See Also
+        --------
+        fit : Fit a model to one or more data sets.
+        set_model : Set the source model expression for a data set.
+        set_stat : Set the statistical method.
+        t_sample : Sample from the Student's t-distribution.
+        uniform_sample : Sample from a uniform distribution.
 
-        SEE ALSO
-           uniform_sample, t_sample
+        Notes
+        -----
+        All thawed model parameters are sampled from the Gaussian
+        distribution, where the mean is set as the best-fit parameter
+        value and the variance is determined by the diagonal elements
+        of the covariance matrix. The multi-variate Gaussian is
+        assumed by default for correlated parameters, using the
+        off-diagonal elements of the covariance matrix.
+
+        Examples
+        --------
+
+        The model fit to the default data set has three free
+        parameters. The median value of the statistic calculated by
+        `normal_sample` is returned:
+
+        >>> ans = normal_sample(num=10000)
+        >>> ans.shape
+        (1000, 4)
+        >>> np.median(ans[:,0])
+        119.82959326927781
 
         """
         ids, fit = self._get_fit(id, otherids)
         return sherpa.sim.normal_sample(fit, num, sigma, correlate, numcores)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
+    ### DOC-TODO: improve the description of factor parameter
     def uniform_sample(self, num=1, factor=4,
                        id=None, otherids=(), numcores=None):
-        """
-        uniform_sample
+        """Sample the fit statistic by taking the parameter values
+        from an uniform distribution.
 
-        SYNOPSIS
-           Samples the current thawed parameter from a uniform distribution
-           and computes the current statistic value on the set.
+        For each iteration (sample), change the thawed parameters by
+        drawing values from a uniform distribution, and calculate the
+        fit statistic.
 
-        SYNTAX
+        Parameters
+        ----------
+        num : int, optional
+           The number of samples to use (default is `1`).
+        factor : number, optional
+           Multiplier to expand the scale parameter (default is `4`).
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        otherids : sequence of int or str, optional
+           For when multiple source expressions are being used.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-
-           num         - Number of samples to calculate
-                         default = 1
-
-           factor      - Multiplier to expand the parameter scale
-                         default = 4
-
-           id          - Sherpa data id
-                         default = default data id
-
-           otherids    - List of other Sherpa data ids
-                         default = ()
-
-           numcores    - Number of cpus to use to calculate the statistic
-                         default = number of detected cpus
-
-        Returns:
+        Returns
+        -------
+        samples :
            A NumPy array table with the first column representing the
-           statistic and subsequent columns as the parameters.
+           statistic and later columns the parameters used.
 
-        DESCRIPTION
-           
+        See Also
+        --------
+        fit : Fit a model to one or more data sets.
+        normal_sample : Sample from a normal distribution.
+        set_model : Set the source model expression for a data set.
+        set_stat : Set the statistical method.
+        t_sample : Sample from the Student's t-distribution.
 
-        SEE ALSO
-           normal_sample, t_sample
+        Examples
+        --------
+
+        The model fit to the default data set has three free
+        parameters. The median value of the statistic calculated by
+        `uniform_sample` is returned:
+
+        >>> ans = uniform_sample(num=10000)
+        >>> ans.shape
+        (1000, 4)
+        >>> np.median(ans[:,0])
+        284.66534775948134
 
         """
         ids, fit = self._get_fit(id, otherids)
         return sherpa.sim.uniform_sample(fit, num, factor, numcores)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def t_sample(self, num=1, dof=None, id=None, otherids=(), numcores=None):
-        """
-        t_sample
+        """Sample the fit statistic by taking the parameter values from
+        a Student's t-distribution.
 
-        SYNOPSIS
-           Samples the current thawed parameter from a Student's t 
-           distribution and computes the current statistic value on the set.
+        For each iteration (sample), change the thawed parameters
+        by drawing values from a Student's t-distribution, and
+        calculate the fit statistic.
 
-        SYNTAX
+        Parameters
+        ----------
+        num : int, optional
+           The number of samples to use (default is `1`).
+        dof : optional
+           The number of degrees of freedom to use (the default
+           is to use the number from the current fit).
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        otherids : sequence of int or str, optional
+           For when multiple source expressions are being used.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-
-           num         - Number of samples to calculate
-                         default = 1
-
-           dof         - Degrees of freedom, will calculate from current fit
-                         by default.
-                         default = None
-
-           id          - Sherpa data id
-                         default = default data id
-
-           otherids    - List of other Sherpa data ids
-                         default = ()
-
-           numcores    - Number of cpus to use to calculate the statistic
-                         default = number of detected cpus
-
-        Returns:
+        Returns
+        -------
+        samples :
            A NumPy array table with the first column representing the
-           statistic and subsequent columns as the parameters.
+           statistic and later columns the parameters used.
 
-        DESCRIPTION
-           
+        See Also
+        --------
+        fit : Fit a model to one or more data sets.
+        normal_sample : Sample from the normal distribution.
+        set_model : Set the source model expression for a data set.
+        set_stat : Set the statistical method.
+        uniform_sample : Sample from a uniform distribution.
 
-        SEE ALSO
-           normal_sample, uniform_sample
+        Examples
+        --------
+
+        The model fit to the default data set has three free
+        parameters. The median value of the statistic calculated by
+        `t_sample` is returned:
+
+        >>> ans = t_sample(num=10000)
+        >>> ans.shape
+        (1000, 4)
+        >>> np.median(ans[:,0])
+        119.9764357725326
+
         """
         ids, fit = self._get_fit(id, otherids)
         if dof is None:
