@@ -1346,7 +1346,7 @@ class Session(sherpa.ui.utils.Session):
         >>> load_grouping('src.pi', colkeys=['grouping'])
 
         Load the first column in `grp.dat` and use it to populate
-        the grouping quality of the data set called 'core'.
+        the grouping array of the data set called 'core'.
 
         >>> load_grouping('core', 'grp.dat')
 
@@ -1357,48 +1357,77 @@ class Session(sherpa.ui.utils.Session):
         self.set_grouping(id,
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
+    ### Ahelp ingest: 2015-04-30 DJB
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def load_quality(self, id, filename=None, bkg_id=None, *args, **kwargs):
         """Load the quality array from a file and add to a PHA data set.
 
-        load_quality
+        This function sets the quality column but does not
+        automatically ignore any columns marked as "bad". Use the
+        `ignore_bad` function to apply the new quality information.
 
-        SYNOPSIS
-           Load the dataset quality flags from file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file that contains the quality
+           information. This file can be a FITS table or an ASCII
+           file. Selection of the relevant column depends on the I/O
+           library in use (Crates or AstroPy).
+        bkg_id : int or str, optional
+           Set if the quality array should be associated with the
+           background associated with the data set.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        SYNTAX
+        See Also
+        --------
+        get_quality : Return the quality array for a PHA data set.
+        ignore_bad : Exclude channels marked as bad in a PHA data set.
+        load_grouping : Load the grouping scheme from a file and add to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           filename   - filename with path
+        There is no check made to see if the quality array contains
+        valid data.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Examples
+        --------
 
-           ncols      - number of columns to read from
-                        default = 2
+        When using Crates as the I/O library, select the quality
+        column from the file `src.pi`, and use it to set the
+        values in the default data set:
 
-           colkeys    - column keys
-                        default = None
+        >>> load_quality('src.pi[cols quality]')
 
-           sep        - separator character
-                        default = ' '
+        Use the `colkeys` option to define the column in the input
+        file:
 
-           comment    - comment character
-                        default = '#'
+        >>> load_quality('src.pi', colkeys=['quality'])
 
-        Returns:
-           None
+        Load the first column in `grp.dat` and use it to populate
+        the quality array of the data set called 'core'.
 
-        DESCRIPTION
-           Load the quality flags for a dataset from file by data id.
+        >>> load_quality('core', 'grp.dat')
 
-        EXAMPLE
-           load_quality("data.dat", colkeys=["GROUPS"])
-
-        SEE ALSO
-            set_quality
         """
         if filename is None:
             id, filename = filename, id
