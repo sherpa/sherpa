@@ -1316,6 +1316,7 @@ class Session(sherpa.ui.utils.Session):
         get_grouping : Return the gouping array for a PHA data set.
         group : Turn on the grouping for a PHA data set.
         load_quality : Load the quality array from a file and add to a PHA data set.
+        save_grouping : Save the grouping scheme to a file.
         set_grouping : Apply a set of grouping flags to a PHA data set.
 
         Notes
@@ -1349,6 +1350,15 @@ class Session(sherpa.ui.utils.Session):
         the grouping array of the data set called 'core'.
 
         >>> load_grouping('core', 'grp.dat')
+
+        Use `group_counts` to calculate a grouping scheme for the
+        data set labelled 'src1', save this scheme to the file
+        'grp.dat', and then load this scheme in for data set
+        'src2'.
+
+        >>> group_counts('src1', 10)
+        >>> save_grouping('src1', 'grp.dat')
+        >>> load_grouping('src2', 'grp.dat', colkeys=['groups'])
 
         """
         if filename is None:
@@ -3088,45 +3098,75 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_pha(filename, d, ascii, clobber)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def save_grouping(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
-        """
-        save_grouping
+        """Save the grouping scheme to a file.
 
-        SYNOPSIS
-           Write PHA grouping flags by id
+        The output is a two-column file, containing the channel and
+        grouping columns from the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the grouping array should be taken from the
+           background associated with the data set.
+        ascii : bool, optional
+           If `False` then the data is written to a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        get_grouping : Return the gouping array for a PHA data set.
+        load_quality : Load the quality array from a file and add to a PHA data set.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        The column names are 'CHANNEL' and 'GROUPS'.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Save the channel and grouping columns from the default data
+        set to the file 'group.dat' as an ASCII file:
 
-        DESCRIPTION
-           Write PHA grouping flags to a FITS file or ASCII file from a
-           Sherpa dataset by id.
+        >>> save_grouping('group.dat')
 
-        EXAMPLE
+        Over-write the 'grp.fits' file, if it exists, and write
+        out the grouping data from the 'jet' data set, as a FITS
+        format file:
 
-           save_grouping(1, "grouping.fits")
+        >>> save_grouping('jet', 'grp.fits', ascii=False, clobber=True)
 
-           save_grouping(1, "grouping.out", ascii=True)
-
-        SEE ALSO
-           save_image, save_data, save_table
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
