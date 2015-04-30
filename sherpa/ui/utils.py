@@ -10457,6 +10457,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_draws : Run the pyBLoCXS MCMC algorithm.
+        plot_scatter : Create a scatter plot.
 
         Examples
         --------
@@ -10490,9 +10491,53 @@ class Session(NoNewAttributesAfterInit):
         return self._traceplot
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def plot_scatter(self, x, y, name="(x,y)", xlabel="x", ylabel="y",
                    replot=False, overplot=False, clearwindow=True ):
+        """Create a scatter plot.
 
+        Parameters
+        ----------
+        x : array
+           The values to plot on the X axis.
+        y : array
+           The values to plot on the Y axis. This must match the size
+           of the `x` array.
+        name : str, optional
+           The plot title.
+        xlabel : str, optional
+           The label for the X axis.
+        ylabel : str, optional
+           The label for the Y axis.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_trace`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
+
+        See Also
+        --------
+        plot_trace : Create a trace plot of row number versus value.
+
+        Examples
+        --------
+
+        Plot the X and Y points:
+
+        >>> mu, sigma, n = 100, 15, 500
+        >>> x = mu + sigma * np.random.randn(n)
+        >>> y = mu + sigma * np.random.randn(n)
+        >>> plot_scatter(x, y)
+
+        Change the axis labels and the plot title:
+
+        >>> plot_scatter(nh, kt, xlabel='nH', ylabel='kT', name='Simulations')
+
+        """
         if not sherpa.utils.bool_cast(replot):
             self._scatterplot.prepare(x, y, xlabel, ylabel, name)
 
