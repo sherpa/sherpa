@@ -5194,7 +5194,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_grouping(self, id=None, bkg_id=None):
-        """
+        """Return the grouping array for a PHA data set.
+
         get_grouping
 
         SYNOPSIS
@@ -5245,7 +5246,8 @@ class Session(sherpa.ui.utils.Session):
            This must be an array of quality values of the same length
            as the data array.
         bkg_id : int or str, optional
-           Set to group the background associated with the data set.
+           Set if the quality values should be associated with the
+           background associated with the data set.
 
         Raises
         ------
@@ -5310,32 +5312,46 @@ class Session(sherpa.ui.utils.Session):
                 data.quality = numpy.asarray(val, SherpaInt)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def get_quality(self, id=None, bkg_id=None):
         """Return the grouping flags for a PHA data set.
 
-        get_quality
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set if the quality flags should be taken from a background
+           associated with the data set.
 
-        SYNOPSIS
-           Retrieve the quality flags by data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-        SYNTAX
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_grouping : Return the grouping array for a PHA data set.
+        ignore_bad : Exclude channels marked as bad in a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Examples
+        --------
 
-           bkg_id    - background id
-                       default = default bkg id
+        Copy the quality array from the default data set to data set
+        2:
 
-        Returns:
-           quality flags array
+        >>> qual1 = get_quality()
+        >>> set_quality(2, qual1)
 
-        DESCRIPTION
-           Obtain the native quality flags (if available) of a Sherpa
-           DataPHA dataset by data id or background by bkg id.
+        Return the quality array of the background component labelled
+        2 for the 'histate' data set:
 
-        SEE ALSO
-           ungroup, group, load_quality, set_quality
+        >>> qual = get_quality('histate', bkg_id=2)
+
         """
 
         data = self._get_pha_data(id)
