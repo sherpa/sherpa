@@ -7543,12 +7543,54 @@ class Session(NoNewAttributesAfterInit):
 
 
     def set_sampler_opt(self, opt, value):
+        """Set an option for the current pyBLoCXS sampler.
+        """
         self._pyblocxs.set_sampler_opt(opt, value)
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler_opt(self, opt):
+        """Return an option of the current pyBLoCXS sampler.
+
+        Returns
+        -------
+        opt : str
+           The name of the option. The fields depend on the current
+           sampler.
+
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        >>> get_sampler_opt('log')
+        False
+
+        """
         return self._pyblocxs.get_sampler_opt(opt)
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler_name(self):
+        """Return the name of the current pyBLoCXS sampler.
+
+        Returns
+        -------
+        name : str
+
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        >>> get_sampler_name()
+        'MetropolisMH'
+
+        """
         return self._pyblocxs.get_sampler_name()
         
     def set_sampler(self, sampler):
@@ -7556,7 +7598,25 @@ class Session(NoNewAttributesAfterInit):
         """
         self._pyblocxs.set_sampler(sampler)
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler(self):
+        """Return the current pyBLoCXS sampler options.
+
+        Returns
+        -------
+        options : dict
+           A copy of the  options for the chosen sampler.  Use
+           `set_sampler_opt` to change these values. The fields depend
+           on the current sampler.
+
+        See Also
+        --------
+        get_sampler_name : Return the name of the current pyBLoCXS sampler.
+        get_sampler_opt : Return an option of the current pyBLoCXS sampler.
+        set_sampler : Set the pyBLoCXS sampler.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+
+        """
         return self._pyblocxs.get_sampler()
 
     ### Ahelp ingest: 2015-04-30 DJB
@@ -7667,7 +7727,28 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.list_priors()
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def list_samplers(self):
+        """List the pyBLoCXS samplers.
+
+        Returns
+        -------
+        samplers : list of str
+           A list of the names (in lower case) that can be used with
+           `set_sampler`.
+
+        See Also
+        --------
+        get_sampler_name : Return the name of the current pyBLoCXS sampler.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        >>> list_samplers()
+        ['metropolismh', 'fullbayes', 'mh', 'pragbayes']
+
+        """
         return self._pyblocxs.list_samplers()
 
     def get_draws(self, id=None, otherids=(), niter=1000):

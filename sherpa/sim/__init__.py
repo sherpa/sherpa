@@ -229,10 +229,28 @@ class MCMC(NoNewAttributesAfterInit):
         self.priors[par.fullname] = prior
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def list_samplers(self):
+        """List the pyBLoCXS samplers.
+
+        Returns
+        -------
+        samplers : list of str
+           A list of the names (in lower case) that can be used with
+           `set_sampler`.
+
+        See Also
+        --------
+        get_sampler_name : Return the name of the current pyBLoCXS sampler.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        >>> list_samplers()
+        ['metropolismh', 'fullbayes', 'mh', 'pragbayes']
+
         """
-        List the dictionary of available MCMC Sampler classes
-        """       
         return self.__samplers.keys()
 
 
@@ -271,38 +289,72 @@ class MCMC(NoNewAttributesAfterInit):
             raise TypeError("Unknown sampler '%s'" % sampler)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler(self):
-        """
-        Return the current sampler's dictionary of configuration options
+        """Return the current pyBLoCXS sampler options.
 
-        returns a dictionary of configuration options
+        Returns
+        -------
+        options : dict
+           A copy of the options for the chosen sampler.  Use
+           `set_sampler_opt` to change these values. The fields depend
+           on the current sampler.
+
+        See Also
+        --------
+        get_sampler_name : Return the name of the current pyBLoCXS sampler.
+        get_sampler_opt : Return an option of the current pyBLoCXS sampler.
+        set_sampler : Set the pyBLoCXS sampler.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
 
         """
         #return self.sampler
         return self._sampler_opt.copy()
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler_name(self):
-        """
-        Return the current sampler type 
+        """Return the name of the current pyBLoCXS sampler.
 
-        returns a string indicating the current sampler type
+        Returns
+        -------
+        name : str
+
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        >>> get_sampler_name()
+        'MetropolisMH'
+
         """
         return self.sampler.__name__
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler_opt(self, opt):
-        """
-        Return the value of an input sampler configuration option
+        """Return an option of the current pyBLoCXS sampler.
 
-        `opt`     String indicating option
+        Returns
+        -------
+        opt : str
+           The name of the option. The fields depend on the current
+           sampler.
 
-        returns option value
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
 
-        Example:
+        Examples
+        --------
 
-        get_sampler_opt("log")
-        True
+        >>> get_sampler_opt('log')
+        False
 
         """
         return self._get_sampler_opt(opt)
