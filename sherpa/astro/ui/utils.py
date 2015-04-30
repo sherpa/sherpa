@@ -4558,7 +4558,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def ignore_bad(self, id=None, bkg_id=None):
-        """
+        """Exclude channels marked as bad in a PHA data set.
+
         ignore_bad
 
         SYNOPSIS
@@ -5091,7 +5092,7 @@ class Session(sherpa.ui.utils.Session):
            the default identifier is used, as returned by
            `get_default_id`.
         val : array of int
-           This must be an array of quality values of the same length
+           This must be an array of grouping values of the same length
            as the data array.
         bkg_id : int or str, optional
            Set to group the background associated with the data set.
@@ -5198,36 +5199,72 @@ class Session(sherpa.ui.utils.Session):
 
         return data.grouping
 
-
+    ### Ahelp ingest: 2015-04-29 DJB
     def set_quality(self, id, val=None, bkg_id=None):
         """Apply a set of quality flags to a PHA data set.
 
-        set_quality
+        A quality value of 1 or greater indicates a good channel,
+        otherwise the channel is considered bad and can be
+        excluded using the `ignore_bad` function, as discussed
+        in [1]_.
 
-        SYNOPSIS
-           Apply user defined quality flags by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        val : array of int
+           This must be an array of quality values of the same length
+           as the data array.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_quality : Return the quality array for a PHA data set.
+        ignore_bad : Exclude channels marked as bad in a PHA data set.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
 
-           val       - properly sized integer array of quality flags
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-           bkg_id    - background id
-                       default = default bkg id
+        References
+        ----------
 
-        Returns:
-           None
+        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
+               Format",
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
-        DESCRIPTION
-           Override native quality flags (if available) of Sherpa
-           DataPHA dataset by data id or background by bkg id to user
-           a user defined array of integers.           
+        Examples
+        --------
 
-        SEE ALSO
-           ungroup, group
+        Copy the quality array from data set 2 into the default data
+        set, and then ensure that any 'bad' channels are ignored:
+
+        >>> qual = get_data(2).quality
+        >>> set_quality(qual)
+        >>> ignore_bad()
+
+        Copy the quality array from data set "src1" to the source and
+        background data sets of "src2":
+
+        >>> qual = get_data("src1").quality
+        >>> set_quality("src2", qual)
+        >>> set_quality("src2", qual, bkg_id=1)
+
         """
         if val is None:
             id, val = val, id
