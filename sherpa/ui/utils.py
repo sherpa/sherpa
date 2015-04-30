@@ -10384,9 +10384,52 @@ class Session(NoNewAttributesAfterInit):
     ## Statistical plotting routines
     #
 
+    ### Ahelp ingest: 2015-04-30 DJB
     def plot_pdf(self, points, name="x", xlabel="x", bins=12, normed=True, 
                  replot=False, overplot=False, clearwindow=True ):
+        """Plot the probability density function of an array of values.
 
+        Create and plot the probability density function (PDF) of
+        the input array.
+
+        Parameters
+        ----------
+        points : array
+           The values used to create the probaility density function.
+        name : str, optional
+           The label to use as part of the plot title.
+        xlabel : str, optional
+           The label for the X axis
+        bins : int, optional
+           The number of bins to use to create the PDF.
+        normed : bool, optional
+           Should the PDF be normalized (the default is `True`).
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_pdf`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
+
+        See Also
+        --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_scatter : Create a scatter plot.
+
+        Examples
+        --------
+
+        >>> mu, sigma = 100, 15
+        >>> x = mu + sigma * np.random.randn(500)
+        >>> plot_pdf(x, bins=15)
+
+        >>> plot_pdf(x, normed=False, xlabel="mu", name="Simulations")
+
+        """
         if not sherpa.utils.bool_cast(replot):
             self._pdfplot.prepare(points, bins, normed, xlabel, name)
 
@@ -10457,6 +10500,8 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_draws : Run the pyBLoCXS MCMC algorithm.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_pdf : Plot the probability density function of an array.
         plot_scatter : Create a scatter plot.
 
         Examples
@@ -10511,7 +10556,7 @@ class Session(NoNewAttributesAfterInit):
            The label for the Y axis.
         replot : bool, optional
            Set to `True` to use the values calculated by the last
-           call to `plot_trace`. The default is `False`.
+           call to `plot_scatter`. The default is `False`.
         overplot : bool, optional
            If `True` then add the data to an exsiting plot, otherwise
            create a new plot. The default is `False`.
