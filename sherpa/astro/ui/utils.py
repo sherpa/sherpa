@@ -1275,47 +1275,81 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id, ignore=ignore)
 
 
+    ### Ahelp ingest: 2015-04-30 DJB
+    ### DOC-TODO: does ncols make sense here? (have removed for now)
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
+    ### DOC-TODO: prob. needs a review as the existing ahelp documentation
+    ###           talks about 2 cols, but experimentation suggests 1 col.
     def load_grouping(self, id, filename=None, bkg_id=None, *args, **kwargs):
-        """
-        load_grouping
+        """Load the grouping scheme from a file and add to a PHA data set.
 
-        SYNOPSIS
-           Load the dataset grouping flags from file
+        This function sets the grouping column but does not
+        automatically group the data, since the quality array may also
+        need updating. The `group` function will apply the grouping
+        information.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file that contains the grouping
+           information. This file can be a FITS table or an ASCII
+           file. Selection of the relevant column depends on the I/O
+           library in use (Crates or AstroPy).
+        bkg_id : int or str, optional
+           Set if the grouping scheme should be associated with the
+           background associated with the data set.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_grouping : Return the gouping array for a PHA data set.
+        group : Turn on the grouping for a PHA data set.
+        load_quality : Load the quality array from a file and add to a PHA data set.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        There is no check made to see if the grouping array contains
+        valid data.
 
-           ncols      - number of columns to read from
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - column keys
-                        default = None
+        When using Crates as the I/O library, select the grouping
+        column from the file `src.pi`, and use it to set the
+        values in the default data set:
 
-           sep        - separator character
-                        default = ' '
+        >>> load_grouping('src.pi[cols grouping]')
 
-           comment    - comment character
-                        default = '#'
+        Use the `colkeys` option to define the column in the input
+        file:
 
-        Returns:
-           None
+        >>> load_grouping('src.pi', colkeys=['grouping'])
 
-        DESCRIPTION
-           Load the grouping flags for a dataset from file by data id.
+        Load the first column in `grp.dat` and use it to populate
+        the grouping quality of the data set called 'core'.
 
-        EXAMPLE
-           load_grouping("data.dat", colkeys=["GROUPS"])
+        >>> load_grouping('core', 'grp.dat')
 
-        SEE ALSO
-            set_grouping
         """
         if filename is None:
             id, filename = filename, id
@@ -1324,7 +1358,8 @@ class Session(sherpa.ui.utils.Session):
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
     def load_quality(self, id, filename=None, bkg_id=None, *args, **kwargs):
-        """
+        """Load the quality array from a file and add to a PHA data set.
+
         load_quality
 
         SYNOPSIS
@@ -5140,6 +5175,7 @@ class Session(sherpa.ui.utils.Session):
         group_counts : Group into a minimum number of counts per bin.
         group_snr : Group into a minimum signal-to-noise ratio.
         group_width : Group into a fixed bin width.
+        load_grouping : Load the grouping scheme from a file and add to a PHA data set.
         set_quality : Apply a set of quality flags to a PHA data set.
         ungroup : Turn off the grouping for a PHA data set.
 
@@ -5273,6 +5309,7 @@ class Session(sherpa.ui.utils.Session):
         fit : Fit one or more data sets.
         get_quality : Return the quality array for a PHA data set.
         ignore_bad : Exclude channels marked as bad in a PHA data set.
+        load_quality : Load the quality array from a file and add to a PHA data set.
         set_grouping : Apply a set of grouping flags to a PHA data set.
 
         Notes
