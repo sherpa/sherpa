@@ -3080,6 +3080,7 @@ class Session(NoNewAttributesAfterInit):
         return sherpa.io.read_arrays(*args)
 
 
+    # DOC-NOTE: also in sherpa.utils
     def unpack_data(self, filename, ncols=2, colkeys=None,
                     dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
         """Read in a file.

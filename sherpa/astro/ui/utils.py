@@ -925,6 +925,7 @@ class Session(sherpa.ui.utils.Session):
                                             colkeys=colkeys, dstype=dstype,
                                             sep=sep, comment=comment ))
         
+    # DOC-NOTE: also in sherpa.utils
     def unpack_data(self, filename, *args, **kwargs):
         """
         unpack_data
@@ -1010,46 +1011,58 @@ class Session(sherpa.ui.utils.Session):
         else:
             self.set_data(id, data)
 
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def unpack_image(self, arg, coord='logical',
                      dstype=sherpa.astro.data.DataIMG):
-        """
-        unpack_image
+        """Create an image data structure.
 
-        SYNOPSIS
-           Read image data into a dataset
+        Parameters
+        ----------
+        arg :
+           Identify the image file: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: an `IMAGECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        coord : { 'logical', 'image', 'physical', 'world', 'wcs' }, optional
+           Ensure that the image contains the given coordinate system.
+        dstype : optional
+           The image class to use. The default is `DataIMG`.
 
-        SYNTAX
+        Returns
+        -------
+        img :
+           The class of the returned object is controlled by the
+           `dstype` parameter.
 
-        Arguments:
-           arg        - filename and path | IMAGECrate obj | PyFITS HDUList obj
-        
-           coord      - string keyword identifying coordinate system
-                      - choices include: logical, image
-                                         physical
-                                         world, wcs
-                        default = logical
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the image does not contain the requested coordinate
+           system.
 
-           dstype     - Sherpa dataset type (DataIMG, DataIMGInt)
-                        default = DataIMG
+        See Also
+        --------
+        load_image : Load a file as an image data set.
+        set_data : Set a data set.
 
-        Returns:
-           Sherpa DataIMG dataset
+        Examples
+        --------
 
-        DESCRIPTION
-           Read image data from a FITS file into a Sherpa dataset given a
-           filename or read in image data from a Crate into a Sherpa dataset
-           given a IMAGECrate object or read in image data from a HDUList into
-           a Sherpa dataset.
+        >>> img1 = unpack_img("img.fits")
+        >>> set_data(img1)
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_table, unpack_data
+        >>> img = unpack_img('img.fits', 'physical')
+
         """
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_image(self, id, arg=None, coord='logical',
                      dstype=sherpa.astro.data.DataIMG):
-        """
+        """Load a file as an image data set.
+
         load_image
 
         SYNOPSIS
