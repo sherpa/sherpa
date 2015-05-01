@@ -2722,34 +2722,29 @@ class Session(NoNewAttributesAfterInit):
         return self.get_data(id).get_y(filter)
 
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def get_dims(self, id=None, filter=False):
-        """
-        get_dims
+        """Return the dimensions of the data set.
 
-        SYNOPSIS
-           Get the dimensionality of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        filter : bool, optional
+           If `True` then apply any filter to the data set before
+           returning the dimensions. The default is `False`.
 
-        SYNTAX
+        Returns
+        -------
+        dims : a tuple of int
 
-        Arguments:
-           id        - session data id
-                       default = default data id
-
-           filter    - apply filter
-                       default = False
-
-        Returns:
-           List of dimensional lengths
-
-        DESCRIPTION
-           Get the dimensionality (dim0, dim1, ...) of data set by data id.
-
-        EXAMPLE
-           get_dims()
-
-           get_dims(1, True)
-
-        SEE ALSO
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        notice : Include data in the fit.
+        sherpa.astro.utils.notice2d : Include a spatial region of an image.
 
         """
         return self.get_data(id).get_dims(filter)
@@ -3746,7 +3741,8 @@ class Session(NoNewAttributesAfterInit):
 
 
     def notice(self, lo=None, hi=None, **kwargs):
-        """
+        """Include data in the fit.
+
         notice
 
         SYNOPSIS
@@ -3788,7 +3784,8 @@ class Session(NoNewAttributesAfterInit):
 
 
     def ignore(self, lo=None, hi=None, **kwargs):
-        """
+        """Exclude data from the fit.
+
         ignore
 
         SYNOPSIS
