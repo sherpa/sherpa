@@ -6128,48 +6128,95 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_adapt(min, maxLength, tabStops)
 
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: shouldn't this be snr=None rather than min=None
     #@loggable(with_id=True, with_keyword='min')
     def group_adapt_snr(self, id, min=None, bkg_id=None,
                         maxLength=None, tabStops=None, errorCol=None):
         """Adaptively group to a minimum signal-to-noise ratio.
 
-        group_adapt_snr
+        Combine the data so that each bin has a signal-to-noise ratio
+        of at least `num`. The difference to `group_snr` is that this
+        algorithm starts with the bins with the largest signal, in
+        order to avoid over-grouping bright features, rather than at
+        the first channel of the data. The adaptive nature means that
+        low-count regions between bright features may not end up in
+        groups with the minimum number of counts.  The binning scheme
+        is applied to all the channels, but any existing filter -
+        created by the `ignore` or `notice` set of functions - is
+        re-applied after the data has been grouped.
 
-        SYNOPSIS
-           Create and set grouping flags adaptively so that each group contains
-           a signal-to-noise ratio of at least min.
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        num : number
+           The minimum signal-to-noise ratio that must be reached
+           to form a group of channels.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and 1 or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+        errorCol : array of num, optional
+           If set, the error to use for each channel when calculating
+           the signal-to-noise ratio. If not given then Poisson
+           statistics is assumed. A warning is displayed for each
+           zero-valued error estimate.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           min       - minimum number of counts
+        Notes
+        -----
+        Unlike `group`, it is possible to call `group_adapt_snr`
+        multiple times on the same data set without needing to call
+        `ungroup`.
 
-           bkg_id    - background id
-                       default = default bkg id
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
 
-           maxLength - number of elements that can be combined into a group
-                       default = None
+        Examples
+        --------
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        Group the default data set so that each bin contains 
+        a signal-to-noise ratio of at least 5:
 
-           errorCol  - gives the error for each element of the original array
-                       default = None
+        >>> group_adapt_snr(5)
 
-        Returns:
-           None
+        Plot two versions of the 'jet' data set: the first uses an
+        adaptive scheme and the second the non-adaptive version:
 
-        DESCRIPTION
-           Creates and sets grouping flags adaptively on a PHA spectrum data
-           set by data ID using a signal-to-noise ratio of at least min for each
-           group.  Resetting the grouping flags clears any filters already in
-           place.
+        >>> group_adapt_snr('jet', 4)
+        >>> plot_data('jet')
+        >>> group_snr('jet', 4)
+        >>> plot_data('jet', overplot=True)
 
-        SEE ALSO
-           group_counts, group_adapt, group_snr
         """
         if min is None:
             id, min = min, id
