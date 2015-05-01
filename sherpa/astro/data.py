@@ -839,12 +839,12 @@ class DataPHA(Data1DInt):
         num : int
            The number of bins in the grouped data set. Each bin
            will contain the same number of channels.
-        tabStops : array of int, optional
-           If set, indicate one or more ranges of channels that
-           should not be included in the grouped output. The
-           array should match the number of channels in the data
-           set and 1 means that the channel should be ignored
-           from the grouping (use 0 otherwise).
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and 1 or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
 
         See Also
         --------
@@ -874,6 +874,47 @@ class DataPHA(Data1DInt):
                 bkg.group_bins(num, tabStops=tabStops)
 
     def group_width(self, val, tabStops=None):
+        """Group into a fixed bin width.
+
+        Combine the data so that each bin contains `num` channels.
+        The binning scheme is applied to all the channels, but any
+        existing filter - created by the `ignore` or `notice` set of
+        functions - is re-applied after the data has been grouped.
+
+        Parameters
+        ----------
+        val : int
+           The number of channels to combine into a group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and 1 or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+
+        Notes
+        -----
+        Unless the requested bin width is a factor of the number of
+        channels (and no `tabStops` parameter is given), then some
+        channels will be "left over". If this happens, a warning
+        message will be displayed to the screen and the quality value
+        for these channels will be set to 2. This information can be
+        found with the `get_quality` command.
+
+        """
         if not groupstatus:
             raise ImportErr('importfailed', 'group', 'dynamic grouping')
         self._dynamic_group(pygroup.grpBinWidth, len(self.channel), val,

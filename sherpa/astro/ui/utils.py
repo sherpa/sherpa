@@ -5643,12 +5643,12 @@ class Session(sherpa.ui.utils.Session):
            When `bkg_id` is None (which is the default), the
            grouping is applied to all the associated background
            data sets as well as the source data set.
-        tabStops : array of int, optional
-           If set, indicate one or more ranges of channels that
-           should not be included in the grouped output. The
-           array should match the number of channels in the data
-           set and 1 means that the channel should be ignored
-           from the grouping (use 0 otherwise).
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and 1 or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
 
         Raises
         ------
@@ -5723,39 +5723,101 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_bins(num, tabStops)
 
+    ### DOC-TODO: should num= be renamed val= to better match
+    ###           underlying code/differ from group_bins?
     #@loggable(with_id=True, with_keyword='num')
     def group_width(self, id, num=None, bkg_id=None, tabStops=None):
         """Group into a fixed bin width.
 
-        group_width
+        Combine the data so that each bin contains `num` channels.
+        The binning scheme is applied to all the channels, but any
+        existing filter - created by the `ignore` or `notice` set of
+        functions - is re-applied after the data has been grouped.
 
-        SYNOPSIS
-           Create and set grouping flags by a bin width.
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        num : int
+           The number of channels to combine into a group.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and 1 or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           num       - bin width
+        Notes
+        -----
+        Unlike `group`, it is possible to call `group_width` multiple
+        times on the same data set without needing to call `ungroup`.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Unless the requested bin width is a factor of the number of
+        channels (and no `tabStops` parameter is given), then some
+        channels will be "left over". If this happens, a warning
+        message will be displayed to the screen and the quality value
+        for these channels will be set to 2. This information can be
+        found with the `get_quality` command.
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Group the default data set so that each bin contains 20
+        channels:
 
-        DESCRIPTION
-           Creates and sets grouping flags on a PHA spectrum data set by data ID
-           using a specific bin width.  Resetting the grouping
-           flags clears any filters already in place.
+        >>> group_width(20)
 
-        SEE ALSO
-           group_bins, group_snr, group_adapt, group_adapt_snr
+        Plot two versions of the 'jet' data set: the first uses
+        20 channels per group and the second is 50 channels per
+        group:
+
+        >>> group_width('jet', 20)
+        >>> plot_data('jet')
+        >>> group_width('jet', 50)
+        >>> plot_data('jet', overplot=True)
+
+        The grouping is applied to the full data set, and then
+        the filter - in this case defined over the range 0.5
+        to 8 keV - will be applied. This means that the
+        noticed data range will likely contain less than
+        50 bins.
+
+        >>> set_analysis('energy')
+        >>> notice(0.5, 8)
+        >>> group_bins(50)
+        >>> plot_data()
+
+        The grouping is not applied to channels 101 to
+        149, inclusive:
+
+        >>> notice()
+        >>> channels = get_data().channel
+        >>> ign = (channels > 100) & (channels < 150)
+        >>> group_width(40, tabStops=ign)
+        >>> plot_data()
+
         """
         if num is None:
             id, num = num, id
