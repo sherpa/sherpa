@@ -4903,78 +4903,93 @@ class Session(NoNewAttributesAfterInit):
         model = self._check_model(model)
         return [p.name for p in model.pars]
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def get_num_par(self, id=None):
-        """
-        get_num_par
+        """Return the number of parameters in a model expression.
 
-        SYNOPSIS
-           Return the number of parameters in a Sherpa model
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        npar : int
 
-        Arguments:
-           id         - id of model
-                        default = default model id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model expression has been set for the data set
+           (with `set_model` or `set_source`).
 
-        Returns:
-           Number of model parameters
+        See Also
+        --------
+        get_num_par_frozen : Return the number of frozen parameters.
+        get_num_par_thawed : Return the number of thawed parameters.
+        set_model : Set the source model expression for a data set.
 
-        DESCRIPTION
-           Returns the number of parameters in the model regardless
-           of combination
-        
-        SEE ALSO
-           get_num_par_thawed, get_num_par_frozen
         """
         return len(self._get_source(id).pars)
     
+    ### Ahelp ingest: 2015-05-01 DJB
     def get_num_par_thawed(self, id=None):
-        """
-        get_num_par_thawed
+        """Return the number of thawed parameters in a model expression.
 
-        SYNOPSIS
-           Return the number of thawed parameters in a Sherpa model
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        npar : int
 
-        Arguments:
-           id         - id of model
-                        default = default model id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model expression has been set for the data set
+           (with `set_model` or `set_source`).
 
-        Returns:
-           Number of thawed model parameters
+        See Also
+        --------
+        get_num_par : Return the number of parameters.
+        get_num_par_frozen : Return the number of frozen parameters.
+        set_model : Set the source model expression for a data set.
 
-        DESCRIPTION
-           Returns the number of thawed parameters in the model regardless
-           of combination
-        
-        SEE ALSO
-           get_num_par, get_num_par_frozen
         """
         return len(self._get_source(id).thawedpars)
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def get_num_par_frozen(self, id=None):
-        """
-        get_num_par_frozen
+        """Return the number of frozen parameters in a model expression.
 
-        SYNOPSIS
-           Return the number of frozen parameters in a Sherpa model
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        npar : int
 
-        Arguments:
-           id         - id of model
-                        default = default model id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model expression has been set for the data set
+           (with `set_model` or `set_source`).
 
-        Returns:
-           Number of frozen model parameters
+        See Also
+        --------
+        get_num_par : Return the number of parameters.
+        get_num_par_thawed : Return the number of thawed parameters.
+        set_model : Set the source model expression for a data set.
 
-        DESCRIPTION
-           Returns the number of frozen parameters in the model regardless
-           of combination
-        
-        SEE ALSO
-           get_num_par, get_num_par_thawed
         """
         model = self._get_source(id)
         return len(model.pars)-len(model.thawedpars)
