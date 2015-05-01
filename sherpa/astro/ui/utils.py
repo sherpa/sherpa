@@ -5626,6 +5626,7 @@ class Session(sherpa.ui.utils.Session):
     ###           this information
     ### DOC-TODO: how to set the quality if using tabstops to indicate
     ###           "bad" channels, rather than ones to ignore
+    ### DOC-TODO: quality bins are 0 or not (rather than 1)
 
     ### Ahelp ingest: 2015-04-30 DJB
     #@loggable(with_id=True, with_keyword='num')
@@ -6037,44 +6038,88 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_snr(snr, maxLength, tabStops, errorCol)
 
+    ### Ahelp ingest: 2015-05-01 DJB
     #@loggable(with_id=True, with_keyword='min')
     def group_adapt(self, id, min=None, bkg_id=None,
                      maxLength=None, tabStops=None):
         """Adaptively group to a minimum number of counts.
 
-        group_adapt
+        Combine the data so that each bin contains `num` or more
+        counts. The difference to `group_counts` is that this
+        algorithm starts with the bins with the largest signal, in
+        order to avoid over-grouping bright features, rather than at
+        the first channel of the data. The adaptive nature means that
+        low-count regions between bright features may not end up in
+        groups with the minimum number of counts.  The binning scheme
+        is applied to all the channels, but any existing filter -
+        created by the `ignore` or `notice` set of functions - is
+        re-applied after the data has been grouped.
 
-        SYNOPSIS
-           Create and set grouping flags adaptively so that each group contains
-           at least min counts.
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        num : int
+           The number of channels to combine into a group.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and 1 or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           min       - minimum number of counts
+        Notes
+        -----
+        Unlike `group`, it is possible to call `group_adapt` multiple
+        times on the same data set without needing to call `ungroup`.
 
-           bkg_id    - background id
-                       default = default bkg id
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
 
-           maxLength - number of elements that can be combined into a group
-                       default = None
+        Examples
+        --------
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        Group the default data set so that each bin contains at
+        least 20 counts:
 
-        Returns:
-           None
+        >>> group_adapt(20)
 
-        DESCRIPTION
-           Creates and sets grouping flags adaptively on a PHA spectrum data
-           set by data ID using a minimum number of counts for each group.
-           Resetting the grouping flags clears any filters already in place.
+        Plot two versions of the 'jet' data set: the first uses
+        an adaptive scheme of 20 counts per bin, the second
+        the `group_counts` method:
 
-        SEE ALSO
-           group_counts, group_snr, group_adapt_snr
+        >>> group_adapt('jet', 20)
+        >>> plot_data('jet')
+        >>> group_counts('jet', 20)
+        >>> plot_data('jet', overplot=True)
+
         """
         if min is None:
             id, min = min, id

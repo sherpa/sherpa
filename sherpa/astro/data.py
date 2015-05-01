@@ -1028,6 +1028,54 @@ class DataPHA(Data1DInt):
                 bkg.group_snr(snr, maxLength=maxLength, tabStops=tabStops, errorCol=errorCol)
 
     def group_adapt(self, minimum, maxLength=None, tabStops=None):
+        """Adaptively group to a minimum number of counts.
+
+        Combine the data so that each bin contains `num` or more
+        counts. The difference to `group_counts` is that this
+        algorithm starts with the bins with the largest signal, in
+        order to avoid over-grouping bright features, rather than at
+        the first channel of the data. The adaptive nature means that
+        low-count regions between bright features may not end up in
+        groups with the minimum number of counts.  The binning scheme
+        is applied to all the channels, but any existing filter -
+        created by the `ignore` or `notice` set of functions - is
+        re-applied after the data has been grouped.
+
+        Parameters
+        ----------
+        num : int
+           The number of channels to combine into a group.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and 1 or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+
+        See Also
+        --------
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+
+        Notes
+        -----
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
+
+        """
         if not groupstatus:
             raise ImportErr('importfailed', 'group', 'dynamic grouping')
         self._dynamic_group(pygroup.grpAdaptive, self.counts, minimum,
