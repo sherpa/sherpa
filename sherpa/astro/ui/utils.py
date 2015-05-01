@@ -5618,38 +5618,102 @@ class Session(sherpa.ui.utils.Session):
         # If we get here, checks showed data grouped, so set ungroup flag
         data.ungroup()
 
+    ### Ahelp ingest: 2015-04-30 DJB
     #@loggable(with_id=True, with_keyword='num')
     def group_bins(self, id, num=None, bkg_id=None, tabStops=None):
-        """
-        group_bins
+        """Group into a fixed number of bins.
 
-        SYNOPSIS
-           Create and set grouping flags by number of bins with equal-widths
+        Combine the data so that there `num` equal-width bins (or
+        groups). The binning scheme is applied to all the channels,
+        but any existing filter - created by the `ignore` or `notice`
+        set of functions - is re-applied after the data has been
+        grouped.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        num : int
+           The number of bins in the grouped data set. Each bin
+           will contain the same number of channels.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        tabStops : array of int, optional
+           If set, indicate one or more ranges of channels that
+           should not be included in the grouped output. The
+           array should match the number of channels in the data
+           set and 1 means that the channel should be ignored
+           from the grouping (use 0 otherwise).
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-           num       - number of groups
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        Unlike `group`, it is possible to call `group_bins` multiple
+        times on the same data set without needing to call `ungroup`.
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        Since the bin width is an integer number of channels, it is
+        likely that some channels will be "left over". This is even
+        more likely when the `tabStops` parameter is set. If this
+        happens, a warning message will be displayed to the screen and
+        the quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Creates and sets grouping flags on a PHA spectrum data set by data ID
-           using a number of groups with equal-widths.  Resetting the grouping
-           flags clears any filters already in place.
+        Group the default data set so that there are 50 bins.
 
-        SEE ALSO
-           group_width, group_snr, group_adapt, group_adapt_snr
+        >>> group_bins(50)
+
+        Group the 'jet' data set to 50 bins and plot the result,
+        then re-bin to 100 bins and overplot the data:
+
+        >>> group_bins('jet', 50)
+        >>> plot_data('jet')
+        >>> group_bins('jet', 100)
+        >>> plot_data('jet', overplot=True)
+
+        The grouping is applied to the full data set, and then
+        the filter - in this case defined over the range 0.5
+        to 8 keV - will be applied. This means that the
+        noticed data range will likely contain less than
+        50 bins.
+
+        >>> set_analysis('energy')
+        >>> notice(0.5, 8)
+        >>> group_bins(50)
+        >>> plot_data()
+
+        Do not group any channels numbered less than 20 or
+        800 or more. Since there are 780 channels to be
+        grouped, the width of each bin will be 20 channels
+        and there are no "left over" channels:
+
+        >>> notice()
+        >>> channels = get_data().channel
+        >>> ign = (channels <= 20) | (channels >= 800)
+        >>> group_bins(39, tabStops=ign)
+        >>> plot_data()
+
         """
         if num is None:
             id, num = num, id
@@ -5661,7 +5725,8 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True, with_keyword='num')
     def group_width(self, id, num=None, bkg_id=None, tabStops=None):
-        """
+        """Group into a fixed bin width.
+
         group_width
 
         SYNOPSIS
@@ -5703,7 +5768,8 @@ class Session(sherpa.ui.utils.Session):
     #@loggable(with_id=True, with_keyword='num')
     def group_counts(self, id, num=None, bkg_id=None,
                      maxLength=None, tabStops=None):
-        """
+        """Group into a minimum number of counts per bin.
+
         group_counts
 
         SYNOPSIS
@@ -5748,7 +5814,8 @@ class Session(sherpa.ui.utils.Session):
     #@loggable(with_id=True, with_keyword='snr')
     def group_snr(self, id, snr=None, bkg_id=None,
                         maxLength=None, tabStops=None, errorCol=None):
-        """
+        """Group into a minimum signal-to-noise ratio.
+
         group_snr
 
         SYNOPSIS
@@ -5796,7 +5863,8 @@ class Session(sherpa.ui.utils.Session):
     #@loggable(with_id=True, with_keyword='min')
     def group_adapt(self, id, min=None, bkg_id=None,
                      maxLength=None, tabStops=None):
-        """
+        """Adaptively group to a minimum number of counts.
+
         group_adapt
 
         SYNOPSIS
@@ -5841,7 +5909,8 @@ class Session(sherpa.ui.utils.Session):
     #@loggable(with_id=True, with_keyword='min')
     def group_adapt_snr(self, id, min=None, bkg_id=None,
                         maxLength=None, tabStops=None, errorCol=None):
-        """
+        """Adaptively group to a minimum signal-to-noise ratio.
+
         group_adapt_snr
 
         SYNOPSIS

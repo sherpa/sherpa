@@ -826,6 +826,44 @@ class DataPHA(Data1DInt):
     ## same grouping conditions on *all* associated background data sets.
     ## CIAO 4.5 bug fix, 05/01/2012
     def group_bins(self, num, tabStops=None):
+        """Group into a fixed number of bins.
+
+        Combine the data so that there `num` equal-width bins (or
+        groups). The binning scheme is applied to all the channels,
+        but any existing filter - created by the `ignore` or `notice`
+        set of functions - is re-applied after the data has been
+        grouped.
+
+        Parameters
+        ----------
+        num : int
+           The number of bins in the grouped data set. Each bin
+           will contain the same number of channels.
+        tabStops : array of int, optional
+           If set, indicate one or more ranges of channels that
+           should not be included in the grouped output. The
+           array should match the number of channels in the data
+           set and 1 means that the channel should be ignored
+           from the grouping (use 0 otherwise).
+
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+
+        Notes
+        -----
+        Since the bin width is an integer number of channels, it is
+        likely that some channels will be "left over". This is even
+        more likely when the `tabStops` parameter is set. If this
+        happens, a warning message will be displayed to the screen and
+        the quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
+
+        """
         if not groupstatus:
             raise ImportErr('importfailed', 'group', 'dynamic grouping')
         self._dynamic_group(pygroup.grpNumBins, len(self.channel), num,
