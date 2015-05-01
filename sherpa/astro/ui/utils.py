@@ -1124,7 +1124,7 @@ class Session(sherpa.ui.utils.Session):
         --------
 
         >>> pha1 = unpack_arf("src1.pi")
-        >>> pha2 = unpack_arf("src2.pi")
+        >>> pha2 = unpack_arf("field.pi")
         >>> set_data(1, pha1)
         >>> set_bkg(1, pha2)
 
@@ -1135,7 +1135,7 @@ class Session(sherpa.ui.utils.Session):
 
         Read in a PHA file using AstroPy:
 
-        >>> hdus = astropy.io.fits.open("src.arf")
+        >>> hdus = astropy.io.fits.open("src.fits")
         >>> pha = unpack_pha(hdus)
 
         """
@@ -1143,30 +1143,57 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_pha(arg, use_errors)
 
 
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
+    ### DOC-TODO: what does this return when given a PHA2 file?
     def unpack_bkg(self, arg, use_errors=False):
-        """
-        unpack_bkg
+        """Create a PHA data structure for a background data set.
 
-        SYNOPSIS
-           Read background PHA data into a dataset
+        Any instrument information referenced in the header of the PHA
+        file - e.g. with the ANCRFILE and RESPFILE, keywords - will
+        also be loaded. Unlike `unpack_pha`, background files will not
+        be loaded.
 
-        SYNTAX
+        Parameters
+        ----------
+        arg :
+           Identify the PHA file: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        use_errors : bool, optional
+           If `True` then the statistical errors are taken from the
+           input data, rather than calculated by Sherpa from the
+           count values. The default is `False`.
 
-        Arguments:
-           arg        - filename and path | PHACrate obj | PyFITS HDUList obj
+        Returns
+        -------
+        pha : sherpa.astro.data.DataPHA instance
 
-           use_errors - flag to use errors
-                        default = False
+        See Also
+        --------
+        load_bkg : Load the background from a file and add it to a PHA data set.
+        set_bkg : Set the background for a data set.
 
-        Returns:
-           List or instance of Sherpa background DataPHA dataset(s)
+        Examples
+        --------
 
-        DESCRIPTION
-           Read background PHA data from a FITS file into a Sherpa dataset 
-           given a filename or PHACrate object or PyFITS HDUList object.
+        >>> pha1 = unpack_arf("src1.pi")
+        >>> pha2 = unpack_bkg("field.pi")
+        >>> set_data(1, pha1)
+        >>> set_bkg(1, pha2)
 
-        SEE ALSO
-           unpack_image, unpack_arf, unpack_rmf, unpack_table, unpack_data
+        Read in a PHA file using Crates:
+
+        >>> cr = pycrates.read_file("bg.fits")
+        >>> pha = unpack_pha(cr)
+
+        Read in a PHA file using AstroPy:
+
+        >>> hdus = astropy.io.fits.open("bg.fits")
+        >>> pha = unpack_pha(hdus)
+
         """
         use_errors = sherpa.utils.bool_cast(use_errors)
         return sherpa.astro.io.read_pha(arg, use_errors, True)
