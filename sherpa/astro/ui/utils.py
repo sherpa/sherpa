@@ -5626,7 +5626,6 @@ class Session(sherpa.ui.utils.Session):
     ###           this information
     ### DOC-TODO: how to set the quality if using tabstops to indicate
     ###           "bad" channels, rather than ones to ignore
-    ### DOC-TODO: quality bins are 0 or not (rather than 1)
 
     ### Ahelp ingest: 2015-04-30 DJB
     #@loggable(with_id=True, with_keyword='num')
@@ -5656,7 +5655,7 @@ class Session(sherpa.ui.utils.Session):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
 
@@ -5677,6 +5676,14 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
         Unlike `group`, it is possible to call `group_bins` multiple
         times on the same data set without needing to call `ungroup`.
 
@@ -5761,7 +5768,7 @@ class Session(sherpa.ui.utils.Session):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
 
@@ -5782,6 +5789,14 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
         Unlike `group`, it is possible to call `group_width` multiple
         times on the same data set without needing to call `ungroup`.
 
@@ -5869,7 +5884,7 @@ class Session(sherpa.ui.utils.Session):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
 
@@ -5890,6 +5905,14 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
         Unlike `group`, it is possible to call `group_counts` multiple
         times on the same data set without needing to call `ungroup`.
 
@@ -5980,7 +6003,7 @@ class Session(sherpa.ui.utils.Session):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
         errorCol : array of num, optional
@@ -6006,6 +6029,14 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `snr` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `snr` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
         Unlike `group`, it is possible to call `group_snr` multiple
         times on the same data set without needing to call `ungroup`.
 
@@ -6044,7 +6075,7 @@ class Session(sherpa.ui.utils.Session):
                      maxLength=None, tabStops=None):
         """Adaptively group to a minimum number of counts.
 
-        Combine the data so that each bin contains `num` or more
+        Combine the data so that each bin contains `min` or more
         counts. The difference to `group_counts` is that this
         algorithm starts with the bins with the largest signal, in
         order to avoid over-grouping bright features, rather than at
@@ -6061,7 +6092,7 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        num : int
+        min : int
            The number of channels to combine into a group.
         bkg_id : int or str, optional
            Set to group the background associated with the data set.
@@ -6074,7 +6105,7 @@ class Session(sherpa.ui.utils.Session):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
 
@@ -6095,6 +6126,14 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `min` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `min` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
         Unlike `group`, it is possible to call `group_adapt` multiple
         times on the same data set without needing to call `ungroup`.
 
@@ -6166,7 +6205,7 @@ class Session(sherpa.ui.utils.Session):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
         errorCol : array of num, optional
@@ -6192,6 +6231,14 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
         Unlike `group`, it is possible to call `group_adapt_snr`
         multiple times on the same data set without needing to call
         `ungroup`.

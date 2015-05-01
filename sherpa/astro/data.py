@@ -842,7 +842,7 @@ class DataPHA(Data1DInt):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
 
@@ -860,8 +860,7 @@ class DataPHA(Data1DInt):
         likely that some channels will be "left over". This is even
         more likely when the `tabStops` parameter is set. If this
         happens, a warning message will be displayed to the screen and
-        the quality value for these channels will be set to 2. This
-        information can be found with the `get_quality` command.
+        the quality value for these channels will be set to 2.
 
         """
         if not groupstatus:
@@ -888,7 +887,7 @@ class DataPHA(Data1DInt):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
 
@@ -906,8 +905,7 @@ class DataPHA(Data1DInt):
         channels (and no `tabStops` parameter is given), then some
         channels will be "left over". If this happens, a warning
         message will be displayed to the screen and the quality value
-        for these channels will be set to 2. This information can be
-        found with the `get_quality` command.
+        for these channels will be set to 2.
 
         """
         if not groupstatus:
@@ -940,7 +938,7 @@ class DataPHA(Data1DInt):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
 
@@ -956,8 +954,7 @@ class DataPHA(Data1DInt):
         -----
         If channels can not be placed into a "valid" group, then a
         warning message will be displayed to the screen and the
-        quality value for these channels will be set to 2. This
-        information can be found with the `get_quality` command.
+        quality value for these channels will be set to 2.
 
         """
         if not groupstatus:
@@ -992,7 +989,7 @@ class DataPHA(Data1DInt):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
         errorCol : array of num, optional
@@ -1013,8 +1010,7 @@ class DataPHA(Data1DInt):
         -----
         If channels can not be placed into a "valid" group, then a
         warning message will be displayed to the screen and the
-        quality value for these channels will be set to 2. This
-        information can be found with the `get_quality` command.
+        quality value for these channels will be set to 2.
 
         """
         if not groupstatus:
@@ -1043,7 +1039,7 @@ class DataPHA(Data1DInt):
 
         Parameters
         ----------
-        num : int
+        minimum : int
            The number of channels to combine into a group.
         maxLength : int, optional
            The maximum number of channels that can be combined into a
@@ -1051,14 +1047,9 @@ class DataPHA(Data1DInt):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
-
-        Raises
-        ------
-        sherpa.utils.err.ArgumentErr
-           If the data set does not contain a PHA data set.
 
         See Also
         --------
@@ -1072,8 +1063,7 @@ class DataPHA(Data1DInt):
         -----
         If channels can not be placed into a "valid" group, then a
         warning message will be displayed to the screen and the
-        quality value for these channels will be set to 2. This
-        information can be found with the `get_quality` command.
+        quality value for these channels will be set to 2.
 
         """
         if not groupstatus:
@@ -1085,6 +1075,7 @@ class DataPHA(Data1DInt):
             if (hasattr(bkg, "group_adapt")):
                 bkg.group_adapt(minimum, maxLength=maxLength, tabStops=tabStops)
 
+    ### DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_adapt_snr(self, minimum, maxLength=None, tabStops=None, errorCol=None):
         """Adaptively group to a minimum signal-to-noise ratio.
 
@@ -1110,7 +1101,7 @@ class DataPHA(Data1DInt):
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
-           match the number of channels in the data set and 1 or
+           match the number of channels in the data set and non-zero or
            `True` means that the channel should be ignored from the
            grouping (use 0 or `False` otherwise).
         errorCol : array of num, optional
@@ -1131,8 +1122,7 @@ class DataPHA(Data1DInt):
         -----
         If channels can not be placed into a "valid" group, then a
         warning message will be displayed to the screen and the
-        quality value for these channels will be set to 2. This
-        information can be found with the `get_quality` command.
+        quality value for these channels will be set to 2.
 
         """
         if not groupstatus:
