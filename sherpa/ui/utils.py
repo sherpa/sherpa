@@ -3124,6 +3124,7 @@ class Session(NoNewAttributesAfterInit):
                                sep, dstype, comment, require_floats)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def load_data(self, id, filename=None, ncols=2, colkeys=None,
                   dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
         """

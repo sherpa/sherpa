@@ -965,6 +965,7 @@ class Session(sherpa.ui.utils.Session):
 
         return data
 
+    # DOC-NOTE: also in sherpa.utils
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_data(self, id, filename=None, *args, **kwargs):
         """
@@ -3658,28 +3659,50 @@ class Session(sherpa.ui.utils.Session):
             data._set_initial_quantity()
 
 
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def unpack_arf(self, arg):
-        """
-        unpack_arf
+        """Create an ARF data structure.
 
-        SYNOPSIS
-           Read ARF data into a dataset
+        Parameters
+        ----------
+        arg :
+           Identify the ARF: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
 
-        SYNTAX
+        Returns
+        -------
+        arf : sherpa.astro.instrument.ARF1D instance
 
-        Arguments:
-           arg       - filename and path | ARFCrate obj | PyFITS HDUList obj
+        See Also
+        --------
+        get_arf : Return the ARF associated with a PHA data set.
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
+        load_multi_arfs : Load multiple ARFs for a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-        Returns:
-           Sherpa DataARF dataset
+        Examples
+        --------
 
-        DESCRIPTION
-           Read a FITS file containing ancillary response data given
-           a filename or read data from a ARFCrate object into a Sherpa dataset
-           or read data from a PyFITS HDUList object into a Sherpa dataset.
+        >>> arf1 = unpack_arf("arf1.fits")
+        >>> arf2 = unpack_arf("arf2.fits")
 
-        SEE ALSO
-           get_arf, set_arf, load_arf
+        Read in an ARF using Crates:
+
+        >>> acr = pycrates.read_arf("src.arf")
+        >>> arf = unpack_arf(acr)
+
+        Read in an ARF using AstroPy:
+
+        >>> hdus = astropy.io.fits.open("src.arf")
+        >>> arf = unpack_arf(hdus)
+
         """
         return sherpa.astro.instrument.ARF1D(sherpa.astro.io.read_arf(arg))
 
@@ -3703,9 +3726,9 @@ class Session(sherpa.ui.utils.Session):
            identifier is used, as returned by `get_default_id`.
         arg :
            Identify the ARF: a file name, or a data structure
-           representing the data to use, as used by the I/O
-           backend in use by Sherpa: a `TABLECrate` for
-           crates, as used by CIAO, or an AstroPy HDUList object.
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
         resp_id : int or str, optional
            The identifier for the ARF within this data set, if there
            are multiple responses.
@@ -3721,8 +3744,8 @@ class Session(sherpa.ui.utils.Session):
         load_pha : Load a file as a PHA data set.
         load_rmf : Load a RMF from a file and add it to a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
-        set_arf : Load an ARF from a file and add it to a PHA data set.
-        unpack_arf : Read in an ARF from a file.
+        set_arf : Set the ARF for use by a PHA data set.
+        unpack_arf : Create an ARF data structure.
 
         Notes
         -----
@@ -3811,9 +3834,9 @@ class Session(sherpa.ui.utils.Session):
            identifier is used, as returned by `get_default_id`.
         arg :
            Identify the ARF: a file name, or a data structure
-           representing the data to use, as used by the I/O
-           backend in use by Sherpa: a `TABLECrate` for
-           crates, as used by CIAO, or an AstroPy HDUList object.
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
 
         See Also
         --------
@@ -3994,7 +4017,7 @@ class Session(sherpa.ui.utils.Session):
         load_rmf : Load a RMF from a file and add it to a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
         set_arf : Set the ARF for use by a PHA data set.
-        unpack_rmf : Read in an RMF from a file.
+        unpack_rmf : Create a RMF data structure.
 
         Notes
         -----
