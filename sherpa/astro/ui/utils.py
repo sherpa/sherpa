@@ -794,7 +794,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> d = unpack_table('sources.fits', ncols=3)
 
-        Read in from columns 'RMID' and 'SUR_bri':
+        Read in from columns 'RMID' and 'SUR_BRI':
 
         >>> d = unpack_table('rprof.fits', colkeys=['RMID', 'SUR_BRI'])
 
@@ -815,48 +815,110 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.read_table(filename, ncols, colkeys, dstype)
 
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: the field listing really should be somewhere else
+    ###           as it's needed in multiple places (ideally in the
+    ###           DataX class documentation, but users may not find it)
+    ### DOC-TODO: what do the shape arguments for Data2D/Data2DInt mean?
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_table(self, id, filename=None, ncols=2, colkeys=None,
                    dstype=Data1D):
         """Load a FITS binary file as a data set.
 
-        load_table
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename :
+           Identify the file to read: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file). The meaning of the columns is determined by
+           the `dstype` parameter.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : optional
+           The data class to use. The default is `Data1D`.
 
-        SYNOPSIS
-           Load data by id
+        See Also
+        --------
+        load_ascii : Load an ASCII file as a data set.
+        load_image : Load an image as a data set.
+        set_data : Set a data set.
+        unpack_table : Unpack a FITS binary table into a data structure.
 
-        SYNTAX
+        Notes
+        -----
+        The column order for the different data types are as follows,
+        where `x` indicates an independent axis and `y` the dependent
+        axis:
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        `Data1D`
+           required fields: x, y
+           optional fields: statistical error, systematic error
 
-           filename   - filename and path | TABLECrate obj | PyFITS HDUList obj
+        `Data1DInt`
+           required fields: xlo, xhi, y
+           optional fields: statistical error, systematic error
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        `Data2D`
+           required fields: x0, x1, y
+           optional fields: shape, statistical error, systematic error
 
-           colkeys    - list of column names
-                      - vector columns return additional arrays
-                        default = None
+        `Data2DInt`
+           required fields: x0lo, x1lo, x0hi, x1hi, y
+           optional fields: shape, statistical error, systematic error
 
-           dstype     - dataset type desired
-                        default = Data1D
+        Examples
+        --------
 
-        Returns:
-           None
+        Read in the first two columns of the file, as the independent
+        (X) and dependent (Y) columns of the default data set:
 
-        DESCRIPTION
-           Load tabular data from a FITS or column-based text file into
-           a Sherpa dataset given a filename and path by data id or load in
-           data from a Crate into a Sherpa dataset given a TABLECrate object
-           by data id or load in data from a HDUList into a Sherpa dataset
-           by data id.
-        
-        SEE ALSO
-           load_pha, load_arf, load_rmf, load_data, load_image,
-           load_bkg
+        >>> load_table('sources.fits')
+
+        Read in the first three columns (the third column is taken to
+        be the error on the dependent variable):
+
+        >>> load_table('sources.fits', ncols=3)
+
+        Read in from columns 'RMID' and 'SUR_BRI' into data set
+        'prof':
+
+        >>> load_table('prof', 'rprof.fits',
+                       colkeys=['RMID', 'SUR_BRI'])
+
+        The first three columns are taken to be the two independent
+        axes of a two-dimensional data set (`x0` and `x1) and
+        the dependent value (`y`):
+
+        >>> load_table('fields.fits', ncols=3,
+                       dstype=sherpa.astro.data.Data2D)
+
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection. This can
+        also be done using the `colkeys` parameter, as shown above:
+
+        >>> load_table('prof',
+                       'rprof.fits[cols rmid,sur_bri,sur_bri_err]',
+                       ncols=3)
+
+        Read in a data set using Crates:
+
+        >>> cr = pycrates.read_file('table.fits')
+        >>> load_table(cr)
+
+        Read in a data set using Crates:
+
+        >>> hdus = astropy.io.fits.open('table.fits')
+        >>> load_table(hdus)
+
         """
         if filename is None:
             id, filename = filename, id
