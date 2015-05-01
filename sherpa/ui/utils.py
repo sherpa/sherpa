@@ -2821,31 +2821,33 @@ class Session(NoNewAttributesAfterInit):
         return self.get_data(id).get_filter()
 
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def copy_data(self, fromid, toid):
         """Copy a data set to a new identifier.
 
-        copy_data
+        This is a "deep" copy, so that once it has been
+        made, changes to one of the data sets will not
+        be made to the other data set.
 
-        SYNOPSIS
-           Copy a dataset by data id to a new data id (deep copy)
+        Parameters
+        ----------
+        fromid : int or str
+           The input data set.
+        toid : int or str
+           The output data set.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If there is no data set with a `fromid` identifier.
 
-        Arguments:
-           fromid     - source data id
-           toid       - destination data id
+        Examples
+        --------
 
-        Returns:
-           None
+        >>> copy_data(1, 2)
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        >>> copy_data(2, "orig")
 
-        SEE ALSO
-           list_data_ids, get_data, set_data, delete_data,
-           read_data, load_data
         """
         data = self.get_data(fromid)
         data = copy.deepcopy(data)
