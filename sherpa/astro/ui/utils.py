@@ -3695,7 +3695,7 @@ class Session(sherpa.ui.utils.Session):
 
         Read in an ARF using Crates:
 
-        >>> acr = pycrates.read_arf("src.arf")
+        >>> acr = pycrates.read_file("src.arf")
         >>> arf = unpack_arf(acr)
 
         Read in an ARF using AstroPy:
@@ -4047,7 +4047,7 @@ class Session(sherpa.ui.utils.Session):
         >>> rmf1 = get_rmf()
         >>> set_rmf(2, rmf1)
 
-        Read in an RMF from the file 'bkg.rmf' and set it as the
+        Read in a RMF from the file 'bkg.rmf' and set it as the
         RMF for the background model of data set "core":
 
         >>> rmf = unpack_rmf('bkg.rmf')
@@ -4071,28 +4071,51 @@ class Session(sherpa.ui.utils.Session):
             data._set_initial_quantity()
 
 
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
+    ### DOC-TOO: does this work with PyFITS/AstroPy?
     def unpack_rmf(self, arg):
-        """
-        unpack_rmf
+        """Create a RMF data structure.
 
-        SYNOPSIS
-           Read RMF data into a dataset
+        Parameters
+        ----------
+        arg :
+           Identify the RMF: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `RMFCrateDataset` for crates, as used by
+           CIAO, or a list of AstroPy HDU objects.
 
-        SYNTAX
+        Returns
+        -------
+        rmf : sherpa.astro.instrument.RMF1D instance
 
-        Arguments:
-           arg       - filename and path | RMFCrate obj | PyFITS HDUList obj
+        See Also
+        --------
+        get_rmf : Return the RMF associated with a PHA data set.
+        load_arf : Load a RMF from a file and add it to a PHA data set.
+        load_bkg_rmf : Load a RMF from a file and add it to the background of a PHA data set.
+        load_multi_rmfs : Load multiple RMFs for a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-        Returns:
-           Sherpa DataRMF dataset
+        Examples
+        --------
 
-        DESCRIPTION
-           Read a FITS file containing response matrix data given
-           a filename or read data from a RMFCrate object into a Sherpa dataset
-           or read data from a PyFITS HDUList object into a Sherpa dataset.
+        >>> rmf1 = unpack_rmf("rmf1.fits")
+        >>> rmf2 = unpack_rmf("rmf2.fits")
 
-        SEE ALSO
-           get_rmf, set_rmf, load_rmf
+        Read in a RMF using Crates:
+
+        >>> acr = pycrates.read_rmf("src.rmf")
+        >>> rmf = unpack_rmf(acr)
+
+        Read in a RMF using AstroPy:
+
+        >>> hdus = astropy.io.fits.open("src.rmf")
+        >>> rmf = unpack_rmf(hdus)
+
         """
         return sherpa.astro.instrument.RMF1D(sherpa.astro.io.read_rmf(arg))
 
