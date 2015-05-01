@@ -5913,13 +5913,16 @@ class Session(sherpa.ui.utils.Session):
         >>> group_counts(30)
         >>> plot_data()
 
-        The channels 101 to 119, inclusive, are not grouped, and
-        a maximum length of 10 channels is enforced, to avoid
-        bins getting too large when the signal is low:
+        If a channel has more than 30 counts then do not group,
+        otherwise group channels so that they contain at least 40
+        counts. The `group_adapt` and `group_adapt_snr` functions
+        provide similar functionality to this example.  A maximum
+        length of 10 channels is enforced, to avoid bins getting too
+        large when the signal is low.
 
         >>> notice()
-        >>> channels = get_data().channel
-        >>> ign = (channels > 100) & (channels < 120)
+        >>> counts = get_data().counts
+        >>> ign = counts > 30
         >>> group_counts(40, tabStops=ign, maxLength=10)
 
         """
