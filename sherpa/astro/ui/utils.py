@@ -5723,6 +5723,7 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_bins(num, tabStops)
 
+    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: should num= be renamed val= to better match
     ###           underlying code/differ from group_bins?
     #@loggable(with_id=True, with_keyword='num')
@@ -5800,13 +5801,11 @@ class Session(sherpa.ui.utils.Session):
 
         The grouping is applied to the full data set, and then
         the filter - in this case defined over the range 0.5
-        to 8 keV - will be applied. This means that the
-        noticed data range will likely contain less than
-        50 bins.
+        to 8 keV - will be applied.
 
         >>> set_analysis('energy')
         >>> notice(0.5, 8)
-        >>> group_bins(50)
+        >>> group_width(50)
         >>> plot_data()
 
         The grouping is not applied to channels 101 to
@@ -5827,43 +5826,102 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_width(num, tabStops)
 
+    ### Ahelp ingest: 2015-04-30 DJB
     #@loggable(with_id=True, with_keyword='num')
     def group_counts(self, id, num=None, bkg_id=None,
                      maxLength=None, tabStops=None):
         """Group into a minimum number of counts per bin.
 
-        group_counts
+        Combine the data so that each bin contains `num` or more
+        counts. The binning scheme is applied to all the channels, but
+        any existing filter - created by the `ignore` or `notice` set
+        of functions - is re-applied after the data has been grouped.
+        The background is *not* included in this calculation; the
+        calculation is done on the raw data even if `subtract` has
+        been called on this data set.
 
-        SYNOPSIS
-           Create and set grouping flags using minimum number of counts per bin
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        num : int
+           The number of channels to combine into a group.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and 1 or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           num       - number of counts per bin
+        Notes
+        -----
+        Unlike `group`, it is possible to call `group_width` multiple
+        times on the same data set without needing to call `ungroup`.
 
-           bkg_id    - background id
-                       default = default bkg id
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
 
-           maxLength - number of elements that can be combined into a group
-                       default = None
+        Examples
+        --------
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        Group the default data set so that each bin contains at
+        least 20 counts:
 
-        Returns:
-           None
+        >>> group_counts(20)
 
-        DESCRIPTION
-           Creates and sets grouping flags on a PHA spectrum data set by data ID
-           using a minimum number of counts per bin.  Resetting the grouping
-           flags clears any filters already in place.
+        Plot two versions of the 'jet' data set: the first uses
+        20 counts per group and the second is 50:
 
-        SEE ALSO
-           group_snr, group_adapt, group_adapt_snr
+        >>> group_counts('jet', 20)
+        >>> plot_data('jet')
+        >>> group_counts('jet', 50)
+        >>> plot_data('jet', overplot=True)
+
+        The grouping is applied to the full data set, and then
+        the filter - in this case defined over the range 0.5
+        to 8 keV - will be applied.
+
+        >>> set_analysis('energy')
+        >>> notice(0.5, 8)
+        >>> group_counts(30)
+        >>> plot_data()
+
+        The channels 101 to 119, inclusive, are not grouped, and
+        a maximum length of 10 channels is enforced, to avoid
+        bins getting too large when the signal is low:
+
+        >>> notice()
+        >>> channels = get_data().channel
+        >>> ign = (channels > 100) & (channels < 120)
+        >>> group_counts(40, tabStops=ign, maxLength=10)
+
         """
         if num is None:
             id, num = num, id
