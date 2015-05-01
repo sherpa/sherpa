@@ -5464,6 +5464,9 @@ class Session(sherpa.ui.utils.Session):
             else:
                 data.quality = numpy.asarray(val, SherpaInt)
 
+    ### DOC TODO: Need to document that routines like get_quality return
+    ###           a reference to the data - so can change the data structure
+    ###           - and not a copy
 
     ### Ahelp ingest: 2015-04-30 DJB
     def get_quality(self, id=None, bkg_id=None):
@@ -5617,6 +5620,12 @@ class Session(sherpa.ui.utils.Session):
 
         # If we get here, checks showed data grouped, so set ungroup flag
         data.ungroup()
+
+    ### DOC-TODO: need to document somewhere that this ignores existing
+    ###           quality flags and how to use tabStops to include
+    ###           this information
+    ### DOC-TODO: how to set the quality if using tabstops to indicate
+    ###           "bad" channels, rather than ones to ignore
 
     ### Ahelp ingest: 2015-04-30 DJB
     #@loggable(with_id=True, with_keyword='num')
@@ -5880,7 +5889,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        Unlike `group`, it is possible to call `group_width` multiple
+        Unlike `group`, it is possible to call `group_counts` multiple
         times on the same data set without needing to call `ungroup`.
 
         If channels can not be placed into a "valid" group, then a
@@ -5934,47 +5943,92 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_counts(num, maxLength, tabStops)
 
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: check the Poisson stats claim; I'm guessing it means
+    ###           gaussian (i.e. sqrt(n))
     #@loggable(with_id=True, with_keyword='snr')
     def group_snr(self, id, snr=None, bkg_id=None,
                         maxLength=None, tabStops=None, errorCol=None):
         """Group into a minimum signal-to-noise ratio.
 
-        group_snr
+        Combine the data so that each bin has a signal-to-noise ratio
+        of at least `snr`. The binning scheme is applied to all the
+        channels, but any existing filter - created by the `ignore` or
+        `notice` set of functions - is re-applied after the data has
+        been grouped.  The background is *not* included in this
+        calculation; the calculation is done on the raw data even if
+        `subtract` has been called on this data set.
 
-        SYNOPSIS
-           Create and set grouping flags so each group has a signal-to-noise
-           ratio of at least snr
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        snr : number
+           The minimum signal-to-noise ratio that must be reached
+           to form a group of channels.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and 1 or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+        errorCol : array of num, optional
+           If set, the error to use for each channel when calculating
+           the signal-to-noise ratio. If not given then Poisson
+           statistics is assumed. A warning is displayed for each
+           zero-valued error estimate.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           snr       - minimum signal-to-noise ratio
+        Notes
+        -----
+        Unlike `group`, it is possible to call `group_snr` multiple
+        times on the same data set without needing to call `ungroup`.
 
-           bkg_id    - background id
-                       default = default bkg id
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
 
-           maxLength - number of elements that can be combined into a group
-                       default = None
+        Examples
+        --------
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        Group the default data set so that each bin has a 
+        signal-to-noise ratio of at least 5:
 
-           errorCol  - gives the error for each element of the original array
-                       default = None
+        >>> group_snr(20)
 
-        Returns:
-           None
+        Plot two versions of the 'jet' data set: the first uses
+        a signal-to-noise ratio of 3 and the second 5:
 
-        DESCRIPTION
-           Creates and sets grouping flags on a PHA spectrum data set by data ID
-           using a minimum signal-to-noise, snr, for each group.  Resetting the
-           grouping flags clears any filters already in place.
+        >>> group_snr('jet', 3)
+        >>> plot_data('jet')
+        >>> group_snr('jet', 5)
+        >>> plot_data('jet', overplot=True)
 
-        SEE ALSO
-           group_counts, group_adapt, group_adapt_snr
         """
         if snr is None:
             id, snr = snr, id

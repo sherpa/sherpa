@@ -969,7 +969,54 @@ class DataPHA(Data1DInt):
             if (hasattr(bkg, "group_counts")):
                 bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
 
+    ### DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_snr(self, snr, maxLength=None, tabStops=None, errorCol=None):
+        """Group into a minimum signal-to-noise ratio.
+
+        Combine the data so that each bin has a signal-to-noise ratio
+        of at least `snr`. The binning scheme is applied to all the
+        channels, but any existing filter - created by the `ignore` or
+        `notice` set of functions - is re-applied after the data has
+        been grouped.  The background is *not* included in this
+        calculation; the calculation is done on the raw data even if
+        `subtract` has been called on this data set.
+
+        Parameters
+        ----------
+        snr : number
+           The minimum signal-to-noise ratio that must be reached
+           to form a group of channels.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and 1 or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+        errorCol : array of num, optional
+           If set, the error to use for each channel when calculating
+           the signal-to-noise ratio. If not given then Poisson
+           statistics is assumed. A warning is displayed for each
+           zero-valued error estimate.
+
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_width : Group into a fixed bin width.
+
+        Notes
+        -----
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
+
+        """
         if not groupstatus:
             raise ImportErr('importfailed', 'group', 'dynamic grouping')
         self._dynamic_group(pygroup.grpSnr, self.counts, snr,
