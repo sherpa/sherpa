@@ -703,7 +703,6 @@ class Session(NoNewAttributesAfterInit):
            If not given the results are displayed to the screen,
            otherwise it is taken to be the name of the file to
            write the results to.
-
         clobber : bool, optional
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
@@ -722,10 +721,9 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-
         When `outfile` is `None`, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If 
+        used is determined by the `PAGER` environment variable. If
         `PAGER` is not found then '/usr/bin/more' is used.
 
         Examples
@@ -752,7 +750,6 @@ class Session(NoNewAttributesAfterInit):
            If not given the results are displayed to the screen,
            otherwise it is taken to be the name of the file to
            write the results to.
-
         clobber : bool, optional
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
@@ -772,10 +769,9 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-
         When `outfile` is `None`, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If 
+        used is determined by the `PAGER` environment variable. If
         `PAGER` is not found then '/usr/bin/more' is used.
 
         Examples
@@ -1110,41 +1106,43 @@ class Session(NoNewAttributesAfterInit):
         all += self._get_show_psf(id)
         _send_to_pager(all, outfile, clobber)
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def show_conf(self, outfile=None, clobber=False):
-        """
-        show_conf
+        """Display the results of the last conf evaluation.
 
-        SYNOPSIS
-           Show results from last time confidence was run
+        The output includes the best-fit model parameter values,
+        associated confidence limits, choice of statistic, and details
+        on the best fit location.
 
-        SYNTAX
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           outfile  - filename to capture the output
-                     default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        See Also
+        --------
+        conf : Estimate confidence intervals using the confidence method.
+        show_all : Displays the current state of the current session.
 
-        Returns:
-           None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        DESCRIPTION
-           Shows results from the last time confidence was run to
-           determine parameter confidence limits.
-
-           Examples:
-              show_conf()
-
-              show_conf("sherpa.conf", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data, show_model,
-           show_fit, show_covar
         """
         all = ''
         all += self._get_show_conf()
@@ -1319,7 +1317,6 @@ class Session(NoNewAttributesAfterInit):
            If not given the results are displayed to the screen,
            otherwise it is taken to be the name of the file to
            write the results to.
-
         clobber : bool, optional
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
@@ -1337,10 +1334,9 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-
         When `outfile` is `None`, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If 
+        used is determined by the `PAGER` environment variable. If
         `PAGER` is not found then '/usr/bin/more' is used.
 
         """
