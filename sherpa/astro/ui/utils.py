@@ -189,7 +189,6 @@ class Session(sherpa.ui.utils.Session):
         filename : str, optional
            The name of the file to write the results to. The default
            is `sherpa.save`.
-
         clobber : bool, optional
            This flag controls whether an existing file can be
            overwritten (`True`) or if it raises an exception (`False`,
@@ -1425,7 +1424,8 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_pha(self, id, arg=None, use_errors=False):
-        """
+        """Load a PHA data set.
+
         load_pha
 
         SYNOPSIS
@@ -3339,45 +3339,71 @@ class Session(sherpa.ui.utils.Session):
                          ascii, clobber)
 
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def save_pha(self, id, filename=None, bkg_id=None, ascii=False, clobber=False):
-        """
-        save_pha
+        """Save a PHA data set to a file.
 
-        SYNOPSIS
-           Write PHA data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source.
+        ascii : bool, optional
+           If `False` then the data is written to a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        load_pha : Load a PHA data set.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Examples
+        --------
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Write out the PHA data from the default data set to the
+        file 'src.pi':
 
-           clobber    - clobber the existing output file
-                        default = False
+        >>> save_pha('src.pi')
 
-        Returns:
-           None
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-        DESCRIPTION
-           Write PHA data to a FITS file or ASCII file from a Sherpa dataset
-           by id.
+        >>> save_pha('jet', 'out.pi', clobber=True)
 
-        EXAMPLE
+        Write the data out as an ASCII file:
 
-           save_pha(1, "pha.fits")
+        >>> save_pha('pi.dat', ascii=True)
 
-           save_pha(1, "pha.out", ascii=True)
-
-        SEE ALSO
-           save_image, save_data, save_table
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
