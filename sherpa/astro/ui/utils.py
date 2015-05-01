@@ -831,45 +831,77 @@ class Session(sherpa.ui.utils.Session):
         
         self.set_data(id, self.unpack_table(filename, ncols, colkeys, dstype))
         
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: what is the astropy input here, if any?
+    ### DOC-TODO: I am going to ignore the crates support here as
+    ###           it is somewhat meaningless, since the crate could
+    ###           have been read from a FITS binary table.
     def unpack_ascii(self, filename, ncols=2, colkeys=None,
                      dstype=Data1D, sep=' ', comment='#'):
-        """
-        unpack_ascii
+        """Unpack an ASCII file into a data structure.
         
-        SYNOPSIS
-           Read ASCII data into a dataset
-        
-        SYNTAX
+        Parameters
+        ----------
+        filename : str
+           The name of the file to read in. Selection of the relevant
+           column depends on the I/O library in use (Crates or
+           AstroPy).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file). The meaning of the columns is determined by
+           the `dstype` parameter.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        dstype : optional
+           The data class to use. The default is `Data1D`.
 
-        Arguments:
-           filename   - filename and path
+        Returns
+        -------
+        data :
+           The class of the returned object is controlled by the
+           `dstype` parameter.
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        See Also
+        --------
+        load_ascii : Load an ASCII file as a data set.
+        set_data : Set a data set.
 
-           colkeys    - list of column names
-                        default = None
+        Examples
+        --------
 
-           dstype     - dataset type desired
-                        default = Data1D
+        Read in the first two columns of the file, as the independent
+        (X) and dependent (Y) columns of a data set:
 
-           sep        - column separating character
-                        default = ' '
+        >>> d = unpack_ascii('sources.dat')
 
-           comment    - comment character
-                        default = '#'
+        Read in the first three columns (the third column is taken to
+        be the error on the dependent variable):
 
-        Returns:
-           Sherpa dataset
+        >>> d = unpack_ascii('sources.dat', ncols=3)
 
-        DESCRIPTION
-           Read tabular data from a column-based text file into a Sherpa
-           dataset given a filename and path.
+        Read in from columns 'col2' and 'col3':
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_image, unpack_data,
-           unpack_table
+        >>> d = unpack_ascii('tbl.dat', colkeys=['col2', 'col3'])
+
+        The first three columns are taken to be the two independent
+        axes of a two-dimensional data set (`x0` and `x1) and
+        the dependent value (`y`):
+
+        >>> d = unpack_ascii('fields.dat', ncols=3,
+                             dstype=sherpa.astro.data.Data2D)
+
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection. This can
+        also be done using the `colkeys` parameter:
+
+        >>> d = unpack_ascii('tbl.dat[cols rmid,sur_bri,sur_bri_err]',
+                             ncols=3)
+
         """
         return sherpa.astro.io.read_ascii(filename, ncols, colkeys, dstype,
                                           sep=sep, comment=comment)
@@ -1054,6 +1086,16 @@ class Session(sherpa.ui.utils.Session):
         >>> set_data(img1)
 
         >>> img = unpack_img('img.fits', 'physical')
+
+        Read in an image using Crates:
+
+        >>> cr = pycrates.read_file('broad.img')
+        >>> idata = unpack_img(cr)
+
+        Read in an image using AstroPy:
+
+        >>> hdus = astropy.io.fits.open('broad.img')
+        >>> idata = unpack_img(hdus)
 
         """
         return sherpa.astro.io.read_image(arg, coord, dstype)
