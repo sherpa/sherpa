@@ -2132,35 +2132,59 @@ class Session(NoNewAttributesAfterInit):
         keys.sort()
         return keys
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def get_data(self, id=None):
-        """
-        get_data
+        """Return the data set.
 
-        SYNOPSIS
-           Return a Sherpa dataset by data id
+        The object returned by the call can be used to query and
+        change properties of the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Returns
+        -------
+        data :
+           An instance of a sherpa.Data.Data-derived class.
 
-        Returns:
-           dataset
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model expression has been set for the data set
+           (with `set_model` or `set_source`).
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        See Also
+        --------
+        copy_data : Copy a data set to a new identifier.
+        delete_data : Delete a data set by identifier.
+        load_data : Create a data set from a file.
+        set_data : Set a data set.
 
-        SEE ALSO
-           list_data_ids, set_data, copy_data, delete_data,
-           read_data, load_data
+        Examples
+        --------
+
+        >>> d = get_data()
+
+        >>> dimg = get_data('img')
+
+        >>> load_arrays('tst', [10, 20, 30], [5.4, 2.3, 9.8])
+        >>> print(get_data('tst'))
+        name      =
+        x         = Int64[3]
+        y         = Float64[3]
+        staterror = None
+        syserror  = None
+
         """
         return self._get_item(id, self._data, 'data set', 'has not been set')
 
+    ### DOC-TODO: terrible synopsis
     def set_data(self, id, data=None):
-        """
+        """Set a data set.
+
         set_data
 
         SYNOPSIS
@@ -2690,6 +2714,7 @@ class Session(NoNewAttributesAfterInit):
         return self.get_data(id).get_indep()
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def get_dep(self, id=None, filter=False):
         """
         get_dep
@@ -2782,7 +2807,8 @@ class Session(NoNewAttributesAfterInit):
 
 
     def copy_data(self, fromid, toid):
-        """
+        """Copy a data set to a new identifier.
+
         copy_data
 
         SYNOPSIS

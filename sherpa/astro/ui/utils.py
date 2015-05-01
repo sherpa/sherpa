@@ -2150,6 +2150,7 @@ class Session(sherpa.ui.utils.Session):
         return d.get_indep()
 
 
+    # DOC-NOTE: also in sherpa.utils
     def get_dep(self, id=None, filter=False, bkg_id=None):
         """
         get_dep
@@ -2230,7 +2231,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_counts : Return the count data for a data set.
+        get_dep : Return the data for a data set.
         ignore : Exclude data from the fit.
         notice : Include data in the fit.
         plot_data : Plot the data values.
