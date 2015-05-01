@@ -747,47 +747,79 @@ class Session(sherpa.ui.utils.Session):
         """
         self.set_data(id, self.unpack_arrays(*args))
 
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: should unpack_ascii be merged into this?
     def unpack_table(self, filename, ncols=2, colkeys=None, dstype=Data1D):
-        """
-        unpack_table
+        """Unpack a FITS binary file into a data structure.
 
-        SYNOPSIS
-           Read data into a dataset
+        Parameters
+        ----------
+        filename :
+           Identify the file to read: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file). The meaning of the columns is determined by
+           the `dstype` parameter.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : optional
+           The data class to use. The default is `Data1D`.
 
-        SYNTAX
+        Returns
+        -------
+        data :
+           The class of the returned object is controlled by the
+           `dstype` parameter.
 
-        Arguments:
-           filename   - filename and path | TABLECrate obj | PyFITS HDUList obj
+        See Also
+        --------
+        load_table : Load a FITS binary file as a data set.
+        set_data : Set a data set.
+        unpack_ascii : Unpack an ASCII file into a data structure.
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - list of column names
-                      - vector columns return additional arrays
-                        default = None
+        Read in the first two columns of the file, as the independent
+        (X) and dependent (Y) columns of a data set:
 
-           dstype     - dataset type desired
-                        default = Data1D
+        >>> d = unpack_table('sources.fits')
 
-        Returns:
-           Sherpa dataset
+        Read in the first three columns (the third column is taken to
+        be the error on the dependent variable):
 
-        DESCRIPTION
-           Read tabular data from a FITS or column-based text file into
-           a Sherpa dataset given a filename and path or read in data from a
-           Crate into a Sherpa dataset given a TABLECrate object or read in
-           data from a HDUList into a Sherpa dataset.
+        >>> d = unpack_table('sources.fits', ncols=3)
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_image, unpack_data
+        Read in from columns 'RMID' and 'SUR_bri':
+
+        >>> d = unpack_table('rprof.fits', colkeys=['RMID', 'SUR_BRI'])
+
+        The first three columns are taken to be the two independent
+        axes of a two-dimensional data set (`x0` and `x1) and
+        the dependent value (`y`):
+
+        >>> d = unpack_table('fields.fits', ncols=3,
+                             dstype=sherpa.astro.data.Data2D)
+
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection. This can
+        also be done using the `colkeys` parameter, as shown above:
+
+        >>> d = unpack_table('rprof.fits[cols rmid,sur_bri,sur_bri_err]',
+                             ncols=3)
+
         """
         return sherpa.astro.io.read_table(filename, ncols, colkeys, dstype)
 
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_table(self, id, filename=None, ncols=2, colkeys=None,
                    dstype=Data1D):
-        """
+        """Load a FITS binary file as a data set.
+
         load_table
 
         SYNOPSIS
@@ -832,7 +864,7 @@ class Session(sherpa.ui.utils.Session):
         self.set_data(id, self.unpack_table(filename, ncols, colkeys, dstype))
         
     ### Ahelp ingest: 2015-05-01 DJB
-    ### DOC-TODO: what is the astropy input here, if any?
+    ### DOC-TODO: should unpack_ascii be merged into unpack_table?
     ### DOC-TODO: I am going to ignore the crates support here as
     ###           it is somewhat meaningless, since the crate could
     ###           have been read from a FITS binary table.
@@ -870,6 +902,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         load_ascii : Load an ASCII file as a data set.
         set_data : Set a data set.
+        unpack_table : Unpack a FITS binary file into a data structure.
 
         Examples
         --------
@@ -897,7 +930,7 @@ class Session(sherpa.ui.utils.Session):
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
-        also be done using the `colkeys` parameter:
+        also be done using the `colkeys` parameter, as shown above:
 
         >>> d = unpack_ascii('tbl.dat[cols rmid,sur_bri,sur_bri_err]',
                              ncols=3)
