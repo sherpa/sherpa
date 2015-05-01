@@ -2066,6 +2066,7 @@ class Session(sherpa.ui.utils.Session):
         return d.get_error(filter, self.get_stat().calc_staterror)
 
 
+    # DOC-NOTE: also in sherpa.utils
     def get_indep(self, id=None, filter=False, bkg_id=None):
         """
         get_indep
@@ -2198,41 +2199,55 @@ class Session(sherpa.ui.utils.Session):
 
     get_counts = get_dep
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def get_rate(self, id=None, filter=False, bkg_id=None):
-        """
-        get_rate
+        """Return the count rate of a PHA data set.
 
-        SYNOPSIS
-           Get the measured count rate of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the rate should be taken from the background
+           associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        rate : array
+           The rate array. The output matches the grouping of the data
+           set. The units are controlled by the `set_analysis` setting
+           for this data set; that is, the units used in `plot_data`.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_counts : Return the count data for a data set.
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+        plot_data : Plot the data values.
+        set_analysis : Set the units used when fitting and displaying spectral data.
 
-           bkg_id     - background id
-                        default = None
+        Examples
+        --------
 
-        Returns:
-           count rate array
+        >>> rate = get_rate()
 
-        DESCRIPTION
-           Get the measured count rate of data set or background by data id or
-           bkg_id.
+        The rate of data set 2 will be in units of count/s/Angstrom
+        and only cover the range 20 to 22 Angstroms:
 
-        EXAMPLE
-           get_rate()
+        >>> set_analysis(2, 'wave')
+        >>> notice_id(2, 20, 22)
+        >>> r2 = get_rate(2, filter=True)
 
-           get_rate(1, True)
-
-           get_rate(1, bkg_id=2)
-
-        SEE ALSO
-           get_counts
         """
         d = self._get_pha_data(id)
         if bkg_id is not None:

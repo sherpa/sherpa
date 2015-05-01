@@ -2659,6 +2659,7 @@ class Session(NoNewAttributesAfterInit):
         return self.get_data(id).get_error(filter,
                                            self.get_stat().calc_staterror)
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def get_indep(self, id=None):
         """
         get_indep
