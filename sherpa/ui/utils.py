@@ -2134,7 +2134,7 @@ class Session(NoNewAttributesAfterInit):
 
     ### Ahelp ingest: 2015-05-01 DJB
     def get_data(self, id=None):
-        """Return the data set.
+        """Return the data set by identifier.
 
         The object returned by the call can be used to query and
         change properties of the data set.
@@ -2181,34 +2181,49 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_item(id, self._data, 'data set', 'has not been set')
 
+    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: terrible synopsis
     def set_data(self, id, data=None):
         """Set a data set.
 
-        set_data
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        data : instance of a sherpa.Data.Data-derived class
+           The new contents of the data set. This can be
+           copied from an existing data set or loaded
+           in from a file (e.g. `unpack_data`).
 
-        SYNOPSIS
-           Set a dataset by Sherpa data id
+        See Also
+        --------
+        copy_data : Copy a data set to a new identifier.
+        delete_data : Delete a data set by identifier.
+        get_data : Return the data set by identifier.
+        load_data : Create a data set from a file.
+        unpack_data : Read in a file.
 
-        SYNTAX
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `data` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `data` parameters,
+        respectively.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Examples
+        --------
 
-           data       - data object
+        >>> d1 = get_data(2)
+        >>> set_data(d1)
 
-        Returns:
-           None
+        Copy the background data from the default data set into
+        a new data set identified as 'bkg':
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        >>> set_data('bkg', get_bkg())
 
-        SEE ALSO
-           list_data_ids, get_data, copy_data, delete_data,
-           read_data, load_data
         """
         if data is None:
             id, data = data, id
@@ -3065,7 +3080,8 @@ class Session(NoNewAttributesAfterInit):
 
     def unpack_data(self, filename, ncols=2, colkeys=None,
                     dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
-        """
+        """Read in a file.
+
         unpack_data
 
         SYNOPSIS
