@@ -855,6 +855,14 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
         The column order for the different data types are as follows,
         where `x` indicates an independent axis and `y` the dependent
         axis:
@@ -1001,49 +1009,115 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_ascii(filename, ncols, colkeys, dstype,
                                           sep=sep, comment=comment)
     
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: I am going to ignore the crates support here as
+    ###           it is somewhat meaningless, since the crate could
+    ###           have been read from a FITS binary table.
+    ### DOC-TODO: how best to include datastack support?
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_ascii(self, id, filename=None, ncols=2, colkeys=None,
                    dstype=Data1D, sep=' ', comment='#'):
-        """
-        load_ascii
+        """Load an ASCII file as a data set.
 
-        SYNOPSIS
-           Load ASCII data by id
+        The standard behavior is to create a single data set, but
+        multiple data sets can be loaded with this command, as
+        described in the `sherpa.astro.datastack` module.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to read in. Selection of the relevant
+           column depends on the I/O library in use (Crates or
+           AstroPy).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file). The meaning of the columns is determined by
+           the `dstype` parameter.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        dstype : optional
+           The data class to use. The default is `Data1D`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        load_table : Load a FITS binary file as a data set.
+        load_image : Load an image as a data set.
+        set_data : Set a data set.
+        unpack_ascii : Unpack an ASCII file into a data structure.
 
-           filename   - filename and path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        The column order for the different data types are as follows,
+        where `x` indicates an independent axis and `y` the dependent
+        axis:
 
-           colkeys    - list of column names
-                        default = None
+        `Data1D`
+           required fields: x, y
+           optional fields: statistical error, systematic error
 
-           dstype     - dataset type desired
-                        default = Data1D
+        `Data1DInt`
+           required fields: xlo, xhi, y
+           optional fields: statistical error, systematic error
 
-           sep        - column separating character
-                        default = ' '
+        `Data2D`
+           required fields: x0, x1, y
+           optional fields: shape, statistical error, systematic error
 
-           comment    - comment character
-                        default = '#'
+        `Data2DInt`
+           required fields: x0lo, x1lo, x0hi, x1hi, y
+           optional fields: shape, statistical error, systematic error
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Load tabular data from a column-based text file into a Sherpa
-           dataset given a filename and path by data id.
-        
-        SEE ALSO
-           load_pha, load_arf, load_rmf, load_data, load_image,
-           load_bkg, load_table
+        Read in the first two columns of the file, as the independent
+        (X) and dependent (Y) columns of the default data set:
+
+        >>> load_ascii('sources.dat')
+
+        Read in the first three columns (the third column is taken to
+        be the error on the dependent variable):
+
+        >>> load_ascii('sources.dat', ncols=3)
+
+        Read in from columns 'RMID' and 'SUR_BRI' into data set
+        'prof':
+
+        >>> load_ascii('prof', 'rprof.dat',
+                       colkeys=['RMID', 'SUR_BRI'])
+
+        The first three columns are taken to be the two independent
+        axes of a two-dimensional data set (`x0` and `x1) and
+        the dependent value (`y`):
+
+        >>> load_ascii('fields.txt', ncols=3,
+                       dstype=sherpa.astro.data.Data2D)
+
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection. This can
+        also be done using the `colkeys` parameter, as shown above:
+
+        >>> load_ascii('prof',
+                       'rprof.dat[cols rmid,sur_bri,sur_bri_err]',
+                       ncols=3)
+
         """
         if filename is None:
             id, filename = filename, id
