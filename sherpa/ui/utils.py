@@ -1190,42 +1190,43 @@ class Session(NoNewAttributesAfterInit):
         all += self._get_show_proj()
         _send_to_pager(all, outfile, clobber)
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def show_covar(self, outfile=None, clobber=False):
-        """
-        show_covar
+        """Display the results of the last covar evaluation.
 
-        SYNOPSIS
-           Show results from the last time covariance was run to
-           determine parameter confidence limits
+        The output includes the best-fit model parameter values,
+        associated confidence limits, choice of statistic, and details
+        on the best fit location.
 
-        SYNTAX
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           outfile  - filename to capture the output
-                     default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        See Also
+        --------
+        covar : Estimate confidence intervals using the covariance method.
+        show_all : Displays the current state of the current session.
 
-        Returns:
-           None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        DESCRIPTION
-           Shows results from the last time covariance was run to
-           determine parameter confidence limits
-
-           Examples:
-              show_covar()
-
-              show_covar("sherpa.covar", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data, show_model,
-           show_fit, show_conf, show_proj
         """
         all = ''
         all += self._get_show_covar()
