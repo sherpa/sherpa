@@ -1364,6 +1364,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         load_pha : Load a file as a PHA data set.
+        pack_pha : Convert a PHA data set into a file structure.
         set_data : Set a data set.
 
         Examples
@@ -3776,27 +3777,34 @@ class Session(sherpa.ui.utils.Session):
                         raise
 
 
+    ### Ahelp ingest: 2015-05-02 DJB
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def pack_pha(self, id=None):
-        """
-        pack_pha
+        """Convert a PHA data set into a file structure.
 
-        SYNOPSIS
-           Pack PHA data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        pha
+           The return value depends on the I/O library in use.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
 
-        Returns:
-           PHACrate or PyFITS HDU list
+        See Also
+        --------
+        load_pha : Load a file as a PHA data set.
+        set_data : Set a data set.
+        unpack_pha : Create a PHA data structure.
 
-        DESCRIPTION
-           Pack up PHA data from a Sherpa dataset by id.
-
-        SEE ALSO
-           pack_image, pack_data, pack_table
         """
         return sherpa.astro.io.pack_pha(self._get_pha_data(id))
     
