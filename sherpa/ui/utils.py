@@ -454,7 +454,6 @@ class Session(NoNewAttributesAfterInit):
         filename : str, optional
            The name of the file to write the results to. The default
            is `sherpa.save`.
-
         clobber : bool, optional
            This flag controls whether an existing file can be
            overwritten (`True`) or if it raises an exception (`False`,
@@ -717,7 +716,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_stat : Return a fit-statistic method.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
 
         Notes
         -----
@@ -765,7 +764,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         get_method : Return an optimization method.
         get_method_opt : Return one or all options of the current optimization method.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
 
         Notes
         -----
@@ -827,7 +826,7 @@ class Session(NoNewAttributesAfterInit):
         get_fit_results : Return the results of the last fit.
         list_data_ids : List the identifiers for the loaded data sets.
         list_model_ids : List of all the data sets with a source expression.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
 
         Notes
         -----
@@ -873,7 +872,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         list_data_ids : List the identifiers for the loaded data sets.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
 
         Notes
         -----
@@ -922,7 +921,7 @@ class Session(NoNewAttributesAfterInit):
         list_data_ids : List the identifiers for the loaded data sets.
         notice : Include data in the fit.
         sherpa.astro.utils.notice2d : Include a spatial region of an image.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
 
         Notes
         -----
@@ -972,7 +971,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         list_model_ids : List of all the data sets with a source expression.
         set_model : Set the source model expression for a data set.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
         show_source : Display the source model expression for a data set.
 
         Notes
@@ -1024,7 +1023,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         list_model_ids : List of all the data sets with a source expression.
         set_model : Set the source model expression for a data set.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
         show_model : Display the model expression used to fit a data set.
 
         Notes
@@ -1076,7 +1075,7 @@ class Session(NoNewAttributesAfterInit):
         load_psf : Create a PSF model.
         plot_kernel : Plot the 1D kernel applied to a data set.
         set_psf : Apply a PSF model to a data set.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
         show_psf : Display any PSF model applied to a data set.
 
         Notes
@@ -1138,7 +1137,7 @@ class Session(NoNewAttributesAfterInit):
         load_psf : Create a PSF model.
         plot_psf : Plot the 1D PSF model applied to a data set.
         set_psf : Apply a PSF model to a data set.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
         show_kernel : Display any kernel applied to a data set.
 
         Notes
@@ -1192,7 +1191,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         conf : Estimate confidence intervals using the confidence method.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
 
         Notes
         -----
@@ -1234,7 +1233,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         proj : Estimate confidence intervals using the projection method.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
 
         Notes
         -----
@@ -1276,7 +1275,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         covar : Estimate confidence intervals using the covariance method.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
 
         Notes
         -----
@@ -1291,41 +1290,64 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
+    ### Ahelp ingest: 2015-05-02 DJB
     def show_all(self, id=None, outfile=None, clobber=False):
-        """
-        show_all
+        """Report the current state of the Sherpa session.
 
-        SYNOPSIS
-           Show current state of Sherpa fitting session
+        Display information about one or all of the data sets that
+        have been loaded into the Sherpa session. The information
+        shown includes that provided by the other `show_xxx` routines,
+        and depends on the type of data that is loaded.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           filename   - name of saved file
-                        default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-        Returns:
-           None
+        See Also
+        --------
+        clean : Clear all stored session data.
+        list_data_ids : List the identifiers for the loaded data sets.
+        save : Save the current Sherpa session to a file.
+        sherpa.astro.ui.utils.save_all : Save the Sherpa session as an ASCII file.
+        sherpa.astro.ui.show_bkg
+        sherpa.astro.ui.show_bkg_model
+        sherpa.astro.ui.show_bkg_source
+        show_conf
+        show_covar
+        show_data
+        show_filter
+        show_fit
+        show_kernel
+        show_method
+        show_model
+        show_proj
+        show_psf
+        show_source
+        show_stat
 
-        DESCRIPTION
-           Show current state of Sherpa fitting session including Opt Method,
-           Statistic, and associated Data Sets and Models by Sherpa data id.
-           If no data id is given then all available data ids will be used.
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-           Examples:
-              show_all()
-
-              show_all(1)
-
-              show_all(1, "sherpa.session", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_data, show_model, show_fit,
-           show_conf, show_proj, show_covar
         """
         all = ''
         all += self._get_show_data(id)
@@ -1391,7 +1413,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
 
         Notes
         -----

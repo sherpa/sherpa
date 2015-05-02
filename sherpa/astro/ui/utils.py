@@ -434,7 +434,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         list_model_ids : List of all the data sets with a source expression.
         load_bkg : Load the background from a file and add it to a PHA data set.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
 
         Notes
         -----
@@ -486,7 +486,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         list_model_ids : List of all the data sets with a source expression.
         set_bkg_model : Set the background model expression for a data set.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
         show_model : Display the model expression used to fit a data set.
         show_bkg_model : Display the background model expression used to fit a data set.
 
@@ -541,7 +541,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         list_model_ids : List of all the data sets with a source expression.
         set_bkg_model : Set the background model expression for a data set.
-        show_all : Displays the current state of the current session.
+        show_all : Report the current state of the Sherpa session.
         show_model : Display the model expression used to fit a data set.
         show_bkg_source : Display the background model expression for a data set.
 
