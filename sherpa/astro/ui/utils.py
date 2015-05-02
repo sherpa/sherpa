@@ -397,46 +397,52 @@ class Session(sherpa.ui.utils.Session):
         return model_str
 
 
+    ### Ahelp ingest: 2015-05-02 DJB
     def show_bkg(self, id=None, bkg_id=None, outfile=None, clobber=False):
-        """
-        show_bkg
+        """Show the details of the PHA background data sets.
 
-        SYNOPSIS
-           Show the Sherpa PHA background data set
+        This displays information about the background, or
+        backgrounds, for the loaded data sets. This includes: any
+        filters, the grouping settings, mission-specific header
+        keywords, and the details of any associated instrument
+        responses files (ARF, RMF).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all background data sets
+           are displayed.
+        bkg_id : int or str, optional
+           The background component to display. The default is all
+           components.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           id       - data id
-                      default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           bkg_id   - background data id
-                      default = All available background data ids per data id
+        See Also
+        --------
+        list_model_ids : List of all the data sets with a source expression.
+        load_bkg : Load the background from a file and add it to a PHA data set.
+        show_all : Displays the current state of the current session.
 
-           outfile   - filename to capture the output
-                      default = None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-           clobber  - overwrite outfile if exists
-                      default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Show the Sherpa PHA background data set by data id and background
-           data id
-
-           Examples:
-              show_bkg(1, 2)
-
-              show_bkg(outfile="bkg.out", clobber=True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           show_all, show_data, show_bkg_model, show_bkg_source
         """
         all = ''
         all += self._get_show_bkg(id, bkg_id)
@@ -456,8 +462,8 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         id : int or str, optional
-           The data set. If not given then all source expressions are
-           displayed.
+           The data set. If not given then all background expressions
+           are displayed.
         bkg_id : int or str, optional
            The background component to display. The default is all
            components.
