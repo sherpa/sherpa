@@ -4044,35 +4044,71 @@ class Session(NoNewAttributesAfterInit):
     # Models
     ###########################################################################
 
+    ### Ahelp ingest: 2015-05-02 DJB
     def paramprompt(self, val=False):
-        """
-        paramprompt
+        """Should the user be asked for the parameter values when creating a model?
 
-        SYNOPSIS
-           Prompts the user for initial, minimum, and maximum parameter values
+        When `val` is `True`, calls to `set_model` will cause the user
+        to be prompted for each parameter in the expression.  The
+        prompt includes the parameter name and default value, in `[]`:
+        the valid responses are
 
-        SYNTAX
+        - return  which accepts the default
+        - value   which changes the parameter value
+        - value, min  which changes the value and the minimum value
+        - value, min, max  which changes the value, minimum, and
+          maximum values
 
-        Arguments:
+        The `value`, `min`, and `max` components are optional, so
+        ",-5" will use the default parameter value and set its minimum
+        to -5, while "2,,10" will change the parameter value to 2 and
+        its maximum to 10, but leave the minimum at its default. If
+        any value is invalid then the parameter is re-prompted.
 
-           val    - boolean value indicating prompt behavior
-                    default = False
+        Parameters
+        ----------
+        val : bool, optional
+           If `True`, the user will be prompted to enter each
+           parameter value, including support for changing the minimum
+           and maximum values, when a model component is created. The
+           default is `False`.
 
-        Returns:
-           None
+        See Also
+        --------
+        set_model : Set the source model expression for a data set.
+        set_par : Set the value, limits, or behavior of a model parameter.
+        show_model : Display the model expression used to fit a data set.
 
-        DESCRIPTION
-           Prompts for the initial, minimum, and maximum parameter values.  User provides
-           the values in a respectively delimited with commas.  The minimum and maximum
-           values are optional.
+        Notes
+        -----
+        Setting this to `True` only makes sense in an interactive
+        environment.  It is designed to be similar to the parameter
+        prompting provided by X-Spec [1]_.
 
-        EXAMPLE
-            abs1.nh parameter value 0.07
+        References
+        ----------
 
-            abs1.nh parameter value  0.07, 1, 10
+        .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/
 
-        SEE ALSO
-           set_model
+        Examples
+        --------
+
+        In the following, the default parameter settings are accepted
+        for the `pl.gamma` parameter, the starting values for the
+        `pl.ref` and `gline.pos` values are changed, the starting
+        value and ranges of both the `pl.ampl` and `gline.ampl`
+        parameters are set, and the `gline.fwhm` parameter is set to
+        100, with its maximum changed to 10000.
+
+        >>> paramprompt(True)
+        >>> set_source(powlaw1d.pl + gauss1d.gline)
+        pl.gamma parameter value [1]
+        pl.ref parameter value [1] 4500
+        pl.ampl parameter value [1] 1.0e-5,1.0e-8,0.01
+        gline.fwhm parameter value [10] 100,,10000
+        gline.pos parameter value [0] 4900
+        gline.ampl parameter value [1] 1.0e-3,1.0e-7,1
+
         """
         self._paramprompt = sherpa.utils.bool_cast(val)
 
@@ -5740,7 +5776,8 @@ class Session(NoNewAttributesAfterInit):
         return self._check_par(par)
 
     def set_par(self, par, val=None, min=None, max=None, frozen=None):
-        """
+        """Set the value, limits, or behavior of a model parameter.
+
         set_par
 
         SYNOPSIS
