@@ -459,8 +459,8 @@ class Session(sherpa.ui.utils.Session):
            The data set. If not given then all source expressions are
            displayed.
         bkg_id : int or str, optional
-           The background component to display. The default is the
-           first one.
+           The background component to display. The default is all
+           components.
         outfile : str, optional
            If not given the results are displayed to the screen,
            otherwise it is taken to be the name of the file to
@@ -497,47 +497,55 @@ class Session(sherpa.ui.utils.Session):
         _send_to_pager(all, outfile, clobber)
 
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def show_bkg_model(self, id=None, bkg_id=None, outfile=None, clobber=False):
         """Display the background model expression used to fit a data set.
 
-        show_bkg_model
+        This displays the model used to the the background data set,
+        that is, the expression set by `set_bkg_model` or
+        `set_bkg_source` combined with any instrumental responses,
+        together with the parameter values for the model. The
+        `show_bkg_source` function displays just the background model,
+        without the instrument components (if any).
 
-        SYNOPSIS
-           Show the background model (convolved)
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all background expressions are
+           displayed.
+        bkg_id : int or str, optional
+           The background component to display. The default is all
+           components.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-        Arguments:
-           id       - data id
-                      default = All available data ids
+        See Also
+        --------
+        list_model_ids : List of all the data sets with a source expression.
+        set_bkg_model : Set the background model expression for a data set.
+        show_all : Displays the current state of the current session.
+        show_model : Display the model expression used to fit a data set.
+        show_bkg_source : Display the background model expression for a data set.
 
-           bkg_id   - background data id
-                      default = All available background data ids per data id
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-           outfile   - filename to capture the output
-                      default = None
-
-           clobber  - overwrite outfile if exists
-                      default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Show the background convolved model by data id and
-           background data id
-
-           Examples:
-              show_bkg_model(1, 2)
-
-              show_bkg_model(outfile="bkg.out", clobber=True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           show_all, show_data, show_bkg, show_bkg_source
         """
         all = ''
         all += self._get_show_bkg_model(id, bkg_id)
