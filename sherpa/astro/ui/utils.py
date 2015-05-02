@@ -3808,27 +3808,29 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_pha(self._get_pha_data(id))
     
+    ### Ahelp ingest: 2015-05-02 DJB
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def pack_image(self, id=None):
-        """
-        pack_image
+        """Convert a data set into an image structure.
 
-        SYNOPSIS
-           Pack image data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        img
+           The return value depends on the I/O library in use.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        load_image : Load a file as an image data set.
+        set_data : Set a data set.
+        unpack_image : Create an image data structure.
 
-        Returns:
-           IMAGECrate or PyFITS HDU list
-
-        DESCRIPTION
-           Pack up image data from a Sherpa dataset by id.
-
-        SEE ALSO
-           pack_pha, pack_data, pack_table
         """
         return sherpa.astro.io.pack_image(self.get_data(id))
 
