@@ -799,16 +799,13 @@ class Session(NoNewAttributesAfterInit):
     def show_fit(self, outfile=None, clobber=False):
         """Summarize the fit results.
 
-        Display the fit results, including: optimization method,
-        statistic, and details of the fit (it does not reflect any
-        changes made after the fit, such as to the model expression or
-        fit parameters).
+        Display the results of the last call to `fit`, including:
+        optimization method, statistic, and details of the fit (it
+        does not reflect any changes made after the fit, such as to
+        the model expression or fit parameters).
 
         Parameters
         ----------
-        id : int or str, optional
-           The data set. If not given then all data sets are
-           displayed.
         outfile : str, optional
            If not given the results are displayed to the screen,
            otherwise it is taken to be the name of the file to
@@ -826,6 +823,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        fit : Fit one or more data sets.
         get_fit_results : Return the results of the last fit.
         list_data_ids : List the identifiers for the loaded data sets.
         list_model_ids : List of all the data sets with a source expression.
@@ -1041,89 +1039,125 @@ class Session(NoNewAttributesAfterInit):
         all += self._get_show_source(id)
         _send_to_pager(all, outfile, clobber)
 
+    ### Ahelp ingest: 2015-05-02 DJB
+    ### DOC-TODO: how and where to describe the PSF/kernel difference
+    ###           as the Notes section below is inadequate
     def show_kernel(self, id=None, outfile=None, clobber=False):
-        """
-        show_kernel
+        """Display any kernel applied to a data set.
 
-        SYNOPSIS
-           Show Sherpa PSF kernels
+        The kernel represents the subset of the PSF model that is used
+        to fit the data. The `show_psf` function shows the un-filtered
+        version.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           outfile  - filename to capture the output
-                     default = None
+        See Also
+        --------
+        image_kernel : Plot the 2D kernel applied to a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        load_psf : Create a PSF model.
+        plot_kernel : Plot the 1D kernel applied to a data set.
+        set_psf : Apply a PSF model to a data set.
+        show_all : Displays the current state of the current session.
+        show_psf : Display any PSF model applied to a data set.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
+        The point spread function (PSF) is defined by the full
+        (unfiltered) PSF image or model expression evaluated over the
+        full range of the dataset; both types of PSFs are established
+        with `load_psf`.  The kernel is the subsection of the PSF
+        image or model which is used to convolve the data: this is
+        changed using `set_psf`.  While the kernel and PSF might be
+        congruent, defining a smaller kernel helps speed the
+        convolution process by restricting the number of points within
+        the PSF that must be evaluated.
 
-        DESCRIPTION
-           Show all current Sherpa PSF kernel models or by Sherpa data id.
-
-           Examples:
-              show_kernel()
-
-              show_kernel(1)
-
-              show_kernel(2, "sherpa.kernel", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data,
-           show_conf, show_proj, show_fit, show_covar, show_model, show_source
         """
         all = ''
         all += self._get_show_kernel(id)
         _send_to_pager(all, outfile, clobber)
 
+    ### Ahelp ingest: 2015-05-02 DJB
+    ### DOC-TODO: how and where to describe the PSF/kernel difference
+    ###           as the Notes section below is inadequate
     def show_psf(self, id=None, outfile=None, clobber=False):
-        """
-        show_psf
+        """Display any PSF model applied to a data set.
 
-        SYNOPSIS
-           Show Sherpa PSF model with PSF kernel
+        The PSF model represents the full model or data set that is
+        applied to the source expression. The `show_kernel` function
+        shows the filtered version.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           outfile  - filename to capture the output
-                     default = None
+        See Also
+        --------
+        image_psf : View the 2D PSF model applied to a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        load_psf : Create a PSF model.
+        plot_psf : Plot the 1D PSF model applied to a data set.
+        set_psf : Apply a PSF model to a data set.
+        show_all : Displays the current state of the current session.
+        show_kernel : Display any kernel applied to a data set.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
+        The point spread function (PSF) is defined by the full
+        (unfiltered) PSF image or model expression evaluated over the
+        full range of the dataset; both types of PSFs are established
+        with `load_psf`.  The kernel is the subsection of the PSF
+        image or model which is used to convolve the data: this is
+        changed using `set_psf`.  While the kernel and PSF might be
+        congruent, defining a smaller kernel helps speed the
+        convolution process by restricting the number of points within
+        the PSF that must be evaluated.
 
-        DESCRIPTION
-           Show all current Sherpa PSF models with PSF kernels or by Sherpa data id.
-
-           Examples:
-              show_psf()
-
-              show_psf(1)
-
-              show_psf(2, "sherpa.psf", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data,
-           show_conf, show_proj, show_fit, show_covar
         """
         all = ''
         #all += self._get_show_kernel(id)
@@ -5478,7 +5512,8 @@ class Session(NoNewAttributesAfterInit):
 
     
     def load_psf(self, modelname, filename_or_model, *args, **kwargs):
-        """
+        """Create a PSF model.
+
         load_psf
 
         SYNOPSIS
@@ -5525,7 +5560,8 @@ class Session(NoNewAttributesAfterInit):
 
     ##@loggable(with_id=True, with_keyword='psf')
     def set_psf(self, id, psf=None):
-        """
+        """Apply a PSF model to a data set.
+
         set_psf
 
         SYNOPSIS
@@ -10284,7 +10320,8 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._ratioplot, **kwargs)
 
     def plot_psf(self, id=None, **kwargs):
-        """
+        """Plot the 1D PSF model applied to a data set.
+
         plot_psf
 
         SYNOPSIS
@@ -10315,7 +10352,8 @@ class Session(NoNewAttributesAfterInit):
 
 
     def plot_kernel(self, id=None, **kwargs):
-        """
+        """Plot the 1D kernel applied to a data set.
+
         plot_kernel
 
         SYNOPSIS
@@ -12405,7 +12443,8 @@ class Session(NoNewAttributesAfterInit):
                     newframe, tile)
 
     def image_psf(self, id=None, newframe=False, tile=False):
-        """
+        """View the 2D PSF model applied to a data set.
+
         image_psf
 
         SYNOPSIS
@@ -12437,7 +12476,8 @@ class Session(NoNewAttributesAfterInit):
 
 
     def image_kernel(self, id=None, newframe=False, tile=False):
-        """
+        """Plot the 2D kernel applied to a data set.
+
         image_kernel
 
         SYNOPSIS
