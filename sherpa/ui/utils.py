@@ -836,45 +836,46 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
+    ### Ahelp ingest: 2015-05-02 DJB
     def show_data(self, id=None, outfile=None, clobber=False):
-        """
-        show_data
+        """Summarize the available data sets.
 
-        SYNOPSIS
-           Show Sherpa datasets
+        Display information on the data sets that have been
+        loaded. The details depend on the type of the data set
+        (e.g. 1D, image, PHA files).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           outfile  - filename to capture the output
-                     default = None
+        See Also
+        --------
+        list_data_ids : List the identifiers for the loaded data sets.
+        show_all : Displays the current state of the current session.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Show all current Sherpa datasets or by Sherpa data id.
-
-           Examples:
-              show_data()
-
-              show_data(1)
-
-              show_data(2, "sherpa.data", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_model, show_conf,
-           show_proj, show_fit, show_covar
         """
         all = ''
         all += self._get_show_data(id)
