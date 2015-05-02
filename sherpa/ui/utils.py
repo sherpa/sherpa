@@ -795,41 +795,49 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
+    ### Ahelp ingest: 2015-05-02 DJB
     def show_fit(self, outfile=None, clobber=False):
-        """
-        show_fit
+        """Summarize the fit results.
 
-        SYNOPSIS
-           Show results from the last Sherpa fit performed
+        Display the fit results, including: optimization method,
+        statistic, and details of the fit (it does not reflect any
+        changes made after the fit, such as to the model expression or
+        fit parameters).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           outfile  - filename to capture the output
-                     default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        See Also
+        --------
+        get_fit_results : Return the results of the last fit.
+        list_data_ids : List the identifiers for the loaded data sets.
+        list_model_ids : List of all the data sets with a source expression.
+        show_all : Displays the current state of the current session.
 
-        Returns:
-           None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        DESCRIPTION
-           Show results from the last Sherpa fit performed.  Fit results
-           can be written to file.
-
-           Examples:
-              show_fit()
-
-              show_fit("sherpa.fit", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_model, show_conf,
-           show_proj, show_data, show_covar
         """
         all = ''
         all += self._get_show_fit()
@@ -6130,7 +6138,8 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_fit_results(self):
-        """
+        """Return the results of the last fit.
+
         get_fit_results
 
         SYNOPSIS
