@@ -881,45 +881,49 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
+    ### Ahelp ingest: 2015-05-02 DJB
     def show_filter(self, id=None, outfile=None, clobber=False):
-        """
-        show_filter
+        """Show any filters applied to a data set.
 
-        SYNOPSIS
-           Show filters on Sherpa datasets
+        Display any filters that have been applied to the independent
+        axis or axes of the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           outfile  - filename to capture the output
-                     default = None
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        list_data_ids : List the identifiers for the loaded data sets.
+        notice : Include data in the fit.
+        sherpa.astro.utils.notice2d : Include a spatial region of an image.
+        show_all : Displays the current state of the current session.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Show all current filters on Sherpa datasets or by Sherpa data id.
-
-           Examples:
-              show_filter()
-
-              show_filter(1)
-
-              show_filter(2, "sherpa.filter", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_model,
-           show_conf, show_proj, show_fit, show_covar, show_data
         """
         all = ''
         all += self._get_show_filter(id)
