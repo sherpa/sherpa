@@ -926,46 +926,51 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
+    ### Ahelp ingest: 2015-05-01 DJB
     def show_model(self, id=None, outfile=None, clobber=False):
         """Display the model expression used to fit a data set.
 
-        show_model
+        This displays the model used to fit the data set, that is
+        that is, the expression set by `set_model` or `set_source`
+        combined with any instrumental responses, together with the
+        parameter values of the model. The `show_source` function
+        displays just the source expression, without the instrumental
+        components (if any).
 
-        SYNOPSIS
-           Show Sherpa models
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all source expressions are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        See Also
+        --------
+        list_model_ids : List of all the data sets with a source expression.
+        set_model : Set the source model expression for a data set.
+        show_all : Displays the current state of the current session.
+        show_source : Display the source model expression for a data set.
 
-           outfile  - filename to capture the output
-                     default = None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-           clobber - overwrite outfile if exists
-                     default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Show all current Sherpa models or by Sherpa data id.
-
-           Examples:
-              show_model()
-
-              show_model(1)
-
-              show_model(2, "sherpa.model", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data,
-           show_conf, show_proj, show_fit, show_covar
         """
         all = ''
         #all += self._get_show_kernel(id)
@@ -982,13 +987,13 @@ class Session(NoNewAttributesAfterInit):
         expression set by `set_model` or `set_source`, as well as the
         parameter values for the model. The `show_model` function
         displays the model that is fit to the data; that is, it
-        includes any instrument models.
+        includes any instrument responses.
 
         Parameters
         ----------
         id : int or str, optional
-           The data set. If not given then all source
-           expressions are displayed.
+           The data set. If not given then all source expressions are
+           displayed.
         outfile : str, optional
            If not given the results are displayed to the screen,
            otherwise it is taken to be the name of the file to
