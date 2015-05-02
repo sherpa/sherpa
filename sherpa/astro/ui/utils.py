@@ -2084,40 +2084,56 @@ class Session(sherpa.ui.utils.Session):
         d.syserror = err
 
 
+    ### Ahelp ingest: 2015-05-02 DJB
     def set_exposure(self, id, exptime=None, bkg_id=None):
-        """
-        set_exposure
+        """Change the exposure time of a PHA data set.
 
-        SYNOPSIS
-           Set the source or background exposure times by id
+        The exposure time of a PHA data set is taken from the
+        EXPTIME keyword in its header, but it can be changed
+        once the file has been loaded.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        exptime : num
+           The exposure time, in seconds.
+        bkg_id : int or str, optional
+           Set to identify which background component to set.  The
+           default value (`None`) means that this is for the source
+           component of the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_exposure : Return the exposure time of a PHA data set.
+        set_backscal : Change the area scaling of a PHA data set.
 
-           exptime    - exposure time
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `exptime` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `exptime` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Increase the exposure time of the default data set by 5 per
+        cent.
 
-        DESCRIPTION
-           Set the exposure time of a source PHA dataset by data id or of a 
-           background data by bkg_id.
+        >>> etime = get_exposure()
+        >>> set_exposure(etime * 1.05)
 
-        EXAMPLE
-           set_exposure(10e5)
+        Set the exposure time of the second background component
+        of the 'jet' data set.
 
-           set_exposure(2, 10e5)
+        >>> set_exposure('jet', 12324.45, bkg_id=2)
 
-           set_exposure(1, 10e5, 1)
-
-        SEE ALSO
-           set_backscal, set_areascal
         """
         if exptime is None:
             exptime, id = id, exptime
@@ -2132,7 +2148,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def set_backscal(self, id, backscale=None, bkg_id=None):
-        """
+        """Change the area scaling of a PHA data set.
+
         set_backscal
 
         SYNOPSIS
@@ -2603,7 +2620,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_exposure(self, id=None, bkg_id=None):
-        """
+        """Return the exposure time of a PHA data set.
+
         get_exposure
 
         SYNOPSIS
