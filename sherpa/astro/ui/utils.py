@@ -3832,27 +3832,30 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_image(self.get_data(id))
 
+    ### Ahelp ingest: 2015-05-02 DJB
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def pack_table(self, id=None):
-        """
-        pack_table
+        """Convert a data set into a table structure.
 
-        SYNOPSIS
-           Pack tabular data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        tbl
+           The return value depends on the I/O library in use and the
+           type of data (such as `Data1D`, `Data2D`).
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        load_table : Load a FITS binary file as a data set.
+        set_data : Set a data set.
+        unpack_table : Unpack a FITS binary file into a data structure.
 
-        Returns:
-           TABLECrate or PyFITS HDU list
-
-        DESCRIPTION
-           Pack up tabular data  from a Sherpa dataset by id.
-
-        SEE ALSO
-           pack_pha, pack_data, pack_image
         """
         return sherpa.astro.io.pack_table(self.get_data(id))
 
