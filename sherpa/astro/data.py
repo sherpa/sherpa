@@ -480,6 +480,21 @@ class DataPHA(Data1DInt):
 
 
     def get_specresp(self, filter=False):
+        """Return the effective area values for the data set.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the ARF or not. The default is `False`.
+
+        Returns
+        -------
+        arf : array
+           The effective area values for the data set (or background
+           component).
+
+        """
         filter=bool_cast(filter)
         self.notice_response(False)
         arf,rmf = self.get_response()

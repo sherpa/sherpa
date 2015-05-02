@@ -2584,41 +2584,31 @@ class Session(sherpa.ui.utils.Session):
         d._rate=old
         return rate
 
+    ### Ahelp ingest: 2015-05-02 DJB
+    ### DOC-TODO: how to get the corresponding x bins for this data?
+    ###           i.e. what are the X values for these points
     def get_specresp(self, id=None, filter=False, bkg_id=None):
-        """
-        get_specresp
+        """Return the effective area values for a PHA data set.
 
-        SYNOPSIS
-           Get the effective area of a PHA spectrum by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the ARF or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the ARF should be taken from a background set
+           associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        arf : array
+           The effective area values for the data set (or background
+           component).
 
-        Arguments:
-           id         - session data id
-                        default = default data id
-
-           filter     - apply filter
-                        default = False
-
-           bkg_id     - background id
-                        default = None
-
-        Returns:
-           effective area array
-
-        DESCRIPTION
-           Get the effective area array of a PHA spectrum by data set or
-           background by data id or bkg_id.
-
-        EXAMPLE
-           get_specresp()
-
-           get_specresp(1, True)
-
-           get_specresp(1, bkg_id=2)
-
-        SEE ALSO
-           get_counts, get_rate
         """
         d = self._get_pha_data(id)
         if bkg_id is not None:
@@ -5888,6 +5878,10 @@ class Session(sherpa.ui.utils.Session):
     ### DOC TODO: Need to document that routines like get_quality return
     ###           a reference to the data - so can change the data structure
     ###           - and not a copy
+
+    ### DOC-TODO: explain that many of these can be done with
+    ###           direct object access
+    ###           get_data().exposure [= ...]
 
     ### Ahelp ingest: 2015-04-30 DJB
     def get_quality(self, id=None, bkg_id=None):
