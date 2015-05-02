@@ -2108,6 +2108,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         get_exposure : Return the exposure time of a PHA data set.
+        set_areascal : Change the area scaling of a PHA data set.
         set_backscal : Change the area scaling of a PHA data set.
 
         Notes
@@ -2128,6 +2129,11 @@ class Session(sherpa.ui.utils.Session):
 
         >>> etime = get_exposure()
         >>> set_exposure(etime * 1.05)
+
+        Use the EXPOSURE value from the ARF, rather than the EXPTIME
+        value from the PHA file, for data set 2:
+
+        >>> set_exposure(2, get_arf(2).exposure)
 
         Set the exposure time of the second background component
         of the 'jet' data set.
@@ -2206,7 +2212,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def set_areascal(self, id, area=None, bkg_id=None):
-        """
+        """Change the area scaling of a PHA data set.
+
         set_areascal
 
         SYNOPSIS
@@ -2619,40 +2626,36 @@ class Session(sherpa.ui.utils.Session):
         return d.get_specresp(filter)
 
 
+    ### Ahelp ingest: 2015-05-02 DJB
     def get_exposure(self, id=None, bkg_id=None):
         """Return the exposure time of a PHA data set.
 
-        get_exposure
+        The exposure time of a PHA data set is taken from the
+        EXPTIME keyword in its header, but it can be changed
+        once the file has been loaded.
 
-        SYNOPSIS
-           Get the source or background exposure times by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to identify which background component to use.  The
+           default value (`None`) means that the time is for the
+           source component of the data set.
 
-        SYNTAX
+        Returns
+        -------
+        exposure : number
+           The exposure time, in seconds.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_areascal : Return the area scaling of a PHA data set.
+        get_backscal : Return the area scaling of a PHA data set.
+        set_exposure : Change the exposure time of a PHA data set.
 
-           bkg_id     - background data id
-                        default = None
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Get the exposure time of a source PHA dataset by data id or of a 
-           background data by bkg_id.
-
-        EXAMPLE
-           get_exposure()
-
-           get_exposure(1)
-
-           get_exposure(1, 2)
-
-        SEE ALSO
-           set_backscal, set_areascal,
-           get_backscal, get_areascal
         """
         if bkg_id is not None:
             return self.get_bkg(id,bkg_id).exposure
@@ -2745,7 +2748,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_areascal(self, id=None, bkg_id=None):
-        """
+        """Return the area scaling of a PHA data set.
+
         get_areascal
 
         SYNOPSIS
