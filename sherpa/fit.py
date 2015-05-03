@@ -57,6 +57,45 @@ def evaluates_model(func):
 
 
 class StatInfoResults(NoNewAttributesAfterInit):
+    """The fields of the object include:
+
+    `name`
+       The name of the data set, or sets, as a string.
+
+    `ids`
+       A sequence of the data set ids (it may be a tuple or
+       array) included in the results.
+
+    `bkg_ids`
+       A sequence of the background data set ids (it may be a
+       tuple or array) included in the results, if any.
+
+    `statname`
+       The name of the statistic function (as used in `set_stat`).
+
+    `statval`
+       The statistic value.
+
+    `numpoints`
+       The number of bins used in the fits.
+
+    `dof`
+       The number of degrees of freedom in the fit (the number of
+       bins minus the number of free parameters).
+
+    `qval`
+       The Q-value (probability) that one would observe the
+       reduced statistic value, or a larger value, if the assumed
+       model is true and the current model parameters are the
+       true parameter values. This will be `None` if the value
+       can not be calculated with the current statistic (e.g.
+       the Cash statistic).
+
+    `rstat`
+       The reduced statistic value (the `statval` field divided by
+       `dof`). This is not calculated for all statistics.
+
+    """
 
     _fields = ('name', 'ids', 'bkg_ids', 'statname', 'statval',
                'numpoints', 'dof', 'qval', 'rstat')
@@ -103,6 +142,67 @@ class StatInfoResults(NoNewAttributesAfterInit):
 
 
 class FitResults(NoNewAttributesAfterInit):
+    """The fields of the object include:
+
+    `datasets`
+       A sequence of the data set ids included in the results.
+
+    `itermethodname`
+       What iterated-fit scheme was used, if any (as set by
+       `set_iter_method`).
+
+    `statname`
+       The name of the statistic function (as used in `set_stat`).
+
+    `succeeded`
+       Was the fit successful (did it converge)?
+
+    `parnames`
+       A tuple of the parameter names that were varied in the fit
+       (the thawed parameters in the model expression).
+
+    `parvals`
+       A tuple of the parameter values, in the same order as
+       `parnames`.
+
+    `statval`
+       The statistic value after the fit.
+
+    `istatval`
+       The statistic value at the start of the fit.
+
+    `dstatval`
+       The difference in the statistic value (`istatval -
+       statval`).
+
+    `numpoints`
+       The number of bins used in the fits.
+
+    `dof`
+       The number of degrees of freedom in the fit (the number of
+       bins minus the number of free parameters).
+
+    `qval`
+       The Q-value (probability) that one would observe the
+       reduced statistic value, or a larger value, if the assumed
+       model is true and the current model parameters are the
+       true parameter values. This will be `None` if the value
+       can not be calculated with the current statistic (e.g.
+       the Cash statistic).
+
+    `rstat`
+       The reduced statistic value (the `statval` field divided by
+       `dof`). This is not calculated for all statistics.
+
+    `message`
+       A message about the results of the fit (e.g. if the fit was
+       unable to converge). The format and contents depend on the
+       optimisation method.
+
+    `nfev`
+       The number of model evaluations made during the fit.
+
+    """
 
     _fields = ('datasets', 'itermethodname', 'methodname', 'statname',
                'succeeded', 'parnames', 'parvals', 'statval', 'istatval',
