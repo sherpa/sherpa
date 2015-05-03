@@ -3879,35 +3879,59 @@ class Session(sherpa.ui.utils.Session):
     #        raise ArgumentTypeError('response identifiers must be integers ' +
     #                                'or strings')
 
+    ### Ahelp ingest: 2015-05-02 DJB
     #@loggable(with_id=True)
     def get_arf(self, id=None, resp_id=None, bkg_id=None):
-        """
-        get_arf
+        """Return the ARF associated with a PHA data set.
 
-        SYNOPSIS
-           Return an ARF1D model by data id and response id
+        Set the effective area curve for a PHA data set, or its
+        background.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           The identifier for the ARF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set this to return the given background component.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        arf : sherpa.astro.instrument.ARF1D instance
+           This is a reference to the ARF, rather than a copy, so that
+           changing the fields of the object will change the values in
+           the data set.
 
-           resp_id   - response id, if multiple responses exist
-                       default = default response id
+        See Also
+        --------
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        set_rmf : Set the RMF for use by a PHA data set.
+        unpack_arf : Read in an ARF from a file.
 
-           bkg_id    - background id, if background response(s) exist
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           Sherpa ARF1D model
+        Return the exposure field of the ARF from the default data
+        set:
 
-        DESCRIPTION
-           Return a ARF1D model containing ancillary response data
-           given a data id and a response id.
+        >>> get_arf().exposure
 
-        SEE ALSO
-           set_arf, unpack_arf, load_arf
+        Copy the ARF from the default data set to data set `2`:
+
+        >>> arf1 = get_arf()
+        >>> set_arf(2, arf1)
+
+        Retrieve the ARF associated to the second background
+        component of the 'core' data set:
+
+        >>> bgarf = get_arf('core', 'bkg.arf', bkg_id=2)
+
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
