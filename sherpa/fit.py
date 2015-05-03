@@ -852,11 +852,49 @@ class Fit(NoNewAttributesAfterInit):
 
 
     def calc_stat(self):
+        """Calculate the fit statistic for a data set.
+
+        Evaluate the model for one or more data sets, compare it to
+        the data using the current statistic, and return the value.
+        No fitting is done, as the current model parameter, and any
+        filters, are used.
+
+        Returns
+        -------
+        stat : number
+           The current statistic value.
+
+        See Also
+        --------
+        calc_chisqr : Calculate the per-bin chi-squared statistic.
+
+        """
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         model = self.data.eval_model_to_fit(self.model)
         return self.stat.calc_stat(dep, model, staterror, syserror)[0]
 
     def calc_chisqr(self):
+        """Calculate the per-bin chi-squared statistic.
+
+        Evaluate the model for one or more data sets, compare it to
+        the data using the current statistic, and return the value for
+        each bin.  No fitting is done, as the current model parameter,
+        and any filters, are used.
+
+        Returns
+        -------
+        chisq : array or `None`
+           The chi-square value for each bin of the data, using the
+           current statistic (as set by `set_stat`).  A value of
+           `None` is returned if the statistic is not a chi-square
+           distribution.
+
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+
+        """
+
         if not isinstance(self.stat, Chi2):
             return None
         

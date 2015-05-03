@@ -6518,30 +6518,37 @@ class Session(NoNewAttributesAfterInit):
         ids, f = self._get_fit(id, otherids)
         return f.calc_stat()
 
+    ### Ahelp ingest: 2015-05-03 DJB
     def calc_chisqr(self, id=None, *otherids):
         """Calculate the per-bin chi-squared statistic.
 
-        calc_chisqr
+        Evaluate the model for one or more data sets, compare it to
+        the data using the current statistic, and return the value for
+        each bin.  No fitting is done, as the current model parameter,
+        and any filters, are used.
 
-        SYNOPSIS
-           Return the chi squared statistic contribution by bin
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        otherids : int or str, optional
+           Include multiple data sets in the calculation.
 
-        SYNTAX
+        Returns
+        -------
+        chisq : array or `None`
+           The chi-square value for each bin of the data, using the
+           current statistic (as set by `set_stat`).  A value of
+           `None` is returned if the statistic is not a chi-square
+           distribution.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        calc_stat_info : Display the statistic values for the current models.
+        set_stat : Set the statistical method.
 
-           otherids  - List of other Sherpa data ids
-
-        Returns:
-           Statistic array
-
-        DESCRIPTION
-           NOTE:  Only available for Chi Squared statistics
-           
-        SEE ALSO
-           calc_stat, get_stat, set_stat
         """
         ids, f = self._get_fit(id, otherids)
         return f.calc_chisqr()
