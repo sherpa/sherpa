@@ -57,41 +57,35 @@ def evaluates_model(func):
 
 
 class StatInfoResults(NoNewAttributesAfterInit):
-    """The fields of the object include:
+    """A summary of the current statistic value for
+    one or more data sets.
 
-    `name`
-       The name of the data set, or sets, as a string.
-
-    `ids`
-       A sequence of the data set ids (it may be a tuple or
-       array) included in the results.
-
-    `bkg_ids`
-       A sequence of the background data set ids (it may be a
-       tuple or array) included in the results, if any.
-
-    `statname`
-       The name of the statistic function (as used in `set_stat`).
-
-    `statval`
+    Attributes
+    ----------
+    name : str
+       The name of the data set, or sets.
+    ids : sequence of int or str
+       The data set ids (it may be a tuple or array) included in the
+       results.
+    bkg_ids: sequence of int or str, or `None`
+       The background data set ids (it may be a tuple or array)
+       included in the results, if any.
+    statname : str
+       The name of the statistic function.
+    statval : number
        The statistic value.
-
-    `numpoints`
+    numpoints : int
        The number of bins used in the fits.
-
-    `dof`
+    dof: int
        The number of degrees of freedom in the fit (the number of
        bins minus the number of free parameters).
-
-    `qval`
-       The Q-value (probability) that one would observe the
-       reduced statistic value, or a larger value, if the assumed
-       model is true and the current model parameters are the
-       true parameter values. This will be `None` if the value
-       can not be calculated with the current statistic (e.g.
-       the Cash statistic).
-
-    `rstat`
+    qval: number or `None`
+       The Q-value (probability) that one would observe the reduced
+       statistic value, or a larger value, if the assumed model is
+       true and the current model parameters are the true parameter
+       values. This will be `None` if the value can not be calculated
+       with the current statistic (e.g. the Cash statistic).
+    rstat: number of `None`
        The reduced statistic value (the `statval` field divided by
        `dof`). This is not calculated for all statistics.
 
@@ -142,64 +136,48 @@ class StatInfoResults(NoNewAttributesAfterInit):
 
 
 class FitResults(NoNewAttributesAfterInit):
-    """The fields of the object include:
+    """A summary of the fit results.
 
-    `datasets`
+    Attributes
+    ----------
+    datasets : sequence of int or str
        A sequence of the data set ids included in the results.
-
-    `itermethodname`
-       What iterated-fit scheme was used, if any (as set by
-       `set_iter_method`).
-
-    `statname`
-       The name of the statistic function (as used in `set_stat`).
-
-    `succeeded`
+    itermethodname : str or `None`
+       What iterated-fit scheme was used, if any.
+    statname : str
+       The name of the statistic function.
+    succeeded : bool
        Was the fit successful (did it converge)?
-
-    `parnames`
-       A tuple of the parameter names that were varied in the fit
+    parnames : tuple of str
+       the parameter names that were varied in the fit
        (the thawed parameters in the model expression).
-
-    `parvals`
-       A tuple of the parameter values, in the same order as
-       `parnames`.
-
-    `statval`
+    parvals : tuple of number
+       The parameter values, in the same order as `parnames`.
+    statval : number
        The statistic value after the fit.
-
-    `istatval`
+    istatval : number
        The statistic value at the start of the fit.
-
-    `dstatval`
-       The difference in the statistic value (`istatval -
-       statval`).
-
-    `numpoints`
+    dstatval : number
+       The change in the statistic value (`istatval - statval`).
+    numpoints : int
        The number of bins used in the fits.
-
-    `dof`
+    dof : int
        The number of degrees of freedom in the fit (the number of
        bins minus the number of free parameters).
-
-    `qval`
-       The Q-value (probability) that one would observe the
-       reduced statistic value, or a larger value, if the assumed
-       model is true and the current model parameters are the
-       true parameter values. This will be `None` if the value
-       can not be calculated with the current statistic (e.g.
-       the Cash statistic).
-
-    `rstat`
+    qval : number or `None`
+       The Q-value (probability) that one would observe the reduced
+       statistic value, or a larger value, if the assumed model is
+       true and the current model parameters are the true parameter
+       values. This will be `None` if the value can not be calculated
+       with the current statistic (e.g.  the Cash statistic).
+    rstat : number or `None`
        The reduced statistic value (the `statval` field divided by
        `dof`). This is not calculated for all statistics.
-
-    `message`
+    message : str
        A message about the results of the fit (e.g. if the fit was
        unable to converge). The format and contents depend on the
        optimisation method.
-
-    `nfev`
+    nfev : int
        The number of model evaluations made during the fit.
 
     """
