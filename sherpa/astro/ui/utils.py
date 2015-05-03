@@ -6868,7 +6868,8 @@ class Session(sherpa.ui.utils.Session):
 
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
                  grouping=None, grouped=False, quality=None, bkg=None):
-        """
+        """Simulate a PHA data set from a model.
+
         fake_pha
 
         SYNOPSIS

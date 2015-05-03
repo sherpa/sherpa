@@ -6153,7 +6153,8 @@ class Session(NoNewAttributesAfterInit):
 
 
     def calc_stat_info(self):
-        """
+        """Display the statistic values for the current models.
+
         calc_stat_info
 
         SYNOPSIS
@@ -6380,34 +6381,60 @@ class Session(NoNewAttributesAfterInit):
                  self._get_model(id).name)
 
 
+    ### Ahelp ingest: 2015-05-02 DJB
     def calc_stat(self, id=None, *otherids):
-        """
-        calc_stat
+        """Calculate the fit statistic for a data set.
 
-        SYNOPSIS
-           Return the statistic value
+        Evaluate the model for one or more data sets, compare it to
+        the data using the current statistic, and return the value.
+        No fitting is done, as the current model parameter, and any
+        filters, are used.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        otherids : int or str, optional
+           Include multiple data sets in the calculation.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Returns
+        -------
+        stat : number
+           The current statistic value.
 
-           otherids  - List of other Sherpa data ids
+        See Also
+        --------
+        calc_chisqr : Calculate the per-bin chi-squared statistic.
+        calc_stat_info : Display the statistic values for the current models.
+        set_stat : Set the statistical method.
 
-        Returns:
-           Statistic value
+        Examples
+        --------
 
-        DESCRIPTION
-           
-        SEE ALSO
-           calc_chisqr, get_stat, set_stat
+        Calculate the statistic for the model and data in the default
+        data set:
+
+        >>> stat = calc_stat()
+
+        Use the data sets labelled "core" and "jet":
+
+        >>> stat = calc_stat("core", "jet")
+
+        Calculate the statistic value using two different statistics:
+
+        >>> set_stat('cash')
+        >>> s1 = calc_stat()
+        >>> set_stat('cstat')
+        >>> s2 = calc_stat()
+
         """
         ids, f = self._get_fit(id, otherids)
         return f.calc_stat()
 
     def calc_chisqr(self, id=None, *otherids):
-        """
+        """Calculate the per-bin chi-squared statistic.
+
         calc_chisqr
 
         SYNOPSIS
