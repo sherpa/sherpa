@@ -1911,7 +1911,8 @@ class Session(NoNewAttributesAfterInit):
         return keys
 
     def set_iter_method(self, meth):
-        """
+        """Set the iterative-fitting scheme used in the fit.
+
         set_iter_method
 
         SYNOPSIS
@@ -6269,51 +6270,100 @@ class Session(NoNewAttributesAfterInit):
         return self._get_stat_info()
 
 
+    ### Ahelp ingest: 2015-05-03 DJB
     def get_fit_results(self):
         """Return the results of the last fit.
 
-        get_fit_results
+        Returns
+        -------
+        stats : sherpa.fit.FitResults instance
+           The results of the last fit. It does not reflect any
+           changes made to the model parameter, or settings, since the
+           last fit.
 
-        SYNOPSIS
-           Return results from the last fit performed
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        calc_stat_info : Display the statistic values for the current models.
+        fit : Fit a model to one or more data sets.
+        get_stat_info : Return the statistic values for the current models.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
 
-        SYNTAX
+        Notes
+        -----
+        The fields of the object include:
 
-        Arguments:
-           None
+        `datasets`
+           A sequence of the data set ids included in the results.
 
-        Returns:
-           Sherpa fit_results object
+        `itermethodname`
+           What iterated-fit scheme was used, if any (as set by
+           `set_iter_method`).
 
-        DESCRIPTION
-           Printing out a Sherpa fit_results object displays results from a
-           fit in table form.
+        `statname`
+           The name of the statistic function (as used in `set_stat`).
 
-           Example 1:
-           
-              print get_fit_results()
-              succeeded = boolean of fit success
-              parnames  = list of thawed parameter names
-              parvals   = list of thawed parameter values
-              statval   = statistic value
-              numpoints = number of points on grid
-              dof       = degrees of freedom
-              qval      = probability                Note: N/A for Cash,CStat
-              rstat     = reduced statistic value    Note: N/A for Cash,CStat
-              message   = message from optimization method
-              nfev      = number of function evalutions
+        `succeeded`
+           Was the fit successful (did it converge)?
 
-           Example 2:
+        `parnames`
+           A tuple of the parameter names that were varied in the fit
+           (the thawed parameters in the model expression).
 
-              print get_fit_results().format()
-              Statistic value = statval at function evaluation nfev
-              Data points = numpoints
-              Degrees of freedom = dof
-              Probability [Q-value] = qval
-              Reduced statistic  = rstat
+        `parvals`
+           A tuple of the parameter values, in the same order as
+           `parnames`.
 
-        SEE ALSO
-           freeze, thaw, link
+        `statval`
+           The statistic value after the fit.
+
+        `istatval`
+           The statistic value at the start of the fit.
+
+        `dstatval`
+           The difference in the statistic value (`istatval -
+           statval`).
+
+        `numpoints`
+           The number of bins used in the fits.
+
+        `dof`
+           The number of degrees of freedom in the fit (the number of
+           bins minus the number of free parameters).
+
+        `qval`
+           The Q-value (probability) that one would observe the
+           reduced statistic value, or a larger value, if the assumed
+           model is true and the current model parameters are the
+           true parameter values. This will be `None` if the value
+           can not be calculated with the current statistic (e.g.
+           the Cash statistic).
+
+        `rstat`
+           The reduced statistic value (the `statval` field divided by
+           `dof`). This is not calculated for all statistics.
+
+        `message`
+           A message about the results of the fit (e.g. if the fit was
+           unable to converge). The format and contents depend on the
+           optimisation method.
+
+        `nfev`
+           The number of model evaluations made during the fit.
+
+        Examples
+        --------
+
+        >>> res = get_fit_results()
+        >>> res.statval
+        498.21750663761935
+        >>> res.dof
+        439
+        >>> res.parnames
+        ('pl.gamma', 'pl.ampl', 'gline.fwhm', 'gline.pos', 'gline.ampl')
+        >>> res.parvals
+        (-0.20659543380329071, 0.00030398852609788524, 100.0, 4900.0, 0.001)
+
         """
         if self._fit_results == None:
             raise SessionErr('nofit', 'fit')
