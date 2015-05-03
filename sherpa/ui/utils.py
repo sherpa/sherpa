@@ -715,6 +715,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        calc_stat : Calculate the fit statistic for a data set.
+        calc_stat_info : Display the statistic values for the current models.
         get_stat : Return a fit-statistic method.
         show_all : Report the current state of the Sherpa session.
 
@@ -6152,39 +6154,29 @@ class Session(NoNewAttributesAfterInit):
         return output
 
 
+    ### Ahelp ingest: 2015-05-03 DJB
     def calc_stat_info(self):
         """Display the statistic values for the current models.
 
-        calc_stat_info
+        Displays the statistic value for each data set,
+        and the combined fit, using the current set of models,
+        parameters, and ranges. The output is printed to
+        stdout, and so is intended for use in interactive
+        analysis.
 
-        SYNOPSIS
-           Shows calculated information of the goodness-of-fit
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        get_stat_info : Return the statistic values for the current models.
 
-        SYNTAX
+        Notes
+        -----
+        If a fit to a particular data set has not been made, or values
+        - such as parameter settings, the noticed data range, or
+        choice of statistic - have been changed since the last fit,
+        then the results for that data set may not be meaningful and
+        will therefore bias the results for the simultaneous results.
 
-        Arguments:
-           None
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Shows calculated results of the current goodness-of-fit by data id.
-
-           Example 1:
-
-              calc_stat_info()
-              Dataset               = Sherpa data id
-              Statistic             = Fit statistic
-              Fit statistic value   = Fit statistic value
-              Data points           = Number of data points
-              Degrees of freedom    = (number of points - number of thawed
-                                       parameters)
-              Probability [Q-value] = Null hypothesis probability
-              Reduced statistic     = Reduced statistic value (statval/dof)
-
-        SEE ALSO
-           get_stat_info
         """
         output = self._get_stat_info()
         output = [statinfo.format() for statinfo in output]
@@ -6196,7 +6188,8 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_stat_info(self):
-        """
+        """Return the statistic values for the current models.
+
         calc_stat_info
 
         SYNOPSIS
