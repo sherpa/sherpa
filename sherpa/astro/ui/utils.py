@@ -3884,9 +3884,6 @@ class Session(sherpa.ui.utils.Session):
     def get_arf(self, id=None, resp_id=None, bkg_id=None):
         """Return the ARF associated with a PHA data set.
 
-        Set the effective area curve for a PHA data set, or its
-        background.
-
         Parameters
         ----------
         id : int or str, optional
@@ -3907,6 +3904,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        fake_pha : Simulate a PHA data set from a model.
         load_arf : Load an ARF from a file and add it to a PHA data set.
         load_pha : Load a file as a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
@@ -4315,35 +4313,52 @@ class Session(sherpa.ui.utils.Session):
             resp_id = resp_ids.pop(0)
             self.load_arf(id, filename, resp_id)
 
+    ### Ahelp ingest: 2015-05-02 DJB
     #@loggable(with_id=True)
     def get_rmf(self, id=None, resp_id=None, bkg_id=None):
-        """
-        get_rmf
+        """Return the RMF associated with a PHA data set.
 
-        SYNOPSIS
-           Return an RMF1D model by data id and response id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           The identifier for the RMF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set this to return the given background component.
 
-        SYNTAX
+        Returns
+        -------
+        rmf : sherpa.astro.instrument.RMF1D instance
+           This is a reference to the RMF, rather than a copy, so that
+           changing the fields of the object will change the values in
+           the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        fake_pha : Simulate a PHA data set from a model.
+        load_pha : Load a file as a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        set_rmf : Set the RMF for use by a PHA data set.
+        unpack_rmf : Read in a RMF from a file.
 
-           resp_id   - response id, if multiple responses exist
-                       default = default response id
+        Examples
+        --------
 
-           bkg_id    - background id, if background response(s) exist
-                       default = None
+        Copy the RMF from the default data set to data set `2`:
 
-        Returns:
-           Sherpa RMF1D model
+        >>> rmf1 = get_rmf()
+        >>> set_rmf(2, rmf1)
 
-        DESCRIPTION
-           Return a RMF1D model containing response matrix data
-           given a data id and a response id.
+        Retrieve the RMF associated to the second background
+        component of the 'core' data set:
 
-        SEE ALSO
-           set_rmf, unpack_rmf, load_rmf
+        >>> bgrmf = get_rmf('core', 'bkg.rmf', bkg_id=2)
+
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
