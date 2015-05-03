@@ -6158,11 +6158,11 @@ class Session(NoNewAttributesAfterInit):
     def calc_stat_info(self):
         """Display the statistic values for the current models.
 
-        Displays the statistic value for each data set,
-        and the combined fit, using the current set of models,
-        parameters, and ranges. The output is printed to
-        stdout, and so is intended for use in interactive
-        analysis.
+        Displays the statistic value for each data set, and the
+        combined fit, using the current set of models, parameters, and
+        ranges. The output is printed to stdout, and so is intended
+        for use in interactive analysis. The `get_stat_info` function
+        returns the values as a list of objects.
 
         See Also
         --------
@@ -6187,41 +6187,84 @@ class Session(NoNewAttributesAfterInit):
             info(output[0])
 
 
+    ### Ahelp ingest: 2015-05-03 DJB
     def get_stat_info(self):
         """Return the statistic values for the current models.
 
-        calc_stat_info
+        Calculate the statistic value for each data set, and the
+        combined fit, using the current set of models, parameters, and
+        ranges.
 
-        SYNOPSIS
-           Access calculated information of the goodness-of-fit
+        Returns
+        -------
+        stats : array of sherpa.fit.StatInfoResults
+           The values for each data set. If there are multiple model
+           expressions then the last element will be the value for the
+           combined data sets.
 
-        SYNTAX
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        calc_stat_info : Display the statistic values for the current models.
+        get_fit_results : Return the results of the last fit.
+        list_data_ids : List the identifiers for the loaded data sets.
+        list_model_ids : List of all the data sets with a source expression.
 
-        Arguments:
-           None
+        Notes
+        -----
+        If a fit to a particular data set has not been made, or values
+        - such as parameter settings, the noticed data range, or
+        choice of statistic - have been changed since the last fit,
+        then the results for that data set may not be meaningful and
+        will therefore bias the results for the simultaneous results.
 
-        Returns:
-           List of StatInfoResults objects
+        The fields of the object include:
 
-        DESCRIPTION
-           Return a list of calculated results of the current goodness-of-fit
-           by data id.
+        `name`
+           The name of the data set, or sets, as a string.
 
-           Example 1:
+        `ids`
+           A sequence of the data set ids (it may be a tuple or
+           array) included in the results.
 
-              print get_stat_info()[0]
-              name      = Sherpa dataset label
-              ids       = Sherpa dataset ids
-              bkg_ids   = Sherpa background dataset ids
-              statname  = Fit statistic
-              statval   = Fit statistic value
-              numpoints = Number of data points
-              dof       = (numpoints - number of thawed parameters)
-              qval      = Null hypothesis probability
-              rstat     = Reduced statistic value (statval/dof)
+        `bkg_ids`
+           A sequence of the background data set ids (it may be a
+           tuple or array) included in the results, if any.
 
-        SEE ALSO
-           calc_stat_info
+        `statname`
+           The name of the statistic function (as used in `set_stat`).
+
+        `statval`
+           The statistic value.
+
+        `numpoints`
+           The number of bins used in the fits.
+
+        `dof`
+           The number of degrees of freedom in the fit (the number of
+           bins minus the number of free parameters).
+
+        `qval`
+           The Q-value (probability) that one would observe the
+           reduced statistic value, or a larger value, if the assumed
+           model is true and the current model parameters are the
+           true parameter values. This will be `None` if the value
+           can not be calculated with the current statistic (e.g.
+           the Cash statistic).
+
+        `rstat`
+           The reduced statistic value (the `statval` field divided by
+           `dof`). This is not calculated for all statistics.
+
+        Examples
+        --------
+
+        >>> res = get_stat_info()
+        >>> res[0].statval
+        498.21750663761935
+        >>> res[0].dof
+        439
+
         """
         return self._get_stat_info()
 
