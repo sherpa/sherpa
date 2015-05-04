@@ -1885,27 +1885,27 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr('badopt', optname, self._current_itermethod['name'])
         return itermethod_opts[optname]
 
+    ### Ahelp ingest: 2015-05-04 DJB
     def list_iter_methods(self):
         """List the iterative fitting schemes.
 
-        list_iter_methods
+        Returns
+        -------
+        schemes : list of str
+           A list of the names that can be used with
+           `set_iter_method`.
 
-        SYNOPSIS
-           List the available iterative fitting methods in Sherpa
+        See Also
+        --------
+        get_iter_method_name : Return the name of the iterative fitting scheme.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
 
-        SYNTAX
+        Examples
+        --------
 
-        Arguments:
-           None
+        >>> list_iter_methods()
+        ['none', 'primini', 'sigmarej']
 
-        Returns:
-           list of iterative fitting methods
-
-        DESCRIPTION
-
-        SEE ALSO
-           get_iter_method_name, set_iter_method, get_iter_method_opt,
-           set_iter_method_opt
         """
         keys = self._itermethods.keys()[:]
         keys.sort()
