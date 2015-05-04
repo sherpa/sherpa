@@ -92,11 +92,10 @@ class Cash(Likelihood):
     where M(i) = S(i) + B(i) is the sum of source and background model
     amplitudes, and D(i) is the number of observed counts, in bin i.
 
-    The Cash statistic [1]_ is derived by (1)
-    taking the logarithm of the likelihood function, (2) changing
-    its sign, (3) dropping the factorial term (which remains
-    constant during fits to the same dataset), and (4) multiplying
-    by two:
+    The Cash statistic [1]_ is derived by (1) taking the logarithm of
+    the likelihood function, (2) changing its sign, (3) dropping the
+    factorial term (which remains constant during fits to the same
+    dataset), and (4) multiplying by two:
 
     C = 2 * (sum)_i [ M(i) - D(i) log M(i) ]
 
@@ -116,7 +115,8 @@ class Cash(Likelihood):
     Monte Carlo simulations. One would repeatedly sample new
     datasets from the best-fit model, fit them, and note where the
     observed Cash statistic lies within the derived distribution
-    of Cash statistics.
+    of Cash statistics. Alternatively, the `cstat` statistic can
+    be used.
 
     Notes
     -----
@@ -153,8 +153,71 @@ class Cash(Likelihood):
                                         weight, truncation_value)
 
 
+### Ahelp ingest: 2015-05-04 DJB
 class CStat(Likelihood):
-    """Maximum likelihood function (XSPEC style)"""
+    """Maximum likelihood function (XSPEC style).
+
+    This is equivalent to the X-Spec implementation of the
+    Cash statistic [1]_. It does *not* include the background
+    modelling.
+
+    Counts are sampled from the Poisson distribution, and so the best
+    way to assess the quality of model fits is to use the product of
+    individual Poisson probabilities computed in each bin i, or the
+    likelihood L:
+
+    L = (product)_i [ M(i)^D(i)/D(i)! ] * exp[-M(i)]
+
+    where M(i) = S(i) + B(i) is the sum of source and background model
+    amplitudes, and D(i) is the number of observed counts, in bin i.
+
+    The cstat statistic is derived by (1) taking the logarithm of the
+    likelihood function, (2) changing its sign, (3) dropping the
+    factorial term (which remains constant during fits to the same
+    dataset), (4) adding an extra data-dependent term (this is what
+    makes it different to `Cash`, and (5) multiplying by two:
+
+    C = 2 * (sum)_i [ M(i) - D(i) + D(i)*[log D(i) - log M(i)] ]
+
+    The factor of two exists so that the change in the cstat statistic
+    from one model fit to the next, (Delta)C, is distributed
+    approximately as (Delta)chi-square when the number of counts in
+    each bin is high.  One can then in principle use (Delta)C instead
+    of (Delta)chi-square in certain model comparison tests. However,
+    unlike chi-square, the cstat statistic may be used regardless of
+    the number of counts in each bin.
+
+    The inclusion of the data term in the expression means that,
+    unlike the Cash statistic, one can assign an approximate
+    goodness-of-fit measure to a given value of the cstat statistic,
+    i.e. the observed statistic, divided by the number of degrees of
+    freedom, should be of order 1 for good fits.
+
+    Notes
+    -----
+    The background should not be subtracted from the data when this
+    statistic is used.  It should be modeled simultaneously with the
+    source.
+
+    The cstat statistic function evaluates the logarithm of each data
+    point. If the number of counts is zero or negative, it's not
+    possible to take the log of that number. The behavior in this case
+    is controlled by the `truncate` and `trunc_value` settings in the
+    .sherpa.rc file:
+
+    - if `truncate` is `True` (the default value), then
+      `log(trunc_value)` is used whenever the data value is <= 0.  The
+      default is `trunc_value=1.0e-25`.
+
+    - when `truncate` is `False` an error is raised.
+
+    References
+    ----------
+
+    .. [1] The description of the Cash statistic (`cstat`) in
+           https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
+
+    """
     def __init__(self, name='cstat'):
         Likelihood.__init__(self, name)
 

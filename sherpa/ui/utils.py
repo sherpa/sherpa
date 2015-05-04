@@ -1907,6 +1907,8 @@ class Session(NoNewAttributesAfterInit):
         return keys
 
     ### Ahelp ingest: 2015-05-04 DJB
+    ### DOC-TODO: this information is also in sherpa/fit.py
+    ### DOC-TODO: this raises a ValueError rather than a Sherpa error class
     def set_iter_method(self, meth):
         """Set the iterative-fitting scheme used in the fit.
 
