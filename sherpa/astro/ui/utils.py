@@ -565,7 +565,8 @@ class Session(sherpa.ui.utils.Session):
     #@loggable(with_id=True, with_name='load_data')
     def dataspace1d(self, start, stop, step=1, numbins=None,
                     id=None, bkg_id=None, dstype=sherpa.data.Data1DInt):
-        """
+        """Create the independent axis for a 1D data set.
+
         dataspace1d
 
         SYNOPSIS
@@ -10144,7 +10145,8 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
     
     def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None):
-        """
+        """Integrate the source model over a pass band.
+
         calc_energy_flux
 
         SYNOPSIS
@@ -10403,54 +10405,113 @@ class Session(sherpa.ui.utils.Session):
             model= self.get_source(id)
         return sherpa.astro.utils.calc_source_sum(data, model, lo, hi)
 
-
+    ### Ahelp ingest: 2015-05-04 DJB
+    ### DOC-TODO: no reason can't k-correct wavelength range,
+    ###           but need to work out how to identify the units
     def calc_kcorr(self, z, obslo, obshi, restlo=None, resthi=None,
                    id=None, bkg_id=None):
-        """
-        calc_kcorr
+        """Calculate the K correction for a model.
 
-        SYNOPSIS
-           Calculate the k correction 
+        The K correction ([1]_, [2]_, [3]_, [4]_) is the numeric
+        factor applied to measured energy fluxes to convert values in
+        an observed energy band to that they are in a rest-frame
+        energy band (that is, correct for the change in spectral shape
+        between the rest-frame and observed-frame bands). This is
+        often used when converting a flux into a luminosity.
 
-        SYNTAX
+        Parameters
+        ----------
+        z : number or array, >= 0
+           The redshift, or redshifts, of the source.
+        obslo : number
+           The minimum energy of the observed band.
+        obshi : number
+           The maximum energy of the observed band, which must
+           be larger than `obslo`.
+        restlo : number or `None`
+           The minimum energy of the rest-frame band. If `None` then
+           use `obslo`.
+        restlo : number or `None`
+           The maximum energy of the rest-frame band. It must be
+           larger than `restlo`. If `None` then use `obshi`.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int or str, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
 
-        Arguments:
-           z        - redshift (scalar or array)
+        See Also
+        --------
+        calc_energy_flux : Integrate the source model over a pass band.
+        dataspace1d : Create the independent axis for a 1D data set.
 
-           obslo    - observed-frame lower limit
+        Notes
+        -----
+        This is only defined when the analysis is in 'energy' units.
 
-           obshi    - observed-frame upper limit
+        If the model contains a redshift parameter then it should
+        be set to `0`, rather than the source redshift.
 
-           restlo   - rest-frame lower limit
-                      default = obslo
+        If the source model is at zero redshift, the observed energy
+        band is olo to ohi, and the rest frame band is rlo to rhi
+        (which need not match the observed band), then the K
+        correction at a redshift z can be calculated as::
 
-           resthi   - rest-frame upper limit
-                      default = obshi
+          frest = calc_energy_flux(rlo, rhi)
+          fobs  = calc_energy_flux(olo*(1+z), ohi*(1+z))
+          kz    = frest / fobs
 
-           id       - dataset ID
-                      default = default data id
+        The energy ranges used - rlo to rhi and olo*(1+z) to ohi*(1+z)
+        - should be fully covered by the data grid, otherwise the flux
+        calculation will be truncated at the grid boundaries, leading
+        to incorrect results.
 
-           bkg_id   - bkg id, if multiple backgrounds exist
-                      default = default bkg id
+        References
+        ----------
 
-        Returns:
-           k correction (scalar or array)
+        .. [1] "The K correction", Hogg, D.W., et al.
+               http://arxiv.org/abs/astro-ph/0210394
 
-        DESCRIPTION
-           Calculates the k correction for a spectral model,
-           redshift, and energy range for a source or background
-           dataset by data id or background id.
+        .. [2] Appendix B of Jones et al. 1998, ApJ, vol 495,
+               p. 100-114.
+               http://adsabs.harvard.edu/abs/1998ApJ...495..100J
 
-        EXAMPLE
-           set_model( xsmekal.clus )
-           calc_kcorr(0.5, 0.5, 2)
-           1.0733301
-           calc_kcorr(0.5, 0.5, 2, 2, 10)
-           0.1129745
+        .. [3] "K and evolutionary corrections from UV to IR",
+               Poggianti, B.M., A&AS, 1997, vol 122, p. 399-407.
+               http://adsabs.harvard.edu/abs/1997A%26AS..122..399P
 
-        SEE ALSO
-           calc_data_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_model_sum
+        .. [4] "Galactic evolution and cosmology - Probing the
+               cosmological deceleration parameter", Yoshii, Y. &
+               Takahara, F., ApJ, 1988, vol 326, p. 1-18.
+               http://adsabs.harvard.edu/abs/1988ApJ...326....1Y
+
+        Examples
+        --------
+
+        Calculate the K correction for an X-Spec apec model, with a
+        source temperature of 6 keV and abundance of 0.3 solar, for
+        the energy band of 0.5 to 2 keV:
+
+        >>> dataspace1d(0.01, 10, 0.01)
+        >>> set_source(xsapec.clus)
+        >>> clus.kt = 6
+        >>> clus.abundanc = 0.3
+        >>> calc_kcorr(0.5, 0.5, 2)
+        0.82799195070436793
+
+        Calculate the K correction for a range of redshifts (0 to 2)
+        using an observed frame of 0. to 2 keV and a rest frame of 0.1
+        to 10 keV (the energy grid is set to ensure that it covers the
+        full energy range; that is the rest-frame band and the
+        observed frame band multiplied by the smallest and largest
+        (1+z) terms):
+
+        >>> dataspace1d(0.01, 11, 0.01)
+        >>> zs = np.linspace(0, 2, 21)
+        >>> ks = calc_kcorr(zs, 0.5, 2, restlo=0.1, resthi=10)
+
         """
         data = self.get_data(id)
         model= None

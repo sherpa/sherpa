@@ -3088,7 +3088,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def dataspace1d(self, start, stop, step=1, numbins=None, 
                     id=None, dstype=sherpa.data.Data1DInt):
-        """
+        """Create the independent axis for a 1D data set.
+
         dataspace1d
 
         SYNOPSIS
@@ -4564,10 +4565,11 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         delete_model_component : Delete a model component.
+        get_model_component : Returns a model component given its name.
         list_models : List the available model types.
         list_model_components : List the names of all the model components.
         set_model : Set the source model expression for a data set.
-        set_model_autoassign_func :
+        set_model_autoassign_func : Set the method used to create model component identifiers.
 
         Notes
         -----

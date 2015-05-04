@@ -253,7 +253,79 @@ def eqwidth(data, model, combo, lo=None, hi=None):
     return eqw
 
 
+### Ahelp ingest: 2015-05-04 DJB
 def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
+    """Calculate the K correction for a model.
+
+    The K correction ([1]_, [2]_, [3]_, [4]_) is the numeric
+    factor applied to measured energy fluxes to convert values in
+    an observed energy band to that they are in a rest-frame
+    energy band (that is, correct for the change in spectral shape
+    between the rest-frame and observed-frame bands). This is
+    often used when converting a flux into a luminosity.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    model :
+       The source expression: this should not include any instrument
+       responses.
+    z : number or array, >= 0
+       The redshift, or redshifts, of the source.
+    obslo : number
+       The minimum energy of the observed band.
+    obshi : number
+       The maximum energy of the observed band, which must
+       be larger than `obslo`.
+    restlo : number or `None`
+       The minimum energy of the rest-frame band. If `None` then
+       use `obslo`.
+    restlo : number or `None`
+       The maximum energy of the rest-frame band. It must be
+       larger than `restlo`. If `None` then use `obshi`.
+
+    Notes
+    -----
+    This is only defined when the analysis is in 'energy' units.
+
+    If the model contains a redshift parameter then it should
+    be set to `0`, rather than the source redshift.
+
+    If the source model is at zero redshift, the observed energy
+    band is olo to ohi, and the rest frame band is rlo to rhi
+    (which need not match the observed band), then the K
+    correction at a redshift z can be calculated as::
+
+      frest = calc_energy_flux(data, model, rlo, rhi)
+      fobs  = calc_energy_flux(data, model, olo*(1+z), ohi*(1+z))
+      kz    = frest / fobs
+
+    The energy ranges used - rlo to rhi and olo*(1+z) to ohi*(1+z)
+    - should be fully covered by the data grid, otherwise the flux
+    calculation will be truncated at the grid boundaries, leading
+    to incorrect results.
+
+    References
+    ----------
+
+    .. [1] "The K correction", Hogg, D.W., et al.
+           http://arxiv.org/abs/astro-ph/0210394
+
+    .. [2] Appendix B of Jones et al. 1998, ApJ, vol 495,
+           p. 100-114.
+           http://adsabs.harvard.edu/abs/1998ApJ...495..100J
+
+    .. [3] "K and evolutionary corrections from UV to IR",
+           Poggianti, B.M., A&AS, 1997, vol 122, p. 399-407.
+           http://adsabs.harvard.edu/abs/1997A%26AS..122..399P
+
+    .. [4] "Galactic evolution and cosmology - Probing the
+           cosmological deceleration parameter", Yoshii, Y. &
+           Takahara, F., ApJ, 1988, vol 326, p. 1-18.
+           http://adsabs.harvard.edu/abs/1988ApJ...326....1Y
+
+    """
 
     if restlo is None:
         restlo = obslo
