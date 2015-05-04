@@ -1803,7 +1803,6 @@ class Session(NoNewAttributesAfterInit):
            The name of the option to set. The `get_method`
            and `get_method_opt` routines can be used to find
            out valid values for this argument.
-
         val :
            The new value for the option.
 
@@ -1929,6 +1928,11 @@ class Session(NoNewAttributesAfterInit):
            scheme is used. It is only valid to change the scheme
            when a chi-square statistic is in use.
 
+        Raises
+        ------
+        TypeError
+           When the `meth` argument is not recognized.
+
         See Also
         --------
         fit : Fit a model to one or more data sets.
@@ -1974,7 +1978,8 @@ class Session(NoNewAttributesAfterInit):
         [3]_, where after a fit data points are excluded if the value
         of `(data-model)/error)` exceeds a threshold, and the data
         re-fit. This removal of data points continues until the fit
-        has converged.
+        has converged. The error removal can be asymmetric, since
+        there are separate parameters for the lower and upper limits.
 
         References
         ----------
@@ -2000,28 +2005,74 @@ class Session(NoNewAttributesAfterInit):
         else:
             _argument_type_error(meth, 'a string')
 
+    ### Ahelp ingest: 2015-05-04 DJB
     def set_iter_method_opt(self, optname, val):
         """Set an option for the iterative-fitting scheme.
 
-        set_iter_method_opt
+        Parameters
+        ----------
+        optname : str
+           The name of the option to set. The
+           `get_iter_method_opt_method` routine can be used to find
+           out valid values for this argument.
+        val :
+           The new value for the option.
 
-        SYNOPSIS
-           Set a Sherpa iterative fitting method option by name
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `optname` argument is not recognized.
 
-        SYNTAX
+        See Also
+        --------
+        get_iter_method_name : Return the name of the iterative fitting scheme.
+        get_iter_method_opt : Return one or all options for the iterative-fitting scheme.
+        list_iter_methods : List the iterative fitting schemes.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
 
-        Arguments:
-           name       - option name
-           val        - option value
+        Notes
+        -----
+        The supported fields for the `primini` scheme are:
 
-        Returns:
-           None
+        `maxiters`
+           The maximum number of iterations to perform.
 
-        DESCRIPTION
+        `tol`
+           The iteration stops when the change in the best-fit
+           statistic varies by less than this value.
 
-        SEE ALSO
-           list_methods, get_method, get_method_name, set_method,
-           get_method_opt
+        The supported fields for the `sigmarej` scheme are:
+
+        `grow`
+           The number of points adjacent to a rejected point that
+           should also be removed. A value of `0` means that only the
+           discrepant point is removed whereas a value of `1` means
+           that the two adjacent points (one lower and one higher)
+           will also be removed.
+
+        `hrej`
+           The rejection criterion in units of sigma, for data
+           points above the model (`hrej` is >= 0).
+
+        `lrej`
+           The rejection criterion in units of sigma, for data
+           points below the model (`lrej` is >= 0).
+
+        `maxiters`
+           The maximum number of iterations to perform. If this
+           value is `0` then the fit will run until it has
+           converged.
+
+        Examples
+        --------
+
+        Reject any points that are more than 5 sigma away from the
+        best fit model and re-fit.
+
+        >>> set_iter_method('sigmarej')
+        >>> set_iter_method_opt('lrej', 5)
+        >>> set_iter_method_opt('hrej', 5)
+
         """
         _check_type(optname, basestring, 'optname', 'a string')
         if (optname not in self._current_itermethod or
