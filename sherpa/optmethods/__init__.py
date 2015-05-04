@@ -313,9 +313,208 @@ class MonCar(OptMethod):
 	OptMethod.__init__(self, name, montecarlo)
 
 
-# Call Sherpa's Nelder-Mead implementation
+### Ahelp ingest: 2015-05-04 DJB
+### DOC-TODO: finalximplex=4 and 5 list the same conditions, it is likely
+###           a cut-n-paste error, so what is the correct description?
 class NelderMead(OptMethod):
+    """Nelder-Mead Simplex optimization method.
 
+    The Nelder-Mead Simplex algorithm, devised by J.A. Nelder and
+    R. Mead [1]_, is a direct search method of optimization for
+    finding local minimum of an objective function of several
+    variables. The implementation of Nelder-Mead Simplex algorithm is
+    a variation of the algorithm outlined in [2]_ and [3]_. As noted,
+    terminating the simplex is not a simple task:
+
+    "For any non-derivative method, the issue of termination is
+    problematical as well as highly sensitive to problem scaling.
+    Since gradient information is unavailable, it is provably
+    impossible to verify closeness to optimality simply by sampling f
+    at a finite number of points.  Most implementations of direct
+    search methods terminate based on two criteria intended to reflect
+    the progress of the algorithm: either the function values at the
+    vertices are close, or the simplex has become very small."
+
+    "Either form of termination-close function values or a small
+    simplex-can be misleading for badly scaled functions."
+
+    Attributes
+    ----------
+    ftol : number
+       The the function tolerance to terminate the search for the
+       minimum; the default is sqrt(DBL_EPSILON) ~ 1.19209289551e-07,
+       where DBL_EPSILON is the smallest number x such that
+       `1.0 != 1.0 + x`.
+
+    maxfev : int or `None`
+       The maximum number of function evaluations; the default value
+       of `None` means to use `1024 * n`, where `n` is the number of
+       free parameters.
+
+    initsimplex : int
+       Dictates how the non-degenerate initial simplex is to be
+       constructed.  Default is `0`; see the "cases for initsimplex"
+       section below for details.
+
+    finalsimplex : int
+       At each iteration, a combination of one of the following
+       stopping criteria is tested to see if the simplex has converged
+       or not.  Full details are in the "cases for finalsimplex"
+       section below.
+
+    step : array of number or `None`
+       A list of length `n` (number of free parameters) to initialize
+       the simplex; see the `initsimplex` for details. The default of
+       `None` means to use a step of 0.4 for each free parameter.
+
+    iquad : int
+       A boolean flag which indicates whether a fit to a quadratic
+       surface is done.  If iquad is set to `1` (the default) then a
+       fit to a quadratic surface is done; if iquad is set to `0` then
+       the quadratic surface fit is not done.  If the fit to the
+       quadratic surface is not positive semi-definitive, then the
+       search terminated prematurely.  The code to fit the quadratic
+       surface was written by D. E. Shaw, CSIRO, Division of
+       Mathematics & Statistics, with amendments by
+       R. W. M. Wedderburn, Rothamsted Experimental Station, and Alan
+       Miller, CSIRO, Division of Mathematics & Statistics.  See also
+       [1]_.
+
+    verbose: int
+       The amount of information to print during the fit. The default
+       is `0`, which means no output.
+
+    Notes
+    -----
+
+    The `initsimplex` option determines how the non-degenerate initial
+    simplex is to be constructed:
+
+    - when `initsimplex` is `0`:
+
+      Then x_(user_supplied) is one of the vertices of the simplex.
+      The other `n` vertices are::
+
+        for ( int i = 0; i &lt; n; ++i ) {
+          for ( int j = 0; j &lt; n; ++j )
+            x[ i + 1 ][ j ] = x_[ j ];
+            x[ i + 1 ][ i ] = x_[ i ] + step[ i ];
+        }
+
+      where step[i] is the ith element of the option step.
+
+    - if `initsimplex` is `1`:
+
+      Then x_(user_supplied) is one of the vertices of the simplex.
+      The other `n` vertices are::
+
+                    { x_[j] + pn,   if i - 1 != j
+                    {
+        x[i][j]  =  {
+                    {
+                    { x_[j] + qn,   otherwise
+
+      for 1 <= i <= n, 0 <= j < n and::
+
+        pn = ( sqrt( n + 1 ) - 1 + n ) / ( n * sqrt(2) )
+        qn = ( sqrt( n + 1 ) - 1 ) / ( n * sqrt(2) )
+
+    The `finalsimplex` option determines whether the simplex has
+    converged:
+
+    - case a (if the max length of the simplex is small enough)::
+
+        max( | x_i - x_0 | ) <= ftol max( 1, | x_0 | )
+        1 <= i <= n
+
+    - case b (if the standard deviation the simplex is < `ftol`)::
+
+         n           -   2
+        ===   ( f  - f )
+        \        i                    2
+        /     -----------     &lt;=  ftol
+        ====   sqrt( n )
+        i = 0
+
+    - case c (if the function values are close enough)::
+
+        f_0  < f_(n-1)     within ftol
+
+    The combination of the above stopping criteria are:
+
+    - case 0: same as case a
+
+    - case 1: case a, case b and case c have to be met
+
+    - case 2: case a and either case b or case c have to be met.
+
+    The `finalsimplex` value controls which of these criteria need to
+    hold:
+
+    - if `finalsimplex=0` then convergence is assumed if case 1 is met.
+
+    - if `finalsimplex=1` then convergence is assumed if case 2 is met.
+
+    - if `finalsimplex=2` then convergence is assumed if case 0 is met
+      at two consecutive iterations.
+
+    - if `finalsimplex=3` then convergence is assumed if case 0 then
+      case 1 are met on two consecutive iterations.
+
+    - if `finalsimplex=4` then convergence is assumed if case 0 then
+      case 1 then case 0 are met on three consecutive iterations.
+
+    - if `finalsimplex=5` then convergence is assumed if case 0 then
+      case 1 then case 0 are met on three consecutive iterations.
+
+    - if `finalsimplex=6` then convergence is assumed if case 1 then
+      case 1 then case 0 are met on three consecutive iterations.
+
+    - if `finalsimplex=7` then convergence is assumed if case 2 then
+      case 1 then case 0 are met on three consecutive iterations.
+
+    - if `finalsimplex=8` then convergence is assumed if case 0 then
+      case 2 then case 0 are met on three consecutive iterations.
+
+    - if `finalsimplex=9` then convergence is assumed if case 0 then
+      case 1 then case 1 are met on three consecutive iterations.
+
+    - if `finalsimplex=10` then convergence is assumed if case 0 then
+      case 2 then case 1 are met on three consecutive iterations.
+
+    - if `finalsimplex=11` then convergence is assumed if case 1 is
+      met on three consecutive iterations.
+
+    - if `finalsimplex=12` then convergence is assumed if case 1 then
+      case 2 then case 1 are met on three consecutive iterations.
+
+    - if `finalsimplex=13` then convergence is assumed if case 2 then
+      case 1 then case 1 are met on three consecutive iterations.
+
+    - otherwise convergence is assumed if case 2 is met on three
+      consecutive iterations.
+
+    References
+    ----------
+
+    .. [1] "A simplex method for function minimization", J.A. Nelder
+           and R. Mead (Computer Journal, 1965, vol 7, pp 308-313)
+           http://dx.doi.org/10.1093%2Fcomjnl%2F7.4.308
+
+    .. [2] "Convergence Properties of the Nelder-Mead Simplex
+           Algorithm in Low Dimensions", Jeffrey C. Lagarias, James
+           A. Reeds, Margaret H. Wright, Paul E. Wright , SIAM Journal
+           on Optimization, Vol. 9, No. 1 (1998), pages 112-147.
+           http://citeseer.ist.psu.edu/3996.html
+
+    .. [3] "Direct Search Methods: Once Scorned, Now Respectable"
+           Wright, M. H. (1996) in Numerical Analysis 1995
+           (Proceedings of the 1995 Dundee Biennial Conference in
+           Numerical Analysis, D.F. Griffiths and G.A. Watson, eds.),
+           191-208, Addison Wesley Longman, Harlow, United Kingdom.
+           http://citeseer.ist.psu.edu/155516.html
+
+    """
     def __init__(self, name='simplex'):
 	OptMethod.__init__(self, name, neldermead)
 
