@@ -1850,26 +1850,33 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._current_itermethod['name']
 
+    ### Ahelp ingest: 2015-05-04 DJB
     def get_iter_method_opt(self, optname=None):
-        """
-        get_iter_method_opt
+        """Return one or all options for the iterative-fitting scheme.
 
-        SYNOPSIS
-           Return a Sherpa iterative fitting method option by name
+        Parameters
+        ----------
+        optname : str, optional
+           If not given, a dictionary of all the options are returned.
+           When given, the individual value is returned.
 
-        SYNTAX
+        Returns
+        -------
+        value : dictionary or value
+           The dictionary is empty when no iterative scheme is being
+           used.
 
-        Arguments:
-           name       - option name
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `optname` argument is not recognized.
 
-        Returns:
-           iterative fitting method option value
-        
-        DESCRIPTION
+        See Also
+        --------
+        get_iter_method_name : Return the name of the iterative fitting scheme.
+        set_iter_method_opt : Set an option for the iterative-fitting scheme.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
 
-        SEE ALSO
-           list_iter_methods, get_iter_method_name, set_iter_method,
-           set_iter_method_opt
         """
         itermethod_opts = dict(self._current_itermethod)
         del itermethod_opts['name']
@@ -1926,7 +1933,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         fit : Fit a model to one or more data sets.
         get_iter_method_name : Return the name of the iterative fitting scheme.
-        get_iter_method_opt : Return an option for the iterative-fitting scheme.
+        get_iter_method_opt : Return one or all options for the iterative-fitting scheme.
         list_iter_methods : List the iterative fitting schemes.
         set_iter_method_opt : Set an option for the iterative-fitting scheme.
         set_stat : Set the statistical method.
