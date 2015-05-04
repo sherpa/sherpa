@@ -506,8 +506,50 @@ class IterFit(NoNewAttributesAfterInit):
 
         return cb
 
+    ### Ahelp ingest: 2015-05-04 DJB
     def primini(self, statfunc, pars, parmins, parmaxes, statargs = (),
                 statkwargs = {}):
+        """An iterative scheme, where the variance is computed from
+        the model amplitudes.
+
+        This is a chi-square statistic where the variance is computed
+        from model amplitudes derived in the previous iteration of the
+        fit. This 'Iterative Weighting' ([1]_) attempts to remove
+        biased estimates of model parameters which is inherent in
+        chi-square2 statistics ([2]_).
+
+        The variance in bin i is estimated to be:
+
+        sigma^2_i^j = S(i, t_s^(j-1)) + (A_s/A_b)^2 B_off(i, t_b^(j-1))
+
+        where j is the number of iterations that have been carried out
+        in the fitting process, B_off is the background model
+        amplitude in bin i of the off-source region, and t_s^(j-1) and
+        t_b^(j-1) are the set of source and background model parameter
+        values derived during the iteration previous to the current
+        one. The variances are set to an array of ones on the first
+        iteration.
+
+        In addition to reducing parameter estimate bias, this
+        statistic can be used even when the number of counts in each
+        bin is small (< 5), although the user should proceed with
+        caution.
+
+        References
+        ----------
+
+        .. [1] "Multiparameter linear least-squares fitting to Poisson
+               data one count at a time", Wheaton et al. 1995, ApJ 438,
+               322
+               http://adsabs.harvard.edu/abs/1995ApJ...438..322W
+
+        .. [2] "Bias-Free Parameter Estimation with Few Counts, by
+               Iterative Chi-Squared Minimization", Kearns, Primini, &
+               Alexander, 1995, ADASS IV, 331
+               http://adsabs.harvard.edu/abs/1995ASPC...77..331K
+
+        """
+
         # Primini's method can only be used with chi-squared;
         # raise exception if it is attempted with least-squares,
         # or maximum likelihood
@@ -586,8 +628,24 @@ class IterFit(NoNewAttributesAfterInit):
         # Return results from Primini's iterative fitting method
         return final_fit_results
 
+    ### Ahelp ingest: 2015-05-04 DJB
     def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs = (),
                  statkwargs = {}):
+        """Exclude points that are significately far away from the best fit.
+
+        The `sigmarej` scheme is based on the IRAF `sfit` function
+        [1]_, where after a fit data points are excluded if the value
+        of `(data-model)/error)` exceeds a threshold, and the data
+        re-fit. This removal of data points continues until the fit
+        has converged. It can only be used whi chi-square statistics.
+
+        References
+        ----------
+
+        .. [1] http://iraf.net/irafhelp.php?val=sfit
+
+        """
+
         # Sigma-rejection can only be used with chi-squared;
         # raise exception if it is attempted with least-squares,
         # or maximum likelihood

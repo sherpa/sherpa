@@ -1886,7 +1886,8 @@ class Session(NoNewAttributesAfterInit):
         return itermethod_opts[optname]
 
     def list_iter_methods(self):
-        """
+        """List the iterative fitting schemes.
+
         list_iter_methods
 
         SYNOPSIS
@@ -1910,27 +1911,82 @@ class Session(NoNewAttributesAfterInit):
         keys.sort()
         return keys
 
+    ### Ahelp ingest: 2015-05-04 DJB
     def set_iter_method(self, meth):
         """Set the iterative-fitting scheme used in the fit.
 
-        set_iter_method
+        Control whether an iterative scheme should be applied to
+        the fit.
 
-        SYNOPSIS
-           Set the Sherpa iterative fitting method by name
+        Parameters
+        ----------
+        meth : { 'none', 'primini', 'sigmarej' }
+           The name of the scheme used during the fit; 'none' means no
+           scheme is used. It is only valid to change the scheme
+           when a chi-square statistic is in use.
 
-        SYNTAX
+        See Also
+        --------
+        fit : Fit a model to one or more data sets.
+        get_iter_method_name : Return the name of the iterative fitting scheme.
+        get_iter_method_opt : Return an option for the iterative-fitting scheme.
+        list_iter_methods : List the iterative fitting schemes.
+        set_iter_method_opt : Set an option for the iterative-fitting scheme.
+        set_stat : Set the statistical method.
 
-        Arguments:
-           name       - name of iterative method ['none'|'primini'|'sigmarej']
+        Notes
+        -----
+        The parameters of each scheme are described in
+        `set_iter_method_opt`.
 
-        Returns:
-           None
+        The `primini` scheme is used for re-calculating statistical
+        errors, using the best-fit model parameters from the
+        *previous* fit, until the fit can no longer be improved.
 
-        DESCRIPTION
+        This is a chi-square statistic where the variance is computed
+        from model amplitudes derived in the previous iteration of the
+        fit. This 'Iterative Weighting' ([1]_) attempts to remove
+        biased estimates of model parameters which is inherent in
+        chi-square2 statistics ([2]_).
 
-        SEE ALSO
-           list_iter_methods, get_iter_method_name, get_iter_method_opt,
-           set_iter_method_opt
+        The variance in bin i is estimated to be:
+
+        sigma^2_i^j = S(i, t_s^(j-1)) + (A_s/A_b)^2 B_off(i, t_b^(j-1))
+
+        where j is the number of iterations that have been carried out
+        in the fitting process, B_off is the background model
+        amplitude in bin i of the off-source region, and t_s^(j-1) and
+        t_b^(j-1) are the set of source and background model parameter
+        values derived during the iteration previous to the current
+        one. The variances are set to an array of ones on the first
+        iteration.
+
+        In addition to reducing parameter estimate bias, this
+        statistic can be used even when the number of counts in each
+        bin is small (< 5), although the user should proceed with
+        caution.
+
+        The `sigmarej` scheme is based on the IRAF `sfit` function
+        [3]_, where after a fit data points are excluded if the value
+        of `(data-model)/error)` exceeds a threshold, and the data
+        re-fit. This removal of data points continues until the fit
+        has converged.
+
+        References
+        ----------
+
+        .. [1] "Multiparameter linear least-squares fitting to Poisson
+               data one count at a time", Wheaton et al. 1995, ApJ 438,
+               322
+               http://adsabs.harvard.edu/abs/1995ApJ...438..322W
+
+        .. [2] "Bias-Free Parameter Estimation with Few Counts, by
+               Iterative Chi-Squared Minimization", Kearns, Primini, &
+               Alexander, 1995, ADASS IV, 331
+               http://adsabs.harvard.edu/abs/1995ASPC...77..331K
+
+        .. [3] http://iraf.net/irafhelp.php?val=sfit
+
         """
         if isinstance(meth, basestring):
             if (self._itermethods.has_key(meth) == True):
@@ -1941,7 +1997,8 @@ class Session(NoNewAttributesAfterInit):
             _argument_type_error(meth, 'a string')
 
     def set_iter_method_opt(self, optname, val):
-        """
+        """Set an option for the iterative-fitting scheme.
+
         set_iter_method_opt
 
         SYNOPSIS
@@ -6583,7 +6640,9 @@ class Session(NoNewAttributesAfterInit):
            Initiate optimization of model parameter values by id(s).
 
         SEE ALSO
-           get_fit_results, conf, proj, covar
+           get_fit_results, conf, proj, covar, set_iter_method,
+           set_stat, set_method
+
         """
         ids, f = self._get_fit(id, otherids)
         res = f.fit(**kwargs)
