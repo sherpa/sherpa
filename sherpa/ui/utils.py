@@ -4478,26 +4478,57 @@ class Session(NoNewAttributesAfterInit):
         return userstat
 
 
+    ### Ahelp ingest: 2015-05-04 DJB
+    ### DOC-TODO: can send in a model variable, but this is just the
+    ###           identity function, so not worth documenting
     def get_model_component(self, name):
-        """
-        get_model_component
+        """Returns a model component given its name.
 
-        SYNOPSIS
-           Access a Sherpa model component by name
+        Parameters
+        ----------
+        name : str
+           The name of the model component.
 
-        SYNTAX
+        Returns
+        -------
+        component : a sherpa.models.model.Model instance
+           The model component object.
 
-        Arguments:
-           name       - component label as a string
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If there is no model component with the given `name`.
 
-        Returns:
-           Sherpa model component
+        See Also
+        --------
+        create_model_component : Create a model component.
+        get_model :
+        get_source :
+        list_model_components : List the names of all the model components.
+        set_model : Set the source model expression for a data set.
 
-        DESCRIPTION
+        Notes
+        -----
+        The model instances are named as modeltype.username, and it is
+        the `username` component that is used here to access the
+        instance.
 
-        SEE ALSO
-           list_models, list_model_components,
-           delete_model_component, create_model_component
+        Examples
+        --------
+
+        When a model component is created, a variable is created that
+        contains the model instance. The instance can also be returned
+        with `get_model_component`, as shown here:
+
+        >>> create_model_component('gauss1d', 'gline')
+        >>> gmodel = get_model_component('gline')
+        >>> gmodel.name
+        'gauss1d.gline'
+        >>> gmodel.pars
+        (<Parameter 'fwhm' of model 'gline'>,
+         <Parameter 'pos' of model 'gline'>,
+         <Parameter 'ampl' of model 'gline'>)
+
         """   
         # If user mistakenly passes an actual model reference,
         # just return the reference
