@@ -1360,27 +1360,18 @@ class Session(NoNewAttributesAfterInit):
         all += self._get_show_covar()
         _send_to_pager(all, outfile, clobber)
 
+    ### Ahelp ingest: 2015-05-04 DJB
     def get_functions(self):
-        """
-        get_functions
-        
-        SYNOPSIS
-           Return all available Sherpa functions in a list
-        
-        SYNTAX
-        
-        Arguments:
-           None
-        
-        Returns:
-           List of all Sherpa function names
+        """Return the functions provided by Sherpa.
 
-        DESCRIPTION
-           Returns a list containing names of all functions
-           defined in the high-level Sherpa UI.
+        Returns
+        -------
+        functions : list of str
 
-        SEE ALSO
-            list_functions
+        See Also
+        --------
+        list_functions : Display the functions provided by Sherpa.
+
         """
         funcs = []
         for func in dir(self):
@@ -1415,6 +1406,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        get_functions : Return the functions provided by Sherpa.
         show_all : Report the current state of the Sherpa session.
 
         Notes
@@ -2072,6 +2064,7 @@ class Session(NoNewAttributesAfterInit):
         >>> set_iter_method('sigmarej')
         >>> set_iter_method_opt('lrej', 5)
         >>> set_iter_method_opt('hrej', 5)
+        >>> fit()
 
         """
         _check_type(optname, basestring, 'optname', 'a string')
