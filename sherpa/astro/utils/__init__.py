@@ -285,6 +285,10 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
        The maximum energy of the rest-frame band. It must be
        larger than `restlo`. If `None` then use `obshi`.
 
+    Returns
+    -------
+    kz : number or array of numbers
+
     Notes
     -----
     This is only defined when the analysis is in 'energy' units.

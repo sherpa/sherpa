@@ -10144,39 +10144,83 @@ class Session(sherpa.ui.utils.Session):
             
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
     
+    ### Ahelp ingest: 2015-05-04 DJB
     def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None):
         """Integrate the source model over a pass band.
 
-        calc_energy_flux
+        Calculate the integral of E * S(E) over an energy band, where
+        E is the energy of the bin and S(E) the spectral model for
+        that bin (that is, the model without any instrumental
+        responses applied to it).
 
-        SYNOPSIS
-           Get the unconvolved energy flux
+        Parameters
+        ----------
+        lo : number, optional
+           The minimum limit of the band. Use `None`, the default,
+           to use the low value of the data set.
+        hi : number
+           The maximum limit of the band, which must be larger than
+           `lo`. Use `None`, the default, to use the upper value of
+           the data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int or str, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
 
-        SYNTAX
+        Returns
+        -------
+        flux :
+           The flux from the source model integrated over the given
+           band. This represents the flux from the model without any
+           instrument response (i.e. the intrinsic flux of the
+           source). For X-Spec style models the units will be
+           erg/cm^2/s. If `hi` is `None` but `lo` is set then the flux
+           density is returned at that point: erg/cm^2/s/keV or
+           erg/cm^2/s/Angstrom depending on the analysis setting.
 
-        Arguments:
-           lo       - low limit
-                      default = None
+        See Also
+        --------
+        calc_data_sum : Sum up the observed counts over a pass band.
+        calc_model_sum : Sum up the model over a pass band.
+        calc_source_sum: Sum up the source model over a pass band.
+        calc_photon_flux : Integrate the source model over a pass band.
+        set_model : Set the source model expression for a data set.
 
-           hi       - high limit
-                      default = None
+        Notes
+        -----
+        The units of `lo` and `hi` are determined by the analysis
+        setting for the data set (e.g. `get_analysis`).
 
-           id       - data id
-                      default = default data id
+        The flux is calculated from the given source model, so if it
+        includes an absorbing component then the result will represent
+        the absorbed flux. The absorbing component can be removed, or
+        set to absorb no photons, to get the un-absorbed flux.
 
-           bkg_id   - bkg id
-                      default = default bkg id
+        The units of the answer depend on the model components used in
+        the source expression and the axis or axes of the data set.
+        It is unlikely to give sensible results for 2D data sets.
 
-        Returns:
-           energy flux value
+        Examples
+        --------
 
-        DESCRIPTION
-           Calculates the unconvolved energy flux for a source
-           or background dataset by data id or background id.
+        Calculate the energy flux over the ranges 0.5 to 2 and 0.5 to
+        7 keV:
 
-        SEE ALSO
-           calc_photon_flux, eqwidth, calc_data_sum, calc_model_sum,
-           calc_source_sum
+        >>> set_analysis('energy')
+        >>> calc_energy_flux(0.5, 2)
+        5.7224906878061796e-10
+        >>> calc_energy_flux(0.5, 7)
+        1.3758131915063825e-09
+
+        Calculate the energy flux density at 0.5 keV for the source
+        "core":
+
+        >>> calc_energy_flux(0.5, id="core")
+        5.2573786652855304e-10
+
         """
         data = self.get_data(id)
         model= None
@@ -10190,7 +10234,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def calc_data_sum(self, lo=None, hi=None, id=None, bkg_id=None):
-        """
+        """Sum up the observed counts over a pass band.
+
         calc_data_sum
 
         SYNOPSIS
@@ -10228,7 +10273,8 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_data_sum(data, lo, hi)
             
     def calc_model_sum(self, lo=None, hi=None, id=None, bkg_id=None):
-        """
+        """Sum up the model over a pass band.
+
         calc_model_sum
 
         SYNOPSIS
@@ -10363,7 +10409,8 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_model_sum2d(data, src, reg)
 
     def calc_source_sum(self, lo=None, hi=None, id=None, bkg_id=None):
-        """
+        """Sum up the source model over a pass band.
+
         calc_source_sum
 
         SYNOPSIS
@@ -10441,6 +10488,10 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            If set, use the model associated with the given background
            component rather than the source model.
+
+        Returns
+        -------
+        kz : number or array of numbers
 
         See Also
         --------
