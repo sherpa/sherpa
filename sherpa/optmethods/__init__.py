@@ -109,10 +109,44 @@ class OptMethod(NoNewAttributesAfterInit):
 
 	return output
 
+### Ahelp ingest: 2015-05-04 DJB
+### DOC-TODO: better description of the sequence argument; what happens
+###           with multiple free parameters.
+### DOC-TODO: what does the method attribute take: string or class instance?
+### DOC-TODO: it looks like there's no error checking on the method attribute
 class GridSearch(OptMethod):
-    """A simple iterative method to support the template model interface,
-    the method can be used for non-template model but it is very ineffecient
-    for this purpose."""
+    """Grid Search optimization method.
+
+    This method evaluates the fit statistic for each point in the
+    parameter space grid; the best match is the grid point with the
+    lowest value of the fit statistic. It is intended for use with
+    template models as it is very inefficient for general models.
+
+    Attributes
+    ----------
+    num : int
+       The size of the grid for each parameter when `sequence` is
+       `None`, so `npar^num` fits will be evaluated, where `npar` is
+       the number of free parameters. The grid spacing is uniform.
+    sequence : sequence of numbers or `None`
+       The list through which to evaluate. Leave as `None` to use
+       a uniform grid spacing as determined by the `num` attribute.
+    numcores : int or `None`
+       The number of CPU cores to use. The default is `1` and a
+       value of `None` will use all the cores on the machine.
+    maxfev : int or `None`
+       The `maxfev` attribute if `method` is not `None`.
+    ftol : number
+       The `ftol` attribute if `method` is not `None`.
+    method : str or `None`
+       The optimization method to use to refine the best-fit
+       location found using the grid search. If `None` then
+       this step is not run.
+    verbose: int
+       The amount of information to print during the fit. The default
+       is `0`, which means no output.
+
+    """
     
     def __init__(self, name='gridsearch'):
 	OptMethod.__init__(self, name, grid_search)
@@ -345,28 +379,23 @@ class NelderMead(OptMethod):
        minimum; the default is sqrt(DBL_EPSILON) ~ 1.19209289551e-07,
        where DBL_EPSILON is the smallest number x such that
        `1.0 != 1.0 + x`.
-
     maxfev : int or `None`
        The maximum number of function evaluations; the default value
        of `None` means to use `1024 * n`, where `n` is the number of
        free parameters.
-
     initsimplex : int
        Dictates how the non-degenerate initial simplex is to be
        constructed.  Default is `0`; see the "cases for initsimplex"
        section below for details.
-
     finalsimplex : int
        At each iteration, a combination of one of the following
        stopping criteria is tested to see if the simplex has converged
        or not.  Full details are in the "cases for finalsimplex"
        section below.
-
     step : array of number or `None`
        A list of length `n` (number of free parameters) to initialize
        the simplex; see the `initsimplex` for details. The default of
        `None` means to use a step of 0.4 for each free parameter.
-
     iquad : int
        A boolean flag which indicates whether a fit to a quadratic
        surface is done.  If iquad is set to `1` (the default) then a
@@ -379,7 +408,6 @@ class NelderMead(OptMethod):
        R. W. M. Wedderburn, Rothamsted Experimental Station, and Alan
        Miller, CSIRO, Division of Mathematics & Statistics.  See also
        [1]_.
-
     verbose: int
        The amount of information to print during the fit. The default
        is `0`, which means no output.
