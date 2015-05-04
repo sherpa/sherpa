@@ -1831,25 +1831,22 @@ class Session(NoNewAttributesAfterInit):
         self._current_method.config[optname] = val
 
     #### Iterative Fitting Methods for CIAO 4.3 testing
+
+    ### Ahelp ingest: 2015-05-04 DJB
     def get_iter_method_name(self):
-        """
-        get_iter_method_name
+        """Return the name of the iterative fitting scheme.
 
-        SYNOPSIS
-           Return the name of the current Sherpa iterative fitting method
+        Returns
+        -------
+        name : str
+           The name of the iterative fitting scheme set by
+           `set_iter_method`.
 
-        SYNTAX
+        See Also
+        --------
+        list_iter_methods : List the iterative fitting schemes.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
 
-        Arguments:
-
-        Returns:
-           Name of Sherpa iterative fitting method
-           
-        DESCRIPTION
-
-        SEE ALSO
-           list_iter_methods, set_iter_method, get_iter_method_opt,
-           set_iter_method_opt
         """
         return self._current_itermethod['name']
 
