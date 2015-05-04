@@ -4277,49 +4277,62 @@ class Session(NoNewAttributesAfterInit):
     # Model components
     #
 
+    ### Ahelp ingest: 2015-05-04 DJB
     def get_model_autoassign_func(self):
-        """
-        get_model_autoassign_func
+        """Return the method used to create model component identifiers.
 
-        SYNOPSIS
-           Return a function pointer to the model assignment function
+        Provides access to the function which is used by
+        `create_model_component` and when creating model components
+        directly to add an identifier in the current Python namespace.
 
-        SYNTAX
+        Returns
+        -------
+        func :
+           The model function set by `set_model_autoassign_func`.
 
-        Arguments:
-           None
+        See Also
+        --------
+        create_model_component : Create a model component.
+        set_model : Set the source model expression for a data set.
+        set_model_autoassign_func : Set the method used to create model component identifiers.
 
-        Returns:
-           function ptr
-
-        DESCRIPTION
-
-        SEE ALSO
-           set_model_autoassign_func
         """
         return self._model_autoassign_func
 
+    ### Ahelp ingest: 2015-05-04 DJB
+    ### DOC-TODO: what does func=None mean? If you try None then it
+    ###           fails with AttributeError: 'Session' object attribute
+    ###           '_model_autoassign_func' cannot be replaced with a non-callable attribute
     def set_model_autoassign_func(self, func=None):
-        """
-        set_model_autoassign_func
+        """Set the method used to create model component identifiers.
 
-        SYNOPSIS
-           Sets the model assignment function to a user defined function
-           pointer
+        When a model component is created, the default behavior is to
+        add the component to the default Python namespace. This is
+        controlled by a function which can be changed with this
+        routine.
 
-        SYNTAX
+        Parameters
+        ----------
+        func : function reference
+           The function to use: this should accept two arguments, a
+           string (component name), and the model instance.
 
-        Arguments:
-           func       - model assignment function pointer
-                        default = None
+        See Also
+        --------
+        create_model_component : Create a model component.
+        get_model_autoassign_func : Return the method used to create model component identifiers
+        set_model : Set the source model expression for a data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        The default assignment function first renames a model
+        component to include the model type and user-defined
+        identifier. It then updates the '__main__' module's dictionary
+        with the model identifier as the key and the model instance as
+        the value. Similarly, it updates the '__builtin__' module's
+        dictionary just like '__main__' for compatibility with
+        IPython.
 
-        DESCRIPTION
-
-        SEE ALSO
-           get_model_autoassign_func
         """
         if (func is not None) and (not callable(func)):
             _argument_type_error('func', 'a function or other callable object')
