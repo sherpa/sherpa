@@ -227,8 +227,52 @@ class CStat(Likelihood):
                                          weight, truncation_value)
 
 
+### Ahelp ingest: 2015-05-04 DJB
 class Chi2(Stat):
-    """Chi Squared"""
+    """Chi Squared statistic.
+
+    The chi-square statistic is:
+
+    chi^2 = (sum)_i [ [ N(i,S) - B(i,x,pB) - S(i,x,pS) ]^2 / sigma(i)^2 ]
+
+    where N(i,S) is the total number of observed counts in bin i of
+    the on-source region; B(i,x,pB) is the number of predicted
+    background model counts in bin i of the on-source region (zero for
+    background-subtracted data), rescaled from bin i of the off-source
+    region, and computed as a function of the model argument x(i)
+    (e.g., energy or time) and set of background model parameter
+    values pB; S(i,x,pS) is the number of predicted source model
+    counts in bin i, as a function of the model argument x(i) and set
+    of source model parameter values pS; and sigma(i) is the error in
+    bin i.
+
+    N(i,B) is the total number of observed counts in bin i of the
+    off-source region; A(B) is the off-source "area", which could be
+    the size of the region from which the background is extracted, or
+    the length of a background time segment, or a product of the two,
+    etc.; and A(S) is the on-source "area". These terms may be defined
+    for a particular type of data: for example, PHA data sets A(B) to
+    `BACKSCAL * EXPTIME` from the background data set and A(S) to
+    `BACKSCAL * EXPTIME` from the source data set.
+
+    There are different ways of defining the sigma(i) terms,
+    supported by the sub-classes.
+
+    Notes
+    -----
+    It is assumed that there is a one-to-one mapping between a given
+    background region bin and a given source region bin.  For
+    instance, in the analysis of PHA data, it is assumed that the
+    input background counts spectrum is binned in exactly the same way
+    as the input source counts spectrum, and any filter applied to the
+    source spectrum automatically applied to the background spectrum.
+    This means that the user cannot, for example, specify arbitrary
+    background and source regions in two dimensions and get correct
+    results. This limitation *only* applies to backgrounds included
+    included as part of the data set - e.g. as with PHA files - and
+    can be avoided by treating the background as a separate data set.
+
+    """
     def __init__(self, name='chi2'):
         Stat.__init__(self, name)
 
@@ -241,8 +285,14 @@ class Chi2(Stat):
         return _statfcts.calc_chi2_stat(data, model, staterror,
                                         syserror, weight, truncation_value)
 
+### Ahelp ingest: 2015-05-04 DJB
 class LeastSq(Chi2):
-    """Least Squared"""
+    """Least Squared Statistic.
+
+    The least-square statistic is equivalent to a chi-square
+    statistic where the error on each point - sigma(i) - is 1.
+
+    """
     def __init__(self, name='leastsq'):
         Stat.__init__(self, name)
 
@@ -256,32 +306,116 @@ class LeastSq(Chi2):
                                        syserror, weight, truncation_value)
     
 
+### Ahelp ingest: 2015-05-04 DJB
 class Chi2Gehrels(Chi2):
-    """Chi Squared with Gehrels variance"""
+    """Chi Squared with Gehrels variance.
+
+    The variance is estimated from the number of counts in each bin,
+    but unlike `Chi2DataVar`, the Gaussian approximation is not
+    used. This makes it more-suitable for use with low-count data.
+
+    The standard deviation for each bin is calculated using the
+    approximation from [1]_:
+
+    sigma(i,S) = 1 + sqrt(N(i,s) + 0.75)
+
+    where the higher-order terms have been dropped. This is accurate
+    to approximately one percent. For data where the background has
+    not been subtracted then the error term is:
+
+    sigma(i) = sigma(i,S)
+
+    whereas with background subtraction,
+
+    sigma(i)^2 = sigma(i,S)^2 + [A(S)/A(B)]^2 sigma(i,B)^2
+
+    Notes
+    -----
+    The accuracy of the error term when the background has been
+    subtracted has not been determined. A preferable approach to
+    background subtraction is to model the background as well as the
+    source signal.
+
+    References
+    ----------
+
+    .. [1] "Confidence limits for small numbers of events in
+           astrophysical data", Gehrels, N. 1986, ApJ, vol 303,
+           p. 336-346.
+           http://adsabs.harvard.edu/abs/1986ApJ...303..336G
+
+    """
     def __init__(self, name='chi2gehrels'):
         Chi2.__init__(self, name)
 
     calc_staterror = _statfcts.calc_chi2gehrels_errors
 
 
+### Ahelp ingest: 2015-05-04 DJB
 class Chi2ConstVar(Chi2):
-    """Chi Squared with constant variance"""
+    """Chi Squared with constant variance.
+
+    The variance is the same in each bin, and set to be the mean
+    number of counts in the data:
+
+    sigma(i)^2 = (1/N) * (sum)_(j=1)^N N(j,S) + [A(S)/A(B)]^2 N(j,B)
+
+    where N is the number of on-source (and off-source) bins included
+    in the fit. The background term appears only if an estimate of the
+    background has been subtracted from the data.
+
+    """
     def __init__(self, name='chi2constvar'):
         Chi2.__init__(self, name)
 
     calc_staterror = _statfcts.calc_chi2constvar_errors
 
 
+### Ahelp ingest: 2015-05-04 DJB
 class Chi2DataVar(Chi2):
-    """Chi Squared with data variance"""
+    """Chi Squared with data variance.
+
+    The variance in each bin is estimated from the data value in that
+    bin. See also `Chi2Gehrels`, `Chi2XSpecVar` and `Chi2ModVar`.
+
+    If the number of counts in each bin is large, then the shape of
+    the Poisson distribution from which the counts are sampled tends
+    asymptotically towards that of a Gaussian distribution, with
+    variance
+
+    sigma(i)^2 = N(i,S) + [A(S)/A(B)]^2 N(i,B)
+
+    where N is the number of on-source (and off-source) bins included
+    in the fit. The background term appears only if an estimate of the
+    background has been subtracted from the data.
+
+    """
     def __init__(self, name='chi2datavar'):
         Chi2.__init__(self, name)
 
     calc_staterror = _statfcts.calc_chi2datavar_errors
 
 
+### Ahelp ingest: 2015-05-04 DJB
 class Chi2ModVar(Chi2):
-    """Chi Squared with model amplitude variance"""
+    """Chi Squared with model amplitude variance.
+
+    The variance in each bin is estimated from the *model* value in
+    that bin. This contrasts with `Chi2DataVar`, Chi2XspecVar`,
+    and `Chi2Gehrels`, which use the data values. The variance is
+
+    sigma(i)^2 = S(i) + [A(S)/A(B)]^2 B(i,off)
+
+    where B(i,off) is the background model amplitude in bin i of the
+    off-source region.
+
+    Notes
+    -----
+    The background should not be subtracted from the data when this
+    statistic is used, as it underestimates the variance when fitting
+    background-subtracted data.
+
+    """
     def __init__(self, name='chi2modvar'):
         Chi2.__init__(self, name)
 
@@ -297,8 +431,18 @@ class Chi2ModVar(Chi2):
                                               truncation_value)
 
 
+### Ahelp ingest: 2015-05-04 DJB
 class Chi2XspecVar(Chi2):
-    """Chi Squared with data variance (XSPEC style)"""
+    """Chi Squared with data variance (XSPEC style).
+
+    The variance in each bin is estimated from the data value in that
+    bin. See also `Chi2DataVar`, `Chi2Gehrels`, and `Chi2ModVar`.
+
+    The calculation of the variance is the same as `Chi2DataVar`
+    except that if the number of counts in a bin is less than 1
+    then the variance for that bin is set to 1.
+
+    """
     def __init__(self, name='chi2xspecvar'):
         Chi2.__init__(self, name)
 
