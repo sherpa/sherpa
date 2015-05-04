@@ -6321,8 +6321,7 @@ class Session(NoNewAttributesAfterInit):
            The statistic value at the start of the fit.
 
         `dstatval`
-           The difference in the statistic value (`istatval -
-           statval`).
+           The change in the statistic value (`istatval - statval`).
 
         `numpoints`
            The number of bins used in the fits.

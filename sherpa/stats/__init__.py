@@ -74,9 +74,76 @@ class Likelihood(Stat):
         # return 1 to avoid dividing by 0 by some optimization methods.
         return numpy.ones_like(data)
 
-
+### Ahelp ingest: 2015-05-04 DJB
+## DOC-TODO: where is the truncate/trunc_value stored for objects
+##           AHA: it appears to be taken straight from the config
+##           file rather than associated with the Stat class
+## DOC-TODO: where to talk about the .sherpa.rc config file?
 class Cash(Likelihood):
-    """Maximum likelihood function"""
+    """Maximum likelihood function.
+
+    Counts are sampled from the Poisson distribution, and so the best
+    way to assess the quality of model fits is to use the product of
+    individual Poisson probabilities computed in each bin i, or the
+    likelihood L:
+
+    L = (product)_i [ M(i)^D(i)/D(i)! ] * exp[-M(i)]
+
+    where M(i) = S(i) + B(i) is the sum of source and background model
+    amplitudes, and D(i) is the number of observed counts, in bin i.
+
+    The Cash statistic [1]_ is derived by (1)
+    taking the logarithm of the likelihood function, (2) changing
+    its sign, (3) dropping the factorial term (which remains
+    constant during fits to the same dataset), and (4) multiplying
+    by two:
+
+    C = 2 * (sum)_i [ M(i) - D(i) log M(i) ]
+
+    The factor of two exists so that the change in cash statistic from
+    one model fit to the next, (Delta)C, is distributed approximately
+    as (Delta)chi-square when the number of counts in each bin is
+    high.  One can then in principle use (Delta)C instead of
+    (Delta)chi-square in certain model comparison tests. However,
+    unlike chi-square, the cash statistic may be used regardless of
+    the number of counts in each bin.
+
+    The magnitude of the Cash statistic depends upon the number of
+    bins included in the fit and the values of the data
+    themselves.  Hence one cannot analytically assign a
+    goodness-of-fit measure to a given value of the Cash statistic.
+    Such a measure can, in principle, be computed by performing
+    Monte Carlo simulations. One would repeatedly sample new
+    datasets from the best-fit model, fit them, and note where the
+    observed Cash statistic lies within the derived distribution
+    of Cash statistics.
+
+    Notes
+    -----
+    The background should not be subtracted from the data when this
+    statistic is used.  It should be modeled simultaneously with the
+    source.
+
+    The Cash statistic function evaluates the logarithm of each data
+    point. If the number of counts is zero or negative, it's not
+    possible to take the log of that number. The behavior in this case
+    is controlled by the `truncate` and `trunc_value` settings in the
+    .sherpa.rc file:
+
+    - if `truncate` is `True` (the default value), then
+      `log(trunc_value)` is used whenever the data value is <= 0.  The
+      default is `trunc_value=1.0e-25`.
+
+    - when `truncate` is `False` an error is raised.
+
+    References
+    ----------
+
+    .. [1] "Parameter estimation in astronomy through application of
+           the likelihood ratio", Cash, W. 1979, ApJ 228, 939
+           http://adsabs.harvard.edu/abs/1979ApJ...228..939C
+
+    """
     def __init__(self, name='cash'):
         Likelihood.__init__(self, name)
 
