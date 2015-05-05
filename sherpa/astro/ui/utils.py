@@ -10448,33 +10448,68 @@ class Session(sherpa.ui.utils.Session):
             model= self.get_model(id)
         return sherpa.astro.utils.calc_model_sum(data, model, lo, hi)
 
+    ### Ahelp ingest: 2015-05-05 DJB
     def calc_data_sum2d(self, reg=None, id=None):
         """Sum up the data values of a 2D data set.
 
-        calc_data_sum2d
+        Parameters
+        ----------
+        reg : str, optional
+           The spatial filter to use. The default, `None`, is to
+           use the whole data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
 
-        SYNOPSIS
-           Get observed image counts
+        Returns
+        -------
+        dsum : number
+           The sum of the data values that lie within the given
+           region.
 
-        SYNTAX
+        See Also
+        --------
+        calc_data_sum : Sum up the data values of a data set.
+        calc_model_sum2d : Sum up the fitted model for a 2D data set.
+        calc_source_sum2d: Sum up the source model for a 2D data set.
+        set_model : Set the source model expression for a data set.
 
-        Arguments:
-           reg      - filename and path of region file or DM region syntax
-                      default = None
+        Notes
+        -----
+        The coordinate system of the region filter is determined by
+        the coordinate setting for the data set (e.g. `get_coord`).
 
-           id       - data id
-                      default = default data id
+        Any existing filter on the data set - e.g. as created by
+        `ignore2d` or `notice2d` - is ignored by this function.
 
-        Returns:
-           sum value of observed image counts
+        Examples
+        --------
 
-        DESCRIPTION
-           Calculates the sum of observed counts data for a source
-           image by data id
+        The following examples use the data in the default data set
+        created with the following calls, which sets the y (data)
+        values to be 0 to 11 in a 3 row by 4 column image:
 
-        SEE ALSO
-           calc_model_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_source_sum, calc_data_sum, calc_model_sum2d
+        >>> ivals = np.arange(12)
+        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y = y.flatten()
+        >>> x = x.flatten()
+        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+
+        With no argument, the full data set is used:
+
+        >>> calc_data_sum2d()
+        66
+        >>> ivals.sum()
+        66
+
+        Only use pixels that fall within the given spatial filters:
+
+        >>> calc_data_sum2d('circle(2,2,1)')
+        36
+        >>> calc_data_sum2d('field()-circle(2,2,1)')
+        30
+
         """
         data = self.get_data(id)
         return sherpa.astro.utils.calc_data_sum2d(data, reg)

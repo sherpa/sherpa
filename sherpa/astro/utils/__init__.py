@@ -471,8 +471,37 @@ def calc_data_sum(data, lo=None, hi=None):
     """
     return _counts( data, lo, hi, data.apply_filter, data.get_dep() )
 
+### Ahelp ingest: 2015-05-05 DJB
 def calc_data_sum2d(data, reg=None):
     """Sum up the data values of a 2D data set.
+
+    Parameters
+    ----------
+    data : sherpa.astro.data.DataIMG instance
+       The data object to use.
+    reg : str, optional
+       The spatial filter to use. The default, `None`, is to use the
+       whole data set.
+
+    Returns
+    -------
+    dsum : number
+       The sum of the data values that lie within the given region.
+
+    See Also
+    --------
+    calc_data_sum : Sum up the data values of a data set.
+    calc_model_sum2d : Sum up the fitted model for a 2D data set.
+    calc_source_sum2d: Sum up the source model for a 2D data set.
+
+    Notes
+    -----
+    The coordinate system of the region filter is determined by the
+    coordinate setting for the data set (e.g. `data.coord`).
+
+    Any existing filter on the data set - e.g. as created by
+    `ignore2d` or `notice2d` - is ignored by this function.
+
     """
     return _counts2d(data, reg, data.apply_filter, data.get_dep() )
 
