@@ -10103,16 +10103,16 @@ class Session(sherpa.ui.utils.Session):
     def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None):
         """Integrate the source model over a pass band.
 
-        Calculate the integral of S(E) over a pass band, where S(E)
-        the spectral model for that bin (that is, the model without
-        any instrumental responses applied to it).
+        Calculate the integral of S(E) over a pass band, where S(E) is
+        the spectral model evaluated for each bin (that is, the model
+        without any instrumental responses applied to it).
 
         Parameters
         ----------
         lo : number, optional
            The minimum limit of the band. Use `None`, the default,
            to use the low value of the data set.
-        hi : number
+        hi : number, optional
            The maximum limit of the band, which must be larger than
            `lo`. Use `None`, the default, to use the upper value of
            the data set.
@@ -10197,9 +10197,9 @@ class Session(sherpa.ui.utils.Session):
     def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None):
         """Integrate the source model over a pass band.
 
-        Calculate the integral of E * S(E) over a pass band, where
-        E is the energy of the bin and S(E) the spectral model for
-        that bin (that is, the model without any instrumental
+        Calculate the integral of E * S(E) over a pass band, where E
+        is the energy of the bin and S(E) the spectral model evaluated
+        for that bin (that is, the model without any instrumental
         responses applied to it).
 
         Parameters
@@ -10207,7 +10207,7 @@ class Session(sherpa.ui.utils.Session):
         lo : number, optional
            The minimum limit of the band. Use `None`, the default,
            to use the low value of the data set.
-        hi : number
+        hi : number, optional
            The maximum limit of the band, which must be larger than
            `lo`. Use `None`, the default, to use the upper value of
            the data set.

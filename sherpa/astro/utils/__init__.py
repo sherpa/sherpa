@@ -190,10 +190,153 @@ def _counts2d(data, reg, func, *args):
 
     return counts
 
+### Ahelp ingest: 2015-05-05 DJB
 def calc_energy_flux( data, src, lo=None, hi=None):
+    """Integrate the source model over a pass band.
+
+    Calculate the integral of E * S(E) over a pass band, where E is
+    the energy of the bin and S(E) the spectral model evaluated for
+    that bin.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    src :
+       The source expression: this should not include any instrument
+       responses.
+    lo : number, optional
+       The minimum limit of the band. Use `None`, the default,
+       to use the low value of the data set.
+    hi : number, optional
+       The maximum limit of the band, which must be larger than
+       `lo`. Use `None`, the default, to use the upper value of
+       the data set.
+
+    Returns
+    -------
+    flux :
+       The flux from the source model integrated over the given
+       band. For X-Spec style models the units will be erg/cm^2/s. If
+       `hi` is `None` but `lo` is set then the flux density is
+       returned at that point: erg/cm^2/s/keV or erg/cm^2/s/Angstrom
+       depending on the analysis setting.
+
+    See Also
+    --------
+    calc_data_sum : Sum up the observed counts over a pass band.
+    calc_model_sum : Sum up the model over a pass band.
+    calc_source_sum: Sum up the source model over a pass band.
+    calc_photon_flux : Integrate the source model over a pass band.
+
+    Notes
+    -----
+    The units of `lo` and `hi` are determined by the analysis
+    setting for the data set (e.g. `data.get_analysis`).
+
+    The flux is calculated from the given source model, so if it
+    includes an absorbing component then the result will represent
+    the absorbed flux. The absorbing component can be removed, or
+    set to absorb no photons, to get the un-absorbed flux.
+
+    The units of the answer depend on the model components used in
+    the source expression and the axis or axes of the data set.
+    It is unlikely to give sensible results for 2D data sets.
+
+    Examples
+    --------
+
+    Calculate the energy flux over the ranges 0.5 to 2 and 0.5 to
+    7 keV:
+
+    >>> data.set_analysis('energy')
+    >>> calc_energy_flux(data, smodel, 0.5, 2)
+    5.7224906878061796e-10
+    >>> calc_energy_flux(data, smodel, 0.5, 7)
+    1.3758131915063825e-09
+
+    Calculate the energy flux density at 0.5 keV:
+
+    >>> calc_energy_flux(data, smodel, 0.5)
+    5.2573786652855304e-10
+
+    """
     return _flux(data, lo, hi, src, eflux=True)
 
+### Ahelp ingest: 2015-05-05 DJB
 def calc_photon_flux( data, src, lo=None, hi=None):
+    """Integrate the source model over a pass band.
+
+    Calculate the integral of S(E) over a pass band, where S(E) is the
+    spectral model evaluated for each bin.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    src :
+       The source expression: this should not include any instrument
+       responses.
+    lo : number, optional
+       The minimum limit of the band. Use `None`, the default,
+       to use the low value of the data set.
+    hi : number, optional
+       The maximum limit of the band, which must be larger than
+       `lo`. Use `None`, the default, to use the upper value of
+       the data set.
+
+    Returns
+    -------
+    flux :
+       The flux from the source model integrated over the given
+       band. For X-Spec style models the units will be
+       photon/cm^2/s. If `hi` is `None` but `lo` is set then the flux
+       density is returned at that point: photon/cm^2/s/keV or
+       photon/cm^2/s/Angstrom depending on the analysis setting.
+
+    See Also
+    --------
+    calc_data_sum : Sum up the observed counts over a pass band.
+    calc_model_sum : Sum up the model over a pass band.
+    calc_energy_flux : Integrate the source model over a pass band.
+    calc_source_sum: Sum up the source model over a pass band.
+
+    Notes
+    -----
+    The units of `lo` and `hi` are determined by the analysis
+    setting for the data set (e.g. `data.get_analysis`).
+
+    The flux is calculated from the given source model, so if it
+    includes an absorbing component then the result will represent
+    the absorbed flux. The absorbing component can be removed, or
+    set to absorb no photons, to get the un-absorbed flux.
+
+    The units of the answer depend on the model components used in
+    the source expression and the axis or axes of the data set.
+    It is unlikely to give sensible results for 2D data sets.
+
+    Examples
+    --------
+
+    Calculate the photon flux over the ranges 0.5 to 2 and 0.5 to
+    7 keV, and compared to the energy fluxes for the same bands:
+
+    >>> data.set_analysis('energy')
+    >>> calc_photon_flux(data, smodel, 0.5, 2)
+    0.35190275
+    >>> calc_photon_flux(data, smodel, 0.5, 7)
+    0.49050927
+    >>> calc_energy_flux(data, smodel, 0.5, 2)
+    5.7224906878061796e-10
+    >>> calc_energy_flux(data, smodel, 0.5, 7)
+    1.3758131915063825e-09
+
+    Calculate the photon flux density at 0.5 keV:
+
+    >>> calc_energy_flux(data, smodel, 0.5)
+    0.64978176
+
+    """
     return _flux(data, lo, hi, src)
 
 def calc_source_sum( data, src, lo=None, hi=None):
