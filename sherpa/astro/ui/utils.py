@@ -2022,48 +2022,57 @@ class Session(sherpa.ui.utils.Session):
         d.staterror = err
 
 
+    # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-05 DJB
     def set_syserror(self, id, val=None, fractional=False, bkg_id=None):
-        """
-        set_syserror
+        """Set the systematic errors on the dependent axis of a data set.
 
-        SYNOPSIS
-           Set the systematic errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        val : array or scalar
+           The systematic error.
+        fractional : bool, optional
+           If `False` (the default value), then the `val` parameter is
+           the absolute value, otherwise the `val` parameter
+           represents the fractional error, so the absolute value is
+           calculated as `get_dep() * val` (and `val` must be
+           a scalar).
+        bkg_id : int or str, optional
+           Set to identify which background component to set. The
+           default value (`None`) means that this is for the source
+           component of the data set.
 
-        SYNTAX
+        See Also
+        --------
+        set_staterror : Set the statistical errors on the dependent axis of a data set.
+        get_error : Return the errors on the dependent axis of a data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-           val        - array or scalar error values
+        Examples
+        --------
 
-           fractional - use fractional portion of dependent array as error,
-                        val must be a scalar value
-                        default = False
+        Set the systematic error for the default data set to the value
+        in `dys` (a scalar or an array):
 
-           bkg_id     - background id
-                        default = None
+        >>> set_syserror(dys)
 
-        Returns:
-           None
+        Set the systematic error on the `core` data set to be 5% of
+        the data values:
 
-        DESCRIPTION
-           Set the systematic error of a dataset by data id.  Users can specify
-           the entire error as an array or as a single value to be repeated for
-           every bin.  Also, setting the fractional argument will use the single
-           value as the fractional portion of the dependent array as the error.
+        >>> set_syserror('core', 0.05, fractional=True)
 
-        EXAMPLE
-           set_syserror([0.040, 0.039, 0.041, ...])
-
-           set_syserror(2, 0.04)
-
-           set_syserror(0.05, fractional=True)
-
-           set_syserror(0.05, bkg_id=1)
-
-        SEE ALSO
-           set_syserror, set_exposure, set_backscal, set_areascal
         """
         if val is None:
             val, id = id, val
