@@ -10376,6 +10376,8 @@ class Session(sherpa.ui.utils.Session):
     ### DOC-TODO: does lo!=None,hi=None make sense here,
     ###           since this is not an integration but a sum.
     ###           For now I have just not documented this capability.
+    ### DOC-TODO: better comparison of calc_source_sum and calc_model_sum
+    ###           needed (e.g. integration or results in PHA case?)
     def calc_model_sum(self, lo=None, hi=None, id=None, bkg_id=None):
         """Sum up the fitted model over a pass band.
 
@@ -10403,10 +10405,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         signal : number
-           The source model summed up over the given band. This does
-           *not* include the bin width when using histogram-style
-           ('integrated' data spaces), such as used with X-Spec
-           emission - also known as additive - models.
+           The sum of the model values used to fit the data.
 
         See Also
         --------

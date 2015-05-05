@@ -477,10 +477,8 @@ def calc_data_sum2d(data, reg=None):
     return _counts2d(data, reg, data.apply_filter, data.get_dep() )
 
 ### Ahelp ingest: 2015-05-05 DJB
-### DOC-TODO: How does this differe to calc_source_sum, since
-###           model here includes the instrumental responses
-###           so do we need both? Probably to do with how grids
-###           are evaluated.
+### DOC-TODO: better comparison of calc_source_sum and calc_model_sum
+###           needed (e.g. integration or results in PHA case?)
 def calc_model_sum(data, model, lo=None, hi=None):
     """Sum up the fitted model over a pass band.
 
@@ -505,10 +503,7 @@ def calc_model_sum(data, model, lo=None, hi=None):
     Returns
     -------
     signal : number
-       The source model summed up over the given band. This does
-       *not* include the bin width when using histogram-style
-       ('integrated' data spaces), such as used with X-Spec
-       emission - also known as additive - models.
+       The sum of the model values used to fit the data.
 
     See Also
     --------
