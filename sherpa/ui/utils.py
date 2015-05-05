@@ -2689,6 +2689,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        load_staterror : Set the statistical errors on the dependent axis of a data set.
+        load_syserror : Set the systematic errors on the dependent axis of a data set.
         set_syserror : Set the systematic errors on the dependent axis of a data set.
         get_error : Return the errors on the dependent axis of a data set.
 
@@ -2753,6 +2755,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        load_staterror : Set the statistical errors on the dependent axis of a data set.
+        load_syserror : Set the systematic errors on the dependent axis of a data set.
         set_staterror : Set the statistical errors on the dependent axis of a data set.
         get_error : Return the errors on the dependent axis of a data set.
 

@@ -1807,7 +1807,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def load_staterror(self, id, filename=None, bkg_id=None, *args, **kwargs):
-        """
+        """Set the statistical errors on the dependent axis of a data set.
+
         load_staterror
 
         SYNOPSIS
@@ -1853,7 +1854,8 @@ class Session(sherpa.ui.utils.Session):
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
     def load_syserror(self, id, filename=None, bkg_id=None, *args, **kwargs):
-        """
+        Set the systematic errors on the dependent axis of a data set.
+
         load_syserror
 
         SYNOPSIS
@@ -1984,6 +1986,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        load_staterror : Set the statistical errors on the dependent axis of a data set.
+        load_syserror : Set the systematic errors on the dependent axis of a data set.
         set_syserror : Set the systematic errors on the dependent axis of a data set.
         get_error : Return the errors on the dependent axis of a data set.
 
@@ -2056,6 +2060,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        load_staterror : Set the statistical errors on the dependent axis of a data set.
+        load_syserror : Set the systematic errors on the dependent axis of a data set.
         set_staterror : Set the statistical errors on the dependent axis of a data set.
         get_error : Return the errors on the dependent axis of a data set.
 
