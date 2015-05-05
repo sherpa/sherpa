@@ -2888,31 +2888,47 @@ class Session(NoNewAttributesAfterInit):
                                            self.get_stat().calc_staterror)
 
     # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-05 DJB
+    ### DOC-NOTE: shouldn't this expose a filter parameter?
     def get_indep(self, id=None):
-        """
-        get_indep
+        """Return the independent axes of a data set.
 
-        SYNOPSIS
-           Get the independent grid of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        axis : tuple of arrays
+           The independent axis values.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-        Returns:
-           Array of the independent variable
+        See Also
+        --------
+        get_dep : Return the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-        DESCRIPTION
-           Get the data set independend grid by data id.
+        Examples
+        --------
 
-        EXAMPLE
-           get_indep()
+        For a one-dimensional data set, the X values are returned:
 
-           get_indep(1)
+        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> get_indep()
+        (array([10, 15, 19]),)
 
-        SEE ALSO
+        For a 2D data set the X0 and X1 values are returned:
+
+        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> get_indep(1)
+        (array([10, 15, 12, 19]), array([12, 14, 10, 17]))
 
         """
         return self.get_data(id).get_indep()

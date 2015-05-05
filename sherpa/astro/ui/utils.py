@@ -2393,36 +2393,95 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-05 DJB
     def get_indep(self, id=None, filter=False, bkg_id=None):
-        """
-        get_indep
+        """Return the independent axes of a data set.
 
-        SYNOPSIS
-           Get the independent grid of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNTAX
+        Returns
+        -------
+        axis : tuple of arrays
+           The independent axis values. The values returned depend on
+           the coordinate system in use for the data set (as set by
+           `set_coord`). For PHA data sets the value returned is
+           always in channels, whatever the `set_analysis` setting is.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           bkg_id     - background id
-                        default = None
+        See Also
+        --------
+        get_axes : Return information about the independent axes of a data set.
+        get_dep : Return the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_coord : Set the coordinate system to use for image analysis.
 
-        Returns:
-           Array of the independent variable
+        Examples
+        --------
 
-        DESCRIPTION
-           Get the data set independend grid by data id or bkg_id.
+        For a one-dimensional data set, the X values are returned:
 
-        EXAMPLE
-           get_indep()
+        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> get_indep()
+        (array([10, 15, 19]),)
 
-           get_indep(1)
+        For a 2D data set the X0 and X1 values are returned:
 
-           get_indep(1, 2)
+        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> get_indep(1)
+        (array([10, 15, 12, 19]), array([12, 14, 10, 17]))
 
-        SEE ALSO
+        For PHA data sets the return value is in channel units:
+
+        >>> load_pha('spec', 'src.pi')
+        >>> set_analysis('spec', 'energy')
+        >>> (chans,) = get_indep('spec')
+        >>> chans[0:6]
+        array([ 1.,  2.,  3.,  4.,  5.,  6.])
+
+        If the `filter` flag is set then the return will be limited to
+        the data that is used in the fit:
+
+        >>> notice_id('spec', 0.5, 7)
+        >>> (nchans,) = get_indep('spec', filter=True)
+        >>> nchans[0:5]
+        array([ 35.,  36.,  37.,  38.,  39.])
+
+        For images the pixel coordinates of each pixel are returned,
+        as a 1D array.
+
+        >>> load_image('img', 'image.fits')
+        >>> (xvals,yvals) = get_indep('img')
+        >>> xvals.shape
+        (65536,)
+        >>> yvals.shape
+        (65536,)
+        >>> xvals[0:5]
+        array([ 1.,  2.,  3.,  4.,  5.])
+        >>> yvals[0:5]
+        >>> array([ 1.,  1.,  1.,  1.,  1.])
+
+        The coordinate system for image axes is determinated by the
+        `set_coord` setting for the data set:
+
+        >>> set_coord('img', 'physical')
+        >>> (avals,bvals) = get_indep('img')
+        >>> avals[0:5]
+        array([  16.5,   48.5,   80.5,  112.5,  144.5])
 
         """
         d = self.get_data(id)
@@ -2432,7 +2491,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_axes(self, id=None, bkg_id=None):
-        """
+        """Return information about the independent axes of a data set.
+
         get_axes
 
         SYNOPSIS
@@ -2478,7 +2538,8 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def get_dep(self, id=None, filter=False, bkg_id=None):
-        """
+        """Return the dependent axis of a data set.
+
         get_dep
 
         SYNOPSIS
