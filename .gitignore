@@ -3,6 +3,30 @@
 # C extensions
 *.so
 
+# Build outputs
+*.o
+*.lo
+*.la
+.deps
+.libs
+config.log
+config.status
+libtool
+extern/**/Makefile
+extern/built
+extern/fftw-3.3.4/api/fftw3.f03
+extern/fftw-3.3.4/config.h
+extern/fftw-3.3.4/fftw.pc
+extern/fftw-3.3.4/fftw3.pc
+extern/fftw-3.3.4/libbench2/libbench2.a
+extern/fftw-3.3.4/mpi/fftw3-mpi.f03
+extern/fftw-3.3.4/mpi/fftw3l-mpi.f03
+extern/fftw-3.3.4/stamp-h1
+extern/fftw-3.3.4/tests/bench
+extern/fftw-3.3.4/tools/fftw-wisdom
+extern/fftw-3.3.4/tools/fftw-wisdom-to-conf
+extern/fftw-3.3.4/tools/fftw_wisdom.1
+
 # Packages
 *.egg
 *.egg-info
