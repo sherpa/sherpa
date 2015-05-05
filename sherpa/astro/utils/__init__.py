@@ -519,8 +519,8 @@ def calc_model_sum(data, model, lo=None, hi=None):
     data :
        The data object to use.
     src :
-       The source expression, which should include any instrumental
-       responses.
+       The source expression, which should not include the
+       instrumental responses.
     lo : number, optional
        The minimum limit of the band. Use `None`, the default, to use
        the low value of the data set.
@@ -556,7 +556,43 @@ def calc_model_sum(data, model, lo=None, hi=None):
     """
     return _counts(data, lo, hi, data.eval_model_to_fit, model)
 
+### Ahelp ingest: 2015-05-05 DJB
+### DOC-TODO: clean up whether the calc_model_* versions should or
+###           should not contain the instrument response/PSF components.
 def calc_model_sum2d(data, model, reg=None):
+    """Sum up the fitted model for a 2D data set.
+
+    Parameters
+    ----------
+    data : sherpa.astro.data.DataIMG instance
+       The data object to use.
+    model :
+       The source expression, which should not include the PSF model.
+    reg : str, optional
+       The spatial filter to use. The default, `None`, is to use the
+       whole data set.
+
+    Returns
+    -------
+    dsum : number
+       The sum of the model values, including any PSF convolution,
+       that lie within the given region.
+
+    See Also
+    --------
+    calc_data_sum2d : Sum up the data values of a 2D data set.
+    calc_model_sum : Sum up the fitted model over a pass band.
+    calc_source_sum2d: Sum up the source model for a 2D data set.
+
+    Notes
+    -----
+    The coordinate system of the region filter is determined by the
+    coordinate setting for the data set (e.g. `data.coord`).
+
+    Any existing filter on the data set - e.g. as created by
+    `ignore2d` or `notice2d` - is ignored by this function.
+
+    """
     return _counts2d(data, reg, data.eval_model_to_fit, model)
 
 def eqwidth(data, model, combo, lo=None, hi=None):
