@@ -2852,7 +2852,8 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_error(self, id=None, filter=False):
-        """
+        """Return the errors on the dependent axis of a data set.
+
         get_error
 
         SYNOPSIS
@@ -2903,7 +2904,8 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         axis : tuple of arrays
-           The independent axis values.
+           The independent axis values. These are the values at which
+           the model is evaluated during fitting.
 
         Raises
         ------
@@ -2927,7 +2929,7 @@ class Session(NoNewAttributesAfterInit):
         For a 2D data set the X0 and X1 values are returned:
 
         >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
-        >>> get_indep(1)
+        >>> get_indep(2)
         (array([10, 15, 12, 19]), array([12, 14, 10, 17]))
 
         """
@@ -2935,34 +2937,47 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-05 DJB
     def get_dep(self, id=None, filter=False):
-        """
-        get_dep
+        """Return the dependent axes of a data set.
 
-        SYNOPSIS
-           Get the dependent variable of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The dependent axis values. The model estimate is compared
+           to these values during fitting.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-        Returns:
-           Array of the dependent variable
+        Examples
+        --------
 
-        DESCRIPTION
-           Get the dependent variable array of data set by data id.
+        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> ignore_id(1, 17, None)
+        >>> get_dep()
+        array([4, 5, 9])
+        >>> get_dep(filter=True)
+        array([4, 5])
 
-        EXAMPLE
-           get_dep()
-
-           get_dep(1)
-
-        SEE ALSO
+        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> get_dep(2)
+        array([ 4,  5,  9, -2])
 
         """
         return self.get_data(id).get_y(filter)

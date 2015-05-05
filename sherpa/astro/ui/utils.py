@@ -2350,7 +2350,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_error(self, id=None, filter=False, bkg_id=None):
-        """
+        """Return the errors on the dependent axis of a data set.
+
         get_error
 
         SYNOPSIS
@@ -2413,10 +2414,12 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         axis : tuple of arrays
-           The independent axis values. The values returned depend on
-           the coordinate system in use for the data set (as set by
-           `set_coord`). For PHA data sets the value returned is
-           always in channels, whatever the `set_analysis` setting is.
+           The independent axis values. These are the values at which
+           the model is evaluated during fitting. The values returned
+           depend on the coordinate system in use for the data set (as
+           set by `set_coord`). For PHA data sets the value returned
+           is always in channels, whatever the `set_analysis` setting
+           is.
 
         Raises
         ------
@@ -2442,7 +2445,7 @@ class Session(sherpa.ui.utils.Session):
         For a 2D data set the X0 and X1 values are returned:
 
         >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
-        >>> get_indep(1)
+        >>> get_indep(2)
         (array([10, 15, 12, 19]), array([12, 14, 10, 17]))
 
         For PHA data sets the return value is in channel units:
@@ -2473,7 +2476,7 @@ class Session(sherpa.ui.utils.Session):
         >>> xvals[0:5]
         array([ 1.,  2.,  3.,  4.,  5.])
         >>> yvals[0:5]
-        >>> array([ 1.,  1.,  1.,  1.,  1.])
+        array([ 1.,  1.,  1.,  1.,  1.])
 
         The coordinate system for image axes is determinated by the
         `set_coord` setting for the data set:
@@ -2537,40 +2540,72 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-05 DJB
     def get_dep(self, id=None, filter=False, bkg_id=None):
         """Return the dependent axis of a data set.
 
-        get_dep
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNOPSIS
-           Get the dependent variable of a dataset by id
+        Returns
+        -------
+        axis : array
+           The dependent axis values. The model estimate is compared
+           to these values during fitting. The values returned depend
+           on the coordinate system in use for the data set (as set by
+           `set_coord`). For PHA data sets the value returned is
+           always in channels, whatever the `set_analysis` setting is.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_rate : Return the count rate of a PHA data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-           filter     - apply filter
-                        default = False
+        Examples
+        --------
 
-           bkg_id     - background id
-                        default = None
+        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> get_dep()
+        array([10, 15, 19])
 
-        Returns:
-           Array of the dependent variable
+        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> get_dep(2)
+        array([4, 5, 9, -2])
 
-        DESCRIPTION
-           Get the dependent variable array of data set by data id or bkg_id.
+        If the `filter` flag is set then the return will be limited to
+        the data that is used in the fit:
 
-        EXAMPLE
-           get_dep()
+        >>> notice_id('spec', 0.5, 7)
+        >>> yall = get_dep('spec')
+        >>> yfilt = get_dep('spec', filter=True)
+        >>> yall.size
+        1024
+        >>> yfilt.size
+        446
 
-           get_dep(1, True)
+        For images, the data is returned as a one-dimensional array:
 
-           get_dep(1, bkg_id=2)
-
-        SEE ALSO
+        >>> load_image('img', 'image.fits')
+        >>> ivals = get_dep('img')
+        >>> ivals.shape
+        (65536,)
 
         """
         d = self.get_data(id)
