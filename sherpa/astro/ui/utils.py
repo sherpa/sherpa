@@ -2382,43 +2382,42 @@ class Session(sherpa.ui.utils.Session):
         return err
 
 
+    # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-05 DJB
     def get_error(self, id=None, filter=False, bkg_id=None):
         """Return the errors on the dependent axis of a data set.
 
-        get_error
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNOPSIS
-           Get the total errors of a dataset by id
+        Returns
+        -------
+        axis : array
+           The error for each data point, formed by adding the
+           statistical and systematic errors in quadrature.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_dep : Return the dependent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-           filter     - apply filter
-                        default = False
-
-           bkg_id     - background id
-                        default = None
-
-        Returns:
-           Total error array
-
-        DESCRIPTION
-           Get the total error (statistical + systematic in quadrature) of a
-           dataset by data id or bkg_id.
-
-        EXAMPLE
-           get_error()
-
-           get_error(1, True)
-
-           get_error(1, bkg_id=2)
-
-        SEE ALSO
-           set_syserror, set_exposure, set_backscal, set_areascal,
-           get_syserror, get_exposure, get_backscal, get_areascal
         """
         d = self.get_data(id)
         if bkg_id is not None:

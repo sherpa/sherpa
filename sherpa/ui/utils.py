@@ -2885,39 +2885,40 @@ class Session(NoNewAttributesAfterInit):
         return err
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-05 DJB
     def get_error(self, id=None, filter=False):
         """Return the errors on the dependent axis of a data set.
 
-        get_error
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
 
-        SYNOPSIS
-           Get the total errors of a dataset by id
+        Returns
+        -------
+        axis : array
+           The error for each data point, formed by adding the
+           statistical and systematic errors in quadrature.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-           filter     - apply filter
-                        default = False
-
-        Returns:
-           Total error array
-
-        DESCRIPTION
-           Get the total error (statistical + systematic in quadrature) of a
-           dataset by data id.
-
-        EXAMPLE
-           get_error()
-
-           get_error(1)
-
-           get_error(1, True)
-
-        SEE ALSO
-           set_syserror, get_syserror, set_staterror, set_syserror
         """
         return self.get_data(id).get_error(filter,
                                            self.get_stat().calc_staterror)

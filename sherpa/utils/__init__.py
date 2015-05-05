@@ -606,14 +606,20 @@ def parse_expr(expr):
 
 
 def calc_total_error(staterror=None, syserror=None):
-    """
+    """Add statistical and systematic errors in quadrature.
 
-    Add statistical and systematic errors in quadrature.  The
-    arguments should be numpy arrays or None.  If both arguments are
-    arrays, a new array containing the element-wise square root of the
-    sum of their squares is returned.  If one argument is None, the
-    other is returned unaltered.  If both arguments are None, None is
-    returned.
+    Parameters
+    ----------
+    staterror : array, optional
+       The statistical error, or `None`.
+    syserror : array, optional
+       The systematic error, or `None`.
+
+    Returns
+    -------
+    error : array or `None`
+       The errors, added in quadrature. If both `staterror` and
+       `syserror` are `None` then the return value is `None`.
 
     """
 

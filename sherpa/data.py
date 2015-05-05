@@ -340,7 +340,31 @@ class Data(BaseData):
         self._no_dim_error()
 
     def get_error(self, filter=False, staterrfunc=None):
-        "Return total error in dependent variable"
+        """Return the total error on the dependent variable.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        staterrfunc : function
+           If no statistical error has been set, the errors will
+           be calculated by applying this function to the
+           dependent axis of the data set.
+
+        Returns
+        -------
+        axis : array or `None`
+           The error for each data point, formed by adding the
+           statistical and systematic errors in quadrature.
+
+        See Also
+        --------
+        get_dep : Return the independent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+
+        """
         return calc_total_error(self.get_staterror(filter, staterrfunc),
                                 self.get_syserror(filter))
 
