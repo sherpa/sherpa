@@ -2259,43 +2259,73 @@ class Session(sherpa.ui.utils.Session):
         else:
             self._get_pha_data(id).areascal = area
 
-
+    # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-05 DJB
     def get_staterror(self, id=None, filter=False, bkg_id=None):
-        """
-        get_staterror
+        """Return the statistical error on the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the statistical errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The statistical error for each data point. This may be
+           estimated from the data (e.g. with the `chi2gehrels`
+           statistic) or have been set explicitly (`set_staterror`).
+           For PHA data sets, the return array will match the grouping
+           scheme applied to the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_staterror : Set the statistical errors on the dependent axis of a data set.
 
-           bkg_id     - background id
-                        default = None
+        Examples
+        --------
 
-        Returns:
-           Statistical error array
+        If not explicitly given, the statistical errors on a data set
+        may be calculated from the data values (the independent axis),
+        depending on the chosen statistic:
 
-        DESCRIPTION
-           Get the statistical error of a source or background dataset by data
-           id or by bkg_id.
+        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> set_stat('chi2datavar')
+        >>> get_staterror()
+        array([ 2.        ,  2.23606798,  3.        ])
+        >>> set_stat('chi2gehrels')
+        >>> get_staterror()
+        array([ 3.17944947,  3.39791576,  4.122499  ])
 
-        EXAMPLE
-           get_staterror()
+        If the statistical errors are set - either when the data set
+        is created or with a call to `set_errors` - then these values
+        will be used, no matter the statistic:
 
-           get_staterror(1, True)
+        >>> load_arrays(1, [10,15,19], [4,5,9], [2,3,5])
+        >>> set_stat('chi2datavar')
+        >>> get_staterror()
+        array([2, 3, 5])
+        >>> set_stat('chi2gehrels')
+        >>> get_staterror()
+        array([2, 3, 5])
 
-           get_staterror(1, 2)
-
-        SEE ALSO
-           set_syserror, set_exposure, set_backscal, set_areascal,
-           get_syserror, get_exposure, get_backscal, get_areascal
         """
         d = self.get_data(id)
         if bkg_id is not None:
@@ -2419,7 +2449,8 @@ class Session(sherpa.ui.utils.Session):
            depend on the coordinate system in use for the data set (as
            set by `set_coord`). For PHA data sets the value returned
            is always in channels, whatever the `set_analysis` setting
-           is.
+           is, and does not follow any grouping setting for the data
+           set.
 
         Raises
         ------
@@ -2561,10 +2592,9 @@ class Session(sherpa.ui.utils.Session):
         -------
         axis : array
            The dependent axis values. The model estimate is compared
-           to these values during fitting. The values returned depend
-           on the coordinate system in use for the data set (as set by
-           `set_coord`). For PHA data sets the value returned is
-           always in channels, whatever the `set_analysis` setting is.
+           to these values during fitting. For PHA data sets, the 
+           return array will match the grouping scheme applied to
+           the data set.
 
         Raises
         ------
@@ -2645,6 +2675,8 @@ class Session(sherpa.ui.utils.Session):
            The rate array. The output matches the grouping of the data
            set. The units are controlled by the `set_analysis` setting
            for this data set; that is, the units used in `plot_data`.
+           The return array will match the grouping scheme applied to
+           the data set.
 
         Raises
         ------

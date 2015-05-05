@@ -250,8 +250,32 @@ class Data(BaseData):
         return dep
 
     def get_staterror(self, filter=False, staterrfunc=None):
-        "Return the statistical error array"
+        """Return the statistical error on the dependent axis of a data set.
 
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        staterrfunc : function
+           If no statistical error has been set, the errors will
+           be calculated by applying this function to the
+           dependent axis of the data set.
+
+        Returns
+        -------
+        axis : array or `None`
+           The statistical error for each data point. A value of
+           `None` is returned if the data set has no statistical error
+           array and `staterrfunc` is `None`.
+
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+
+        """
         staterror = getattr(self, 'staterror', None)
         filter=bool_cast(filter)
         if filter:

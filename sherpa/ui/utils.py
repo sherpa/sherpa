@@ -2774,38 +2774,68 @@ class Session(NoNewAttributesAfterInit):
                 err = numpy.array([val]*len(d.get_dep()))
         d.syserror = err
 
-
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-05 DJB
     def get_staterror(self, id=None, filter=False):
-        """
-        get_staterror
+        """Return the statistical error on the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the statistical errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The statistical error for each data point. This may be
+           estimated from the data (e.g. with the `chi2gehrels`
+           statistic) or have been set explicitly (`set_staterror`).
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_staterror : Set the statistical errors on the dependent axis of a data set.
 
-        Returns:
-           Statistical error array
+        Examples
+        --------
 
-        DESCRIPTION
-           Get the statistical error of a dataset by data id.
+        If not explicitly given, the statistical errors on a data set
+        may be calculated from the data values (the independent axis),
+        depending on the chosen statistic:
 
-        EXAMPLE
-           get_staterror()
+        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> set_stat('chi2datavar')
+        >>> get_staterror()
+        array([ 2.        ,  2.23606798,  3.        ])
+        >>> set_stat('chi2gehrels')
+        >>> get_staterror()
+        array([ 3.17944947,  3.39791576,  4.122499  ])
 
-           get_staterror(1)
+        If the statistical errors are set - either when the data set
+        is created or with a call to `set_errors` - then these values
+        will be used, no matter the statistic:
 
-           get_staterror(1, True)
+        >>> load_arrays(1, [10,15,19], [4,5,9], [2,3,5])
+        >>> set_stat('chi2datavar')
+        >>> get_staterror()
+        array([2, 3, 5])
+        >>> set_stat('chi2gehrels')
+        >>> get_staterror()
+        array([2, 3, 5])
 
-        SEE ALSO
-           set_syserror, get_syserror
         """
         return self.get_data(id).get_staterror(filter,
                                                self.get_stat().calc_staterror)
@@ -2939,7 +2969,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     ### Ahelp ingest: 2015-05-05 DJB
     def get_dep(self, id=None, filter=False):
-        """Return the dependent axes of a data set.
+        """Return the dependent axis of a data set.
 
         Parameters
         ----------
@@ -2947,6 +2977,9 @@ class Session(NoNewAttributesAfterInit):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
 
         Returns
         -------
