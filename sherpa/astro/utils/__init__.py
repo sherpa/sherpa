@@ -492,7 +492,6 @@ def calc_data_sum2d(data, reg=None):
     --------
     calc_data_sum : Sum up the data values of a data set.
     calc_model_sum2d : Sum up the fitted model for a 2D data set.
-    calc_source_sum2d: Sum up the source model for a 2D data set.
 
     Notes
     -----
@@ -559,6 +558,8 @@ def calc_model_sum(data, model, lo=None, hi=None):
 ### Ahelp ingest: 2015-05-05 DJB
 ### DOC-TODO: clean up whether the calc_model_* versions should or
 ###           should not contain the instrument response/PSF components.
+###           Note: there is no calc_source_sum2d in this module, so
+###           this needs looking at to see if the text is correct
 def calc_model_sum2d(data, model, reg=None):
     """Sum up the fitted model for a 2D data set.
 
@@ -582,7 +583,6 @@ def calc_model_sum2d(data, model, reg=None):
     --------
     calc_data_sum2d : Sum up the data values of a 2D data set.
     calc_model_sum : Sum up the fitted model over a pass band.
-    calc_source_sum2d: Sum up the source model for a 2D data set.
 
     Notes
     -----

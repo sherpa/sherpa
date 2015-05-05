@@ -10532,7 +10532,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        dsum : number
+        msum : number
            The sum of the model values, as fitted to the data, that
            lie within the given region. This includes any PSF
            included by `set_psf`.
@@ -10582,38 +10582,76 @@ class Session(sherpa.ui.utils.Session):
         >>> calc_model_sum2d('field()-circle(2,2,1)')
         16.0
 
-
         """
         data = self.get_data(id)
         model= self.get_model(id)
         return sherpa.astro.utils.calc_model_sum2d(data, model, reg)
 
+    ### Ahelp ingest: 2015-05-05 DJB
     def calc_source_sum2d(self, reg=None, id=None):
-        """
-        calc_source_sum2d
+        """Sum up the fitted model for a 2D data set.
 
-        SYNOPSIS
-           Get the sum of unconvolved image model amplitudes
+        Parameters
+        ----------
+        reg : str, optional
+           The spatial filter to use. The default, `None`, is to
+           use the whole data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        msum : number
+           The sum of the model values that lie within the given
+           region. This does not include any PSF included by
+           `set_psf`.
 
-        Arguments:
-           reg      - filename and path of region file or DM region syntax
-                      default = None
+        See Also
+        --------
+        calc_model_sum2d : Sum up the fitted model for a 2D data set.
+        calc_source_sum : Sum up the model over a pass band.
+        set_psf : Apply a PSF model to a data set.
+        set_model : Set the source model expression for a data set.
 
-           id       - data id
-                      default = default data id
+        Notes
+        -----
+        The coordinate system of the region filter is determined by
+        the coordinate setting for the data set (e.g. `get_coord`).
 
-        Returns:
-           sum value of unconvolved image model amplitudes
+        Any existing filter on the data set - e.g. as created by
+        `ignore2d` or `notice2d` - is ignored by this function.
 
-        DESCRIPTION
-           Calculates the sum of unconvolved image model amplitudes
-           for a source by data id
+        Examples
+        --------
 
-        SEE ALSO
-           calc_data_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_source_sum, calc_source_sum, calc_data_sum2d
+        The following examples use the data in the default data set
+        created with the following calls, which sets the y (data)
+        values to be 0 to 11 in a 3 row by 4 column image:
+
+        >>> ivals = np.arange(12)
+        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y = y.flatten()
+        >>> x = x.flatten()
+        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+        >>> set_source(const2d.bgnd)
+        >>> bgnd.c0 = 2
+
+        With no argument, the full data set is used. Since the model
+        evaluates to 2 per pixel, and there are 12 pixels in the
+        data set, the result is 24:
+
+        >>> calc_source_sum2d()
+        24.0
+
+        Only use pixels that fall within the given spatial filters:
+
+        >>> calc_source_sum2d('circle(2,2,1)')
+        8.0
+        >>> calc_source_sum2d('field()-circle(2,2,1)')
+        16.0
+
         """
         data = self.get_data(id)
         src= self.get_source(id)
