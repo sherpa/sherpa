@@ -2841,37 +2841,41 @@ class Session(NoNewAttributesAfterInit):
                                                self.get_stat().calc_staterror)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-05 DJB
     def get_syserror(self, id=None, filter=False):
-        """
-        get_syserror
+        """Return the systematic error on the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the systematic errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The systematic error for each data point.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has no systematic errors.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_syserror : Set the systematic errors on the dependent axis of a data set.
 
-        Returns:
-           Systematic error array
-
-        DESCRIPTION
-           Get the systematic error of a dataset by data id.
-
-        EXAMPLE
-           get_syserror()
-
-           get_syserror(1)
-
-           get_syserror(1, True)
-
-        SEE ALSO
-           set_syserror, get_syserror
         """
         d = self.get_data(id)
         id = self._fix_id(id)

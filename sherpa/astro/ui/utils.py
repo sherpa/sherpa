@@ -2333,41 +2333,44 @@ class Session(sherpa.ui.utils.Session):
         return d.get_staterror(filter, self.get_stat().calc_staterror)
 
 
+    # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-05 DJB
     def get_syserror(self, id=None, filter=False, bkg_id=None):
-        """
-        get_syserror
+        """Return the systematic error on the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the systematic errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The systematic error for each data point.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has no systematic errors.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_syserror : Set the systematic errors on the dependent axis of a data set.
 
-           bkg_id     - background id
-                        default = None
-
-        Returns:
-           Systematic error array
-
-        DESCRIPTION
-           Get the systematic error of a dataset by data id or bkg_id.
-
-        EXAMPLE
-           get_syserror()
-
-           get_syserror(1, True)
-
-           get_syserror(1, bkg_id=2)
-
-        SEE ALSO
-           set_syserror, set_exposure, set_backscal, set_areascal,
-           get_syserror, get_exposure, get_backscal, get_areascal
         """
         d = self.get_data(id)
         id = self._fix_id(id)

@@ -289,7 +289,28 @@ class Data(BaseData):
         return staterror
 
     def get_syserror(self, filter=False):
-        "Return the systematic error array"
+        """Return the statistical error on the dependent axis of a data set.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+
+        Returns
+        -------
+        axis : array or `None`
+           The systematic error for each data point. A value of
+           `None` is returned if the data set has no systematic
+           errors.
+
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+
+        """
         syserr = getattr(self, 'syserror', None)
         filter=bool_cast(filter)
         if filter:
