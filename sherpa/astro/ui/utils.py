@@ -10149,6 +10149,9 @@ class Session(sherpa.ui.utils.Session):
         The units of `lo` and `hi` are determined by the analysis
         setting for the data set (e.g. `get_analysis`).
 
+        Any existing filter on the data set - e.g. as created by
+        `ignore` or `notice` - is ignored by this function.
+
         The flux is calculated from the given source model, so if it
         includes an absorbing component then the result will represent
         the absorbed flux. The absorbing component can be removed, or
@@ -10177,7 +10180,7 @@ class Session(sherpa.ui.utils.Session):
         Calculate the photon flux density at 0.5 keV for the source
         "core":
 
-        >>> calc_energy_flux(0.5, id="core")
+        >>> calc_photon_flux(0.5, id="core")
         0.64978176
 
         """
@@ -10232,7 +10235,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_data_sum : Sum up the observed counts over a pass band.
+        calc_data_sum : Sum up the data values over a pass band.
         calc_model_sum : Sum up the model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
         calc_photon_flux : Integrate the source model over a pass band.
@@ -10242,6 +10245,9 @@ class Session(sherpa.ui.utils.Session):
         -----
         The units of `lo` and `hi` are determined by the analysis
         setting for the data set (e.g. `get_analysis`).
+
+        Any existing filter on the data set - e.g. as created by
+        `ignore` or `notice` - is ignored by this function.
 
         The flux is calculated from the given source model, so if it
         includes an absorbing component then the result will represent
@@ -10282,39 +10288,84 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_energy_flux(data, model, lo, hi)
 
 
+    ### Ahelp ingest: 2015-05-05 DJB
+    ### DOC-TODO: how do lo/hi limits interact with bin edges;
+    ###           is it all in or partially in or ...
     def calc_data_sum(self, lo=None, hi=None, id=None, bkg_id=None):
-        """Sum up the observed counts over a pass band.
+        """Sum up the data values over a pass band.
 
-        calc_data_sum
+        Parameters
+        ----------
+        lo : number, optional
+           The minimum limit of the band. Use `None`, the default,
+           to use the low value of the data set.
+        hi : number, optional
+           The maximum limit of the band, which must be larger than
+           `lo`. Use `None`, the default, to use the upper value of
+           the data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int or str, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
 
-        SYNOPSIS
-           Get observed data counts
+        Returns
+        -------
+        dsum : number
+           The sum of the data values that lie within the given
+           limits.  If `hi` is `None` but `lo` is set then the data
+           value of the bin containing the `lo` value are returned.
+           If a background estimate has been subtracted from the data
+           set then the calculation will use the background-subtracted
+           values.
 
-        SYNTAX
+        See Also
+        --------
+        calc_data_sum2d : Sum up the data values of a 2D data set.
+        calc_model_sum : Sum up the model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the source model over a pass band.
+        calc_source_sum: Sum up the source model over a pass band.
+        set_model : Set the source model expression for a data set.
 
-        Arguments:
-           lo       - low limit
-                      default = None
+        Notes
+        -----
+        The units of `lo` and `hi` are determined by the analysis
+        setting for the data set (e.g. `get_analysis`).
 
-           hi       - high limit
-                      default = None
+        Any existing filter on the data set - e.g. as created by
+        `ignore` or `notice` - is ignored by this function.
 
-           id       - data id
-                      default = default data id
+        If a grouping scheme has been applied to the data set that it
+        will be used. This can change the results, since the first and
+        last bins of the selected range may extend outside the
+        requested range.
 
-           bkg_id   - bkg id, if multiple backgrounds exist
-                      default = default bkg id
+        Examples
+        --------
 
-        Returns:
-           sum value of observed counts
+        Calculate the number of counts over the ranges 0.5 to 2 and 0.5 to
+        7 keV for the default data set, first using the observed signal
+        and then, for the 0.5 to 2 keV band - the background-subtraced
+        estimate:
 
-        DESCRIPTION
-           Calculates the sum of observed counts data for a source
-           or background dataset by data id or background id.
+        >>> set_analysis('energy')
+        >>> calc_data_sum(0.5, 2)
+        745.0
+        >>> calc_data_sum(0.5, 7)
+        60.0
+        >>> subtract()
+        >>> calc_data_sum(0.5, 2)
+        730.9179738207356
 
-        SEE ALSO
-           calc_model_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_source_sum, calc_data_sum2d, calc_model_sum2d
+        Calculate the data value in the bin containing 0.5 keV for the
+        source "core":
+
+        >>> calc_data_sum(0.5, id="core")
+        0.0
+
         """
         data = self.get_data(id)
         if bkg_id is not None:
@@ -10366,7 +10417,8 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_model_sum(data, model, lo, hi)
 
     def calc_data_sum2d(self, reg=None, id=None):
-        """
+        """Sum up the data values of a 2D data set.
+
         calc_data_sum2d
 
         SYNOPSIS

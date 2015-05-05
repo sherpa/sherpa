@@ -224,7 +224,7 @@ def calc_energy_flux( data, src, lo=None, hi=None):
 
     See Also
     --------
-    calc_data_sum : Sum up the observed counts over a pass band.
+    calc_data_sum : Sum up the data values over a pass band.
     calc_model_sum : Sum up the model over a pass band.
     calc_source_sum: Sum up the source model over a pass band.
     calc_photon_flux : Integrate the source model over a pass band.
@@ -233,6 +233,8 @@ def calc_energy_flux( data, src, lo=None, hi=None):
     -----
     The units of `lo` and `hi` are determined by the analysis
     setting for the data set (e.g. `data.get_analysis`).
+
+    Any existing filter on the data set is ignored by this function.
 
     The flux is calculated from the given source model, so if it
     includes an absorbing component then the result will represent
@@ -296,7 +298,7 @@ def calc_photon_flux( data, src, lo=None, hi=None):
 
     See Also
     --------
-    calc_data_sum : Sum up the observed counts over a pass band.
+    calc_data_sum : Sum up the data values over a pass band.
     calc_model_sum : Sum up the model over a pass band.
     calc_energy_flux : Integrate the source model over a pass band.
     calc_source_sum: Sum up the source model over a pass band.
@@ -305,6 +307,8 @@ def calc_photon_flux( data, src, lo=None, hi=None):
     -----
     The units of `lo` and `hi` are determined by the analysis
     setting for the data set (e.g. `data.get_analysis`).
+
+    Any existing filter on the data set is ignored by this function.
 
     The flux is calculated from the given source model, so if it
     includes an absorbing component then the result will represent
@@ -333,7 +337,7 @@ def calc_photon_flux( data, src, lo=None, hi=None):
 
     Calculate the photon flux density at 0.5 keV:
 
-    >>> calc_energy_flux(data, smodel, 0.5)
+    >>> calc_photon_flux(data, smodel, 0.5)
     0.64978176
 
     """
@@ -345,10 +349,74 @@ def calc_source_sum( data, src, lo=None, hi=None):
 #def calc_source_sum2d( data, src, reg=None):
 #    return _counts2d(data, reg, data.eval_model_to_fit, src)
 
+### Ahelp ingest: 2015-05-05 DJB
 def calc_data_sum(data, lo=None, hi=None):
+    """Sum up the data values over a pass band.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    lo : number, optional
+       The minimum limit of the band. Use `None`, the default, to use
+       the low value of the data set.
+    hi : number, optional
+       The maximum limit of the band, which must be larger than
+       `lo`. Use `None`, the default, to use the upper value of the
+       data set.
+
+    Returns
+    -------
+    dsum : number
+       The sum of the data values that lie within the given limits.
+       If `hi` is `None` but `lo` is set then the data value of the
+       bin containing the `lo` value are returned.  If a background
+       estimate has been subtracted from the data set then the
+       calculation will use the background-subtracted values.
+
+    See Also
+    --------
+    calc_data_sum2d : Sum up the data values of a 2D data set.
+    calc_model_sum : Sum up the model over a pass band.
+    calc_energy_flux : Integrate the source model over a pass band.
+    calc_photon_flux : Integrate the source model over a pass band.
+    calc_source_sum: Sum up the source model over a pass band.
+    set_model : Set the source model expression for a data set.
+
+    Notes
+    -----
+    The units of `lo` and `hi` are determined by the analysis
+    setting for the data set (e.g. `data.get_analysis`).
+
+    Any existing filter on the data set - e.g. as created by
+    `ignore` or `notice` - is ignored by this function.
+
+    If a grouping scheme has been applied to the data set that it will
+    be used. This can change the results, since the first and last
+    bins of the selected range may extend outside the requested range.
+
+    Examples
+    --------
+
+    Calculate the number of counts over the ranges 0.5 to 2 and 0.5 to
+    7 keV, first using the observed signal and then, for the 0.5 to 2
+    keV band - the background-subtraced estimate:
+
+    >>> set_analysis('energy')
+    >>> calc_data_sum(data, 0.5, 2)
+    745.0
+    >>> calc_data_sum(data, 0.5, 7)
+    60.0
+    >>> data.subtract()
+    >>> calc_data_sum(data, 0.5, 2)
+    730.9179738207356
+
+    """
     return _counts( data, lo, hi, data.apply_filter, data.get_dep() )
 
 def calc_data_sum2d(data, reg=None):
+    """Sum up the data values of a 2D data set.
+    """
     return _counts2d(data, reg, data.apply_filter, data.get_dep() )
 
 def calc_model_sum(data, model, lo=None, hi=None):
