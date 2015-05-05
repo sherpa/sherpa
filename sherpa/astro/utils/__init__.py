@@ -343,7 +343,65 @@ def calc_photon_flux( data, src, lo=None, hi=None):
     """
     return _flux(data, lo, hi, src)
 
+### Ahelp ingest: 2015-05-05 DJB
+### DOC-TODO: compare to calc_photon_flux ?
 def calc_source_sum( data, src, lo=None, hi=None):
+    """Sum up the source model over a pass band.
+
+    Sum up S(E) over a pass band, where S(E) is the spectral model
+    evaluated for each bin.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    src :
+       The source expression.
+    lo : number, optional
+       The minimum limit of the band. Use `None`, the default, to use
+       the low value of the data set.
+    hi : number, optional
+       The maximum limit of the band, which must be larger than
+       `lo`. Use `None`, the default, to use the upper value of the
+       data set.
+
+    Returns
+    -------
+    signal : number
+       The source model summed up over the given band. This does
+       *not* include the bin width when using histogram-style
+       ('integrated' data spaces), such as used with X-Spec
+       emission - also known as additive - models.
+
+    See Also
+    --------
+    calc_data_sum : Sum up the observed counts over a pass band.
+    calc_model_sum : Sum up the model over a pass band.
+    calc_energy_flux : Integrate the source model over a pass band.
+    calc_photon_flux : Integrate the source model over a pass band.
+    calc_source_sum: Sum up the source model over a pass band.
+
+    Notes
+    -----
+    The units of `lo` and `hi` are determined by the analysis
+    setting for the data set (e.g. `data.get_analysis`).
+
+    Any existing filter on the data set - e.g. as created by
+    `ignore` or `notice` - is ignored by this function.
+
+    The units of the answer depend on the model components used in
+    the source expression and the axis or axes of the data set.
+    It is unlikely to give sensible results for 2D data sets.
+
+    Examples
+    --------
+
+    Sum up the model over the data range 0.5 to 2:
+
+    >>> calc_source_sum(data, smodel, 0.5, 2)
+    139.12819041922018
+
+    """
     return _flux(data, lo, hi, src, srcflux=True)
 
 #def calc_source_sum2d( data, src, reg=None):

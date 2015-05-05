@@ -10509,40 +10509,87 @@ class Session(sherpa.ui.utils.Session):
         src= self.get_source(id)
         return sherpa.astro.utils.calc_model_sum2d(data, src, reg)
 
+    ### Ahelp ingest: 2015-05-05 DJB
+    ### DOC-TODO: does lo!=None,hi=None make sense here,
+    ###           since this is not an integration but a sum.
+    ###           For now I have just not documented this capability.
     def calc_source_sum(self, lo=None, hi=None, id=None, bkg_id=None):
         """Sum up the source model over a pass band.
 
-        calc_source_sum
+        Sum up S(E) over a pass band, where S(E) is the spectral model
+        evaluated for each bin (that is, the model without any
+        instrumental responses applied to it).
 
-        SYNOPSIS
-           Get the sum of unconvolved model amplitudes
+        Parameters
+        ----------
+        lo : number, optional
+           The minimum limit of the band. Use `None`, the default,
+           to use the low value of the data set.
+        hi : number, optional
+           The maximum limit of the band, which must be larger than
+           `lo`. Use `None`, the default, to use the upper value of
+           the data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int or str, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
 
-        SYNTAX
+        Returns
+        -------
+        signal : number
+           The source model summed up over the given band. This does
+           *not* include the bin width when using histogram-style
+           ('integrated' data spaces), such as used with X-Spec
+           emission - also known as additive - models.
 
-        Arguments:
-           lo       - low limit
-                      default = None
+        See Also
+        --------
+        calc_data_sum : Sum up the observed counts over a pass band.
+        calc_model_sum : Sum up the model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the source model over a pass band.
+        calc_source_sum: Sum up the source model over a pass band.
+        set_model : Set the source model expression for a data set.
 
-           hi       - high limit
-                      default = None
+        Notes
+        -----
+        The units of `lo` and `hi` are determined by the analysis
+        setting for the data set (e.g. `get_analysis`).
 
-           id       - dataset ID
-                      default = default data id
+        Any existing filter on the data set - e.g. as created by
+        `ignore` or `notice` - is ignored by this function.
 
-           bkg_id   - bkg id, if multiple backgrounds exist
-                      default = default bkg id
+        The units of the answer depend on the model components used in
+        the source expression and the axis or axes of the data set.
+        It is unlikely to give sensible results for 2D data sets.
 
-        Returns:
-           sum value of unconvolved model amplitudes
+        Examples
+        --------
 
-        DESCRIPTION
-           Calculates the sum of unconvolved model amplitudes
-           for a source or background dataset by data id or
-           background id.
+        Sum up the model over the data range 0.5 to 2 for the default
+        data set:
 
-        SEE ALSO
-           calc_data_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_model_sum
+        >>> calc_source_sum(0.5, 2)
+        139.12819041922018
+
+        Compare the output of the `calc_source_sum` and
+        `calc_photon_flux` routines. A 1099-bin data space is created,
+        with a model which has a value of 1 for each bin. As the bin
+        width is constant, at `0.01`, the integrated value, calculated
+        by `calc_photon_flux`, is ` one hundredth the value from
+        `calc_data_sum`:
+
+        >>> dataspace1d(0.01, 11, 0.01, id="test")
+        >>> set_source("test", const1d.bflat)
+        >>> bflat.c0 = 1
+        >>> calc_source_sum(id="test")
+        1099.0
+        >>> calc_photon_flux(id="test")
+        10.99
+
         """
         data = self.get_data(id)
         model= None
