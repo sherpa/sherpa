@@ -4505,41 +4505,63 @@ class Session(NoNewAttributesAfterInit):
             self.get_data(i).notice(lo, hi, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-06 DJB
     def ignore_id(self, ids, lo=None, hi=None, **kwargs):
         """Exclude data from the fit for a data set.
 
-        ignore_id
+        Select one or more ranges of data to exclude by filtering on
+        the independent axis value. The filter is applied to the
+        given data set, or data sets.
 
-        SYNOPSIS
-           Exclusive 1D ignore on interval(s) for specific Sherpa data id(s)
+        Parameters
+        ----------
+        ids : int or str, or array of int or str
+           The data set, or sets, to use.
+        lo : number or str, optional
+           The lower bound of the filter (when a number) or a string
+           expression listing ranges in the form `a:b`, with multiple
+           ranges allowed, where the ranges are separated by a
+           `,`. The term `:b` means exclude everything up to, and
+           including `b`, and `a:` means exclude everything that is
+           higher than, or equal to, `a`.
+        hi : number, optional
+           The upper bound of the filter when `lo` is not a string.
 
-        SYNTAX
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        notice : Include data in the fit.
+        show_filter : Show any filters applied to a data set.
 
-        Arguments:
+        Notes
+        -----
+        The order of `ignore` and `notice` calls is important.
 
-           ids   -  list of specific Sherpa data ids
+        The units used depend on the `analysis` setting of the data
+        set, if appropriate.
 
-           lo    -  lower bound OR interval expression string
-                    default = None
+        To filter a 2D data set by a shape use `ignore2d`.
 
-           hi    -  upper bound
-                    default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Ignore all data points with an X value (the independent axis)
+        between 12 and 18 for data set 1:
 
-        DESCRIPTION
+        >>> ignore_id(1, 12, 18)
 
-           ignore_id(1)
+        Ignore the range up to 0.5 and 7 and above, for data sets 1,
+        2, and 3:
 
-           ignore_id(1, 0.5, 7.0)
+        >>> ignore_id([1,2,3], None, 0.5)
+        >>> ignore_id([1,2,3], 7, None)
 
-           ignore_id(2, ":0.5, 7.0:")
+        Apply the same filter as the previous example, but to
+        data sets "core" and "jet":
 
-           ignore_id([2,3], ":0.5, 7.0:")
+        >>> ignore_id(["core","jet"], ":0.5,7:")
 
-        SEE ALSO
-           notice, ignore, notice_id
         """
         kwargs['ignore'] = True
         if lo is not None and type(lo) in (str,numpy.string_):
