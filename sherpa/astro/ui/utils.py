@@ -1693,7 +1693,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_filter : Return the filter array for a data set.
+        get_filter : Return the filter expression for a data set.
         ignore : Exclude data from the fit.
         notice : Include data in the fit.
         save_filter : Save the filter array to a file.
@@ -6314,6 +6314,12 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or str, optional
            Set if the grouping flags should be taken from a background
            associated with the data set.
+
+        Returns
+        -------
+        grouping : array or `None`
+           A value of 1 indicates the start of a new group, and -1
+           indicates that the bin is part of the group.
 
         Raises
         ------

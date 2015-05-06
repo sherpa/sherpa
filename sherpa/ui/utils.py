@@ -2611,7 +2611,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_filter : Return the filter array for a data set.
+        get_filter : Return the filter expression for a data set.
         ignore : Exclude data from the fit.
         notice : Include data in the fit.
         save_filter : Save the filter array to a file.
@@ -3156,32 +3156,70 @@ class Session(NoNewAttributesAfterInit):
         """
         return self.get_data(id).get_dims(filter)
 
-
+    ### Ahelp ingest: 2015-05-06 DJB
     def get_filter(self, id=None):
-        """
-        get_filter
+        """Return the filter expression for a data set.
 
-        SYNOPSIS
-           Get the filter of a dataset by id
+        This returns the filter expression, created by one or more
+        calls to `ignore` and `notice`, for the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id        - session data id
-                       default = default data id
+        Returns
+        -------
+        filter : str
+           The empty string or a string expression representing the
+           filter used. For PHA data dets the units are controlled by
+           the analysis setting for the data set.
 
-        Returns:
-           filter string
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not exist.
 
-        DESCRIPTION
-           Get the filter expression of data set by data id.
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        load_filter : Load the filter array from a file and add to a data set.
+        notice : Include data in the fit.
+        save_filter : Save the filter array to a file.
+        set_filter : Set the filter array of a data set.
 
-        EXAMPLE
-           get_filter()
+        Examples
+        --------
 
-           get_filter(1)
+        The default filter is the full dataset, given in the
+        format `lowval:hival` (both are includive limits):
 
-        SEE ALSO
+        >>> load_arrays(1, [10,15,20,25], [5,7,4,2])
+        >>> get_filter()
+        '10.0000:25.0000'
+
+        The `notice` call restricts the data to the range between
+        14 and 30. The resulting filter is the combination of this
+        range and the data:
+
+        >>> notice(14,30)
+        >>> get_filter()
+        '15.0000:25.0000'
+
+        Ignoring the point at `x=20` means that only the points at
+        `x=15` and `x=25` remain, so a comma-separated list is used:
+
+        >>> ignore(19,22)
+        >>> get_filter()
+        '15.0000,25.0000'
+
+        The filter equivalent to the per-bin array of filter values:
+
+        >>> set_filter([1,1,0,1])
+        >>> get_filter()
+        '10.0000,15.0000,25.0000'
 
         """
         return self.get_data(id).get_filter()
