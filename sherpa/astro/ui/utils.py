@@ -3516,50 +3516,77 @@ class Session(sherpa.ui.utils.Session):
                          ascii, clobber)
 
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
+    ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-TODO: discuss the output format (e.g. column names)?
+    ###           May not make sense with different back ends
     def save_syserror(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
         """Save the systematic errors to a file.
 
-        save_syserror
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source.
+        ascii : bool, optional
+           If `False` then the data is written to a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNOPSIS
-           Write the data set systematic errors to file
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If the data set does not contain any systematic errors.
+        sherpa.utils.err.DataErr
+           If `filename` already exists and `clobber` is `False`.
 
-        SYNTAX
+        See Also
+        --------
+        load_syserror : Load the systematic errors from a file.
+        save_error : Save the errors to a file.
+        save_staterror : Save the statistical errors to a file.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           filename   - filename with path
+        Examples
+        --------
 
-           bkg_id     - background data id
-                        default = default background data id
+        Write out the systematic errors from the default data set to the
+        file 'errs.dat'.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        >>> save_syserror('errs.dat')
 
-           clobber    - clobber the existing output file
-                        default = False
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-        Returns:
-           None
+        >>> save_syserror('jet', 'err.out', clobber=True)
 
-        DESCRIPTION
-           Write the data set systematic errors to file by id or background
-           id.
+        Write the data out in FITS format:
 
-        EXAMPLE
+        >>> save_syserror('staterr.fits', ascii=False)
 
-           save_syserror("syserror.fits")
-           
-           save_syserror("bkgsyserr.fits", bkg_id = 1)
-
-           save_syserror("syserror.dat", ascii = True)
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi, save_error, save_staterror
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
