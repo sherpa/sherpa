@@ -3536,49 +3536,70 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
+    ### Ahelp ingest: 2015-05-06 DJB
     def save_filter(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
-        """
-        save_filter
+        """Save the filter array to a file.
 
-        SYNOPSIS
-           Write the data set filter to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source.
+        ascii : bool, optional
+           If `False` then the data is written to a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has not been filtered.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        load_filter : Load the filter array from a file and add to a data set.
+        save_data : Save the data to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        The output file contains the columns `X` and `FILTER`.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Examples
+        --------
 
-           clobber    - clobber the existing output file
-                        default = False
+        Write the filter from the default data set as an ASCII file:
 
-        Returns:
-           None
+        >>> save_filter('filt.dat')
 
-        DESCRIPTION
-           Write the data set filter to file by id or background id. NOTE that
-           the filter array written to file respects the grouping flags, if any.
+        Write the filter for data set 'src' to a FITS format file:
 
-        EXAMPLE
+        >>> save_filter('src', 'filter.fits', ascii=False)
 
-           save_filter("filter.fits")
-
-           save_filter("bkgfilter.fits", bkg_id=1)
-
-           save_filter("filter.dat", ascii=True)
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
