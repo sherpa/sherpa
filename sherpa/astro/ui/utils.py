@@ -1854,7 +1854,7 @@ class Session(sherpa.ui.utils.Session):
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
     def load_syserror(self, id, filename=None, bkg_id=None, *args, **kwargs):
-        Set the systematic errors on the dependent axis of a data set.
+        """Set the systematic errors on the dependent axis of a data set.
 
         load_syserror
 
