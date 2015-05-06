@@ -5790,37 +5790,135 @@ class Session(sherpa.ui.utils.Session):
     ignore.__doc__ = sherpa.ui.utils.Session.ignore.__doc__
 
 
+    ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-TODO: how best to document the region support?
     def notice2d(self, val=None):
-        """Include a spatial region of an image.
+        """Include a spatial region of all data sets.
 
-        notice2d
+        Select a spatial region to include in the fit. The filter is
+        applied to all data sets.
 
-        SYNOPSIS
-           Notice a region mask for all Sherpa DataIMG datasets
+        Parameters
+        ----------
+        val : str, optional
+           A region specification as a string or the name of a file
+           containing a region filter. The coordinates system of the
+           filter is taken from the coordinate setting of the data
+           sets (`set_coord`). If `None`, then all points are
+           included.
 
-        SYNTAX
+        See Also
+        --------
+        notice2d_id : Include a spatial region of a data set.
+        notice2d_image : Select the region to include from the image data viewer.
+        ignore2d : Exclude a spatial region from all data sets.
+        ignore2d_id : Exclude a spatial region from a data set.
+        ignore2d_image : Select the region to exclude from the image data viewer.
 
-        Arguments:
-           val       - filename and path of region file or DM region syntax
-                       default = None
-        Returns:
-           None
+        Notes
+        -----
+        The region syntax support is provided by the CIAO region
+        library [1]_, and supports the following shapes (the
+        capitalized parts of the name indicate the minimum length of
+        the name that is supported):
 
-        DESCRIPTION
-           Notice a region mask for all Sherpa DataIMG datasets using a
-           DM region library syntax or a region file.
+        =========  ===================================================
+        Name       Arguments
+        =========  ===================================================
+        RECTangle  (xmin,ymin,xmax,ymax)
+        BOX        (xcenter,ycenter,width,height)
+        BOX        (xcenter,ycenter,width,height,angle)
+        ROTBOX     (xcenter,ycenter,width,height,angle)
+        CIRcle     (xcenter,ycenter,radius)
+        ANNULUS    (xcenter,ycenter,iradius,oradius)
+        ELLipse    (xcenter,ycenter,xradius,yradius,angle)
+        SECTor     (xcenter,ycenter,minangle,maxangle)
+        PIE        (xcenter,ycenter,iradius,oradius,minangle,maxangle)
+        POLYgon    (x1,y1,x2,y2,x3,y3,...)
+        POInt      (xcenter,ycenter)
+        REGION     (file)
+        FIELD      ()
+        =========  ===================================================
 
-           Example1: notice2d with region file
+        Angles are measured in degrees from the X axis, with a
+        positive value indicating a counter-clockwise direction.
 
-	       notice2d( 'region filename' )
+        Only simple polygons are supported, which means that a polygon
+        can not intersect itself. The last point does not need to
+        equal the first point (i.e. polygons are automatically closed
+        if necessary).
 
-           Example2: notice2d with DM region syntax in physical coordinates
+        The shapes can be combined using AND (intersection), OR
+        (union), or NOT (negation):
 
-               notice2d( 'circle(4071, 4250, 135)' )
+        intersection::
 
-        SEE ALSO
-           notice2d_id, notice2d_image, ignore2d, ignore2d_id, ignore2d_image,
-           notice, ignore, notice_id, ignore_id
+          shape1()*shape2()
+          shape1()&shape2()
+
+        union::
+
+          shape1()+shape2()
+          shape1()|shape2()
+          shape1()shape2()
+
+        negation::
+
+          !shape1()
+          shape1()-shape2()
+          shape1()*!shape1()
+
+        The precedence uses the same rules as the mathematical
+        operators "+" and "*" (with - replaced by *!), so that::
+
+          circle(0,0,10)+rect(10,-10,20,10)-circle(10,0,10)
+
+        means that the second circle is only excluded from the
+        rectangle, and not the first circle. To remove it from both
+        shapes requires writing::
+
+          circle(0,0,10)-circle(10,0,10)+rect(10,-10,20,10)-circle(10,0,10)
+
+        A point is included if the center of the pixel lies within
+        the region. The comparison is done using the selected
+        coordinate system for the image, so a pixel may not
+        have a width and height of 1.
+
+        References
+        ----------
+
+        .. [1] http://cxc.harvard.edu/ciao/ahelp/dmregions.html
+
+        Examples
+        --------
+
+        Include the data points that lie within a circle centered
+        at 4324.5,3827.5 with a radius of 300:
+
+        >>> notice2d('circle(4324.5,3827.5,430)')
+
+        Read in the filter from the file `ds9.reg`, using either:
+
+        >>> notice2d('ds9.reg')
+
+        or
+
+        >>> notice2d('region(ds9.reg)')
+
+        Select those points that lie both within the rotated box and
+        the annulus (i.e. an intersection of the two shapes):
+
+        >>> notice2d('rotbox(100,200,50,40,45)*annulus(120,190,20,60)')
+
+        Select those points that lie within the rotated box or the
+        annulus (i.e. a union of the two shapes):
+
+        >>> notice2d('rotbox(100,200,50,40,45)+annulus(120,190,20,60)')
+
+        All existing spatial filters are removed:
+
+        >>> notice2d()
+
         """
         for d in self._data.values():
             _check_type(d, sherpa.astro.data.DataIMG, 'img',
@@ -5828,7 +5926,7 @@ class Session(sherpa.ui.utils.Session):
             d.notice2d(val, False)
 
     def ignore2d(self, val=None):
-        """Exclude a spatial region from an image.
+        """Exclude a spatial region from all data sets.
 
         ignore2d
 
@@ -5866,7 +5964,8 @@ class Session(sherpa.ui.utils.Session):
             d.notice2d(val, True)
     
     def notice2d_id(self, ids, val=None):
-        """
+        """Include a spatial region of a data set.
+
         notice2d_id
 
         SYNOPSIS
@@ -5915,7 +6014,8 @@ class Session(sherpa.ui.utils.Session):
             self.get_data(id).notice2d(val, False)
         
     def ignore2d_id(self, ids, val=None):
-        """
+        """Exclude a spatial region from a data set.
+
         ignore2d_id
 
         SYNOPSIS
@@ -5964,7 +6064,8 @@ class Session(sherpa.ui.utils.Session):
             self.get_data(id).notice2d(val, True)
 
     def notice2d_image(self, ids=None):
-        """
+        """Select the region to include from the image data viewer.
+
         notice2d_image
 
         SYNOPSIS
@@ -6014,7 +6115,8 @@ class Session(sherpa.ui.utils.Session):
             self.notice2d_id(id, regions)
 
     def ignore2d_image(self, ids=None):
-        """
+        """Select the region to exclude from the image data viewer.
+
         ignore2d_image
 
         SYNOPSIS

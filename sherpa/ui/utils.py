@@ -4530,7 +4530,9 @@ class Session(NoNewAttributesAfterInit):
         bkg_id : int or str, optional
            The filter will be applied to the associated background
            component of the data set if `bkg_id` is set. Only PHA
-           data sets support this option.
+           data sets support this option; if not given, then the
+           filter is applied to all background components as well
+           as the source data.
 
         See Also
         --------
@@ -4606,7 +4608,9 @@ class Session(NoNewAttributesAfterInit):
         bkg_id : int or str, optional
            The filter will be applied to the associated background
            component of the data set if `bkg_id` is set. Only PHA
-           data sets support this option.
+           data sets support this option; if not given, then the
+           filter is applied to all background components as well
+           as the source data.
 
         See Also
         --------
