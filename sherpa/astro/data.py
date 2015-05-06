@@ -781,6 +781,31 @@ class DataPHA(Data1DInt):
         return grouped_data
 
     def ignore_bad(self):
+        """Exclude channels marked as bad.
+
+        Ignore any bin in the PHA data set which has a quality value
+        that is larger than zero.
+
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has no quality array.
+
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+
+        Notes
+        -----
+        Bins with a non-zero quality setting are not automatically
+        excluded when a data set is created.
+
+        If the data set has been grouped, then calling `ignore_bad`
+        will remove any filter applied to the data set. If this
+        happens a warning message will be displayed.
+
+        """
         if self.quality is None:
             raise DataErr("noquality", self.name)
 

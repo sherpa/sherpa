@@ -5698,44 +5698,63 @@ class Session(sherpa.ui.utils.Session):
         return self._get_img_data(id).coord
 
 
+    ### Ahelp ingest: 2015-05-06 DJB
     def ignore_bad(self, id=None, bkg_id=None):
         """Exclude channels marked as bad in a PHA data set.
 
-        ignore_bad
+        Ignore any bin in the PHA data set which has a quality value
+        that is larger than zero.
 
-        SYNOPSIS
-           Ignore bins according to quality flags
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to change. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           The identifier for the background (the default of `None`
+           uses the first component).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has no quality array.
 
-        Arguments:
-           id          Data set ID
-                       default = default data id
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        The `load_pha` command - and others that create a PHA data set
+        - do not exclude these bad-quality bins automatically.
 
-        Returns:
-           None
+        If the data set has been grouped, then calling `ignore_bad`
+        will remove any filter applied to the data set. If this
+        happens a warning message will be displayed.
 
-        DESCRIPTION
-           Ignore bins according to quality flags
+        Examples
+        --------
 
-               ignore_bad()
+        Remove any bins that are marked bad in the default data set:
 
-               ignore_bad("src")
+        >>> load_pha('src.pi')
+        >>> ignore_bad()
 
-               notice(0.1,4.0)
-               ignore_bad()
-           WARNING: filtering with quality flags, noticing all bins
+        The data set 'jet' is grouped, and a filter applied. After
+        ignoring the bad-quality points, the filter has been removed
+        and will need to be re-applied:
 
-           Ignore_bad may alter the grouping flags size, so any filters
-           in place will be removed in the case where the grouping flags
-           size is changed.
+        >>> group_counts('jet', 20)
+        >>> notice_id('jet', 0.5, 7)
+        >>> get_filter('jet')
+        '0.540199995041:7.869399785995'
+        >>> ignore_bad('jet')
+        WARNING: filtering grouped data with quality flags, previous filters deleted
+        >>> get_filter('jet')
+        '0.200749998679:14.417500019073'
 
-        SEE ALSO
-           notice2d_id, notice2d_image, ignore2d, ignore2d_id, ignore2d_image,
-           notice, ignore, notice_id, ignore_id, notice2d
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
