@@ -457,7 +457,7 @@ class Session(NoNewAttributesAfterInit):
         clobber : bool, optional
            This flag controls whether an existing file can be
            overwritten (`True`) or if it raises an exception (`False`,
-           the default setting.
+           the default setting).
 
         Raises
         ------
@@ -706,7 +706,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -755,7 +755,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -815,7 +815,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -864,7 +864,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -909,7 +909,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -962,7 +962,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -1014,7 +1014,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -1063,7 +1063,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -1125,7 +1125,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -1183,7 +1183,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -1225,7 +1225,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -1267,7 +1267,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -1314,7 +1314,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -1397,7 +1397,7 @@ class Session(NoNewAttributesAfterInit):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -3954,50 +3954,75 @@ class Session(NoNewAttributesAfterInit):
                          clobber, sep, comment, linebreak, format)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils with a different interface
+    ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-TODO: discuss the output format (e.g. column names)?
+    ###           May not make sense with different back ends
     def save_staterror(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
-        """
-        save_staterror
+        """Save the statistical errors to a file.
 
-        SYNOPSIS
-           Write the data set statistical errors to file
+        If the statistical errors have not been set explicitly, then
+        the values calculated by the statistic - such as `chi2gehrels`
+        or `chi2datavar` - will be used.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        linebreak : str, optional
+           Indicate a new line. The default is '\n'.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is '%g%.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        load_staterror : Load the statistical errors from a file.
+        save_error : Save the errors to a file.
+        save_syserror : Save the systematic errors to a file.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           sep        - separation character between columns
-                        default = ' '
+        Examples
+        --------
 
-           comment    - comment character
-                        default = '#'
+        Write out the statistical errors from the default data set to the
+        file 'errs.dat'.
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        >>> save_staterror('errs.dat')
 
-           format     - array element format string
-                        default = '%g'
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-        Returns:
-           None
+        >>> save_staterror('jet', 'err.out', clobber=True)
 
-        DESCRIPTION
-           Write the data set statistical errors to file by id.
-
-        EXAMPLE
-
-           save_staterror("staterror.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         if filename is None:

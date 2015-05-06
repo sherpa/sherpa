@@ -192,7 +192,7 @@ class Session(sherpa.ui.utils.Session):
         clobber : bool, optional
            This flag controls whether an existing file can be
            overwritten (`True`) or if it raises an exception (`False`,
-           the default setting.
+           the default setting).
 
         Raises
         ------
@@ -422,7 +422,7 @@ class Session(sherpa.ui.utils.Session):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -474,7 +474,7 @@ class Session(sherpa.ui.utils.Session):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -529,7 +529,7 @@ class Session(sherpa.ui.utils.Session):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -3424,49 +3424,79 @@ class Session(sherpa.ui.utils.Session):
                          ascii, clobber)
 
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
+    ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-TODO: discuss the output format (e.g. column names)?
+    ###           May not make sense with different back ends
     def save_staterror(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
-        """
-        save_staterror
+        """Save the statistical errors to a file.
 
-        SYNOPSIS
-           Write the data set statistical errors to file
+        If the statistical errors have not been set explicitly, then
+        the values calculated by the statistic - such as `chi2gehrels`
+        or `chi2datavar` - will be used.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source.
+        ascii : bool, optional
+           If `False` then the data is written to a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        load_staterror : Load the statistical errors from a file.
+        save_error : Save the errors to a file.
+        save_syserror : Save the systematic errors to a file.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Examples
+        --------
 
-           clobber    - clobber the existing output file
-                        default = False
+        Write out the statistical errors from the default data set to the
+        file 'errs.dat'.
 
-        Returns:
-           None
+        >>> save_staterror('errs.dat')
 
-        DESCRIPTION
-           Write the data set statistical errors to file by id or background
-           id.
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-        EXAMPLE
+        >>> save_staterror('jet', 'err.out', clobber=True)
 
-           save_staterror("staterror.fits")
-           
-           save_staterror("bkgstaterr.fits", bkg_id = 1)
+        Write the data out in FITS format:
 
-           save_staterror("staterror.dat", ascii = True)
+        >>> save_staterror('staterr.fits', ascii=False)
 
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi, save_error, save_syserror
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)        
@@ -3488,7 +3518,8 @@ class Session(sherpa.ui.utils.Session):
 
     def save_syserror(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
-        """
+        """Save the systematic errors to a file.
+
         save_syserror
 
         SYNOPSIS
@@ -3550,8 +3581,10 @@ class Session(sherpa.ui.utils.Session):
 
     def save_error(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
-        """
-        save_error
+        """Save the errors to a file.
+
+        Write out the combined statistical and systematic errors
+        for a data set to a file.
 
         SYNOPSIS
            Write the total errors of a data set to file
@@ -3635,7 +3668,7 @@ class Session(sherpa.ui.utils.Session):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -3718,7 +3751,7 @@ class Session(sherpa.ui.utils.Session):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -3805,7 +3838,7 @@ class Session(sherpa.ui.utils.Session):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
@@ -11131,7 +11164,7 @@ class Session(sherpa.ui.utils.Session):
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
            or if it raises an exception (`False`, the default
-           setting.
+           setting).
 
         Raises
         ------
