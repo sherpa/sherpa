@@ -3204,6 +3204,7 @@ class Session(NoNewAttributesAfterInit):
         load_filter : Load the filter array from a file and add to a data set.
         notice : Include data in the fit.
         save_filter : Save the filter array to a file.
+        show_filter : Show any filters applied to a data set.
         set_filter : Set the filter array of a data set.
 
         Examples
@@ -4384,40 +4385,70 @@ class Session(NoNewAttributesAfterInit):
             d.notice(lo, hi, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-06 DJB
     def ignore(self, lo=None, hi=None, **kwargs):
         """Exclude data from the fit.
 
-        ignore
+        Select one or more ranges of data to exclude by filtering on
+        the independent axis value. The filter is applied to all data
+        sets.
 
-        SYNOPSIS
-           Exclusive 1D ignore on interval(s) for all available 
-           Sherpa data ids
+        Parameters
+        ----------
+        lo : number or str, optional
+           The lower bound of the filter (when a number) or a string
+           expression listing ranges in the form `a:b`, with multiple
+           ranges allowed, where the ranges are separated by a
+           `,`. The term `:b` means exclude everything up to, and
+           including `b`, and `a:` means exclude everything that is
+           higher than, or equal to, `a`.
+        hi : number, optional
+           The upper bound of the filter when `lo` is not a string.
 
-        SYNTAX
+        See Also
+        --------
+        ignore_id : Exclude data from the fit for a data set.
+        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        notice : Include data in the fit.
+        show_filter : Show any filters applied to a data set.
 
-        Arguments:
+        Notes
+        -----
+        The order of `ignore` and `notice` calls is important.
 
-           lo    -   lower bound OR interval expression string
-                     default = None
+        The units used depend on the `analysis` setting of the data
+        set, if appropriate.
 
-           hi    -   upper bound
-                     default = None
+        To filter a 2D data set by a shape use `ignore2d`.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
+        Ignore all data points with an X value (the independent axis)
+        between 12 and 18. For this one-dimensional data set, this
+        means that the second bin is ignored:
 
-           ignore()
+        >>> load_arrays(1, [10,15,20,30], [5,10,7,13])
+        >>> ignore(12, 18)
+        >>> get_dep(filter=True)
+        array([ 5,  7, 13])
 
-           ignore(0.5, 7.0)
+        Filtering X values that are 25 or larger means that the last
+        point is also ignored:
 
-           ignore(":0.5, 7.0:")
+        >>> ignore(25, None)
+        >>> get_dep(filter=True)
+        array([ 5,  7])
 
-           ignore(":0.5, 7.0:")
+        The `notice` call removes the previous filter, and then a
+        multi-range filter is applied to exclude values between 8 and
+        12 and 18 and 22:
 
-        SEE ALSO
-           notice_id, notice, ignore_id
+        >>> notice()
+        >>> ignore("8:12,18:22")
+        >>> get_dep(filter=True)
+        array([10, 13])
+
         """
         kwargs['ignore'] = True
         if lo is not None and type(lo) in (str,numpy.string_):
@@ -4475,7 +4506,8 @@ class Session(NoNewAttributesAfterInit):
 
 
     def ignore_id(self, ids, lo=None, hi=None, **kwargs):
-        """
+        """Exclude data from the fit for a data set.
+
         ignore_id
 
         SYNOPSIS
