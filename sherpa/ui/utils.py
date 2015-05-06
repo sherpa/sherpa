@@ -4342,40 +4342,86 @@ class Session(NoNewAttributesAfterInit):
             self.notice_id(ids, *vals, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-06 DJB
     def notice(self, lo=None, hi=None, **kwargs):
         """Include data in the fit.
 
-        notice
+        Select one or more ranges of data to include by filtering on
+        the independent axis value. The filter is applied to all data
+        sets.
 
-        SYNOPSIS
-           Exclusive 1D notice on interval(s) for all available
-           Sherpa data ids
+        Parameters
+        ----------
+        lo : number or str, optional
+           The lower bound of the filter (when a number) or a string
+           expression listing ranges in the form `a:b`, with multiple
+           ranges allowed, where the ranges are separated by a
+           `,`. The term `:b` means include everything up to, and
+           including `b`, and `a:` means include everything that is
+           higher than, or equal to, `a`.
+        hi : number, optional
+           The upper bound of the filter when `lo` is not a string.
 
-        SYNTAX
+        See Also
+        --------
+        notice_id : Include data for a data set.
+        sherpa.astro.utils.notice2d : Include a spatial region in an image.
+        ignore : Exclude data from the fit.
+        show_filter : Show any filters applied to a data set.
 
-        Arguments:
+        Notes
+        -----
+        The order of `ignore` and `notice` calls is important, and the
+        results are a union, rather than intersection, of the
+        combination.
 
-           lo    -   lower bound OR interval expression string
-                     default = None
+        If `notice` is called on an un-filtered data set, then the
+        ranges outside the noticed range are excluded: it can be
+        thought of as if `ignore` had been used to remove all data
+        points. If `notice` is called after a filter has been applied
+        then the filter is applied to the existing data.
 
-           hi    -   upper bound
-                     default = None
+        For binned data sets, the bin is included if the noticed
+        range falls anywhere within the bin.
 
-        Returns:
-           None
+        The units used depend on the `analysis` setting of the data
+        set, if appropriate.
 
-        DESCRIPTION
+        To filter a 2D data set by a shape use `notice2d`.
 
-           notice()
+        Examples
+        --------
 
-           notice(0.5, 7.0)
+        Since the `notice` call is applied to an un-filtered
+        data set, the filter choses only those points that lie
+        within the range 12 <= X <= 18.
 
-           notice("0.5:7.0, 8.0:10.0")
+        >>> load_arrays(1, [10,15,20,30], [5,10,7,13])
+        >>> notice(12, 28)
+        >>> get_dep(filter=True)
+        array([10,  7])
 
-           notice(":0.5, 7.0:")
+        As no limits are given, the whole data set is included:
 
-        SEE ALSO
-           notice_id, ignore, ignore_id
+        >>> notice()
+        >>> get_dep(filter=True)
+        array([ 5, 10,  7, 13])
+
+        The `ignore` call excludes the first two points, but the
+        `notice` call adds back in the second point:
+
+        >>> ignore(None, 17)
+        >>> notice(12, 16)
+        >>> get_dep(filter=True)
+        array([10,  7, 13])
+
+        Only include data points in the range 8<=X<=12 and 18<=X=22:
+
+        >>> ignore()
+        >>> notice("8:12, 18:22")
+        >>> get_dep(filter=True)
+        array([5, 7])
+
         """
         if lo is not None and type(lo) in (str,numpy.string_):
             return self._notice_expr(lo, **kwargs)
@@ -4414,7 +4460,12 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The order of `ignore` and `notice` calls is important.
+        The order of `ignore` and `notice` calls is important, and the
+        results are a union, rather than intersection, of the
+        combination.
+
+        For binned data sets, the bin is excluded if the ignored
+        range falls anywhere within the bin.
 
         The units used depend on the `analysis` setting of the data
         set, if appropriate.
