@@ -1303,7 +1303,7 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         arg :
-           Identify the image file: a file name, or a data structure
+           Identify the data: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
            use by Sherpa: an `IMAGECrate` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
@@ -1505,36 +1505,111 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_pha(arg, use_errors, True)
 
 
+    ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-TODO: how best to include datastack support?
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_pha(self, id, arg=None, use_errors=False):
         """Load a PHA data set.
 
-        load_pha
+        This will load the PHA data and any related information, such
+        as ARF, RMF, and background. The background is loaded but
+        *not* subtracted. Any grouping information in the file will be
+        applied to the data. The quality information is read in, but
+        *not* automatically applied. See `subtract` and `ignore_bad`.
 
-        SYNOPSIS
-           Load PHA data by id
+        The standard behavior is to create a single data set, but
+        multiple data sets can be loaded with this command, as
+        described in the `sherpa.astro.datastack` module.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        arg :
+           Identify the data to read: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `PHACrateDataset` for crates, as used by
+           CIAO, or a list of AstroPy HDU objects.
+        use_errors : bool, optional
+           If `True` then the statistical errors are taken from the
+           input data, rather than calculated by Sherpa from the
+           count values. The default is `False`.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        ignore_bad : Exclude channels marked as bad in a PHA data set.
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_bkg : Load the background from a file and add it to a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        pack_pha : Convert a PHA data set into a file structure.
+        save_pha : Save a PHA data set to a file.
+        subtract : Subtract the background estimate from a data set.
+        unpack_pha : Create a PHA data structure.
 
-           arg        - filename and path | PHACrate obj | PyFITS HDUList obj
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           use_errors - flag to use errors
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Load the PHA file 'src.pi' into the default data set, and
+        automatically load the ARF, RMF, and background from the files
+        pointed to by the `ANCRFILE`, `RESPFILE`, and `BACKFILE`
+        keywords in the file. The background is then subtracted and
+        any 'bad quality' bins are removed:
 
-        DESCRIPTION
-           Load PHA data from a FITS file or a PHACrate object or a PyFITS
-           HDUList object into a Sherpa dataset by data id.
+        >>> load_pha('src.pi')
+        read ARF file src.arf
+        read RMF file src.rmf
+        read background file src_bkg.pi
+        >>> subtract()
+        >>> ignore_bad()
 
-        SEE ALSO
-           load_image, load_arf, load_rmf, load_data, load_table,
-           load_bkg
+        Load two files into data sets 'src' and 'bg':
+
+        >>> load_pha('src', 'x1.fits')
+        >>> load_pha('bg', 'x2.fits')
+
+        If a type II PHA data set is loaded, then multiple
+        data sets will be created, one for each order.
+
+        >>> clean()
+        >>> load_pha('src.pha2')
+        >>> list_data_ids()
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+        Create the data set from the data read in by Crates:
+
+        >>> pha = pycrates.read_pha('src.pi')
+        >>> load_pha(pha)
+        read ARF file src.arf
+        read RMF file src.rmf
+        read background file src_bkg.pi
+
+        Create the data set from the data read in by AstroPy:
+
+        >>> hdus = astropy.io.fits.open('src.pi')
+        >>> load_pha(hdus)
+        read ARF file src.arf
+        read RMF file src.rmf
+        read background file src_bkg.pi
+
+        The default behavior is to calculate the errors based on the
+        counts values and the choice of statistic - e.g. `chi2gehrels`
+        or `chi2datavar` - but the statistical errors from the input
+        file can be used instead by setting `use_errors` to `True`:
+
+        >>> load_pha('source.fits', use_errors=True)
+
         """
         if arg is None:
             id, arg = arg, id
