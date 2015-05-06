@@ -5792,6 +5792,8 @@ class Session(sherpa.ui.utils.Session):
 
     ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-TODO: how best to document the region support?
+    ### DOC-TODO: I have not mentioned the support for radii in arcsec/minutes/degrees
+    ###           or sexagessimal formats. Is this supported here?
     def notice2d(self, val=None):
         """Include a spatial region of all data sets.
 
@@ -5809,11 +5811,11 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        notice2d_id : Include a spatial region of a data set.
-        notice2d_image : Select the region to include from the image data viewer.
         ignore2d : Exclude a spatial region from all data sets.
         ignore2d_id : Exclude a spatial region from a data set.
         ignore2d_image : Select the region to exclude from the image data viewer.
+        notice2d_id : Include a spatial region of a data set.
+        notice2d_image : Select the region to include from the image data viewer.
 
         Notes
         -----
@@ -5925,38 +5927,54 @@ class Session(sherpa.ui.utils.Session):
                         'a image data set')
             d.notice2d(val, False)
 
+    ### Ahelp ingest: 2015-05-06 DJB
     def ignore2d(self, val=None):
         """Exclude a spatial region from all data sets.
 
-        ignore2d
+        Select a spatial region to exclude in the fit. The filter is
+        applied to all data sets.
 
-        SYNOPSIS
-           Ignore a region mask for all Sherpa DataIMG datasets
+        Parameters
+        ----------
+        val : str, optional
+           A region specification as a string or the name of a file
+           containing a region filter. The coordinates system of the
+           filter is taken from the coordinate setting of the data
+           sets (`set_coord`). If `None`, then all points are
+           included.
 
-        SYNTAX
+        See Also
+        --------
+        notice2d : Include a spatial region from all data sets.
+        notice2d_id : Include a spatial region of a data set.
+        notice2d_image : Select the region to include from the image data viewer.
+        ignore2d_id : Exclude a spatial region from a data set.
+        ignore2d_image : Select the region to exclude from the image data viewer.
 
-        Arguments:
-           val       - filename and path of region file or DM region syntax
-                       default = None
+        Notes
+        -----
+        The region syntax is described in the `notice2d1 function.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Ignore a region mask for all Sherpa DataIMG datasets using a
-           DM region library syntax or a region file.
+        Exclude points that fall within the two regions:
 
-           Example1: ignore2d with region file
+        >>> ignore2d('ellipse(200,300,40,30,-34)')
+        >>> ignore2d('box(40,100,30,40)')
 
-               ignore2d( 'region filename' )
+        Use a region file called 'reg.fits', by using either:
 
-           Example2: ignore2d with DM region syntax in physical coordinates
+        >>> ignore2d('reg.fits')
 
-               ignore2d( 'circle(4071, 4250, 135)' )
+        or
 
-        SEE ALSO
-           notice2d_id, notice2d, notice2d_image, ignore2d_id, ignore2d_image,
-           notice, ignore, notice_id, ignore_id
+        >>> ignore2d('region(reg.fits)')
+
+        Exclude all points.
+
+        >>> ignore2d()
+
         """
         for d in self._data.values():
             _check_type(d, sherpa.astro.data.DataIMG, 'img',
