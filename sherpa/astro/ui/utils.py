@@ -1911,35 +1911,53 @@ class Session(sherpa.ui.utils.Session):
         self.set_quality(id,
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
+    ### Ahelp ingest: 2015-05-06 DJB
     def set_filter(self, id, val=None, bkg_id=None, ignore=False):
-        """
-        set_filter
+        """Set the filter array of a data set.
 
-        SYNOPSIS
-           Set the dataset filter by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        val : array
+           The array of filter values (`0` or `1`). The size should
+           match the array returned by `get_dep`.
+        bkg_id : int or str, optional
+           Set to identify which background component to set. The
+           default value (`None`) means that this is for the source
+           component of the data set.
+        ignore : bool, optional
+           If `False` (the default) then include bins with a non-zero
+           filter value, otherwise exclude these bins.
 
-        SYNTAX
+        See Also
+        --------
+        get_dep : Return the dependent axis of a data set.
+        get_filter : Return the filter expression for a data set.
+        ignore : Exclude data from the fit.
+        load_filter : Load the filter array from a file and add to a data set.
+        notice : Include data in the fit.
+        save_filter : Save the filter array to a file.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-           ignore     - non-zero values ignore instead of notice
-                        default = False
+        Examples
+        --------
 
-           val        - array of 0s or 1s
+        Ignore those bins with a value less 20.
 
-        Returns:
-           None
+        >>> d = get_dep()
+        >>> f = d >= 20
+        >>> set_filter(f)
 
-        DESCRIPTION
-           Set the filter of a dataset by data id.  
-
-        EXAMPLE
-           set_filter([0, 1, 1, ...])
-
-        SEE ALSO
-           load_filter
         """
         if val is None:
             val, id = id, val

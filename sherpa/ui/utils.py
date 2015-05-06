@@ -2653,35 +2653,49 @@ class Session(NoNewAttributesAfterInit):
                         ignore=ignore)
 
 
+    ### Ahelp ingest: 2015-05-06 DJB
     def set_filter(self, id, val=None, ignore=False):
-        """
-        set_filter
+        """Set the filter array of a data set.
 
-        SYNOPSIS
-           Set the dataset filter by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        val : array
+           The array of filter values (`0` or `1`). The size should
+           match the array returned by `get_dep`.
+        ignore : bool, optional
+           If `False` (the default) then include bins with a non-zero
+           filter value, otherwise exclude these bins.
 
-        SYNTAX
+        See Also
+        --------
+        get_dep : Return the dependent axis of a data set.
+        get_filter : Return the filter expression for a data set.
+        ignore : Exclude data from the fit.
+        load_filter : Load the filter array from a file and add to a data set.
+        notice : Include data in the fit.
+        save_filter : Save the filter array to a file.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-           val        - array of 0s or 1s
+        Examples
+        --------
 
-           ignore     - non-zero values ignore instead of notice
-                        default = False
+        Ignore those bins with a value less 20.
 
-        Returns:
-           None
+        >>> d = get_dep()
+        >>> f = d >= 20
+        >>> set_filter(f)
 
-        DESCRIPTION
-           Set the filter of a dataset by data id.  
-
-        EXAMPLE
-           set_filter([0, 1, 1, ...])
-
-        SEE ALSO
-           load_filter
         """
         if val is None:
             val, id = id, val
@@ -3157,6 +3171,8 @@ class Session(NoNewAttributesAfterInit):
         return self.get_data(id).get_dims(filter)
 
     ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-NOTE: should there be a version in sherpa.astro.utils with a bkg_id
+    ###           parameter?
     def get_filter(self, id=None):
         """Return the filter expression for a data set.
 
