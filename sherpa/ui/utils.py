@@ -3517,36 +3517,76 @@ class Session(NoNewAttributesAfterInit):
                                            sep=sep, comment=comment, require_floats=require_floats))
 
     # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: rework the Data type notes section.
     ##@loggable(with_id = True)
     def load_arrays(self, id, *args):
-        """
-        load_arrays
-        
-        SYNOPSIS
-           Load NumPy arrays into a dataset
+        """Create a data set from array values.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           The identifier for the data set to use.
+        *args :
+           Two or more arrays, followed by the type of data set to
+           create.
 
-        Arguments:
-           id         - data id
-        
-           array0     - first NumPy array
+        See Also
+        --------
+        copy_data : Copy a data set to a new identifier.
+        delete_data : Delete a data set by identifier.
+        get_data : Return the data set by identifier.
+        load_data : Create a data set from a file.
+        set_data : Set a data set.
+        unpack_arrays :
 
-           ...
+        Notes
+        -----
+        The data type identifier, which defaults to `Data1D`,
+        determines the number, and order, of the required inputs.
 
-           arrayN     - last NumPy array
+        `Data1D`
+           required fields: x, y
+           optional fields: statistical error, systematic error
 
-           dstype     - dataset type desired
-                        default = Data1D
+        `Data1DInt`
+           required fields: xlo, xhi, y
+           optional fields: statistical error, systematic error
 
-        Returns:
-           None
+        `Data2D`
+           required fields: x0, x1, y
+           optional fields: shape, statistical error, systematic error
+           The `shape` argument should be a tuple giving the
+           size of the data (ny,nx).
 
-        DESCRIPTION
-           Load NumPy arrays into a Sherpa dataset by data id.
+        `Data2DInt`
+           required fields: x0lo, x1lo, x0hi, x1hi, y
+           optional fields: shape, statistical error, systematic error
+           The `shape` argument should be a tuple giving the
+           size of the data (ny,nx).
 
-        SEE ALSO
-           load_data, unpack_arrays
+        Examples
+        --------
+
+        Create a 1D data set with three points:
+
+        >>> load_arrays(1, [10, 12, 15], [4.2, 12.1, 8.4])
+
+        Create a 1D data set, with the identifier 'prof', from the
+        arrays `x` (independent axis), `y` (dependent axis), and `dy`
+        (statistical error on the dependent axis):
+
+        >>> load_arrays('prof', x, y, dy)
+
+        Explicitly define the type of the data set:
+
+        >>> load_arrays('prof', x, y, dy, Data1D)
+
+        Data set 1 is a histogram, where the bins cover the range
+        1-3, 3-5, and 5-7 with values 4, 5, and 9 respectively.
+
+        >>> load_arrays(1, [1,3,5], [3,5,7], [4,5,9], Data1DInt)
+
         """
         self.set_data(id, self.unpack_arrays(*args))
 

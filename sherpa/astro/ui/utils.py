@@ -733,39 +733,97 @@ class Session(sherpa.ui.utils.Session):
             dataset = sherpa.io.read_arrays(*args)
         return dataset
 
-    # DOC-NOTE: also in sherpa.astro.utils
+    # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-01 DJB
+    ### DOC-TODO: rework the Data type notes section.
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_arrays(self, id, *args):
-        """
-        load_arrays
-        
-        SYNOPSIS
-           Load NumPy arrays into a dataset
+        """Create a data set from array values.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           The identifier for the data set to use.
+        *args :
+           Two or more arrays, followed by the type of data set to
+           create.
 
-        Arguments:
-           id         - data id
-        
-           array0     - first NumPy array | first CrateData obj
+        See Also
+        --------
+        copy_data : Copy a data set to a new identifier.
+        delete_data : Delete a data set by identifier.
+        get_data : Return the data set by identifier.
+        load_data : Create a data set from a file.
+        set_data : Set a data set.
+        unpack_arrays :
 
-           ...
+        Notes
+        -----
+        The data type identifier, which defaults to `Data1D`,
+        determines the number, and order, of the required inputs.
 
-           arrayN     - last NumPy array | last CrateData obj
+        `Data1D`
+           required fields: x, y
+           optional fields: statistical error, systematic error
 
-           dstype     - dataset type desired
-                        default = Data1D
+        `Data1DInt`
+           required fields: xlo, xhi, y
+           optional fields: statistical error, systematic error
 
-        Returns:
-           None
+        `Data2D`
+           required fields: x0, x1, y
+           optional fields: shape, statistical error, systematic error
+           The `shape` argument should be a tuple giving the
+           size of the data (ny,nx).
 
-        DESCRIPTION
-           Load NumPy arrays into a Sherpa dataset by data id or load CrateData
-           objects into a Sherpa dataset by data id.  The list can include both
-           NumPy arrays and CrateData objects together.
+        `Data2DInt`
+           required fields: x0lo, x1lo, x0hi, x1hi, y
+           optional fields: shape, statistical error, systematic error
+           The `shape` argument should be a tuple giving the
+           size of the data (ny,nx).
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_image, unpack_data
+        `DataPHA`
+           required fields: channel, counts
+           optional fields: staterror, syserror, bin_lo, bin_hi,
+             grouping, quality
+
+        `DataIMG`
+           The arrays should be 1D, not 2D.
+           required fields: x0, x1, y
+           optional fields: shape, statistical error, systematic error
+           The `shape` argument should be a tuple giving the
+           size of the data (ny,nx).
+
+        Examples
+        --------
+
+        Create a 1D data set with three points:
+
+        >>> load_arrays(1, [10, 12, 15], [4.2, 12.1, 8.4])
+
+        Create a 1D data set, with the identifier 'prof', from the
+        arrays `x` (independent axis), `y` (dependent axis), and `dy`
+        (statistical error on the dependent axis):
+
+        >>> load_arrays('prof', x, y, dy)
+
+        Explicitly define the type of the data set:
+
+        >>> load_arrays('prof', x, y, dy, Data1D)
+
+        Data set 1 is a histogram, where the bins cover the range
+        1-3, 3-5, and 5-7 with values 4, 5, and 9 respectively.
+
+        >>> load_arrays(1, [1,3,5], [3,5,7], [4,5,9], Data1DInt)
+
+        Create an image data set:
+
+        >>> ivals = np.arange(12)
+        >>> (y, x) = np.mgrid[0:3, 0:4]
+        >>> x = x.flatten()
+        >>> y = y.flatten()
+        >>> load_arrays('img', x, y, ivals, (3,4), DataIMG)
+
         """
         self.set_data(id, self.unpack_arrays(*args))
 
@@ -870,6 +928,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        load_arrays : Create a data set from array values.
         load_ascii : Load an ASCII file as a data set.
         load_image : Load an image as a data set.
         set_data : Set a data set.
