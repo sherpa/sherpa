@@ -5979,40 +5979,71 @@ class Session(sherpa.ui.utils.Session):
             self.ignore2d_id(id, regions)
 
 
+    ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-TODO: how best to include datastack support? How is it handled here?
     #@loggable(with_id=True, with_keyword='arg')
     def load_bkg(self, id, arg=None, use_errors=False, bkg_id=None):
         """Load the background from a file and add it to a PHA data set.
 
-        load_bkg
+        This will load the PHA data and any response information - so
+        ARF and RMF - and add it as a background component to the
+        PHA data set.
 
-        SYNOPSIS
-           Load background PHA data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        arg :
+           Identify the data to read: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `PHACrateDataset` for crates, as used by
+           CIAO, or a list of AstroPy HDU objects.
+        use_errors : bool, optional
+           If `True` then the statistical errors are taken from the
+           input data, rather than calculated by Sherpa from the
+           count values. The default is `False`.
+        bkg_id : int or str, optional
+           The identifier for the background (the default of `None`
+           uses the first component).
 
-        SYNTAX
+        See Also
+        --------
+        load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
+        load_bkg_rmf : Load a RMF from a file and add it to the background of a PHA data set.
+        load_pha : Load a PHA data set.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           arg        - filename and path | PHACrate obj | PyFITS HDUList obj
+        Examples
+        --------
 
-           use_errors - flag to use errors
-                        default = False
+        Load a source and background data set:
 
-           bkg_id     - background id, if multiple bkgs exist
-                        default = default background id
+        >>> load_pha('src.pi')
+        read ARF file src.arf
+        read RMF file src.rmf
+        >>> load_bkg('src_bkg.pi')
 
-        Returns:
-           None
+        Read in the background via Crates:
 
-        DESCRIPTION
-           Load background PHA data from a FITS file or a PHACrate object or a
-           PyFITS HDUList object into a Sherpa dataset by data id and
-           background id.
+        >>> bpha = pycrates.read_pha('src_bkg.pi')
+        >>> load_bkg(bpha)
 
-        SEE ALSO
-           load_image, load_arf, load_rmf, load_data, load_table,
-           load_pha
+        Create the data set from the data read in by AstroPy:
+
+        >>> bhdus = astropy.io.fits.open('src_bkg.pi')
+        >>> load_bkg(bhdus)
+
         """
         if arg is None:
             id, arg = arg, id
