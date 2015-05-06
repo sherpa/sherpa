@@ -1657,51 +1657,81 @@ class Session(sherpa.ui.utils.Session):
     #     return err
 
 
+    # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-TODO: does ncols make sense here? (have removed for now)
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def load_filter(self, id, filename=None, bkg_id=None, ignore=False, 
                     ncols=2, *args, **kwargs):
-        """
-        load_filter
+        """Load the filter array from a file and add to a data set.
 
-        SYNOPSIS
-           Load the dataset filter from file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file that contains the filter
+           information. This file can be a FITS table or an ASCII
+           file. Selection of the relevant column depends on the I/O
+           library in use (Crates or AstroPy).
+        bkg_id : int or str, optional
+           Set if the filter array should be associated with the
+           background associated with the data set.
+        ignore : bool, optional
+           If `False` (the default) then include bins with a non-zero
+           filter value, otherwise exclude these bins.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        SYNTAX
+        See Also
+        --------
+        get_filter : Return the filter array for a data set.
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+        save_filter : Save the filter array to a file.
+        set_filter : Set the filter array of a data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           filename   - filename with path
+        Examples
+        --------
 
-           bkg_id     - background data id
-                        default = default background data id
+        Read in the first column of the file and apply it to the
+        default data set:
 
-           ignore     - non-zero values ignore instead of notice
-                        default = False
+        >>> load_filter('filt.dat')
 
-           ncols      - number of columns to read from
-                        default = 2
+        Select the `FILTER` column of the file:
 
-           colkeys    - column keys
-                        default = None
+        >>> load_filter(2, 'filt.dat', colkeys=['FILTER'])
 
-           sep        - separator character
-                        default = ' '
+        When using Crates as the I/O library, the above can
+        also be written as
 
-           comment    - comment character
-                        default = '#'
+        >>> load_filter(2, 'filt.dat[cols filter]')
 
-        Returns:
-           None
+        Read in a filter for an image. The image must match the size
+        of the data and, as `ignore=True`, pixels with a non-zero
+        value are excluded (rather than included):
 
-        DESCRIPTION
-           Load the filter for a dataset from file by data id.
+        >>> load_filter('img', 'filt.img', ignore=True)
 
-        EXAMPLE
-           load_filter("data.dat", colkeys=["FILTER"])
-
-        SEE ALSO
-            set_filter
         """
         if filename is None:
             id, filename = filename, id
@@ -1941,7 +1971,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     ### Ahelp ingest: 2015-05-06 DJB
-    ### DOC-NOTE: is ncols really 2 here? Does it make sense?
+    ### DOC-TODO: does ncols make sense here? (have removed for now)
     def load_staterror(self, id, filename=None, bkg_id=None, *args, **kwargs):
         """Load the statistical errors from a file.
 
@@ -1964,9 +1994,6 @@ class Session(sherpa.ui.utils.Session):
            Set to identify which background component to set. The
            default value (`None`) means that this is for the source
            component of the data set.
-        ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
-           in the file).
         colkeys : array of str, optional
            An array of the column name to read in. The default is
            `None`.

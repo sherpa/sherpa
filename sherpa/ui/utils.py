@@ -2578,48 +2578,72 @@ class Session(NoNewAttributesAfterInit):
                                                *args, **kwargs))
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-TODO: does ncols make sense here? (have removed for now)
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def load_filter(self, id, filename=None, ignore=False, ncols=2,
                     *args, **kwargs):
-        """
-        load_filter
+        """Load the filter array from a file and add to a data set.
 
-        SYNOPSIS
-           Load the dataset filter from file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file that contains the filter
+           information. This file can be a FITS table or an ASCII
+           file. Selection of the relevant column depends on the I/O
+           library in use (Crates or AstroPy).
+        ignore : bool, optional
+           If `False` (the default) then include bins with a non-zero
+           filter value, otherwise exclude these bins.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        SYNTAX
+        See Also
+        --------
+        get_filter : Return the filter array for a data set.
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+        save_filter : Save the filter array to a file.
+        set_filter : Set the filter array of a data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           filename   - filename with path
+        Examples
+        --------
 
-           ignore     - non-zero values ignore instead of notice
-                        default = False
+        Read in the first column of the file and apply it to the
+        default data set:
 
-           ncols      - number of columns to read from
-                        default = 2
+        >>> load_filter('filt.dat')
 
-           colkeys    - column keys
-                        default = None
+        Select the `FILTER` column of the file:
 
-           sep        - separator character
-                        default = ' '
+        >>> load_filter(2, 'filt.dat', colkeys=['FILTER'])
 
-           comment    - comment character
-                        default = '#'
+        When using Crates as the I/O library, the above can
+        also be written as
 
-        Returns:
-           None
+        >>> load_filter(2, 'filt.dat[cols filter]')
 
-        DESCRIPTION
-           Load the filter for a dataset from file by data id.
-
-        EXAMPLE
-           load_filter("data.dat", colkeys=["FILTER"])
-
-        SEE ALSO
-            set_filter
         """
         if filename is None:
             id, filename = filename, id
