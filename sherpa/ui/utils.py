@@ -4506,40 +4506,62 @@ class Session(NoNewAttributesAfterInit):
             return self._notice_expr(lo, **kwargs)
         self.notice(lo, hi, **kwargs)
 
+    ### Ahelp ingest: 2015-05-06 DJB
     def notice_id(self, ids, lo=None, hi=None, **kwargs):
-        """
-        notice_id
+        """Include data from the fit for a data set.
 
-        SYNOPSIS
-           Exclusive 1D notice on interval(s) for specific Sherpa data id(s)
+        Select one or more ranges of data to include by filtering on
+        the independent axis value. The filter is applied to the
+        given data set, or data sets.
 
-        SYNTAX
+        Parameters
+        ----------
+        ids : int or str, or array of int or str
+           The data set, or sets, to use.
+        lo : number or str, optional
+           The lower bound of the filter (when a number) or a string
+           expression listing ranges in the form `a:b`, with multiple
+           ranges allowed, where the ranges are separated by a
+           `,`. The term `:b` means include everything up to, and
+           including `b`, and `a:` means inlude everything that is
+           higher than, or equal to, `a`.
+        hi : number, optional
+           The upper bound of the filter when `lo` is not a string.
 
-        Arguments:
+        See Also
+        --------
+        ignore_id : Exclude data from the fit for a data set.
+        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        notice : Include data in the fit.
+        show_filter : Show any filters applied to a data set.
 
-           ids   -  list of specific Sherpa data ids
+        Notes
+        -----
+        The order of `ignore` and `notice` calls is important.
 
-           lo    -  lower bound OR interval expression string
-                    default = None
+        The units used depend on the `analysis` setting of the data
+        set, if appropriate.
 
-           hi    -  upper bound
-                    default = None
+        To filter a 2D data set by a shape use `ignore2d`.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
+        Include all data points with an X value (the independent axis)
+        between 12 and 18 for data set 1:
 
-           notice_id(1)
+        >>> notice_id(1, 12, 18)
 
-           notice_id(1, 0.5, 7.0)
+        Include the range 0.5 to 7, for data sets 1,
+        2, and 3:
 
-           notice_id(2, "0.5:7.0, 8.0:10.0")
+        >>> notice_id([1,2,3], 0.5, 7)
 
-           notice_id([2,3], ":0.5, 7.0:")
+        Apply the filter 0.5 to 2 and 2.2 to 7 to the data sets "core"
+        and "jet":
 
-        SEE ALSO
-           notice, ignore, ignore_id
+        >>> notice_id(["core","jet"], "0.5:2, 2.2:7")
+
         """
         if self._valid_id(ids):
             ids = (ids,)
@@ -4582,7 +4604,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         ignore : Exclude data from the fit.
         sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
-        notice : Include data in the fit.
+        notice_id : Include data from the fit for a data set.
         show_filter : Show any filters applied to a data set.
 
         Notes
