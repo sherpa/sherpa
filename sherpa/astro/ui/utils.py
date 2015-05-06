@@ -3426,8 +3426,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     ### Ahelp ingest: 2015-05-06 DJB
-    ### DOC-TODO: discuss the output format (e.g. column names)?
-    ###           May not make sense with different back ends
     def save_staterror(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
         """Save the statistical errors to a file.
@@ -3480,6 +3478,8 @@ class Session(sherpa.ui.utils.Session):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        The output file contains the columns `X` and `STAT_ERR`.
+
         Examples
         --------
 
@@ -3518,8 +3518,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     ### Ahelp ingest: 2015-05-06 DJB
-    ### DOC-TODO: discuss the output format (e.g. column names)?
-    ###           May not make sense with different back ends
     def save_syserror(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
         """Save the systematic errors to a file.
@@ -3570,6 +3568,8 @@ class Session(sherpa.ui.utils.Session):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        The output file contains the columns `X` and `SYS_ERR`.
+
         Examples
         --------
 
@@ -3608,8 +3608,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     ### Ahelp ingest: 2015-05-06 DJB
-    ### DOC-TODO: discuss the output format (e.g. column names)?
-    ###           May not make sense with different back ends
     def save_error(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
         """Save the errors to a file.
@@ -3666,6 +3664,8 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
+
+        The output file contains the columns `X` and `ERR`.
 
         Examples
         --------

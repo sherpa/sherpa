@@ -3956,8 +3956,6 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     ### Ahelp ingest: 2015-05-06 DJB
-    ### DOC-TODO: discuss the output format (e.g. column names)?
-    ###           May not make sense with different back ends
     def save_staterror(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
         """Save the statistical errors to a file.
@@ -4010,6 +4008,8 @@ class Session(NoNewAttributesAfterInit):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        The output file contains the columns `X` and `STAT_ERR`.
+
         Examples
         --------
 
@@ -4036,8 +4036,6 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     ### Ahelp ingest: 2015-05-06 DJB
-    ### DOC-TODO: discuss the output format (e.g. column names)?
-    ###           May not make sense with different back ends
     def save_syserror(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
         """Save the statistical errors to a file.
@@ -4088,6 +4086,8 @@ class Session(NoNewAttributesAfterInit):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        The output file contains the columns `X` and `SYS_ERR`.
+
         Examples
         --------
 
@@ -4113,8 +4113,6 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     ### Ahelp ingest: 2015-05-06 DJB
-    ### DOC-TODO: discuss the output format (e.g. column names)?
-    ###           May not make sense with different back ends
     def save_error(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
         """Save the errors to a file.
@@ -4171,6 +4169,8 @@ class Session(NoNewAttributesAfterInit):
         they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
+
+        The output file contains the columns `X` and `ERR`.
 
         Examples
         --------
