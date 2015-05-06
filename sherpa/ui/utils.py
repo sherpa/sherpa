@@ -4527,6 +4527,10 @@ class Session(NoNewAttributesAfterInit):
            higher than, or equal to, `a`.
         hi : number, optional
            The upper bound of the filter when `lo` is not a string.
+        bkg_id : int or str, optional
+           The filter will be applied to the associated background
+           component of the data set if `bkg_id` is set. Only PHA
+           data sets support this option.
 
         See Also
         --------
@@ -4599,6 +4603,10 @@ class Session(NoNewAttributesAfterInit):
            higher than, or equal to, `a`.
         hi : number, optional
            The upper bound of the filter when `lo` is not a string.
+        bkg_id : int or str, optional
+           The filter will be applied to the associated background
+           component of the data set if `bkg_id` is set. Only PHA
+           data sets support this option.
 
         See Also
         --------
