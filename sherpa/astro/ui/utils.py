@@ -1805,46 +1805,87 @@ class Session(sherpa.ui.utils.Session):
                                                len(d.get_y(False)), len(filter))
 
 
+    # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_staterror(self, id, filename=None, bkg_id=None, *args, **kwargs):
-        """Set the statistical errors on the dependent axis of a data set.
+        """Load the statistical errors from a file.
 
-        load_staterror
+        Read in a column or image from a file and use the values
+        as the statistical errors for a data set. This over rides
+        the errors calculated by any statistic, such as
+        `chi2gehrels` or `chi2datavar`.
 
-        SYNOPSIS
-           Load the statistical errors for a dataset from file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy) and the
+           type of data set (e.g. 1D or 2D).
+        bkg_id : int or str, optional
+           Set to identify which background component to set. The
+           default value (`None`) means that this is for the source
+           component of the data set.
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        SYNTAX
+        See Also
+        --------
+        get_staterror : Return the statistical error on the dependent axis of a data set.
+        load_syserror : Load the systematic errors from a file.
+        set_staterror : Set the statistical errors on the dependent axis of a data set.
+        set_stat : Set the statistical method.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           filename   - filename with path
+        Examples
+        --------
 
-           bkg_id     - background data id
-                        default = default background data id
+        Read in the first column from 'tbl.dat':
 
-           ncols      - number of columns to read from
-                        default = 2
+        >>> load_staterror('tbl.dat')
 
-           colkeys    - column keys
-                        default = None
+        Use the column labelled 'col3'
 
-        Returns:
-           None
+        >>> load_staterror('tbl.dat', colkeys=['col3'])
 
-        DESCRIPTION
-           Load the statistical error for a dataset from file by data id.  
-           Users can specify the column name by using the colkeys argument to 
-           set the statistical error.
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection:
 
-        EXAMPLE
-           load_staterror("data.dat", colkeys=["STAT_ERR"])
+        >>> load_staterror('tbl.dat[cols col3]')
 
-           load_staterror("bkg.fits", bkg_id=1, colkeys=["STAT_ERR"])
+        Read in the first column from the file 'errors.fits' as the
+        statistical errors for the 'core' data set:
 
-        SEE ALSO
-           load_syserror, set_staterror, set_syserror
+        >>> load_staterror('core', 'errors.fits')
+
+        The data set labelled 'img' is loaded from the file
+        'image.fits' and the statistical errors from 'err.fits'.
+        The dimensions of the two images must be the same.
+
+        >>> load_image('img', 'image.fits')
+        >>> load_staterror('img', 'err.fits')
+
         """
         if filename is None:
             id, filename = filename, id
@@ -2001,6 +2042,9 @@ class Session(sherpa.ui.utils.Session):
     ### Ahelp ingest: 2015-05-05 DJB
     def set_staterror(self, id, val=None, fractional=False, bkg_id=None):
         """Set the statistical errors on the dependent axis of a data set.
+
+        These values over-ride the errors calculated by any statistic,
+        such as `chi2gehrels` or `chi2datavar`.
 
         Parameters
         ----------
