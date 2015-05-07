@@ -7977,28 +7977,48 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_estmethod_opt('confidence', name)
     
+    ### Ahelp ingest: 2015-05-07 DJB
     def get_proj_opt(self, name=None):
-        """
-        get_proj_opt
+        """Return one or all of the options for the confidence interval
+        method.
 
-        SYNOPSIS
-           Return a projection option by name
+        .. note:: The `conf` function should be used instead of `proj`.
 
-        SYNTAX
+        This is a helper function since the options can also
+        be read directly using the object returned by `get_proj`.
 
-        Arguments:
-           name       - projection option name
+        Parameters
+        ----------
+        name : str, optional
+           If not given, a dictionary of all the options are returned.
+           When given, the individual value is returned.
 
-        Returns:
-           projection option value
+        Returns
+        -------
+        value : dictionary or value
 
-        DESCRIPTION
-           If given no argument, returns dictionary of all options
-           that govern how projection is run.  If given the name
-           of an option, returns the value of that option.
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
 
-        SEE ALSO
-           proj, set_proj_opt
+        See Also
+        --------
+        conf : Estimate confidence intervals for fit parameters.
+        proj : Estimate confidence intervals for fit parameters.
+        get_proj : Return the confidence-interval estimation object.
+        set_proj_opt : Set an option of the proj estimation object.
+
+        Examples
+        --------
+
+        >>> get_proj_opt('sigma')
+        1
+
+        >>> popts = get_proj_opt()
+        >>> popts['sigma']
+        1
+
         """
         return self._get_estmethod_opt('projection', name)
     
