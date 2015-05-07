@@ -12199,6 +12199,7 @@ class Session(NoNewAttributesAfterInit):
 
     ### Ahelp ingest: 2015-05-07 DJB
     ### DOC-NOTE: I am not convinced that this code is working when recalc=True
+    ### DOC-NOTE: needs to support the fast option of int_proj
     def get_int_proj(self, par=None, id=None, otherids=None, recalc=False,
                      min=None, max=None, nloop=20, delv=None, fac=1, 
                      log=False, numcores=None):
@@ -12221,10 +12222,6 @@ class Session(NoNewAttributesAfterInit):
            last call to `int_proj` (or `get_int_proj`) are returned,
            ignoring the other parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
-        fast : bool, optional
-           If `True` then the fit optimization used may be changed from
-           the current setting (only for the error analysis) to use
-           a faster optimization method. The default is `False`.
         min : number, optional
            The minimum parameter value for the calcutation. The
            default value of `None` means that the limit is calculated
@@ -12295,65 +12292,89 @@ class Session(NoNewAttributesAfterInit):
             self._intproj.calc(fit,par,self._methods)
         return self._intproj
 
+    ### Ahelp ingest: 2015-05-07 DJB
+    ### DOC-NOTE: Check that this works (since get_int_proj may not) when recalc=True
     def get_int_unc(self, par=None, id=None, otherids=None, recalc=False,
                     min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                     numcores=None):
-        """
-        get_int_unc
+        """Return the interval-uncertainty object.
 
-        SYNOPSIS
-           Return a confidence plot of fit statistic vs. parameter value.  At
-           each step calculate the statistic with the other parameter(s) frozen
-           at best fit values.
+        This returns (and optionally calculates) the data used to
+        display the `int_unc` plot.
 
-        SYNTAX
+        Parameters
+        ----------
+        par
+           The parameter to plot.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The `id` and `otherids` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        recalc : bool, optional
+           The default value (`False`) means that the results from the
+           last call to `int_proj` (or `get_int_proj`) are returned,
+           ignoring the other parameter values. Otherwise, the
+           statistic curve is re-calculated, but not plotted.
+        min : number, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-           par       - source model parameter
-                       default = None
+        Returns
+        -------
+        iunc : sherpa.plot.IntervalUncertainty instance
+           The fields of this object can be used to re-create the plot
+           created by `int_unc`.
 
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        int_unc : Calculate and plot the fit statistic versus fit parameter value.
+        reg_proj : Plot the statistic value as two parameters are varied.
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Examples
+        --------
 
-           recalc    - calculate confidence data
-                       default=False
+        Return the results of the `int_unc` run:
 
-           min       - minimum bound
-                       default=None
+        >>> int_unc(src.xpos)
+        >>> iunc = get_int_unc()
+        >>> min(iunc.y)
+        119.55942437129544
 
-           max       - maximum bound
-                       default=None
+        Create the data without creating a plot:
 
-           nloop     - bin size, used in calculating stepsize
-                       default=20
+        >>> iunc = get_int_unc(pl.gamma, recalc=True)
 
-           delv      - stepsize, calculated by default
-                       default=None
+        Control how the data is created
 
-           fac       - factor used to expand or condense interval,
-                       default=1
+        >>> iunc = get_int_unc(pl.gamma, id="src", min=12, max=14,
+                               nloop=51, recalc=True)
 
-           log       - boolean to use log space for interval
-                       default=False
-
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
-
-        Returns:
-           int_unc object
-
-        DESCRIPTION
-
-           Example: for users who do not want to create plots
-
-               print get_int_unc( par, recalc=True )
-
-        SEE ALSO
-           int_proj, reg_proj, reg_unc, get_int_proj
         """
         if sherpa.utils.bool_cast(recalc):
             par = self._check_par(par)
@@ -12703,10 +12724,6 @@ class Session(NoNewAttributesAfterInit):
         replot : bool, optional
            Set to `True` to use the values calculated by the last
            call to `int_proj`. The default is `False`.
-        fast : bool, optional
-           If `True` then the fit optimization used may be changed from
-           the current setting (only for the error analysis) to use
-           a faster optimization method. The default is `False`.
         min : number, optional
            The minimum parameter value for the calcutation. The
            default value of `None` means that the limit is calculated
