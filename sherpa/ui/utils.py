@@ -8310,9 +8310,8 @@ class Session(NoNewAttributesAfterInit):
         id : str or int, optional
         otherids : list of str or int, optional
            The `id` and `otherids` arguments determine which data set
-           or data sets are fit. If not given, all data sets which
+           or data sets are used. If not given, all data sets which
            have a defined source model are used.
-
         parameters : optional
            The default is to calculate the confidence limits on all
            thawed parameters of the model, or models, for all the
@@ -8328,7 +8327,7 @@ class Session(NoNewAttributesAfterInit):
         get_conf_results : Return the results of the last `conf` run.
         int_proj : Plot the statisitic value as a single parameter is varied.
         reg_proj : Plot the statistic value as two parameters are varied.
-        set_conf_opt : Set an option of the conf estimation object.
+        set_conf_opt : Set an option of the `conf` estimation object.
 
         Notes
         -----
@@ -8480,64 +8479,107 @@ class Session(NoNewAttributesAfterInit):
         """
         self._confidence_results = self._est_errors(args, 'confidence')
 
+    ### Ahelp ingest: 2015-05-06 DJB
+    ### DOC-TODO: add a deprecation note?
     def proj(self, *args):
-        """
-        proj
+        """Estimate the confidence intervals for parameters using the
+        projection method.
 
-        SYNOPSIS
-           Estimate confidence intervals for selected thawed parameters
+        .. note:: The `conf` function should be used instead of `proj`.
 
-        SYNTAX
+        The `proj` command computes confidence interval bounds for the
+        specified model parameters in the dataset. A given parameter's
+        value is varied along a grid of values while the values of all
+        the other thawed parameters are allowed to float to new
+        best-fit values. The `get_proj` and `set_proj_opt`
+        commands can be used to configure the error analysis; an
+        example being changing the 'sigma' field to `1.6` (i.e. 90%)
+        from its default value of `1`.  The output from the routine is
+        displayed on screen, and the `get_proj_results` routine can be
+        used to retrieve the results.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Parameters
+        ----------
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The `id` and `otherids` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        parameters : optional
+           The default is to calculate the confidence limits on all
+           thawed parameters of the model, or models, for all the
+           data sets. The evaluation can be restricted by listing
+           the parameters to use. Note that each parameter should be
+           given as a separate argument, rather than as a list.
+           For example `proj(g1.ampl, g1.sigma)`.
 
-           otherids  - Other Sherpa data ids
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        get_proj : Return the confidence-interval estimation object.
+        get_proj_results : Return the results of the last `proj` run.
+        int_proj : Plot the statisitic value as a single parameter is varied.
+        reg_proj : Plot the statistic value as two parameters are varied.
+        set_proj_opt : Set an option of the `proj` estimation object.
 
-           pars      - Sherpa model parameters
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with multiple `ids` or `parameters` values, the
+        order is unimportant, since any argument that is not defined
+        as a model parameter is assumed to be a data id.
 
-        Returns:
-           Formatted estimation results output
+        The `proj` command is different to `covar`, in that all other
+        thawed parameters are allowed to float to new best-fit values,
+        instead of being fixed to the initial best-fit values.  While
+        `proj` is more general (e.g. allowing the user to examine the
+        parameter space away from the best-fit point), it is in the
+        strictest sense no more accurate than `covar` for
+        determining confidence intervals.
 
-        DESCRIPTION
-           Confidence interval bounds are determined for each selected
-           parameter in turn. A given parameter's value is varied along a grid
-           of values while the values of all the other nominally thawed
-           parameters are allowed to float to new best-fit values (compare to
-           covar, where the values of all the other nominally thawed parameters
-           remain fixed to their best-fit values). This method of estimating
-           confidence interval bounds gives truly accurate results only in
-           special cases:
+        An estimated confidence interval is accurate if and only if:
 
-           An estimated confidence interval is accurate if and only if:
+        1. the chi^2 or logL surface in parameter space is
+           approximately shaped like a multi-dimensional paraboloid,
+           and
 
-           1. the chi^2 or logL surface in parameter space is approximately
-              shaped like a multi-dimensional paraboloid, and
-           2. the best-fit point is sufficiently far from parameter space
-              boundaries.
+        2. the best-fit point is sufficiently far from parameter space
+           boundaries.
 
-           One may determine if these conditions hold, for example, by plotting
-           the fit statistic as a function of each parameter's values (the
-           curve should approximate a parabola) and by examining contour plots
-           of the fit statistics made by varying the values of two parameters
-           at a time (the contours should be elliptical, and parameter space
-           boundaries should be no closer than approximately 3 sigma from the
-           best-fit point).
+        One may determine if these conditions hold, for example, by
+        plotting the fit statistic as a function of each parameter's
+        values (the curve should approximate a parabola) and by
+        examining contour plots of the fit statistics made by varying
+        the values of two parameters at a time (the contours should be
+        elliptical, and parameter space boundaries should be no closer
+        than approximately 3 sigma from the best-fit point). The
+        `int_proj` and `reg_proj` commands may be used for this.
 
-           If no arguments are given this function, it is assumed that the
-           data id is the default data id, and that limits should be computed
-           for all thawed parameters.
+        If either of the conditions given above does not hold, then
+        the output from `proj` may be meaningless except to give an
+        idea of the scale of the confidence intervals. To accurately
+        determine the confidence intervals, one would have to
+        reparameterize the model, use Monte Carlo simulations, or
+        Bayesian methods.
 
-           If arguments are given, each argument is examined to see if it
-           is a Sherpa model parameter.  If model parameters are given, it
-           is assumed that limits for only those parameters should be
-           computed.  Any argument that is not a model parameter is assumed
-           to be a data id.
+        As the calculation can be computer intensive, the default
+        behavior is to use all available CPU cores to speed up the
+        analysis. This can be changed be varying the `numcores` option
+        - or setting `parallel` to `False` - either with
+        `set_proj_opt` or `get_proj`.
 
-        SEE ALSO
-           covar, get_proj, get_covar, get_covar_results,
-           get_proj_results
+        As `proj` estimates intervals for each parameter
+        independently, the relationship between sigma and the change
+        in statistic value delta_S can be particularly simple: sigma =
+        the square root of delta_S for statistics sampled from the
+        chi-square distribution and for the Cash statistic, and is
+        approximately equal to the square root of (2 * delta_S) for
+        fits based on the general log-likelihood. The default setting
+        is to calculate the one-sigma interval, which can be changed
+        with the `sigma` option to `set_proj_opt` or `get_proj`.
+
         """
         self._projection_results = self._est_errors(args, 'projection')
 
