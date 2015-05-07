@@ -12650,65 +12650,116 @@ class Session(NoNewAttributesAfterInit):
                        delv=delv, fac=fac, log=log, numcores=numcores, 
                        overplot=overplot)
 
+    ### Ahelp ingest: 2015-05-07 DJB
+    ### DOC-NOTE: I am not convinced I have fac described correctly
+    ### DOC-NOTE: same synopsis as int_proj
     def int_unc(self, par, id=None, otherids=None, replot=False, min=None,
                  max=None, nloop=20, delv=None, fac=1, log=False,
                  numcores=None, overplot=False):
         """Calculate and plot the fit statistic versus fit parameter value.
 
-        int_unc
+        Create a confidence plot of the fit statistic as a function of
+        parameter value. Dashed lines are added to indicate the
+        current statistic value and the parameter value at this
+        point. The parameter value is varied over a grid of points and
+        the statistic evaluated while holding the other parameters
+        fixed.
 
-        SYNOPSIS
-           Create a confidence plot of fit statistic vs. parameter value.  At
-           each step calculate the statistic with the other parameter(s) frozen
-           at best fit values.
+        Parameters
+        ----------
+        par
+           The parameter to plot.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The `id` and `otherids` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `int_proj`. The default is `False`.
+        fast : bool, optional
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
+        min : number, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        get_int_unc : Return the interval-uncertainty object.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        reg_unc : Plot the statistic value as two parameters are varied.
 
-        Arguments:
-           par       - source model parameter
+        Notes
+        -----
+        The difference to `int_proj` is that at each step, only the
+        single parameter value is varied while all other parameters
+        remain at their starting value. This makes
+        the result a less-accurate rendering of the projected shape of the
+        hypersurface formed by the statistic, but the run-time is likely
+        shorter than, the results of `int_proj`, which fits the model
+        to the remaining thawed parameters at each step.
 
-        Keyword arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Examples
+        --------
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Vary the `gamma` parameter of the `p1` model component for
+        all data sets with a source expression.
 
-           replot    - replot the previously calculated data in cache
-                       default=False
+        >>> int_unc(p1.gamma)
 
-           min       - minimum bound
-                       default=None
+        Use only the data in data set 1:
 
-           max       - maximum bound
-                       default=None
+        >>> int_unc(p1.gamma, id=1)
 
-           nloop     - bin size, used in calculating stepsize
-                       default=20
+        Use two data sets ('obs1' and 'obs2'):
 
-           delv      - stepsize, calculated by default
-                       default=None
+        >>> int_unc(clus.kt, id='obs1', otherids=['obs2'])
 
-           fac       - factor used to expand or condense interval,
-                       default=1
+        Vary the `bgnd.c0` parameter between 1e-4 and 2e-4,
+        using 41 points:
 
-           log       - boolean to use log space for interval
-                       default=False
+        >>> int_unc(bgnd.c0, min=1e-4, max=2e-4, step=41)
 
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
+        This time define the step size, rather than the number of
+        steps to use:
 
-           overplot  - plot over existing plot
-                       default=False
+        >>> int_unc(bgnd.c0, min=1e-4, max=2e-4, delv=2e-6)
 
-        Returns:
-           None
+        Overplot the `int_unc` results for the parameter on top of
+        the `int_proj` values:
 
-        DESCRIPTION
+        >>> int_proj(mdl.xpos)
+        >>> int_unc(mdl.xpos, overplot=True)
 
-        SEE ALSO
-           int_proj, reg_proj, reg_unc
         """
         self._int_plot(self._intunc, par, id=id, otherids=otherids,
                        replot=replot, min=min, max=max, nloop=nloop,
