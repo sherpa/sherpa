@@ -2806,39 +2806,87 @@ class Session(sherpa.ui.utils.Session):
         return d.get_indep(filter=filter)
 
 
+    ### Ahelp ingest: 2015-05-07 DJB
     def get_axes(self, id=None, bkg_id=None):
         """Return information about the independent axes of a data set.
 
-        get_axes
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNOPSIS
-           Get the alternate grid of a dataset by id
+        Returns
+        -------
+        axis : tuple of arrays
+           The independent axis values. The difference to `get_dep` is
+           that this represents the "alternate grid" for the axis. For
+           PHA data, this is the energy grid (E_MIN and E_MAX). For
+           image data it is an array for each axis, of the length of
+           the axis, using the current coordinate system for the data
+           set.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_indep : Return the independent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-           bkg_id     - background id
-                        default = None
+        Examples
+        --------
 
-        Returns:
-           Array of the alternate independent variable
+        For 1D data sets, the "alternate" view is the same as the
+        independent axis:
 
-        DESCRIPTION
-           Get the data set alternate grid by data id or bkg_id.
-           For PHA spectra, this cooresponds to E_MIN,E_MAX.
-           for images, this respresents the axes lengths.
+        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> get_indep()
+        array([10, 15, 19])
+        >>> get_axes()
+        array([10, 15, 19])
 
-        EXAMPLE
-           get_axes()
+        For a PHA data set, the approximate energy grid of the
+        channels is returned (this is determined by the EBOUNDS
+        extension of the RMF).
 
-           get_axes(1)
+        >>> load_pha('core', 'src.pi')
+        read ARF file src.arf
+        read RMF file src.rmf
+        read background file src_bkg.pi
+        >>> (chans,) = get_indep()
+        >>> (elo, ehi) = get_axes()
+        >>> chans[0:5]
+        array([ 1.,  2.,  3.,  4.,  5.])
+        >>> elo[0:5]
+        array([ 0.0073,  0.0146,  0.0292,  0.0438,  0.0584])
+        >>> ehi[0:5]
+        array([ 0.0146,  0.0292,  0.0438,  0.0584,  0.073 ])
 
-           get_axes(1, 2)
+        The image has 101 columns by 108 rows. The `get_indep`
+        function returns one-dimensional arrays, for the full dataset,
+        where as `get_axes` returns values for the individual axis:
 
-        SEE ALSO
+        >>> load_image('img', 'img.fits')
+        >>> get_data('img').shape
+        (108, 101)
+        >>> set_coord('img', 'physical')
+        >>> (x0, x1) = get_indep('img')
+        >>> (a0, a1) = get_axes('img')
+        >>> (x0.size, x1.size)
+        (10908, 10908)
+        >>> (a0.size, a1.size)
+        (101, 108)
+        >>> np.all(x0[:101] == a0)
+        True
+        >>> np.all(x1[::101] == a1)
+        True
 
         """
         d = self.get_data(id)
