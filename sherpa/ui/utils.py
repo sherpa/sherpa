@@ -7712,17 +7712,17 @@ class Session(NoNewAttributesAfterInit):
 
         `max_rstat`
            If the reduced chi square is larger than this value, do not
-           use (only used with hci-square statistics). The default is
+           use (only used with chi-square statistics). The default is
            `3`.
+
+        `maxfits`
+           The maximum number of re-fits allowed (that is, when the
+           `remin` filter is met). The default is `5`.
 
         `maxiters`
            The maximum number of iterations allowed when bracketing
            limits, before stopping for that parameter. The default is
            `200`.
-
-        `maxfits`
-           The maximum number of re-fits allowed (that is, when the
-           `remin` filter is met). The default is `5`.
 
         `numcores`
            The number of computer cores to use when evaluating results
@@ -7793,44 +7793,96 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._estmethods['confidence']
 
+    ### Ahelp ingest: 2015-05-07 DJB
     def get_proj(self):
-        """
-        get_proj
+        """Return the confidence-interval estimation object.
 
-        SYNOPSIS
-           Access current proj estimation method object
+        .. note:: The `conf` function should be used instead of `proj`.
 
-        SYNTAX
+        Returns
+        -------
+        proj : object
 
-        Arguments:
-           None
+        See Also
+        --------
+        conf : Estimate confidence intervals for fit parameters.
+        get_proj_opt : Return one or all of the options for the confidence interval method.
+        proj : Estimate confidence intervals for fit parameters.
+        set_proj_opt : Set an option of the proj estimation object.
 
-        Returns:
-           Current proj estimation method object
+        Notes
+        -----
+        The attributes of the object include:
 
-        DESCRIPTION
-           Estimation method objects include the following attributes:
+        `eps`
+           The precision of the calculated limits. The default is
+           `0.01`.
 
-           * sigma                      - default = 1
+        `fast`
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
 
-           * eps                        - default = 0.01
+        `max_rstat`
+           If the reduced chi square is larger than this value, do not
+           use (only used with chi-square statistics). The default is
+           `3`.
 
-           * maxiters                   - default = 200
+        `maxfits`
+           The maximum number of re-fits allowed (that is, when the
+           `remin` filter is met). The default is `5`.
 
-           * remin                      - default = 0.01
+        `maxiters`
+           The maximum number of iterations allowed when bracketing
+           limits, before stopping for that parameter. The default is
+           `200`.
 
-           * maxfits                    - default = 5
-                      
-           * max_rstat                  - default = 3
+        `numcores`
+           The number of computer cores to use when evaluating results
+           in parallel. This is only used if `parallel` is `True`.
+           The default is to use all cores.
 
-           * soft_limits                - default = False
+        `parallel`
+           If there is more than one free parameter then the results
+           can be evaluated in parallel, to reduce the time required.
+           The default is `True`.
 
-           * fast                       - default = True
+        `remin`
+           The minimum difference in statistic value for a new fit
+           location to be considered better than the current best fit
+           (which starts out as the starting location of the fit at
+           the time `proj` is called). The default is `0.01`.
 
-           * tol                        - default = 0.2
+        `sigma`
+           What is the error limit being calculated. The default is
+           `1`.
 
-        SEE ALSO
-           proj, covar, get_covar_results, get_proj_results, get_covar
+        `soft_limits`
+           Should the search be restricted to the soft limits of the
+           parameters (`True`), or can parameter values go out all the
+           way to the hard limits if necessary (`False`).  The default
+           is `False`
+
+        `tol`
+           The tolerance for the fit. The default is `0.2`.
+
+        Examples
+        --------
+
+        >>> print(get_proj())
+        name        = projection
+        numcores    = 8
+        max_rstat   = 3
+        maxiters    = 200
+        soft_limits = False
+        eps         = 0.01
+        fast        = False
+        maxfits     = 5
+        remin       = 0.01
+        tol         = 0.2
+        sigma       = 1
+        parallel    = True
+
         """
         return self._estmethods['projection']
 
