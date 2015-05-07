@@ -3093,7 +3093,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         get_areascal : Return the area scaling of a PHA data set.
         get_bkg_scale : Return the background scaling factor for a PHA data set.
-        set_backscal : Set the area scaling of a PHA data set.
+        set_backscal : Change the area scaling of a PHA data set.
 
         Notes
         -----
@@ -3126,39 +3126,53 @@ class Session(sherpa.ui.utils.Session):
         return self._get_pha_data(id).backscal
 
 
+    ### Ahelp ingest: 2015-05-07 DJB
     def get_bkg_scale(self, id=None):
         """Return the background scaling factor for a PHA data set.
 
-        get_bkg_scale
+        Return the factor applied to the background component to scale
+        it to match it to the source (either when subtracting the
+        background, or fitting it simultaneously).
 
-        SYNOPSIS
-           Get the PHA background scale factor by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to identify which background component to use.  The
+           default value (`None`) means that the value is for the
+           source component of the data set.
 
-        SYNTAX
+        Returns
+        -------
+        ratio : number
+           The scaling factor.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_areascal : Return the area scaling of a PHA data set.
+        get_backscal : Return the area scaling factor for a PHA data set.
+        set_backscal : Change the area scaling of a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_bkg_full_model : Define the convolved background model expression for a data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        The scale factor::
 
-        DESCRIPTION
-           Get the background scaling factor for a source PHA dataset by data id.
-           The background source model is scaled by this factor summed in quadrature
-           of all revelent backgrounds.
+          exp_src * bscale_src / (exp_bgnd * bscale_bgnd)
 
-           scale =  BACKSCAL*EXPOSURE/N  *  \sum_i^N 1./BBACKSCAL_i/BEXPOSURE_i
-           
+        where exp_x and bscale_x are the exposure and BACKSCAL values
+        for the source (x=src) and background (x=bgnd).
 
-        EXAMPLE
-           get_bkg_scale()
+        Examples
+        --------
 
-           get_bkg_scale(1)
+        >>> get_bkg_scale('pi')
+        0.034514770047217924
 
-        SEE ALSO
-           set_exposure, set_areascal,
-           get_exposure, get_areascal
         """
         scale = self._get_pha_data(id).get_background_scale()
         if scale is None:
@@ -7803,6 +7817,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     #@loggable(with_id=True, with_keyword='model')
     def set_full_model(self, id, model=None):
+        """Define the convolved model expression for a data set.
+        """
         sherpa.ui.utils.Session.set_full_model(self, id, model)
 
         if model is None:
@@ -8073,7 +8089,8 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True, with_keyword='model')
     def set_bkg_full_model(self, id, model=None, bkg_id=None):
-        """
+        """Define the convolved background model expression for a data set.
+
         set_bkg_full_model
 
         SYNOPSIS
