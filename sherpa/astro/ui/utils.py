@@ -3066,45 +3066,60 @@ class Session(sherpa.ui.utils.Session):
         return self._get_pha_data(id).exposure
 
 
+    ### Ahelp ingest: 2015-05-07 DJB
     def get_backscal(self, id=None, bkg_id=None):
-        """
-        get_backscal
+        """Return the area scaling of a PHA data set.
 
-        SYNOPSIS
-           Get the source or background extraction region areas by id
+        Return the BACKSCAL setting [1]_ for the source or background
+        component of a PHA data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to identify which background component to use.  The
+           default value (`None`) means that the value is for the
+           source component of the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Returns
+        -------
+        backscal : number
+           The BACKSCAL value.
 
-           bkg_id     - background data id
-                        default = None
+        See Also
+        --------
+        get_areascal : Return the area scaling of a PHA data set.
+        get_bkg_scale : Return the background scaling factor for a PHA data set.
+        set_backscal : Set the area scaling of a PHA data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        The BACKSCAL value can be defined as the ratio of the area of
+        the source (or background) extraction region in image pixels
+        to the total number of image pixels. The fact that there is no
+        ironclad definition for this quantity does not matter so long
+        as the value for a source dataset and its associated
+        background dataset are defined in the similar manner, because
+        only the ratio of source and background BACKSCAL values is
+        used.
 
-        DESCRIPTION
-           Get the extraction region areas of a source PHA dataset by data id
-           or of a background dataset by bkg_id. Backscale can be defined as the
-           ratio of the area of the source (or background) extraction region in
-           image pixels to the total number of image pixels. The fact that
-           there is no ironclad definition for this quantity does not matter so
-           long as the backscale for a source dataset and its associated
-           background dataset are defined in the similar manner, because only
-           the ratio of source and background backscale is used in analyses.
+        References
+        ----------
 
-        EXAMPLE
-           get_backscal()
+        .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
-           get_backscal(1)
+        Examples
+        --------
 
-           get_backscal(1, 2)
+        >>> get_backscal()
+        7.8504301607718007e-06
+        >>> get_backscal(bkg_id=1)
+        0.00022745132446289
 
-        SEE ALSO
-           set_exposure, set_areascal,
-           get_exposure, get_areascal
         """
         if bkg_id is not None:
             return self.get_bkg(id,bkg_id).backscal
@@ -3112,7 +3127,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_bkg_scale(self, id=None):
-        """
+        """Return the background scaling factor for a PHA data set.
+
         get_bkg_scale
 
         SYNOPSIS
