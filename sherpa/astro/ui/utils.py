@@ -2462,7 +2462,6 @@ class Session(sherpa.ui.utils.Session):
         --------
         get_backscal : Return the area scaling of a PHA data set.
         set_areascal : Change the fractional area factor of a PHA data set.
-        set_backscal : Change the area scaling of a PHA data set.
         set_exposure : Change the exposure time of a PHA data set.
 
         Notes
@@ -2490,41 +2489,44 @@ class Session(sherpa.ui.utils.Session):
             self._get_pha_data(id).backscal = backscale
 
 
+    ### Ahelp ingest: 2015-05-02 DJB
+    ### DOC-TODO: the description needs improving.
     def set_areascal(self, id, area=None, bkg_id=None):
-        """Change the area scaling of a PHA data set.
+        """Change the fractional area factor of a PHA data set.
 
-        set_areascal
+        The area scaling factor of a PHA data set is taken from the
+        AREASCAL keyword, but it can be changed once the file has been
+        loaded.
 
-        SYNOPSIS
-           Set the source or background fractional area by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        area : number
+           The scaling factor.
+        bkg_id : int or str, optional
+           Set to identify which background component to set.  The
+           default value (`None`) means that this is for the source
+           component of the data set.
 
-        SYNTAX
+        See Also
+        --------
+        get_areascal : Return the fractional area factor of a PHA data set.
+        set_backscal : Change the area scaling of a PHA data set.
+        set_exposure : Change the exposure time of a PHA data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `area` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `area` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           area       - areascal value [pixel]
-
-           bkg_id     - background data id
-                        default = None
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Set the fractional area of a source PHA dataset by data id or of a 
-           background data by bkg_id.
-
-        EXAMPLE
-           set_areascal(0.75)
-
-           set_areascal(2, 0.75)
-
-           set_areascal(1, 0.75, 1)
-
-        SEE ALSO
-           set_backscal, set_exposure
         """
         if area is None:
             area, id = id, area
