@@ -12765,7 +12765,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The difference to `int_proj` is that at each step, only the
+        The difference to `int_proj` is that at each step *only* the
         single parameter value is varied while all other parameters
         remain at their starting value. This makes the result a
         less-accurate rendering of the projected shape of the
@@ -12967,74 +12967,131 @@ class Session(NoNewAttributesAfterInit):
                        delv=delv, fac=fac, log=log, sigma=sigma, levels=levels,
                        numcores=numcores, overplot=overplot)
 
+    ### Ahelp ingest: 2015-05-07 DJB
+    ### DOC-TODO: how is sigma converted into delta_stat
     def reg_unc(self, par0, par1, id=None, otherids=None, replot=False,
                 min=None, max=None, nloop=(10,10), delv=None, fac=4,
                 log=(False,False), sigma=(1,2,3), levels=None, numcores=None, 
                 overplot=False):
-        """
-        reg_unc
+        """Plot the statistic value as two parameters are varied.
 
-        SYNOPSIS
-           Create a confidence contour of fit statistic vs. two thawed
-           parameter values.  At each step calculate the statistic with the
-           other parameter(s) frozen at best fit values.
+        Create a confidence plot of the fit statistic as a function of
+        parameter value. Dashed lines are added to indicate the
+        current statistic value and the parameter value at this
+        point. The parameter value is varied over a grid of points and
+        the statistic evaluated while holding the other parameters
+        fixed.
 
-        SYNTAX
+        Parameters
+        ----------
+        par0, par1
+           The parameters to plot on the X and Y axes, respectively.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The `id` and `otherids` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `int_proj`. The default is `False`.
+        min : pair of numbers, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : pair of number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : pair of int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : pair of number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : pair of bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        sigma : sequence of number, optional
+           The levels at which to draw the contours. The units are the
+           change in significance relative to the starting value,
+           in units of sigma.
+        levels : sequence of number, optional
+           The numeric values at which to draw the contours. This
+           over-rides the `sigma` parameter, if set (the default is
+           `None`).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           par0      - first source model parameter
-           par1      - second source model parameter
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        get_reg_proj : Return the interval-projection object.
+        int_unc : Calculate and plot the fit statistic versus fit parameter value.
+        reg_proj : Plot the statistic value as two parameters are varied.
 
-        Keyword arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Notes
+        -----
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        The difference to `reg_proj` is that at each step *only* the
+        pair of parameters are varied, while all the other parameters
+        remain at their starting value. This makes the result a
+        less-accurate rendering of the projected shape of the
+        hypersurface formed by the statistic, but the run-time is
+        likely shorter than, the results of `reg_proj`, which fits the
+        model to the remaining thawed parameters at each step. If
+        there are no free parameters in the model, other than the
+        parameters being plotted, then the results will be the same.
 
-           replot    - replot the previously calculated data in cache
-                       default=False
+        Examples
+        --------
 
-           min       - list of minimums [min par0, min par1]
-                       default=None
+        Vary the `xpos` and `ypos` parameters of the `gsrc` model
+        component for all data sets with a source expression.
 
-           max       - list of maximums [max par0, max par1]
-                       default=None
+        >>> reg_unc(gsrc.xpos, gsrc.ypos)
 
-           nloop     - list of bin sizes, used in calculating stepsize for each
-                       dimension
-                       default=(10,10)
+        Use only the data in data set 1:
 
-           delv      - list of stepsizes, calculated by default
-                       default=None
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, id=1)
 
-           fac       - factor used to expand or condense interval,
-                       default=4
+        Only display the one- and three-sigma contours:
 
-           log       - list of booleans to use log space for interval
-                       default=(False,False)
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, sigma=(1,3))
 
-           sigma     - list of sigmas used to calculate the confidence levels
-                       (slices)
-                       default=(1,2,3)
+        Display contours at values of 5, 10, and 20 more than the
+        statistic value of the source model for data set 1:
 
-           levels    - confidence level values
-                       default=None
+        >>> s0 = calc_stat(id=1)
+        >>> lvls = s0 + np.asarray([5, 10, 20])
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, levels=lvls, id=1)
 
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
+        Increase the limits of the plot and the number of steps along
+        each axis:
 
-           overplot  - plot over existing plot
-                       default=False
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41,41))
 
-        Returns:
-           None
+        Compare the `ampl` parameters of the `g` and `b` model
+        components, for data sets 'core' and 'jet', over the given
+        ranges:
 
-        DESCRIPTION
+        >>> reg_unc(g.ampl, b.ampl, min=(0,1e-4), max=(0.2,5e-4),
+                    nloop=(51,51), id='core', otherids=['jet'])
 
-        SEE ALSO
-           int_unc, int_proj, reg_proj
+        Overplot the results on the `reg_proj` plot:
+
+        >>> reg_proj(s1.c0, s2.xpos)
+        >>> reg_unc(s1.c0, s2.xpos, overplot=True)
+
         """
         self._reg_plot(self._regunc, par0, par1, id=id, otherids=otherids,
                        replot=replot, min=min, max=max, nloop=nloop, delv=delv,
