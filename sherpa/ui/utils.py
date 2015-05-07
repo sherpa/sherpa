@@ -4589,8 +4589,8 @@ class Session(NoNewAttributesAfterInit):
         """Exclude data from the fit for a data set.
 
         Select one or more ranges of data to exclude by filtering on
-        the independent axis value. The filter is applied to the
-        given data set, or data sets.
+        the independent axis value. The filter is applied to the given
+        data set, or sets.
 
         Parameters
         ----------

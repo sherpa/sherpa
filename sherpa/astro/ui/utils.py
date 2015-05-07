@@ -5813,9 +5813,9 @@ class Session(sherpa.ui.utils.Session):
         --------
         ignore2d : Exclude a spatial region from all data sets.
         ignore2d_id : Exclude a spatial region from a data set.
-        ignore2d_image : Select the region to exclude from the image data viewer.
+        ignore2d_image : Select the region to exclude from the image viewer.
         notice2d_id : Include a spatial region of a data set.
-        notice2d_image : Select the region to include from the image data viewer.
+        notice2d_image : Select the region to include from the image viewer.
 
         Notes
         -----
@@ -5947,13 +5947,13 @@ class Session(sherpa.ui.utils.Session):
         --------
         notice2d : Include a spatial region from all data sets.
         notice2d_id : Include a spatial region of a data set.
-        notice2d_image : Select the region to include from the image data viewer.
+        notice2d_image : Select the region to include from the image viewer.
         ignore2d_id : Exclude a spatial region from a data set.
-        ignore2d_image : Select the region to exclude from the image data viewer.
+        ignore2d_image : Select the region to exclude from the image viewer.
 
         Notes
         -----
-        The region syntax is described in the `notice2d1 function.
+        The region syntax is described in the `notice2d` function.
 
         Examples
         --------
@@ -5981,41 +5981,60 @@ class Session(sherpa.ui.utils.Session):
                         'a image data set')
             d.notice2d(val, True)
     
+    ### Ahelp ingest: 2015-05-06 DJB
     def notice2d_id(self, ids, val=None):
         """Include a spatial region of a data set.
 
-        notice2d_id
+        Select a spatial region to include in the fit. The filter is
+        applied to the given data set, or sets.
 
-        SYNOPSIS
-           Notice a region mask for specific Sherpa DataIMG datasets
+        Parameters
+        ----------
+        ids : int or str, or array of int or str
+           The data set, or sets, to use.
+        val : str, optional
+           A region specification as a string or the name of a file
+           containing a region filter. The coordinates system of the
+           filter is taken from the coordinate setting of the data
+           sets (`set_coord`). If `None`, then all points are
+           included.
 
-        SYNTAX
+        See Also
+        --------
+        ignore2d : Exclude a spatial region from all data sets.
+        ignore2d_id : Exclude a spatial region from a data set.
+        ignore2d_image : Select the region to exclude from the image viewer.
+        notice2d : Include a spatial region of all data sets.
+        notice2d_image : Select the region to include from the image viewer.
 
-        Arguments:
-           ids       - list of data ids to apply filter
+        Notes
+        -----
+        The region syntax is described in the `notice2d` function.
 
-           val       - filename and path of region file or DM region syntax
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Select all the pixels in the default data set:
 
-        DESCRIPTION
-           Notice a region mask for specific Sherpa DataIMG datasets by ids
-           using a DM region library syntax or a region file.
+        >>> notice2d_id(1)
 
-           Example1: notice2d_id with region file
+        Select all the pixels in data sets 'i1' and 'i2':
 
-               notice2d_id(['foo','bar'], 'region filename' )
+        >>> notice2d_id(['i1', 'i2'])
 
-           Example2: notice2d_id with DM region syntax in physical coordinates
+        Apply the filter to the 'img' data set:
 
-               notice2d_id([2,5,7], 'circle(4071, 4250, 135)' )
+        >>> notice2d_id('img', 'annulus(4324.2,3982.2,40.2,104.3)')
 
-        SEE ALSO
-           notice2d, notice2d_image, ignore2d, ignore2d_id, ignore2d_image,
-           notice, ignore, notice_id, ignore_id
-         """
+        Use the regions in the file `srcs.reg` for data set 1:
+
+        >>> notice2d_id(1, 'srcs.reg')
+
+        or
+
+        >>> notice2d_id(1, 'region(srcs.reg)')
+
+        """
         if self._valid_id(ids):
             ids = (ids,)
         else:
@@ -6031,40 +6050,51 @@ class Session(sherpa.ui.utils.Session):
                         'img', 'a image data set')
             self.get_data(id).notice2d(val, False)
         
+    ### Ahelp ingest: 2015-05-06 DJB
     def ignore2d_id(self, ids, val=None):
         """Exclude a spatial region from a data set.
 
-        ignore2d_id
+        Select a spatial region to exclude in the fit. The filter is
+        applied to the given data set, or sets.
 
-        SYNOPSIS
-           Ignore a region mask for specific Sherpa DataIMG datasets
+        Parameters
+        ----------
+        ids : int or str, or array of int or str
+           The data set, or sets, to use.
+        val : str, optional
+           A region specification as a string or the name of a file
+           containing a region filter. The coordinates system of the
+           filter is taken from the coordinate setting of the data
+           sets (`set_coord`). If `None`, then all points are
+           included.
 
-        SYNTAX
+        See Also
+        --------
+        ignore2d : Exclude a spatial region from all data sets.
+        ignore2d_image : Select the region to exclude from the image viewer.
+        notice2d : Include a spatial region of all data sets.
+        notice2d_id : Include a spatial region from a data set.
+        notice2d_image : Select the region to include from the image viewer.
 
-        Arguments:
-           ids       - list of data ids to apply filter
+        Notes
+        -----
+        The region syntax is described in the `notice2d` function.
 
-           val       - filename and path of region file or DM region syntax
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Ignore the pixels within the rectangle from data set 1:
 
-        DESCRIPTION
-           Ignore a region mask for specific Sherpa DataIMG datasets by ids
-           using a DM region library syntax or a region file.
+        >>> ignore2d_id(1, 'rect(10,10,20,290)')
 
-           Example1: ignore2d_id with region file
+        Ignore the spatial region in the file `srcs.reg`:
 
-               ignore2d_id(['foo','bar'], 'region filename' )
+        >>> ignore2d_id(1, 'srcs.reg')
 
-           Example2: ignore2d_id with DM region syntax in physical coordinates
+        or
 
-               ignore2d_id([2,5,7], 'circle(4071, 4250, 135)' )
+        >>> ignore2d_id(1, 'region(srcs.reg)')
 
-        SEE ALSO
-           notice2d, ignore2d, notice2d_id, notice2d_image, ignore2d_image,
-           notice, ignore, notice_id, ignore_id
         """
         if self._valid_id(ids):
             ids = (ids,)
@@ -6082,7 +6112,7 @@ class Session(sherpa.ui.utils.Session):
             self.get_data(id).notice2d(val, True)
 
     def notice2d_image(self, ids=None):
-        """Select the region to include from the image data viewer.
+        """Select the region to include from the image viewer.
 
         notice2d_image
 
@@ -6133,7 +6163,7 @@ class Session(sherpa.ui.utils.Session):
             self.notice2d_id(id, regions)
 
     def ignore2d_image(self, ids=None):
-        """Select the region to exclude from the image data viewer.
+        """Select the region to exclude from the image viewer.
 
         ignore2d_image
 
