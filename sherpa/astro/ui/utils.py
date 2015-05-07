@@ -2392,7 +2392,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         get_exposure : Return the exposure time of a PHA data set.
-        set_areascal : Change the area scaling of a PHA data set.
+        set_areascal : Change the fractional area factor of a PHA data set.
         set_backscal : Change the area scaling of a PHA data set.
 
         Notes
@@ -3056,7 +3056,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_areascal : Return the area scaling of a PHA data set.
+        get_areascal : Return the fractional area factor of a PHA data set.
         get_backscal : Return the area scaling of a PHA data set.
         set_exposure : Change the exposure time of a PHA data set.
 
@@ -3091,7 +3091,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_areascal : Return the area scaling of a PHA data set.
+        get_areascal : Return the fractional area factor of a PHA data set.
         get_bkg_scale : Return the background scaling factor for a PHA data set.
         set_backscal : Change the area scaling of a PHA data set.
 
@@ -3152,7 +3152,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_areascal : Return the area scaling of a PHA data set.
+        get_areascal : Return the fractional area factor of a PHA data set.
         get_backscal : Return the area scaling factor for a PHA data set.
         set_backscal : Change the area scaling of a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
@@ -3181,40 +3181,46 @@ class Session(sherpa.ui.utils.Session):
         return scale
 
 
+    ### Ahelp ingest: 2015-05-07 DJB
+    ### DOC-TODO: the description needs improving.
     def get_areascal(self, id=None, bkg_id=None):
-        """Return the area scaling of a PHA data set.
+        """Return the fractional area factor of a PHA data set.
 
-        get_areascal
+        Return the AREASCAL setting [1]_ for the source or background
+        component of a PHA data set.
 
-        SYNOPSIS
-           Get the source or background fractional area by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to identify which background component to use.  The
+           default value (`None`) means that the value is for the
+           source component of the data set.
 
-        SYNTAX
+        Returns
+        -------
+        areascal : number
+           The AREASCAL value.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_backscal : Return the area scaling of a PHA data set.
+        set_areascal : Change the fractional area factor of a PHA data set.
 
-           bkg_id     - background data id
-                        default = None
+        Notes
+        -----
+        The fractional area scale is normally set to 1, with the ARF used
+        to scale the model.
 
-        Returns:
-           None
+        References
+        ----------
 
-        DESCRIPTION
-           Get the fractional area of a source PHA dataset by data id or of a 
-           background data by bkg_id.
+        .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
-        EXAMPLE
-           get_areascal()
-
-           get_areascal(1)
-
-           get_areascal(1, 2)
-
-        SEE ALSO
-           set_backscal, set_exposure,
-           get_backscal, get_exposure
         """
         if bkg_id is not None:
             return self.get_bkg(id,bkg_id).areascal
