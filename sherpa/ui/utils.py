@@ -12197,67 +12197,93 @@ class Session(NoNewAttributesAfterInit):
     # Projection and uncertainty plots
     ###########################################################################
 
+    ### Ahelp ingest: 2015-05-07 DJB
+    ### DOC-NOTE: I am not convinced that this code is working when recalc=True
     def get_int_proj(self, par=None, id=None, otherids=None, recalc=False,
                      min=None, max=None, nloop=20, delv=None, fac=1, 
                      log=False, numcores=None):
         """Return the interval-projection object.
 
-        get_int_proj
+        This returns (and optionally calculates) the data used to
+        display the `int_proj` plot.
 
-        SYNOPSIS
-           Return a confidence plot of fit statistic vs. a thawed parameter
-           value.  At each step a fit is performed to obtain a new statistic
-           if other thawed parameter(s) exist in the source model, otherwise,
-           calculate the statistic (see get_int_unc).
+        Parameters
+        ----------
+        par
+           The parameter to plot.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The `id` and `otherids` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        recalc : bool, optional
+           The default value (`False`) means that the results from the
+           last call to `int_proj` (or `get_int_proj`) are returned,
+           ignoring the other parameter values. Otherwise, the
+           statistic curve is re-calculated, but not plotted.
+        fast : bool, optional
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
+        min : number, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        SYNTAX
+        Returns
+        -------
+        iproj : sherpa.plot.IntervalProjection instance
+           The fields of this object can be used to re-create the plot
+           created by `int_proj`.
 
-        Arguments:
-           par       - source model parameter
-                       default = None
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        int_unc : Calculate and plot the fit statistic versus fit parameter value.
+        reg_proj : Plot the statistic value as two parameters are varied.
 
-           id        - Sherpa data id
-                       default = default data id
+        Examples
+        --------
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Return the results of the `int_proj` run:
 
-           recalc    - calculate confidence data
-                       default=False
+        >>> int_proj(src.xpos)
+        >>> iproj = get_int_proj()
+        >>> min(iproj.y)
+        119.55942437129544
 
-           min       - minimum bound
-                       default=None
+        Create the data without creating a plot:
 
-           max       - maximum bound
-                       default=None
+        >>> iproj = get_int_proj(pl.gamma, recalc=True)
 
-           nloop     - bin size, used in calculating stepsize
-                       default=20
+        Control how the data is created
 
-           delv      - stepsize, calculated by default
-                       default=None
+        >>> iproj = get_int_proj(pl.gamma, id="src", min=12, max=14,
+                                 nloop=51, recalc=True)
 
-           fac       - factor used to expand or condense interval,
-                       default=1
-
-           log       - boolean to use log space for interval
-                       default=False
-
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
-
-        Returns:
-           int_proj object
-
-        DESCRIPTION
-
-           Example: for users who do not want to create plots
-
-               print get_int_proj( par, recalc=True )
-
-        SEE ALSO
-           int_unc, reg_proj, reg_unc, get_int_inc
         """
         if sherpa.utils.bool_cast(recalc):
             par = self._check_par(par)
