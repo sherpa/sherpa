@@ -12652,12 +12652,14 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The difference to `int_unc` is that at each step, a fit is made to
-        the remaining thawed parameters in the source model. This makes
-        the result a more-accurate rendering of the projected shape of the
-        hypersurface formed by the statistic, but the run-time is longer
-        than, the results of `int_unc`, which does not vary any other
-        parameter.
+        The difference to `int_unc` is that at each step, a fit is
+        made to the remaining thawed parameters in the source
+        model. This makes the result a more-accurate rendering of the
+        projected shape of the hypersurface formed by the statistic,
+        but the run-time is longer than, the results of `int_unc`,
+        which does not vary any other parameter. If there are no free
+        parameters in the source expression, other than the parameter
+        being plotted, then the results will be the same.
 
         Examples
         --------
@@ -12765,11 +12767,14 @@ class Session(NoNewAttributesAfterInit):
         -----
         The difference to `int_proj` is that at each step, only the
         single parameter value is varied while all other parameters
-        remain at their starting value. This makes
-        the result a less-accurate rendering of the projected shape of the
-        hypersurface formed by the statistic, but the run-time is likely
-        shorter than, the results of `int_proj`, which fits the model
-        to the remaining thawed parameters at each step.
+        remain at their starting value. This makes the result a
+        less-accurate rendering of the projected shape of the
+        hypersurface formed by the statistic, but the run-time is
+        likely shorter than, the results of `int_proj`, which fits the
+        model to the remaining thawed parameters at each step. If
+        there are no free parameters in the source expression, other
+        than the parameter being plotted, then the results will be the
+        same.
 
         Examples
         --------
@@ -12835,78 +12840,127 @@ class Session(NoNewAttributesAfterInit):
         self._contour(id, plotobj, replot=True, **cont_dict)
 
 
+    ### Ahelp ingest: 2015-05-07 DJB
+    ### DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self, par0, par1, id=None, otherids=None, replot=False,
                  fast=True, min=None, max=None, nloop=(10,10), delv=None, fac=4,
                  log=(False,False), sigma=(1,2,3), levels=None, numcores=None, 
                  overplot=False):
-        """
-        reg_proj
+        """Plot the statistic value as two parameters are varied.
 
-        SYNOPSIS
-           Create a confidence contour of fit statistic vs. two thawed
-           parameter values.  At each step a fit is performed to obtain a new
-           statistic if other thawed parameter(s) exist in the source model,
-           otherwise, calculate the statistic (see reg_unc).
+        Create a confidence plot of the fit statistic as a function of
+        parameter value. Dashed lines are added to indicate the current
+        statistic value and the parameter value at this point. The parameter
+        value is varied over a grid of points and the free parameters
+        re-fit.
 
-        SYNTAX
+        Parameters
+        ----------
+        par0, par1
+           The parameters to plot on the X and Y axes, respectively.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The `id` and `otherids` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `int_proj`. The default is `False`.
+        fast : bool, optional
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
+        min : pair of numbers, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : pair of number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : pair of int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : pair of number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : pair of bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        sigma : sequence of number, optional
+           The levels at which to draw the contours. The units are the
+           change in significance relative to the starting value,
+           in units of sigma.
+        levels : sequence of number, optional
+           The numeric values at which to draw the contours. This
+           over-rides the `sigma` parameter, if set (the default is
+           `None`).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           par0      - first source model parameter
-           par1      - second source model parameter
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        get_reg_proj : Return the interval-projection object.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        reg_unc : Plot the statistic value as two parameters are varied.
 
-        Keyword arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Notes
+        -----
+        The difference to `reg_unc` is that at each step, a fit is
+        made to the remaining thawed parameters in the source
+        model. This makes the result a more-accurate rendering of the
+        projected shape of the hypersurface formed by the statistic,
+        but the run-time is longer than, the results of `reg_unc`,
+        which does not vary any other parameter. If there are no
+        free parameters in the model, other than the parameters
+        being plotted, then the results will be the same.
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Examples
+        --------
 
-           replot    - replot the previously calculated data in cache
-                       default=False
+        Vary the `xpos` and `ypos` parameters of the `gsrc` model
+        component for all data sets with a source expression.
 
-           fast      - change opt method to levmar for Chi2 statistics
-                       default=True
+        >>> reg_proj(gsrc.xpos, gsrc.ypos)
 
-           min       - list of minimums [min par0, min par1]
-                       default=None
+        Use only the data in data set 1:
 
-           max       - list of maximums [max par0, max par1]
-                       default=None
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, id=1)
 
-           nloop     - list of bin sizes, used in calculating stepsize for each
-                       dimension
-                       default=(10,10)
+        Only display the one- and three-sigma contours:
 
-           delv      - list of stepsizes, calculated by default
-                       default=None
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, sigma=(1,3))
 
-           fac       - factor used to expand or condense interval,
-                       default=4
+        Display contours at values of 5, 10, and 20 more than the
+        statistic value of the source model for data set 1:
 
-           log       - list of booleans to use log space for interval
-                       default=(False,False)
+        >>> s0 = calc_stat(id=1)
+        >>> lvls = s0 + np.asarray([5, 10, 20])
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, levels=lvls, id=1)
 
-           sigma     - list of sigmas used to calculate the confidence levels
-                       (slices)
-                       default=(1,2,3)
+        Increase the limits of the plot and the number of steps along
+        each axis:
 
-           levels    - confidence level values
-                       default=None
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41,41))
 
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
+        Compare the `ampl` parameters of the `g` and `b` model
+        components, for data sets 'core' and 'jet', over the given
+        ranges:
 
-           overplot  - plot over existing plot
-                       default=False
+        >>> reg_proj(g.ampl, b.ampl, min=(0,1e-4), max=(0.2,5e-4),
+                     nloop=(51,51), id='core', otherids=['jet'])
 
-        Returns:
-           None
-
-        DESCRIPTION
-
-        SEE ALSO
-           int_unc, int_proj, reg_unc
         """
         self._reg_plot(self._regproj, par0, par1, id=id, otherids=otherids,
                        replot=replot, fast=fast, min=min, max=max, nloop=nloop,
