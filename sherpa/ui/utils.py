@@ -12592,10 +12592,12 @@ class Session(NoNewAttributesAfterInit):
         """Calculate and plot the fit statistic versus fit parameter value.
 
         Create a confidence plot of the fit statistic as a function of
-        parameter value. Dashed lines are added to indicate the current
-        statistic value and the parameter value at this point. The parameter
-        value is varied over a grid of points and the free parameters
-        re-fit.
+        parameter value. Dashed lines are added to indicate the
+        current statistic value and the parameter value at this
+        point. The parameter value is varied over a grid of points and
+        the free parameters re-fit. It is expected that this is run
+        after a successful fit, so that the parameter values are at
+        the best-fit location.
 
         Parameters
         ----------
@@ -12712,7 +12714,8 @@ class Session(NoNewAttributesAfterInit):
         current statistic value and the parameter value at this
         point. The parameter value is varied over a grid of points and
         the statistic evaluated while holding the other parameters
-        fixed.
+        fixed. It is expected that this is run after a successful fit,
+        so that the parameter values are at the best-fit location.
 
         Parameters
         ----------
@@ -12849,10 +12852,12 @@ class Session(NoNewAttributesAfterInit):
         """Plot the statistic value as two parameters are varied.
 
         Create a confidence plot of the fit statistic as a function of
-        parameter value. Dashed lines are added to indicate the current
-        statistic value and the parameter value at this point. The parameter
-        value is varied over a grid of points and the free parameters
-        re-fit.
+        parameter value. Dashed lines are added to indicate the
+        current statistic value and the parameter value at this
+        point. The parameter value is varied over a grid of points and
+        the free parameters re-fit. It is expected that this is run
+        after a successful fit, so that the parameter values are at
+        the best-fit location.
 
         Parameters
         ----------
@@ -12980,7 +12985,8 @@ class Session(NoNewAttributesAfterInit):
         current statistic value and the parameter value at this
         point. The parameter value is varied over a grid of points and
         the statistic evaluated while holding the other parameters
-        fixed.
+        fixed. It is expected that this is run after a successful fit,
+        so that the parameter values are at the best-fit location.
 
         Parameters
         ----------
@@ -13035,7 +13041,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         conf : Estimate the confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
-        get_reg_proj : Return the interval-projection object.
+        get_reg_unc : Return the interval-uncertainty object.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
         reg_proj : Plot the statistic value as two parameters are varied.
 
