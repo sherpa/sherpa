@@ -8258,47 +8258,91 @@ class Session(NoNewAttributesAfterInit):
         else:
             return self._confidence_results
 
+    ### Ahelp ingest: 2015-05-07 DJB
     def get_proj_results(self):
-        """
-        get_proj_results
+        """Return the results of the last `proj` run.
 
-        SYNOPSIS
-           Access projection estimation results object
+        .. note:: The `conf` function should be used instead of `proj`.
 
-        SYNTAX
+        Returns
+        -------
+        results : object
 
-        Arguments:
-           None
+        Raises
+        ------
+        sherpa.utils.err.SessionErr
+           If no `proj` call has been made.
 
-        Returns:
-           Proj estimation results object
+        See Also
+        --------
+        conf : Estimate confidence intervals for fit parameters.
+        proj : Estimate confidence intervals for fit parameters.
+        get_proj_opt : Return one or all of the options for the projection method.
+        set_proj_opt : Set an option of the proj estimation object.
 
-        DESCRIPTION
-           Access results from the last time projection was run.  The results
-           include the following attributes:
+        Notes
+        -----
+        The fields of the object include:
 
-           * datasets                        - Data sets in fit
-           
-           * methodname                      - Estimation method name
+        `datasets`
+           A tuple of the data sets used in the analysis.
 
-           * fitname                         - Fitting method name
+        `methodname`
+           This will be `projection`.
 
-           * statname                        - Statistic name
+        `iterfitname`
+           The name of the iterated-fit method used, if any.
 
-           * sigma                           - Change in statistic
+        `fitname`
+           The name of the optimization method used.
 
-           * parnames                        - Model parameter names
+        `statname`
+           The name of the fit statistic used.
 
-           * parvals                         - Model parameter fit values
+        `sigma`
+           The `sigma` value used to calculate the confidence
+           intervals.
 
-           * parmins                         - Model parameter minimum values
+        `percent`
+           The percentage of the signal contained within the
+           confidence intervals (calculated from the `sigma`
+           value assuming a normal distribution).
 
-           * parmaxes                        - Model parameter maximum values
+        `parnames`
+           A tuple of the parameter names included in the analysis.
 
-           * warnings                        - Warning messages
+        `parvals`
+           A tuple of the best-fit parameter values, in the same
+           order as `parnames`.
 
-        SEE ALSO
-           proj, covar, get_proj, get_covar_results, get_covar
+        `parmins`
+           A tuple of the lower error bounds, in the same
+           order as `parnames`.
+
+        `parmaxes`
+           A tuple of the upper error bounds, in the same
+           order as `parnames`.
+
+        `nfits`
+
+        Examples
+        --------
+
+        >>> res = get_proj_results()
+        >>> print(res)
+        datasets    = ('src',)
+        methodname  = projection
+        iterfitname = none
+        fitname     = levmar
+        statname    = chi2gehrels
+        sigma       = 1
+        percent     = 68.2689492137
+        parnames    = ('bgnd.c0',)
+        parvals     = (9.1958148476800918,)
+        parmins     = (-2.0765029551804268,)
+        parmaxes    = (2.0765029551935186,)
+        nfits       = 0
+
         """
         if self._projection_results == None:
             raise SessionErr('noaction', "projection")
