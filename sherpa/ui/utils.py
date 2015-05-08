@@ -5319,33 +5319,61 @@ class Session(NoNewAttributesAfterInit):
                               'has not been set, consider using set_source()' +
                               ' or set_model()')
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_source(self, id=None):
-        """
-        get_source
+        """Return the source model expression for a data set.
 
-        SYNOPSIS
-           Return a Sherpa model by model id
+        This returns the model expression created by `set_model` or
+        `set_source`. It does not include any instrument response.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id         - model id
-                        default = default model id
+        Returns
+        -------
+        model : a sherpa.models.Model object
+           This can contain multiple model components. Changing
+           attributes of this model changes the model used by the data
+           set.
 
-        Returns:
-           Sherpa model
+        See Also
+        --------
+        delete_model : Delete the model expression from a data set.
+        fit : Fit one or more data sets.
+        freeze : Fix model parameters so they are not changed by a fit.
+        get_model : Return the model expression for a data set.
+        integrate1d : Integrate 1D source expressions.
+        list_model_ids : List of all the data sets with a source expression.
+        sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+        show_model : Display the source model expression for a data set.
+        thaw : Allow model parameters to be varied during a fit.
 
-        DESCRIPTION
-           Retrieve a Sherpa model by model id
+        Examples
+        --------
 
-        SEE ALSO
-           list_model_ids, set_model, delete_model, get_model_type,
-           get_model_pars
+        Return the source expression for the default data set:
+
+        >>> src = get_source()
+        >>> len(src.pars)
+        5
+
+        Set the source expression for data set 'obs2' to be equal to
+        the model of data set 'obs1' multiplied by a scalar value:
+
+        >>> set_source('obs2', const1d.norm * get_source('obs1'))
+
         """
         return self._get_source(id)
 
     def get_model(self, id=None):
-        """
+        """Return the model expression for a data set.
+
         get_model
 
         SYNOPSIS
@@ -5488,6 +5516,7 @@ class Session(NoNewAttributesAfterInit):
         delete_model : Delete the model expression from a data set.
         fit : Fit one or more data sets.
         freeze : Fix model parameters so they are not changed by a fit.
+        get_source : Return the source model expression for a data set.
         integrate1d : Integrate 1D source expressions.
         sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
