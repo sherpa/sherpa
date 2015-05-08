@@ -4766,29 +4766,51 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
         self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_bkg_arf(self, id=None):
-        """
-        get_bkg_arf
+        """Return the background ARF associated with a PHA data set.
 
-        SYNOPSIS
-           Return a bkg ARF dataset by data id using default bkg_id and resp_id
+        This is for the case when there is only one background
+        component and one background response. If this does not hold,
+        use `get_arf` and use the `bkg_id` and `resp_id` arguments.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        arf : sherpa.astro.instrument.ARF1D instance
+           This is a reference to the ARF, rather than a copy, so that
+           changing the fields of the object will change the values in
+           the data set.
 
-        Returns:
-           Sherpa DataARF dataset
+        See Also
+        --------
+        fake_pha : Simulate a PHA data set from a model.
+        load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        set_rmf : Set the RMF for use by a PHA data set.
+        unpack_arf : Read in an ARF from a file.
 
-        DESCRIPTION
-           Return a dataset containing background ancillary response data
-           given a data id using the default background id and default
-           response id.
+        Examples
+        --------
 
-        SEE ALSO
-           set_arf, unpack_arf, load_bkg_arf
+        Return the exposure field of the ARF from the background of
+        the default data set:
+
+        >>> get_bkg_arf().exposure
+
+        Copy the ARF from the default data set to data set `2`,
+        as the first component:
+
+        >>> arf1 = get_bkg_arf()
+        >>> set_arf(2, arf1, bkg_id=1)
+
         """
         bkg_id = self._get_pha_data(id).default_background_id
         resp_id = self._get_pha_data(id).primary_response_id
