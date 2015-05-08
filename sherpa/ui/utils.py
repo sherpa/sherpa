@@ -7645,37 +7645,59 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
 
+    ### Ahelp ingest: 2015-05-08 DJB
+    ### DOC-TODO: how best to document the settings?
+    ### DOC-TODO: have I got soft_limits described correctly?
     def get_covar(self):
-        """
-        get_covar
+        """Return the covariance estimation object.
 
-        SYNOPSIS
-           Access current covar estimation method object
+        Returns
+        -------
+        covar : object
 
-        SYNTAX
+        See Also
+        --------
+        covar : Estimate confidence intervals using the covariance method.
+        get_covar_opt : Return one or all of the options for the covariance method.
+        set_covar_opt : Set an option of the covar estimation object.
 
-        Arguments:
-           None
+        Notes
+        -----
+        The attributes of the covariance object include:
 
-        Returns:
-           Current covar estimation method object
+        `eps`
+           The precision of the calculated limits. The default is
+           `0.01`.
 
-        DESCRIPTION
-           Estimation method objects include the following attributes:
+        `maxiters`
+           The maximum number of iterations allowed before stopping
+           for that parameter. The default is `200`.
 
-           * sigma                      - default = 1
+        `sigma`
+           What is the error limit being calculated. The default is
+           `1`.
 
-           * eps                        - default = 0.01
+        `soft_limits`
+           Should the search be restricted to the soft limits of the
+           parameters (`True`), or can parameter values go out all the
+           way to the hard limits if necessary (`False`).  The default
+           is `False`
 
-           * maxiters                   - default = 200
+        Examples
+        --------
 
-           * remin                      - default = 0.01
+        >>> print(get_covar())
+        name        = covariance
+        sigma       = 1
+        maxiters    = 200
+        soft_limits = False
+        eps         = 0.01
 
-           * soft_limits                - default = False
+        Change the `sigma` field of the `covar` method to 1.9.
 
-        SEE ALSO
-           conf, proj, covar, get_covar_results, get_proj_results, get_proj,
-           get_conf_results, get_conf
+        >>> cv = get_covar()
+        >>> cv.sigma = 1.6
+
         """
         return self._estmethods['covariance']
 
@@ -7693,7 +7715,7 @@ class Session(NoNewAttributesAfterInit):
            
         See Also
         --------
-        conf : Estimate confidence intervals for fit parameters.
+        conf : Estimate confidence intervals using the confidence method.
         get_conf_opt : Return one or all of the options for the confidence interval method.
         set_conf_opt : Set an option of the conf estimation object.
 
@@ -7783,12 +7805,8 @@ class Session(NoNewAttributesAfterInit):
 
         Change the `remin` field of the `conf` method to 0.05.
 
-        >>> conf = get_conf()
-        >>> conf.remin = 0.05
-
-        SEE ALSO
-           conf, proj, covar, get_covar_results, get_conf_results,
-           get_proj_results, get_covar
+        >>> cf = get_conf()
+        >>> cf.remin = 0.05
 
         """
         return self._estmethods['confidence']
@@ -7910,28 +7928,45 @@ class Session(NoNewAttributesAfterInit):
         self._check_estmethod_opt(meth, optname)
         meth.config[optname] = val
         
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_covar_opt(self, name=None):
-        """
-        get_covar_opt
+        """Return one or all of the options for the covariance
+        method.
 
-        SYNOPSIS
-           Return a covariance option by name
+        This is a helper function since the options can also
+        be read directly using the object returned by `get_covar`.
 
-        SYNTAX
+        Parameters
+        ----------
+        name : str, optional
+           If not given, a dictionary of all the options are returned.
+           When given, the individual value is returned.
 
-        Arguments:
-           name       - covariance option name
+        Returns
+        -------
+        value : dictionary or value
 
-        Returns:
-           covariance option value
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
 
-        DESCRIPTION
-           If given no argument, returns dictionary of all options
-           that govern how covariance is run.  If given the name
-           of an option, returns the value of that option.
+        See Also
+        --------
+        covar : Estimate confidence intervals using the covariance method.
+        get_covar : Return the covariance estimation object.
+        set_covar_opt : Set an option of the covar estimation object.
 
-        SEE ALSO
-           covar, set_covar_opt
+        Examples
+        --------
+
+        >>> get_covar_opt('sigma')
+        1
+
+        >>> copts = get_covar_opt()
+        >>> copts['sigma']
+        1
+
         """
         return self._get_estmethod_opt('covariance', name)
 
@@ -7960,7 +7995,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals for fit parameters.
+        conf : Estimate confidence intervals using the confidence method.
         get_conf : Return the confidence-interval estimation object.
         set_conf_opt : Set an option of the conf estimation object.
 
@@ -8071,7 +8106,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals for fit parameters.
+        conf : Estimate confidence intervals using the confidence method.
         get_conf : Return the conf estimation object.
         get_conf_opt : Return one or all options of the conf estimation object.
 
@@ -8108,50 +8143,96 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_estmethod_opt('projection', name, val)
 
-    # Functions to get confidence limit results after last run
-    # of named confidence limit function.
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_covar_results(self):
-        """
-        get_covar_results
+        """Return the results of the last `covar` run.
 
-        SYNOPSIS
-           Access covariance estimation results object
+        Returns
+        -------
+        results : sherpa.fit.ErrorEstResults object
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.SessionErr
+           If no `covar` call has been made.
 
-        Arguments:
-           None
+        See Also
+        --------
+        get_covar_opt : Return one or all of the options for the covariance method.
+        set_covar_opt : Set an option of the covar estimation object.
 
-        Returns:
-           Covar estimation results object
+        Notes
+        -----
+        The fields of the object include:
 
-        DESCRIPTION
-           Access results from the last time covar was run.  The results
-           include the following attributes:
+        `datasets`
+           A tuple of the data sets used in the analysis.
 
-           * datasets                        - Data sets in fit
-           
-           * methodname                      - Estimation method name
+        `methodname`
+           This will be `covariance`.
 
-           * fitname                         - Fitting method name
+        `iterfitname`
+           The name of the iterated-fit method used, if any.
 
-           * statname                        - Statistic name
+        `fitname`
+           The name of the optimization method used.
 
-           * sigma                           - Change in statistic
+        `statname`
+           The name of the fit statistic used.
 
-           * parnames                        - Model parameter names
+        `sigma`
+           The `sigma` value used to calculate the confidence
+           intervals.
 
-           * parvals                         - Model parameter fit values
+        `percent`
+           The percentage of the signal contained within the
+           confidence intervals (calculated from the `sigma`
+           value assuming a normal distribution).
 
-           * parmins                         - Model parameter minimum values
+        `parnames`
+           A tuple of the parameter names included in the analysis.
 
-           * parmaxes                        - Model parameter maximum values
+        `parvals`
+           A tuple of the best-fit parameter values, in the same
+           order as `parnames`.
 
-           * warnings                        - Warning messages
+        `parmins`
+           A tuple of the lower error bounds, in the same
+           order as `parnames`.
 
-        SEE ALSO
-           conf, proj, covar, get_proj, get_conf_results,
-           get_proj_results, get_covar
+        `parmaxes`
+           A tuple of the upper error bounds, in the same
+           order as `parnames`.
+
+        `nfits`
+
+        There is also an `extra_output` field which is used to return
+        the covariance matrix.
+
+        Examples
+        --------
+
+        >>> res = get_covar_results()
+        >>> print(res)
+        datasets    = (1,)
+        methodname  = covariance
+        iterfitname = none
+        fitname     = levmar
+        statname    = chi2gehrels
+        sigma       = 1
+        percent     = 68.2689492137
+        parnames    = ('bgnd.c0',)
+        parvals     = (10.228675427602724,)
+        parmins     = (-2.4896739438296795,)
+        parmaxes    = (2.4896739438296795,)
+        nfits       = 0
+
+        In this case, of a single parameter, the covariance
+        matrix is just the variance of the parameter:
+
+        >>> copt.extra_output
+        array([[ 6.19847635]])
+
         """
         if self._covariance_results == None:
             raise SessionErr('noaction', "covariance")
@@ -8165,7 +8246,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        results : object
+        results : sherpa.fit.ErrorEstResults object
            
         Raises
         ------
@@ -8174,7 +8255,6 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals for fit parameters.
         get_conf_opt : Return one or all of the options for the confidence interval method.
         set_conf_opt : Set an option of the conf estimation object.
 
@@ -8266,7 +8346,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        results : object
+        results : sherpa.fit.ErrorEstResults object
 
         Raises
         ------
