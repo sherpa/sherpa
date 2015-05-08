@@ -8317,31 +8317,45 @@ class Session(sherpa.ui.utils.Session):
     set_bkg_source = set_bkg_model
 
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def delete_bkg_model(self, id=None, bkg_id=None):
-        """
-        delete_bkg_model
+        """Delete the background model expression for a data set.
 
-        SYNOPSIS
-           Remove a bkg model by data id and bkg id
+        This removes the model expression, created by `set_bkg_model`,
+        for the background component of a data set. It does not delete
+        the components of the expression, or remove the models for any
+        other background components or the source of the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or string, optional
+           The identifier for the background component to use.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        clean : Clear all stored session data.
+        delete_model : Delete the model expression for a data set.
+        get_default_id : Return the default data set identifier.
+        list_bkg_ids : List all the background identifiers for a data set.
+        set_model : Set the source model expression for a data set.
+        show_model : Display the source model expression for a data set.
 
-           bkg_id    - bkg id, if multiple bkgs exist
-                       default = default bkg id
+        Examples
+        --------
 
-        Returns:
-           None
+        Remove the background model expression for the default data set:
 
-        DESCRIPTION
-           Removes a background model from the stack by data id
-           and background id.
+        >>> delete_bkg_model()
 
-        SEE ALSO
-           get_bkg_model, set_bkg_model
+        Remove the model expression for the background component
+        labelled 'down' for the data set with the identifier 'src':
+
+        >>> delete_bkg_model('src', 'down')
+
         """
         id     = self._fix_id(id)
         bkg_id = self._fix_id(bkg_id)
