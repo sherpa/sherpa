@@ -14178,7 +14178,8 @@ class Session(NoNewAttributesAfterInit):
     # through unbound functions of the Image class--always talking to
     # the same instance of the Image backend, so OK for now
     def image_deleteframes(self):
-        """
+        """Delete a frame from the image viewer.
+
         image_deleteframes
 
         SYNOPSIS
@@ -14201,56 +14202,70 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.delete_frames()
         
+    ### Ahelp ingest: 2015-05-08 DJB
     def image_open(self):
-        """
-        image_open
+        """Start the image viewer.
 
-        SYNOPSIS
-           Open a image visualizer window
+        The image viewer will be started, if found. Calling this
+        function when the viewer has already been started will not
+        cause a second viewer to be started. The image viewer
+        will be started automatically by any of the commands
+        like `image_data`.
 
-        SYNTAX
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_deleteframes : Delete a frame from the image viewer.
+        image_getregion : Return the region defined in the image viewer.
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaget : Return the result of an XPA call to the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        Arguments:
-           None
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        Returns:
-           None
+        References
+        ----------
 
-        DESCRIPTION
-           Open a window for image visualization.
+        .. [1] http://ds9.si.edu/site/Home.html
 
-        SEE ALSO
-           image_deleteframes, image_close, image_getregion, image_setregion,
-           image_xpaget, image_xpaset
+        Examples
+        --------
+
+        >>> image_open()
+
         """
         sherpa.image.Image.open()
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def image_close(self):
-        """
-        image_close
+        """Close the image viewer.
 
-        SYNOPSIS
-           Close a image visualizer window
+        Close the image viewer created by a previous call to one
+        of the `image_xxx` functions.
 
-        SYNTAX
+        See Also
+        --------
+        image_deleteframes : Delete a frame from the image viewer.
+        image_getregion : Return the region defined in the image viewer.
+        image_open : Start the image viewer.
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaget : Return the result of an XPA call to the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           None
+        >>> image_close()
 
-        DESCRIPTION
-           Close a image visualizer window.
-
-        SEE ALSO
-           image_open, image_deleteframes, image_getregion, image_setregion,
-           image_xpaget, image_xpaset
         """
         sherpa.image.Image.close()
 
     def image_getregion(self, coord=''):
-        """
+        """Return the region defined in the image viewer.
+
         image_getregion
 
         SYNOPSIS
@@ -14274,7 +14289,8 @@ class Session(NoNewAttributesAfterInit):
         return sherpa.image.Image.get_region(coord)
 
     def image_setregion(self, reg, coord=''):
-        """
+        """Set the region to display in the image viewer.
+
         image_setregion
 
         SYNOPSIS
@@ -14298,7 +14314,8 @@ class Session(NoNewAttributesAfterInit):
         sherpa.image.Image.set_region(reg, coord)
 
     def image_xpaget(self, arg):
-        """
+        """Return the result of an XPA call to the image viewer.
+
         image_xpaget
 
         SYNOPSIS
@@ -14322,8 +14339,7 @@ class Session(NoNewAttributesAfterInit):
         return sherpa.image.Image.xpaget(arg)
 
     def image_xpaset(self, arg, data=None):
-        """
-        image_deleteframes
+        """Send an XPA command to the image viewer.
 
         SYNOPSIS
            Send an XPA data stream
