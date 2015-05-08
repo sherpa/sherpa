@@ -11949,7 +11949,7 @@ class Session(NoNewAttributesAfterInit):
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
            Set to `True` to use the values calculated by the last
-           call to `plot_data`. The default is `False`.
+           call to `contour_data`. The default is `False`.
         overcontour : bool, optional
            If `True` then add the data to an exsiting plot, otherwise
            create a new contour plot. The default is `False`.
@@ -11989,7 +11989,7 @@ class Session(NoNewAttributesAfterInit):
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
            Set to `True` to use the values calculated by the last
-           call to `plot_data`. The default is `False`.
+           call to `contour_model`. The default is `False`.
         overcontour : bool, optional
            If `True` then add the data to an exsiting plot, otherwise
            create a new contour plot. The default is `False`.
@@ -12032,7 +12032,7 @@ class Session(NoNewAttributesAfterInit):
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
            Set to `True` to use the values calculated by the last
-           call to `plot_data`. The default is `False`.
+           call to `contour_source`. The default is `False`.
         overcontour : bool, optional
            If `True` then add the data to an exsiting plot, otherwise
            create a new contour plot. The default is `False`.
@@ -12091,67 +12091,89 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._fitcontour, **kwargs)
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def contour_resid(self, id=None, **kwargs):
-        """
-        contour_resid
+        """Contour the residuals of the fit.
 
-        SYNOPSIS
-           Send a residuals contour plot to the visualizer
+        The residuals are formed by subtracting the current model -
+        including any PSF - from the data.  The preferences are the
+        same as `contour_data`.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set that provides the data and model. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_resid`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_resid_contour : Return the data used by contour_resid.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        Plot the residuals from the default data set:
 
-        Returns:
-           None
+        >>> contour_resid()
 
-        DESCRIPTION
-           Visualize the residuals (dataset minus dataset model) by Sherpa data
-           id.
+        Overplot the residuals on the model:
 
-        SEE ALSO
-           get_resid_contour, contour_ratio, contour_fit_resid, contour_fit,
-           contour_data, contour_model
+        >>> contour_model('img')
+        >>> contour_resid('img', overcontour=True)
+
         """
         self._contour(id, self._residcontour, **kwargs)
     
+    ### Ahelp ingest: 2015-05-08 DJB
     def contour_ratio(self, id=None, **kwargs):
-        """
-        contour_ratio
+        """Contour the ratio of data to model.
 
-        SYNOPSIS
-           Send a ratio plot to the visualizer
+        The ratio image is formed by dividing the data by the current
+        model, including any PSF. The preferences are the same as
+        `contour_data`.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set that provides the data and model. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_ratio`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_ratio_contour : Return the data used by contour_ratio.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        Plot the ratio from the default data set:
 
-        Returns:
-           None
+        >>> contour_ratio()
 
-        DESCRIPTION
-           Visualize the ratio (dataset divided by dataset model) by Sherpa
-           data id.
+        Overplot the ratio on the residuals:
 
-        SEE ALSO
-           get_ratio_contour, contour_resid, contour_fit_resid, contour_fit,
-           contour_data, contour_model
+        >>> contour_resid('img')
+        >>> contour_ratio('img', overcontour=True)
+
         """
         self._contour(id, self._ratiocontour, **kwargs)
 
