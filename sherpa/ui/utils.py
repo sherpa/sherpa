@@ -8376,31 +8376,129 @@ class Session(NoNewAttributesAfterInit):
         info(res.format())
         return res
 
+    ### Ahelp ingest: 2015-05-08 DJB
+    ### DOC-TODO: include screen output of covar() ?
     def covar(self, *args):
-        """
-        covar
+        """Estimate the confidence intervals for parameters using the
+        covariance method.
 
-        SYNOPSIS
-           Estimate confidence intervals for selected thawed parameters
+        The `covar` command computes confidence interval bounds for
+        the specified model parameters in the dataset, using the
+        covariance matrix of the statistic. The `get_covar` and
+        `set_covar_opt` commands can be used to configure the error
+        analysis; an example being changing the 'sigma' field to `1.6`
+        (i.e. 90%) from its default value of `1`.  The output from the
+        routine is displayed on screen, and the `get_covar_results`
+        routine can be used to retrieve the results.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The `id` and `otherids` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        parameters : optional
+           The default is to calculate the confidence limits on all
+           thawed parameters of the model, or models, for all the
+           data sets. The evaluation can be restricted by listing
+           the parameters to use. Note that each parameter should be
+           given as a separate argument, rather than as a list.
+           For example `covar(g1.ampl, g1.sigma)`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        covar : Estimate the confidence intervals using the confidence method.
+        get_covar : Return the covariance estimation object.
+        get_covar_results : Return the results of the last `covar` run.
+        int_proj : Plot the statisitic value as a single parameter is varied.
+        int_unc : Plot the statisitic value as a single parameter is varied.
+        reg_proj : Plot the statistic value as two parameters are varied.
+        reg_unc : Plot the statistic value as two parameters are varied.
+        set_covar_opt : Set an option of the `covar` estimation object.
 
-           otherids  - Other Sherpa data ids
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with multiple `ids` or `parameters` values, the
+        order is unimportant, since any argument that is not defined
+        as a model parameter is assumed to be a data id.
 
-           pars      - Sherpa model parameters
+        The `covar` command is different to `conf`, in that in that
+        all other thawed parameters are fixed, rather than being
+        allowed to float to new best-fit values.  While `conf` is more
+        general (e.g. allowing the user to examine the parameter space
+        away from the best-fit point), it is in the strictest sense no
+        more accurate than `covar` for determining confidence
+        intervals.
 
-        Returns:
-           Formatted estimation results output
+        An estimated confidence interval is accurate if and only if:
 
-        DESCRIPTION
+        1. the chi^2 or logL surface in parameter space is
+           approximately shaped like a multi-dimensional paraboloid,
+           and
 
-        SEE ALSO
-           proj, get_proj, get_covar, get_covar_results,
-           get_proj_results
+        2. the best-fit point is sufficiently far from parameter space
+           boundaries.
+
+        One may determine if these conditions hold, for example, by
+        plotting the fit statistic as a function of each parameter's
+        values (the curve should approximate a parabola) and by
+        examining contour plots of the fit statistics made by varying
+        the values of two parameters at a time (the contours should be
+        elliptical, and parameter space boundaries should be no closer
+        than approximately 3 sigma from the best-fit point). The
+        `int_proj` and `reg_proj` commands may be used for this.
+
+        If either of the conditions given above does not hold, then
+        the output from `covar` may be meaningless except to give an
+        idea of the scale of the confidence intervals. To accurately
+        determine the confidence intervals, one would have to
+        reparameterize the model, use Monte Carlo simulations, or
+        Bayesian methods.
+
+        As `covar` estimates intervals for each parameter
+        independently, the relationship between sigma and the change
+        in statistic value delta_S can be particularly simple: sigma =
+        the square root of delta_S for statistics sampled from the
+        chi-square distribution and for the Cash statistic, and is
+        approximately equal to the square root of (2 * delta_S) for
+        fits based on the general log-likelihood. The default setting
+        is to calculate the one-sigma interval, which can be changed
+        with the `sigma` option to `set_covar_opt` or `get_covar`.
+
+        Examples
+        --------
+
+        Evaluate confidence intervals for all thawed parameters in all
+        data sets with an associated source model. The results are
+        then stored in the variable `res`.
+
+        >>> covar()
+        >>> res = get_covar_results()
+
+        Only evaluate the parametes associated with data set 2.
+
+        >>> covar(2)
+
+        Only evaluate the intervals for the `pos.xpos` and `pos.ypos`
+        parameters:
+
+        >>> covar(pos.xpos, pos.ypos)
+
+        Change the limits to be 1.6 sigma (90%) rather than the default
+        1 sigma.
+
+        >>> get_covar().sigma = 1.6
+        >>> covar()
+
+        Only evaluate the `clus.kt` parameter for the data sets with
+        identifiers "obs1", "obs5", and "obs6". This will still use
+        the 1.6 sigma setting from the previous run.
+
+        >>> covar("obs1", ["obs5","obs6"], clus.kt)
+
         """
         self._covariance_results = self._est_errors(args, 'covariance')
     
@@ -8442,7 +8540,9 @@ class Session(NoNewAttributesAfterInit):
         get_conf : Return the confidence-interval estimation object.
         get_conf_results : Return the results of the last `conf` run.
         int_proj : Plot the statisitic value as a single parameter is varied.
+        int_unc : Plot the statisitic value as a single parameter is varied.
         reg_proj : Plot the statistic value as two parameters are varied.
+        reg_unc : Plot the statistic value as two parameters are varied.
         set_conf_opt : Set an option of the `conf` estimation object.
 
         Notes
