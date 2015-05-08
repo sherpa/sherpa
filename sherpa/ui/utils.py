@@ -11853,48 +11853,88 @@ class Session(NoNewAttributesAfterInit):
         else:            
             sherpa.plot.end()
 
+    ### Ahelp ingest: 2015-05-07 DJB
+    ### DOC-TODO: how to describe optional plot types
+    ### DOC-TODO: how to list information/examples about the backends?
+    ###           have some introductory text, but prob. need a link
+    ###           to more information
     def contour(self, *args):
-        """
-        contour
+        """Create a contour plot for an image data set.
 
-        SYNOPSIS
-           Send a combination contour plot to the visualizer
+        Create one or more contour plots, depending on the arguments
+        it is set: a plot type, followed by an optional data set
+        identifier, and this can be repeated. If no data set
+        identifier is given for a plot type, the default identifier -
+        as returned by `get_default_id` - is used. This is for
+        2D data sets.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           The data set does not support the requested plot type.
 
-        Arguments:
-           contour0    - string of first plot type
+        See Also
+        ---------
+        contour_data :
+        contour_fit :
+        contour_fit_resid :
+        contour_kernel :
+        contour_model :
+        contour_psf :
+        contour_ratio :
+        contour_resid :
+        contour_source :
+        get_default_id : Return the default data set identifier.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-           id0         - Sherpa data id
-                         default = default data id
+        Notes
+        -----
+        The supported plot types depend on the data set type, and
+        include the following list. There are also individual
+        functions, with `contour_` prepended to the plot type, such as
+        `contour_data` and the `contour_fit_resid` variant.
 
-           ...
+        `data`
+           The data.
 
-           contourn    - string of nth plot type
+        `fit`
+           Contours of the data and the source model.
 
-           idn         - Sherpa data id
-                         default = default data id
+        `fit_resid`
+           Two plots: the first is the contours of the data and the
+           source model and the second is the residuals.
 
-        Returns:
-           None
+        `kernel`
+           The kernel.
 
-        DESCRIPTION
-           Visualize multiple contour plots by Sherpa data ids.
+        `model`
+           The source model including any PSF convolution set by
+           `set_psf`.
 
-           Applicable types include: 'data', 'model', 'fit', 'resid',
-                                     'ratio', 'psf'
+        `psf`
+           The PSF.
 
-           Example 1:
+        `ratio`
+           Contours of the ratio image, formed by dividing the data by
+           the model.
 
-               contour('data', 'model')
+        `resid`
+           Contours of the residual image, formed by subtracting the
+           model from the data.
 
-           Example 2: using ids
+        `source`
+           The source model (without any PSF convolution set by
+           `set_psf`).
 
-               contour('data', 1, 'model', 1)
+        Examples
+        --------
 
-        SEE ALSO
-           contour_fit, contour_data, contour_model, contour_resid,
-           contour_ratio, contour_fit_resid
+        >>> contour('data')
+
+        >>> contour('data', 1, 'data', 2)
+
+        >>> contour('data', 'model')
+
         """
         self._multi_plot(args, 'contour')
 
