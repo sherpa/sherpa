@@ -12704,81 +12704,102 @@ class Session(NoNewAttributesAfterInit):
             self._intunc.calc(fit,par)
         return self._intunc
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_reg_proj(self, par0=None, par1=None, id=None, otherids=None,
                      recalc=False, fast=True, min=None, max=None, 
                      nloop=(10,10),delv=None, fac=4, log=(False,False),
                      sigma=(1,2,3), levels=None, numcores=None):
-        """
-        get_reg_proj
+        """Return the region-projection object.
 
-        SYNOPSIS
-           Return a confidence contour of fit statistic vs. two thawed
-           parameter values.  At each step a fit is performed to obtain a new
-           statistic if other thawed parameter(s) exist in the source model,
-           otherwise, calculate the statistic (see get_reg_unc).
+        This returns (and optionally calculates) the data used to
+        display the `reg_proj` contour plot.
 
-        SYNTAX
+        Parameters
+        ----------
+        par0, par1
+           The parameters to plot on the X and Y axes, respectively.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The `id` and `otherids` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        recalc : bool, optional
+           The default value (`False`) means that the results from the
+           last call to `reg_proj` (or `get_reg_proj`) are returned,
+           ignoring the other parameter values. Otherwise, the
+           statistic curve is re-calculated, but not plotted.
+        fast : bool, optional
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
+        min : pair of numbers, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : pair of number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : pair of int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : pair of number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : pair of bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        sigma : sequence of number, optional
+           The levels at which to draw the contours. The units are the
+           change in significance relative to the starting value,
+           in units of sigma.
+        levels : sequence of number, optional
+           The numeric values at which to draw the contours. This
+           over-rides the `sigma` parameter, if set (the default is
+           `None`).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-           par0      - first source model parameter
-                     - default = None
+        Returns
+        -------
+        rproj : sherpa.plot.RegionProjection instance
+           The fields of this object can be used to re-create the plot
+           created by `reg_proj`.
 
-           par1      - second source model parameter
-                       default = None
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        int_unc : Calculate and plot the fit statistic versus fit parameter value.
+        reg_proj : Plot the statistic value as two parameters are varied.
+        reg_unc : Plot the statistic value as two parameters are varied.
 
-           id        - Sherpa data id
-                       default = default data id
+        Examples
+        --------
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Return the results for the `reg_proj` run:
 
-           recalc    - calculate confidence data
-                       default=False
+        >>> reg_proj(src.xpos, src.ypos)
+        >>> rproj = get_reg_proj()
 
-           fast      - change opt method to levmar for Chi2 statistics
-                       default=True
+        Create the data without creating a plot:
 
-           min       - list of minimums [min par0, min par1]
-                       default=None
+        >>> rproj = get_reg_proj(pl.gamma, gal.nh, recalc=True)
 
-           max       - list of maximums [max par0, max par1]
-                       default=None
+        Control how the data is created:
 
-           nloop     - list of bin sizes, used in calculating stepsize for each
-                       dimension
-                       default=(10,10)
+        >>> rproj = get_reg_proj(pl.gamma, gal.nh, id="src",
+                                 min=(0.5,0.01), max=(2.5,1),
+                                 nloop=(51,51), log=(False,True),
+                                 recalc=True)
 
-           delv      - list of stepsizes, calculated by default
-                       default=None
-
-           fac       - factor used to expand or condense interval,
-                       default=4
-
-           log       - list of booleans to use log space for interval
-                       default=(False,False)
-
-           sigma     - list of sigmas used to calculate the confidence levels
-                       (slices)
-                       default=(1,2,3)
-
-           levels    - confidence level values
-                       default=None
-
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
-
-        Returns:
-           reg_proj object
-
-        DESCRIPTION
-
-           Example: for users who do not want to create contours:
-
-                print get_reg_proj( par0, par1, recalc=True )
-
-        SEE ALSO
-           int_unc, int_proj, reg_unc, get_reg_unc
         """
         if sherpa.utils.bool_cast(recalc):
             par0 = self._check_par(par0, 'par0')
