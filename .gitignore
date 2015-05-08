@@ -27,6 +27,9 @@ extern/fftw-3.3.4/tools/fftw-wisdom
 extern/fftw-3.3.4/tools/fftw-wisdom-to-conf
 extern/fftw-3.3.4/tools/fftw_wisdom.1
 
+# VI
+*.swp
+
 # Packages
 *.egg
 *.egg-info
