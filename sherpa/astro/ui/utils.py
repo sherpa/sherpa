@@ -5351,32 +5351,46 @@ class Session(sherpa.ui.utils.Session):
             resp_id = resp_ids.pop(0)
             self.load_rmf(id, filename, resp_id)
         
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_bkg(self, id=None, bkg_id=None):
         """Return the background for a PHA data set.
 
-        get_bkg
+        The object returned by the call can be used to query and
+        change properties of the background of data set.
 
-        SYNOPSIS
-           Return an background PHA dataset by data id and bkg_id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           The identifier for this background, which is needed if
+           there are multiple background estimates for the source.
 
-        SYNTAX
+        Returns
+        -------
+        data : a sherpa.astro.data.DataPHA object
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+        sherpa.utils.err.IdentifierErr
+           If no data set is associated with this identifier.
 
-           bkg_id    - background id, if multiple bkgs exist
-                       default = default background id
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_bkg : Load the backgreound from a file and add it to a PHA data set.
+        set_bkg : Set the background for a PHA data set.
 
-        Returns:
-           Sherpa DataPHA dataset
+        Examples
+        --------
 
-        DESCRIPTION
-           Return a dataset containing background PHA data
-           given a data id and a background id.
+        >>> bg = get_bkg()
 
-        SEE ALSO
-           set_bkg, unpack_bkg, load_bkg
+        >>> bg = get_bkg('flare', 2)
+
         """
         data = self._get_pha_data(id)
         bkg = data.get_background(bkg_id)
