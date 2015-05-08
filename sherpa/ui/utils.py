@@ -5709,6 +5709,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         create_model_component : Create a model component.
         get_model : Return the model expression for a data set.
+        get_model_pars : Return the names of the parameters of a model.
         get_source : Return the source model expression for a data set.
 
         Examples
@@ -5738,34 +5739,34 @@ class Session(NoNewAttributesAfterInit):
         model = self._check_model(model)
         return type(model).__name__.lower()
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_model_pars(self, model):
         """Return the names of the parameters of a model.
 
-        get_model_pars
+        Parameters
+        ----------
+        model : str or a sherpa.models.model.Model object
 
-        SYNOPSIS
-           Return a list of Sherpa model parameters by model or model 
-           expression
+        Returns
+        -------
+        names : list of str
+           The names of the parameters in the model expression.  These
+           names do not include the name of the parent component.
 
-        SYNTAX
+        See Also
+        --------
+        create_model_component : Create a model component.
+        get_model : Return the model expression for a data set.
+        get_model_type : Describe a model expression.
+        get_source : Return the source model expression for a data set.
 
-        Arguments:
-           model      - label of model object
+        Examples
+        --------
 
-        Returns:
-           list of model parameters
+        >>> set_source(gauss2d.src + const2d.bgnd)
+        >>> get_model_pars(get_source())
+        ['fwhm', 'xpos', 'ypos', 'ellip', 'theta', 'ampl', 'c0']
 
-        DESCRIPTION
-           Get a list of Sherpa model parameters by model variable or model
-           expression string.
-
-           Example 1
-
-               get_model_pars( gauss1d.foo.apply( psf1d.pp ) )
-           ['fwhm', 'pos', 'ampl', 'xsize', 'xoff']
-
-        SEE ALSO
-           list_model_ids, set_model, get_model, delete_model, get_model_type
         """
         model = self._check_model(model)
         return [p.name for p in model.pars]
