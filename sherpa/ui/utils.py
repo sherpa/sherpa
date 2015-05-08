@@ -11875,7 +11875,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         ---------
-        contour_data :
+        contour_data : Contour the values of an image data set.
         contour_fit :
         contour_fit_resid :
         contour_kernel :
@@ -11938,33 +11938,43 @@ class Session(NoNewAttributesAfterInit):
         """
         self._multi_plot(args, 'contour')
 
+    ### Ahelp ingest: 2015-05-07 DJB
     def contour_data(self, id=None, **kwargs):
-        """
-        contour_data
+        """Contour the values of an image data set.
 
-        SYNOPSIS
-           Send a data contour plot to the visualizer
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_data`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        SYNTAX
+        See Also
+        --------
+        get_data_contour : Return the data used by contour_data.
+        get_data_contour_prefs : Return the preferences for contour_data.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Examples
+        --------
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Plot the data from the default data set:
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        >>> contour_data()
 
-        Returns:
-           None
+        Contour the data and then overplot the data from the second
+        data set:
 
-        DESCRIPTION
-           Visualize a dataset by Sherpa data id.
+        >>> contour_data()
+        >>> contour_data(2, overcontour=True)
 
-        SEE ALSO
-           get_data_contour, contour_model, contour_fit, contour_fit_resid
         """
         self._contour(id, self._datacontour, **kwargs)
         
