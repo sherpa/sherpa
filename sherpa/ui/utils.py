@@ -8127,28 +8127,41 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_estmethod_opt('confidence', name, val)
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def set_proj_opt(self, name, val):
-        """
-        set_proj_opt
-        
-        SYNOPSIS
-           Set a projection option by name
-        
-        SYNTAX
-        
-        Arguments:
-           name       - projection option name
-           val        - projection option value
-        
-        Returns:
-           None
-        
-        DESCRIPTION
-           For the named projection option, set that option to the new
-           value.
-        
-        SEE ALSO
-           proj, get_proj_opt
+        """Set an option for the projection method.
+
+        .. note:: The `conf` function should be used instead of `proj`.
+
+        This is a helper function since the options can also
+        be set directly using the object returned by `get_proj`.
+
+        Parameters
+        ----------
+        name : str
+           The name of the option to set. The `get_proj`
+           routine can be used to find out valid values for
+           this argument.
+        val :
+           The new value for the option.
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
+
+        See Also
+        --------
+        conf : Estimate confidence intervals using the confidence method.
+        proj : Estimate confidence intervals using the projection method.
+        get_proj : Return the proj estimation object.
+        get_proj_opt : Return one or all options of the proj estimation object.
+
+        Examples
+        --------
+
+        >>> set_proj_opt('parallel', False)
+
         """
         self._set_estmethod_opt('projection', name, val)
 
