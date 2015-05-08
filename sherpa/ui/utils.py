@@ -8057,28 +8057,38 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_estmethod_opt('projection', name)
     
+    ### Ahelp ingest: 2015-05-08 DJB
     def set_covar_opt(self, name, val):
-        """
-        set_covar_opt
-        
-        SYNOPSIS
-           Set a covariance option by name
-        
-        SYNTAX
-        
-        Arguments:
-           name       - covariance option name
-           val        - covariance option value
-        
-        Returns:
-           None
-        
-        DESCRIPTION
-           For the named covariance option, set that option to the new
-           value.
-        
-        SEE ALSO
-           covar, get_covar_opt
+        """Set an option for the covariance method.
+
+        This is a helper function since the options can also
+        be set directly using the object returned by `get_covar`.
+
+        Parameters
+        ----------
+        name : str
+           The name of the option to set. The `get_covar`
+           routine can be used to find out valid values for
+           this argument.
+        val :
+           The new value for the option.
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
+
+        See Also
+        --------
+        covar : Estimate confidence intervals using the covariance method.
+        get_covar : Return the covar estimation object.
+        get_covar_opt : Return one or all options of the covar estimation object.
+
+        Examples
+        --------
+
+        >>> set_covar_opt('sigma', 1.6)
+
         """
         self._set_estmethod_opt('covariance', name, val)
 
@@ -8093,9 +8103,8 @@ class Session(NoNewAttributesAfterInit):
         ----------
         name : str
            The name of the option to set. The `get_conf`
-           routine can be used to find out valid values for 
+           routine can be used to find out valid values for
            this argument.
-
         val :
            The new value for the option.
 
