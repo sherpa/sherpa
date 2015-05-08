@@ -5006,8 +5006,8 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         create_model_component : Create a model component.
-        get_model :
-        get_source :
+        get_model : Return the model expression for a data set.
+        get_source : Return the source model expression for a data set.
         list_model_components : List the names of all the model components.
         set_model : Set the source model expression for a data set.
 
@@ -5369,6 +5369,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_source(id)
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_model(self, id=None):
         """Return the model expression for a data set.
 
@@ -5691,48 +5692,48 @@ class Session(NoNewAttributesAfterInit):
                     'a model object or model expression string')
         return model
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_model_type(self, model):
         """Describe a model expression.
 
-        get_model_type
+        Parameters
+        ----------
+        model : str or a sherpa.models.model.Model object
 
-        SYNOPSIS
-           Return a Sherpa model type by model or model expression string
+        Returns
+        -------
+        type : str
+           The name of the model expression.
 
-        SYNTAX
+        See Also
+        --------
+        create_model_component : Create a model component.
+        get_model : Return the model expression for a data set.
+        get_source : Return the source model expression for a data set.
 
-        Arguments:
-           model      - model variable
+        Examples
+        --------
 
-        Returns:
-           type of model
+        >>> create_model_component("powlaw1d", "pl")
+        >>> get_model_type("pl")
+        'powlaw1d'
 
-        DESCRIPTION
-           Get the Sherpa model type by the model variable or model expression
-           string.
+        For expressions containing more than one component, the
+        result is likely to be 'binaryopmodel'
 
-           Example 1
+        >>> get_model_type(const1d.norm * (polynom1d.poly + gauss1d.gline))
+        'binaryopmodel'
 
-               foo = gauss1d.foo
-               get_model_type( foo )
-           'gauss1d'
-           
-           Example 2
-           
-               get_model_type( gauss1d.foo * const1d.bar )
-           'binaryopmodel'
+        For sources with some form of an instrument model - such as a
+        PSF convolution for an image or a PHA file with response
+        information from the ARF and RMF - the response can depend on
+        whether the expression contains this extra information or not:
 
-           Example 3 ( from astro package )
+        >>> get_model_type(get_source('spec'))
+        'binaryopmodel'
+        >>> get_model_type(get_model('spec'))
+        'rspmodelpha'
 
-               arf = get_arf()
-               rmf = get_rmf()
-               src = xsphabs.abs1 + powlaw1d.p1
-               foo = (src.apply( arf.apply_arf )).apply( rmf.apply_rmf )
-               get_model_type(foo)
-           'nestedmodel'
-
-        SEE ALSO
-           list_model_ids, set_model, get_model, delete_model, get_model_pars
         """
         model = self._check_model(model)
         return type(model).__name__.lower()
