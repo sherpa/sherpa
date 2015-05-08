@@ -11876,13 +11876,13 @@ class Session(NoNewAttributesAfterInit):
         See Also
         ---------
         contour_data : Contour the values of an image data set.
-        contour_fit :
+        contour_fit : Contour the fit to a data set.
         contour_fit_resid :
-        contour_kernel :
+        contour_kernel : Contour the kernel applied to the model of an image data set.
         contour_model : Contour the values of the model, including any PSF.
-        contour_psf :
-        contour_ratio :
-        contour_resid :
+        contour_psf : Contour the PSF applied to the model of an image data set.
+        contour_ratio : Contour the ratio of data to model.
+        contour_resid : Contour the residuals of the fit.
         contour_source : Contour the values of the model, without any PSF.
         get_default_id : Return the default data set identifier.
         sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
@@ -12191,66 +12191,66 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._ratiocontour, **kwargs)
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def contour_psf(self, id=None, **kwargs):
-        """
-        contour_psf
+        """Contour the PSF applied to the model of an image data set.
 
-        SYNOPSIS
-           Send a PSF contour to the visualizer
+        If the data set has no PSF applied to it, the model is
+        displayed.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set that provides the model. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_psf`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_psf_contour : Return the data used by contour_psf.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        contour_kernel : Contour the kernel applied to the model of an image data set.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
+        set_psf : Apply a PSF model to a data set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
-
-           overcontour - Contour data without clearing previous plot
-                         default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Visualize the PSF image or PSF model contour by Sherpa data id.
-
-        SEE ALSO
-           get_ratio_contour, contour_resid, contour_fit_resid, contour_fit,
-           contour_data, contour_model
         """
         self._contour(id, self._psfcontour, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def contour_kernel(self, id=None, **kwargs):
-        """
-        contour_kernel
+        """Contour the kernel applied to the model of an image data set.
 
-        SYNOPSIS
-           Send a PSF kernel contour to the visualizer
+        If the data set has no PSF applied to it, the model is
+        displayed.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set that provides the model. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_kernel`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_psf_contour : Return the data used by contour_psf.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        contour_psf : Contour the PSF applied to the model of an image data set.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
+        set_psf : Apply a PSF model to a data set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
-
-           overcontour - Contour data without clearing previous plot
-                         default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Visualize the PSF sub-kernel contour by Sherpa data id.
-
-        SEE ALSO
-           get_ratio_contour, contour_resid, contour_fit_resid, contour_fit,
-           contour_data, contour_model
         """
         self._contour(id, self._kernelcontour, **kwargs)
 
