@@ -12254,36 +12254,43 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._kernelcontour, **kwargs)
 
-
+    ### Ahelp ingest: 2015-05-08 DJB
     def contour_fit_resid(self, id=None, replot=False, overcontour=False):
-        """
-        contour_fit_resid
+        """Contour the fit and the residuals to a data set.
 
-        SYNOPSIS
-           Send fit and residual contours plot to the visualizer
+        Overplot the model - including any PSF - on the data. In a
+        separate plot contour the residuals. The preferences are the
+        same as `contour_data` and `contour_model`.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set that provides the data and model. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_fit_resid`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_fit_contour : Return the data used by contour_fit.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        contour_fit : Contour the fit to a data set.
+        contour_resid : Contour the residuals of the fit.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        Plot the fit and residuals for the default data set:
 
-        Returns:
-           None
+        >>> contour_fit_resid()
 
-        DESCRIPTION
-           Visualize the fit contour and residuals contour in a joint contour
-           window by Sherpa data id.
-
-        SEE ALSO
-           contour_resid, contour_ratio, contour_fit, contour_data,
-           contour_model
         """
         self._splitplot.reset()
         fc = self._fitcontour
