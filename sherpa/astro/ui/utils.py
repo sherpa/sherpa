@@ -5217,29 +5217,46 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
         self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_bkg_rmf(self, id=None):
-        """
-        get_bkg_rmf
+        """Return the background RMF associated with a PHA data set.
 
-        SYNOPSIS
-           Return a bkg RMF dataset by data id using default bkg_id and resp_id
+        This is for the case when there is only one background
+        component and one background response. If this does not hold,
+        use `get_rmf` and use the `bkg_id` and `resp_id` arguments.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        rmf : sherpa.astro.instrument.RMF1D instance
+           This is a reference to the RMF, rather than a copy, so that
+           changing the fields of the object will change the values in
+           the data set.
 
-        Returns:
-           Sherpa DataRMF dataset
+        See Also
+        --------
+        fake_pha : Simulate a PHA data set from a model.
+        load_bkg_rmf : Load a RMF from a file and add it to the background of a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        set_rmf : Set the RMF for use by a PHA data set.
+        unpack_rmf : Read in a RMF from a file.
 
-        DESCRIPTION
-           Return a dataset containing background response matrix data
-           given a data id using the default background id and default
-           response id.
+        Examples
+        --------
 
-        SEE ALSO
-           set_rmf, unpack_rmf, load_bkg_rmf
+        Copy the RMF from the default data set to data set `2`,
+        as the first component:
+
+        >>> rmf1 = get_bkg_arf()
+        >>> set_rmf(2, arf1, bkg_id=1)
+
         """
         bkg_id = self._get_pha_data(id).default_background_id
         resp_id = self._get_pha_data(id).primary_response_id
