@@ -5343,16 +5343,14 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         delete_model : Delete the model expression from a data set.
-        fit : Fit one or more data sets.
-        freeze : Fix model parameters so they are not changed by a fit.
         get_model : Return the model expression for a data set.
-        integrate1d : Integrate 1D source expressions.
+        get_model_pars : Return the names of the parameters of a model.
+        get_model_type : Describe a model expression.
         list_model_ids : List of all the data sets with a source expression.
         sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
         set_model : Set the source model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
         show_model : Display the source model expression for a data set.
-        thaw : Allow model parameters to be varied during a fit.
 
         Examples
         --------
@@ -5374,26 +5372,45 @@ class Session(NoNewAttributesAfterInit):
     def get_model(self, id=None):
         """Return the model expression for a data set.
 
-        get_model
+        This returns the model expression for a data set, including
+        any instrument response (e.g. PSF or ARF and RMF) whether
+        created automatically or with `set_full_model`.
 
-        SYNOPSIS
-           Return a Sherpa model by model id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        model : a sherpa.models.Model object
+           This can contain multiple model components. Changing
+           attributes of this model changes the model used by the data
+           set.
 
-        Arguments:
-           id         - model id
-                        default = default model id
+        See Also
+        --------
+        delete_model : Delete the model expression from a data set.
+        get_model_pars : Return the names of the parameters of a model.
+        get_model_type : Describe a model expression.
+        get_source : Return the source model expression for a data set.
+        list_model_ids : List of all the data sets with a source expression.
+        sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+        show_model : Display the source model expression for a data set.
 
-        Returns:
-           Sherpa model
+        Examples
+        --------
 
-        DESCRIPTION
-           Retrieve the full convolved Sherpa model by model id
+        Return the model fitted to the default data set:
 
-        SEE ALSO
-           list_model_ids, set_model, delete_model, get_model_type,
-           get_model_pars, get_model
+        >>> mdl = get_model()
+        >>> len(mdl.pars)
+        5
+
         """
         return self._get_model(id)
 
@@ -5675,7 +5692,8 @@ class Session(NoNewAttributesAfterInit):
         return model
 
     def get_model_type(self, model):
-        """
+        """Describe a model expression.
+
         get_model_type
 
         SYNOPSIS
@@ -5720,7 +5738,8 @@ class Session(NoNewAttributesAfterInit):
         return type(model).__name__.lower()
 
     def get_model_pars(self, model):
-        """
+        """Return the names of the parameters of a model.
+
         get_model_pars
 
         SYNOPSIS
