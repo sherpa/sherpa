@@ -12061,33 +12061,47 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._sourcecontour, **kwargs)
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def contour_fit(self, id=None, **kwargs):
-        """
-        contour_fit
+        """Contour the fit to a data set.
 
-        SYNOPSIS
-           Send a fit contour plot to the visualizer
+        Overplot the model - including any PSF - on the data. The
+        preferences are the same as `contour_data` and
+        `contour_model`.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set that provides the data and model. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_fit`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_fit_contour : Return the data used by contour_fit.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        Plot the fit for the default data set:
 
-        Returns:
-           None
+        >>> contour_fit()
 
-        DESCRIPTION
-           Visualize a dataset and dataset model by Sherpa data id.
+        Overplot the fit to data set 's2' on that of the default data
+        set:
 
-        SEE ALSO
-           get_fit_contour, contour_model, contour_data, contour_fit_resid
+        >>> contour_fit()
+        >>> contour_fit('s2', overcontour=True)
+
         """
         self._contour(id, self._fitcontour, **kwargs)
 
