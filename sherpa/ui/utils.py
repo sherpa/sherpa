@@ -14177,28 +14177,29 @@ class Session(NoNewAttributesAfterInit):
     # Manage these functions (open, close, delete frames, regions, XPA)
     # through unbound functions of the Image class--always talking to
     # the same instance of the Image backend, so OK for now
+
+    ### Ahelp ingest: 2015-05-08 DJB
     def image_deleteframes(self):
         """Delete a frame from the image viewer.
 
-        image_deleteframes
+        Delete all the frames - in other words, images - being
+        displayed in the image viewer (e.g. as created by
+        `image_data` or `image_fit`).
 
-        SYNOPSIS
-           Delete frames in image visualizer
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_getregion : Return the region defined in the image viewer.
+        image_open : Create the image viewer.
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaget : Return the result of an XPA call to the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        SYNTAX
+        Examples
+        --------
 
-        Arguments:
-           None
+        >>> image_deleteframes()
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Delete all frames in the image visualizer window.
-
-        SEE ALSO
-           image_open, image_close, image_getregion, image_setregion,
-           image_xpaget, image_xpaset
         """
         sherpa.image.Image.delete_frames()
         
