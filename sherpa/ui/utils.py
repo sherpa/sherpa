@@ -14314,53 +14314,120 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.set_region(reg, coord)
 
+    ### Ahelp ingest: 2015-05-09 DJB
+    ### DOC-TODO: check the ds9 link when it is working
+    ### DOC-TODO: is there a link of ds9 commands we can link to?
     def image_xpaget(self, arg):
         """Return the result of an XPA call to the image viewer.
 
-        image_xpaget
+        Send a query to the image viewer.
 
-        SYNOPSIS
-           Return an XPA data stream
+        Parameters
+        ----------
+        arg : str
+           A command to send to the image viewer via XPA.
 
-        SYNTAX
+        Returns
+        -------
+        returnval : str
 
-        Arguments:
-           arg      - XPA agrument
+        Raises
+        ------
+        sherpa.utils.err.DS9Err
+           The image is not running.
+        sherpa.utils.err.RuntimeErr
+           If the command is not recognized.
 
-        Returns:
-           XPA data stream
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_getregion : Return the region defined in the image viewer.
+        image_open : Create the image viewer.
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        DESCRIPTION
-           Retrieve an XPA data stream from image visualizer.
+        Notes
+        -----
 
-        SEE ALSO
-           image_open, image_close, image_getregion, image_setregion,
-           image_deleteframes, image_xpaset
+        This XPA access point [1]_ of the ds9 image viewer lets
+        commands and queries to be sent to the viewer.
+
+        References
+        ----------
+
+        .. [1] http://ds9.si.edu/ref/xpa.html
+
+        Examples
+        --------
+
+        Return the current zoom setting of the active frame:
+
+        >>> image_xpaget('zoom')
+        '1\n'
+
         """
         return sherpa.image.Image.xpaget(arg)
 
+    ### Ahelp ingest: 2015-05-09 DJB
+    ### DOC-TODO: check the ds9 link when it is working
+    ### DOC-TODO: is there a link of ds9 commands we can link to?
     def image_xpaset(self, arg, data=None):
-        """Send an XPA command to the image viewer.
+        """Return the result of an XPA call to the image viewer.
 
-        SYNOPSIS
-           Send an XPA data stream
+        Send a command to the image viewer.
 
-        SYNTAX
+        Parameters
+        ----------
+        arg : str
+           A command to send to the image viewer via XPA.
+        data : optional
+           The data for the command.
 
-        Arguments:
-           arg      - XPA agrument
+        Raises
+        ------
+        sherpa.utils.err.DS9Err
+           The image is not running.
+        sherpa.utils.err.RuntimeErr
+           If the command is not recognized or could not be completed.
 
-           data     - data to be sent as stdin to the
-                      XPA argument (None by default)
-        Returns:
-           None
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_getregion : Return the region defined in the image viewer.
+        image_open : Create the image viewer.
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        DESCRIPTION
-           Send an XPA data stream to image visualizer.
+        Notes
+        -----
 
-        SEE ALSO
-           image_open, image_close, image_getregion, image_setregion,
-           image_xpaget, image_deleteframes
+        This XPA access point [1]_ of the ds9 image viewer lets
+        commands and queries to be sent to the viewer.
+
+        References
+        ----------
+
+        .. [1] http://ds9.si.edu/ref/xpa.html
+
+        Examples
+        --------
+
+        Change the zoom setting of the active frame:
+
+        >>> image_xpaset('zoom 4')
+
+        Overlay the coordinate grid on the current frame:
+
+        >>> image_xpaset('grid yes')
+
+        Add the region file `src.reg` to the display:
+
+        >>> image_xpaset('regions src.reg')
+
+        Create a png version of the image being displayed:
+
+        >>> image_xpaset('saveimage png /tmp/img.png')
+
         """
         return sherpa.image.Image.xpaset(arg, data)
 
