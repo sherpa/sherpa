@@ -13823,35 +13823,61 @@ class Session(NoNewAttributesAfterInit):
 
     def _image(self, id, imageobj, shape, newframe, tile, model=None):
         self._prepare_imageobj(id, imageobj, model).image(shape, newframe, tile)
-        
+
+    ### Ahelp ingest: 2015-05-09 DJB
     def image_data(self, id=None, newframe=False, tile=False):
-        """
-        image_data
+        """Display a data set in the image viewer.
 
-        SYNOPSIS
-           Send a data image to the visualizer
+        The image viewer is automatically started if it is not
+        already open.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_fit :
+        image_open : Open the image viewer.
+        image_source :
 
-           newframe    - Add a new frame
-                         default = False
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-           tile        - Tile image frame
-                         default = False
+        References
+        ----------
 
-        Returns:
-           None
+        .. [1] http://ds9.si.edu/site/Home.html
 
-        DESCRIPTION
-           Visualize an image dataset by Sherpa data id.
+        Examples
+        --------
 
-        SEE ALSO
-           get_data_image, image_model, image_fit, image_resid,
-           image_ratio, image_fit_resid, image_psf
+        Display the data in default data set.
+
+        >>> image_data()
+
+        Display data set 2 in a new frame so that the data in the
+        current frame is not destroyed. The new data will be displayed
+        in a single frame (i.e. the only data shown by the viewer).
+
+        >>> image_data(2, newframe=True)
+
+        Display data sets 'i1' and 'i2' side by side:
+
+        >>> image_data('i1')
+        >>> image_data('i2', newframe=True, tile=True)
+
         """
         self._image(id, self._dataimage, None,
                     newframe, tile)
