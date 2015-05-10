@@ -13843,6 +13843,11 @@ class Session(NoNewAttributesAfterInit):
            Should the frames be tiles? If `False`, the default, then
            only a single frame is displayed.
 
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
+
         See Also
         --------
         image_close : Close the image viewer.
@@ -13881,35 +13886,73 @@ class Session(NoNewAttributesAfterInit):
         """
         self._image(id, self._dataimage, None,
                     newframe, tile)
-    
+
+    ### Ahelp ingest: 2015-05-09 DJB
     def image_model(self, id=None, newframe=False, tile=False):
-        """
-        image_model
+        """Display tme model for a data set in the image viewer.
 
-        SYNOPSIS
-           Send a model image to the visualizer
+        This function evaluates and displays the model expression for
+        a data set, including any instrument response (e.g. PSF or ARF
+        and RMF) whether created automatically or with
+        `set_full_model`.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-           newframe    - Add a new frame
-                         default = False
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           tile        - Tile image frame
-                         default = False
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_fit :
+        image_open : Open the image viewer.
+        image_source :
 
-        Returns:
-           None
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a model image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_model_image, image_data, image_fit, image_resid,
-           image_ratio, image_fit_resid, image_psf, image_source
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the model for the default data set.
+
+        >>> image_model()
+
+        Display the model for data set 2 in a new frame so that the
+        data in the current frame is not destroyed. The new data will
+        be displayed in a single frame (i.e. the only data shown by
+        the viewer).
+
+        >>> image_model(2, newframe=True)
+
+        Display the models for data sets 'i1' and 'i2' side by side:
+
+        >>> image_model('i1')
+        >>> image_model('i2', newframe=True, tile=True)
+
         """
         self._image(id, self._modelimage, None,
                     newframe, tile)
