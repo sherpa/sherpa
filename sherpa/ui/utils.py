@@ -13854,7 +13854,7 @@ class Session(NoNewAttributesAfterInit):
         image_close : Close the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
         image_open : Open the image viewer.
-        image_source :
+        image_source : Display the model for a data set in the image viewer.
 
         Notes
         -----
@@ -13925,7 +13925,7 @@ class Session(NoNewAttributesAfterInit):
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
         image_model_component :
         image_open : Open the image viewer.
-        image_source :
+        image_source : Display the model for a data set in the image viewer.
         image_source_component :
 
         Notes
@@ -14152,14 +14152,11 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_source_image :
         image_close : Close the image viewer.
         image_data : Display a data set in the image viewer.
         image_model : Display the model for a data set in the image viewer.
-        image_model_component :
         image_open : Open the image viewer.
-        image_resid : 
-        image_source_component :
+        image_resid : Display the residuals (data - model) for a data set in the image viewer.
 
         Notes
         -----
@@ -14228,14 +14225,14 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_image :
+        get_ratio_image :
         image_close : Close the image viewer.
+        image_data : Display a data set in the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
         image_model : Display the model for a data set in the image viewer.
-        image_model_component :
         image_open : Open the image viewer.
-        image_source :
-        image_source_component :
+        image_ratio : Display the ratio (data/model) for a data set in the image viewer.
+        image_source : Display the model for a data set in the image viewer.
 
         Notes
         -----
@@ -14271,34 +14268,62 @@ class Session(NoNewAttributesAfterInit):
         self._image(id, self._residimage, None,
                     newframe, tile)
 
+    ### Ahelp ingest: 2015-05-09 DJB
     def image_ratio(self, id=None, newframe=False, tile=False):
-        """
-        image_ratio
+        """Display the ratio (data/model) for a data set in the image viewer.
 
-        SYNOPSIS
-           Send a ratio image to the visualizer
+        This function displays the ratio data/model for a data
+        set.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-           newframe    - Add a new frame
-                         default = False
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           tile        - Tile image frame
-                         default = False
+        See Also
+        --------
+        get_ratio_image :
+        image_close : Close the image viewer.
+        image_data : Display a data set in the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_resid : Display the residuals (data - model) for a data set in the image viewer.
+        image_source : Display the model for a data set in the image viewer.
 
-        Returns:
-           None
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a ratio image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_ratio_image, image_data, image_model, image_fit, image_resid,
-           image_fit_resid, image_psf
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the ratio (data/model) for the default data set.
+
+        >>> image_ratio()
+
         """
         self._image(id, self._ratioimage, None,
                     newframe, tile)
