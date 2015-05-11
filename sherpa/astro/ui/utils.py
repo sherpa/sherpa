@@ -8106,29 +8106,51 @@ class Session(sherpa.ui.utils.Session):
                               'has not been set')
 
     #@loggable(with_id=True, with_keyword='model')
+    ### Ahelp ingest: 2015-05-08 DJB
     def set_pileup_model(self, id, model=None):
-        """
-        set_pileup_model
+        """Include a model of the Chandra ACIS pile up when fitting PHA data.
 
-        SYNOPSIS
-           Set a jdpileup model by data id
+        Chandra observations of bright sources can be affected by
+        pileup, so that there is a non-linear correlation between
+        the source model and the predicted counts. This process can
+        be modelled by including the `jdpileup` model for a
+        data set, using the `set_pileup_model`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : an instance of the sherpa.astro.models.JDPileup class
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        set_model : Set the source model expression for a data set.
 
-           model     - Sherpa jdpileup model
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Put a Sherpa jdpileup model on the stack by data id
+        Plot up the model (an xsphabs model multiplied by a powlaw1d
+        component) and then overplot the same expression but including
+        the effects of pileup in the Chandra ACIS instrument:
 
-        SEE ALSO
-           jdpileup, get_pileup_model
+        >>> load_pha('src.pi')
+        >>> set_source(xsphabs.gal * powlaw1d.pl)
+        >>> plot_model()
+        >>> set_pileup_model(jdpileup.jpd)
+        >>> plot_model(overplot=True)
+
         """
         if model is None:
             id, model = model, id
