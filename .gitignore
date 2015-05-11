@@ -26,6 +26,9 @@ extern/fftw-3.3.4/tests/bench
 extern/fftw-3.3.4/tools/fftw-wisdom
 extern/fftw-3.3.4/tools/fftw-wisdom-to-conf
 extern/fftw-3.3.4/tools/fftw_wisdom.1
+sherpa/optmethods/src/_minimmodule.c
+sherpa/optmethods/src/minpack/_minpack-f2pywrappers.f
+sherpa/optmethods/src/minpack/_minpackmodule.c
 
 # VI
 *.swp
