@@ -8080,33 +8080,51 @@ class Session(sherpa.ui.utils.Session):
         return resp
 
 
+    ### Ahelp ingest: 2015-05-08 DJB
     def get_pileup_model(self, id=None):
-        """
-        get_pileup_model
+        """Return the pile up model for a data set.
 
-        SYNOPSIS
-           Return a jdpileup model by data id
+        Return the pile up model set by a call to `set_pileup_model`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        model : a sherpa.astro.models.JDPileup instance
 
-        Returns:
-           Sherpa jdpileup model
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no pile up model has been set for the data set.
 
-        DESCRIPTION
-           Retrieve a previously set jdpileup model by data id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_model : Return the model expression for a data set.
+        get_source : Return the source model expression for a data set.
+        sherpa.astro.models.JDPileup : The ACIS pile up model.
+        set_pileup_model : Include a model of the Chandra ACIS pile up when fitting PHA data.
 
-        SEE ALSO
-           set_pileup_model, jdpileup
+        Examples
+        --------
+
+        >>> jdp1 = get_pileup_model()
+        >>> jdp2 = get_pileup_model(2)
+
         """
         return self._get_item(id, self._pileup_models, 'pileup model',
                               'has not been set')
 
     #@loggable(with_id=True, with_keyword='model')
     ### Ahelp ingest: 2015-05-08 DJB
+    ### DOC-NOTE: should this be made a general function, since it
+    ###           presumably does not care about pileup, just adds the
+    ###           given model into the expression? Or is it PHA specific?
     def set_pileup_model(self, id, model=None):
         """Include a model of the Chandra ACIS pile up when fitting PHA data.
 
@@ -8127,6 +8145,9 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         fit : Fit one or more data sets.
+        get_pileup_model : Return the pile up model for a data set.
+        sherpa.models.model.JDPileup : The ACIS pile up model.
+        set_full_model : Define the convolved model expression for a data set.
         set_model : Set the source model expression for a data set.
 
         Notes
@@ -8138,12 +8159,16 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `model` parameters,
         respectively.
 
+        This is a generic function, and can be used to model other
+        non-linear detector effects, but at present the only available
+        model is for the ACIS pile up provided by the jdpileup model.
+
         Examples
         --------
 
         Plot up the model (an xsphabs model multiplied by a powlaw1d
         component) and then overplot the same expression but including
-        the effects of pileup in the Chandra ACIS instrument:
+        the effects of pile up in the Chandra ACIS instrument:
 
         >>> load_pha('src.pi')
         >>> set_source(xsphabs.gal * powlaw1d.pl)
