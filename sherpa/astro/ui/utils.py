@@ -2188,39 +2188,54 @@ class Session(sherpa.ui.utils.Session):
         self.set_syserror(id,
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
+    # also in sherpa.utils
+    ### Ahelp ingest: 2015-05-11 DJB
     def set_dep(self, id, val=None, bkg_id=None):
-        """
-        set_dep
+        """Set the dependent axis of a data set.
 
-        SYNOPSIS
-           Set the dependent variable of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        val : array
+           The array of values for the dependent axis.
+        bkg_id : int or str, optional
+           Set to identify which background component to set. The
+           default value (`None`) means that this is for the source
+           component of the data set.
 
-        SYNTAX
+        See Also
+        --------
+        dataspace1d : Create the independent axis for a 1D data set.
+        dataspace2d : Create the independent axis for a 2D data set.
+        get_dep : Return the dependent axis of a data set.
+        load_arrays : Create a data set from array values.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-           val        - dependent variable array or scalar
+        Examples
+        --------
 
-           bkg_id     - background id
-                        default = None
+        Create a 1D data set with values at (0,4), (2,10), (4,12),
+        (6,8), (8,2), and (10,12):
 
-        Returns:
-           None
+        >>> dataspace1d(0, 10, 2, dstype=Data1D)
+        >>> set_dep([4, 10, 12, 8, 2, 12])
 
-        DESCRIPTION
-           Set the dependent variable of a data set by data id or bkg_id.
+        Set the values for the source and background of the data set
+        'src':
 
-        EXAMPLE
-           set_dep([1,2,3,...])
+        >>> set_dep('src', y1)
+        >>> set_dep('src', bg1, bkg_id=1)
 
-           set_dep(1,1)
-
-           set_dep([1,2,3,...], bkg_id=1)
-
-        SEE ALSO
-           get_dep, get_indep, get_axes
         """
         if val is None:
             val, id = id, val
