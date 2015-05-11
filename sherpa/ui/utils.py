@@ -13923,10 +13923,10 @@ class Session(NoNewAttributesAfterInit):
         get_model_image :
         image_close : Close the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
-        image_model_component :
+        image_model_component : Display a component of the model in the image viewer.
         image_open : Open the image viewer.
         image_source : Display the model for a data set in the image viewer.
-        image_source_component :
+        image_source_component : Display a component of the source expression in the image viewer.
 
         Notes
         -----
@@ -13962,37 +13962,81 @@ class Session(NoNewAttributesAfterInit):
                     newframe, tile)
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def image_source_component(self, id, model=None, newframe=False,
                                tile=False):
-        """
-        image_source_component
+        """Display a component of the source expression in the image viewer.
 
-        SYNOPSIS
-           Send a source model component image to the visualizer
+        This function evaluates and displays a component of the model
+        expression for a data set, without any instrument response.
+        Use `image_model_component` to include any response.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-           source       - Sherpa source component to image
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           newframe    - Add a new frame
-                         default = False
+        See Also
+        --------
+        get_source_component_image :
+        image_close : Close the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_model_component : Display a component of the model in the image viewer.
+        image_open : Open the image viewer.
+        image_source : Display the source expression for a data set in the image viewer.
 
-           tile        - Tile image frame
-                         default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-        Returns:
-           None
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a source model component image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_model_image, image_data, image_fit, image_resid,
-           image_ratio, image_fit_resid, image_psf, image_source
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the full source model and then just the `gsrc`
+        component for the default data set:
+
+        >>> image_source()
+        >>> image_source_component(gsrc)
+
+        Display the 'clus' and 'bgnd' components of the model for the
+        'img' data set side by side:
+
+        >>> image_source_component('img', 'clus')
+        >>> image_source_component('img', 'bgnd', newframe=True,
+                                   tile=True)
+
         """
         if model is None:
             id, model = model, id
@@ -14003,36 +14047,81 @@ class Session(NoNewAttributesAfterInit):
         self._image(id, self._srccompimage, None, newframe, tile, model=model)
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def image_model_component(self, id, model=None, newframe=False, tile=False):
-        """
-        image_model_component
+        """Display a component of the model in the image viewer.
 
-        SYNOPSIS
-           Send a model component image to the visualizer
+        This function evaluates and displays a component of the model
+        expression for a data set, including any instrument response.
+        Use `image_source_component` to exclude the response.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-           model       - Sherpa model component to image
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           newframe    - Add a new frame
-                         default = False
+        See Also
+        --------
+        get_model_component_image :
+        image_close : Close the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_source : Display the source expression for a data set in the image viewer.
+        image_source_component : Display a component of the source expression in the image viewer.
 
-           tile        - Tile image frame
-                         default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-        Returns:
-           None
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a model component image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_model_image, image_data, image_fit, image_resid,
-           image_ratio, image_fit_resid, image_psf, image_source
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the full source model and then just the `gsrc`
+        component for the default data set:
+
+        >>> image_model()
+        >>> image_model_component(gsrc)
+
+        Display the 'clus' component of the model for the 'img' data
+        set side by side without the with any instrument response
+        (such as convolution with a PSF model):
+
+        >>> image_source_component('img', 'clus')
+        >>> image_model_component('img', 'clus', newframe=True,
+                                  tile=True)
+
         """
         if model is None:
             id, model = model, id
@@ -14049,7 +14138,7 @@ class Session(NoNewAttributesAfterInit):
 
     ### Ahelp ingest: 2015-05-09 DJB
     def image_source(self, id=None, newframe=False, tile=False):
-        """Display the model for a data set in the image viewer.
+        """Display the source expression for a data set in the image viewer.
 
         This function evaluates and displays the model expression for
         a data set, without any instrument response.
@@ -14081,9 +14170,9 @@ class Session(NoNewAttributesAfterInit):
         image_close : Close the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
         image_model : Display the model for a data set in the image viewer.
-        image_model_component :
+        image_model_component : Display a component of the model in the image viewer.
         image_open : Open the image viewer.
-        image_source_component :
+        image_source_component : Display a component of the source expression in the image viewer.
 
         Notes
         -----
