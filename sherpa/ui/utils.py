@@ -10684,8 +10684,8 @@ class Session(NoNewAttributesAfterInit):
     def get_psf_contour(self, id=None):
         """Return the data used by contour_psf.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -10723,8 +10723,8 @@ class Session(NoNewAttributesAfterInit):
     def get_kernel_contour(self, id=None):
         """Return the data used by contour_kernel.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -10763,8 +10763,8 @@ class Session(NoNewAttributesAfterInit):
     def get_psf_plot(self, id=None):
         """Return the data used by plot_psf.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -10801,8 +10801,8 @@ class Session(NoNewAttributesAfterInit):
     def get_kernel_plot(self, id=None):
         """Return the data used by plot_kernel.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -11345,37 +11345,60 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._modelplot, **kwargs)
 
-
+    # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
+    #           but does the astro version support a bkg_id parameter?
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_source_component(self, id, model=None, **kwargs):
-        """
-        plot_source_component
+        """Plot a component of the source expression for a data set.
 
-        SYNOPSIS
-           Send a source model component plot to the visualizer
+        This function evaluates and plots a component of the model
+        expression for a data set, without any instrument response.
+        Use `plot_model_component` to include any response.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_source_component`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_source_component_plot : Return the data used by plot_source_component.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_model_component : Plot a component of the model for a data set.
+        plot_source : Plot the source expression for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           model       - Sherpa model component or expression string
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Overplot the `pl` component of the source expression for
+        the default data set:
 
-        Returns:
-           None
+        >>> plot_source()
+        >>> plot_source_component(pl, overplot=True)
 
-        DESCRIPTION
-           Visualize a source model component by Sherpa data id.
-
-        SEE ALSO
-           get_model_component_plot, plot_model_component, plot_data,
-           plot_fit, plot_fit_resid, plot_fit_delchi
         """
 
         if model is None:
@@ -11391,36 +11414,68 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, plotobj, model, **kwargs)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
+    #           but does the astro version support a bkg_id parameter?
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_model_component(self, id, model=None, **kwargs):
-        """
-        plot_model_component
+        """Plot a component of the model for a data set.
 
-        SYNOPSIS
-           Send a model component plot to the visualizer
+        This function evaluates and plots a component of the model
+        expression for a data set, including any instrument response.
+        Use `plot_source_component` to display without any response.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_model_component`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_model_component_plot : Return the data used by plot_model_component.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_source_component : Plot a component of the source expression for a data set.
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           model       - Sherpa model component or expression string
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Overplot the `pl` component of the model expression for
+        the default data set:
 
-        Returns:
-           None
+        >>> plot_model()
+        >>> plot_model_component(pl, overplot=True)
 
-        DESCRIPTION
-           Visualize a model component by Sherpa data id.
+        Display the results for the 'jet' data set (data and model),
+        and then overplot the `pl` component evaluated for the 'jet'
+        and 'core' data sets:
 
-        SEE ALSO
-           get_model_component_plot, plot_source_component, plot_data,
-           plot_fit, plot_fit_resid, plot_fit_delchi
+        >>> plot_fit('jet')
+        >>> plot_model_component('jet', pl, overplot=True)
+        >>> plot_model_component('core', pl, overplot=True)
+
         """
         if model is None:
             id, model = model, id
@@ -11494,8 +11549,8 @@ class Session(NoNewAttributesAfterInit):
         This function creates a plot containing the data and the model
         (including any instrument response) for a data set.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -11550,8 +11605,8 @@ class Session(NoNewAttributesAfterInit):
         This function displays the residuals (data - model) for a data
         set.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -11610,8 +11665,8 @@ class Session(NoNewAttributesAfterInit):
         This function displays the square of the residuals (data -
         model) divided by the error, for a data set.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -11665,8 +11720,8 @@ class Session(NoNewAttributesAfterInit):
         This function displays the residuals (data - model) divided by
         the error, for a data set.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -11719,8 +11774,8 @@ class Session(NoNewAttributesAfterInit):
 
         This function displays the ratio data / model for a data set.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -11773,8 +11828,8 @@ class Session(NoNewAttributesAfterInit):
         The `plot_kernel` function shows the data used to convolve
         the model.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -11827,8 +11882,8 @@ class Session(NoNewAttributesAfterInit):
         The `plot_psf` function shows the full PSF, from which the
         kernel is derived.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -11884,8 +11939,8 @@ class Session(NoNewAttributesAfterInit):
         This creates two plots - the first from `plot_fit` and the
         second from `plot_resid` - for a data set.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -11969,8 +12024,8 @@ class Session(NoNewAttributesAfterInit):
         This creates two plots - the first from `plot_fit` and the
         second from `plot_delchi` - for a data set.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -12494,8 +12549,8 @@ class Session(NoNewAttributesAfterInit):
     def contour_data(self, id=None, **kwargs):
         """Contour the values of an image data set.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
@@ -12534,8 +12589,8 @@ class Session(NoNewAttributesAfterInit):
     def contour_model(self, id=None, **kwargs):
         """Contour the values of the model, including any PSF.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set that provides the model. If not given then the
            default identifier is used, as returned by `get_default_id`.
@@ -12577,8 +12632,8 @@ class Session(NoNewAttributesAfterInit):
 
         The preferences are the same as `contour_model`.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set that provides the model. If not given then the
            default identifier is used, as returned by `get_default_id`.
@@ -12621,8 +12676,8 @@ class Session(NoNewAttributesAfterInit):
         preferences are the same as `contour_data` and
         `contour_model`.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set that provides the data and model. If not given
            then the default identifier is used, as returned by
@@ -12665,8 +12720,8 @@ class Session(NoNewAttributesAfterInit):
         including any PSF - from the data.  The preferences are the
         same as `contour_data`.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set that provides the data and model. If not given
            then the default identifier is used, as returned by
@@ -12708,8 +12763,8 @@ class Session(NoNewAttributesAfterInit):
         model, including any PSF. The preferences are the same as
         `contour_data`.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set that provides the data and model. If not given
            then the default identifier is used, as returned by
@@ -12750,8 +12805,8 @@ class Session(NoNewAttributesAfterInit):
         If the data set has no PSF applied to it, the model is
         displayed.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set that provides the model. If not given then the
            default identifier is used, as returned by `get_default_id`.
@@ -12782,8 +12837,8 @@ class Session(NoNewAttributesAfterInit):
         If the data set has no PSF applied to it, the model is
         displayed.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set that provides the model. If not given then the
            default identifier is used, as returned by `get_default_id`.
@@ -12814,8 +12869,8 @@ class Session(NoNewAttributesAfterInit):
         separate plot contour the residuals. The preferences are the
         same as `contour_data` and `contour_model`.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set that provides the data and model. If not given
            then the default identifier is used, as returned by
@@ -14064,8 +14119,8 @@ class Session(NoNewAttributesAfterInit):
     def get_psf_image(self, id=None):
         """Return the data used by image_psf.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
@@ -14103,8 +14158,8 @@ class Session(NoNewAttributesAfterInit):
     def get_kernel_image(self, id=None):
         """Return the data used by image_kernel.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.

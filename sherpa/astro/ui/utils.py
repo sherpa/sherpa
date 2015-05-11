@@ -9954,8 +9954,8 @@ class Session(sherpa.ui.utils.Session):
         Display the effective area curve from the ARF
         component of a PHA data set.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set with an ARF. If not given then the default
            identifier is used, as returned by `get_default_id`.
@@ -10005,7 +10005,7 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('noarf', self._fix_id(id))
         self._plot(id, self._arfplot, resp_id, **kwargs)
 
-
+    ### DOC-TODO: does this support bkg_id for PHA data sets?
     def plot_source_component(self, id, model=None, **kwargs):
 
         if model is None:
