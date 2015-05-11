@@ -10472,118 +10472,84 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._fitcontour)
         return self._fitcontour
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_resid_contour(self, id=None):
-        """
-        get_resid_contour
+        """Return the data used by contour_resid.
 
-        SYNOPSIS
-           Return a Sherpa resid contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.ResidPlot instance
+           The `y` attribute contains the residual values and the `x0`
+           and `x1` arrays the corresponsing coordinate values, as
+           one-dimensional arrays.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ResidContour object
+        See Also
+        --------
+        get_ratio_contour : Return the data used by contour_ratio.
+        contour_resid : Contour the residuals of the fit.
 
-        DESCRIPTION
-           The Sherpa resid contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the residual data for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> rinfo = get_resid_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-              contour_prefs   - dictionary of plotting preferences
-
-                 color      - None
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           contour_resid
         """
         self._prepare_plotobj(id, self._residcontour)
         return self._residcontour
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_ratio_contour(self, id=None):
-        """
-        get_ratio_contour
+        """Return the data used by contour_ratio.
 
-        SYNOPSIS
-           Return a Sherpa ratio contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.RatioPlot instance
+           The `y` attribute contains the ratio values and the `x0`
+           and `x1` arrays the corresponsing coordinate values, as
+           one-dimensional arrays.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa RatioContour object
+        See Also
+        --------
+        get_resid_contour : Return the data used by contour_resid.
+        contour_ratio : Contour the ratio of data to model.
 
-        DESCRIPTION
-           The Sherpa ratio contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the ratio data for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> rinfo = get_ratio_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-              contour_prefs   - dictionary of plotting preferences
-
-                 color      - None
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           contour_ratio
         """
         self._prepare_plotobj(id, self._ratiocontour)
         return self._ratiocontour
