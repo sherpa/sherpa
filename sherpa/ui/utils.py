@@ -6312,38 +6312,53 @@ class Session(NoNewAttributesAfterInit):
     # PSF
     #
 
-    
+    ### Ahelp ingest: 2015-05-11 DJB
+    ### DOC-TODO: what args/kwargs are supported?
     def load_psf(self, modelname, filename_or_model, *args, **kwargs):
         """Create a PSF model.
 
-        load_psf
+        Create a PSF model representing either an array of data, read
+        from a file, or a model component (such as a gaussian). The
+        `set_psf` function is used to associate this model with a data
+        set.
 
-        SYNOPSIS
-           load a file-based or model-based kernel into a PSF model
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this PSF model.
+        filename_or_model : str or model instance
+           The form of the PSF. This can be a file name, which will
+           be read in using the chosen Sherpa I/O library, or a
+           model component. When reading in a model, additional
+           arguments can be used to specify the data format (see
+           `load_table` and `load_image` for more information).
 
-        SYNTAX
+        See Also
+        --------
+        delete_psf : Delete the PSF model for a data set.
+        load_image :
+        load_table :
+        set_psf : Apply a PSF model to a data set.
 
-        Arguments:
-           modelname - name of PSF
+        Examples
+        --------
 
-           filename_or_model - filename with path for file-based kernel
-                               a Sherpa model for a model-based kernel
+        Create a PSF model using a 2D gaussian:
 
-           args      - additional arguments when reading a file kernel
+        >>> load_psf('psf1', gauss2d.gpsf)
+        >>> set_psf('psf1')
+        >>> gpsf.fwhm = 4.2
+        >>> gpsf.ellip = 0.2
+        >>> gpsf.theta = 30 * np.pi / 180
+        >>> image_psf()
 
-           kwargs    - additional keyword arguments when reading a file
-                       kernel
+        Create a PSF model from the data in the file
+        `line_profile.fits` and apply it to the data set called
+        `bgnd`:
 
-        Returns:
-           None
+        >>> load_psf('pmodel', 'line_profile.fits')
+        >>> set_psf('bgnd', 'pmodel')
 
-        DESCRIPTION
-           Create a PSF model object with identifier 'modelname' and 
-           initializes the PSF kernel to be either a Sherpa dataset
-           loaded from file or a Sherpa model.
-
-        SEE ALSO
-           set_psf, get_psf, delete_psf
         """        
         kernel = filename_or_model
         if isinstance(filename_or_model, basestring):
