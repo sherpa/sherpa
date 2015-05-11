@@ -6424,27 +6424,45 @@ class Session(NoNewAttributesAfterInit):
                 pass
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_psf(self, id=None):
-        """
-        get_psf
+        """Return the PSF model defined for a data set.
 
-        SYNOPSIS
-           Return a PSF model by Sherpa data id
+        Return the parameter settings for the PSF model assigned to
+        the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id   - Sherpa data id
-                  default = default data id
+        Returns
+        -------
+        psf : sherpa.instrument.PSFModel instance
 
-        Returns:
-           None
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no PSF model has been set for the data set.
 
-        DESCRIPTION
-           Return a PSF model from the instrument list by Sherpa data id.
+        See Also
+        --------
+        delete_psf : Delete the PSF model for a data set.
+        image_psf : Display the 2D PSF model for a data set in the image viewer.
+        load_psf : Create a PSF model.
+        plot_psf : Plot the 1D PSF model applied to a data set.
+        set_psf : Apply a PSF model to a data set.
 
-        SEE ALSO
-           set_psf, load_psf, delete_psf
+        Examples
+        --------
+
+        Change the size and center of the PSF for th default data set:
+
+        >>> psf = get_psf()
+        >>> psf.size = (21,21)
+        >>> psf.center = (10,10)
+
         """
         return self._get_item(id, self._psf, 'psf model', 'has not been set')
 
@@ -6465,7 +6483,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         load_psf : Create a PSF model.
         set_psf : Apply a PSF model to a data set.
-        get_psf :
+        get_psf : Return the PSF model defined for a data set.
 
         Examples
         --------
