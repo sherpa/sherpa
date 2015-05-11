@@ -11560,69 +11560,113 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._residplot, **kwargs)
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_chisqr(self, id=None, **kwargs):
         """Plot the chi-squared value for each point in a data set.
 
-        plot_chisqr
+        This function displays the square of the residuals (data -
+        model) divided by the error, for a data set.
 
-        SYNOPSIS
-           Send a chi^2 plot to the visualizer
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_chisqr`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_chisqr_plot : Return the data used by plot_chisqr.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_delchi : Plot the ratio of residuals to error for a data set.
+        plot_ratio : Plot the ratio of data to model for a data set.
+        plot_resid : Plot the residuals (data - model) for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Plot the chi-quare values for each point in the default data
+        set:
 
-        Returns:
-           None
+        >>> plot_chisqr()
 
-        DESCRIPTION
-           Visualize the chi^2 (residuals divided by dataset uncertainties, the
-           quantity squared) by Sherpa data id.
+        Overplot the values from the 'core' data set on those
+        from the 'jet' dataset:
 
-        SEE ALSO
-           get_chisqr_plot, plot_resid, plot_ratio, plot_fit_resid,
-           plot_fit_delchi, plot_delchi, plot_fit, plot_data, plot_model
+        >>> plot_chisqr('jet')
+        >>> plot_chisqr('core', overplot=True)
+
         """
         self._plot(id, self._chisqrplot, **kwargs)
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_delchi(self, id=None, **kwargs):
         """Plot the ratio of residuals to error for a data set.
 
-        plot_delchi
+        This function displays the residuals (data - model) divided by
+        the error, for a data set.
 
-        SYNOPSIS
-           Send a delta chi plot to the visualizer
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_delchi`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_delchi_plot : Return the data used by plot_delchi.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_chisqr : Plot the chi-squared value for each point in a data set.
+        plot_ratio : Plot the ratio of data to model for a data set.
+        plot_resid : Plot the residuals (data - model) for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Plot the residuals for the default data set, divided by
+        the error value for each bin:
 
-        Returns:
-           None
+        >>> plot_delchi()
 
-        DESCRIPTION
-           Visualize the delta chi (residuals divided by dataset uncertainties)
-           by Sherpa data id.
+        Overplot the values from the 'core' data set on those
+        from the 'jet' dataset:
 
-        SEE ALSO
-           get_delchi_plot, plot_resid, plot_ratio, plot_fit_resid,
-           plot_fit_delchi, plot_chisqr, plot_fit, plot_data, plot_model
+        >>> plot_delchi('jet')
+        >>> plot_delchi('core', overplot=True)
+
         """
         self._plot(id, self._delchiplot, **kwargs)
         
