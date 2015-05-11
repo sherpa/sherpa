@@ -10680,117 +10680,80 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._ratiocontour)
         return self._ratiocontour
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_psf_contour(self, id=None):
-        """
-        get_psf_contour
+        """Return the data used by contour_psf.
 
-        SYNOPSIS
-           Return a Sherpa PSF contour
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        psf_data : a sherpa.plot.PSFContour instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFContour object
+        See Also
+        --------
+        get_kernel_contour : Return the data used by contour_kernel.
+        contour_kernel : Contour the kernel applied to the model of an image data set.
+        contour_psf : Contour the PSF applied to the model of an image data set.
 
-        DESCRIPTION
-           The Sherpa PSF contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the contour data for the PSF for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> cplot = get_psf_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-              contour_prefs   - dictionary of plotting preferences
-
-                 color      - None or 'red'
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           contour_psf
         """
         self._prepare_plotobj(id, self._psfcontour)
         return self._psfcontour
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_kernel_contour(self, id=None):
-        """
-        get_kernel_contour
+        """Return the data used by contour_kernel.
 
-        SYNOPSIS
-           Return a Sherpa PSF kernel contour
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        psf_data : a sherpa.plot.PSFKernelContour instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFKernelContour object
+        See Also
+        --------
+        get_psf_contour : Return the data used by contour_psf.
+        contour_kernel : Contour the kernel applied to the model of an image data set.
+        contour_psf : Contour the PSF applied to the model of an image data set.
 
-        DESCRIPTION
-           The Sherpa PSF kernel contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the contour data for the kernel for the default data
+        set:
 
-              xlabel       - x axis label, read-only
+        >>> kplot = get_kernel_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-              contour_prefs   - dictionary of plotting preferences
-
-                 color      - None or 'red'
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           contour_kernel
         """
         self._prepare_plotobj(id, self._kernelcontour)
         return self._kernelcontour
