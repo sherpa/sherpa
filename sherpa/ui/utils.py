@@ -6387,7 +6387,11 @@ class Session(NoNewAttributesAfterInit):
         """Apply a PSF model to a data set.
 
         After this call, the model that is fit to the data (as set by
-        `set_model`) will be convolved by the given PSF model.
+        `set_model`) will be convolved by the given PSF model. The
+        term "psf" is used in functions to refer to the data sent to
+        this function whereas the term "kernel" refers to the data
+        that is used in the actual convolution (this can be
+        re-normalized and a sub-set of the PSF data).
 
         Parameters
         ----------
@@ -11724,67 +11728,112 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._ratioplot, **kwargs)
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_psf(self, id=None, **kwargs):
         """Plot the 1D PSF model applied to a data set.
 
-        plot_psf
+        The `plot_kernel` function shows the data used to convolve
+        the model.
 
-        SYNOPSIS
-           Send a PSF plot to the visualizer
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_psf`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_psf_plot : Return the data used by plot_psf.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_kernel : Plot the 1D kernel applied to a data set.
+        set_psf : Apply a PSF model to a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Create a model (a step function) that is convolved by
+        a gaussian, and display the PSF:
 
-        Returns:
-           None
+        >>> dataspace1d(1, 10, step=1, dstype=Data1D)
+        >>> set_model(steplo1d.stp)
+        >>> stp.xcut = 4.4
+        >>> load_psf('psf1', gauss1d.gline)
+        >>> set_psf('psf1')
+        >>> gline.fwhm = 1.2
+        >>> plot_psf()
 
-        DESCRIPTION
-           Visualize the PSF dataset or PSF model by Sherpa data id.
-
-        SEE ALSO
-           get_psf_plot, plot_data
         """
         self._plot(id, self._psfplot, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_kernel(self, id=None, **kwargs):
         """Plot the 1D kernel applied to a data set.
 
-        plot_kernel
+        The `plot_psf` function shows the full PSF, from which the
+        kernel is derived.
 
-        SYNOPSIS
-           Send a PSF kernel plot to the visualizer
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_kernel`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_kernel_plot : Return the data used by plot_kernel.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_psf : Plot the 1D PSF model applied to a data set.
+        set_psf : Apply a PSF model to a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Create a model (a step function) that is convolved by
+        a gaussian, and display the kernel overplotted on the
+        PSF:
 
-        Returns:
-           None
+        >>> dataspace1d(1, 10, step=1, dstype=Data1D)
+        >>> set_model(steplo1d.stp)
+        >>> stp.xcut = 4.4
+        >>> load_psf('psf1', gauss1d.gline)
+        >>> set_psf('psf1')
+        >>> gline.fwhm = 1.2
+        >>> plot_psf()
+        >>> plot_kernel(overplot=True)
 
-        DESCRIPTION
-           Visualize the extracted sub-kernel dataset or extracted kernel model 
-           by Sherpa data id.
-
-        SEE ALSO
-           get_psf_plot, plot_data
         """
         self._plot(id, self._kernelplot, **kwargs)
 
