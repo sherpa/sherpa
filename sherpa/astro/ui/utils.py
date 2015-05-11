@@ -10045,47 +10045,74 @@ class Session(sherpa.ui.utils.Session):
 
     plot_model_component.__doc__ = sherpa.ui.utils.Session.plot_model_component.__doc__
 
+    # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_source(self, id=None, lo=None, hi=None, **kwargs):
-        """
-        plot_source
+        """Plot the source expression for a data set.
 
-        SYNOPSIS
-           Plot unconvolved source model
+        This function plots the source model for a data set. This does
+        not include any instrument response (e.g. a convolution
+        created by `set_psf` or ARF and RMF automatically created for
+        a PHA data set).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        lo : number, optional
+           The low value to plot (only used for PHA data sets).
+        hi : number, optional
+           The high value to plot (only use for PHA data sets).
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_source`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_source_plot : Return the data used by plot_source.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_model : Plot the model for a data set.
+        set_analysis : Set the units used when fitting and displaying spectral data.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           lo       - low limit of plot
-                      default = None
+        Examples
+        --------
 
-           hi       - high limit of plot
-                      default = None
+        Plot the unconvolved source model for the default data set:
 
-           replot   - replot calculated arrays
-                      default = False
+        >>> plot_source()
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        Overplot the source model for data set 2 on data set 1:
 
-        Returns:
-           None
+        >>> plot_source(1)
+        >>> plot_source(2, overplot=True)
 
-        DESCRIPTION
-           Visualize the unconvolved source model in a 1D plot by
-           data id.
+        Restrict the plot to values between 0.5 and 7 for the
+        independent axis:
 
-        SEE ALSO
-           plot_model, plot_data, get_source_plot, plot_arf, plot_bkg,
-           plot_bkg_source
+        >>> plot_source(lo=0.5, hi=7)
+
+        For a PHA data set, the units on both the X and Y axes of the
+        plot are controlled by the `set_analysis` command. In this
+        case the Y axis will be in units of photons/s/cm^2 and the X
+        axis in keV:
+
+        >>> set_analysis('energy', factor=1)
+        >>> plot_source()
+
         """
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
             self._plot(id, self._astrosourceplot, None, None, lo, hi, **kwargs)
         else:
             self._plot(id, self._sourceplot, **kwargs)
-
 
     def plot_order(self, id=None, orders=None, **kwargs):
         """

@@ -11268,8 +11268,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_data(self, id=None, **kwargs):
         """Plot the data values.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         id : int or str, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
@@ -11435,33 +11435,50 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._compmdlplot, model, **kwargs)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_source(self, id=None, **kwargs):
-        """
-        plot_source
+        """Plot the source expression for a data set.
 
-        SYNOPSIS
-           Send a source plot to the visualizer
+        This function plots the source model for a data set. This does
+        not include any instrument response (e.g. a convolution
+        created by `set_psf`).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_source`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_source_plot : Return the data used by plot_source.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Plot the unconvolved source model for the default data set:
 
-        Returns:
-           None
+        >>> plot_source()
 
-        DESCRIPTION
-           Visualize a dataset source by Sherpa data id.
+        Overplot the source model for data set 2 on data set 1:
 
-        SEE ALSO
-           get_source_plot, plot_data, plot_fit, plot_fit_resid, plot_fit_delchi
+        >>> plot_source(1)
+        >>> plot_source(2, overplot=True)
+
         """
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
