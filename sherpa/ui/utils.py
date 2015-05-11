@@ -11315,7 +11315,8 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._dataplot, **kwargs)
     
     def plot_model(self, id=None, **kwargs):
-        """
+        """Plot the model for a data set.
+
         plot_model
 
         SYNOPSIS
@@ -11499,40 +11500,69 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._fitplot, **kwargs)
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_resid(self, id=None, **kwargs):
-        """
-        plot_resid
+        """Plot the residuals (data - model) for a data set.
 
-        SYNOPSIS
-           Send a residuals plot to the visualizer
+        This function displays the residuals (data - model) for a data
+        set.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_resid`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_resid_plot : Return the data used by plot_resid.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_chisqr : Plot the chi-squared value for each point in a data set.
+        plot_delchi : Plot the ratio of residuals to error for a data set.
+        plot_ratio : Plot the ratio of data to model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the residuals for the default data set:
 
-        DESCRIPTION
-           Visualize the residuals (dataset minus dataset model) by Sherpa data
-           id.
+        >>> plot_resid()
 
-        SEE ALSO
-           get_resid_plot, plot_ratio, plot_delchi, plot_fit_resid,
-           plot_fit_delchi, plot_chisqr, plot_fit, plot_data, plot_model
+        Overplot the residuals from the 'core' data set on those
+        from the 'jet' dataset:
+
+        >>> plot_resid('jet')
+        >>> plot_resid('core', overplot=True)
+
+        Add the residuals to the plot of the data, for the default
+        data set:
+
+        >>> plot_data()
+        >>> plot_resid(overplot=True)
+
         """
         self._plot(id, self._residplot, **kwargs)
 
     def plot_chisqr(self, id=None, **kwargs):
-        """
+        """Plot the chi-squared value for each point in a data set.
+
         plot_chisqr
 
         SYNOPSIS
@@ -11564,7 +11594,8 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._chisqrplot, **kwargs)
 
     def plot_delchi(self, id=None, **kwargs):
-        """
+        """Plot the ratio of residuals to error for a data set.
+
         plot_delchi
 
         SYNOPSIS
@@ -11595,35 +11626,56 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._delchiplot, **kwargs)
         
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_ratio(self, id=None, **kwargs):
-        """
-        plot_ratio
+        """Plot the ratio of data to model for a data set.
 
-        SYNOPSIS
-           Send a ratio plot to the visualizer
+        This function displays the ratio data / model for a data set.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_ratio`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_ratio_plot : Return the data used by plot_ratio.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_chisqr : Plot the chi-squared value for each point in a data set.
+        plot_delchi : Plot the ratio of residuals to error for a data set.
+        plot_resid : Plot the residuals (data - model) for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the ratio of data to model for the default data set:
 
-        DESCRIPTION
-           Visualize the ratio (dataset divided by dataset model) by Sherpa
-           data id.
+        >>> plot_ratio()
 
-        SEE ALSO
-           get_ratio_plot, plot_resid, plot_delchi, plot_fit_resid,
-           plot_fit_delchi, plot_chisqr, plot_fit, plot_data, plot_model
+        Overplot the ratios from the 'core' data set on those from the
+        'jet' dataset:
+
+        >>> plot_ratio('jet')
+        >>> plot_ratio('core', overplot=True)
+
         """
         self._plot(id, self._ratioplot, **kwargs)
 
@@ -14441,7 +14493,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_ratio_image :
+        get_resid_image : Return the data used by image_resid.
         image_close : Close the image viewer.
         image_data : Display a data set in the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
@@ -14514,7 +14566,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_ratio_image :
+        get_ratio_image : Return the data used by image_ratio.
         image_close : Close the image viewer.
         image_data : Display a data set in the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
