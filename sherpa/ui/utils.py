@@ -3409,30 +3409,42 @@ class Session(NoNewAttributesAfterInit):
     def dataspace2d(self, dims, id=None, dstype=sherpa.data.Data2D):
         """Create the independent axis for a 2D data set.
 
-        dataspace2d
+        Create an "empty" two-dimensional data set by defining the
+        grid on which the points are defined (the independent axis).
+        The values are set to 0.
 
-        SYNOPSIS
-           Populates a blank 2D Sherpa image data set by data id
+        Parameters
+        ----------
+        dims : sequence of 2 number
+           The dimensions of the grid in `(width,height)` order.
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data2D` (the default) and `Data2DInt`.
 
-        SYNTAX
+        See Also
+        --------
+        dataspace1d : Create the independent axis for a 1D data set.
+        get_dep : Return the dependent axis of a data set.
+        get_indep : Return the independent axes of a data set.
+        set_dep : Set the dependent axis of a data set.
 
-        Arguments:
-           dims    -  array of image dimensions, i.e. [width,height]
+        Examples
+        --------
 
-           id      -  Sherpa data id
-                      defaut is default data id
+        Create a 200 pixel by 150 pixel grid (number of columns by
+        number of rows) and display it (each pixel has a value of 0):
 
-           dstype  -  Type of data set to use
-                      default is Data2D
+        >>> dataspace2d([200,150])
+        >>> image_data()
 
-        Returns:
-           None
+        Create a data space called "fakeimg":
 
-        DESCRIPTION
-           Populates a blank 2D Sherpa image data set by Sherpa data id.
+        >>> dataspace2d([nx,ny], id="fakeimg")
 
-        SEE ALSO
-           dataspace1d
         """
         x0, x1, y, shape = sherpa.utils.dataspace2d(dims)
 
