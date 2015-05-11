@@ -14328,68 +14328,118 @@ class Session(NoNewAttributesAfterInit):
         self._image(id, self._ratioimage, None,
                     newframe, tile)
 
+    ### Ahelp ingest: 2015-05-11 DJB
+    ### DOC-TODO: what gets displayed when there is no PSF?
     def image_psf(self, id=None, newframe=False, tile=False):
-        """View the 2D PSF model applied to a data set.
+        """Display the 2D PSF model for a data set in the image viewer.
 
-        image_psf
+        The image viewer is automatically started if it is not
+        already open.
 
-        SYNOPSIS
-           Send a PSF image to the visualizer
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_psf_image :
+        image_close : Close the image viewer.
+        image_data : Display a data set in the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_source : Display the model for a data set in the image viewer.
+        plot_psf : Plot the 1D PSF model applied to a data set.
 
-           newframe    - Add a new frame
-                         default = False
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-           tile        - Tile image frame
-                         default = False
+        References
+        ----------
 
-        Returns:
-           None
+        .. [1] http://ds9.si.edu/site/Home.html
 
-        DESCRIPTION
-           Visualize a PSF image by Sherpa data id.
+        Examples
+        --------
 
-        SEE ALSO
-           get_psf_image, image_data, image_model,
-           image_fit, image_resid, image_ratio, image_fit_resid
+        >>> image_psf()
+
+        >>> image_psf(2)
+
         """
         self._image(id, self._psfimage, None, newframe, tile)
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
+    ### DOC-TODO: what gets displayed when there is no PSF?
+    ### DOC-TODO: where to point to for PSF/kernel discussion/description
+    ###           (as it appears in a number of places)?
     def image_kernel(self, id=None, newframe=False, tile=False):
-        """Plot the 2D kernel applied to a data set.
+        """Display the 2D kernel for a data set in the image viewer.
 
-        image_kernel
+        The image viewer is automatically started if it is not
+        already open.
 
-        SYNOPSIS
-           Send a PSF kernel image to the visualizer
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_kernel_image :
+        image_close : Close the image viewer.
+        image_data : Display a data set in the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_source : Display the model for a data set in the image viewer.
+        plot_kernel : Plot the 1D kernel applied to a data set.
 
-           newframe    - Add a new frame
-                         default = False
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-           tile        - Tile image frame
-                         default = False
+        References
+        ----------
 
-        Returns:
-           None
+        .. [1] http://ds9.si.edu/site/Home.html
 
-        DESCRIPTION
-           Visualize a PSF sub-kernel image by Sherpa data id.
+        Examples
+        --------
 
-        SEE ALSO
-           get_kernel_image, image_data, image_model,
-           image_fit, image_resid, image_ratio, image_fit_resid
+        >>> image_kernel()
+
+        >>> image_kernel(2)
+
         """
         self._image(id, self._kernelimage, None, newframe, tile)
 
