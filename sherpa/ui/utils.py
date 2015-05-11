@@ -3319,6 +3319,7 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-11 DJB
     def dataspace1d(self, start, stop, step=1, numbins=None, 
                     id=None, dstype=sherpa.data.Data1DInt):
         """Create the independent axis for a 1D data set.
@@ -3406,6 +3407,7 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-11 DJB
     def dataspace2d(self, dims, id=None, dstype=sherpa.data.Data2D):
         """Create the independent axis for a 2D data set.
 
@@ -6447,27 +6449,31 @@ class Session(NoNewAttributesAfterInit):
         return self._get_item(id, self._psf, 'psf model', 'has not been set')
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def delete_psf(self, id=None):
-        """
-        delete_psf
+        """Delete the PSF model for a data set.
 
-        SYNOPSIS
-           Delete the specified PSF model by Sherpa data id.
+        Remove the PSF convolution applied to a source model.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        load_psf : Create a PSF model.
+        set_psf : Apply a PSF model to a data set.
+        get_psf :
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Delete the PSF model from the instrument list by Sherpa data id.
+        >>> delete_psf()
 
-        SEE ALSO
-           set_psf, get_psf, load_psf
+        >>> delete_psf('core')
+
         """
         id = self._fix_id(id)
         self._psf.pop(id, None)

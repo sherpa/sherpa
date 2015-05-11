@@ -561,6 +561,7 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-11 DJB
     #@loggable(with_id=True, with_name='load_data')
     def dataspace1d(self, start, stop, step=1, numbins=None,
                     id=None, bkg_id=None, dstype=sherpa.data.Data1DInt):
@@ -670,6 +671,7 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-11 DJB
     def dataspace2d(self, dims, id=None, dstype=sherpa.astro.data.DataIMG):
         """Create the independent axis for a 2D data set.
 
