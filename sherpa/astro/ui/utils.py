@@ -566,66 +566,83 @@ class Session(sherpa.ui.utils.Session):
                     id=None, bkg_id=None, dstype=sherpa.data.Data1DInt):
         """Create the independent axis for a 1D data set.
 
-        dataspace1d
+        Create an "empty" one-dimensional data set by defining the
+        grid on which the points are defined (the independent axis).
+        The values are set to 0.
 
-        SYNOPSIS
-           Populates a blank 1D Sherpa data set by id
+        Parameters
+        ----------
+        start : number
+           The minimum value of the axis.
+        stop : number
+           The maximum value of the axis.
+        step : number, optional
+           The separation between each grid point. This is not used if
+           `numbins` is set.
+        numbins : int, optional
+           The number of grid points. This over-rides the `step`
+           setting.
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           If set, the grid is for the background component of the
+           data set.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1DInt` (the default), `Data1D`, and `DataPHA`.
 
-        SYNTAX
+        See Also
+        --------
+        dataspace2d : Create the independent axis for a 2D data set.
+        get_dep : Return the dependent axis of a data set.
+        get_indep : Return the independent axes of a data set.
+        set_dep : Set the dependent axis of a data set.
 
-        Arguments:
-           start   -  lower bound of grid
+        Notes
+        -----
+        The meaning of the `stop` parameter depends on whether it is a
+        binned or unbinned data set (as set by the `dstype`
+        parameter).
 
-           stop    -  upper bound of grid
+        Examples
+        --------
 
-           step    -  bin width size
-                      default is 1
+        Create a binned data set, starting at 1 and with a
+        bin-width of 1.
 
-           numbins -  number of bins desired
-                      default is None
+        >>> dataspace1d(1, 5, 1)
+        >>> print(get_indep())
+        (array([ 1.,  2.,  3.,  4.]), array([ 2.,  3.,  4.,  5.]))
 
-           id      -  Sherpa data id
-                      defaut is default data id
+        This time for an un-binned data set:
 
-           bkg_id  -  Sherpa background id
-                      defaut is default background id
+        >>> dataspace1d(1, 5, 1, dstype=Data1D)
+        >>> print(get_indep())
+        (array([ 1.,  2.,  3.,  4.,  5.]),)
 
-           dstype  -  Type of data set to use
-                      default is Data1DInt
+        Specify the number of bins rather than the grid spacing:
 
-        Returns:
-           None
+        >>> dataspace1d(1, 5, numbins=5, id=2)
+        >>> (xlo, xhi) = get_indep(2)
+        >>> xlo
+        array([ 1. ,  1.8,  2.6,  3.4,  4.2])
+        >>> xhi
+        array([ 1.8,  2.6,  3.4,  4.2,  5. ])
 
-        DESCRIPTION
-           Populates a blank 1D Sherpa data set with the specified grid
-           by Sherpa data id.  Alternatively, populate a blank PHA background
-           data set by bkg_id.
-           
-           Specifying a dataspace using step size:
-           if numbins is None (default) -> numpy.arange(start,stop,step)
+        >>> dataspace1d(1, 5, numbins=5, id=3, dstype=Data1D)
+        >>> (x, ) = get_indep(3)
+        >>> x
+        array([ 1.,  2.,  3.,  4.,  5.])
 
-           Specifying a dataspace by indicating the number of bins:
-           if numbins is not None -> numpy.linspace(start, stop, numbins)
+        Create a grid for a PHA data set called 'jet', and
+        for its background component:
 
-        EXAMPLES
-           Blank integrated data set
-           
-              dataspace1d(0.1,10,0.1)
+        >>> dataspace1d(0.01, 11, 0.01, id='jet', dstype=DataPHA)
+        >>> dataspace1d(0.01, 11, 0.01, id='jet', bkg_id=1,
+                        dstype=DataPHA)
 
-           Blank non-integrated data set
-
-              dataspace1d(0.1,10,0.1,dstype=Data1D)
-
-           Blank PHA data set
-
-              dataspace1d(0.1,10,0.1,dstype=DataPHA)
-
-           Blank PHA background data set
-
-              dataspace1d(0.1,10,0.1, 1, 1, DataPHA)
-
-        SEE ALSO
-           dataspace2d
         """
         # support non-integrated grids with inclusive boundaries
         if dstype in (sherpa.data.Data1D, sherpa.astro.data.DataPHA):
@@ -654,7 +671,8 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def dataspace2d(self, dims, id=None, dstype=sherpa.astro.data.DataIMG):
-        """
+        """Create the independent axis for a 2D data set.
+
         dataspace2d
 
         SYNOPSIS
