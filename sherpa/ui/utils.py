@@ -10796,141 +10796,77 @@ class Session(NoNewAttributesAfterInit):
         return self._kernelcontour
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_psf_plot(self, id=None):
-        """
-        get_psf_plot
+        """Return the data used by plot_psf.
 
-        SYNOPSIS
-           Return a Sherpa PSF plot
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        psf_plot : a sherpa.plot.PSFPLot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFPlot object
+        See Also
+        --------
+        get_kernel_plot : Return the data used by plot_kernel.
+        plot_kernel : Plot the 1D kernel applied to a data set.
+        plot_psf : Plot the 1D PSF model applied to a data set.
 
-        DESCRIPTION
-           The Sherpa PSF plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the plot data and then create a plot with it:
 
-              xlabel       - x axis label, read-only
+        >>> pplot = get_psf_plot()
+        >>> pplot.plot()
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line' or None
-                 errthickness   - None
-                 linecolor      - None or 'red'
-                 linestyle      - 0 or 1
-                 linethickness  - None or 3
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3 or None
-                 symbolstyle    - 4 or 0
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - True or False
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_psf, plot_data, plot_model
         """
         self._prepare_plotobj(id, self._psfplot)
         return self._psfplot
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_kernel_plot(self, id=None):
-        """
-        get_kernel_plot
+        """Return the data used by plot_kernel.
 
-        SYNOPSIS
-           Return a Sherpa PSF kernel plot
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        kernel_plot : a sherpa.plot.PSFKernelPLot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFKernelPlot object
+        See Also
+        --------
+        get_psf_plot : Return the data used by plot_psf.
+        plot_kernel : Plot the 1D kernel applied to a data set.
+        plot_psf : Plot the 1D PSF model applied to a data set.
 
-        DESCRIPTION
-           The Sherpa PSF kernel plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the plot data and then create a plot with it:
 
-              xlabel       - x axis label, read-only
+        >>> kplot = get_kernel_plot()
+        >>> kplot.plot()
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line' or None
-                 errthickness   - None
-                 linecolor      - None or 'red'
-                 linestyle      - 0 or 1
-                 linethickness  - None or 3
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3 or None
-                 symbolstyle    - 4 or 0
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - True or False
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_kernel, plot_data, plot_model
         """
         self._prepare_plotobj(id, self._kernelplot)
         return self._kernelplot
@@ -11738,8 +11674,8 @@ class Session(NoNewAttributesAfterInit):
         Arguments
         ---------
         id : int or str, optional
-           The data set that provides the data. If not given then the
-           default identifier is used, as returned by `get_default_id`.
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
         replot : bool, optional
            Set to `True` to use the values calculated by the last
            call to `plot_psf`. The default is `False`.
@@ -11792,8 +11728,8 @@ class Session(NoNewAttributesAfterInit):
         Arguments
         ---------
         id : int or str, optional
-           The data set that provides the data. If not given then the
-           default identifier is used, as returned by `get_default_id`.
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
         replot : bool, optional
            Set to `True` to use the values calculated by the last
            call to `plot_kernel`. The default is `False`.
