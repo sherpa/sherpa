@@ -13867,59 +13867,79 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._residimage)
         return self._residimage
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_psf_image(self, id=None):
-        """
-        get_psf_image
+        """Return the data used by image_psf.
 
-        SYNOPSIS
-           Return a Sherpa PSF image obj
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        psf_data : a sherpa.image.PSFImage instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFImage object
+        See Also
+        --------
+        get_kernel_image : Return the data used by image_kernel.
+        image_kernel : Display the 2D kernel for a data set in the image viewer.
+        image_psf : Display the 2D PSF model for a data set in the image viewer.
 
-        DESCRIPTION
-           The PSF image object holds the reference to the image array.
+        Examples
+        --------
 
-           Attributes:
-              y            - image array
+        Return the image data for the PSF for the default data set:
 
-        SEE ALSO
-           image_psf
+        >>> iplot = get_psf_image()
+        >>> iplot.y.shape
+        (175, 200)
+
         """
         self._prepare_imageobj(id, self._psfimage)
         return self._psfimage
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_kernel_image(self, id=None):
-        """
-        get_kernel_image
+        """Return the data used by image_kernel.
 
-        SYNOPSIS
-           Return a Sherpa PSF kernel image obj
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        psf_data : a sherpa.image.PSFKernelImage instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFKernelImage object
+        See Also
+        --------
+        get_psf_image : Return the data used by image_psf.
+        image_kernel : Display the 2D kernel for a data set in the image viewer.
+        image_psf : Display the 2D PSF model for a data set in the image viewer.
 
-        DESCRIPTION
-           The PSF kernel image object holds the reference to the image array.
+        Examples
+        --------
 
-           Attributes:
-              y            - image array
+        Return the image data for the kernel for the default data set:
 
-        SEE ALSO
-           image_kernel
+        >>> lplot = get_kernel_image()
+        >>> iplot.y.shape
+        (51, 51)
+
         """
         self._prepare_imageobj(id, self._kernelimage)
         return self._kernelimage
