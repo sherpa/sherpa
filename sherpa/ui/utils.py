@@ -11470,33 +11470,59 @@ class Session(NoNewAttributesAfterInit):
                     (mdl.name, str(id)))
         self._plot(id, self._sourceplot, **kwargs)
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_fit(self, id=None, **kwargs):
-        """
-        plot_fit
+        """Plot the fit results (data, model) for a data set.
 
-        SYNOPSIS
-           Send a fit plot to the visualizer
+        This function creates a plot containing the data and the model
+        (including any instrument response) for a data set.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_fit`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_fit_plot : Return the data used by plot_fit.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
+        plot_data : Plot the data values.
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the fit results for the default data set:
 
-        DESCRIPTION
-           Visualize a dataset and dataset model by Sherpa data id.
+        >>> plot_fit()
 
-        SEE ALSO
-           get_fit_plot, plot_model, plot_data, plot_fit_resid, plot_fit_delchi
+        Overplot the 'core' results on those from the 'jet' data set,
+        using a logarithmic scale for the X axis:
+
+        >>> set_xlog()
+        >>> plot_fit('jet')
+        >>> plot_fit('core', overplot=True)
+
         """
         self._plot(id, self._fitplot, **kwargs)
 
@@ -11833,36 +11859,63 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._kernelplot, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True):
-        """
-        plot_fit_resid
+        """Plot the fit results, and the residuals, for a data set.
 
-        SYNOPSIS
-           Send fit and residuals plots to the visualizer
+        This creates two plots - the first from `plot_fit` and the
+        second from `plot_resid` - for a data set.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_fit_resid`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_fit_plot : Return the data used by plot_fit.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_fit : Plot the fit results for a data set.
+        plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
+        plot_data : Plot the data values.
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the results for the default data set:
 
-        DESCRIPTION
-           Visualize the fit plot and residuals plot in a joint plot
-           window by Sherpa data id.
+        >>> plot_fit_resid()
 
-        SEE ALSO
-           plot_resid, plot_delchi, plot_ratio, plot_chisqr, plot_fit,
-           plot_data, plot_model, plot_fit_delchi
+        Overplot the 'core' results on those from the 'jet' data set,
+        using a logarithmic scale for the X axis:
+
+        >>> set_xlog()
+        >>> plot_fit_resid('jet')
+        >>> plot_fit_resid('core', overplot=True)
+
         """
         self._jointplot.reset()
         fp = self._fitplot
@@ -11891,36 +11944,63 @@ class Session(NoNewAttributesAfterInit):
         else:
             sherpa.plot.end()
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_fit_delchi(self, id=None, replot=False, overplot=False,
                         clearwindow=True):
-        """
-        plot_fit_delchi
+        """Plot the fit results, and the residuals, for a data set.
 
-        SYNOPSIS
-           Send fit and delta chi plots to the visualizer
+        This creates two plots - the first from `plot_fit` and the
+        second from `plot_delchi` - for a data set.
 
-        SYNTAX
+        Arguments
+        ---------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_fit_delchi`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_fit_plot : Return the data used by plot_fit.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_fit : Plot the fit results for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
+        plot_data : Plot the data values.
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the results for the default data set:
 
-        DESCRIPTION
-           Visualize the fit plot and delta chi plot in a joint plot
-           window by Sherpa data id.
+        >>> plot_fit_delchi()
 
-        SEE ALSO
-           plot_resid, plot_delchi, plot_ratio, plot_chisqr, plot_fit,
-           plot_data, plot_model, plot_fit_resid
+        Overplot the 'core' results on those from the 'jet' data set,
+        using a logarithmic scale for the X axis:
+
+        >>> set_xlog()
+        >>> plot_fit_delchi('jet')
+        >>> plot_fit_delchi('core', overplot=True)
+
         """
         self._jointplot.reset()
         fp = self._fitplot
