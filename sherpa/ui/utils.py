@@ -14533,53 +14533,81 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.close()
 
+    ### Ahelp ingest: 2015-05-11 DJB
+    ### DOC-TODO: what is the "default" coordinate system
     def image_getregion(self, coord=''):
         """Return the region defined in the image viewer.
 
-        image_getregion
+        The regions defined in the current frame are returned.
 
-        SYNOPSIS
-           Return a visualizer image region
+        Parameters
+        ----------
+        coord : str, optional
+           The coordinate system to use.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.DS9Err
+           Invalid coordinate system.
 
-        Arguments:
-           None
+        See Also
+        --------
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaget : Return the result of an XPA call to the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        Returns:
-           visualizer image region
+        Examples
+        --------
 
-        DESCRIPTION
-           Return a visualizer image region.
+        >>> image_getregion()
+        'circle(123,128,12.377649);-box(130,121,14,14,329.93142);'
 
-        SEE ALSO
-           image_open, image_close, image_deleteframes, image_setregion,
-           image_xpaget, image_xpaset
+        >>> image_getregion('physical')
+        'circle(3920.5,4080.5,396.08476);-rotbox(4144.5,3856.5,448,448,329.93142);'
+
         """
         return sherpa.image.Image.get_region(coord)
 
+    ### Ahelp ingest: 2015-05-11 DJB
+    ### DOC-TODO: what is the "default" coordinate system
     def image_setregion(self, reg, coord=''):
         """Set the region to display in the image viewer.
 
-        image_setregion
+        Parameters
+        ----------
+        reg : str
+           The region to display.
+        coord : str, optional
+           The coordinate system to use.
 
-        SYNOPSIS
-           Set a visualizer image region
+        Raises
+        ------
+        sherpa.utils.err.DS9Err
+           Invalid coordinate system.
 
-        SYNTAX
+        See Also
+        --------
+        image_getregion : Return the region defined in the image viewer.
+        image_xpaget : Return the result of an XPA call to the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        Arguments:
-           reg      - image visualizer region
+        Examples
+        --------
 
-        Returns:
-           None
+        Add a circle, in the physical coordinate system, to the data
+        from the default data set:
 
-        DESCRIPTION
-           Set a visualizer image region.
+        >>> image_data()
+        >>> image_setregion('circle(4234.53,3245.29,46.74)', 'physical')
 
-        SEE ALSO
-           image_open, image_close, image_getregion, image_deleteframes,
-           image_xpaget, image_xpaset
+        Copy the region from the current frame, create a new frame
+        displaying the residuals from data set 'img', and then display
+        the region on it:
+
+        >>> r = image_getregion()
+        >>> image_resid('img', newframe=True)
+        >>> image_setregion(r)
+
         """
         sherpa.image.Image.set_region(reg, coord)
 
@@ -14603,7 +14631,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.DS9Err
-           The image is not running.
+           The image viewer is not running.
         sherpa.utils.err.RuntimeErr
            If the command is not recognized.
 
@@ -14655,7 +14683,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.DS9Err
-           The image is not running.
+           The image viewer is not running.
         sherpa.utils.err.RuntimeErr
            If the command is not recognized or could not be completed.
 
