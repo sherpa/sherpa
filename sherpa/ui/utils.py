@@ -11314,34 +11314,57 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._dataplot, **kwargs)
     
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-11 DJB
     def plot_model(self, id=None, **kwargs):
         """Plot the model for a data set.
 
-        plot_model
+        This function plots the model for a data set, which includes
+        any instrument response (e.g. a convolution created by
+        `set_psf`).
 
-        SYNOPSIS
-           Send a model plot to the visualizer
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_model`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        See Also
+        --------
+        get_model_plot : Return the data used by plot_model.
+        get_model_plot_prefs : Return the preferences for plot_model.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_model_component : Plot a component of the model for a data set.
+        plot_source : Plot the source expression for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Examples
+        --------
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Plot the convolved source model for the default data set:
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        >>> plot_model()
 
-        Returns:
-           None
+        Overplot the model for data set 2 on data set 1:
 
-        DESCRIPTION
-           Visualize a dataset model by Sherpa data id.
+        >>> plot_model(1)
+        >>> plot_model(2, overplot=True)
 
-        SEE ALSO
-           get_model_plot, plot_data, plot_fit, plot_fit_resid, plot_fit_delchi
+        Create the equivalent of `plot_fit('jet')`:
+
+        >>> plot_data('jet')
+        >>> plot_model('jet', overplot=True)
+
         """
         self._plot(id, self._modelplot, **kwargs)
 
@@ -11517,6 +11540,7 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_model : Plot the model for a data set.
+        plot_source_component : Plot a component of the source expression for a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
         set_ylinear : New plots will display a linear Y axis.
