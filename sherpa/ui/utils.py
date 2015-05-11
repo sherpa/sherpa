@@ -10037,278 +10037,173 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._fitplot)
         return self._fitplot
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_resid_plot(self, id=None):
-        """
-        get_resid_plot
+        """Return the data used by plot_resid.
 
-        SYNOPSIS
-           Return a Sherpa resid plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.ResidPlot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ResidPlot object
+        See Also
+        --------
+        get_chisqr_plot : Return the data used by plot_chisqr.
+        get_delchi_plot : Return the data used by plot_delchi.
+        get_ratio_plot : Return the data used by plot_ratio.
+        plot_resid : Plot the residuals (data - model) for a data set.
 
-        DESCRIPTION
-           The Sherpa resid plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the residual data for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> rplot = get_resid_plot()
+        >>> np.min(rplot.y)
+        -2.9102595936209896
+        >>> np.max(rplot.y)
+        4.0897404063790104
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - False
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3
-                 symbolstyle    - 2
-                 xaxis          - True
-                 xerrorbars     - True
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the residuals and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_resid
         """
         self._prepare_plotobj(id, self._residplot)
         return self._residplot
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_delchi_plot(self,id=None):
-        """
-        get_delchi_plot
+        """Return the data used by plot_delchi.
 
-        SYNOPSIS
-           Return a Sherpa delta chi plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.DelchiPlot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa DelchiPlot object
+        See Also
+        --------
+        get_chisqr_plot : Return the data used by plot_chisqr.
+        get_ratio_plot : Return the data used by plot_ratio.
+        get_resid_plot : Return the data used by plot_resid.
+        plot_delchi : Plot the ratio of residuals to error for a data set.
 
-        DESCRIPTION
-           The Sherpa delta chi plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the residual data, measured in units of the error, for
+        the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> rplot = get_delchi_plot()
+        >>> np.min(rplot.y)
+        -2.85648373819671875
+        >>> np.max(rplot.y)
+        2.89477053577520982
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - False
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3
-                 symbolstyle    - 2
-                 xaxis          - True
-                 xerrorbars     - True
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the delta chi and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_delchi
         """
         self._prepare_plotobj(id, self._delchiplot)
         return self._delchiplot
 
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_chisqr_plot(self,id=None):
-        """
-        get_chisqr_plot
+        """Return the data used by plot_chisqr.
 
-        SYNOPSIS
-           Return a Sherpa chi square plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.ChisqrPlot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ChisqrPlot object
+        See Also
+        --------
+        get_delchi_plot : Return the data used by plot_delchi.
+        get_ratio_plot : Return the data used by plot_ratio.
+        get_resid_plot : Return the data used by plot_resid.
+        plot_chisqr : Plot the chi-squared value for each point in a data set.
 
-        DESCRIPTION
-           The Sherpa chi square plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the residual data, measured as chi square, for the
+        default data set:
 
-              xlabel       - x axis label, read-only
+        >>> rplot = get_chisqr_plot()
+        >>> np.min(rplot.y)
+        0.0005140622701128954
+        >>> np.max(rplot.y)
+        8.379696454792295
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - None
-                 linecolor      - 'red'
-                 errthickness   - None
-                 linestyle      - 1
-                 linethickness  - 3
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - None
-                 symbolstyle    - 0
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the chi square and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_chisqr
         """
         self._prepare_plotobj(id, self._chisqrplot)
         return self._chisqrplot
     
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_ratio_plot(self, id=None):
-        """
-        get_ratio_plot
+        """Return the data used by plot_ratio.
 
-        SYNOPSIS
-           Return a Sherpa ratio plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.RatioPlot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa RatioPlot object
+        See Also
+        --------
+        get_chisqr_plot : Return the data used by plot_chisqr.
+        get_delchi_plot : Return the data used by plot_delchi.
+        get_resid_plot : Return the data used by plot_resid.
+        plot_ratio : Plot the ratio of data to model for a data set.
 
-        DESCRIPTION
-           The Sherpa ratio plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the ratio of the data to the model for the default data
+        set:
 
-              xlabel       - x axis label, read-only
+        >>> rplot = get_ratio_plot()
+        >>> np.min(rplot.y)
+        0.6320905073750186
+        >>> np.max(rplot.y)
+        1.5170172177000447
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - True
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3
-                 symbolstyle    - 2
-                 xaxis          - False
-                 xerrorbars     - True
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False                 
-
-           Functions:
-
-              prepare()
-                 calculate the ratios and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_ratio
         """
         self._prepare_plotobj(id, self._ratioplot)
         return self._ratioplot
