@@ -5552,7 +5552,12 @@ class Session(NoNewAttributesAfterInit):
         """Set the source model expression for a data set.
 
         The function is available as both `set_model` and
-        `set_source`.
+        `set_source`. The model fit to the data can be further
+        modified by instrument responses which can be set explicitly -
+        e.g. by `set_psf` - or be defined automatically by the type of
+        data being used (e.g. the ARF and RMF of a PHA data set). The
+        `set_full_model` command can be used to explicitly include the
+        instrument response if necessary.
 
         Parameters
         ----------
@@ -6309,7 +6314,7 @@ class Session(NoNewAttributesAfterInit):
 
 
     #
-    # PSF
+    # PSF1
     #
 
     ### Ahelp ingest: 2015-05-11 DJB
@@ -6375,31 +6380,113 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(psf)
         self._psf_models.append(psf)
 
+    ### Ahelp ingest: 2015-05-11 DJB
+    ### DOC-TODO: am I correct about the multiple use warning?
     ##@loggable(with_id=True, with_keyword='psf')
     def set_psf(self, id, psf=None):
         """Apply a PSF model to a data set.
 
-        set_psf
+        After this call, the model that is fit to the data (as set by
+        `set_model`) will be convolved by the given PSF model.
 
-        SYNOPSIS
-           Add a PSF model by Sherpa data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        psf : str or sherpa.instrument.PSFModel instance
+           The PSF model created by `load_psf`.
 
-        SYNTAX
+        See Also
+        --------
+        delete_psf : Delete the PSF model for a data set.
+        get_psf : Return the PSF model defined for a data set.
+        image_psf : Display the 2D PSF model for a data set in the image viewer.
+        load_psf : Create a PSF model.
+        plot_psf : Plot the 1D PSF model applied to a data set.
+        set_model : Set the source model expression for a data set.
 
-        Arguments:
-           id   - Sherpa data id
-                  default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `psf` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `psf` parameters,
+        respectively.
 
-           psf  - Sherpa PSF model
+        A PSF component should only be applied to a single data set.
+        This is not enforced by the system, and incorrect results
+        can occur if this condition is not true.
 
-        Returns:
-           None
+        The point spread function (PSF) is defined by the full
+        (unfiltered) PSF image loaded into Sherpa or the PSF model
+        expression evaluated over the full range of the dataset; both
+        types of PSFs are established with the `load_psf` command.
+        The kernel is the subsection of the PSF image or model which
+        is used to convolve the data. This subsection is created from
+        the PSF when the size and center of the kernel are defined by
+        the command `set_psf`. While the kernel and PSF might be
+        congruent, defining a smaller kernel helps speed the
+        convolution process by restricting the number of points within
+        the PSF that must be evaluated.
 
-        DESCRIPTION
-           Add a PSF model to the instrument list by Sherpa data id.
+        In a 1-D PSF model, a radial profile or 1-D model array is
+        used to convolve (fold) the given source model using the Fast
+        Fourier Transform (FFT) technique. In a 2-D PSF model, an
+        image or 2-D model array is used.
 
-        SEE ALSO
-           get_psf, load_psf, delete_psf
+        The parameters of a PSF model include:
+
+        kernel
+           The data used for the convolution (file name or model
+           instance).
+
+        size
+           The number of pixels used in the convolution (this can be a
+           subset of the full PSF). This is a scalar (1D) or a
+           sequence (2D, width then height) value.
+
+        center
+           The center of the kernel. This is a scalar (1D) or a
+           sequence (2D, width then height) value. The kernel centroid
+           must always be at the center of the extracted sub-image,
+           otherwise, systematic shifts will occur in the best-fit
+           positions.
+
+        radial
+           Set to `1` to use a symmetric array. The default is `0` to
+           reduce edge effects.
+
+        norm
+           Should the kernel be normalized so that it sums to 1?  This
+           summation is done over the full data set (not the subset
+           defined by the `size` parameter). The default is `1` (yes).
+
+        Examples
+        --------
+
+        Use the data in the file `line_profile.fits` as the PSF for
+        the default data set:
+
+        >>> load_psf('psf1', 'line_profile.fits')
+        >>> set_psf(psf1)
+
+        Use the same PSF for different data sets:
+
+        >>> load_psf('p1', 'psf.img')
+        >>> load_psf('p2', 'psf.img')
+        >>> set_psf(1, 'p1')
+        >>> set_psf(2, 'p2')
+
+        Restrict the convolution to a sub-set of the PSF data and
+        compare the two:
+
+        >>> set_psf(psf1)
+        >>> psf1.size = (41,41)
+        >>> image_psf()
+        >>> image_kernel(newframe=True, tile=True)
+
         """
         if psf is None:
             id, psf, = psf, id
