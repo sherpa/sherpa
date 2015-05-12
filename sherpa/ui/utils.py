@@ -9579,7 +9579,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data : object
+        data : a sherpa.plot.DataPlot instance
            An object representing the data used to create the plot by
            `plot_data`. The relationship between the returned values
            and the values in the data set depend on the data type. For
@@ -9702,51 +9702,33 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._dataplot.plot_prefs
 
+    # also in sherpa.astro.utils (copies this docstring)
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_plot(self, id=None):
-        """
-        get_model_plot
+        """Return the data used by plot_model.
 
-        SYNOPSIS
-           Return a Sherpa model plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        data : a sherpa.plot.ModelPlot instance
+           An object representing the data used to create the plot by
+           `plot_model`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_model_plot_prefs : Return the preferences for plot_model.
+        plot_model : Plot the model for a data set.
 
-        Returns:
-           Sherpa ModelPlot object
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa model plot object holds references to various
-           plot preferences and data arrays.
+        >>> mplot = get_model_plot()
 
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-           Functions:
-
-              prepare()
-                 calculate the model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_model
         """
         self._prepare_plotobj(id, self._modelplot)
         return self._modelplot

@@ -8939,6 +8939,7 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
+    # also in sherpa.utils
     def get_model_plot(self, id=None, **kwargs):
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
             self._prepare_plotobj(id, self._modelhisto, **kwargs)

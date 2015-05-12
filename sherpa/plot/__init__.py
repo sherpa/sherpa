@@ -739,7 +739,25 @@ class PSFKernelContour(DataContour):
 
 
 class ModelPlot(Plot):
-    "Derived class for creating 1D model plots"
+    """Create 1D plots of model values.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point (the independent variable).
+    y : array_like
+       The Y value for each point (the dependent variable).
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value, if set.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     plot_prefs = backend.get_model_plot_defaults()
     
     def __init__(self):
