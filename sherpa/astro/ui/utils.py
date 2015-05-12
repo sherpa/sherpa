@@ -8036,33 +8036,59 @@ class Session(sherpa.ui.utils.Session):
 
         return model
 
+    ### Ahelp ingest: 2015-05-12 DJB
     #@loggable(with_id=True)
     def get_response(self, id=None, bkg_id=None):
-        """
-        get_response
+        """Return the respone information applied to a PHA data set.
 
-        SYNOPSIS
-           Return a PHA instrument response, multiple PHA instrument response
-           or PHA pileup response model by data id
+        For a PHA data set, the source model - created by `set_model`
+        - is modified by a model representing the instrumental effects
+        - such as the effective area of the mirror, the energy
+        resolution of the detector, and any model of pile up - which
+        is collectively known as the instrument response.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the instrument response. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           If given, return the response for the given background
+           component, rather than the source.
 
-        Arguments:
-           id        - data id
-                       default = default data id
-           
-           bkg_id    - background id
-                       default = default bkg_id
+        Returns
+        -------
+        response
+           The return value depends on whether an ARF, RMF, or pile up
+           model has been associated with the data set.
 
-        Returns:
-           Sherpa response model
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
 
-        DESCRIPTION
-           Retrieve a PHA instrument response, multiple PHA instrument response
-           or PHA pileup response model by data id and background id
+        See Also
+        --------
+        get_arf : Return the ARF associated with a PHA data set.
+        get_pileup_model : Return the pile up model for a data set.
+        get_rmf : Return the RMF associated with a PHA data set.
+        set_bkg_full_model : Define the convolved background model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-        SEE ALSO
-           get_pileup_model, get_arf, get_rmf
+        Examples
+        --------
+
+        Create an empty PHA data set, load in an ARF and RMF, and then
+        retrieve the response. The response is then used to model the
+        instrument response applied to a `powlaw1d` model component:
+
+        >>> dataspace1d(1, 1024, 1, dstype=DataPHA)
+        >>> load_arf('src.arf')
+        >>> load_rmf('src.rmf')
+        >>> rsp = get_response()
+        >>> mdl = rsp(powlaw1d.pl)
+
         """
         pha = self._get_pha_data(id)
         if bkg_id is not None:
