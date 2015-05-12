@@ -10289,52 +10289,44 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._modelcontour)
         return self._modelcontour
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_source_contour(self, id=None):
-        """
-        get_source_contour
+        """Return the data used by contour_source.
 
-        SYNOPSIS
-           Return a Sherpa source contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.SourceContour instance
+           The `y` attribute contains the model values and the `x0`
+           and `x1` arrays the corresponsing coordinate values, as
+           one-dimensional arrays.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa SourceContour object
+        See Also
+        --------
+        get_source_image : Return the data used by image_source.
+        contour_source : Contour the values of the model, without any PSF.
+        image_source : Display the source expression for a data set in the image viewer.
 
-        DESCRIPTION
-           The Sherpa source contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the source model pixel values for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> sinfo = get_source_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           contour_source
         """
         self._prepare_plotobj(id, self._sourcecontour)
         return self._sourcecontour
