@@ -9138,36 +9138,41 @@ class Session(sherpa.ui.utils.Session):
         self._prepare_plotobj(id, self._arfplot, resp_id)
         return self._arfplot
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_fit_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_fit_plot
+        """Return the data used by plot_bkg_fit.
 
-        SYNOPSIS
-           Return a Sherpa background fit plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        model : a sherpa.astro.plot.BkgFitPlot instance
+           An object representing the data used to create the plot by
+           `plot_bkg_fit`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                       default = None
+        See Also
+        --------
+        get_bkg_plot : Return the data used by plot_bkg.
+        get_bkg_model_plot : Return the data used by plot_bkg_model.
+        plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
 
-        Returns:
-           Sherpa BkgFitPlot plot
-
-        DESCRIPTION
-           The Sherpa background fit plot object holds a reference to a
-           background plot and background model plot instance.
-
-           Attributes:
-              bkgdataplot
-
-              bkgmodelplot
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit, plot_bkg_source
         """
         self._prepare_plotobj(id, self._bkgfitplot, bkg_id=bkg_id)
         return self._bkgfitplot
