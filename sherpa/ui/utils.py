@@ -10500,7 +10500,9 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_ratio_contour : Return the data used by contour_ratio.
+        get_resid_image : Return the data used by image_resid.
         contour_resid : Contour the residuals of the fit.
+        image_resid : Display the residuals (data - model) for a data set in the image viewer.
 
         Examples
         --------
@@ -10525,7 +10527,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_data : a sherpa.plot.RatioPlot instance
+        ratio_data : a sherpa.plot.RatioPlot instance
            The `y` attribute contains the ratio values and the `x0`
            and `x1` arrays the corresponsing coordinate values, as
            one-dimensional arrays.
@@ -10540,8 +10542,10 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
+        get_ratio_image : Return the data used by image_ratio.
         get_resid_contour : Return the data used by contour_resid.
         contour_ratio : Contour the ratio of data to model.
+        image_ratio : Display the ratio (data/model) for a data set in the image viewer.
 
         Examples
         --------
@@ -13956,59 +13960,84 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._srccompimage, model=model)
         return self._srccompimage
 
-
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_ratio_image(self, id=None):
-        """
-        get_ratio_image
+        """Return the data used by image_ratio.
 
-        SYNOPSIS
-           Return a Sherpa ratio image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        ratio_img : a sherpa.image.RatioImage instance
+           The `y` attribute contains the ratio values as a 2D NumPy
+           array.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa RatioImage object
+        See Also
+        --------
+        get_resid_image : Return the data used by image_resid.
+        contour_ratio : Contour the ratio of data to model.
+        image_ratio : Display the ratio (data/model) for a data set in the image viewer.
 
-        DESCRIPTION
-           The ratio image object holds the reference to the image array.
+        Examples
+        --------
 
-           Attributes:
-              y            - image array
+        Return the ratio data for the default data set:
 
-        SEE ALSO
-           image_ratio
+        >>> rinfo = get_ratio_image()
+
         """
         self._prepare_imageobj(id, self._ratioimage)
         return self._ratioimage
     
+    ### Ahelp ingest: 2015-05-11 DJB
     def get_resid_image(self, id=None):
-        """
-        get_resid_image
+        """Return the data used by image_resid.
 
-        SYNOPSIS
-           Return a Sherpa resid image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_img : a sherpa.image.ResidImage instance
+           The `y` attribute contains the residual values as a 2D
+           NumPy array.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ResidImage object
+        See Also
+        --------
+        get_ratio_image : Return the data used by image_ratio.
+        contour_resid : Contour the residuals of the fit.
+        image_resid : Display the residuals (data - model) for a data set in the image viewer.
 
-        DESCRIPTION
-           The resid image object holds the reference to the image array.
+        Examples
+        --------
 
-           Attributes:
-              y            - image array
+        Return the residual data for the default data set:
 
-        SEE ALSO
-           image_resid
+        >>> rinfo = get_resid_image()
+
         """
         self._prepare_imageobj(id, self._residimage)
         return self._residimage
