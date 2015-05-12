@@ -9624,7 +9624,7 @@ class Session(NoNewAttributesAfterInit):
         A value of `None` means to use the default value for that
         attribute, unless indicated otherwise. These preferences
         are used by the following commands: `plot_data`, `plot_bkg`,
-        `plot_rato`, and the "fit" variants, such as `plot_fit`,
+        `plot_ratio`, and the "fit" variants, such as `plot_fit`,
         `plot_fit_resid`, and `plot_bkg_fit`.
 
         `errcolor`
@@ -9664,7 +9664,6 @@ class Session(NoNewAttributesAfterInit):
            What size is the symbol drawn. The default is `3`.
 
         `symbolstyle`
-
            What style is used for the symbols. The default is `4`
            which means `circle` for the ChIPS back end.
 
@@ -9891,56 +9890,104 @@ class Session(NoNewAttributesAfterInit):
         return self._compsrcplot
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_plot_prefs(self):
-        """
-        get_model_plot_prefs
+        """Return the preferences for plot_model.
 
-        SYNOPSIS
-           Return model plot preferences
+        Returns
+        -------
+        prefs : dict
+           Changing the values of this dictionary will change any new
+           model plots. This dictionary will be empty if no plot
+           backend is available.
 
-        SYNTAX
+        See Also
+        --------
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-        Arguments:
-           None
+        Notes
+        -----
+        The meaning of the fields depend on the chosen plot backend.
+        A value of `None` means to use the default value for that
+        attribute, unless indicated otherwise. These preferences are
+        used by the following commands: `plot_model`, `plot_ratio`,
+        `plot_bkg_model`, and the "fit" variants, such as `plot_fit`,
+        `plot_fit_resid`, and `plot_bkg_fit`.
 
-        Returns:
-           Dictionary of model plot preferences
+        `errcolor`
+           The color to draw error bars. The default is `None`.
 
-        DESCRIPTION
-              plot_prefs   - dictionary of plotting preferences
+        `errstyle`
+           How to draw errors. The default is `None`.
 
-                 errcolor       - None
-                 errstyle       - None
-                 errthickness   - None
-                 linecolor      - 'red'
-                 linestyle      - 1
-                 linethickness  - 3
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - None
-                 symbolstyle    - 0
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False
+        `errthickness`
+           What thickness of line to draw error bars. The default is
+           `None`.
 
-           Examples:
+        `linecolor`
+           What color to use for the line connecting the data points.
+           The default is `red`.
 
-               get_model_plot_prefs()
-           {'symbolstyle': 0, 'linethickness': 3, 'linestyle': 1,
-            'linecolor': 'red'}
+        `linestyle`
+           How should the line connecting the data points be drawn.
+           The default is `1`, which means a solid line is drawn.
 
-               get_model_plot_prefs()['linecolor']='yellow'
+        `linethickness`
+           What thickness should be used to draw the line connecting
+           the data points. The default is `3`.
 
-               get_model_plot_prefs()
-           {'symbolstyle': 0, 'linethickness': 3, 'linestyle': 1,
-            'linecolor': 'yellow'}
+        `ratioline`
+           Should a horizontal line be drawn at y=1?  The default is
+           `False`.
 
+        `symbolcolor`
+           What color to draw the symbol representing the data points.
+           The default is `None`.
 
-        SEE ALSO
-           plot_model, get_model_plot
+        `symbolfill`
+           Should the symbol be drawn filled? The default is `True`.
+
+        `symbolsize`
+           What size is the symbol drawn. The default is `None`.
+
+        `symbolstyle`
+           What style is used for the symbols. The default is `0`,
+           which means no symbol is used.
+
+        `xaxis`
+           The default is `False`
+
+        `xerrorbars`
+           Should error bars be drawn for the X axis. The default is
+           `False`.
+
+        `xlog`
+           Should the X axis be drawn with a logarithmic scale? The
+           default is `False`. This field can also be changed with the
+           `set_xlog` and `set_xlinear` functions.
+
+        `yerrorbars`
+           Should error bars be drawn for the Y axis. The default is
+           `False`.
+
+        `ylog`
+           Should the Y axis be drawn with a logarithmic scale? The
+           default is `False`. This field can also be changed with the
+           `set_ylog` and `set_ylinear` functions.
+
+        Examples
+        --------
+
+        After these commands, any model plot will use a green line
+        to display the model:
+
+        >>> prefs = get_model_plot_prefs()
+        >>> prefs['linecolor'] = 'green'
+
         """
         return self._modelplot.plot_prefs
 
