@@ -89,6 +89,19 @@ class Image(NoNewAttributesAfterInit):
     xpaset = staticmethod(xpaset)
 
 class DataImage(Image):
+    """Image data.
+
+    Attributes
+    ----------
+    name : str
+    y : array_like
+       The image data (pixel valuess) as a 2D array.
+    eqpos :
+       Coordinate transform to the "world" system.
+    sky :
+       Coordinate transform to the "physical" system.
+
+    """
 
     def __init__(self):
         self.y = None

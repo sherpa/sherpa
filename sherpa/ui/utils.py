@@ -9605,10 +9605,10 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        prefs : dictionary
-           Changing the values of this dictionary will change
-           any new data plots. This dictionary will be empty
-           if no plot backend is available.
+        prefs : dict
+           Changing the values of this dictionary will change any new
+           data plots. This dictionary will be empty if no plot
+           backend is available.
 
         See Also
         --------
@@ -9617,7 +9617,6 @@ class Session(NoNewAttributesAfterInit):
         set_xlog : New plots will display a logarithmically-scaled X axis.
         set_ylinear : New plots will display a linear Y axis.
         set_ylog : New plots will display a logarithmically-scaled Y axis.
-
 
         Notes
         -----
@@ -10177,93 +10176,96 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._ratioplot)
         return self._ratioplot
     
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_data_contour(self, id=None):
-        """
-        get_data_contour
+        """Return the data used by contour_data.
 
-        SYNOPSIS
-           Return a Sherpa data contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.DataContour instance
+           The `y` attribute contains the residual values and the `x0`
+           and `x1` arrays the corresponsing coordinate values, as
+           one-dimensional arrays.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa DataContour object
+        See Also
+        --------
+        get_data_image : Return the data used by image_data.
+        contour_data : Contour the values of an image data set.
+        image_data : Display a data set in the image viewer.
 
-        DESCRIPTION
-           The Sherpa data contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the data for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> dinfo = get_data_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           contour_data
         """
         self._prepare_plotobj(id, self._datacontour)
         return self._datacontour
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_data_contour_prefs(self):
-        """
-        get_data_contour_prefs
+        """Return the preferences for contour_data.
 
-        SYNOPSIS
-           Return data contour preferences
+        Returns
+        -------
+        prefs : dict
+           Changing the values of this dictionary will change any new
+           contour plots. The default is an empty dictionary.
 
-        SYNTAX
+        See Also
+        --------
+        contour_data : Contour the values of an image data set.
 
-        Arguments:
-           None
+        Notes
+        -----
+        The meaning of the fields depend on the chosen plot backend.
+        A value of `None` (or not set) means to use the default value
+        for that attribute, unless indicated otherwise.
 
-        Returns:
-           Dictionary of data contour preferences
+        `color`
+           The color to draw the contours. The default is `None`.
 
-        DESCRIPTION
-              contour_prefs   - dictionary of plotting preferences
+        `style`
+           How to draw the contours. The default is `None`.
 
-                 color      - None
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
+        `thickness`
+           What thickness of line to draw the contours. The default is
+           `None`.
 
-           Examples:
+        `xlog`
+           Should the X axis be drawn with a logarithmic scale? The
+           default is `False`.
 
-               get_data_contour_prefs()
-           {}
+        `ylog`
+           Should the Y axis be drawn with a logarithmic scale? The
+           default is `False`.
 
-               get_data_contour_prefs()['color']='blue'
+        Examples
+        --------
 
-               get_data_contour_prefs()
-           {'color': 'blue'}
+        Change the contours to be drawn in 'green':
 
+        >>> contour_data()
+        >>> prefs = get_data_contour_prefs()
+        >>> prefs['color'] = 'green'
+        >>> contour_data()
 
-        SEE ALSO
-           contour_data, get_data_contour
         """
         return self._datacontour.contour_prefs
 
@@ -10453,7 +10455,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_data : a sherpa.plot.ResidPlot instance
+        resid_data : a sherpa.plot.ResidContour instance
            The `y` attribute contains the residual values and the `x0`
            and `x1` arrays the corresponsing coordinate values, as
            one-dimensional arrays.
@@ -10496,7 +10498,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        ratio_data : a sherpa.plot.RatioPlot instance
+        ratio_data : a sherpa.plot.RatioContour instance
            The `y` attribute contains the ratio values and the `x0`
            and `x1` arrays the corresponsing coordinate values, as
            one-dimensional arrays.
@@ -13775,30 +13777,45 @@ class Session(NoNewAttributesAfterInit):
     # Image object access
     #
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_data_image(self, id=None):
-        """
-        get_data_image
+        """Return the data used by image_data.
 
-        SYNOPSIS
-           Return a Sherpa data image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        data_img : a sherpa.image.DataImage instance
+           The `y` attribute contains the ratio values as a 2D NumPy
+           array.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa DataImage object
+        See Also
+        --------
+        get_data_image : Return the data used by image_data.
+        contour_data : Contour the values of an image data set.
+        image_data : Display a data set in the image viewer.
 
-        DESCRIPTION
-           The data image object holds the reference to the image array.
+        Examples
+        --------
 
-           Attributes:
-              y            - image array
+        Return the image data for the default data set:
 
-        SEE ALSO
-           image_data
+        >>> dinfo = get_data_image()
+        >>> dinfo.y.shape
+        (150, 175)
+
         """
         self._prepare_imageobj(id, self._dataimage)
         return self._dataimage

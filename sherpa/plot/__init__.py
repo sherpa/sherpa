@@ -656,7 +656,25 @@ class PSFKernelPlot(DataPlot):
 
 
 class DataContour(Contour):
-    "Derived class for creating 2D data contours"
+    """Create contours of 2D data.
+
+    Attributes
+    ----------
+    contour_prefs : dict
+       The preferences for the plot.
+    x0, x1 : array_like
+       The coordinates of each point (the independent variables), as
+       one-dimensional arrays.
+    y : array_like
+       The Y value for each point (the dependent variable), as a
+       one-dimensional array.
+    levels : array_like or `None`
+       The values at which to draw contours.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     contour_prefs = backend.get_data_contour_defaults()
     
     def __init__(self):
