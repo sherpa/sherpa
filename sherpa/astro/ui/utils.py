@@ -10519,44 +10519,57 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgfitplot, None, bkg_id, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_source(self, id=None, lo=None, hi=None, bkg_id=None, **kwargs):
         """Plot the model expression for the background of a PHA data set.
 
-        plot_bkg_source
+        This function plots the model for the background of a PHA data
+        set. It does not include the instrument response (the ARF and
+        RMF).
 
-        SYNOPSIS
-           Plot the unconvolved background model
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        lo : number, optional
+           The low value to plot.
+        hi : number, optional
+           The high value to plot.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_model`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_bkg_source_plot : Return the data used by plot_bkg_source.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
 
-           lo       - low limit of plot
-                      default = None
-   
-           hi       - high limit of plot
-                      default = None
+        Examples
+        --------
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        >>> plot_bkg_source()
 
-           replot   - replot calculated arrays
-                      default = False
+        >>> plot_bkg_source('jet', bkg_id=1)
+        >>> plot_bkg_source('jet', bkg_id=2, overplot=True)
 
-           overplot - Plot data without clearing previous plot
-                      default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Visualize the unconvolved source model in a 1D plot by
-           data id and bkg_id.
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgsourceplot, None, bkg_id, lo, hi, **kwargs)
