@@ -13934,30 +13934,57 @@ class Session(NoNewAttributesAfterInit):
         return self._sourceimage
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_component_image(self, id, model=None):
-        """
-        get_model_component_image
+        """Return the data used by image_model_component.
 
-        SYNOPSIS
-           Return a Sherpa model image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
 
-        SYNTAX
+        Returns
+        -------
+        cpt_img : a sherpa.image.ComponentModelImage instance
+           The `y` attribute contains the component model values as a
+           2D NumPy array.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ModelImage object
+        See Also
+        --------
+        get_source_component_image : Return the data used by image_source_component.
+        get_model_image : Return the data used by image_model.
+        image_model : Display the model for a data set in the image viewer.
+        image_model_component : Display a component of the model in the image viewer.
 
-        DESCRIPTION
-           The model image object holds the reference to the image array.
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-           Attributes:
-              y            - image array
+        Examples
+        --------
 
-        SEE ALSO
-           image_model
+        Return the gsrc component values for the default data set:
+
+        >>> minfo = get_model_component_image(gsrc)
+
+        Get the `bgnd` model pixel values for data set 2:
+
+        >>> minfo = get_model_component_image(2, bgnd)
+
         """
         if model is None:
             id, model = model, id
@@ -13968,31 +13995,57 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._mdlcompimage, model=model)
         return self._mdlcompimage
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_source_component_image(self, id, model=None):
-        """
-        get_source_component_image
+        """Return the data used by image_source_component.
 
-        SYNOPSIS
-           Return a Sherpa model component image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
 
-        SYNTAX
+        Returns
+        -------
+        cpt_img : a sherpa.image.ComponentSourceImage instance
+           The `y` attribute contains the component model values as a
+           2D NumPy array.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ModelImage object
+        See Also
+        --------
+        get_model_component_image : Return the data used by image_model_component.
+        get_source_image : Return the data used by image_source.
+        image_source : Display the source expression for a data set in the image viewer.
+        image_source_component : Display a component of the source expression in the image viewer.
 
-        DESCRIPTION
-           The model component image object holds the reference to the 
-           image array.
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-           Attributes:
-              y            - image array
+        Examples
+        --------
 
-        SEE ALSO
-           image_model
+        Return the gsrc component values for the default data set:
+
+        >>> sinfo = get_source_component_image(gsrc)
+
+        Get the `bgnd` model pixel values for data set 2:
+
+        >>> sinfo = get_source_component_image(2, bgnd)
+
         """
         if model is None:
             id, model = model, id
@@ -14341,7 +14394,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_source_component_image :
+        get_source_component_image : Return the data used by image_source_component.
         image_close : Close the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
         image_model : Display the model for a data set in the image viewer.
@@ -14511,7 +14564,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_source_image :
+        get_source_image : Return the data used by image_source.
         image_close : Close the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
         image_model : Display the model for a data set in the image viewer.
