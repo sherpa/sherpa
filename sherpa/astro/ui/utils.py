@@ -10187,37 +10187,62 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._orderplot, None, None, None, None,orders, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg(self, id=None, bkg_id=None, **kwargs):
-        """
-        plot_bkg
+        """Plot the background values for a PHA data set.
 
-        SYNOPSIS
-           Plot background counts
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_bkg_plot : Return the data used by plot_bkg.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        set_analysis : Set the units used when fitting and displaying spectral data.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        Examples
+        --------
 
-           replot   - replot calculated arrays
-                      default = False
+        Plot the background from the default data set:
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg()
 
-        Returns:
-           None
+        Overplot the background from the 'jet' data set on the
+        data. There is no scaling for differences in aperture or
+        exposure time:
 
-        DESCRIPTION
-           Visualize the background counts in a 1D plot by
-           data id or background id.
+        >>> plot_data('jet')
+        >>> plot_bkg('jet', overplot=True)
 
-        SEE ALSO
-           plot_bkg_model, plot_bkg_fit, plot_bkg_source
+        Compare the first two background components of data set 1:
+
+        >>> plot_bkg(1, 1)
+        >>> plot_bkg(1, 2, overplot=True)
+
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgdataplot, None, bkg_id, **kwargs)
