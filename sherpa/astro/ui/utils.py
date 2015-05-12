@@ -9309,74 +9309,42 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgsourceplot
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_resid_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_resid_plot
+        """Return the data used by plot_bkg_resid.
 
-        SYNOPSIS
-           Return a Sherpa background residuals plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        source : a sherpa.astro.plot.BkgResidPlot instance
+           An object representing the data used to create the plot by
+           `plot_bkg_resid`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_chisqr_plot : Return the data used by plot_bkg_chisqr.
+        get_bkg_delchi_plot : Return the data used by plot_bkg_delchi.
+        get_bkg_ratio_plot : Return the data used by plot_bkg_ratio.
+        plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
 
-        Returns:
-           Sherpa BkgResidPlot plot
-
-        DESCRIPTION
-           The Sherpa background resid plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - False
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3
-                 symbolstyle    - 2
-                 xaxis          - True
-                 xerrorbars     - True
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the residuals and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit, plot_bkg_source,
-           plot_bkg_ratio, plot_bkg_resid, plot_bkg_delchi
         """
         self._prepare_plotobj(id, self._bkgresidplot, bkg_id=bkg_id)
         return self._bkgresidplot
