@@ -9264,80 +9264,45 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgdataplot
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_source_plot(self, id=None, lo=None, hi=None, bkg_id=None):
-        """
-        get_bkg_source_plot
+        """Return the data used by plot_bkg_source.
 
-        SYNOPSIS
-           Return a Sherpa background source plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        lo : number, optional
+           The low value to plot.
+        hi : number, optional
+           The high value to plot.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        source : a sherpa.astro.plot.BkgSourcePlot instance
+           An object representing the data used to create the plot by
+           `plot_bkg_source`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           lo       - low limit of plot
-                      default = None
-           
-           hi       - high limit of plot
-                      default = None
+        See Also
+        --------
+        get_bkg_model_plot : Return the data used by plot_bkg_model.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_source : Plot the model expression for the background of a PHA data set.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
-
-        Returns:
-           Sherpa BkgSourcePlot plot
-
-        DESCRIPTION
-           The Sherpa source plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              units        - units of grid, read-only
-
-              xlo          - grid array, low bins
-
-              xhi          - grid array, high bins
-
-              flux         - unconvolved counts
-
-              y            - convolved counts
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - None
-                 linecolor      - 'red'
-                 linestyle      - 1
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolstyle    - N/A
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False                 
-
-           Functions:
-
-              prepare()
-                 calculate the source model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit, plot_bkg_source
         """
         self._prepare_plotobj(id, self._bkgsourceplot, bkg_id=bkg_id,
                               lo=lo, hi=hi)
