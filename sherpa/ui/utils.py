@@ -10286,52 +10286,44 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._datacontour.contour_prefs
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_contour(self, id=None):
-        """
-        get_model_contour
+        """Return the data used by contour_model.
 
-        SYNOPSIS
-           Return a Sherpa model contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.ModelContour instance
+           The `y` attribute contains the model values and the `x0`
+           and `x1` arrays the corresponsing coordinate values, as
+           one-dimensional arrays.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ModelContour object
+        See Also
+        --------
+        get_model_image : Return the data used by image_model.
+        contour_model : Contour the values of the model, including any PSF.
+        image_model : Display the model for a data set in the image viewer.
 
-        DESCRIPTION
-           The Sherpa model contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the model pixel values for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> minfo = get_model_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           contour_model
         """
         self._prepare_plotobj(id, self._modelcontour)
         return self._modelcontour
