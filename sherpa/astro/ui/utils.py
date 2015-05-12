@@ -3738,10 +3738,10 @@ class Session(sherpa.ui.utils.Session):
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
-           If `False` then the data is written to a FITS
-           format binary table. The default is `True`. The
-           exact format of the output file depends on the
-           I/O library in use (Crates or AstroPy).
+           If `False` then the data is written as a FITS format binary
+           table. The default is `True`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
         clobber : bool, optional
            If `outfile` is not `None`, then this flag controls
            whether an existing file can be overwritten (`True`)
@@ -3830,7 +3830,7 @@ class Session(sherpa.ui.utils.Session):
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
-           If `False` then the data is written to a FITS
+           If `False` then the data is written as a FITS
            format binary table. The default is `True`. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
@@ -3918,7 +3918,7 @@ class Session(sherpa.ui.utils.Session):
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
-           If `False` then the data is written to a FITS
+           If `False` then the data is written as a FITS
            format binary table. The default is `True`. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
@@ -4014,7 +4014,7 @@ class Session(sherpa.ui.utils.Session):
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
-           If `False` then the data is written to a FITS
+           If `False` then the data is written as a FITS
            format binary table. The default is `True`. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
@@ -4103,7 +4103,7 @@ class Session(sherpa.ui.utils.Session):
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
-           If `False` then the data is written to a FITS
+           If `False` then the data is written as a FITS
            format binary table. The default is `True`. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
@@ -4186,7 +4186,7 @@ class Session(sherpa.ui.utils.Session):
            Set if the grouping array should be taken from the
            background associated with the data set.
         ascii : bool, optional
-           If `False` then the data is written to a FITS
+           If `False` then the data is written as a FITS
            format binary table. The default is `True`. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
@@ -4273,7 +4273,7 @@ class Session(sherpa.ui.utils.Session):
            Set if the quality array should be taken from the
            background associated with the data set.
         ascii : bool, optional
-           If `False` then the data is written to a FITS
+           If `False` then the data is written as a FITS
            format binary table. The default is `True`. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
@@ -4434,47 +4434,77 @@ class Session(sherpa.ui.utils.Session):
                                     ascii, clobber)
 
 
+    ### DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-12 DJB
     def save_data(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
-        """
-        save_data
+        """Save the data to a file.
 
-        SYNOPSIS
-           Write a data set to file by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The data is
+           written out as an ASCII file.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source (for a PHA data set).
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `True`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If there is no matching data set.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        save_arrays : 
+        save_delchi :
+        save_error : Save the errors to a file.
+        save_filter : Save the filter array to a file.
+        save_grouping : Save the grouping scheme to a file.
+        save_image :
+        save_pha : Save a PHA data set to a file.
+        save_quality : Save the quality array to a file.
+        save_resid :
+        save_staterror : Save the statistical errors to a file.
+        save_syserror : Save the statistical errors to a file.
+        save_table :
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Examples
+        --------
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Write the default data set out to the ASCII file 'src.dat':
 
-           clobber    - clobber the existing output file
-                        default = False
+        >>> save_data('src.dat')
 
-        Returns:
-           None
+        Write the 'rprof' data out to the FITS file 'prof.fits',
+        over-writing it if it already exists:
 
-        DESCRIPTION
-           Write data to a FITS file or ASCII file from a Sherpa dataset
-           by id.
+        >>> save_data('rprof', 'prof.fits', clobber=True, ascii=True)
 
-        EXAMPLE
-
-           save_data(1, "pha.fits")
-           
-           save_data(1, "img.fits")
-
-           save_data(1, "data.out", ascii=True)
-
-        SEE ALSO
-           save_image, save_data, save_table, save_pha
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)

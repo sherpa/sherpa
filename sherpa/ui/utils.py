@@ -4058,50 +4058,80 @@ class Session(NoNewAttributesAfterInit):
                         comment=comment, linebreak=linebreak, format=format)
 
 
+    ### DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-12 DJB
     def save_data(self, id, filename=None, fields=None, sep=' ', comment='#',
                   clobber=False, linebreak='\n', format='%g'):
-        """
-        save_data
+        """Save the data to a file.
 
-        SYNOPSIS
-           Write tabular data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The data is
+           written out as an ASCII file.
+        fields : array of str, optional
+           The attributes of the data set to write out. If `None`,
+           write out all the columns.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
+        linebreak : str, optional
+           Indicate a new line. The default is '\n'.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is '%g%.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If there is no matching data set.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
-           filename   - filename with path
+        See Also
+        --------
+        save_arrays : 
+        save_delchi :
+        save_error : Save the errors to a file.
+        save_filter : Save the filter array to a file.
+        save_resid :
+        save_staterror : Save the statistical errors to a file.
+        save_syserror : Save the statistical errors to a file.
 
-        Keyword Arguments:
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           fields     - dataset attribute names
-                        default = None
+        Examples
+        --------
 
-           sep        - separation character
-                        default = ' '
+        Write the default data set out to the ASCII file 'src.dat':
 
-           comment    - comment character
-                        default = '#'
+        >>> save_data('src.dat')
 
-           clobber    - clobber output file
-                        default = False
+        Only write out the x, y, and staterror columns for data set
+        'rprof' to the file 'prof.out', over-writing it if it already
+        exists:
 
-           linebreak  - new line character
-                        default = '\n'
+        >>> save_data('rprof', 'prof.out', clobber=True,
+                      fields=['x', 'y', 'staterror'])
 
-           format     - format strings for array element
-                        default = '%g'
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Write tabular data to a column-based text file from a
-           Sherpa dataset by id.
-
-        SEE ALSO
-           save_pha, save_arf, save_rmf, save_table, save_image
         """
         clobber=sherpa.utils.bool_cast(clobber)
         if filename is None:
