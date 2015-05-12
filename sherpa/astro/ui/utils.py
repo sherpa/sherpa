@@ -9091,74 +9091,46 @@ class Session(sherpa.ui.utils.Session):
         return self._orderplot
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_arf_plot(self, id=None, resp_id=None):
-        """
-        get_arf_plot
+        """Return the data used by plot_arf.
 
-        SYNOPSIS
-           Return a Sherpa ancillary response plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set with an ARF. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           Which ARF to use in the case that multiple ARFs are
+           associated with a data set. The default is `None`,
+           which means the first one.
 
-        SYNTAX
+        Returns
+        -------
+        arf_plot : a sherpa.astro.plot.ARFPlot instance
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
 
-           resp_id  - response id, if multiple response exist
-                      default  = default response id
+        See Also
+        --------
+        plot : Create one or more plot types.
+        plot_arf : Plot the ARF associated with a data set.
 
-        Returns:
-           Sherpa ARFPlot plot
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa ARF plot object holds references to various
-           plot preferences and data arrays.
+        Return the ARF plot data for the default data set:
 
-           Attributes:
-              title        - title of plot, read-only
+        >>> aplot = get_arf_plot()
 
-              xlabel       - x axis label, read-only
+        Return the ARF data for the second response of the
+        data set labelled 'histate':
 
-              ylabel       - y axis label, read-only
+        >>> aplot = get_arf_plot('histate', 2)
 
-              units        - units of grid, read-only
-
-              xlo          - grid array, low bins
-
-              xhi          - grid array, high bins
-
-              flux         - unconvolved counts
-
-              y            - convolved counts
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - None
-                 linecolor      - 'red'
-                 linestyle      - 1
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolstyle    - N/A
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False                 
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_arf, plot_source, plot_bkg, get_source_plot, get_bkg_plot
         """
         self._prepare_plotobj(id, self._arfplot, resp_id)
         return self._arfplot
@@ -10039,7 +10011,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_default_id : Return the default data set identifier.
+        get_arf_plot : Return the data used by plot_arf.
         plot : Create one or more plot types.
 
         Examples
