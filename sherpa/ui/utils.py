@@ -10370,46 +10370,54 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._sourcecontour)
         return self._sourcecontour
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_contour_prefs(self):
-        """
-        get_model_contour_prefs
+        """Return the preferences for contour_model.
 
-        SYNOPSIS
-           Return model contour preferences
+        Returns
+        -------
+        prefs : dict
+           Changing the values of this dictionary will change any new
+           contour plots.
 
-        SYNTAX
+        See Also
+        --------
+        contour_model : Contour the values of the model, including any PSF.
 
-        Arguments:
-           None
+        Notes
+        -----
+        The meaning of the fields depend on the chosen plot backend.
+        A value of `None` (or not set) means to use the default value
+        for that attribute, unless indicated otherwise.
 
-        Returns:
-           Dictionary of model contour preferences
+        `color`
+           The color to draw the contours. The default is `red`.
 
-        DESCRIPTION
-              contour_prefs   - dictionary of plotting preferences
+        `style`
+           How to draw the contours. The default is `None`.
 
-                 color      - 'red'
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
+        `thickness`
+           What thickness of line to draw the contours. The default is
+           `3`.
 
-           Examples:
+        `xlog`
+           Should the X axis be drawn with a logarithmic scale? The
+           default is `False`.
 
-               get_model_contour_prefs()
-           {'color': 'red', 'style': None, 'thickness': 3}
+        `ylog`
+           Should the Y axis be drawn with a logarithmic scale? The
+           default is `False`.
 
-               get_model_contour_prefs()['xlog']=True
+        Examples
+        --------
 
-               get_model_contour_prefs()['ylog']=True
+        Change the contours for the model to be drawn in 'orange':
 
-               get_model_contour_prefs()
-           {'color': 'red', 'style': None, 'ylog': True, 'xlog': True,
-            'thickness': 3}
+        >>> prefs = get_model_contour_prefs()
+        >>> prefs['color'] = 'orange'
+        >>> contour_data()
+        >>> contour_model(overcontour=True)
 
-
-        SEE ALSO
-           contour_model, get_model_contour
         """
         return self._modelcontour.contour_prefs
 
