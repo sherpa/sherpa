@@ -10726,7 +10726,11 @@ class Session(sherpa.ui.utils.Session):
     ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_fit_resid(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True):
-        """Plot the fit results, and the residuals, for the background of a PHA data set.
+        """Plot the fit results, and the residuals, for the background of
+        a PHA data set.
+
+        This creates two plots - the first from `plot_bkg_fit` and the
+        second from `plot_bkg_resid` - for a data set.
 
         Parameters
         ----------
@@ -10738,7 +10742,7 @@ class Session(sherpa.ui.utils.Session):
            multiple ones associated with the data set.
         replot : bool, optional
            Set to `True` to use the values calculated by the last
-           call to `plot_bkg_fit`. The default is `False`.
+           call to `plot_bkg_fit_resid`. The default is `False`.
         overplot : bool, optional
            If `True` then add the data to an exsiting plot, otherwise
            create a new plot. The default is `False`.
@@ -10764,7 +10768,7 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
-        plot_bkg_fit_delchi :
+        plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
 
@@ -10804,39 +10808,63 @@ class Session(sherpa.ui.utils.Session):
             sherpa.plot.end()
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_fit_delchi(self, id=None, bkg_id=None, replot=False,
                             overplot=False, clearwindow=True):
-        """
-        plot_bkg_fit_delchi
+        """Plot the fit results, and the residuals, for the background of
+        a PHA data set.
 
-        SYNOPSIS
-           Send background fit and background delta chi plots to the visualizer
+        This creates two plots - the first from `plot_bkg_fit` and the
+        second from `plot_bkg_delchi` - for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_fit_delchi`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id      - bkg id, if multiple bkgs exist
-                         default = None
+        See Also
+        --------
+        get_bkg_fit_plot : Return the data used by plot_bkg_fit.
+        get_bkg_delchi_plot : Return the data used by plot_bkg_delchi.
+        plot : Create one or more plot types.
+        plot_bkg : Plot the background values for a PHA data set.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        set_analysis : Set the units used when fitting and displaying spectral data.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Plot the background fit and residuals (normalised by the
+        error) to the default data set:
 
-        Returns:
-           None
+        >>> plot_bkg_fit_delchi()
 
-        DESCRIPTION
-           Visualize the fit plot and delta chi plot in a joint plot
-           window by Sherpa data id.
-
-        SEE ALSO
-           plot_bkg_resid, plot_bkg_delchi, plot_bkg_ratio, plot_bkg_chisqr,
-           plot_bkg_fit, plot_bkg, plot_bkg_model, plot_bkg_fit_resid
         """
         self._jointplot.reset()
         fp = self._bkgfitplot
