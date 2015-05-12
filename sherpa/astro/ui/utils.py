@@ -9226,73 +9226,39 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgmodelhisto
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_plot
+        """Return the data used by plot_bkg.
 
-        SYNOPSIS
-           Return a Sherpa background data plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        data : a sherpa.astro.plot.BkgDataPlot instance
+           An object representing the data used to create the plot by
+           `plot_data`. The relationship between the returned values
+           and the values in the data set depend on the analysis,
+           filtering, and grouping settings of the data set.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        plot_bkg : Plot the background values for a PHA data set.
 
-        Returns:
-           Sherpa BkgDataPlot object
-
-        DESCRIPTION
-           The Sherpa data plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'capped'
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 2
-                 symbolstyle    - 4
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_data, plot_arf, plot_source, plot_bkg, get_data_plot
         """
         self._prepare_plotobj(id, self._bkgdataplot, bkg_id=bkg_id)
         return self._bkgdataplot
