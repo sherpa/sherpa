@@ -1076,7 +1076,7 @@ class Session(NoNewAttributesAfterInit):
         list_data_ids : List the identifiers for the loaded data sets.
         load_psf : Create a PSF model.
         plot_kernel : Plot the 1D kernel applied to a data set.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
         show_all : Report the current state of the Sherpa session.
         show_psf : Display any PSF model applied to a data set.
 
@@ -1138,7 +1138,7 @@ class Session(NoNewAttributesAfterInit):
         list_data_ids : List the identifiers for the loaded data sets.
         load_psf : Create a PSF model.
         plot_psf : Plot the 1D PSF model applied to a data set.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
         show_all : Report the current state of the Sherpa session.
         show_kernel : Display any kernel applied to a data set.
 
@@ -6356,7 +6356,7 @@ class Session(NoNewAttributesAfterInit):
         delete_psf : Delete the PSF model for a data set.
         load_image :
         load_table :
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
 
         Examples
         --------
@@ -6397,7 +6397,7 @@ class Session(NoNewAttributesAfterInit):
     ### DOC-TODO: am I correct about the multiple use warning?
     ##@loggable(with_id=True, with_keyword='psf')
     def set_psf(self, id, psf=None):
-        """Apply a PSF model to a data set.
+        """Add a PSF model to a data set.
 
         After this call, the model that is fit to the data (as set by
         `set_model`) will be convolved by the given PSF model. The
@@ -6571,7 +6571,7 @@ class Session(NoNewAttributesAfterInit):
         image_psf : Display the 2D PSF model for a data set in the image viewer.
         load_psf : Create a PSF model.
         plot_psf : Plot the 1D PSF model applied to a data set.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
 
         Examples
         --------
@@ -6601,7 +6601,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         load_psf : Create a PSF model.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
         get_psf : Return the PSF model defined for a data set.
 
         Examples
@@ -11694,7 +11694,7 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_kernel : Plot the 1D kernel applied to a data set.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
         set_ylinear : New plots will display a linear Y axis.
@@ -11748,7 +11748,7 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_psf : Plot the 1D PSF model applied to a data set.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
         set_ylinear : New plots will display a linear Y axis.
@@ -12451,7 +12451,7 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         contour : Create one or more plot types.
         sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
 
         Examples
         --------
@@ -12493,7 +12493,7 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         contour : Create one or more plot types.
         sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
 
         Examples
         --------
@@ -12667,7 +12667,7 @@ class Session(NoNewAttributesAfterInit):
         contour : Create one or more plot types.
         contour_kernel : Contour the kernel applied to the model of an image data set.
         sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
 
         """
         self._contour(id, self._psfcontour, **kwargs)
@@ -12699,7 +12699,7 @@ class Session(NoNewAttributesAfterInit):
         contour : Create one or more plot types.
         contour_psf : Contour the PSF applied to the model of an image data set.
         sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
 
         """
         self._contour(id, self._kernelcontour, **kwargs)
@@ -13773,7 +13773,6 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_data_image : Return the data used by image_data.
         contour_data : Contour the values of an image data set.
         image_data : Display a data set in the image viewer.
 
@@ -13790,58 +13789,95 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._dataimage)
         return self._dataimage
     
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_image(self, id=None):
-        """
-        get_model_image
+        """Return the data used by image_model.
 
-        SYNOPSIS
-           Return a Sherpa model image obj
+        Evaluate the source expression for the image pixels -
+        including any PSF convolution defined by `set_psf` - and
+        return the results.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Returns
+        -------
+        src_img : a sherpa.image.ModelImage instance
+           The `y` attribute contains the source model values as a 2D
+           NumPy array.
 
-        Returns:
-           Sherpa ModelImage object
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        DESCRIPTION
-           The model image object holds the reference to the image array.
+        See Also
+        --------
+        get_source_image : Return the data used by image_source.
+        contour_model : Contour the values of the model, including any PSF.
+        image_model : Display the model for a data set in the image viewer.
+        set_psf : Add a PSF model to a data set.
 
-           Attributes:
-              y            - image array
+        Examples
+        --------
 
-        SEE ALSO
-           image_model
+        Calculate the residuals (data - model) for the default
+        data set:
+
+        >>> minfo = get_model_image()
+        >>> dinfo = get_data_image()
+        >>> resid = dinfo.y - minfo.y
+
         """
         self._prepare_imageobj(id, self._modelimage)
         return self._modelimage
 
+    ### Ahelp ingest: 2015-05-12 DJB
+    ### DOC-TODO: it looks like get_source_image doesn't raise DataErr with
+    ###           a non-2D data set
     def get_source_image(self, id=None):
-        """
-        get_source_image
+        """Return the data used by image_source.
 
-        SYNOPSIS
-           Return a Sherpa source image obj
+        Evaluate the source expression for the image pixels - without
+        any PSF convolution - and return the results.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Returns
+        -------
+        src_img : a sherpa.image.SourceImage instance
+           The `y` attribute contains the source model values as a 2D
+           NumPy array.
 
-        Returns:
-           Sherpa SourceImage object
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        DESCRIPTION
-           The source image object holds the reference to the image array.
+        See Also
+        --------
+        get_model_image : Return the data used by image_model.
+        contour_source : Contour the values of the model, without any PSF.
+        image_source : Display the source expression for a data set in the image viewer.
 
-           Attributes:
-              y            - image array
+        Examples
+        --------
 
-        SEE ALSO
-           image_source
+        Return the model data for the default data set:
+
+        >>> sinfo = get_source_image()
+        >>> sinfo.y.shape
+        (150, 175)
+
         """
         self._prepare_imageobj(id, self._sourceimage)
         return self._sourceimage
@@ -14796,7 +14832,7 @@ class Session(NoNewAttributesAfterInit):
 
     ### Ahelp ingest: 2015-05-08 DJB
     def image_deleteframes(self):
-        """Delete a frame from the image viewer.
+        """Delete all the frames open in the image viewer.
 
         Delete all the frames - in other words, images - being
         displayed in the image viewer (e.g. as created by
@@ -14832,7 +14868,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         image_close : Close the image viewer.
-        image_deleteframes : Delete a frame from the image viewer.
+        image_deleteframes : Delete all the frames open in the image viewer.
         image_getregion : Return the region defined in the image viewer.
         image_setregion : Set the region to display in the image viewer.
         image_xpaget : Return the result of an XPA call to the image viewer.
@@ -14865,7 +14901,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        image_deleteframes : Delete a frame from the image viewer.
+        image_deleteframes : Delete all the frames open in the image viewer.
         image_getregion : Return the region defined in the image viewer.
         image_open : Start the image viewer.
         image_setregion : Set the region to display in the image viewer.
@@ -14891,6 +14927,11 @@ class Session(NoNewAttributesAfterInit):
         ----------
         coord : str, optional
            The coordinate system to use.
+
+        Returns
+        -------
+        region : str
+           The region, or regions, or the empty string.
 
         Raises
         ------

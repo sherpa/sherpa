@@ -11494,7 +11494,7 @@ class Session(sherpa.ui.utils.Session):
         calc_model_sum : Sum up the fitted model over a pass band.
         calc_model_sum2d : Sum up the fitted model for a 2D data set.
         calc_source_sum2d: Sum up the source model for a 2D data set.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
         set_model : Set the source model expression for a data set.
 
         Notes
@@ -11564,7 +11564,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         calc_model_sum2d : Sum up the fitted model for a 2D data set.
         calc_source_sum : Sum up the model over a pass band.
-        set_psf : Apply a PSF model to a data set.
+        set_psf : Add a PSF model to a data set.
         set_model : Set the source model expression for a data set.
 
         Notes
