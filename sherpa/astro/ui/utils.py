@@ -9173,54 +9173,41 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgfitplot
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_model_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_model_plot
+        """Return the data used by plot_bkg_model.
 
-        SYNOPSIS
-           Return a Sherpa background convolved model plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        model : a sherpa.astro.plot.BkgModelHistogram instance
+           An object representing the data used to create the plot by
+           `plot_bkg_model`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_source_plot : Return the data used by plot_bkg_source.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_source : Plot the model expression for the background of a PHA data set.
 
-        Returns:
-           Sherpa BkgModelPlot object
-
-        DESCRIPTION
-           The Sherpa background model plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-           Functions:
-
-              prepare()
-                 calculate the model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_bkg_model, plot_bkg, plot_bkg_fit, plot_bkg_source
         """
         self._prepare_plotobj(id, self._bkgmodelhisto, bkg_id=bkg_id)
         return self._bkgmodelhisto
