@@ -754,6 +754,7 @@ class Session(sherpa.ui.utils.Session):
         get_data : Return the data set by identifier.
         load_arrays : Create a data set from array values.
         set_data : Set a data set.
+        unpack_data : Create a sherpa data object from a file.
 
         Examples
         --------
@@ -1271,29 +1272,52 @@ class Session(sherpa.ui.utils.Session):
                                             sep=sep, comment=comment ))
         
     # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-12 DJB
     def unpack_data(self, filename, *args, **kwargs):
-        """
-        unpack_data
+        """Create a sherpa data object from a file.
 
-        SYNOPSIS
-           Read spectrum, table, or ASCII data into a dataset
+        The object returned by `unpack_data` can be used in a
+        `set_data` call. The data types supported are those
+        supported by `unpack_pha`, `unpack_image`, `unpack_table`,
+        and `unpack_ascii`.
 
-        SYNTAX
+        Parameters
+        ----------
+        filename :
+           A file name or a data structure representing the data to
+           use, as used by the I/O backend in use by Sherpa: e.g.  a
+           `PHACrateDataset`, `TABLECrate`, or `IMAGECrate` for
+           crates, as used by CIAO, or a list of AstroPy HDU objects.
+        *args, **kwargs
+           The options supported by
+           `unpack_pha`, `unpack_image`, `unpack_table`, and
+           `unpack_ascii`.
 
-        Arguments:
-           filename   - filename and path
+        Returns
+        -------
+        data
+           The data set object.
 
-        Returns:
-           Sherpa dataset
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_arrays : Create a data set from array values.
+        set_data : Set a data set.
+        unpack_arrays : Create a sherpa data object from arrays of data.
+        unpack_ascii : Unpack an ASCII file into a data structure.
+        unpack_image : Create an image data structure.
+        unpack_pha : Create a PHA data structure.
+        unpack_table : Unpack a FITS binary file into a data structure.
 
-        DESCRIPTION
-           Read PHA spectrum data, FITS table data , or tabular data from a
-           column-based text file into a Sherpa dataset given a filename
-           and path.
+        Examples
+        --------
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_image, unpack_data,
-           unpack_table, unpack_ascii
+        Create a data object from the contents of the file "src.dat"
+        and use it to create a Sherpa data set called "src":
+
+        >>> dat = unpack_data('src.dat')
+        >>> set_data('src', dat)
+
         """
         try:
             data = self.unpack_pha(filename, *args, **kwargs)

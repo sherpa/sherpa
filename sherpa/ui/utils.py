@@ -3547,6 +3547,7 @@ class Session(NoNewAttributesAfterInit):
         get_data : Return the data set by identifier.
         load_arrays : Create a data set from array values.
         set_data : Set a data set.
+        unpack_data : Create a sherpa data object from a file.
 
         Examples
         --------
@@ -3576,45 +3577,70 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-12 DJB
     def unpack_data(self, filename, ncols=2, colkeys=None,
                     dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
-        """Read in a file.
+        """Create a sherpa data object from a file.
 
-        unpack_data
+        The object returned by `unpack_data` can be used in a
+        `set_data` call.
 
-        SYNOPSIS
-           Read a data text file into a dataset
+        Parameters
+        ----------
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy) and the
+           type of data set (e.g. 1D or 2D).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1D` (the default), `Data1DInt`, `Data2D`, and
+           `Data2DInt`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        require_floats : bool, optional
+           If `True` (the default), non-numeric data values will
+           raise a `ValueError`.
 
-        SYNTAX
+        Returns
+        -------
+        data
+           The data set object.
 
-        Arguments:
-           filename   - name of text file
+        Raises
+        ------
+        ValueError
+           If a column value can not be converted into a numeric value
+           and the `require_floats` parameter is True.
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_arrays : Create a data set from array values.
+        set_data : Set a data set.
+        unpack_arrays : Create a sherpa data object from arrays of data.
 
-           colkeys    - list of column names
-                        default = None
+        Examples
+        --------
 
-           dstype     - dataset type desired
-                        default = Data1D
+        Create a data object from the first two columns of the file
+        "src.dat" and use it to create a Sherpa data set called "src":
 
-           sep        - separation character between columns
-                        default = ' '
+        >>> dat = unpack_data('src.dat')
+        >>> set_data('src', dat)
 
-           comment    - comment character
-                        default = '#'
+        Read in the first three columns - the independent axis (x),
+        the dependent variable (y), and the error on y:
 
-        Returns:
-           Sherpa dataset
+        >>> dat = unpack_data('src.dat', ncols=3)
 
-        DESCRIPTION
-           Read tabular data from column based text file into a
-           Sherpa dataset given a filename.
-
-        SEE ALSO
-           load_data, unpack_arrays, load_arrays
         """
         return self._read_data(sherpa.io.read_data, filename, ncols, colkeys,
                                sep, dstype, comment, require_floats)
