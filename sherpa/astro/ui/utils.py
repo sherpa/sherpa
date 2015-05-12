@@ -724,37 +724,68 @@ class Session(sherpa.ui.utils.Session):
 
         self.set_data(id, dataset)
 
-
     # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-12 DJB
+    ### DOC-TODO: how to describe Crates and/or AstroPy?
     def unpack_arrays(self, *args):
-        """
-        unpack_arrays
-        
-        SYNOPSIS
-           Read NumPy arrays into a dataset
+        """Create a sherpa data object from arrays of data.
 
-        SYNTAX
+        The object returned by `unpack_arrays` can be used in a
+        `set_data` call.
 
-        Arguments:
-           array0     - first NumPy array | first CrateData obj
+        Parameters
+        ----------
+        a1, .., aN : array_like
+           Arrays of data. The order, and number, is determined by
+           the `dstype` parameter, and listed in the `load_arrays`
+           routine.
+        dstype :
+           The data set type. The default is `Data1D` and values
+           include: `Data1D`, `Data1DInt`, `Data2D`, `Data2DInt`,
+           `DataPHA`, and `DataIMG`.
 
-           ...
+        Returns
+        -------
+        data
+           The data set object matching the requested `dstype`.
 
-           arrayN     - last NumPy array | last CrateData obj
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_arrays : Create a data set from array values.
+        set_data : Set a data set.
 
-           dstype     - dataset type desired
-                        default = Data1D
+        Examples
+        --------
 
-        Returns:
-           Sherpa dataset
+        Create a 1D (unbinned) data set from the values in
+        the x and y arrays. Use the returned object to create
+        a data set labelled "oned":
 
-        DESCRIPTION
-           Read NumPy arrays into a Sherpa dataset or read CrateData objects
-           into a Sherpa dataset.  The list can include both NumPy arrays and
-           CrateData objects together.
+        >>> x = [1,3,7,12]
+        >>> y = [2.3,3.2,-5.4,12.1]
+        >>> dat = unpack_arrays(x, y)
+        >>> set_data("oned", dat)
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_image, unpack_data
+        Include statistical errors on the data:
+
+        >>> edat = unpack_arrays(x, y, dy)
+
+        Create a "binned" 1D data set, giving the low,
+        and high edges of the independent axis (xlo
+        and xhi respectively) and the dependent values
+        for this grid (y):
+
+        >>> hdat = unpack_arrays(xlo, xhi, y, Data1DInt)
+
+        Create a 3 column by 4 row image:
+
+        >>> ivals = np.arange(12)
+        >>> (y, x) = np.mgrid[0:3, 0:4]
+        >>> x = x.flatten()
+        >>> y = y.flatten()
+        >>> idat = unpack_arrays(x, y, ivals, (3,4), DataIMG)
+
         """
         dataset = None
         try:
@@ -766,7 +797,8 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     ### Ahelp ingest: 2015-05-01 DJB
-    ### DOC-TODO: rework the Data type notes section.
+    ### DOC-TODO: rework the Data type notes section (also needed for
+    ###           unpack_arrays)
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_arrays(self, id, *args):
         """Create a data set from array values.
@@ -786,7 +818,7 @@ class Session(sherpa.ui.utils.Session):
         get_data : Return the data set by identifier.
         load_data : Create a data set from a file.
         set_data : Set a data set.
-        unpack_arrays :
+        unpack_arrays : Create a sherpa data object from arrays of data.
 
         Notes
         -----
