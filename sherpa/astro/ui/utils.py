@@ -10285,7 +10285,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         get_bkg_resid_plot : Return the data used by plot_bkg_resid.
-        plot_bkg_chisqr : 
+        plot_bkg_chisqr : Plot the chi-squared value for each point of the background of a PHA data set.
         plot_bkg_delchi : Plot the ratio of residuals to error for the background of a PHA data set.
         plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
         set_bkg_model : Set the background model expression for a PHA data set.
@@ -10340,7 +10340,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         get_bkg_ratio_plot : Return the data used by plot_bkg_ratio.
-        plot_bkg_chisqr : 
+        plot_bkg_chisqr : Plot the chi-squared value for each point of the background of a PHA data set.
         plot_bkg_delchi : Plot the ratio of residuals to error for the background of a PHA data set.
         plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
         set_bkg_model : Set the background model expression for a PHA data set.
@@ -10394,7 +10394,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         get_bkg_delchi_plot : Return the data used by plot_bkg_delchi.
-        plot_bkg_chisqr : 
+        plot_bkg_chisqr : Plot the chi-squared value for each point of the background of a PHA data set.
         plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
         plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
         set_bkg_model : Set the background model expression for a PHA data set.
@@ -10412,37 +10412,55 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgdelchiplot, None, bkg_id, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_chisqr(self, id=None, bkg_id=None, **kwargs):
-        """
-        plot_bkg_chisqr
+        """Plot the chi-squared value for each point of the background of a PHA data set.
 
-        SYNOPSIS
-           Plot background chi squared contributions
+        Display the square of the residuals (data-model) divided by
+        the error values for the background of a PHA data set when it
+        is being fit, rather than subtracted from the source.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_ratio`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_chisqr_plot : Return the data used by plot_bkg_chisqr.
+        plot_bkg_delchi : Plot the ratio of residuals to error for the background of a PHA data set.
+        plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
+        plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
 
-           replot   - replot calculated arrays
-                      default = False
+        Examples
+        --------
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg_chisqr()
 
-        Returns:
-           None
+        >>> plot_bkg_chisqr('jet', bkg_id=1)
+        >>> plot_bkg_chisqr('jet', bkg_id=2, overplot=True)
 
-        DESCRIPTION
-           Visualize the background chi squared contributions in a 1D plot by
-           data id and background id.
-
-        SEE ALSO
-           plot_bkg, plot_bkg_fit, plot_bkg_source
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgchisqrplot, None, bkg_id, **kwargs)
