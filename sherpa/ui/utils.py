@@ -3800,52 +3800,61 @@ class Session(NoNewAttributesAfterInit):
         sherpa.io.write_arrays(filename, args, fields, **kwargs)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils with a different interface
+    ### Ahelp ingest: 2015-05-12 DJB
     def save_arrays(self, filename, args, fields=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """
-        save_arrays
+        """Write a list of arrays to a file.
 
-        SYNOPSIS
-           Write a list of arrays to file as columns
+        Parameters
+        ----------
+        filename : str
+           The name of the file to write the array to.
+        args : array of arrays
+           The arrays to write out.
+        fields : array of str
+           The column names (should match the size of `args`).
+        clobber : bool, optional
+           If `filename` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        linebreak : str, optional
+           Indicate a new line. The default is '\n'.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is '%g%.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           filename   - filename with path
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_image :
+        save_table :
 
-           args       - list of arrays that correspond to columns
+        Examples
+        --------
 
-           fields     - list of column headings
-                        default = None
+        Write the x and y columns from the default data set to the
+        file 'src.dat':
 
-           clobber    - clobber the existing output file
-                        default = False
+        >>> x = get_indep()
+        >>> y = get_dep()
+        >>> save_arrays('src.dat', [x,y])
 
-           sep        - separation character between columns
-                        default = ' '
+        Use the column names "r" and "surbri" for the columns:
 
-           comment    - comment character
-                        default = '#'
+        >>> save_arrays('prof.txt', [x,y], fields=["r", "surbri"],
+                        clobber=True)
 
-           linebreak  - line break character between rows
-                        default = '\n'
-
-           format     - array element format string
-                        default = '%g'
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Write a list of arrays to file as columns.
-
-        EXAMPLE
-
-           save_arrays("foo.dat", [a,b,c], fields=['a','b','c'])
-
-        SEE ALSO
-           save_image, save_data, save_table, save_source, save_model,
-           save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         _check_type(filename, basestring, 'filename', 'a string')

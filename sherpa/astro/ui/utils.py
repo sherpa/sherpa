@@ -3465,44 +3465,57 @@ class Session(sherpa.ui.utils.Session):
 # program with ease.  ASCII is probably better for that.
 # SMD 05/15/13
 #
+
+    # DOC-NOTE: also in sherpa.utils with a different interface
+    ### Ahelp ingest: 2015-05-12 DJB
     def save_arrays(self, filename, args, fields=None, ascii=True,
                     clobber=False):
-        """
-        save_arrays
+        """Write a list of arrays to a file.
 
-        SYNOPSIS
-           Write a list of arrays to file as columns
+        Parameters
+        ----------
+        filename : str
+           The name of the file to write the array to.
+        args : array of arrays
+           The arrays to write out.
+        fields : array of str
+           The column names (should match the size of `args`).
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `True`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           filename   - filename with path
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_image :
+        save_table :
 
-           args       - list of arrays that correspond to columns
+        Examples
+        --------
 
-           fields     - list of column headings
-                        default = None
+        Write the x and y columns from the default data set to the
+        file 'src.dat':
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = True
+        >>> x = get_indep()
+        >>> y = get_dep()
+        >>> save_arrays('src.dat', [x,y])
 
-           clobber    - clobber the existing output file
-                        default = False
+        Use the column names "r" and "surbri" for the columns:
 
-        Returns:
-           None
+        >>> save_arrays('prof.fits', [x,y], fields=["r", "surbri"],
+                        ascii=False, clobber=True)
 
-        DESCRIPTION
-           Write a list of arrays to file as columns.
-
-        EXAMPLE
-
-           save_arrays("foo.dat", [a,b,c], fields=['a','b','c'])
-       
-
-        SEE ALSO
-           save_image, save_data, save_table, save_source, save_model,
-           save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
