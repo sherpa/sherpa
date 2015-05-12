@@ -8242,7 +8242,6 @@ class Session(sherpa.ui.utils.Session):
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
         bkg_id : int or str, optional
-        bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
 
@@ -8256,7 +8255,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         delete_bkg_model : Delete the background model expression for a data set.
-        get_bkg_model : 
+        get_bkg_model : Return the model expression for the background of a PHA data set.
         list_model_ids : List of all the data sets with a source expression.
         set_bkg_model : Set the background model expression for a PHA data set.
         show_bkg_model : Display the background model expression for a data set.
@@ -8282,31 +8281,48 @@ class Session(sherpa.ui.utils.Session):
         return model
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_model(self, id=None, bkg_id=None):
-        """
-        get_bkg_model
+        """Return the model expression for the background of a PHA data set.
 
-        SYNOPSIS
-           Return the background convolved model by data id and bkg id
+        This returns the model expression for the background of a data
+        set, including the instrument response (e.g. ARF and RMF),
+        whether created automatically or explicitly, with
+        `set_bkg_full_model`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        model :
+           This can contain multiple model components and any
+           instrument response. Changing attributes of this model
+           changes the model used by the data set.
 
-           bkg_id    - bkg id, if multiple bkgs exist
-                       default = default bkg id
+        See Also
+        --------
+        delete_bkg_model : Delete the background model expression for a data set.
+        get_bkg_source : Return the model expression for the background of a PHA data set.
+        list_model_ids : List of all the data sets with a source expression.
+        set_bkg_model : Set the background model expression for a PHA data set.
+        set_bkg_full_model : Define the convolved background model expression for a data set.
+        show_bkg_model : Display the background model expression for a data set.
 
-        Returns:
-           Sherpa bkg convolved model
+        Examples
+        --------
 
-        DESCRIPTION
-           Retrieve a Sherpa convolved background model by data id and
-           background id.
+        Return the background model expression for the default data
+        set, including any instrument response:
 
-        SEE ALSO
-           set_bkg_model, delete_bkg_model
+        >>> bkg = get_bkg_model()
+
         """
         id     = self._fix_id(id)
         bkg_id = self._fix_id(bkg_id)

@@ -5423,7 +5423,7 @@ class Session(NoNewAttributesAfterInit):
 
         This returns the model expression for a data set, including
         any instrument response (e.g. PSF or ARF and RMF) whether
-        created automatically or with `set_full_model`.
+        created automatically or explicitly, with `set_full_model`.
 
         Parameters
         ----------
@@ -5434,10 +5434,10 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        model : a sherpa.models.Model object
-           This can contain multiple model components. Changing
-           attributes of this model changes the model used by the data
-           set.
+        model :
+           This can contain multiple model components and any
+           instrument response. Changing attributes of this model
+           changes the model used by the data set.
 
         See Also
         --------
