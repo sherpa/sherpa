@@ -9715,9 +9715,10 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data : a sherpa.plot.ModelPlot instance
+        data :
            An object representing the data used to create the plot by
-           `plot_model`.
+           `plot_model`. The return value depends on the data
+           set (e.g. 1D binned or un-binned).
 
         See Also
         --------
@@ -9733,51 +9734,38 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._modelplot)
         return self._modelplot
 
+    # also in sherpa.astro.utils (does not copy this docstring)
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_source_plot(self, id=None):
-        """
-        get_source_plot
+        """Return the data used by plot_source.
 
-        SYNOPSIS
-           Return a Sherpa source plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        data :
+           An object representing the data used to create the plot by
+           `plot_source`. The return value depends on the data
+           set (e.g. 1D binned or un-binned).
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_model_plot : Return the data used by plot_model.
+        plot_model : Plot the model for a data set.
+        plot_source : Plot the source expression for a data set.
 
-        Returns:
-           Sherpa SourcePlot object
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa source plot object holds references to various
-           plot preferences and data arrays.
+        >>> splot = get_source_plot()
 
-           Attributes:
-              title        - title of plot, read-only
+        >>> splot1 = get_source_plot(id='jet')
+        >>> splot2 = get_source_plot(id='core')
 
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-           Functions:
-
-              prepare()
-                 calculate the source and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_source
         """
         self._prepare_plotobj(id, self._sourceplot)
         return self._sourceplot

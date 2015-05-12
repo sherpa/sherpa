@@ -85,7 +85,6 @@ class Plot(NoNewAttributesAfterInit):
     
     def __init__(self):
         """
-
         Initialize a Plot object.  All 1D line plot
         instances utilize Plot, which provides a generic
         interface to a backend.
@@ -93,7 +92,6 @@ class Plot(NoNewAttributesAfterInit):
         Once an instance of Plot is initialized no new
         attributes of the class can be made. (To eliminate
         the accidental creation of erroneous attributes)
-        
         """
         self.plot_prefs = self.plot_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
@@ -832,9 +830,26 @@ class ComponentTemplateModelPlot(ComponentModelPlot):
         self.ylabel = data.get_ylabel()
         self.title = 'Model component: %s' % model.name
 
-
 class SourcePlot(ModelPlot):
-    "Derived class for creating 1D model plots"
+    """Create 1D plots of unconcolved model values.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point (the independent variable).
+    y : array_like
+       The Y value for each point (the model value).
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value, if set.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     def __init__(self):
         ModelPlot.__init__(self)
         self.title = 'Source'

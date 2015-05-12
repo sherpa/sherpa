@@ -83,7 +83,20 @@ class ModelHistogram(HistogramPlot):
 
 
 class SourcePlot(HistogramPlot):
-    "Derived class for creating plots of the unconvolved source model"
+    """Create 1D plots of unconcolved model values.
+
+    Attributes
+    ----------
+    histo_prefs : dict
+       The preferences for the plot.
+    xlo, xhi : array_like
+       The lower and upper edges for each bin (the independent variable).
+    y : array_like
+       The Y value for each point (the model value).
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
 
     histo_prefs = backend.get_model_histo_defaults()
 

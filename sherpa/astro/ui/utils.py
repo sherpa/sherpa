@@ -8950,77 +8950,50 @@ class Session(sherpa.ui.utils.Session):
 
     get_model_plot.__doc__ = sherpa.ui.utils.Session.get_model_plot.__doc__
 
+    # also in sherpa.utils, but without the lo/hi arguments
+    ### Ahelp ingest: 2015-05-12 DJB
     def get_source_plot(self, id=None, lo=None, hi=None):
-        """
-        get_source_plot
+        """Return the data used by plot_source.
 
-        SYNOPSIS
-           Return a Sherpa source plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        lo : number, optional
+           The low value to plot (only used for PHA data sets).
+        hi : number, optional
+           The high value to plot (only use for PHA data sets).
 
-        SYNTAX
+        Returns
+        -------
+        data :
+           An object representing the data used to create the plot by
+           `plot_source`. The return value depends on the data
+           set (e.g. PHA, 1D binned, 1D un-binned).
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_model_plot : Return the data used by plot_model.
+        plot_model : Plot the model for a data set.
+        plot_source : Plot the source expression for a data set.
 
-           lo       - low limit of plot
-                      default = None
-           
-           hi       - high limit of plot
-                      default = None
+        Examples
+        --------
 
-        Returns:
-           Sherpa SourcePlot plot
+        >>> splot = get_source_plot()
 
-        DESCRIPTION
-           The Sherpa source plot object holds references to various
-           plot preferences and data arrays.
+        >>> splot1 = get_source_plot(id='jet', lo=0.5, hi=7)
+        >>> splot2 = get_source_plot(id='core', lo=0.5, hi=7)
 
-           Attributes:
-              title        - title of plot, read-only
+        For a PHA data set, the units on both the X and Y axes of the
+        plot are controlled by the `set_analysis` command. In this
+        case the Y axis will be in units of photons/s/cm^2 and the X
+        axis in keV:
 
-              xlabel       - x axis label, read-only
+        >>> set_analysis('energy', factor=1)
+        >>> splot = get_source_plot()
 
-              ylabel       - y axis label, read-only
-
-              units        - units of grid, read-only
-
-              xlo          - grid array, low bins
-
-              xhi          - grid array, high bins
-
-              flux         - unconvolved counts
-
-              y            - convolved counts
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - None
-                 linecolor      - 'red'
-                 linestyle      - 1
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolstyle    - N/A
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False                 
-
-           Functions:
-
-              prepare()
-                 calculate the source model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_source, plot_bkg, plot_arf, get_bkg_plot, get_arf_plot
         """
         ## srcplot obj is possibly reinstantiated depending on data type
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
