@@ -9125,6 +9125,8 @@ class Session(sherpa.ui.utils.Session):
         Return the ARF plot data for the default data set:
 
         >>> aplot = get_arf_plot()
+        >>> aplot.y.max()
+        676.95794677734375
 
         Return the ARF data for the second response of the
         data set labelled 'histate':

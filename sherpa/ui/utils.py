@@ -9593,37 +9593,6 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         plot_data : Plot the data values.
 
-        Notes
-        -----
-        The fields of the returned object include:
-
-        `x`
-           The X axis values (the independent variable).
-
-        `y`
-           The Y axis values (the dependent variable).
-
-        `yerr`
-           The error values, if any, on the dependent variable.
-
-        `xerr`
-           The error values, if any, on the independent variable.
-           This indicates the bin size but is displayed as an
-           error.
-
-        `xlabel`
-           The label used for the X axis.
-
-        `ylabel`
-           The label used for the Y axis.
-
-        `title`
-           The label used for the plot title.
-
-        `plot_prefs`
-           A copy of the current plot preferences (see
-           `get_data_plot_prefs`).
-
         """
         self._prepare_plotobj(id, self._dataplot)
         return self._dataplot

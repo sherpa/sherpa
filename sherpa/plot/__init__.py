@@ -103,6 +103,7 @@ class Plot(NoNewAttributesAfterInit):
     def vline(x, ymin=0, ymax=1,
               linecolor=None, linestyle=None, linewidth=None,
               overplot=False, clearwindow=True):
+        "Draw a line at constant x, extending over the plot."
         backend.vline(x, ymin=ymin, ymax=ymax, linecolor=linecolor,
                       linestyle=linestyle, linewidth=linewidth,
                       overplot=overplot, clearwindow=clearwindow)
@@ -112,6 +113,7 @@ class Plot(NoNewAttributesAfterInit):
     def hline(y, xmin=0, xmax=1,
               linecolor=None, linestyle=None, linewidth=None,
               overplot=False, clearwindow=True):
+        "Draw a line at constant y, extending over the plot."
         backend.hline(y, xmin=xmin, xmax=xmax, linecolor=linecolor,
                       linestyle=linestyle, linewidth=linewidth,
                       overplot=overplot, clearwindow=clearwindow)
@@ -123,6 +125,7 @@ class Plot(NoNewAttributesAfterInit):
                      clearwindow, **self.plot_prefs)
 
     def overplot(self, *args, **kwargs):
+        "Add the data to an existing plot."
         kwargs['overplot'] = True
         self.plot(*args, **kwargs)
 
@@ -132,7 +135,6 @@ class Contour(NoNewAttributesAfterInit):
     
     def __init__(self):
         """
-
         Initialize a Contour object.  All 2D contour plot
         instances utilize Contour, which provides a generic
         interface to a backend.
@@ -140,7 +142,6 @@ class Contour(NoNewAttributesAfterInit):
         Once an instance of Contour is initialized no new
         attributes of the class can be made. (To eliminate
         the accidental creation of erroneous attributes)
-        
         """
         self.contour_prefs = self.contour_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
@@ -160,7 +161,6 @@ class Point(NoNewAttributesAfterInit):
 
     def __init__(self):
         """
-
         Initialize a Point object.  All 1D point plot
         instances utilize Point, which provides a generic
         interface to a backend.
@@ -168,7 +168,6 @@ class Point(NoNewAttributesAfterInit):
         Once an instance of Point is initialized no new
         attributes of the class can be made. (To eliminate
         the accidental creation of erroneous attributes)
-        
         """
         self.point_prefs = self.point_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
@@ -183,7 +182,6 @@ class Histogram(NoNewAttributesAfterInit):
 
     def __init__(self):
         """
-
         Initialize a Histogram object.  All 1D histogram plot
         instances utilize Histogram, which provides a generic
         interface to a backend.
@@ -191,7 +189,6 @@ class Histogram(NoNewAttributesAfterInit):
         Once an instance of Histogram is initialized no new
         attributes of the class can be made. (To eliminate
         the accidental creation of erroneous attributes)
-
         """
         self.histo_prefs = self.histo_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
@@ -535,7 +532,25 @@ class JointPlot(SplitPlot):
 
 
 class DataPlot(Plot):
-    "Derived class for creating 1D data plots"
+    """Create 1D plots of data values.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point (the independent variable).
+    y : array_like
+       The Y value for each point (the dependent variable).
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value, if set.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     plot_prefs = backend.get_data_plot_defaults()
     
     def __init__(self):
@@ -965,7 +980,27 @@ class FitContour(Contour):
 
 
 class DelchiPlot(ModelPlot):
-    "Derived class for creating 1D delchi chi plots ((data-model)/error)"
+    """Create plots of the delta-chi value per point.
+
+    The value of (data-model)/error is plotted for each point.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point.
+    y : array_like
+       The Y value for each point: (data-model)/error
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value (each element is `1`).
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     plot_prefs = backend.get_resid_plot_defaults()
 
     def _calc_delchi(self, ylist, staterr):
@@ -990,7 +1025,26 @@ class DelchiPlot(ModelPlot):
                   self.xlabel, self.ylabel, overplot, clearwindow)
 
 class ChisqrPlot(ModelPlot):
-    "Derived class for creating 1D chi**2 plots ((data-model)/error)**2"
+    """Create plots of the chi-square value per point.
+
+    The value of ((data-model)/error)^2 is plotted for each point.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point.
+    y : array_like
+       The Y value for each point: ((data-model)/error)^2
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value. Will be `None` here.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
     plot_prefs = backend.get_model_plot_defaults()
 
     def _calc_chisqr(self, ylist, staterr):
@@ -1015,7 +1069,27 @@ class ChisqrPlot(ModelPlot):
 
 
 class ResidPlot(ModelPlot):
-    "Derived class for creating 1D residual plots (data-model)"
+    """Create plots of the residuals (data - model) per point.
+
+    The value of (data-model) is plotted for each point.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point.
+    y : array_like
+       The Y value for each point: data-model.
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value, if set.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     plot_prefs = backend.get_resid_plot_defaults()
 
     def _calc_resid(self, ylist):
@@ -1061,7 +1135,27 @@ class ResidContour(ModelContour):
 
 
 class RatioPlot(ModelPlot):
-    "Derived class for creating 1D ratio plots (data:model)"
+    """Create plots of the ratio of data to model per point.
+
+    The value of data / model is plotted for each point.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point.
+    y : array_like
+       The Y value for each point: data-model.
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value, if set.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     plot_prefs = backend.get_ratio_plot_defaults()
 
     def _calc_ratio(self, ylist):

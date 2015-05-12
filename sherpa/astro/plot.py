@@ -196,13 +196,13 @@ class ARFPlot(HistogramPlot):
     Attributes
     ----------
     histo_prefs : dict
-       The preferences for the plot
+       The preferences for the plot.
     xlo, xhi : array_like
        The lower and upper edges of each bin.
     y : array_like
        The effective area (ARF) value for the bin.
     xlabel, ylabel, title : str
-       Plot labels
+       Plot labels.
 
     """
 
