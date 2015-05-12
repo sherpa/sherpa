@@ -9017,7 +9017,7 @@ class Session(sherpa.ui.utils.Session):
 
     get_model_component_plot.__doc__ = sherpa.ui.utils.Session.get_model_component_plot.__doc__
 
-
+    # copy doc string from sherpa.utils
     def get_source_component_plot(self, id, model=None):
         if model is None:
             id, model = model, id
