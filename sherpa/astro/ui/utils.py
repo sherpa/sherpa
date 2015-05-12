@@ -9001,6 +9001,7 @@ class Session(sherpa.ui.utils.Session):
         return self._prepare_plotobj(id, self._sourceplot)
 
 
+    # copy doc string from sherpa.utils
     def get_model_component_plot(self, id, model=None):
         if model is None:
             id, model = model, id

@@ -9770,53 +9770,59 @@ class Session(NoNewAttributesAfterInit):
         return self._sourceplot
 
 
+    # sherpa.astro.utils version copies this docstring
     def get_model_component_plot(self, id, model=None):
-        """
-        get_model_component_plot
+        """Return the data used by plot_model_component.
 
-        SYNOPSIS
-           Return a Sherpa model component plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to use (the name, if a string).
 
-        SYNTAX
+        Returns
+        -------
+        data :
+           An object representing the data used to create the plot by
+           `plot_model_component`. The return value depends on the
+           data set (e.g. 1D binned or un-binned).
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_model_plot : Return the data used by plot_model.
+        plot_model : Plot the model for a data set.
+        plot_model_component : Plot a component of the model for a data set.
 
-           model     - Sherpa model component
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-        Returns:
-           Sherpa ComponentModelPlot object
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa model component plot object holds references to 
-           various plot preferences and data arrays.
+        Return the plot data for the `pl` component used in the
+        default data set:
 
-           Attributes:
-              title        - title of plot, read-only
+        >>> cplot = get_model_component(pl)
 
-              xlabel       - x axis label, read-only
+        Return the full source model (`fplot`) and then for the
+        components `gal * pl` and `gal * gline`, for the data set
+        'jet':
 
-              ylabel       - y axis label, read-only
+        >>> fmodel = xsphabs.gal * (powlaw1d.pl + gauss1d.gline)
+        >>> set_source('jet', fmodel)
+        >>> fit('jet')
+        >>> fplot = get_model('jet')
+        >>> plot1 = get_model_component('jet', pl*gal)
+        >>> plot2 = get_model_component('jet', gline*gal)
 
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-           Functions:
-
-              prepare()
-                 calculate the source and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_model_component, plot_source_component
         """
         if model is None:
             id, model = model, id
@@ -9828,7 +9834,7 @@ class Session(NoNewAttributesAfterInit):
         return self._compmdlplot
 
 
-    # shrepa.astro.utils version copies this docstring
+    # sherpa.astro.utils version copies this docstring
     def get_source_component_plot(self, id, model=None):
         """Return the data used by plot_source_component.
 
