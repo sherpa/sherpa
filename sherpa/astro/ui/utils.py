@@ -10267,7 +10267,7 @@ class Session(sherpa.ui.utils.Session):
            multiple ones associated with the data set.
         replot : bool, optional
            Set to `True` to use the values calculated by the last
-           call to `plot_bkg`. The default is `False`.
+           call to `plot_bkg_resid`. The default is `False`.
         overplot : bool, optional
            If `True` then add the data to an exsiting plot, otherwise
            create a new plot. The default is `False`.
@@ -10304,39 +10304,55 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgresidplot, None, bkg_id, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_ratio(self, id=None, bkg_id=None, **kwargs):
         """Plot the ratio of data to model values for the background of a PHA data set.
 
-        plot_bkg_ratio
+        Display the ratio of data to model values for the background
+        of a PHA data set when it is being fit, rather than subtracted
+        from the source.
 
-        SYNOPSIS
-           Plot background ratio
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_ratio`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_bkg_ratio_plot : Return the data used by plot_bkg_ratio.
+        plot_bkg_chisqr : 
+        plot_bkg_delchi : 
+        plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        Examples
+        --------
 
-           replot   - replot calculated arrays
-                      default = False
+        >>> plot_bkg_ratio()
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg_ratio('jet', bkg_id=1)
+        >>> plot_bkg_ratio('jet', bkg_id=2, overplot=True)
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Visualize the background ratio (background measured counts divided
-           by background predicted counts) in a 1D plot by data id and
-           background id.
-
-        SEE ALSO
-           plot_bkg, plot_bkg_fit, plot_bkg_source
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgratioplot, None, bkg_id, **kwargs)
