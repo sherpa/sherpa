@@ -2216,6 +2216,7 @@ class Session(NoNewAttributesAfterInit):
         calc_stat : Calculate the statistic value for a dataset.
         get_stat_name : Return the current statistic method.
         list_stats : List the supported fit statistics.
+        load_user_stat : Create a user-defined statistic.
 
         Notes
         -----
@@ -6572,44 +6573,68 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(newusermodel)
 
 
+    ### Ahelp ingest: 2015-05-13 DJB
+    ### DOC-TODO: Improve priors documentation
     def load_user_stat(self, statname, calc_stat_func, calc_err_func=None,
                        priors={}):
-        """
-        load_user_stat
+        """Create a user-defined statistic.
 
-        SYNOPSIS
-           Load a user defined statistic into a Sherpa session
+        The choice of statistics - that is, the numeric value that is
+        minimised during the fit - can be extended by providing a
+        function to calculate a numeric value given the data. The
+        statistic is given a name and then can be used just like any
+        of the pre-defined statistics.
 
-        SYNTAX
+        Parameters
+        ----------
+        statname : str
+           The name to use for the new statisitic when calling
+           `set_stat`.
+        calc_stat_func : func
+           The function that calculates the statistic.
+        calc_err_func : func, optional
+           How to calculate the statistical error on a data point.
+        priors : dict
+           A dictionary of hyper-parameters for the priors.
 
-        Arguments:
-           statname        - reference to a user statistic
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        set_stat : Set the statistical method.
 
-           calc_stat_func  - function to calculate and return the statistic
-                             value and the statistic contribution per bin as
-                             a tuple.
+        Notes
+        -----
+        The `calc_stat_func` should have the following signature::
 
-           calc_err_func   - function to calculate the statistical error.
-                             default = None
+           def func(data, model, staterror=None, syserrr=None, weight=None)
 
-           priors          - dictionary of model parameters and 
-                             hyper-parameters for priors.
-                             default = {}
+        where data is the array of dependent values, model the array
+        of the predicted values, staterror and syserror are arrays of
+        statistical and systematic errors respectively (if valid), and
+        weight an array of weights. The return value is the pair
+        (stat_value, stat_per_bin), where stat_value is a scalar and
+        stat_per_bin is an array the same length as data.
 
-        Returns:
-           None
+        The `calc_err_func` should have the following signature::
 
-        DESCRIPTION
-           Load a user-defined statistic from user_calc_stat and 
-           user_calc_err functions with identifier statname.  Optionally,
-           include a dictionary of hyper-parameters and references to 
-           source model parameters for priors statistics.  The symbols
-           supplied in the dictionary are available in the first argument
-           of the user_calc_stat function signature for use at every model
-           evaluation.
+           def func(data)
 
-        SEE ALSO
-           set_set, calc_stat, calc_chisqr
+        and returns an array the same length as data.
+
+        Examples
+        --------
+
+        Define a chi-square statistic with the label "qstat":
+
+        >>> def qstat(d, m, staterr=None, syserr=None, w=None):
+                if staterr == None:
+                    staterr = 1
+                c = ((d-m) / staterr)
+                return ((c*c).sum(), c)
+
+        >>> load_user_stat("qstat", qstat)
+        >>> set_stat("qstat")
+
         """
         userstat = sherpa.stats.UserStat(calc_stat_func, 
                                          calc_err_func, statname)
@@ -6631,7 +6656,7 @@ class Session(NoNewAttributesAfterInit):
 
     ### Ahelp ingest: 2015-05-13 DJB
     ### DOC-NOTE: why isn't the "flux" of the convolved model ~
-    ###           that of the uncolved model?
+    ###           that of the unconvolved model?
     ### DOC-NOTE: better description of conv vs psf
     ##@loggable()
     def load_conv(self, modelname, filename_or_model, *args, **kwargs):
