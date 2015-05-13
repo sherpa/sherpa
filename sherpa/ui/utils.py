@@ -10182,33 +10182,37 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._modelplot.plot_prefs
 
+    ### Ahelp ingest: 2015-05-13 DJB
     def get_fit_plot(self, id=None):
-        """
-        get_fit_plot
+        """Return the data used by plot_fit.
 
-        SYNOPSIS
-           Return a Sherpa fit plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        data : a sherpa.plot.FitPlot instance
+           An object representing the data used to create the plot by
+           `plot_fit`. It contains the data from `get_data_plot`
+           and `get_model_plot` in the `dataplot` and `modelplot`
+           attributes.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_data_plot_prefs : Return the preferences for plot_data.
+        get_model_plot_prefs : Return the preferences for plot_model.
+        get_default_id : Return the default data set identifier.
+        plot_data : Plot the data values.
+        plot_model : Plot the model for a data set.
 
-        Returns:
-           Sherpa FitPlot plot
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa fit plot object holds a reference to a data plot and
-           model plot instance.
+        >>> fplot = get_fit_plot()
 
-           Attributes:
-              dataplot
-
-              modelplot
-
-        SEE ALSO
-           plot_fit
         """
         self._prepare_plotobj(id, self._fitplot)
         return self._fitplot
