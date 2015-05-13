@@ -3573,53 +3573,84 @@ class Session(sherpa.ui.utils.Session):
         self._save_type('source', id, filename, ascii=ascii, clobber=clobber,
                         bkg_id=bkg_id)
 
+    # DOC-NOTE: also in sherpa.utils with a different API
+    ### Ahelp ingest: 2015-05-13 DJB
     def save_model(self, id, filename=None, bkg_id=None, ascii=False,
                    clobber=False):
-        """
-        save_model
+        """Save the model values to a file.
 
-        SYNOPSIS
-           Write the convolved source model to file
+        The model is evaluated on the grid of the data set, including
+        any instrument response (such as a PSF or ARF and RMF).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background model should be written out
+           rather than the source.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `False`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_source : Save the model values to a file.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-           bkg_id     - background id
-                        default = default background id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        The output file contains the columns `X` and `MODEL` for 1D
+        data sets. The residuals array respects any filter or (for PHA
+        files), grouping settings.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Write the model values for the default data set to the file
+        "model.fits":
 
-        DESCRIPTION
-           Write the convolved source model or background model to file by
-           data id or background id.  NOTE that the source model array 
-           written to file respects the filter.  For PHA data, the source 
-           model array is noticed and ungrouped.
+        >>> save_model('model.fits')
 
-        EXAMPLE
+        Write the model from the data set 'jet' to the ASCII file
+        "model.dat":
 
-           save_model("model.dat", ascii=True)
+        >>> save_model('jet', "model.dat", ascii=True)
 
-           save_model("model.fits")
+        For 2D (image) data sets, the model is written out as an
+        image:
 
-           save_model("bkg_model.dat", ascii=True, bkg_id=1)
+        >>> save_model('img', 'model.img')
 
-           save_model("bkg_model.fits", bkg_id=1)
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -3657,6 +3688,8 @@ class Session(sherpa.ui.utils.Session):
 
         Raises
         ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
         sherpa.utils.err.IOErr
            If `filename` already exists and `clobber` is `False`.
 
@@ -3728,13 +3761,15 @@ class Session(sherpa.ui.utils.Session):
 
         Raises
         ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
         sherpa.utils.err.IOErr
            If `filename` already exists and `clobber` is `False`.
 
         See Also
         --------
         save_data : Save the data to a file.
-        save_delchi : Save the ratio of residuals (data-model) to error to a file.
+        save_resid : Save the residuals (data-model) to a file.
 
         Notes
         -----
@@ -4425,8 +4460,8 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         save_data : Save the data to a file.
-        save_model :
-        save_source :
+        save_model : Save the model values to a file.
+        save_source : Save the model values to a file.
         save_table : Save a data set to a file as a table.
 
         Notes
@@ -4495,8 +4530,8 @@ class Session(sherpa.ui.utils.Session):
         save_data : Save the data to a file.
         save_image : Save the pixel values of a 2D data set to a file.
         save_pha : Save a PHA data set to a file.
-        save_model :
-        save_source :
+        save_model : Save the model values to a file.
+        save_source : Save the model values to a file.
 
         Notes
         -----
