@@ -6214,50 +6214,71 @@ class Session(NoNewAttributesAfterInit):
 	sherpa.models.template.interpolators[name] = (interpolator_class, kwargs)
 
 
+    # also in sherpa.astro.utils
+    # DOC-NOTE: does it make sense to allow ncols to vary here?
+    ### Ahelp ingest: 2015-05-13 DJB
     def load_table_model(self, modelname, filename, ncols=2, colkeys=None,
                          dstype=sherpa.data.Data1D, sep=' ', comment='#',
                          method=sherpa.utils.linear_interp):
-        """
-        load_table_model
+        """Load tabular data and use it as a model component.
 
-        SYNOPSIS
-           Load a table model from file into a Sherpa session
+        A table model is defined on a grid of points which is
+        interpolated onto the independent axis of the data set. The
+        model has a single parameter, `ampl`, which is used to
+        scale the data, and it can be fixed or allowed to vary
+        during a fit.
 
-        SYNTAX
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this table model.
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1D` (the default) and `Data1Dint`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        method : func
+           The interpolation method to use to map the input data onto
+           the coordinate grid of the data set. Linear,
+           nearest-neighbor, and polynomial schemes are provided in
+           the sherpa.utils module.
 
-        Arguments:
-           modelname  - model label
+        See Also
+        --------
+        load_conv : Load a 1D convolution model.
+        load_psf : Create a PSF model
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-           filename   - file from which table model data are read
+        Notes
+        -----
+        Examples of interpolation schemes provided by `sherpa.utils`
+        are: `linear_interp`, `nearest_interp`, `neville`, and
+        `neville2d`.
 
-           ncols      - number of columns to read from
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - column keys
-                        default = None
+        Load in the data from filt.fits and use it to multiply
+        the source model (a power law and a gaussian). Allow
+        the amplitude for the table model to vary between 1
+        and 1e6, starting at 1e3.
 
-           dstype     - Sherpa data class to contain table model data
-                        default = sherpa.data.Data1D
-        
-           sep        - separator character
-                        default = ' '
+        >>> load_table_model('filt', 'filt.fits')
+        >>> set_source(filt * (powlaw1d.pl + gauss1d.gline))
+        >>> set_par(filt.ampl, 1e3, min=1, max=1e6)
 
-           comment    - comment character
-                        default = '#'
-
-           method     - interpolation method
-                        default = linear {neville, linear}
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Load data from a file, and put it in a new model.  This
-           model can be used in fitting, just as models that containing
-           functions can be used.
-        
-        SEE ALSO
-           set_model, load_user_model, add_user_pars
         """
         tablemodel = sherpa.models.TableModel(modelname)
         # interpolation method
@@ -6512,7 +6533,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         delete_psf : Delete the PSF model for a data set.
         load_psf : Create a PSF model.
-        load_table_model :
+        load_table_model : Load tabular data and use it as a model component.
         set_full_model : Define the convolved model expression for a data set.
         set_model : Set the source model expression for a data set.
         set_psf : Add a PSF model to a data set.
@@ -6589,7 +6610,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         delete_psf : Delete the PSF model for a data set.
         load_conv : Load a 1D convolution model.
-        load_table_model :
+        load_table_model : Load tabular data and use it as a model component.
         set_full_model : Define the convolved model expression for a data set.
         set_model : Set the source model expression for a data set.
         set_psf : Add a PSF model to a data set.

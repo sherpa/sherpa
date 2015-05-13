@@ -994,6 +994,7 @@ def interp_util( xout, xin, yin ):
     return x0, x1, y0, y1
 
 def linear_interp( xout, xin, yin ):
+    """Linear interpolation of (xin,yin) onto xout."""
     x0, x1, y0, y1 = interp_util( xout, xin, yin )
     val = (xout - x0) / (x1 - x0) * (y1 - y0) + y0
     if True == numpy.any( numpy.isnan( val ) ):
@@ -1002,21 +1003,31 @@ def linear_interp( xout, xin, yin ):
     return val
 
 def nearest_interp( xout, xin, yin ):
+    """Nearest-neighbor interpolation of (xin,yin) onto xout."""
     x0, x1, y0, y1 = interp_util( xout, xin, yin )
     return numpy.where((numpy.abs(xout - x0) < numpy.abs(xout - x1)), y0, y1)
     
 def interpolate(xout, xin, yin, function=linear_interp):
-    """
-    Interpolate the curve defined by (xin, yin) at points xout.
-    The array xin must be monotonically increasing.  The output
-    has the same data type as the input yin.
+    """Interpolate the curve defined by (xin, yin) at points xout.
 
-    :param yin: y values of input curve
-    :param xin: x values of input curve
-    :param xout: x values of output interpolated curve
-    :param method: interpolation method (linear_interp | nearest_interp | neville)
+    Parameters
+    ----------
+    xout : array_like
+       The positions at which to interpolate.
+    xin : array_like
+       The x values of the data to interpolate. This must be
+       sorted so that it is monotonically increasing.
+    yin : array_like
+       The y values of the data to interpolate.
+    function : func
+       The function to perfoem the interpolation.
 
-    @:rtype: numpy array with interpolated curve
+    Returns
+    -------
+    yout : array_like
+       This has the dimensions of xout and matches the data type of
+       yin.
+
     """
 
     if not callable(function):
@@ -1027,9 +1038,7 @@ def interpolate(xout, xin, yin, function=linear_interp):
 
 
 def is_binary_file( filename ):
-    """
-    boolean determining if the file 'filename' is binary
-
+    """Estimate if a file is a binary file.
     """
     fd = open( filename, 'r')
     lines = fd.readlines(1024)

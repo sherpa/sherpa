@@ -8896,38 +8896,78 @@ class Session(sherpa.ui.utils.Session):
                     raise
         return (x,y)
 
+    # also in sherpa.utils
+    ### Ahelp ingest: 2015-05-13 DJB
+    ### DOC-NOTE: can filename be a crate/hdulist?
+    ### DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
     #@loggable()
     def load_table_model(self, modelname, filename, method=sherpa.utils.linear_interp, *args, **kwargs):
-        """
-        load_table_model
-        
-        SYNOPSIS
-           Load a table model from file into a Sherpa session
-           
-        SYNTAX
-        
-        Arguments:
-           modelname  - model label
-        
-           filename   - file from which table model data are read
-        
-           method     - interpolation method
-                        default = linear {neville, linear}
+        """Load tabular or image data and use it as a model component.
 
-           args       - optional arguments to pass to data reader
+        A table model is defined on a grid of points which is
+        interpolated onto the independent axis of the data set.  The
+        model will have at least one parameter (the amplitude, or
+        scaling factor to multiply the data by), but may have more
+        (if X-Spec table models are used).
 
-           kwargs     - optional keyword arguments to pass to data reader
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this table model.
+        filename : str
+           The name of the file containing the data, which should
+           contain two columns, which are the x and y values for
+           the data, or be an image.
+        method : func
+           The interpolation method to use to map the input data onto
+           the coordinate grid of the data set. Linear,
+           nearest-neighbor, and polynomial schemes are provided in
+           the sherpa.utils module.
+        *args, **kwargs :
+           Arguments for reading in the data.
 
-        Returns:
-           None
-           
-        DESCRIPTION
-           Load data from a file, and put it in a new model.  This
-           model can be used in fitting, just as models that containing
-           functions can be used.
-           
-        SEE ALSO
-           set_model, load_user_model, add_user_pars        
+        See Also
+        --------
+        load_conv : Load a 1D convolution model.
+        load_psf : Create a PSF model
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+
+        Notes
+        -----
+        X-Spec style additive (atable, [1]_) and multiplicative
+        (mtable, [2]_) table models are supported. These models may
+        have multiple model parameters.
+
+        Examples of interpolation schemes provided by `sherpa.utils`
+        are: `linear_interp`, `nearest_interp`, `neville`, and
+        `neville2d`.
+
+        References
+        ----------
+
+        .. [1] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+
+        .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+
+        Examples
+        --------
+
+        Load in the data from filt.fits and use it to multiply
+        the source model (a power law and a gaussian). Allow
+        the amplitude for the table model to vary between 1
+        and 1e6, starting at 1e3.
+
+        >>> load_table_model('filt', 'filt.fits')
+        >>> set_source(filt * (powlaw1d.pl + gauss1d.gline))
+        >>> set_par(filt.ampl, 1e3, min=1, max=1e6)
+
+        Load in an image ("broad.img") and use the pixel values as a
+        model component for data set "img":
+
+        >>> load_table_model('emap', 'broad.img')
+        >>> set_source('img', emap * gauss2d)
+
         """
         tablemodel = sherpa.models.TableModel(modelname)
         # interpolation method
