@@ -3498,7 +3498,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         save_data : Save the data to a file.
-        save_image :
+        save_image : Save the pixel values of a 2D data set to a file.
         save_table :
 
         Examples
@@ -4390,42 +4390,64 @@ class Session(sherpa.ui.utils.Session):
                                      ['CHANNEL', 'GROUPS'], ascii, clobber)
 
 
+    ### Ahelp ingest: 2015-05-13 DJB
+    ### DOC-TODO: setting ascii=True is not supported for crates
+    ###           and in pyfits it seems to just be a 1D array (needs thinking about)
     def save_image(self, id, filename=None, ascii=False, clobber=False):
-        """
-        save_image
+        """Save the pixel values of a 2D data set to a file.
 
-        SYNOPSIS
-           Write image data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the data to. The format
+           is determined by the `ascii` argument.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `False`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_model :
+        save_source :
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Examples
+        --------
 
-           clobber    - clobber the existing output file
-                        default = False
+        Write the pixel values to the file "img.fits":
 
-        Returns:
-           None
+        >>> save_image('resid.fits')
 
-        DESCRIPTION
-           Write image data to a FITS file or ASCII file from a Sherpa dataset
-           by id.
+        Write the data from the data set 'jet' to the file "jet.img":
 
-        EXAMPLE
+        >>> save_image('jet', 'jet.img', clobber=True)
 
-           save_image(1, "img.fits")
-
-           save_image(1, "img.out", ascii=True)
-
-        SEE ALSO
-           save_pha, save_data, save_table
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -4525,7 +4547,7 @@ class Session(sherpa.ui.utils.Session):
         save_error : Save the errors to a file.
         save_filter : Save the filter array to a file.
         save_grouping : Save the grouping scheme to a file.
-        save_image :
+        save_image : Save the pixel values of a 2D data set to a file.
         save_pha : Save a PHA data set to a file.
         save_quality : Save the quality array to a file.
         save_resid :
