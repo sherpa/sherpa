@@ -1413,7 +1413,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        load_image : Load a file as an image data set.
+        load_image : Load an image as a data set.
         set_data : Set a data set.
 
         Examples
@@ -1437,44 +1437,61 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
+    ### Ahelp ingest: 2015-05-13 DJB
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_image(self, id, arg=None, coord='logical',
                      dstype=sherpa.astro.data.DataIMG):
-        """Load a file as an image data set.
+        """Load an image as a data set.
 
-        load_image
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        arg :
+           Identify the image data: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: an `IMAGECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        coord : { 'logical', 'image', 'physical', 'world', 'wcs' }
+           The coordinate system to use. The 'image' option is the
+           same as 'logical', and 'wcs' the same as 'world'.
+        dstype : optional
+           The data class to use. The default is `DataIMG`.
 
-        SYNOPSIS
-           Load image data by id
+        See Also
+        --------
+        load_arrays : Create a data set from array values.
+        load_ascii : Load an ASCII file as a data set.
+        load_table : Load a FITS binary file as a data set.
+        set_coord : Set the coordinate system to use for image analysis.
+        set_data : Set a data set.
+        unpack_image : Create an image data structure.
 
-        SYNTAX
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
-           arg        - filename and path | IMAGECrate obj | PyFITS HDUList obj
+        Examples
+        --------
 
-           coord      - string keyword identifying coordinate system
-                        choices include: logical, image
-                                         physical
-                                         world, wcs
-                        default = logical
+        Load the image from the file "img.fits" into the default data
+        set:
 
-           dstype     - Sherpa dataset type (DataIMG, DataIMGInt)
-                        default = DataIMG
+        >>> load_image('img.fits')
 
-        Returns:
-           None
+        Set the 'bg' data set to the contents of the file
+        "img_bg.fits":
 
-        DESCRIPTION
-           Load image data from a FITS file into a Sherpa dataset given a
-           filename by data id or load in image data from a Crate into a Sherpa
-           dataset given a IMAGECrate object by data id or read in image data
-           from a HDUList into a Sherpa dataset by data id.
+        >>> load_image('bg', 'img_bg.fits')
 
-        SEE ALSO
-           load_pha, load_arf, load_rmf, load_data, load_table,
-           load_bkg
         """
         if arg is None:
             id, arg = arg, id
@@ -4745,7 +4762,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        load_image : Load a file as an image data set.
+        load_image : Load an image as a data set.
         set_data : Set a data set.
         unpack_image : Create an image data structure.
 
@@ -6017,12 +6034,9 @@ class Session(sherpa.ui.utils.Session):
         id : int or str
            The data set to change. If not given then the default
            identifier is used, as returned by `get_default_id`.
-
         coord : { 'logical', 'image', 'physical', 'world', 'wcs' }
            The coordinate system to use. The 'image' option is the
-           same as 'logical', and 'wcs' the same as 'world'.  The
-           'physical' and 'world' options are only available for
-           installations built with the optional `wcssubs` package.
+           same as 'logical', and 'wcs' the same as 'world'.
 
         See Also
         --------
@@ -6056,12 +6070,6 @@ class Session(sherpa.ui.utils.Session):
         system refers to a linear transformation, with possible
         offset, of the 'logical' system. The 'world' system refers to
         the mapping to a celestial coordinate system.
-
-        Support for the 'physical' and 'world' coordinate systems
-        relies on the optional `wcssubs` package. This can be checked
-        for by
-
-        >>> import sherpa.astro.utils._wcs
 
         References
         ----------
