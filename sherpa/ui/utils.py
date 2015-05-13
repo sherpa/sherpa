@@ -4000,7 +4000,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         save_chisqr :
         save_data : Save the data to a file.
-        save_delchi :
+        save_delchi : Save the ratio of residuals (data-model) to error to a file.
 
         Notes
         -----
@@ -4033,52 +4033,70 @@ class Session(NoNewAttributesAfterInit):
         self._save_type('resid', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
+    ### Ahelp ingest: 2015-05-12 DJB
     def save_delchi(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """
-        save_delchi
+        """Save the ratio of residuals (data-model) to error to a file.
 
-        SYNOPSIS
-           Write the delta chi squared residuals to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        linebreak : str, optional
+           Indicate a new line. The default is '\n'.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is '%g%.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        save_chisqr :
+        save_data : Save the data to a file.
+        save_delchi : Save the ratio of residuals (data-model) to error to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           clobber    - clobber the existing output file
-                        default = False
+        The output file contains the columns `X` and `DELCHI`. The
+        residuals array respects any filter setting for the data set.
 
-           sep        - separation character between columns
-                        default = ' '
+        Examples
+        --------
 
-           comment    - comment character
-                        default = '#'
+        Write the residuals to the file "delchi.dat":
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        >>> save_delchi('delchi.dat')
 
-           format     - array element format string
-                        default = '%g'
+        Write the residuals from the data set 'jet' to the
+        file "delchi.dat":
 
-        Returns:
-           None
+        >>> save_resid('jet', "delchi.dat", clobber=True)
 
-        DESCRIPTION
-           Write the delta chi squared residuals to file.  NOTE that the 
-           delta chi squared residuals array written to file respects the
-           filter.
-
-        EXAMPLE
-
-           save_delchi("delchi.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_resid
         """
         clobber=sherpa.utils.bool_cast(clobber)
         _check_type(filename, basestring, 'filename', 'a string')
@@ -4129,7 +4147,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         save_arrays : 
-        save_delchi :
+        save_delchi : Save the ratio of residuals (data-model) to error to a file.
         save_error : Save the errors to a file.
         save_filter : Save the filter array to a file.
         save_resid :
