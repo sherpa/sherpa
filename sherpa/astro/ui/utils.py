@@ -8930,6 +8930,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         load_conv : Load a 1D convolution model.
         load_psf : Create a PSF model
+        load_template_model : Load a set of templates and use it as a model component.
         set_model : Set the source model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
 

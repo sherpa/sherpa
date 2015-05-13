@@ -6142,8 +6142,108 @@ class Session(NoNewAttributesAfterInit):
             raise
         return (x,y)
 
+    ### DOC-TODO: I am not sure I have the data format correct.
+    ### DOC-TODO: description of template interpolation needs a lot of work.
+    ### Ahelp ingest: 2015-05-13 DJB
     def load_template_model(self, modelname, templatefile, dstype=sherpa.data.Data1D,
                             sep=' ', comment='#', method=sherpa.utils.linear_interp, template_interpolator_name='default'):
+        """Load a set of templates and use it as a model component.
+
+        A template model can be considered to be an extension
+        of the table model supported by `load_table_model`. In
+        the template case, a set of models (the "templates")
+        are read in and then compared to the data, with the
+        best-fit being used to return a set of parameters.
+
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this table model.
+        templatefile : str
+           The name of the file to read in. This file lists the
+           template data files.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1D` (the default) and `Data1Dint`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        method : func
+           The interpolation method to use to map the input data onto
+           the coordinate grid of the data set. Linear,
+           nearest-neighbor, and polynomial schemes are provided in
+           the sherpa.utils module.
+        template_interpolator_name : str
+           The method used to interpolate within the set of templates.
+           The default is `default`. A value of `None` turns off the
+           interpolation; in this case the grid-search optimiser
+           must be used to fit the data.
+
+        See Also
+        --------
+        load_conv : Load a 1D convolution model.
+        load_psf : Create a PSF model
+        load_table_model : Load tabular data and use it as a model component.
+        load_template_interpolator : Set the template interpolation scheme.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+
+        Notes
+        -----
+        Examples of interpolation schemes provided by `sherpa.utils`
+        are: `linear_interp`, `nearest_interp`, and `neville`.
+
+        The template index file is the argument to
+        `load_template_model`, and is used to list the data files. It
+        is an ASCII file with one line per template, and each line
+        containing the model parameters (numeric values), followed by
+        the MODELFLAG column and then the file name for the data file
+        (its name must begin with FILE). The MODELFLAG column is used
+        to indicate whether a file should be used or not; a value of
+        `1` means that the file should be used, and a value of `0`
+        that the line should be ignored. The parameter names are set
+        by the column names.
+
+        The data file - the last column of the template index file -
+        is read in and the first two columns used to set up the x and
+        y values (`Data1D`) or xlo, xhi, and y values (`Data1DInt`).
+
+        The `method` parameter determines how the template data values
+        are interpolated onto the source data grid.
+
+        The `template_interpolator_name` parameter determines how the
+        dependent axis (Y) values are interpolated when the parameter
+        values are varied. This interpolation can be turned off by
+        using a value of `None`, in which case the grid-search
+        optimiser *must* be used. See `load_template_intepolator` for
+        how to create a valid interpolator. The "default" interpolator
+        uses `sherpa.models.KNNInterpolator` with k=2 and order=2.
+
+        Examples
+        --------
+
+        Load in the templates from the file "index.tmpl" as the model
+        component "kerr", and set it as the source model for the
+        default data set. The optimisation method is switched to
+        use a grid search for the parameters of this model.
+
+        >>> load_template_model("kerr", "index.tmpl")
+        >>> set_source(kerr)
+        >>> set_method('gridsearch')
+        >>> set_method_opt('sequence', kerr.parvals)
+        >>> fit()
+
+        Fit a constant plus the templates, using the neville scheme
+        for integrating the template onto the data grid. The
+        Monte-Carlo based optimiser is used.
+
+        >>> load_template_model('tbl', 'table.lis',
+                                sherpa.utils.neville)
+        >>> set_source(tbl + const1d.bgnd)
+        >>> set_method('moncar')
+
+        """
 
         if sherpa.utils.is_binary_file(templatefile):
             raise sherpa.utils.err.IOErr('notascii', templatefile)
@@ -6209,8 +6309,35 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(templatemodel)
 
 
+    ### DOC-TODO: description of template interpolation needs a lot of work.
+    ### Ahelp ingest: 2015-05-13 DJB
     ##@loggable()
     def load_template_interpolator(self, name, interpolator_class, **kwargs):
+        """Set the template interpolation scheme.
+
+        Parameters
+        ----------
+        name : str
+        interpolator_class :
+           An interpolator class.
+        **kwargs :
+           The arguments for the interpolator.
+
+        See Also
+        --------
+        load_template_model : Load a set of templates and use it as a model component.
+
+        Examples
+        --------
+
+        Create an interpolator name that can be used as the
+        `template_interpolator_name` argument to
+        `load_template_model`.
+
+        >>> from sherpa.models import KNNInterpolator
+        >>> load_template_intepoator('myint', KNNInterpolator, k=4, order=3)
+
+        """
 	sherpa.models.template.interpolators[name] = (interpolator_class, kwargs)
 
 
@@ -6258,6 +6385,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         load_conv : Load a 1D convolution model.
         load_psf : Create a PSF model
+        load_template_model : Load a set of templates and use it as a model component.
         set_model : Set the source model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
 
