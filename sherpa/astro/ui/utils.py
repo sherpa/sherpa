@@ -1336,33 +1336,63 @@ class Session(sherpa.ui.utils.Session):
         return data
 
     # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-13 DJB
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_data(self, id, filename=None, *args, **kwargs):
-        """
-        load_data
+        """Load a data set from a file.
 
-        SYNOPSIS
-           Load spectrum, table, or ASCII data by id
+        This loads a data set from the file, trying in order
+        `load_pha`, `load_image`, `load_table`, then `load_ascii`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename :
+           A file name or a data structure representing the data to
+           use, as used by the I/O backend in use by Sherpa: e.g.  a
+           `PHACrateDataset`, `TABLECrate`, or `IMAGECrate` for
+           crates, as used by CIAO, or a list of AstroPy HDU objects.
+        *args, **kwargs
+           The options supported by
+           `load_pha`, `load_image`, `load_table`, and
+           `load_ascii`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        load_arrays : Create a data set from array values.
+        load_ascii : Load an ASCII file as a data set.
+        load_image : Load an image as a data set.
+        load_pha : Load a PHA data set.
+        load_table : Load a FITS binary file as a data set.
+        set_data : Set a data set.
+        unpack_data : Create a sherpa data object from a file.
 
-           filename   - filename and path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments,
+        then they are interpreted as the `id` and `filename`
+        parameters, respectively. The remaining parameters are
+        expected to be given as named arguments.
 
-      Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Load PHA spectrum data, FITS table data, or tabular data from a
-           column-based text file into a Sherpa dataset given a filename
-           and path by data id.
-        
-        SEE ALSO
-           load_pha, load_arf, load_rmf, load_data, load_image,
-           load_bkg, load_table, load_ascii
+        >>> load_data('tbl.dat')
+
+        >>> load_data('hist.dat', dstype=Data1DInt)
+
+        >>> load_data('img', 'img.fits')
+        >>> load_data('bg', 'img_bg.fits')
+
+        >>> cols = ['rmid', 'sur_bri', 'sur_bri_err']
+        >>> load_data(2, 'profile.fits', colkeys=cols)
+
         """
         if filename is None:
             id, filename = filename, id

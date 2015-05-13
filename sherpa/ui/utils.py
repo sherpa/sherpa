@@ -3624,6 +3624,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         get_data : Return the data set by identifier.
         load_arrays : Create a data set from array values.
+        load_data : Load a data set from a file.
         set_data : Set a data set.
         unpack_arrays : Create a sherpa data object from arrays of data.
 
@@ -3647,46 +3648,70 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-13 DJB
     def load_data(self, id, filename=None, ncols=2, colkeys=None,
                   dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
-        """
-        load_data
+        """Load a data set from a file.
 
-        SYNOPSIS
-           Load a data text file by id
+        Parameters
+        ----------
+        id : int or str
+           The identifier for the data set to use.
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy) and the
+           type of data set (e.g. 1D or 2D).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1D` (the default), `Data1DInt`, `Data2D`, and
+           `Data2DInt`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        require_floats : bool, optional
+           If `True` (the default), non-numeric data values will
+           raise a `ValueError`.
 
-        SYNTAX
+        Raises
+        ------
+        ValueError
+           If a column value can not be converted into a numeric value
+           and the `require_floats` parameter is True.
 
-        Arguments:
-           id         - data id
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_arrays : Create a data set from array values.
+        unpack_arrays : Create a sherpa data object from arrays of data.
+        unpack_data : Create a sherpa data object from a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - list of column names
-                        default = None
+        >>> load_data('tbl.dat')
 
-           dstype     - dataset type desired
-                        default = Data1D
+        >>> load_data('hist.dat', dstype=Data1DInt)
 
-           sep        - separation character between columns
-                        default = ' '
+        >>> cols = ['rmid', 'sur_bri', 'sur_bri_err']
+        >>> load_data(2, 'profile.fits', colkeys=cols)
 
-           comment    - comment character
-                        default = '#'
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Load tabular data from column-based text file
-           into a Sherpa dataset by data id.
-
-        SEE ALSO
-           load_arrays, unpack_data, unpack_arrays
         """
         if filename is None:
             id, filename = filename, id
