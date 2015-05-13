@@ -3926,8 +3926,8 @@ class Session(NoNewAttributesAfterInit):
         --------
         save_data : Save the data to a file.
         save_model : Save the model values to a file.
-        set_model : Set the source model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
+        set_model : Set the source model expression for a data set.
 
         Notes
         -----
@@ -6480,40 +6480,70 @@ class Session(NoNewAttributesAfterInit):
     # Conv
     #
 
+    ### Ahelp ingest: 2015-05-13 DJB
+    ### DOC-NOTE: why isn't the "flux" of the convolved model ~
+    ###           that of the uncolved model?
+    ### DOC-NOTE: better description of conv vs psf
     ##@loggable()
     def load_conv(self, modelname, filename_or_model, *args, **kwargs):
-        """
-        load_conv
+        """Load a 1D convolution model.
 
-        SYNOPSIS
-           load a file-based or model-based 1D kernel into a 1D convolution model
+        The convolution model can be defined either by a data set,
+        read from a file, or an analytic model, using a Sherpa model
+        instance. A source model can be convolved with this model
+        by including `modelname` in the `set_model` call, using the
+        form::
 
-        SYNTAX
+           modelname(modelexpr)
 
-        Arguments:
-           modelname - name of convolution kernel
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this PSF model.
+        filename_or_model : str or model instance
+           The form of the model. This can be a file name, which will
+           be read in using the chosen Sherpa I/O library, or a
+           model component.
+        *args, **kwargs :
+           Arguments for `unpack_data` if `filename_or_model`
+           is a file.
 
-           filename_or_model - filename with path for file-based kernel
-                               a Sherpa model for a model-based kernel
+        See Also
+        --------
+        delete_psf : Delete the PSF model for a data set.
+        load_psf : Create a PSF model.
+        load_table_model :
+        set_full_model : Define the convolved model expression for a data set.
+        set_model : Set the source model expression for a data set.
+        set_psf : Add a PSF model to a data set.
 
-           args      - additional arguments when reading a file kernel
+        Examples
+        --------
 
-           kwargs    - additional keyword arguments when reading a file
-                       kernel
+        Create a 1D data set, assign a box model - which is flat
+        between the xlow and xhi values and zero elsewhere - and then
+        display the model values. Then add in a convolution component
+        by a gaussian and overplot the resulting source model with two
+        different widths.
 
-        Returns:
-           None
+        >>> dataspace1d(-10, 10, 0.5, id='tst', dstype=Data1D)
+        >>> set_source('tst', box1d.bmdl)
+        >>> bmdl.xlow = -2
+        >>> bmdl.xhi = 3
+        >>> plot_source('tst')
+        >>> load_conv('conv', normgauss1d.gconv)
+        >>> gconv.fwhm = 2
+        >>> set_source('tst', conv(bmdl))
+        >>> plot_source('tst', overplot=True)
+        >>> gconv.fwhm = 5
+        >>> plot_source('tst', overplot=True)
 
-        DESCRIPTION
-           Create a convolution model object with identifier 'modelname' and 
-           initializes the convolution kernel to be either a Sherpa dataset
-           loaded from file or a Sherpa model.
+        Create a convolution component called "cmodel" which uses the
+        data in the file "conv.dat", which should have two columns
+        (the X and Y values).
 
-           NOTE: load_conv() is intended for 1D convolution only.  It uses the
-                 midpoint as the origin.
+        >>> load_conv('cmodel', 'conv.dat')
 
-        SEE ALSO
-           set_psf, get_psf, delete_psf
         """        
         kernel = filename_or_model
         if isinstance(filename_or_model, basestring):
@@ -6535,7 +6565,6 @@ class Session(NoNewAttributesAfterInit):
     #
 
     ### Ahelp ingest: 2015-05-11 DJB
-    ### DOC-TODO: what args/kwargs are supported?
     def load_psf(self, modelname, filename_or_model, *args, **kwargs):
         """Create a PSF model.
 
@@ -6551,15 +6580,18 @@ class Session(NoNewAttributesAfterInit):
         filename_or_model : str or model instance
            The form of the PSF. This can be a file name, which will
            be read in using the chosen Sherpa I/O library, or a
-           model component. When reading in a model, additional
-           arguments can be used to specify the data format (see
-           `load_table` and `load_image` for more information).
+           model component.
+        *args, **kwargs :
+           Arguments for `unpack_data` if `filename_or_model`
+           is a file.
 
         See Also
         --------
         delete_psf : Delete the PSF model for a data set.
-        load_image :
-        load_table :
+        load_conv : Load a 1D convolution model.
+        load_table_model :
+        set_full_model : Define the convolved model expression for a data set.
+        set_model : Set the source model expression for a data set.
         set_psf : Add a PSF model to a data set.
 
         Examples
@@ -6625,6 +6657,7 @@ class Session(NoNewAttributesAfterInit):
         image_psf : Display the 2D PSF model for a data set in the image viewer.
         load_psf : Create a PSF model.
         plot_psf : Plot the 1D PSF model applied to a data set.
+        set_full_model : Define the convolved model expression for a data set.
         set_model : Set the source model expression for a data set.
 
         Notes
