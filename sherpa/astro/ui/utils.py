@@ -4420,12 +4420,14 @@ class Session(sherpa.ui.utils.Session):
         ------
         sherpa.utils.err.IOErr
            If `filename` already exists and `clobber` is `False`.
+           If the data set does not contain 2D data.
 
         See Also
         --------
         save_data : Save the data to a file.
         save_model :
         save_source :
+        save_table : Save a data set to a file as a table.
 
         Notes
         -----
@@ -4458,43 +4460,66 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_image(filename, self.get_data(id),
                                     ascii, clobber)
 
-
+    ### Ahelp ingest: 2015-05-13 DJB
+    ### DOC-TODO: the output for an image is "excessive"
     def save_table(self, id, filename=None, ascii=False, clobber=False):
-        """
-        save_table
+        """Save a data set to a file as a table.
 
-        SYNOPSIS
-           Write tabular data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the data to. The format
+           is determined by the `ascii` argument.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `False`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_image : Save the pixel values of a 2D data set to a file.
+        save_pha : Save a PHA data set to a file.
+        save_model :
+        save_source :
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Examples
+        --------
 
-           clobber    - clobber the existing output file
-                        default = False
+        Write the data set to the file "table.fits":
 
-        Returns:
-           None
+        >>> save_table('table.fits')
 
-        DESCRIPTION
-           Write tabular data to a FITS file or column-based text file
-           from a Sherpa dataset by id.
+        Write the data from the data set 'jet' to the file "jet.dat",
+        as an ASCII file:
 
-        EXAMPLE
+        >>> save_table('jet', 'jet.dat', ascii=True, clobber=True)
 
-           save_table(1, "tbl.fits")
-
-           save_table(1, "tbl.out", ascii=True)
-
-        SEE ALSO
-           save_pha, save_data, save_image
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)

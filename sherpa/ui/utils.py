@@ -3837,7 +3837,6 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         save_data : Save the data to a file.
-        save_table :
 
         Examples
         --------
@@ -3903,7 +3902,7 @@ class Session(NoNewAttributesAfterInit):
            save_source("source.dat")
 
         SEE ALSO
-           save_data, save_table, save_arrays, save_model,
+           save_data, save_arrays, save_model,
            save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
@@ -3954,7 +3953,7 @@ class Session(NoNewAttributesAfterInit):
            save_model("model.dat")
 
         SEE ALSO
-           save_data, save_table, save_arrays, save_source,
+           save_data, save_arrays, save_source,
            save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
