@@ -3998,7 +3998,6 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        save_chisqr :
         save_data : Save the data to a file.
         save_delchi : Save the ratio of residuals (data-model) to error to a file.
 
@@ -4068,7 +4067,6 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        save_chisqr :
         save_data : Save the data to a file.
         save_delchi : Save the ratio of residuals (data-model) to error to a file.
 

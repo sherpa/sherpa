@@ -3662,7 +3662,6 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        save_chisqr :
         save_data : Save the data to a file.
         save_delchi : Save the ratio of residuals (data-model) to error to a file.
 
@@ -3734,7 +3733,6 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        save_chisqr :
         save_data : Save the data to a file.
         save_delchi : Save the ratio of residuals (data-model) to error to a file.
 
