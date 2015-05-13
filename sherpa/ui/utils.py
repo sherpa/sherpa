@@ -3963,51 +3963,70 @@ class Session(NoNewAttributesAfterInit):
         self._save_type('model', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
+    ### Ahelp ingest: 2015-05-12 DJB
     def save_resid(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """
-        save_resid
+        """Save the residuals (data-model) to a file.
 
-        SYNOPSIS
-           Write the data - model residuals to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        linebreak : str, optional
+           Indicate a new line. The default is '\n'.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is '%g%.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        save_chisqr :
+        save_data : Save the data to a file.
+        save_delchi :
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           clobber    - clobber the existing output file
-                        default = False
+        The output file contains the columns `X` and `RESID`. The
+        residuals array respects any filter setting for the data set.
 
-           sep        - separation character between columns
-                        default = ' '
+        Examples
+        --------
 
-           comment    - comment character
-                        default = '#'
+        Write the residuals to the file "resid.dat":
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        >>> save_resid('resid.dat')
 
-           format     - array element format string
-                        default = '%g'
+        Write the residuals from the data set 'jet' to the
+        file "resid.dat":
 
-        Returns:
-           None
+        >>> save_resid('jet', "resid.dat", clobber=True)
 
-        DESCRIPTION
-           Write the data - model residuals to file. NOTE that the residuals
-           array written to file respects the filter.
-
-        EXAMPLE
-
-           save_resid("resid.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         _check_type(filename, basestring, 'filename', 'a string')
