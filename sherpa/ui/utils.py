@@ -3859,51 +3859,77 @@ class Session(NoNewAttributesAfterInit):
         sherpa.io.write_arrays(filename, args, fields, sep, comment, clobber,
                                linebreak, format)
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
+    ### Ahelp ingest: 2015-05-13 DJB
     def save_source(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """
-        save_source
+        """Save the model values to a file.
 
-        SYNOPSIS
-           Write the unconvolved source model to file
+        The model is evaluated on the grid of the data set, but does
+        not include any instrument response (such as a PSF).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        linebreak : str, optional
+           Indicate a new line. The default is '\n'.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is '%g%.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_model : Save the model values to a file.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           sep        - separation character between columns
-                        default = ' '
+        The output file contains the columns `X` and `SOURCE` (for 1D
+        data). The residuals array respects any filter setting for the
+        data set.
 
-           comment    - comment character
-                        default = '#'
+        Examples
+        --------
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        Write the model to the file "model.dat":
 
-           format     - array element format string
-                        default = '%g'
+        >>> save_source('model.dat')
 
-        Returns:
-           None
+        Write the model from the data set 'jet' to the
+        file "jet.mdl":
 
-        DESCRIPTION
-           Write the unconvolved source model to file.  NOTE that the source 
-           model array written to file respects the filter.
+        >>> save_source('jet', "jet.mdl", clobber=True)
 
-        EXAMPLE
-
-           save_source("source.dat")
-
-        SEE ALSO
-           save_data, save_arrays, save_model,
-           save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         _check_type(filename, basestring, 'filename', 'a string')
@@ -3943,6 +3969,8 @@ class Session(NoNewAttributesAfterInit):
 
         Raises
         ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
         sherpa.utils.err.IOErr
            If `filename` already exists and `clobber` is `False`.
 
@@ -3970,14 +3998,14 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Write the residuals to the file "model.dat":
+        Write the model to the file "model.dat":
 
-        >>> save_resid('model.dat')
+        >>> save_model('model.dat')
 
         Write the model from the data set 'jet' to the
         file "jet.mdl":
 
-        >>> save_resid('jet', "jet.mdl", clobber=True)
+        >>> save_model('jet', "jet.mdl", clobber=True)
 
         """
         clobber=sherpa.utils.bool_cast(clobber)
@@ -4015,6 +4043,8 @@ class Session(NoNewAttributesAfterInit):
 
         Raises
         ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
         sherpa.utils.err.IOErr
            If `filename` already exists and `clobber` is `False`.
 
@@ -4084,13 +4114,15 @@ class Session(NoNewAttributesAfterInit):
 
         Raises
         ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
         sherpa.utils.err.IOErr
            If `filename` already exists and `clobber` is `False`.
 
         See Also
         --------
         save_data : Save the data to a file.
-        save_delchi : Save the ratio of residuals (data-model) to error to a file.
+        save_resid : Save the residuals (data-model) to a file.
 
         Notes
         -----
