@@ -10616,33 +10616,48 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._modelcontour.contour_prefs
 
+    ### Ahelp ingest: 2015-05-13 DJB
     def get_fit_contour(self, id=None):
-        """
-        get_fit_contour
+        """Return the data used by contour_fit.
 
-        SYNOPSIS
-           Return a Sherpa fit contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        fit_data : a sherpa.plot.FitContour instance
+           An object representing the data used to create the plot by
+           `contour_fit`. It contains the data from `get_data_contour`
+           and `get_model_contour` in the `datacontour` and
+           `modelcontour` attributes.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa FitContour plot
+        See Also
+        --------
+        get_data_image : Return the data used by image_data.
+        get_model_image : Return the data used by image_model.
+        contour_data : Contour the values of an image data set.
+        contour_model : Contour the values of the model, including any PSF.
+        image_data : Display a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
 
-        DESCRIPTION
-           The Sherpa fit contour object holds a reference to a data contour
-           and model contour instance.
+        Examples
+        --------
 
-           Attributes:
-              datacontour
+        Return the contour data for the default data set:
 
-              modelcontour
+        >>> finfo = get_fit_contour()
 
-        SEE ALSO
-           contour_fit
         """
         self._prepare_plotobj(id, self._fitcontour)
         return self._fitcontour
