@@ -9314,37 +9314,91 @@ class Session(sherpa.ui.utils.Session):
         return fit_to_ids, f
 
 
+    # also in sherpa.utils
+    ### Ahelp ingest: 2015-05-14 DJB
+    ### DOC-TODO: existing docs suggest that bkg_only can be set, but looking
+    ###           at the code it is always set to False.
     def fit(self, id=None, *otherids, **kwargs):
-        """
-        fit
+        """Fit a model to one or more data sets.
 
-        SYNOPSIS
-           Perform fitting process using current optimization method and 
-           current fit statistic.
+        Use forward fitting to find the best-fit model to one or more
+        data sets, given the chosen statisitic and optimization
+        method. The fit proceeds until the results converge or the
+        number of iterations exceeds the maximum value (these values
+        can be changed with `set_method_opt`). An iterative scheme can
+        be added using `set_iter_method` to try and improve the
+        fit. The final fit results are displayed to the screen and can
+        be retrieved with `get_fit_results`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are fit simultaneously.
+        *otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
+        outfile : str, optional
+           If set, then the fit results will be written to a file with
+           this name. The file contains the per-iteration fit results.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.FitErr
+           If `filename` already exists and `clobber` is `False`.
 
-           otherids  - List of other Sherpa data ids
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        contour_fit : Contour the fit to a data set.
+        covar : Estimate the confidence intervals using the confidence method.
+        fit_bkg :
+        freeze : Fix model parameters so they are not changed by a fit.
+        get_fit_results : Return the results of the last fit.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        set_stat : Set the statistical method.
+        set_method : Change the optimization method.
+        set_method_opt : Change an option of the current optimization method.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
+        set_model : Set the model expression for a data set.
+        show_fit : Summarize the fit results.
+        thaw : Allow model parameters to be varied during a fit.
 
-           outfile   - filename and path of parameter value output vs. number
-                       of function evaluations
-                       default = None
+        Notes
+        -----
+        For PHA data sets with background components, the function
+        will fit any background components for which a background
+        model has been created (rather than being subtracted).
 
-           clobber   - boolean whether to clobber outfile
-                       default = False
+        Examples
+        --------
 
-        Returns:
-           Formatted fit results output 
+        Simultaneously fit all data sets with models and then
+        store the results in the variable fres:
 
-        DESCRIPTION
-           Initiate optimization of model parameter values by id(s).
+        >>> fit()
+        >>> fres = get_fit_results()
 
-        SEE ALSO
-           get_fit_results, conf, proj, covar, show_fit
+        Fit just the data set 'img':
+
+        >>> fit('img')
+
+        Simultaneously fit data sets 1, 2, and 3:
+
+        >>> fit(1, 2, 3)
+
+        Fit data set 'jet' and write the fit results to the text file
+        'jet.fit', over-writing it if it already exists:
+
+        >>> fit('jet', outfile='jet.fit', clobber=True)
+
         """
         kwargs['bkg_only']=False
         self._fit(id, *otherids, **kwargs)
