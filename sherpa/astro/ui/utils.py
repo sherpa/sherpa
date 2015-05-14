@@ -8069,56 +8069,97 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('subtractset', 'data set', str(self._fix_id(id)), 'False')
         self._get_pha_data(id).unsubtract()
 
+    ### Ahelp ingest: 2015-05-14 DJB
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
                  grouping=None, grouped=False, quality=None, bkg=None):
         """Simulate a PHA data set from a model.
 
-        fake_pha
+        Take a PHA data set, evaluate the model for each bin, and then
+        use this value to create a data value from each bin, where the
+        value is used as the expectation value of the Poisson
+        distribution. A background component can be added (these
+        values are scaled to account for area extraction and exposure
+        time, but are not themselves simulated).
 
-        SYNOPSIS
-           Create and fill a Sherpa DataPHA dataset by data id 
-           with faked PHA counts using poisson noise.
+        Parameters
+        ----------
+        id : int or str
+           The identifier for the data set to create. If it
+           already exists then it is assumed to contain a PHA
+           data set and the counts will be over-written.
+        arf : filename or ARF object
+           The name of the ARF, or an ARF data object (e.g.
+           as returned by `get_arf` or `unpack_arf`).
+        rmf : filename or RMF object
+           The name of the RMF, or an RMF data object (e.g.
+           as returned by `get_arf` or `unpack_arf`).
+        exposure : number
+           The exposure time, in seconds.
+        backscal : number, optional
+           The 'BACKSCAL' value for the data set.
+        areascal : number, optional
+           The 'AREASCAL' value for the data set.
+        grouping : array, optional
+           The grouping array for the data (see `set_grouping`).
+        grouped : bool, optional
+           Should the simulated data be grouped (see `group`)?
+           The default is `False`. This value is only used if
+           the `grouping` parameter is set.
+        quality : array, optional
+           The quality array for the data (see `set_quality`).
+        bkg : optional
+           If left empty, then only the source emission is simulated.
+           If set to a PHA data object, then the counts from this data
+           set are scaled appropriately and added to the simulated
+           source signal.
 
-        SYNTAX
+        See Also
+        --------
+        fake : Simulate a data set.
+        get_arf : Return the ARF associated with a PHA data set.
+        get_rmf : Return the RMF associated with a PHA data set.
+        get_dep : Return the dependent axis of a data set.
+        load_arrays : Create a data set from array values.
+        set_model : Set the source model expression for a data set.
 
-        Arguments:
-           id        - data id, if exists overwrites old dataset
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set already exists and does not contain PHA
+           data.
 
-           arf       - Sherpa DataARF dataset, defines ancillary response
+        Examples
+        --------
+        Estimate the signal from a 5000 second observation using
+        the ARF and RMF from "src.arf" and "src.rmf" respectively:
 
-           rmf       - Sherpa DataRMF dataset, defines response matrix
+        >>> set_source(1, xsphabs.gal * xsapec.clus)
+        >>> gal.nh = 0.12
+        >>> clus.kt, clus.abundanc = 4.5, 0.3
+        >>> clus.redshift = 0.187
+        >>> clus.norm = 1.2e-3
+        >>> fake_pha(1, 'src.arf', 'src.rmf', 5000)
 
-           exposure  - length of observation in seconds
+        Simulate a 1 mega second observation for the data and model
+        from the default data set. The simulated data will include an
+        estimated background component based on scaling the existing
+        background observations for the source. The simulated data
+        set, which has the same grouping as the default set, for
+        easier comparison, is created with the 'sim' label
+        and then written out to the file 'sim.pi':
 
-           backscal  - background scaling factor
-                       default = None
+        >>> arf = get_arf()
+        >>> rmf = get_rmf()
+        >>> bkg = get_bkg()
+        >>> bscal = get_backscal()
+        >>> grp = get_grouping()
+        >>> qual = get_quality()
+        >>> texp = 1e6
+        >>> set_source('sim', get_model())
+        >>> fake_pha('sim', arf, rmf, backscal=bscal, bkg=bkg,
+                     grouping=grp, quality=qual, grouped=True)
+        >>> save_pha('sim', 'sim.pi')
 
-           areascal  - area scaling factor
-                       default = None
-
-           grouping  - integer array of grouping flags
-                       default = None
-
-           grouped   - dataset grouped boolean
-                       default = False
-
-           quality   - integer array of quality flags
-                       default = None
-
-           bkg       - python DataPHA object defines the background,
-                       default = None
-
-        Returns:
-           None
-
-        DESCRIPTION
-           fake_pha allows for the simulation of spectra given a source model
-           and a grid.  The generated counts will contain poisson noise. If the
-           data id exists, the dataset's counts will be clobber, if not, a new
-           dataset with that data id will be generated.
-
-        SEE ALSO
-           save_pha           
         """
         d = sherpa.astro.data.DataPHA('', None, None)
         if self._data.has_key(id):
