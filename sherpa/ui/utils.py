@@ -6463,7 +6463,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         add_model : 
-        add_user_pars :
+        add_user_pars : Add parameter information to a user model.
         load_table : Load a FITS binary file as a data set.
         load_table_model : Load tabular data and use it as a model component.
         load_template_model : Load a set of templates and use it as a model component.
@@ -6516,46 +6516,62 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(usermodel)
 
     ##@loggable()
+    ### Ahelp ingest: 2015-05-14 DJB
     def add_user_pars(self, modelname, parnames,
                       parvals = None, parmins = None, parmaxs = None,
                       parunits = None, parfrozen = None):
-        """
-        add_user_pars
+        """Add parameter information to a user model.
 
-        SYNOPSIS
-           Add parameters to a user model
+        Parameters
+        ----------
+        modelname : str
+           The name of the user model (created by `load_user_model`).
+        parnames : array of str
+           The names of the parameters. The order of all the parameter
+           arrays must match that expected by the model function (the
+           first argument to `load_user_model`).
+        parvals : array of number, optional
+           The default values of the parameters. If not given each
+           parameter is set to 0.
+        parmins : array of number, optional
+           The minimum values of the parameters (hard limit). The
+           default value is -3.40282e+38.
+        parmaxs : array of number, optional
+           The maximum values of the parameters (hard limit). The
+           default value is 3.40282e+38.
+        parunits : array of str, optional
+           The units of the parameters. This is only used in screen
+           output (i.e. is informational in nature).
+        parfrozen : array of bool, optional
+           Should each parameter be frozen. The default is that
+           all parameters are thawed.
 
-        SYNTAX
+        See Also
+        --------
+        add_model : 
+        load_user_model : Create a user-defined model.
+        set_par : Set the value, limits, or behavior of a model parameter.
 
-        Arguments:
-           modelname  - model label
+        Examples
+        --------
 
-           parnames   - list of parameter names
+        Create a user model for the function `profile` called
+        "myprof", which has two parameters called "core" and "ampl",
+        both of which will start with a value of 0.
 
-           parvals    - list of parameter values
-                        default = None
+        >>> load_user_model(profile, "myprof")
+        >>> add_user_pars("myprof", ["core", "ampl"])
 
-           parmins    - list of parameter minimum values
-                        default = None
+        Set the starting values, minimum values, and whether or not
+        the parameter is frozen by default, for the "prof" model:
 
-           parmaxs    - list of parameter maxinum values
-                        default = None
+        >>> pnames = ["core", "ampl", "intflag"]
+        >>> pvals = [10, 200, 1]
+        >>> pmins = [0.01, 0, 0]
+        >>> pfreeze = [False, False, True]
+        >>> add_user_pars("prof", pnames, pvals,
+                          parmins=pmins, parfrozen=pfreeze)
 
-           parunits   - list of parameter units
-                        default = None
-
-           parfrozen  - list of frozen parameter names
-                        default = None
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Add a new set of parameters to a user model that can be 
-           used in Sherpa model definitions.
-        
-        SEE ALSO
-           set_model, load_user_model
         """
         pars = []
         vals=None

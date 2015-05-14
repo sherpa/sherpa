@@ -9059,7 +9059,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         add_model : 
-        add_user_pars :
+        add_user_pars : Add parameter information to a user model.
         load_image : Load an image as a data set.
         load_table : Load a FITS binary file as a data set.
         load_table_model : Load tabular data and use it as a model component.
