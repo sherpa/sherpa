@@ -8075,26 +8075,28 @@ class Session(NoNewAttributesAfterInit):
         self._pvalue_results = results
 
 
+    ### Ahelp ingest: 2015-05-14 DJB
     def get_pvalue_results(self):
-        """
-        get_pvalue_results
+        """Return the data calculated by the last plot_pvalue call.
 
-        SYNOPSIS
-           Access the simulation results of the likelihood ratio test.
+        Returns
+        -------
+        plot : a sherpa.sim.simulate.LikelihoodRatioResults instance
+           None is returned if neither `plot_pvalue` or
+           `get_pvalue_pvalue` have been run.
 
-        SYNTAX
+        See Also
+        --------
+        plpt_value : Compute and plot a histogram of likelihood ratios by simulating data.
+        get_pvalue_plot : Return the data used by plot_pvalue.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           Likelihood Ratio Test results 
+        >>> res = get_pvalue_results()
+        >>> res.ppp
+        0.472
 
-        DESCRIPTION
-           Access the simulation results of the likelihood ratio test.
-
-        SEE ALSO
-           plot_pvalue, get_pvalue_plot
         """
         return self._pvalue_results
 
@@ -8147,7 +8149,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_pvalue_plot : Return the data used by plot_pvalue.
-        get_pvalue_results :
+        get_pvalue_results : Return the data calculated by the last plot_pvalue call.
 
         Raises
         ------
@@ -8250,7 +8252,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_pvalue_results :
+        get_pvalue_results : Return the data calculated by the last plot_pvalue call.
         plot_pvalue : Compute and plot a histogram of likelihood ratios by simulating data.
 
         Examples
