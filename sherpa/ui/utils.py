@@ -8087,7 +8087,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        plpt_value : Compute and plot a histogram of likelihood ratios by simulating data.
+        plot_value : Compute and plot a histogram of likelihood ratios by simulating data.
         get_pvalue_plot : Return the data used by plot_pvalue.
 
         Examples
