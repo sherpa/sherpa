@@ -43,7 +43,11 @@ if hasattr(IPython.iplib.readline, "clear_history") is False:
       pass
    IPython.iplib.readline.clear_history = clear_history
 
+### DOC-NOTE: this needs changing to support the fact that sherpa
+###           documentation (at least) should be looked for in the
+###           docstrings rather than via ahelp.
 def ahelp (*args):
+   "Run ahelp on the arguments"
    import os
    cmd = ''
    for elem in args:
@@ -57,28 +61,29 @@ def ahelp (*args):
 del IPython, ciao_exception_handler
 
 def script(filename="sherpa.log", clobber=False):
-   """
-   script
+   """Save the commands used to a file.
 
-   SYNOPSIS
-      Save Sherpa session commands to file
+   This function writes out the current IPython history to a file.
 
-   SYNTAX
+   Parameters
+   ----------
+   filename : str, optional
+      The name of the output file. The default is "sherpa.log".
+   clobber : bool, optional
+      This flag controls whether an existing file can be
+      overwritten (`True`) or if it raises an exception (`False`,
+      the default setting).
 
-   Arguments:
-      filename  - script filename
-                  default = 'sherpa.log'
-      clobber   - clobber file flag
-                  default = False
+   Raises
+   ------
+   IOError
+      If `filename` already exists and `clobber` is `False`.
 
-   Returns:
-      None
+   Notes
+   -----
+   The function does not cause new commands to be written to the
+   file. A new call to `save` is needed to record these commands.
 
-   DESCRIPTION
-      Save Sherpa commands from current session to a script file.
-
-   SEE ALSO
-      save
    """
    hist = _ip.IP.input_hist
 
