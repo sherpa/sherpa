@@ -9355,7 +9355,7 @@ class Session(sherpa.ui.utils.Session):
         conf : Estimate the confidence intervals using the confidence method.
         contour_fit : Contour the fit to a data set.
         covar : Estimate the confidence intervals using the confidence method.
-        fit_bkg :
+        fit_bkg : Fit a model to one or more background PHA data sets.
         freeze : Fix model parameters so they are not changed by a fit.
         get_fit_results : Return the results of the last fit.
         plot_fit : Plot the fit results (data, model) for a data set.
@@ -9404,37 +9404,80 @@ class Session(sherpa.ui.utils.Session):
         self._fit(id, *otherids, **kwargs)
 
 
+    ### Ahelp ingest: 2015-05-14 DJB
     def fit_bkg(self, id=None, *otherids, **kwargs):
-        """
-        fit_bkg
+        """Fit a model to one or more background PHA data sets.
 
-        SYNOPSIS
-           Perform fitting process on PHA backgrounds using current 
-           optimization method and current fit statistic.
+        Fit only the backgound components of PHA data sets.  This can
+        be used to find the best-fit background parameters, which can
+        then be frozen before fitting the data, or to ensure that
+        these parameters are well defined before performing a
+        simultaneous source and background fit.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the background data. If not
+           given then all data sets with an associated background
+           model are fit simultaneously.
+        *otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
+        outfile : str, optional
+           If set, then the fit results will be written to a file with
+           this name. The file contains the per-iteration fit results.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
 
-        Arguments:
-           id        - Sherpa background data id
-                       default = default background data id
+        Raises
+        ------
+        sherpa.utils.err.FitErr
+           If `filename` already exists and `clobber` is `False`.
 
-           otherids  - List of other Sherpa background data ids
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        contour_fit : Contour the fit to a data set.
+        covar : Estimate the confidence intervals using the confidence method.
+        fit : Fit a model to one or more data sets.
+        freeze : Fix model parameters so they are not changed by a fit.
+        get_fit_results : Return the results of the last fit.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        set_stat : Set the statistical method.
+        set_method : Change the optimization method.
+        set_method_opt : Change an option of the current optimization method.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
+        set_model : Set the model expression for a data set.
+        show_bkg_source : Display the background model expression for a data set.
+        show_bkg_model : Display the background model expression used to fit a data set.
+        show_fit : Summarize the fit results.
+        thaw : Allow model parameters to be varied during a fit.
 
-           outfile   - filename and path of parameter value output vs. number
-                       of function evaluations
-                       default = None
+        Notes
+        -----
+        This is only for PHA data sets where the background is being
+        modelled, rather than subtracted from the data.
 
-           clobber   - boolean whether to clobber outfile
-                       default = False
+        Examples
+        --------
 
-        Returns:
-           Formatted fit results output 
+        Simultaneously fit all background data sets with models and
+        then store the results in the variable fres:
 
-        DESCRIPTION
-           Initiate optimization of model parameter values by background id(s).
+        >>> fit_bkg()
+        >>> fres = get_fit_results()
 
-        SEE ALSO
-           get_fit_results, conf, proj, covar, show_fit
+        Fit the background for data sets 1 and 2, then do a
+        simultaneous fit to the source and background data sets:
+
+        >>> fit_bkg(1,2)
+        >>> fit(1,2)
+
         """
         kwargs['bkg_only']=True
         self._fit(id, *otherids, **kwargs)
