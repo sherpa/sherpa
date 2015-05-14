@@ -8099,59 +8099,98 @@ class Session(NoNewAttributesAfterInit):
         return self._pvalue_results
 
 
+    ### Ahelp ingest: 2015-05-14 DJB
+    ### DOC-TODO: improve discussion of how the simulations are done.
     def plot_pvalue(self, null_model, alt_model, conv_model=None,
                     id=1, otherids=(), num=500, bins=25, numcores=None,
                     replot=False, overplot=False, clearwindow=True):
-        """
-        plot_pvalue
+        """Compute and plot a histogram of likelihood ratios by simulating data.
 
-        SYNOPSIS
-           Plot a histogram of likelihood ratios comparing fits of the null
-           model to fits of the alternative model to faked data using poisson
-           noise.  Computes the likelihood ratio on the real data and the 
-           p-value.
+        Compare the likelihood of the null model to an alternative model
+        by running a number of simulations, comparing the likelihoods
+        of the two models when compared to the observed data. The fit
+        statistic must be set to a likelihood-based method, such
+        as "cash" or "cstat". Screen output is created as well as the
+        plot; these values can be retrieved with `get_pvalue_results`.
 
-        SYNTAX
+        Parameters
+        ----------
+        null_model :
+           The model expression for the null hypothesis.
+        alt_model :
+           The model expression for the alternative hypothesis.
+        conv_model : optional
+           An expression used to modify the model so that it can be
+           compared to the data (e.g. a PSF or PHA response).
+        id : int or str, optional
+           The data set that provides the data. The default is `1`.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
+        num : int, optional
+           The number of simulations to run. The default is `500`.
+        bins : int, optional
+           The number of bins to use to create the histogram. The
+           default is `25`.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_pvalue`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
 
-        Arguments:
+        See Also
+        --------
+        get_pvalue_plot : Return the data used by plot_pvalue.
+        get_pvalue_results :
 
-           null_model  - model representing the null hypothesis
+        Raises
+        ------
+        TypeError
+           An invalid statistic.
 
-           alt_model   - alternative model to compare to null
+        Notes
+        -----
+        Each simulation involves creating a data set using the
+        observed data simulated with Poisson noise.
 
-           conv_model  - convolution model to include for fitting.
-                         default = None
+        For the likelihood ratio test to be valid, the following
+        conditions must hold:
 
-           id          - Sherpa data id
-                         default = default data id
+           1. The null model is nested within the alternative model.
 
-           otherids    - List of other Sherpa data ids
-                         default = ()
+           2. The extra parameters of the alternative model have
+              Gaussian (normal) distributions that are not truncated
+              by the boundaries of the parameter spaces.
 
-           num         - Number of iterations to run
-                         default = 500
+        Examples
+        --------
 
-           bins        - Number of bins for the histogram
-                         default = 25
+        Use the likelihood ratio to see if the data in data set 1 has
+        a statistically-significant gaussian component:
 
-           numcores    - Number of cpus to use during simulation
-                         default = number of detected cpus
+        >>> create_model_component('powlaw1d', 'pl')
+        >>> create_model_component('gauss1d', 'gline')
+        >>> plot_pvalue(pl, pl+gline)
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Use 1000 simulations and use the data from data sets
+        1, 2, and 3:
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        >>> mdl1 = pl
+        >>> mdl2 = pl + gline
+        >>> plot_pvalue(mdl1, mdl2, id=1, otherids=(2,3),
+                        num=1000)
 
+        Apply a convolution to the models before fitting:
 
-        Returns:
-           Likelihood Ratio Test results 
+        >>> rsp = get_psf()
+        >>> plot_pvalue(mdl1, mdl2, conv_model=rsp)
 
-        DESCRIPTION
-           Access the simulation results of the likelihood ratio test.
-
-        SEE ALSO
-           get_pvalue_results, get_pvalue_plot
         """
         if not sherpa.utils.bool_cast(replot) or self._pvalue_results is None:
             self._run_pvalue(null_model, alt_model, conv_model,
