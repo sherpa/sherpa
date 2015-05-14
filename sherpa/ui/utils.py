@@ -7139,31 +7139,47 @@ class Session(NoNewAttributesAfterInit):
                     'a parameter object or parameter expression string')
         return par
 
+    ### Ahelp ingest: 2015-05-14 DJB
+    ### DOC-NOTE: I have not documented that par can be an actual parameter
+    ###           since in that case get_par(x) === x, so seems somewhat pointless!
     def get_par(self, par):
-        """
-        get_par
+        """Return a parameter of a model component.
 
-        SYNOPSIS
-           Return a model parameter
+        Parameters
+        ----------
+        par : str
+           The name of the parameter, using the format
+           "componentname.parametername".
 
-        SYNTAX
+        Returns
+        -------
+        par : a sherpa.models.parameter.Parameter instance
+           The parameter values - e.g. current value, limits, and
+           whether it is frozen - can be changed using this
+           object.
 
-        Arguments:
-           par       - model parameter
+        See Also
+        --------
+        set_par : Set the value, limits, or behavior of a model parameter.
 
-        Returns:
-           Sherpa model parameter
+        Examples
+        --------
 
-        DESCRIPTION
-           Return a Sherpa model parameter given a parameter string.
+        Return the "c0" parameter of the "bgnd" model component
+        and change it to be frozen:
 
-        SEE ALSO
-           set_par
+        >>> p = get_par('bgnd.c0')
+        >>> p.frozen = True
+
         """
         return self._check_par(par)
 
     def set_par(self, par, val=None, min=None, max=None, frozen=None):
         """Set the value, limits, or behavior of a model parameter.
+
+        See Also
+        --------
+        get_par : Return a parameter of a model component.
 
         set_par
 
