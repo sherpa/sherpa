@@ -3474,40 +3474,73 @@ class Session(NoNewAttributesAfterInit):
         self.set_data(id, dataset)
 
 
+    ### Ahelp ingest: 2015-05-14 DJB
     def fake(self, id=None, method=sherpa.utils.poisson_noise):
-        """
-        fake
+        """Simulate a data set.
 
-        SYNOPSIS
-           Fake source data using supplied noise function by data id
+        Take a data set, evaluate the model for each bin, and then use
+        this value to create a data value from each bin. The default
+        behavior is to use a Poisson distribution, with the model
+        value as the expectation value of the distribution.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        method : func
+           The function used to create a random realisation of
+           a data set.
 
-        Arguments:
-           id      -  data id with corresponding model to evaluate and store
-                      faked data.
-                      default = default data id
+        See Also
+        --------
+        dataspace1d : Create the independent axis for a 1D data set.
+        dataspace2d : Create the independent axis for a 2D data set.
+        get_dep : Return the dependent axis of a data set.
+        load_arrays : Create a data set from array values.
+        set_model : Set the source model expression for a data set.
 
-           method  -  noise function
-                      default = poisson_noise
+        Notes
+        -----
+        The function for the `method` argument accepts a single
+        argument, the data values, and should return an array of the
+        same shape as the input, with the data values to use.
 
-        Returns:
-           None
+        The function can be called on any data set, it does not need
+        to have been created with `dataspace1d` or `dataspace2d`.
 
-        DESCRIPTION
-           Evalutes the source model by data id, adds noise defined by 'method'
-           and stores the resulting array in the data set.  The data set can
-           created from file or populated using dataspace1d or dataspace2d.
+        Specific data set types may have their own, specialized,
+        version of this function.
 
-        EXAMPLES
-           Blank data set with faked data.
+        Examples
+        --------
+        Create a random realisation of the model - a constant plus
+        gaussian line - for the range x=-5 to 5.
 
-              dataspace1d(0.1,10,0.1,dstype=Data1D)
-              set_model(gauss1d.g1)
-              fake()
+        >>> dataspace1d(-5, 5, 0.5, dstype=Data1D)
+        >>> set_source(gauss1d.gline + const1d.bgnd)
+        >>> bgnd.c0 = 2
+        >>> gline.fwhm = 4
+        >>> gline.ampl = 5
+        >>> gline.pos = 1
+        >>> fake()
+        >>> plot_data()
+        >>> plot_model(overplot=True)
 
-        SEE ALSO
-           dataspace1d, dataspace2d, set_model
+        For a 2D data set, display the simulated data, model, and
+        residuals:
+
+        >>> dataspace2d([150,80], id='fakeimg')
+        >>> set_source('fakeimg', beta2d.src + polynom2d.bg)
+        >>> src.xpos, src.ypos = 75, 40
+        >>> src.r0, src.alpha = 15, 2.3
+        >>> src.ellip, src.theta = 0.4, 1.32
+        >>> src.ampl = 100
+        >>> bg.c, bg.cx1, bg.cy1 = 3, 0.4, 0.3
+        >>> fake('fakeimg')
+        >>> image_fit('fakeimg')
+
         """
         data = self.get_data(id)
         model = self.get_model(id)
