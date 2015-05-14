@@ -10460,38 +10460,56 @@ class Session(sherpa.ui.utils.Session):
         else:
             self._plot(id, self._sourceplot, **kwargs)
 
+    ### Ahelp ingest: 2015-05-14 DJB
+    ### DOC-TODO: is orders the same as resp_id?
     def plot_order(self, id=None, orders=None, **kwargs):
-        """
-        plot_order
+        """Plot the model for a data set convolved by the given response.
 
-        SYNOPSIS
-           Plot convolved source model by multiple response order
+        Some data sets - such as grating PHA data - can have multiple
+        responses. The `plot_order` function acts like `plot_model`,
+        in that it displays the model after passing through a
+        response, but allows the user to select which response to use.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        orders : optional
+           Which response to use. The argument can be a scalar or
+           array, in which case multiple curves will be displayed.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_model`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_order_plot : Return the data used by plot_order.
+        plot : Create one or more plot types.
+        plot_model : Plot the model for a data set.
 
-           orders   - list of plot orders
-                      default = None
+        Examples
+        --------
 
-           replot   - replot calculated arrays
-                      default = False
+        Display the source model convolved by the first response
+        for the default data set:
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_order(orders=1)
 
-        Returns:
-           None
+        Plot the source convolved through the first and second
+        responses for the second data set (separate curves for
+        each response):
 
-        DESCRIPTION
-           Visualize the convolved source model in a 1D plot by
-           data id and multiple response order.
+        >>> plot_order(2, orders=[1,2])
 
-        SEE ALSO
-           plot_model, plot_data, get_source_plot, plot_arf, plot_bkg,
-           plot_bkg_source
+        Add the orders plot to a model plot:
+
+        >>> plot_model()
+        >>> plot_order(orders=[2,3], overplot=True)
+
         """
         self._plot(id, self._orderplot, None, None, None, None,orders, **kwargs)
 
