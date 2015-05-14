@@ -8254,9 +8254,76 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     # DOC-NOTE: also in sherpa.utils
+    ### Ahelp ingest: 2015-05-14 DJB
     #@loggable(with_id=True, with_keyword='model')
     def set_full_model(self, id, model=None):
         """Define the convolved model expression for a data set.
+
+        The model expression created by `set_model` can be modified by
+        "instrumental effects", such as PSF, ARF and RMF for PHA data
+        sets, or a pile up model. These can be set automatically - for
+        example, the ARF and RMF can be set up when the source data is
+        loaded - or explicitly with calls to routines like `set_psf`,
+        `set_arf`, `set_rmf`, and `set_pileup_model`. The
+        `set_full_model` function is for when this is not sufficient,
+        and full control is needed. Examples of when this would be
+        needed include: if different PSF models should be applied to
+        different source components; some source components need to
+        include the ARF and RMF but some do not.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : str or sherpa.models.Model object
+           This defines the model used to fit the data. It can be a
+           Python expression or a string version of it.
+
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        set_bkg_full_model : Define the convolved background model expression for a data set.
+        set_pileup_model : Include a model of the Chandra ACIS pile up when fitting PHA data.
+        set_psf : Add a PSF model to a data set.
+        set_model : Set the source model expression for a data set.
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
+
+        Some functions - such as `plot_source` and `calc_energy_flux`
+        - may not work for model expressions created by
+        `set_full_model`.
+
+        Examples
+        --------
+
+        Extract the response - the combined RMF and ARF - for a PHA
+        data set - and apply it to a model (`xsphabs` * `xsapec`) and
+        then include a `powlaw1d` component that only includes the
+        RMF and a gaussian that has no instrumental response:
+
+        >>> rsp = get_response()
+        >>> rmf = get_rmf()
+        >>> smodel = xsphabs.galabs * xsapec.emiss
+        >>> bmodel = powlaw1d.pbgnd
+        >>> set_full_model(rsp(smodel) + rmf(bmodel) + gauss1d.iline)
+
+        Apply different PSFs to different components, as well as an
+        unconvolved component:
+
+        >>> load_psf("psf1", "psf1.fits")
+        >>> load_psf("psf2", "psf2.fits")
+        >>> smodel = psf1(gauss2d.src1) + psf2(beta2d.src2) + const2d.bgnd
+        >>> set_full_model("src", smodel)
+
         """
         sherpa.ui.utils.Session.set_full_model(self, id, model)
 

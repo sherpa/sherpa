@@ -5426,7 +5426,7 @@ class Session(NoNewAttributesAfterInit):
         fit : Fit one or more data sets.
         guess : Set model parameters to values matching the data. 
         paramprompt : Control how parameter values are set.
-        set_par : Set a parameter value.
+        set_par : Set the value, limits, or behavior of a model parameter.
 
         Examples
         --------
@@ -5757,32 +5757,59 @@ class Session(NoNewAttributesAfterInit):
                         break
 
     # DOC-NOTE: also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-14 DJB
+    ### DOC-TODO: what examples/info should be talked about here?
+    ###           (e.g. no PHA/ARF/RMF)
     ##@loggable(with_id=True, with_keyword='model')
     def set_full_model(self, id, model=None):
-        """
-        set_full_model
+        """Define the convolved model expression for a data set.
 
-        SYNOPSIS
-           Set a convolved Sherpa model by model id
+        The model expression created by `set_model` can be modified by
+        "instrumental effects", such as a PSF set by `set_psf`.  The
+        `set_full_model` function is for when this is not sufficient,
+        and full control is needed. An example of when this would be
+        if different PSF models should be applied to different source
+        components.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : str or sherpa.models.Model object
+           This defines the model used to fit the data. It can be a
+           Python expression or a string version of it.
 
-        Arguments:
-           id         - model id
-                        default = default model id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        set_psf : Add a PSF model to a data set.
+        set_model : Set the source model expression for a data set.
 
-           model      - Sherpa model
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-        Returns:
-           None
+        Some functions - such as `plot_source` - may not work for
+        model expressions created by `set_full_model`.
 
-        DESCRIPTION
-           Add a Sherpa model to the list of current active Sherpa model
-           by model id.
+        Examples
+        --------
 
-        SEE ALSO
-           list_model_ids, get_model, delete_model, get_model_type,
-           get_model_pars        
+        Apply different PSFs to different components, as well as an
+        unconvolved component:
+
+        >>> load_psf("psf1", "psf1.fits")
+        >>> load_psf("psf2", "psf2.fits")
+        >>> smodel = psf1(gauss2d.src1) + psf2(beta2d.src2) + const2d.bgnd
+        >>> set_full_model("src", smodel)
+
         """
         if model is None:
             id, model = model, id
@@ -5827,6 +5854,7 @@ class Session(NoNewAttributesAfterInit):
         sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
         show_model : Display the source model expression for a data set.
+        set_par : Set the value, limits, or behavior of a model parameter.
         thaw : Allow model parameters to be varied during a fit.
 
         Notes
@@ -7366,7 +7394,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         freeze : Fix model parameters so they are not changed by a fit.
-        set_par : Set a parameter value.
+        set_par : Set the value, limits, or behavior of a model parameter.
         thaw : Allow model parameters to be varied during a fit.
         unlink : Unlink a parameter value.
 
@@ -7437,7 +7465,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         freeze : Fix model parameters so they are not changed by a fit.
         link : Link a parameter to a value.
-        set_par : Set a parameter value.
+        set_par : Set the value, limits, or behavior of a model parameter.
         thaw : Allow model parameters to be varied during a fit.
 
         Examples
@@ -7828,7 +7856,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         get_default_id : Return the default data set identifier.
         reset : Reset the model parameters to their default settings.
-        set_par : Set a parameter value.
+        set_par : Set the value, limits, or behavior of a model parameter.
 
         Notes
         -----
