@@ -9028,42 +9028,81 @@ class Session(sherpa.ui.utils.Session):
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
+    ### also in sherpa.utils
+    ### Ahelp ingest: 2015-05-14 DJB
+    ### DOC-TODO: how to describe *args/**kwargs
+    ### DOC-TODO: how is the _y value used if set
     def load_user_model(self, func, modelname, filename=None, *args, **kwargs):
-        """
-        load_user_model
-        
-        SYNOPSIS
-           Load a table model from file into a Sherpa session
-           
-        SYNTAX
-        
-        Arguments:
-           func       - reference to a user model function
-           
-           modelname  - model label
-        
-           filename   - file from which table model data are read
-                        default = None
-        
-           args       - optional arguments to pass to data reader
+        """Create a user-defined model.
 
-           kwargs     - optional keyword arguments to pass to data reader
+        Assign a name to a function; this name can then be used as any
+        other name of a model component, either in a source expression
+        - such as with `set_model` - or to change a parameter
+        value. The `add_user_pars` function should be called after
+        `load_user_model` to set up the parameter names and
+        defaults.
 
-        Returns:
-           None
-           
-        DESCRIPTION
-           Take a function written by the user, and assign to a new
-           user model class.  Instances of the new class can be created,
-           and used as models during fits--just as ordinary Sherpa
-           models can.  Optionally, data from a file can be attached to
-           the model, and used in an arbitrary way by the user model
-           function; but data from file is not required, the user model
-           can be just a function.  After a user model is created,
-           parameters need to be added with the add_user_pars function.
-           
-        SEE ALSO
-           set_model, load_table_model, add_user_pars
+        Parameters
+        ----------
+        func : func
+           The function that evaluates the model.
+        modelname : str
+           The name to use to refer to the model component.
+        filename : str, optional
+           Set this to include data from this file in the model. The
+           file should contain two columns, and the second column is
+           stored in the `_y` attribute of the model.
+        *args, **kwargs :
+           Options for reading in the data from `filename`, if set.
+           See `load_table` and `load_image` for more information.
+
+        See Also
+        --------
+        add_model : 
+        add_user_pars :
+        load_image : Load an image as a data set.
+        load_table : Load a FITS binary file as a data set.
+        load_table_model : Load tabular data and use it as a model component.
+        load_template_model : Load a set of templates and use it as a model component.
+        set_model : Set the source model expression for a data set.
+
+        Notes
+        -----
+        The function used for the model depends on the dimensions of
+        the data. For a 1D model, the signature is::
+
+           def func1d(pars, x, xhi=None):
+
+        where, if xhi is not None, then the dataset is binned and the
+        x argument is the low edge of each bin. The pars argument is
+        the parameter array - the names, defaults, and limits can be
+        set with `add_user_pars` - and should not be changed.  The
+        return value is an array the same size as x.
+
+        For 2D models, the signature is::
+
+           def func2d(pars, x0, x1, x0hi=None, x1hi=None):
+
+        The `add_model` routine can also be used to add a model
+        to Sherpa.
+
+        Example
+        -------
+
+        Create a two-parameter model of the form "y = mx + c",
+        where the intercept is the first parameter and the slope the
+        second, set the parameter names and default values, then
+        use it in a source expression:
+
+        >>> def func1d(pars, x, xhi=None):
+                if xhi != None:
+                    x = (x + xhi)/2
+                return x * pars[1] + pars[0]
+
+        >>> load_user_model(func1d, "myfunc")
+        >>> add_user_pars(myfunc, ["c","m"], [0,1])
+        >>> set_source(myfunc + gauss1d.gline)
+
         """
         usermodel = sherpa.models.UserModel(modelname)
         usermodel.calc = func

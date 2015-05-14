@@ -6419,56 +6419,93 @@ class Session(NoNewAttributesAfterInit):
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
+    # also in sherpa.astro.utils
+    ### Ahelp ingest: 2015-05-14 DJB
+    ### DOC-TODO: how is the _y value used if set
     ##@loggable()
     def load_user_model(self, func, modelname, filename=None, ncols=2,
                         colkeys=None, dstype=sherpa.data.Data1D,
                         sep=' ', comment='#'):
-        """
-        load_user_model
+        """Create a user-defined model.
 
-        SYNOPSIS
-           Load a user model from file into a Sherpa session
+        Assign a name to a function; this name can then be used as any
+        other name of a model component, either in a source expression
+        - such as with `set_model` - or to change a parameter
+        value. The `add_user_pars` function should be called after
+        `load_user_model` to set up the parameter names and
+        defaults.
 
-        SYNTAX
+        Parameters
+        ----------
+        func : func
+           The function that evaluates the model.
+        modelname : str
+           The name to use to refer to the model component.
+        filename : str, optional
+           Set this to include data from this file in the model. The
+           file should contain two columns, and the second column is
+           stored in the `_y` attribute of the model.
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1D` (the default), `Data1DInt`, `Data2D`, and
+           `Data2DInt`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        Arguments:
-           func       - reference to a user model function
-           
-           modelname  - model label
+        See Also
+        --------
+        add_model : 
+        add_user_pars :
+        load_table : Load a FITS binary file as a data set.
+        load_table_model : Load tabular data and use it as a model component.
+        load_template_model : Load a set of templates and use it as a model component.
+        set_model : Set the source model expression for a data set.
 
-           filename   - file from which optional data are read
-                        default = None
+        Notes
+        -----
+        The function used for the model depends on the dimensions of
+        the data. For a 1D model, the signature is::
 
-           ncols      - number of columns to read from
-                        default = 2
+           def func1d(pars, x, xhi=None):
 
-           colkeys    - column keys
-                        default = None
+        where, if xhi is not None, then the dataset is binned and the
+        x argument is the low edge of each bin. The pars argument is
+        the parameter array - the names, defaults, and limits can be
+        set with `add_user_pars` - and should not be changed.  The
+        return value is an array the same size as x.
 
-           dstype     - Sherpa data class to contain table model data
-                        default = sherpa.data.Data1D
-        
-           sep        - separator character
-                        default = ' '
-        
-           comment    - comment character
-                        default = '#'
+        For 2D models, the signature is::
 
-        Returns:
-           None
+           def func2d(pars, x0, x1, x0hi=None, x1hi=None):
 
-        DESCRIPTION
-           Take a function written by the user, and assign to a new
-           user model class.  Instances of the new class can be created,
-           and used as models during fits--just as ordinary Sherpa
-           models can.  Optionally, data from a file can be attached to
-           the model, and used in an arbitrary way by the user model
-           function; but data from file is not required, the user model
-           can be just a function.  After a user model is created,
-           parameters need to be added with the add_user_pars function.
-        
-        SEE ALSO
-           set_model, load_table_model, add_user_pars
+        The `add_model` routine can also be used to add a model
+        to Sherpa.
+
+        Example
+        -------
+
+        Create a two-parameter model of the form "y = mx + c",
+        where the intercept is the first parameter and the slope the
+        second, set the parameter names and default values, then
+        use it in a source expression:
+
+        >>> def func1d(pars, x, xhi=None):
+                if xhi != None:
+                    x = (x + xhi)/2
+                return x * pars[1] + pars[0]
+
+        >>> load_user_model(func1d, "myfunc")
+        >>> add_user_pars(myfunc, ["c","m"], [0,1])
+        >>> set_source(myfunc + gauss1d.gline)
+
         """
         usermodel = sherpa.models.UserModel(modelname)
         usermodel.calc = func
