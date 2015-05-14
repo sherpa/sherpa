@@ -3350,7 +3350,7 @@ class Session(sherpa.ui.utils.Session):
         get_backscal : Return the area scaling factor for a PHA data set.
         set_backscal : Change the area scaling of a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
-        set_bkg_full_model : Define the convolved background model expression for a data set.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
 
         Notes
         -----
@@ -8284,7 +8284,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         fit : Fit one or more data sets.
-        set_bkg_full_model : Define the convolved background model expression for a data set.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
         set_pileup_model : Include a model of the Chandra ACIS pile up when fitting PHA data.
         set_psf : Add a PSF model to a data set.
         set_model : Set the source model expression for a data set.
@@ -8429,7 +8429,7 @@ class Session(sherpa.ui.utils.Session):
         get_arf : Return the ARF associated with a PHA data set.
         get_pileup_model : Return the pile up model for a data set.
         get_rmf : Return the RMF associated with a PHA data set.
-        set_bkg_full_model : Define the convolved background model expression for a data set.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
 
         Examples
@@ -8668,7 +8668,7 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_source : Return the model expression for the background of a PHA data set.
         list_model_ids : List of all the data sets with a source expression.
         set_bkg_model : Set the background model expression for a PHA data set.
-        set_bkg_full_model : Define the convolved background model expression for a data set.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
         show_bkg_model : Display the background model expression for a data set.
 
         Examples
@@ -8700,37 +8700,69 @@ class Session(sherpa.ui.utils.Session):
                 model = resp(src)
         return model
 
+    ### Ahelp ingest: 2015-05-14 DJB
     #@loggable(with_id=True, with_keyword='model')
     def set_bkg_full_model(self, id, model=None, bkg_id=None):
-        """Define the convolved background model expression for a data set.
+        """Define the convolved background model expression for a PHA data set.
 
-        set_bkg_full_model
+        Set a model expression for a background data set in the same
+        way that `set_full_model` does for a source.  This is for when
+        the background is being fitted simultaneously to the source,
+        rather than subtracted from it.
 
-        SYNOPSIS
-           Set a convolved Sherpa background model by data id
-           and bkg id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : str or sherpa.models.Model object
+           This defines the model used to fit the data. It can be a
+           Python expression or a string version of it.
+        bkg_id : int or str, optional
+           The identifier for the background of the data set, in
+           cases where multiple backgrounds are provided.
 
-        SYNTAX
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        set_full_model : Define the convolved model expression for a data set.
+        set_pileup_model : Include a model of the Chandra ACIS pile up when fitting PHA data.
+        set_psf : Add a PSF model to a data set.
+        set_model : Set the source model expression for a data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-           model     - Sherpa bkg model
+        Some functions - such as `plot_bkg_source` - may not work for
+        model expressions created by `set_bkg_full_model`.
 
-           bkg_id    - bkg id, if multiple bkgs exist
-                       default = default bkg id
+        Examples
+        --------
 
-        Returns:
-           None
+        The background is fit by two power laws - one that is passed
+        through the instrument response (gbgnd) and one that is not
+        (pbgnd). The source is modelled by `xsphabs * galabs`,
+        together with the background model, scaled by the ratio of
+        area and time. Note that the background component in the
+        source expression uses the source response rather than
+        background response.
 
-        DESCRIPTION
-           Add a Sherpa background convolved model to the list of
-           current background models by data id and background id.
+        >>> rsp = get_response()
+        >>> bresp = get_response(bkg_id=1)
+        >>> bscale = get_bkg_scale()
+        >>> smodel = xsphabs.galabs * xsapec.emiss
+        >>> bmdl = brsp(powlaw1d.gbdng) + powlaw1d.pbgnd
+        >>> smdl = rsp(smodel) + bscale*(rsp(gbgnd) + pbgnd)
+        >>> set_full_model(smdl)
+        >>> set_bkg_full_model(bmdl)
 
-        SEE ALSO
-           get_bkg_model, delete_bkg_model, set_bkg_model, 
-           set_bkg_source
         """
         if model is None:
             id, model = model, id
@@ -8804,7 +8836,7 @@ class Session(sherpa.ui.utils.Session):
         fit : Fit one or more data sets.
         integrate1d : Integrate 1D source expressions.
         set_model : Set the model expression for a data set.
-        set_bkg_full_model : Define the convolved background model expression for a data set.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
         show_bkg_model : Display the background model expression for a data set.
 
         Notes
