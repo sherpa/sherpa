@@ -8212,55 +8212,59 @@ class Session(NoNewAttributesAfterInit):
             sherpa.plot.end()
 
 
+    ### Ahelp ingest: 2015-05-14 DJB
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                      id=1, otherids=(), num=500, bins=25, numcores=None,
                      recalc=False):
-        """
-        get_pvalue_plot
+        """Return the data used by plot_pvalue.
 
-        SYNOPSIS
-           Acess the histogram plot of the likelihood ratios comparing fits 
-           of the null model to fits of the alternative model to faked data
-           using poisson noise.  Access the likelihood ratio on the real data
-           and the p-value.
+        Parameters
+        ----------
+        null_model :
+           The model expression for the null hypothesis.
+        alt_model :
+           The model expression for the alternative hypothesis.
+        conv_model : optional
+           An expression used to modify the model so that it can be
+           compared to the data (e.g. a PSF or PHA response).
+        id : int or str, optional
+           The data set that provides the data. The default is `1`.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
+        num : int, optional
+           The number of simulations to run. The default is `500`.
+        bins : int, optional
+           The number of bins to use to create the histogram. The
+           default is `25`.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        recalc : bool, optional
+           The default value (`False`) means that the results from the
+           last call to `plot_pvalue` or `get_pvalue_plot` are
+           returned. If `True`, the values are re-calculated.
 
-        SYNTAX
+        Returns
+        -------
+        plot : a sherpa.plot.LRHistogram instance
 
-        Arguments:
+        See Also
+        --------
+        get_pvalue_results :
+        plot_pvalue : Compute and plot a histogram of likelihood ratios by simulating data.
 
-           null_model  - model representing the null hypothesis
+        Examples
+        --------
 
-           alt_model   - alternative model to compare to null
+        Return the values from the last call to `plot_pvalue`:
 
-           conv_model  - convolution model to include for fitting.
-                         default = None
+        >>> pvals = get_pvalue_plot()
+        >>> pvals.ppp
+        0.472
 
-           id          - Sherpa data id
-                         default = default data id
+        Run 500 simulations for the two models:
 
-           otherids    - List of other Sherpa data ids
-                         default = ()
-
-           num         - Number of iterations to run
-                         default = 500
-
-           bins        - Number of bins for the histogram
-                         default = 25
-
-           numcores    - Number of cpus to use during simulation
-                         default = number of detected cpus
-
-           recalc      - Recalculate the likelihood ratio test simulation
-                         default = False
-
-        Returns:
-           LRHistogram object
-
-        DESCRIPTION
-           Access the histogram plot of the likelihood ratio test.
-
-        SEE ALSO
-           plot_pvalue, get_pvalue_results
+        >>> pvals = get_pvalue_plot(mdl1, mdl2, recalc=True, num=500)
 
         """
         lrplot = self._lrplot
@@ -8286,7 +8290,7 @@ class Session(NoNewAttributesAfterInit):
     ## Sampling functions
     #
     ### DOC-TODO: This copies from sherpa/sim/sample.py, so can
-    ###           functools/... be used to share docstrings?
+    ###           docstrings be shared (whether directly or via functools)?
     ###           Unfortunately not quite a direct copy, so hard
     ###           to see how to do
 
