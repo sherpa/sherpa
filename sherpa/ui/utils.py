@@ -10129,63 +10129,16 @@ class Session(NoNewAttributesAfterInit):
     # Plot object access
     #
 
+    ### Ahelp ingest: 2015-05-14 DJB
+    ### DOC-TODO: how is this used? simple testing didn't seem to make any
+    ###           difference with chips
     def get_split_plot(self):
-        """
-        get_split_plot
+        """Return the plot attributes for displays with multiple plots.
 
-        SYNOPSIS
-           Return a Sherpa split plot
+        Returns
+        -------
+        splot : a sherpa.plot.SplitPlot instance
 
-        SYNTAX
-
-        Arguments:
-           None
-
-        Returns:
-           Sherpa SplitPlot plot
-
-        DESCRIPTION
-           The Sherpa split plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              rows         - number of rows of plots
-                             default = 2
-
-              cols         - number of columns of plots
-                             default = 1
-
-              plot_prefs   - dictionary of plotting preferences
-                  None
-
-           Functions:
-
-              addplot(self, plot, *args, **kwargs)
-                 add a plot to the series in the split plot panel
-
-              addcontour(self, plot, *args, **kwargs)
-                 add a contour plot to the series in the split plot panel
-
-              plot(self, row, col, plot, *args, **kwargs)
-                 send the split plot panel to the visualizer
-
-              contour(self, row, col, plot, *args, **kwargs)
-                 send the split plot panel to the visualizer
-
-              overlayplot(self, plot, *args, **kwargs)
-                 plot over current plot
-
-              overlaycontour(self, plot, *args, **kwargs)
-                 plot contour over current contour plot
-
-              overplot(self, row, col, plot, *args, **kwargs)
-                 plot over current plot at specific coordinates
-
-              overcontour(self, row, col, plot, *args, **kwargs)
-                plot contour over current contour plot at specific coordinates
-
-        SEE ALSO
-           plot, plot_fit_resid, plot_fit_delchi
         """
         return self._splitplot
 

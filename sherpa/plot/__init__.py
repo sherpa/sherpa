@@ -398,7 +398,19 @@ class LRHistogram(HistogramPlot):
 
 
 class SplitPlot(Plot,Contour):
-    "Derived class for creating multiple plots"
+    """Create multiple plots.
+
+    Attributes
+    ----------
+    rows : int
+       Number of rows of plots. The default is 2.
+    cols : int
+       Number of columns of plots. The default is 1.
+    plot_prefs : dict
+       The preferences for the plots. This depends on the plot
+       backend.
+
+    """
     plot_prefs = backend.get_split_plot_defaults()
 
     def __init__(self, rows=2, cols=1):
@@ -415,6 +427,7 @@ class SplitPlot(Plot,Contour):
                   self.plot_prefs))
 
     def reset(self, rows=2, cols=1):
+        "Prepare for a new set of plots or contours."
         self.rows = rows
         self.cols = cols
         self._reset_used()
@@ -439,14 +452,17 @@ class SplitPlot(Plot,Contour):
         return row, col
 
     def addplot(self, plot, *args, **kwargs):
+        "Add the plot to the next space."
         row, col = self._next_subplot()
         self.plot(row, col, plot, *args, **kwargs)
 
     def addcontour(self, plot, *args, **kwargs):
+        "Add the contour plot to the next space."
         row, col = self._next_subplot()
         self.contour(row, col, plot, *args, **kwargs)
     
     def plot(self, row, col, plot, *args, **kwargs):
+        "Add the plot in the given space."
         self._clear_window()
         clearaxes = ((not kwargs.get('overplot', False)) and
                      kwargs.get('clearwindow', True))
@@ -461,6 +477,7 @@ class SplitPlot(Plot,Contour):
         self._current = (row, col)
 
     def contour(self, row, col, plot, *args, **kwargs):
+        "Add the contour in the given space."
         self._clear_window()
         clearaxes = ((not kwargs.get('overcontour', False)) and
                      kwargs.get('clearwindow', True))
@@ -475,19 +492,23 @@ class SplitPlot(Plot,Contour):
         self._current = (row, col)
     
     def overlayplot(self, plot, *args, **kwargs):
+        "Add the plot to the current space without destroying the contents."
         self.overplot(self._current[0], self._current[1], plot, *args,
                       **kwargs)
 
     def overlaycontour(self, plot, *args, **kwargs):
+        "Add the contour to the current space without destroying the contents."
         self.overcontour(self._current[0], self._current[1], plot, *args,
                       **kwargs)
         
     # FIXME: work on overplot issue
     def overplot(self, row, col, plot, *args, **kwargs):
+        "Add a plot to the given space without destroying the contents."
         kwargs['overplot'] = True
         self.plot(row, col, plot, *args, **kwargs)
 
     def overcontour(self, row, col, plot, *args, **kwargs):
+        "Add a contour plot to the given space without destroying the contents."
         kwargs['overcontour'] = True
         self.contour(row, col, plot, *args, **kwargs)
 
