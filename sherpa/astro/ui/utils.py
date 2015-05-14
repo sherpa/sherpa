@@ -9574,29 +9574,31 @@ class Session(sherpa.ui.utils.Session):
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
 
 
+    ### Ahelp ingest: 2015-05-14 DJB
     def get_order_plot(self, id=None, orders=None):
-        """
-        get_order_plot
+        """Return the data used by plot_order.
 
-        SYNOPSIS
-           Return a Sherpa order plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        orders : optional
+           Which response to use. The argument can be a scalar or
+           array, in which case multiple curves will be displayed.
+           The default is to use all orders.
 
-        SYNTAX
+        Returns
+        -------
+        data : a sherpa.astro.plot.OrderPlot instance
+           An object representing the data used to create the plot by
+           `plot_order`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        plot_order : Plot the model for a data set convolved by the given response.
 
-           orders   - array of orders
-                      default = all orders
-
-        Returns:
-           Sherpa OrderPlot plot
-
-        DESCRIPTION
-
-        SEE ALSO
-           plot_order, plot_bkg, plot_arf, get_bkg_plot, get_arf_plot
         """
         self._prepare_plotobj(id, self._orderplot, orders=orders)
         return self._orderplot
@@ -10478,6 +10480,7 @@ class Session(sherpa.ui.utils.Session):
         orders : optional
            Which response to use. The argument can be a scalar or
            array, in which case multiple curves will be displayed.
+           The default is to use all orders.
         replot : bool, optional
            Set to `True` to use the values calculated by the last
            call to `plot_model`. The default is `False`.
