@@ -7158,6 +7158,13 @@ class Session(NoNewAttributesAfterInit):
            whether it is frozen - can be changed using this
            object.
 
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `par` argument is invalid: the model component does
+           not exist or the given model has no parameter with that
+           name.
+
         See Also
         --------
         set_par : Set the value, limits, or behavior of a model parameter.
@@ -7174,45 +7181,67 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._check_par(par)
 
+    ### Ahelp ingest: 2015-05-14 DJB
+    ### DOC-NOTE: I have not documented that par can be an actual parameter
+    ###           since you can just change the values directly then (although
+    ###           may have to car about order of operations)
     def set_par(self, par, val=None, min=None, max=None, frozen=None):
         """Set the value, limits, or behavior of a model parameter.
 
+        Parameters
+        ----------
+        par : str
+           The name of the parameter, using the format
+           "componentname.parametername".
+        val : number, optional
+           Change the current value of the parameter.
+        min : number, optional
+           Change the minimum value of the parameter (the soft limit).
+        max : number, optional
+           Change the maximum value of the parameter (the soft limit).
+        frozen : bool, optional
+           Freeze (`True`) or thaw (`Thaw`) the parameter.
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `par` argument is invalid: the model component does
+           not exist or the given model has no parameter with that
+           name.
+
         See Also
         --------
+        freeze : Fix model parameters so they are not changed by a fit.
         get_par : Return a parameter of a model component.
+        link : Link a parameter value to an associated value.
+        thaw : Allow model parameters to be varied during a fit.
+        unlink : Unlink a parameter value.
 
-        set_par
+        Notes
+        -----
+        The parameter object can be used to change these values
+        directly, by setting the attribute with the same
+        name as the argument - so that::
 
-        SYNOPSIS
-           Set initial values for a model parameter
+           set_par('emis.flag', val=2, frozen=True)
 
-        SYNTAX
+        is the same as::
 
-        Arguments:
-           par       - model parameter
+           emis.flag.val = 2
+           emis.flag.frozen = True
 
-           val       - initial parameter value
-                       default = None
+        Examples
+        --------
 
-           min       - minimum limit
-                       default = None
+        Change the parameter value to 23.
 
-           max       - maximum limit
-                       default = None
+        >>> set_par('bgnd.c0', 23)
 
-           frozen    - is the parameter frozen?
-                       default = None
+        Restrict the line.ampl parameter to be between 1e-4
+        and 10 and to have a value of 0.1.
 
-        Returns:
-           None
+        >>> set_par('line.ampl', 0.1, min=1e-4, max=10)
 
-        DESCRIPTION
-           Set initial values for parameter fields which include initial
-           value, minimum limit, maximum limit, and whether it should be
-           frozen during a fit.
-
-        SEE ALSO
-           get_par
         """
         self._check_par(par).set(val, min, max, frozen)
 
@@ -7244,6 +7273,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         fit : Fit one or more data sets.
         link : Link a parameter value to an associated value.
+        set_par : Set the value, limits, or behavior of a model parameter.
         thaw : Allow model parameters to be varied during a fit.
         unlink : Unlink a parameter value.
 
@@ -7288,6 +7318,7 @@ class Session(NoNewAttributesAfterInit):
         fit : Fit one or more data sets.
         freeze : Fix model parameters so they are not changed by a fit.
         link : Link a parameter value to an associated value.
+        set_par : Set the value, limits, or behavior of a model parameter.
         unlink : Unlink a parameter value.
 
         Examples
