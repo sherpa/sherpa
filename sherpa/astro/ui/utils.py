@@ -9058,7 +9058,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        add_model : 
+        add_model : Create a user-defined model class.
         add_user_pars : Add parameter information to a user model.
         load_image : Load an image as a data set.
         load_table : Load a FITS binary file as a data set.
@@ -9068,6 +9068,14 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
+        The `load_user_model` function is designed to make it easy to
+        add a model, but the interface is not the same as the existing
+        models (such as having to call both `load_user_model` and
+        `add_user_pars` for each new instance).  The `add_model`
+        function is used to add a model as a Python class, which is
+        more work to set up, but then acts the same way as the
+        existing models.
+
         The function used for the model depends on the dimensions of
         the data. For a 1D model, the signature is::
 
@@ -9083,8 +9091,8 @@ class Session(sherpa.ui.utils.Session):
 
            def func2d(pars, x0, x1, x0hi=None, x1hi=None):
 
-        The `add_model` routine can also be used to add a model
-        to Sherpa.
+        There is no way using this interface to indicate that the
+        model is for 1D or 2D data.
 
         Example
         -------

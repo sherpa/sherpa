@@ -4998,26 +4998,56 @@ class Session(NoNewAttributesAfterInit):
             self._model_types[name] = ModelWrapper(self, cls)
             self._model_globals.update(self._model_types)
 
-
+    ### Ahelp ingest: 2015-05-14 DJB
     def add_model(self, modelclass, args=(), kwargs={}):
-        """
-        add_model
+        """Create a user-defined model class.
 
-        SYNOPSIS
-           Add a user-defined model class as a Sherpa model
+        Create a model from a class. The name of the class can then be
+        used to create model components - e.g.  with
+        `create_model_component` or `set_model` - as with any existing
+        Sherpa model.
 
-        SYNTAX
+        Parameters
+        ----------
+        modelclass :
+           A class derived from `sherpa.models.ArithmeticModel`. This
+           class defines the functional form and the parameters of the
+           model.
+        args, kwargs : optional
+           Arguments for the class constructor.
 
-        Arguments:
-           modelclass     - User-defined model class
+        See Also
+        --------
+        create_model_component : Create a model component.
+        list_models : List the available model types.
+        load_table : Load a FITS binary file as a data set.
+        load_table_model : Load tabular data and use it as a model component.
+        load_user_model : Create a user-defined model.
+        set_model : Set the source model expression for a data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        The `load_user_model` function is designed to make it easy to
+        add a model, but the interface is not the same as the existing
+        models (such as having to call both `load_user_model` and
+        `add_user_pars` for each new instance).  The `add_model`
+        function is used to add a model as a Python class, which is
+        more work to set up, but then acts the same way as the
+        existing models.
 
-        DESCRIPTION
+        Examples
+        --------
 
-        SEE ALSO
-           list_models
+        The following example creates a model type called "mygauss1d"
+        which will behave excatly the same as the existing "gauss1d"
+        model.  Normally the class used with `add_model` would add new
+        functionality.
+
+        >>> from sherpa.models import Gauss1D
+        >>> class MyGauss1D(Gauss1D): pass
+        >>> add_model(MyGauss1D)
+        >>> set_source(mygauss1d.g1 + mygauss1d.g2)
+
         """
         name = modelclass.__name__.lower()
 
@@ -6462,7 +6492,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        add_model : 
+        add_model : Create a user-defined model class.
         add_user_pars : Add parameter information to a user model.
         load_table : Load a FITS binary file as a data set.
         load_table_model : Load tabular data and use it as a model component.
@@ -6471,6 +6501,14 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
+        The `load_user_model` function is designed to make it easy to
+        add a model, but the interface is not the same as the existing
+        models (such as having to call both `load_user_model` and
+        `add_user_pars` for each new instance).  The `add_model`
+        function is used to add a model as a Python class, which is
+        more work to set up, but then acts the same way as the
+        existing models.
+
         The function used for the model depends on the dimensions of
         the data. For a 1D model, the signature is::
 
@@ -6486,8 +6524,8 @@ class Session(NoNewAttributesAfterInit):
 
            def func2d(pars, x0, x1, x0hi=None, x1hi=None):
 
-        The `add_model` routine can also be used to add a model
-        to Sherpa.
+        There is no way using this interface to indicate that the
+        model is for 1D or 2D data.
 
         Example
         -------
@@ -6548,7 +6586,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        add_model : 
+        add_model : Create a user-defined model class.
         load_user_model : Create a user-defined model.
         set_par : Set the value, limits, or behavior of a model parameter.
 
