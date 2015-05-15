@@ -11450,9 +11450,11 @@ class Session(sherpa.ui.utils.Session):
         vals :
            The return array has the shape (num, N+1), where N is the
            number of free parameters and num is the `num` parameter.
-           The rows of this array contain the flux value, followed by
-           the values of the thawed parameters used for that
-           iteration.
+           The rows of this array contain the flux value, as
+           calculated by `calc_photon_flux`, followed by the values of
+           the thawed parameters used for that iteration. The order of
+           the parameters matches the data returned by
+           `get_fit_results`.
 
         See Also
         --------
@@ -11502,55 +11504,92 @@ class Session(sherpa.ui.utils.Session):
                                              scales)
 
 
+    ### Ahelp ingest: 2015-05-15 DJB
+    ### DOC-TODO: should this accept the confidence parameter?
     def sample_energy_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
                            correlated=False, numcores=None, bkg_id=None):
-        """
-        sample_energy_flux
+        """Return the flux distribution of a model.
 
-        SYNOPSIS
-           Get a sample the of energy flux
+        For each iteration, draw the parameter values of the model
+        from a normal distribution, evaluate the model, and sum the
+        model over the given range (the flux). The return array
+        contains the flux and parameter values for each iteration.
+        The units for the flux are as returned by `calc_energy_flux`.
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number, optional
+           The lower limit to use when summing up the signal. If not
+           given then the lower value of the data grid is used.
+        hi : optional
+           The upper limit to use when summing up the signal. If not
+           guven then the upper value of the data grid is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        num : int, optional
+           The number of samples to create. The default is `1`.
+        scales : array, optional
+           The scales used to define the normal distributions for the
+           parameters. The form depends on the `correlated`
+           parameter: when `True`, the array should be a symmetric
+           positive semi-definite (N,N) array, otherwise a 1D array
+           of length N, where N is the number of free parameters.
+        correlated : bool, optional
+           If `True` (the default is `False`) then `scales` is the
+           full covariance matrix, otherwise it is just a 1D array
+           containing the variances of the parameters (the diagonal
+           elements of the covariance matrix).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
 
-        Arguments:
-           lo          - lower energy bound
-                         default = None
+        Returns
+        -------
+        vals :
+           The return array has the shape (num, N+1), where N is the
+           number of free parameters and num is the `num` parameter.
+           The rows of this array contain the flux value, as
+           calculated by `calc_energy_flux`, followed by the values of
+           the thawed parameters used for that iteration. The order of
+           the parameters matches the data returned by
+           `get_fit_results`.
 
-           hi          - upper energy bound
-                         default = None
+        See Also
+        --------
+        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        covar : Estimate the confidence intervals using the confidence method.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_pdf : Plot the probability density function of an array.
+        plot_energy_flux :
+        plot_photon_flux :
+        plot_trace : Create a trace plot of row number versus value.
+        sample_photon_flux : Return the flux distribution of a model.
+        sample_flux : Return the flux distribution of a model.
 
-           id          - Sherpa data id
-                         default = default data id
+        Examples
+        --------
 
-           num         - Number of simulations
-                         default = 1
+        Calculate the energy flux distribution for the range 0.5 to 7,
+        and plot up the resulting flux distribution (as a cumulative
+        distribution):
 
-           correlated  - Use a multi-variate distribution to sample parameter values.
-                         default = False
+        >>> vals = sample_energy_flux(0.5, 7, num=1000)
+        >>> plot_cdf(vals[:,0], name='flux')
 
-           scales      - User supplied scales for the sampling distributions.
-                         If correlated is True then scales must be a symmetric
-                         and postive semi-definite 2-D array_like of shape 
-                         (N,N) where N is the number of free parameters,
-                         otherwise scales can be a 1-D array_like, of length N.
-                         default = None
+        Repeat the above, but allowing the parameters to be
+        correlated, and then calculate the 5, 50, and 95 percent
+        quantiles of the energy flux distribution:
 
-           numcores    - specify the number of cores for parallel processing.
-                         All available cores are used by default.
-                         default = None
+        >>> cvals = sample_energy_flux(.5, 7, num=1000, correlated=True)
+        >>> np.percentile(cvals[:,0], [5,50,95])
 
-           bkg_id      - Sherpa background id
-                         default = default bkg id
-
-        Returns:
-           array of flux value and parameter values
-
-        DESCRIPTION
-           Get a sample of the energy flux at a particular spot in parameter space.
-
-        SEE ALSO
-           get_energy_flux_plot, get_photon_flux_plot, plot_photon_flux,
-           plot_energy_flux, sample_photon_flux
         """
         ids, fit = self._get_fit(id)
         data = self.get_data(id)
