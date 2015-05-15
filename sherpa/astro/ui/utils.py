@@ -10227,99 +10227,73 @@ class Session(sherpa.ui.utils.Session):
         return self._energyfluxplot
 
 
+    ### Ahelp ingest: 2015-05-15 DJB
+    ### DOC-TODO: See comments about plot_photon_flux.
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None, **kwargs):
-        """
-        get_photon_flux_hist
+        """Return the data displayed by plot_photon_flux.
 
-        SYNOPSIS
-           Return a Sherpa photon flux histogram
+        Parameters
+        ----------
+        lo : number, optional
+           The lower limit to use when summing up the signal. If not
+           given then the lower value of the data grid is used.
+        hi : optional
+           The upper limit to use when summing up the signal. If not
+           guven then the upper value of the data grid is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        num : int, optional
+           The number of samples to create. The default is `7500`.
+        bins : int, optional
+           The number of bins to use for the histogram.
+        correlated : bool, optional
+           If `True` (the default is `False`) then `scales` is the
+           full covariance matrix, otherwise it is just a 1D array
+           containing the variances of the parameters (the diagonal
+           elements of the covariance matrix).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
+        scales : array, optional
+           The scales used to define the normal distributions for the
+           parameters. The form depends on the `correlated`
+           parameter: when `True`, the array should be a symmetric
+           positive semi-definite (N,N) array, otherwise a 1D array
+           of length N, where N is the number of free parameters.
+        recalc : bool, optional
+           If `True`, the default, then re-calculate the values rather
+           than use the values from the last time the function was
+           run.
 
-        SYNTAX
+        Returns
+        -------
+        hist : a sherpa.astro.plot.PhotonFluxHistogram instance
+           An object representing the data used to create the plot by
+           `plot_photon_flux`.
 
-        Arguments:
-           lo          - lower energy bound
-                         default = None
+        See Also
+        --------
+        get_energy_flux_hist : Return the data displayed by plot_energy_flux.
+        plot_energy_flux : Display the energy flux distribution.
+        sample_energy_flux : Return the energy flux distribution of a model.
+        sample_flux : Return the flux distribution of a model.
+        sample_photon_flux : Return the photon flux distribution of a model.
 
-           hi          - upper energy bound
-                         default = None
+        Examples
+        --------
 
-           id          - data id
-                         default = default data id
+        >>> phist = get_photon_flux_hist(0.5, 7, num=1000)
 
-           num         - Number of simulations
-                         default = 7500
+        >>> phist1 = get_photon_flux_hist(0.5, 2, id="jet", num=1000)
+        >>> phist2 = get_photon_flux_hist(0.5, 2, id="core", num=1000)
 
-           bins        - Number of bins in the histogram
-                         default = 75
-
-           correlated  - Use a multi-variate distribution to sample parameter values
-                         default = False
-
-           numcores    - specify the number of cores for parallel processing.
-                         All available cores are used by default.
-                         default = None
-
-           bkg_id      - Sherpa background id
-                         default = default bkg id
-
-           recalc      - Recompute before sending data arrays to visualizer
-                         default = True
-
-        Returns:
-           Sherpa photon FluxHistogram object
-
-        DESCRIPTION
-           The Sherpa FluxHistogram object holds references to various
-           histogram preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              units        - units of grid, read-only
-
-              xlo          - grid array, low bins
-
-              xhi          - grid array, high bins
-
-              y            - flux distribution
-
-              histo_prefs  - dictionary of plotting preferences
-
-                 errcolor       - N/A
-                 errstyle       - N/A
-                 errthickness   - N/A
-                 fillcolor      - None
-                 fillopacity    - None
-                 fillstyle      - None
-                 linestyle      - 1
-                 linecolor      - 'red'
-                 linethickness  - None
-                 symbolangle    - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolsize     - N/A
-                 symbolstyle    - N/A
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the source model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_photon_flux, get_energy_flux_plot, plot_energy_flux,
-           sample_energy_flux, sample_photon_flux
         """
         if sherpa.utils.bool_cast(kwargs.pop('recalc',True)):
             self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id, num,
@@ -11095,7 +11069,6 @@ class Session(sherpa.ui.utils.Session):
 
     ### Ahelp ingest: 2015-05-15 DJB
     ### DOC-TODO: I am assuming it accepts a scales parameter
-    ### DOC-TODO: does recalc default to True here?
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None, **kwargs):
         """Display the energy flux distribution.
@@ -11104,8 +11077,9 @@ class Session(sherpa.ui.utils.Session):
         from a normal distribution, evaluate the model, and sum the
         model over the given range (the flux). Plot up the
         distribution of this flux. The units for the flux are as
-        returned by `calc_energy_flux`. The `sample_energy_flux`
-        command returns the data used to create this plot.
+        returned by `calc_energy_flux`. The `sample_energy_flux` and
+        `get_energy_flux_hist` functions return the data used to
+        create this plot.
 
         Parameters
         ----------
@@ -11142,9 +11116,9 @@ class Session(sherpa.ui.utils.Session):
            positive semi-definite (N,N) array, otherwise a 1D array
            of length N, where N is the number of free parameters.
         recalc : bool, optional
-           The default value (`False`) means that the results from the
-           last call are used, otherwise the distribution is
-           re-calculated.
+           If `True`, the default, then re-calculate the values rather
+           than use the values from the last time the function was
+           run.
         overplot : bool, optional
            If `True` then add the data to an exsiting plot, otherwise
            create a new plot. The default is `False`.
@@ -11154,6 +11128,8 @@ class Session(sherpa.ui.utils.Session):
         calc_photon_flux : Integrate the source model over a pass band.
         calc_energy_flux : Integrate the source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
+        get_energy_flux_hist : Return the data displayed by plot_energy_flux.
+        get_photon_flux_hist : Return the data displayed by plot_photon_flux.
         plot_cdf : Plot the cumulative density function of an array.
         plot_pdf : Plot the probability density function of an array.
         plot_photon_flux : Display the photon flux distribution.
@@ -11193,9 +11169,7 @@ class Session(sherpa.ui.utils.Session):
     ### Ahelp ingest: 2015-05-15 DJB
     ### DOC-TODO: I am assuming it accepts a scales parameter, but
     ###           changing it doesn't seem to do anything (see next)
-    ### DOC-TODO: does recalc default to True here?
     ### DOC-NOTE: I got a TypeError about the scales option
-    ### DOC-TODO: I have not checked to see if the examples need recalc=True
     def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None, **kwargs):
         """Display the photon flux distribution.
@@ -11204,8 +11178,9 @@ class Session(sherpa.ui.utils.Session):
         from a normal distribution, evaluate the model, and sum the
         model over the given range (the flux). Plot up the
         distribution of this flux. The units for the flux are as
-        returned by `calc_photon_flux`. The `sample_photon_flux`
-        command returns the data used to create this plot.
+        returned by `calc_photon_flux`. The `sample_photon_flux` and
+        `get_photon_flux_hist` functions return the data used to
+        create this plot.
 
         Parameters
         ----------
@@ -11242,9 +11217,9 @@ class Session(sherpa.ui.utils.Session):
            positive semi-definite (N,N) array, otherwise a 1D array
            of length N, where N is the number of free parameters.
         recalc : bool, optional
-           The default value (`False`) means that the results from the
-           last call are used, otherwise the distribution is
-           re-calculated.
+           If `True`, the default, then re-calculate the values rather
+           than use the values from the last time the function was
+           run.
         overplot : bool, optional
            If `True` then add the data to an exsiting plot, otherwise
            create a new plot. The default is `False`.
@@ -11254,6 +11229,8 @@ class Session(sherpa.ui.utils.Session):
         calc_photon_flux : Integrate the source model over a pass band.
         calc_energy_flux : Integrate the source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
+        get_energy_flux_hist : Return the data displayed by plot_energy_flux.
+        get_photon_flux_hist : Return the data displayed by plot_photon_flux.
         plot_cdf : Plot the cumulative density function of an array.
         plot_pdf : Plot the probability density function of an array.
         plot_energy_flux : Display the energy flux distribution.
@@ -11529,8 +11506,8 @@ class Session(sherpa.ui.utils.Session):
         covar : Estimate the confidence intervals using the confidence method.
         plot_cdf : Plot the cumulative density function of an array.
         plot_pdf : Plot the probability density function of an array.
-        plot_energy_flux :
-        plot_photon_flux :
+        plot_energy_flux : Display the energy flux distribution.
+        plot_photon_flux : Display the photon flux distribution.
         plot_trace : Create a trace plot of row number versus value.
         sample_energy_flux : Return the energy flux distribution of a model.
         sample_flux : Return the flux distribution of a model.
@@ -11633,8 +11610,8 @@ class Session(sherpa.ui.utils.Session):
         covar : Estimate the confidence intervals using the confidence method.
         plot_cdf : Plot the cumulative density function of an array.
         plot_pdf : Plot the probability density function of an array.
-        plot_energy_flux :
-        plot_photon_flux :
+        plot_energy_flux : Display the energy flux distribution.
+        plot_photon_flux : Display the photon flux distribution.
         plot_trace : Create a trace plot of row number versus value.
         sample_photon_flux : Return the flux distribution of a model.
         sample_flux : Return the flux distribution of a model.
@@ -11750,8 +11727,8 @@ class Session(sherpa.ui.utils.Session):
          calc_photon_flux : Integrate the source model over a pass band.
          calc_energy_flux : Integrate the source model over a pass band.
          covar : Estimate the confidence intervals using the confidence method.
-         plot_photon_flux :
-         plot_energy_flux :
+         plot_energy_flux : Display the energy flux distribution.
+         plot_photon_flux : Display the photon flux distribution.
          sample_energy_flux : Return the energy flux distribution of a model.
          sample_photon_flux : Return the photon flux distribution of a model.
 
