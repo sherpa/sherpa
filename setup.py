@@ -117,7 +117,8 @@ meta = dict(name='sherpa',
             entry_points={
                 'console_scripts': [
                     'sherpa_test = sherpa:clitest',
-                ],
+                ]
+            },
             classifiers=[
                 'Intended Audience :: Science/Research',
                 'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
@@ -129,7 +130,7 @@ meta = dict(name='sherpa',
                 'Topic :: Scientific/Engineering :: Astronomy',
                 'Topic :: Scientific/Engineering :: Physics'
                 ],
-            })
+            )
 
 setup(**meta)
 
