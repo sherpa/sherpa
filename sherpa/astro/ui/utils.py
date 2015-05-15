@@ -11533,92 +11533,115 @@ class Session(sherpa.ui.utils.Session):
                                              correlated, num, lo, hi, numcores,
                                              scales)
 
+    ### Ahelp ingest: 2015-05-15 DJB
+    ### DOC-NOTE: are scales the variance or standard deviation?
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                      num=1, scales=None, correlated=False,
                      numcores=None, bkg_id=None, Xrays=True, confidence=68):
-         """
-         sample_flux
+         """Return the flux distribution of a model.
 
-         SYNOPSIS
-            Get a sample of the parameters with the corresponding flux and a
-            flux uncertainty for a model component or a combination of model
-            components.
+         For each iteration, draw the parameter values of the model
+         from a normal distribution, evaluate the model, and sum the
+         model over the given range (the flux). Return the parameter
+         values used, together with the median, upper, and lower
+         quantiles of the flux distribution.
 
+         Parameters
+         ----------
+         modelcomponent : optional
+            The model to use. It can be a single component or
+            a combination. If not given, then the full source
+            expression for the data set is used.
+         lo : number, optional
+            The lower limit to use when summing up the signal. If not
+            given then the lower value of the data grid is used.
+         hi : optional
+            The upper limit to use when summing up the signal. If not
+            guven then the upper value of the data grid is used.
+         id : int or string, optional
+            The identifier of the data set to use. The default value
+            (`None`) means that the default identifier, as returned by
+            `get_default_id`, is used.
+         num : int, optional
+            The number of samples to create. The default is `1`.
+         scales : array, optional
+            The scales used to define the normal distributions for the
+            parameters. The form depends on the `correlated`
+            parameter: when `True`, the array should be a symmetric
+            positive semi-definite (N,N) array, otherwise a 1D array
+            of length N, where N is the number of free parameters.
+         correlated : bool, optional
+            If `True` (the default is `False`) then `scales` is the
+            full covariance matrix, otherwise it is just a 1D array
+            containing the variances of the parameters (the diagonal
+            elements of the covariance matrix).
+         numcores : optional
+            The number of CPU cores to use. The default is to use all
+            the cores on the machine.
+         bkg_id : int or string, optional
+            The identifier of the background component to use. This
+            should only be set when the line to be measured is in the
+            background model.
+         Xrays : bool, optional
+            When `True` (the default), assume that the model has
+            units of photon/cm^2/s, and use `calc_energy_flux`
+            to convert to erg/cm^2/s.
+         confidence : number, optional
+            The confidence level for the upper and lower quartiles,
+            as a percentage. The default is 68, so as to return
+            the one-sigma range.
 
-         SYNTAX
+         Returns
+         -------
+         (fullflux,cptflux,vals) :
+            The fullflux and cptflux arrays contain the results for
+            the full source model and the flux of the `modelcomponent`
+            argument (they can be the same). They have three elements
+            and give the median value, upper quartile, and lower
+            quartile values of the flux distribution. The vals array
+            has a shape of (num+1,N+2), where N is the number of free
+            parameters and num is the `num` parameter. The rows of
+            this array contain the flux value for the iteration (for
+            the full source model), the parameter values, and then the
+            statistic value for this set of parameters.
 
-         Arguments:
-            modelcomponent - a model component or by default the model
-                             expression built from the previously defined
-                             models.
-                             default = None
+         See Also
+         --------
+         calc_photon_flux : Integrate the source model over a pass band.
+         calc_energy_flux : Integrate the source model over a pass band.
+         covar : Estimate the confidence intervals using the confidence method.
+         plot_photon_flux :
+         plot_energy_flux :
+         sample_energy_flux :
+         sample_photon_flux :
 
-            lo             - lower energy bound
-                             default = None
+         Examples
+         --------
 
-            hi             - upper energy bound
-                             default = None
+         Estimate the flux distribution for the "src" component using
+         the default data set. The parameters are assumed to be
+         uncorrelated.
 
-            id             - Sherpa data id
-                             default = default data id
+         >>> set_source(xsphabs.gal * xsapec.src)
+         >>> fit()
+         >>> covar()
+         >>> (fflux,cflux,vals) = sample_flux(src, 0.5, 2, num=1000)
+         original model flux = 2.88993e-14, + 1.92575e-15, - 1.81963e-15
+         model component flux = 7.96865e-14, + 4.65144e-15, - 4.41222e-15
+         >>> (f0, fhi, flo) = cflux
+         >>> print("Flux: {:.2e} {:.2e} {:.2e}".format(f0, fhi-f0, flo-f0))
+         Flux: 7.97e-14 4.65e-15 -4.41e-15
 
-            num            - Number of realization in the sample
-                             default = 1
+         This time the parameters are assumed to be correlated, using
+         the covariance matrix created by the `covar` call:
 
-            correlated	   - If True then include a full covariance matrix
-			     to set scales for multi-variate distributions,
-                             otherwise use only diagonal elements (variances).  
-			     default = False
+         >>> ans = sample_flux(src, 0.5, 2, num=1000, correlated=True)
 
-            scales	   - User supplied scales for the sampling
-			     distributions.  If correlated is True then scales
-                             must be a symmetric and postive semi-definite 2-D
-                             array_like of shape (N,N) where N is the number of
-                             free parameters, otherwise scales can be a 1-D
-                             array_like, of length N.
-			     default = None
+         Explicitly send in a covariance matrix:
 
-            numcores       - specify the number of cores for parallel 
-			     processing. All available cores are used by
-                             default.
-                             default = None
+         >>> cmatrix = get_covar_results().extra_output
+         >>> ans = sample_flux(correlated=True, scales=cmatrix, num=500)
 
-            bkg_id         - Sherpa background id
-                             default = default bkg_id
-
-            Xrays          - If True then calc_energy_flux used and the
-                             returned flux is in units of erg/cm2/s, otherwise
-                             the units are not specified and depend the data.
-                             default = True
-
-            confidence     - confidence level for the returned flux uncertainty
-                             expressed as percentile
-			     default = 68
-
-         Returns:
-            array of parameter values and a flux value with lower and upper
-            bounds.
-
-         DESCRIPTION
-	    Get a sample of parameters with a corresponding flux and a
-	    flux uncertainty for a model component or a combination of
-	    model components. The model components have to be
-	    previously defined and used in the fit. The samples are
-	    generated from the multi-variate normal distributions with
-	    the scales defined by covariance (if at the best fit) or
-	    supplied (as "scales"). The flux is calculated for each
-	    set of new parameters.  The returned flux value is given
-	    by a sample's median with the lower and upper quantiles
-	    defined by the confidence level supplied to the function.
-
-	 EXAMPLES
-
-
-         SEE ALSO
-            get_energy_flux_plot, get_photon_flux_plot, plot_photon_flux,
-            plot_energy_flux, sample_photon_flux, sample_energy_flux, 
-	    calc_energy_flux, calc_photon_flux, plot_cdf, plot_pdf, normal_sample,
-	    t_sample, get_draws
          """
 
          ids, fit = self._get_fit(id)
