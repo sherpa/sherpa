@@ -10127,99 +10127,74 @@ class Session(sherpa.ui.utils.Session):
         return plot
 
 
+    ### Ahelp ingest: 2015-05-15 DJB
+    ### DOC-TODO: See comments about plot_energy_flux.
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None, **kwargs):
-        """
-        get_energy_flux_hist
+        """Return the data displayed by plot_energy_flux.
 
-        SYNOPSIS
-           Return a Sherpa energy flux histogram
+        Parameters
+        ----------
+        lo : number, optional
+           The lower limit to use when summing up the signal. If not
+           given then the lower value of the data grid is used.
+        hi : optional
+           The upper limit to use when summing up the signal. If not
+           guven then the upper value of the data grid is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        num : int, optional
+           The number of samples to create. The default is `7500`.
+        bins : int, optional
+           The number of bins to use for the histogram.
+        correlated : bool, optional
+           If `True` (the default is `False`) then `scales` is the
+           full covariance matrix, otherwise it is just a 1D array
+           containing the variances of the parameters (the diagonal
+           elements of the covariance matrix).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
+        scales : array, optional
+           The scales used to define the normal distributions for the
+           parameters. The form depends on the `correlated`
+           parameter: when `True`, the array should be a symmetric
+           positive semi-definite (N,N) array, otherwise a 1D array
+           of length N, where N is the number of free parameters.
+        recalc : bool, optional
+           If `True`, the default, then re-calculate the values rather
+           than use the values from the last time the function was
+           run.
 
-        SYNTAX
+        Returns
+        -------
+        hist : a sherpa.astro.plot.EnergyFluxHistogram instance
+           An object representing the data used to create the plot by
+           `plot_energy_flux`.
 
-        Arguments:
-           lo          - lower energy bound
-                         default = None
+        See Also
+        --------
+        get_photon_flux_hist : Return the data displayed by plot_photon_flux.
+        plot_energy_flux : Display the energy flux distribution.
+        plot_photon_flux : Display the photon flux distribution.
+        sample_energy_flux : Return the energy flux distribution of a model.
+        sample_flux : Return the flux distribution of a model.
+        sample_photon_flux : Return the photon flux distribution of a model.
 
-           hi          - upper energy bound
-                         default = None
+        Examples
+        --------
 
-           id          - data id
-                         default = default data id
+        >>> ehist = get_energy_flux_hist(0.5, 7, num=1000)
 
-           num         - Number of simulations
-                         default = 7500
+        >>> ehist1 = get_energy_flux_hist(0.5, 2, id="jet", num=1000)
+        >>> ehist2 = get_energy_flux_hist(0.5, 2, id="core", num=1000)
 
-           bins        - Number of bins in the histogram
-                         default = 75
-
-           correlated  - Use a multi-variate distribution to sample parameter values
-                         default = False
-
-           numcores    - specify the number of cores for parallel processing.
-                         All available cores are used by default.
-                         default = None
-
-           bkg_id      - Sherpa background id
-                         default = default bkg id
-
-           recalc      - Recompute before sending data arrays to visualizer
-                         default = True
-
-        Returns:
-           Sherpa energy FluxHistogram object
-
-        DESCRIPTION
-           The Sherpa FluxHistogram object holds references to various
-           histogram preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              units        - units of grid, read-only
-
-              xlo          - grid array, low bins
-
-              xhi          - grid array, high bins
-
-              y            - flux distribution
-
-              histo_prefs  - dictionary of plotting preferences
-
-                 errcolor       - N/A
-                 errstyle       - N/A
-                 errthickness   - N/A
-                 fillcolor      - None
-                 fillopacity    - None
-                 fillstyle      - None
-                 linestyle      - 1
-                 linecolor      - 'red'
-                 linethickness  - None
-                 symbolangle    - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolsize     - N/A
-                 symbolstyle    - N/A
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the source model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_energy_flux, get_photon_flux_plot, plot_photon_flux,
-           sample_energy_flux, sample_photon_flux
         """
         if sherpa.utils.bool_cast(kwargs.pop('recalc',True)):
             self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id, num,
@@ -10282,6 +10257,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         get_energy_flux_hist : Return the data displayed by plot_energy_flux.
         plot_energy_flux : Display the energy flux distribution.
+        plot_photon_flux : Display the photon flux distribution.
         sample_energy_flux : Return the energy flux distribution of a model.
         sample_flux : Return the flux distribution of a model.
         sample_photon_flux : Return the photon flux distribution of a model.
