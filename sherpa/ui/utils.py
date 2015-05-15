@@ -7972,7 +7972,7 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        otherids : int or str, optional
+        *otherids : int or str, optional
            Include multiple data sets in the calculation.
 
         Returns
@@ -8023,7 +8023,7 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        otherids : int or str, optional
+        *otherids : int or str, optional
            Include multiple data sets in the calculation.
 
         Returns
@@ -8062,7 +8062,7 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set that provides the data. If not given then
            all data sets with an associated model are fit simultaneously.
-        *otherids : sequence of int or str, optional
+        *otherids : int or str, optional
            Other data sets to use in the calculation.
         outfile : str, optional
            If set, then the fit results will be written to a file with
@@ -10163,7 +10163,6 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_sampler_name : Return the name of the current pyBLoCXS sampler.
-        set_sampler : Set the pyBLoCXS sampler.
 
         Examples
         --------
@@ -10174,7 +10173,101 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.list_samplers()
 
+    ### Ahelp ingest: 2015-05-15 DJB
+    ### DOC-TODO: fix up the URL since it should be an internal
+    ###           reference (ie documented here)
+    ### DOC-TODO: add pointers on what to do with the return values
     def get_draws(self, id=None, otherids=(), niter=1000):
+        """Run the pyBLoCXS MCMC algorithm.
+
+        The function runs a Markov Chain Monte Carlo (MCMC) algorithm
+        designed to carry out Bayesian Low-Count X-ray Spectral
+        (BLoCXS) analysis [1]_. Unlike many MCMC algorithms, it is
+        designed to explore the parameter space at the suspected
+        statistic minimum (i.e.  after using `fit`) [2]_. The return
+        values include the statistic value, parameter values, and a
+        flag indicating whether the row represents a jump from the
+        current location or not.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the data and model. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
+        niter : int, optional
+           The number of draws to use. The default is `1000`.
+
+        Returns
+        -------
+        stats, accept, params :
+           The results of the MCMC chain. The stats and accept arrays
+           contain niter+1 elements, with the first row being the
+           starting values. The params array has (nparams,niter+1)
+           elements, where nparams is the number of free parameters in
+           the model expression, and the first column contains the
+           values that the chain starts at. The accept array contains
+           boolean values, indicating whether the jump, or step, was
+           accepted (`True`), so the parameter values and statistic
+           change, or it wasn't, in which case there is no change to
+           the previous row.
+
+        See Also
+        --------
+        covar : Estimate the confidence intervals using the covariance method.
+        fit : Fit a model to one or more data sets.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_pdf : Plot the probability density function of an array.
+        plot_scatter : Create a scatter plot.
+        plot_trace : Create a trace plot of row number versus value.
+        set_prior : Set the prior function to use with a parameter.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Notes
+        -----
+        The chain is run using fit information associated with the
+        specified data set, or sets, the currently set sampler
+        (`set_sampler`) and parameter priors (`set_prior`), for a
+        specified number of iterations. The model should have been fit
+        to find the best-fit parameters, and `covar` called, before
+        running `get_draws`. The results from `get_draws` is used to
+        estimate the parameter distributions.
+
+        References
+        ----------
+
+        .. [1] "Analysis of Energy Spectra with Low Photon Counts via
+               Bayesian Posterior Simulation", van Dyk, D.A., Connors,
+               A., Kashyap, V.L., & Siemiginowska, A.  2001, Ap.J.,
+               548, 224
+               http://adsabs.harvard.edu/abs/2001ApJ...548..224V
+
+        .. [2] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+
+        Examples
+        --------
+        Fit a source and then run a chain to investigate the parameter
+        distributions.  The distribution of the stats values created
+        by the chain is then displayed, using `plot_trace`, and the
+        parameter distributions for the first two thawed parameters
+        are displayed. The first one as a cumulative distribution
+        using `plot_cdf` and the second one as a probability
+        distribution using `plot_pdf`. Finally the acceptance fraction
+        (number of draws where the chain moved) is displayed:
+
+        >>> fit()
+        >>> covar()
+        >>> (stats, accept, params) = get_draws(1, niter=1e4)
+        >>> plot_trace(stats, name='stats', xlabel='stat')
+        >>> names = [p.fullname for p in get_source().pars if not p.frozen]
+        >>> plot_cdf(params[0,:], name=names[0], xlabel=names[0])
+        >>> plot_pdf(params[1,:], name=names[1], xlabel=names[1])
+        >>> accept[1:].sum() / 1.0e4
+        0.4287
+
+        """
 
         ids, fit = self._get_fit(id, otherids)
 
