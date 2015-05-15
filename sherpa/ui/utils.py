@@ -10260,7 +10260,7 @@ class Session(NoNewAttributesAfterInit):
         >>> fit()
         >>> covar()
         >>> (stats, accept, params) = get_draws(1, niter=1e4)
-        >>> plot_trace(stats, name='stats', xlabel='stat')
+        >>> plot_trace(stats, name='stat')
         >>> names = [p.fullname for p in get_source().pars if not p.frozen]
         >>> plot_cdf(params[0,:], name=names[0], xlabel=names[0])
         >>> plot_pdf(params[1,:], name=names[1], xlabel=names[1])
