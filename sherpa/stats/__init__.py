@@ -74,7 +74,6 @@ class Likelihood(Stat):
         # return 1 to avoid dividing by 0 by some optimization methods.
         return numpy.ones_like(data)
 
-### Ahelp ingest: 2015-05-04 DJB
 ## DOC-TODO: where is the truncate/trunc_value stored for objects
 ##           AHA: it appears to be taken straight from the config
 ##           file rather than associated with the Stat class
@@ -153,7 +152,6 @@ class Cash(Likelihood):
                                         weight, truncation_value)
 
 
-### Ahelp ingest: 2015-05-04 DJB
 class CStat(Likelihood):
     """Maximum likelihood function (XSPEC style).
 
@@ -227,7 +225,6 @@ class CStat(Likelihood):
                                          weight, truncation_value)
 
 
-### Ahelp ingest: 2015-05-04 DJB
 class Chi2(Stat):
     """Chi Squared statistic.
 
@@ -285,7 +282,6 @@ class Chi2(Stat):
         return _statfcts.calc_chi2_stat(data, model, staterror,
                                         syserror, weight, truncation_value)
 
-### Ahelp ingest: 2015-05-04 DJB
 class LeastSq(Chi2):
     """Least Squared Statistic.
 
@@ -306,7 +302,6 @@ class LeastSq(Chi2):
                                        syserror, weight, truncation_value)
     
 
-### Ahelp ingest: 2015-05-04 DJB
 class Chi2Gehrels(Chi2):
     """Chi Squared with Gehrels variance.
 
@@ -351,7 +346,6 @@ class Chi2Gehrels(Chi2):
     calc_staterror = _statfcts.calc_chi2gehrels_errors
 
 
-### Ahelp ingest: 2015-05-04 DJB
 class Chi2ConstVar(Chi2):
     """Chi Squared with constant variance.
 
@@ -371,7 +365,6 @@ class Chi2ConstVar(Chi2):
     calc_staterror = _statfcts.calc_chi2constvar_errors
 
 
-### Ahelp ingest: 2015-05-04 DJB
 class Chi2DataVar(Chi2):
     """Chi Squared with data variance.
 
@@ -396,7 +389,6 @@ class Chi2DataVar(Chi2):
     calc_staterror = _statfcts.calc_chi2datavar_errors
 
 
-### Ahelp ingest: 2015-05-04 DJB
 class Chi2ModVar(Chi2):
     """Chi Squared with model amplitude variance.
 
@@ -431,7 +423,6 @@ class Chi2ModVar(Chi2):
                                               truncation_value)
 
 
-### Ahelp ingest: 2015-05-04 DJB
 class Chi2XspecVar(Chi2):
     """Chi Squared with data variance (XSPEC style).
 

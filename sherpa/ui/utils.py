@@ -292,7 +292,6 @@ class Session(NoNewAttributesAfterInit):
 
         return allnames
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def clean(self):
         """Clear out the current Sherpa session.
 
@@ -445,7 +444,6 @@ class Session(NoNewAttributesAfterInit):
         self._srccompimage = sherpa.image.ComponentSourceImage()
 
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def save(self, filename='sherpa.save', clobber=False):
         """Save the current Sherpa session to a file.
 
@@ -504,7 +502,6 @@ class Session(NoNewAttributesAfterInit):
         finally:
             fout.close()
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def restore(self, filename='sherpa.save'):
         """Load in a Sherpa session from a file.
 
@@ -692,7 +689,6 @@ class Session(NoNewAttributesAfterInit):
             covar_str += self.get_covar_results().format() + '\n\n'
         return covar_str
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def show_stat(self, outfile=None, clobber=False):
         """Display the current fit statistic.
 
@@ -741,7 +737,6 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def show_method(self, outfile=None, clobber=False):
         """Display the current optimization method and options.
 
@@ -796,7 +791,6 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def show_fit(self, outfile=None, clobber=False):
         """Summarize the fit results.
 
@@ -843,7 +837,6 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def show_data(self, id=None, outfile=None, clobber=False):
         """Summarize the available data sets.
 
@@ -889,7 +882,6 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def show_filter(self, id=None, outfile=None, clobber=False):
         """Show any filters applied to a data set.
 
@@ -938,7 +930,6 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def show_model(self, id=None, outfile=None, clobber=False):
         """Display the model expression used to fit a data set.
 
@@ -991,7 +982,6 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def show_source(self, id=None, outfile=None, clobber=False):
         """Display the source model expression for a data set.
 
@@ -1040,7 +1030,6 @@ class Session(NoNewAttributesAfterInit):
         all += self._get_show_source(id)
         _send_to_pager(all, outfile, clobber)
 
-    ### Ahelp ingest: 2015-05-02 DJB
     ### DOC-TODO: how and where to describe the PSF/kernel difference
     ###           as the Notes section below is inadequate
     def show_kernel(self, id=None, outfile=None, clobber=False):
@@ -1102,7 +1091,6 @@ class Session(NoNewAttributesAfterInit):
         all += self._get_show_kernel(id)
         _send_to_pager(all, outfile, clobber)
 
-    ### Ahelp ingest: 2015-05-02 DJB
     ### DOC-TODO: how and where to describe the PSF/kernel difference
     ###           as the Notes section below is inadequate
     def show_psf(self, id=None, outfile=None, clobber=False):
@@ -1165,7 +1153,6 @@ class Session(NoNewAttributesAfterInit):
         all += self._get_show_psf(id)
         _send_to_pager(all, outfile, clobber)
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def show_conf(self, outfile=None, clobber=False):
         """Display the results of the last conf evaluation.
 
@@ -1207,7 +1194,6 @@ class Session(NoNewAttributesAfterInit):
         all += self._get_show_conf()
         _send_to_pager(all, outfile, clobber)
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def show_proj(self, outfile=None, clobber=False):
         """Display the results of the last proj evaluation.
 
@@ -1249,7 +1235,6 @@ class Session(NoNewAttributesAfterInit):
         all += self._get_show_proj()
         _send_to_pager(all, outfile, clobber)
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def show_covar(self, outfile=None, clobber=False):
         """Display the results of the last covar evaluation.
 
@@ -1292,7 +1277,6 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def show_all(self, id=None, outfile=None, clobber=False):
         """Report the current state of the Sherpa session.
 
@@ -1360,7 +1344,6 @@ class Session(NoNewAttributesAfterInit):
         all += self._get_show_covar()
         _send_to_pager(all, outfile, clobber)
 
-    ### Ahelp ingest: 2015-05-04 DJB
     def get_functions(self):
         """Return the functions provided by Sherpa.
 
@@ -1379,7 +1362,6 @@ class Session(NoNewAttributesAfterInit):
                 funcs.append(func)
         return funcs
         
-    ### Ahelp ingest: 2015-04-27 DJB
     def list_functions(self, outfile=None, clobber=False):
         """Display the functions provided by Sherpa.
 
@@ -1455,7 +1437,6 @@ class Session(NoNewAttributesAfterInit):
         _check_type(item, itemtype, itemname, itemdesc)
         itemdict[id] = item
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def get_default_id(self):
         """Return the default data set identifier.
 
@@ -1484,7 +1465,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._default_id
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def set_default_id(self, id):
         """Set the default data set identifier.
 
@@ -1532,7 +1512,6 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def list_methods(self):
         """List the optimization methods.
 
@@ -1564,7 +1543,6 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr('badmethod', name)
         return meth
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def get_method(self, name=None):
         """Return an optimization method.
 
@@ -1618,7 +1596,6 @@ class Session(NoNewAttributesAfterInit):
         _check_type(name, basestring, 'name', 'a string')
         return self._get_method_by_name(name)
 
-    ### Ahelp ingest: 2015-04-27 DJB
     ### DOC-TODO: is this guaranteed to be the same as get_method().name
     ###           or get_method().name.lower() and, if so, shouldn't this be
     ###           how it is coded?
@@ -1652,7 +1629,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return type(self.get_method()).__name__.lower()
 
-    ### Ahelp ingest: 2015-04-25 DJB
     ### DOC-TODO: remove the list of supported methods once the
     ### relevant documenation has been updated.
     def set_method(self, meth):
@@ -1737,7 +1713,6 @@ class Session(NoNewAttributesAfterInit):
         if optname not in self._current_method.config:
             raise ArgumentErr('badopt', optname, self.get_method_name())
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def get_method_opt(self, optname=None):
         """Return one or all of the options for the current optimization
         method.
@@ -1782,7 +1757,6 @@ class Session(NoNewAttributesAfterInit):
         self._check_method_opt(optname)
         return self._current_method.config[optname]
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def set_method_opt(self, optname, val):
         """Set an option for the current optimization method.
 
@@ -1823,7 +1797,6 @@ class Session(NoNewAttributesAfterInit):
 
     #### Iterative Fitting Methods for CIAO 4.3 testing
 
-    ### Ahelp ingest: 2015-05-04 DJB
     def get_iter_method_name(self):
         """Return the name of the iterative fitting scheme.
 
@@ -1841,7 +1814,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._current_itermethod['name']
 
-    ### Ahelp ingest: 2015-05-04 DJB
     def get_iter_method_opt(self, optname=None):
         """Return one or all options for the iterative-fitting scheme.
 
@@ -1880,7 +1852,6 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr('badopt', optname, self._current_itermethod['name'])
         return itermethod_opts[optname]
 
-    ### Ahelp ingest: 2015-05-04 DJB
     def list_iter_methods(self):
         """List the iterative fitting schemes.
 
@@ -1906,7 +1877,6 @@ class Session(NoNewAttributesAfterInit):
         keys.sort()
         return keys
 
-    ### Ahelp ingest: 2015-05-04 DJB
     ### DOC-TODO: this information is also in sherpa/fit.py
     ### DOC-TODO: this raises a ValueError rather than a Sherpa error class
     def set_iter_method(self, meth):
@@ -1999,7 +1969,6 @@ class Session(NoNewAttributesAfterInit):
         else:
             _argument_type_error(meth, 'a string')
 
-    ### Ahelp ingest: 2015-05-04 DJB
     def set_iter_method_opt(self, optname, val):
         """Set an option for the iterative-fitting scheme.
 
@@ -2080,7 +2049,6 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def list_stats(self):
         """List the fit statistics.
 
@@ -2120,7 +2088,6 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr('badstat', name)
         return stat
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def get_stat(self, name=None):
         """Return a fit statisic.
 
@@ -2162,7 +2129,6 @@ class Session(NoNewAttributesAfterInit):
         _check_type(name, basestring, 'name', 'a string')
         return self._get_stat_by_name(name)
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def get_stat_name(self):
         """Return the name of the current fit statistic.
 
@@ -2190,7 +2156,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return type(self.get_stat()).__name__.lower()
 
-    ### Ahelp ingest: 2015-04-24 DJB
     ### DOC-TODO: remove the list of supported methods once the
     ### relevant documenation has been updated.
     def set_stat(self, stat):
@@ -2288,7 +2253,6 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def list_data_ids(self):
         """List the identifiers for the loaded data sets.
 
@@ -2322,7 +2286,6 @@ class Session(NoNewAttributesAfterInit):
         keys.sort()
         return keys
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def get_data(self, id=None):
         """Return the data set by identifier.
 
@@ -2371,7 +2334,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_item(id, self._data, 'data set', 'has not been set')
 
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: terrible synopsis
     def set_data(self, id, data=None):
         """Set a data set.
@@ -2427,7 +2389,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_staterror(self, id, filename=None, ncols=2, *args, **kwargs):
         """Load the statistical errors from a file.
@@ -2505,7 +2466,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_syserror(self, id, filename=None, ncols=2, *args, **kwargs):
         """Load the systematic errors from a file.
@@ -2580,7 +2540,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-TODO: does ncols make sense here? (have removed for now)
     ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
     ###           from PyFITS lands soon.
@@ -2654,7 +2613,6 @@ class Session(NoNewAttributesAfterInit):
                         ignore=ignore)
 
 
-    ### Ahelp ingest: 2015-05-06 DJB
     def set_filter(self, id, val=None, ignore=False):
         """Set the filter array of a data set.
 
@@ -2723,7 +2681,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-11 DJB
     def set_dep(self, id, val=None):
         """Set the dependent axis of a data set.
 
@@ -2778,7 +2735,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def set_staterror(self, id, val=None, fractional=False):
         """Set the statistical errors on the dependent axis of a data set.
 
@@ -2847,7 +2803,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def set_syserror(self, id, val=None, fractional=False):
         """Set the systematic errors on the dependent axis of a data set.
 
@@ -2912,7 +2867,6 @@ class Session(NoNewAttributesAfterInit):
         d.syserror = err
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def get_staterror(self, id=None, filter=False):
         """Return the statistical error on the dependent axis of a data set.
 
@@ -2979,7 +2933,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def get_syserror(self, id=None, filter=False):
         """Return the systematic error on the dependent axis of a data set.
 
@@ -3023,7 +2976,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def get_error(self, id=None, filter=False):
         """Return the errors on the dependent axis of a data set.
 
@@ -3061,7 +3013,6 @@ class Session(NoNewAttributesAfterInit):
                                            self.get_stat().calc_staterror)
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     ### DOC-NOTE: shouldn't this expose a filter parameter?
     def get_indep(self, id=None):
         """Return the independent axes of a data set.
@@ -3109,7 +3060,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def get_dep(self, id=None, filter=False):
         """Return the dependent axis of a data set.
 
@@ -3158,7 +3108,6 @@ class Session(NoNewAttributesAfterInit):
         return self.get_data(id).get_y(filter)
 
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def get_dims(self, id=None, filter=False):
         """Return the dimensions of the data set.
 
@@ -3185,7 +3134,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self.get_data(id).get_dims(filter)
 
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-NOTE: should there be a version in sherpa.astro.utils with a bkg_id
     ###           parameter?
     def get_filter(self, id=None):
@@ -3257,7 +3205,6 @@ class Session(NoNewAttributesAfterInit):
         return self.get_data(id).get_filter()
 
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def copy_data(self, fromid, toid):
         """Copy a data set to a new identifier.
 
@@ -3289,7 +3236,6 @@ class Session(NoNewAttributesAfterInit):
         data = copy.deepcopy(data)
         self.set_data(toid, data)
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: this does not delete the source expression;
     ###           is this intended or a bug?
     def delete_data(self, id=None):
@@ -3333,7 +3279,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-11 DJB
     def dataspace1d(self, start, stop, step=1, numbins=None, 
                     id=None, dstype=sherpa.data.Data1DInt):
         """Create the independent axis for a 1D data set.
@@ -3421,7 +3366,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-11 DJB
     def dataspace2d(self, dims, id=None, dstype=sherpa.data.Data2D):
         """Create the independent axis for a 2D data set.
 
@@ -3474,7 +3418,6 @@ class Session(NoNewAttributesAfterInit):
         self.set_data(id, dataset)
 
 
-    ### Ahelp ingest: 2015-05-14 DJB
     def fake(self, id=None, method=sherpa.utils.poisson_noise):
         """Simulate a data set.
 
@@ -3554,7 +3497,6 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     ### DOC-TODO: What data types are supported here?
-    ### Ahelp ingest: 2015-05-12 DJB
     def unpack_arrays(self, *args):
         """Create a sherpa data object from arrays of data.
 
@@ -3611,7 +3553,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-12 DJB
     def unpack_data(self, filename, ncols=2, colkeys=None,
                     dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
         """Create a sherpa data object from a file.
@@ -3682,7 +3623,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-13 DJB
     def load_data(self, id, filename=None, ncols=2, colkeys=None,
                   dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
         """Load a data set from a file.
@@ -3754,7 +3694,6 @@ class Session(NoNewAttributesAfterInit):
                                            sep=sep, comment=comment, require_floats=require_floats))
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: rework the Data type notes section (also needed by unpack_arrays)
     ##@loggable(with_id = True)
     def load_arrays(self, id, *args):
@@ -3860,7 +3799,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    ### Ahelp ingest: 2015-05-12 DJB
     def save_arrays(self, filename, args, fields=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
         """Write a list of arrays to a file.
@@ -3919,7 +3857,6 @@ class Session(NoNewAttributesAfterInit):
                                linebreak, format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    ### Ahelp ingest: 2015-05-13 DJB
     def save_source(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
         """Save the model values to a file.
@@ -3996,7 +3933,6 @@ class Session(NoNewAttributesAfterInit):
                         comment=comment, linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    ### Ahelp ingest: 2015-05-13 DJB
     def save_model(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
         """Save the model values to a file.
@@ -4073,7 +4009,6 @@ class Session(NoNewAttributesAfterInit):
                         comment=comment, linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    ### Ahelp ingest: 2015-05-12 DJB
     def save_resid(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
         """Save the residuals (data-model) to a file.
@@ -4144,7 +4079,6 @@ class Session(NoNewAttributesAfterInit):
                         comment=comment, linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    ### Ahelp ingest: 2015-05-12 DJB
     def save_delchi(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
         """Save the ratio of residuals (data-model) to error to a file.
@@ -4216,7 +4150,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     ### DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-12 DJB
     def save_data(self, id, filename=None, fields=None, sep=' ', comment='#',
                   clobber=False, linebreak='\n', format='%g'):
         """Save the data to a file.
@@ -4299,7 +4232,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    ### Ahelp ingest: 2015-05-06 DJB
     def save_filter(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
         """Save the filter array to a file.
@@ -4376,7 +4308,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    ### Ahelp ingest: 2015-05-06 DJB
     def save_staterror(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
         """Save the statistical errors to a file.
@@ -4456,7 +4387,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    ### Ahelp ingest: 2015-05-06 DJB
     def save_syserror(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
         """Save the statistical errors to a file.
@@ -4533,7 +4463,6 @@ class Session(NoNewAttributesAfterInit):
                          clobber, sep, comment, linebreak, format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    ### Ahelp ingest: 2015-05-06 DJB
     def save_error(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
         """Save the errors to a file.
@@ -4628,7 +4557,6 @@ class Session(NoNewAttributesAfterInit):
             self.notice_id(ids, *vals, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-06 DJB
     def notice(self, lo=None, hi=None, **kwargs):
         """Include data in the fit.
 
@@ -4717,7 +4645,6 @@ class Session(NoNewAttributesAfterInit):
             d.notice(lo, hi, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-06 DJB
     def ignore(self, lo=None, hi=None, **kwargs):
         """Exclude data from the fit.
 
@@ -4792,7 +4719,6 @@ class Session(NoNewAttributesAfterInit):
             return self._notice_expr(lo, **kwargs)
         self.notice(lo, hi, **kwargs)
 
-    ### Ahelp ingest: 2015-05-06 DJB
     def notice_id(self, ids, lo=None, hi=None, **kwargs):
         """Include data from the fit for a data set.
 
@@ -4870,7 +4796,6 @@ class Session(NoNewAttributesAfterInit):
             self.get_data(i).notice(lo, hi, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-06 DJB
     def ignore_id(self, ids, lo=None, hi=None, **kwargs):
         """Exclude data from the fit for a data set.
 
@@ -4944,7 +4869,6 @@ class Session(NoNewAttributesAfterInit):
     # Models
     ###########################################################################
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def paramprompt(self, val=False):
         """Should the user be asked for the parameter values when creating a model?
 
@@ -5031,7 +4955,6 @@ class Session(NoNewAttributesAfterInit):
             self._model_types[name] = ModelWrapper(self, cls)
             self._model_globals.update(self._model_types)
 
-    ### Ahelp ingest: 2015-05-14 DJB
     def add_model(self, modelclass, args=(), kwargs={}):
         """Create a user-defined model class.
 
@@ -5097,7 +5020,6 @@ class Session(NoNewAttributesAfterInit):
     # Model components
     #
 
-    ### Ahelp ingest: 2015-05-04 DJB
     def get_model_autoassign_func(self):
         """Return the method used to create model component identifiers.
 
@@ -5119,7 +5041,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._model_autoassign_func
 
-    ### Ahelp ingest: 2015-05-04 DJB
     ### DOC-TODO: what does func=None mean? If you try None then it
     ###           fails with AttributeError: 'Session' object attribute
     ###           '_model_autoassign_func' cannot be replaced with a non-callable attribute
@@ -5158,7 +5079,6 @@ class Session(NoNewAttributesAfterInit):
             _argument_type_error('func', 'a function or other callable object')
         self._model_autoassign_func = func
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def list_models(self, show="all"):
         """List the available model types.
 
@@ -5207,7 +5127,6 @@ class Session(NoNewAttributesAfterInit):
 
         return keys
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def list_model_components(self):
         """List the names of all the model components.
 
@@ -5298,7 +5217,6 @@ class Session(NoNewAttributesAfterInit):
         return userstat
 
 
-    ### Ahelp ingest: 2015-05-04 DJB
     ### DOC-TODO: can send in a model variable, but this is just the
     ###           identity function, so not worth documenting
     def get_model_component(self, name):
@@ -5359,7 +5277,6 @@ class Session(NoNewAttributesAfterInit):
         return self._get_model_component(name, require=True)
 
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def create_model_component(self, typename=None, name=None):
         """Create a model component.
 
@@ -5434,7 +5351,6 @@ class Session(NoNewAttributesAfterInit):
         self._model_components[name] = cls(name)
         #self._add_model_component(cls(name))
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def reset(self, model=None, id=None):
         """Reset the model parameters to their default settings.
 
@@ -5497,7 +5413,6 @@ class Session(NoNewAttributesAfterInit):
             model.reset()
 
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def delete_model_component(self, name):
         """Delete a model component.
 
@@ -5564,7 +5479,6 @@ class Session(NoNewAttributesAfterInit):
         except:
             raise ArgumentErr('badexpr', typestr, sys.exc_info()[1])
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def list_model_ids(self):
         """List of all the data sets with a source expression.
 
@@ -5635,7 +5549,6 @@ class Session(NoNewAttributesAfterInit):
                               'has not been set, consider using set_source()' +
                               ' or set_model()')
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_source(self, id=None):
         """Return the source model expression for a data set.
 
@@ -5685,7 +5598,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_source(id)
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_model(self, id=None):
         """Return the model expression for a data set.
 
@@ -5790,7 +5702,6 @@ class Session(NoNewAttributesAfterInit):
                         break
 
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-14 DJB
     ### DOC-TODO: what examples/info should be talked about here?
     ###           (e.g. no PHA/ARF/RMF)
     ##@loggable(with_id=True, with_keyword='model')
@@ -5853,7 +5764,6 @@ class Session(NoNewAttributesAfterInit):
                        'a model object or model expression string')
         self._runparamprompt(model.pars)
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: the .cache value appears to default to 5
     ##@loggable(with_id=True, with_keyword="model")
     def set_model(self, id, model=None):
@@ -5993,7 +5903,6 @@ class Session(NoNewAttributesAfterInit):
     set_source = set_model
 
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def delete_model(self, id=None):
         """Delete the model expression for a data set.
 
@@ -6041,7 +5950,6 @@ class Session(NoNewAttributesAfterInit):
                     'a model object or model expression string')
         return model
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_model_type(self, model):
         """Describe a model expression.
 
@@ -6088,7 +5996,6 @@ class Session(NoNewAttributesAfterInit):
         model = self._check_model(model)
         return type(model).__name__.lower()
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_model_pars(self, model):
         """Return the names of the parameters of a model.
 
@@ -6120,7 +6027,6 @@ class Session(NoNewAttributesAfterInit):
         model = self._check_model(model)
         return [p.name for p in model.pars]
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def get_num_par(self, id=None):
         """Return the number of parameters in a model expression.
 
@@ -6150,7 +6056,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return len(self._get_source(id).pars)
     
-    ### Ahelp ingest: 2015-05-01 DJB
     def get_num_par_thawed(self, id=None):
         """Return the number of thawed parameters in a model expression.
 
@@ -6180,7 +6085,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return len(self._get_source(id).thawedpars)
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def get_num_par_frozen(self, id=None):
         """Return the number of frozen parameters in a model expression.
 
@@ -6236,7 +6140,6 @@ class Session(NoNewAttributesAfterInit):
 
     ### DOC-TODO: I am not sure I have the data format correct.
     ### DOC-TODO: description of template interpolation needs a lot of work.
-    ### Ahelp ingest: 2015-05-13 DJB
     def load_template_model(self, modelname, templatefile, dstype=sherpa.data.Data1D,
                             sep=' ', comment='#', method=sherpa.utils.linear_interp, template_interpolator_name='default'):
         """Load a set of templates and use it as a model component.
@@ -6402,7 +6305,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     ### DOC-TODO: description of template interpolation needs a lot of work.
-    ### Ahelp ingest: 2015-05-13 DJB
     ##@loggable()
     def load_template_interpolator(self, name, interpolator_class, **kwargs):
         """Set the template interpolation scheme.
@@ -6435,7 +6337,6 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils
     # DOC-NOTE: does it make sense to allow ncols to vary here?
-    ### Ahelp ingest: 2015-05-13 DJB
     def load_table_model(self, modelname, filename, ncols=2, colkeys=None,
                          dstype=sherpa.data.Data1D, sep=' ', comment='#',
                          method=sherpa.utils.linear_interp):
@@ -6511,7 +6412,6 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(tablemodel)
 
     # also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-14 DJB
     ### DOC-TODO: how is the _y value used if set
     ##@loggable()
     def load_user_model(self, func, modelname, filename=None, ncols=2,
@@ -6615,7 +6515,6 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(usermodel)
 
     ##@loggable()
-    ### Ahelp ingest: 2015-05-14 DJB
     def add_user_pars(self, modelname, parnames,
                       parvals = None, parmins = None, parmaxs = None,
                       parunits = None, parfrozen = None):
@@ -6725,7 +6624,6 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(newusermodel)
 
 
-    ### Ahelp ingest: 2015-05-13 DJB
     ### DOC-TODO: Improve priors documentation
     def load_user_stat(self, statname, calc_stat_func, calc_err_func=None,
                        priors={}):
@@ -6806,7 +6704,6 @@ class Session(NoNewAttributesAfterInit):
     # Conv
     #
 
-    ### Ahelp ingest: 2015-05-13 DJB
     ### DOC-NOTE: why isn't the "flux" of the convolved model ~
     ###           that of the unconvolved model?
     ### DOC-NOTE: better description of conv vs psf
@@ -6890,7 +6787,6 @@ class Session(NoNewAttributesAfterInit):
     # PSF1
     #
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def load_psf(self, modelname, filename_or_model, *args, **kwargs):
         """Create a PSF model.
 
@@ -6955,7 +6851,6 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(psf)
         self._psf_models.append(psf)
 
-    ### Ahelp ingest: 2015-05-11 DJB
     ### DOC-TODO: am I correct about the multiple use warning?
     ##@loggable(with_id=True, with_keyword='psf')
     def set_psf(self, id, psf=None):
@@ -7106,7 +7001,6 @@ class Session(NoNewAttributesAfterInit):
                 pass
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_psf(self, id=None):
         """Return the PSF model defined for a data set.
 
@@ -7149,7 +7043,6 @@ class Session(NoNewAttributesAfterInit):
         return self._get_item(id, self._psf, 'psf model', 'has not been set')
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def delete_psf(self, id=None):
         """Delete the PSF model for a data set.
 
@@ -7200,7 +7093,6 @@ class Session(NoNewAttributesAfterInit):
                     'a parameter object or parameter expression string')
         return par
 
-    ### Ahelp ingest: 2015-05-14 DJB
     ### DOC-NOTE: I have not documented that par can be an actual parameter
     ###           since in that case get_par(x) === x, so seems somewhat pointless!
     def get_par(self, par):
@@ -7242,7 +7134,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._check_par(par)
 
-    ### Ahelp ingest: 2015-05-14 DJB
     ### DOC-NOTE: I have not documented that par can be an actual parameter
     ###           since you can just change the values directly then (although
     ###           may have to car about order of operations)
@@ -7320,7 +7211,6 @@ class Session(NoNewAttributesAfterInit):
                 if not p.alwaysfrozen:
                     getattr(p, action)()
 
-    ### Ahelp ingest: 2015-04-28 DJB
     ### DOC-TODO: is this the best way to document the arguments?
     def freeze(self, *args):
         """Fix model parameters so they are not changed by a fit.
@@ -7364,7 +7254,6 @@ class Session(NoNewAttributesAfterInit):
         for p in par:
             self._freeze_thaw_par_or_model(p, 'freeze')
 
-    ### Ahelp ingest: 2015-04-28 DJB
     ### DOC-TODO: is this the best way to document the arguments?
     def thaw(self, *args):
         """Allow model parameters to be varied during a fit.
@@ -7407,7 +7296,6 @@ class Session(NoNewAttributesAfterInit):
         for p in par:
             self._freeze_thaw_par_or_model(p, 'thaw')
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def link(self, par, val):
         """Link a parameter to a value.
 
@@ -7480,7 +7368,6 @@ class Session(NoNewAttributesAfterInit):
             val = self._eval_model_expression(val, 'parameter link')
         par.link = val
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def unlink(self, par):
         """Unlink a parameter value.
 
@@ -7647,7 +7534,6 @@ class Session(NoNewAttributesAfterInit):
         return output
 
 
-    ### Ahelp ingest: 2015-05-03 DJB
     def calc_stat_info(self):
         """Display the statistic values for the current models.
 
@@ -7680,7 +7566,6 @@ class Session(NoNewAttributesAfterInit):
             info(output[0])
 
 
-    ### Ahelp ingest: 2015-05-03 DJB
     def get_stat_info(self):
         """Return the statistic values for the current models.
 
@@ -7762,7 +7647,6 @@ class Session(NoNewAttributesAfterInit):
         return self._get_stat_info()
 
 
-    ### Ahelp ingest: 2015-05-03 DJB
     def get_fit_results(self):
         """Return the results of the last fit.
 
@@ -7861,7 +7745,6 @@ class Session(NoNewAttributesAfterInit):
         else:
             return self._fit_results
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def guess(self, id=None, model=None, limits=True, values=True):
         """Estimate the parameter values and ranges given the loaded data.
 
@@ -7958,7 +7841,6 @@ class Session(NoNewAttributesAfterInit):
                  self._get_model(id).name)
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def calc_stat(self, id=None, *otherids):
         """Calculate the fit statistic for a data set.
 
@@ -8009,7 +7891,6 @@ class Session(NoNewAttributesAfterInit):
         ids, f = self._get_fit(id, otherids)
         return f.calc_stat()
 
-    ### Ahelp ingest: 2015-05-03 DJB
     def calc_chisqr(self, id=None, *otherids):
         """Calculate the per-bin chi-squared statistic.
 
@@ -8148,7 +8029,6 @@ class Session(NoNewAttributesAfterInit):
         self._pvalue_results = results
 
 
-    ### Ahelp ingest: 2015-05-14 DJB
     def get_pvalue_results(self):
         """Return the data calculated by the last plot_pvalue call.
 
@@ -8174,7 +8054,6 @@ class Session(NoNewAttributesAfterInit):
         return self._pvalue_results
 
 
-    ### Ahelp ingest: 2015-05-14 DJB
     ### DOC-TODO: improve discussion of how the simulations are done.
     def plot_pvalue(self, null_model, alt_model, conv_model=None,
                     id=1, otherids=(), num=500, bins=25, numcores=None,
@@ -8287,7 +8166,6 @@ class Session(NoNewAttributesAfterInit):
             sherpa.plot.end()
 
 
-    ### Ahelp ingest: 2015-05-14 DJB
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                      id=1, otherids=(), num=500, bins=25, numcores=None,
                      recalc=False):
@@ -8369,7 +8247,6 @@ class Session(NoNewAttributesAfterInit):
     ###           Unfortunately not quite a direct copy, so hard
     ###           to see how to do
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def normal_sample(self, num=1, sigma=1, correlate=True,
                       id=None, otherids=(), numcores=None):
         """Sample the fit statistic by taking the parameter values
@@ -8441,7 +8318,6 @@ class Session(NoNewAttributesAfterInit):
         return sherpa.sim.normal_sample(fit, num, sigma, correlate, numcores)
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: improve the description of factor parameter
     def uniform_sample(self, num=1, factor=4,
                        id=None, otherids=(), numcores=None):
@@ -8500,7 +8376,6 @@ class Session(NoNewAttributesAfterInit):
         return sherpa.sim.uniform_sample(fit, num, factor, numcores)
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def t_sample(self, num=1, dof=None, id=None, otherids=(), numcores=None):
         """Sample the fit statistic by taking the parameter values from
         a Student's t-distribution.
@@ -8566,7 +8441,6 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
 
-    ### Ahelp ingest: 2015-05-08 DJB
     ### DOC-TODO: how best to document the settings?
     ### DOC-TODO: have I got soft_limits described correctly?
     def get_covar(self):
@@ -8622,7 +8496,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._estmethods['covariance']
 
-    ### Ahelp ingest: 2015-04-27 DJB
     ### DOC-TODO: how best to document the settings?
     ### DOC-TODO: have I got soft_limits described correctly?
     ### DOC-TODO: when verbose=True how is extra output displayed?
@@ -8732,7 +8605,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._estmethods['confidence']
 
-    ### Ahelp ingest: 2015-05-07 DJB
     def get_proj(self):
         """Return the confidence-interval estimation object.
 
@@ -8849,7 +8721,6 @@ class Session(NoNewAttributesAfterInit):
         self._check_estmethod_opt(meth, optname)
         meth.config[optname] = val
         
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_covar_opt(self, name=None):
         """Return one or all of the options for the covariance
         method.
@@ -8891,7 +8762,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_estmethod_opt('covariance', name)
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def get_conf_opt(self, name=None):
         """Return one or all of the options for the confidence interval
         method.
@@ -8933,7 +8803,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_estmethod_opt('confidence', name)
     
-    ### Ahelp ingest: 2015-05-07 DJB
     def get_proj_opt(self, name=None):
         """Return one or all of the options for the confidence interval
         method.
@@ -8978,7 +8847,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_estmethod_opt('projection', name)
     
-    ### Ahelp ingest: 2015-05-08 DJB
     def set_covar_opt(self, name, val):
         """Set an option for the covariance method.
 
@@ -9013,7 +8881,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_estmethod_opt('covariance', name, val)
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def set_conf_opt(self, name, val):
         """Set an option for the confidence interval method.
 
@@ -9048,7 +8915,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_estmethod_opt('confidence', name, val)
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def set_proj_opt(self, name, val):
         """Set an option for the projection method.
 
@@ -9086,7 +8952,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_estmethod_opt('projection', name, val)
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_covar_results(self):
         """Return the results of the last `covar` run.
 
@@ -9182,7 +9047,6 @@ class Session(NoNewAttributesAfterInit):
         else:
             return self._covariance_results
 
-    ### Ahelp ingest: 2015-04-27 DJB
     ### DOC_TODO: what is the best description for nfits?
     def get_conf_results(self):
         """Return the results of the last `conf` run.
@@ -9281,7 +9145,6 @@ class Session(NoNewAttributesAfterInit):
         else:
             return self._confidence_results
 
-    ### Ahelp ingest: 2015-05-07 DJB
     def get_proj_results(self):
         """Return the results of the last `proj` run.
 
@@ -9399,7 +9262,6 @@ class Session(NoNewAttributesAfterInit):
         info(res.format())
         return res
 
-    ### Ahelp ingest: 2015-05-08 DJB
     ### DOC-TODO: include screen output of covar() ?
     def covar(self, *args):
         """Estimate the confidence intervals for parameters using the
@@ -9525,7 +9387,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._covariance_results = self._est_errors(args, 'covariance')
     
-    ### Ahelp ingest: 2015-04-27 DJB
     ### DOC-TODO: include screen output of conf() ?
     def conf(self, *args):
         """Estimate the confidence intervals for parameters using the
@@ -9718,7 +9579,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._confidence_results = self._est_errors(args, 'confidence')
 
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-TODO: add a deprecation note?
     def proj(self, *args):
         """Estimate the confidence intervals for parameters using the
@@ -9841,7 +9701,6 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def set_sampler_opt(self, opt, value):
         """Set an option for the current pyBLoCXS sampler.
 
@@ -9906,7 +9765,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._pyblocxs.set_sampler_opt(opt, value)
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler_opt(self, opt):
         """Return an option of the current pyBLoCXS sampler.
 
@@ -9930,7 +9788,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.get_sampler_opt(opt)
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler_name(self):
         """Return the name of the current pyBLoCXS sampler.
 
@@ -9952,7 +9809,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.get_sampler_name()
         
-    ### Ahelp ingest: 2015-04-30 DJB
     def set_sampler(self, sampler):
         """Set the pyBLoCXS sampler.
 
@@ -10015,7 +9871,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._pyblocxs.set_sampler(sampler)
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler(self):
         """Return the current pyBLoCXS sampler options.
 
@@ -10036,7 +9891,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.get_sampler()
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: should set_sampler_opt be mentioned here?
     def set_prior(self, par, prior):
         """Set the prior function to use with a parameter.
@@ -10099,7 +9953,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._pyblocxs.set_prior(par, prior)
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def get_prior(self, par):
         """Return the prior function for a parameter.
 
@@ -10131,7 +9984,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.get_prior(par)
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: include examples once this returns something useful
     def list_priors(self):
         """Return the priors set for model parameters, if any.
@@ -10150,7 +10002,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.list_priors()
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def list_samplers(self):
         """List the pyBLoCXS samplers.
 
@@ -10173,7 +10024,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.list_samplers()
 
-    ### Ahelp ingest: 2015-05-15 DJB
     ### DOC-TODO: fix up the URL since it should be an internal
     ###           reference (ie documented here)
     ### DOC-TODO: add pointers on what to do with the return values
@@ -10295,7 +10145,6 @@ class Session(NoNewAttributesAfterInit):
     # Plot object access
     #
 
-    ### Ahelp ingest: 2015-05-14 DJB
     ### DOC-TODO: how is this used? simple testing didn't seem to make any
     ###           difference with chips
     def get_split_plot(self):
@@ -10308,7 +10157,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._splitplot
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def get_data_plot(self, id=None):
         """Return the data used by plot_data.
 
@@ -10338,7 +10186,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._dataplot)
         return self._dataplot
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: discussion of preferences needs better handling
     ###           of how it interacts with the chosen plot backend.
     def get_data_plot_prefs(self):
@@ -10443,7 +10290,6 @@ class Session(NoNewAttributesAfterInit):
         return self._dataplot.plot_prefs
 
     # also in sherpa.astro.utils (copies this docstring)
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_plot(self, id=None):
         """Return the data used by plot_model.
 
@@ -10475,7 +10321,6 @@ class Session(NoNewAttributesAfterInit):
         return self._modelplot
 
     # also in sherpa.astro.utils (does not copy this docstring)
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_source_plot(self, id=None):
         """Return the data used by plot_source.
 
@@ -10643,7 +10488,6 @@ class Session(NoNewAttributesAfterInit):
         return self._compsrcplot
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_plot_prefs(self):
         """Return the preferences for plot_model.
 
@@ -10744,7 +10588,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._modelplot.plot_prefs
 
-    ### Ahelp ingest: 2015-05-13 DJB
     def get_fit_plot(self, id=None):
         """Return the data used by plot_fit.
 
@@ -10779,7 +10622,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._fitplot)
         return self._fitplot
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_resid_plot(self, id=None):
         """Return the data used by plot_resid.
 
@@ -10821,7 +10663,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._residplot)
         return self._residplot
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_delchi_plot(self,id=None):
         """Return the data used by plot_delchi.
 
@@ -10864,7 +10705,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._delchiplot)
         return self._delchiplot
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_chisqr_plot(self,id=None):
         """Return the data used by plot_chisqr.
 
@@ -10907,7 +10747,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._chisqrplot)
         return self._chisqrplot
     
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_ratio_plot(self, id=None):
         """Return the data used by plot_ratio.
 
@@ -10950,7 +10789,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._ratioplot)
         return self._ratioplot
     
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_data_contour(self, id=None):
         """Return the data used by contour_data.
 
@@ -10992,7 +10830,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._datacontour)
         return self._datacontour
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_data_contour_prefs(self):
         """Return the preferences for contour_data.
 
@@ -11043,7 +10880,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._datacontour.contour_prefs
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_contour(self, id=None):
         """Return the data used by contour_model.
 
@@ -11085,7 +10921,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._modelcontour)
         return self._modelcontour
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_source_contour(self, id=None):
         """Return the data used by contour_source.
 
@@ -11127,7 +10962,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._sourcecontour)
         return self._sourcecontour
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_contour_prefs(self):
         """Return the preferences for contour_model.
 
@@ -11178,7 +11012,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._modelcontour.contour_prefs
 
-    ### Ahelp ingest: 2015-05-13 DJB
     def get_fit_contour(self, id=None):
         """Return the data used by contour_fit.
 
@@ -11224,7 +11057,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._fitcontour)
         return self._fitcontour
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_resid_contour(self, id=None):
         """Return the data used by contour_resid.
 
@@ -11267,7 +11099,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._residcontour)
         return self._residcontour
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_ratio_contour(self, id=None):
         """Return the data used by contour_ratio.
 
@@ -11310,7 +11141,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_plotobj(id, self._ratiocontour)
         return self._ratiocontour
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_psf_contour(self, id=None):
         """Return the data used by contour_psf.
 
@@ -11349,7 +11179,6 @@ class Session(NoNewAttributesAfterInit):
         return self._psfcontour
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_kernel_contour(self, id=None):
         """Return the data used by contour_kernel.
 
@@ -11389,7 +11218,6 @@ class Session(NoNewAttributesAfterInit):
         return self._kernelcontour
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_psf_plot(self, id=None):
         """Return the data used by plot_psf.
 
@@ -11427,7 +11255,6 @@ class Session(NoNewAttributesAfterInit):
         return self._psfplot
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_kernel_plot(self, id=None):
         """Return the data used by plot_kernel.
 
@@ -11601,7 +11428,6 @@ class Session(NoNewAttributesAfterInit):
                 plot.histo_prefs[item] = value
 
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def set_xlog(self, plottype="all"):
         """New plots will display a logarithmically-scaled X axis.
 
@@ -11638,7 +11464,6 @@ class Session(NoNewAttributesAfterInit):
         self._set_plot_item(plottype, 'xlog', True)
 
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def set_ylog(self, plottype="all"):
         """New plots will display a logarithmically-scaled Y axis.
 
@@ -11675,7 +11500,6 @@ class Session(NoNewAttributesAfterInit):
         self._set_plot_item(plottype, 'ylog', True)
 
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def set_xlinear(self, plottype="all"):
         """New plots will display a linear X axis.
 
@@ -11712,7 +11536,6 @@ class Session(NoNewAttributesAfterInit):
         self._set_plot_item(plottype, 'xlog', False)
 
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def set_ylinear(self, plottype="all"):
         """New plots will display a linear Y axis.
 
@@ -11749,7 +11572,6 @@ class Session(NoNewAttributesAfterInit):
         self._set_plot_item(plottype, 'ylog', False)
 
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: how to describe optional plot types
     ### DOC-TODO: should we add plot_order
     ### DOC-TODO: how to list information/examples about the backends?
@@ -11894,7 +11716,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._multi_plot(args)        
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def plot_data(self, id=None, **kwargs):
         """Plot the data values.
 
@@ -11945,7 +11766,6 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._dataplot, **kwargs)
     
     # DOC-NOTE: also in sherpa.astro.utils
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_model(self, id=None, **kwargs):
         """Plot the model for a data set.
 
@@ -12000,7 +11820,6 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_source_component(self, id, model=None, **kwargs):
         """Plot a component of the source expression for a data set.
 
@@ -12069,7 +11888,6 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_model_component(self, id, model=None, **kwargs):
         """Plot a component of the model for a data set.
 
@@ -12144,7 +11962,6 @@ class Session(NoNewAttributesAfterInit):
 
 
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_source(self, id=None, **kwargs):
         """Plot the source expression for a data set.
 
@@ -12196,7 +12013,6 @@ class Session(NoNewAttributesAfterInit):
                     (mdl.name, str(id)))
         self._plot(id, self._sourceplot, **kwargs)
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_fit(self, id=None, **kwargs):
         """Plot the fit results (data, model) for a data set.
 
@@ -12252,7 +12068,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._fitplot, **kwargs)
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_resid(self, id=None, **kwargs):
         """Plot the residuals (data - model) for a data set.
 
@@ -12312,7 +12127,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._residplot, **kwargs)
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_chisqr(self, id=None, **kwargs):
         """Plot the chi-squared value for each point in a data set.
 
@@ -12367,7 +12181,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._chisqrplot, **kwargs)
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_delchi(self, id=None, **kwargs):
         """Plot the ratio of residuals to error for a data set.
 
@@ -12422,7 +12235,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._delchiplot, **kwargs)
         
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_ratio(self, id=None, **kwargs):
         """Plot the ratio of data to model for a data set.
 
@@ -12475,7 +12287,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._plot(id, self._ratioplot, **kwargs)
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_psf(self, id=None, **kwargs):
         """Plot the 1D PSF model applied to a data set.
 
@@ -12529,7 +12340,6 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._psfplot, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_kernel(self, id=None, **kwargs):
         """Plot the 1D kernel applied to a data set.
 
@@ -12585,7 +12395,6 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._kernelplot, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True):
         """Plot the fit results, and the residuals, for a data set.
@@ -12670,7 +12479,6 @@ class Session(NoNewAttributesAfterInit):
         else:
             sherpa.plot.end()
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_fit_delchi(self, id=None, replot=False, overplot=False,
                         clearwindow=True):
         """Plot the fit results, and the residuals, for a data set.
@@ -12760,7 +12568,6 @@ class Session(NoNewAttributesAfterInit):
     ## Statistical plotting routines
     #
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def plot_pdf(self, points, name="x", xlabel="x", bins=12, normed=True, 
                  replot=False, overplot=False, clearwindow=True ):
         """Plot the probability density function of an array of values.
@@ -12838,7 +12645,6 @@ class Session(NoNewAttributesAfterInit):
         return self._pdfplot
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def plot_cdf(self, points, name="x", xlabel="x", 
                  replot=False, overplot=False, clearwindow=True ):
         """Plot the cumulative density function of an array of values.
@@ -12914,7 +12720,6 @@ class Session(NoNewAttributesAfterInit):
         return self._cdfplot
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: what does xlabel do?
     ### DOC-TODO: is clearwindow a ChIPS-only setting?
     def plot_trace(self, points, name="x", xlabel="x", 
@@ -12998,7 +12803,6 @@ class Session(NoNewAttributesAfterInit):
         return self._traceplot
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def plot_scatter(self, x, y, name="(x,y)", xlabel="x", ylabel="y",
                    replot=False, overplot=False, clearwindow=True ):
         """Create a scatter plot.
@@ -13114,7 +12918,6 @@ class Session(NoNewAttributesAfterInit):
         else:            
             sherpa.plot.end()
 
-    ### Ahelp ingest: 2015-05-07 DJB
     ### DOC-TODO: how to describe optional plot types
     ### DOC-TODO: how to list information/examples about the backends?
     ###           have some introductory text, but prob. need a link
@@ -13199,7 +13002,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._multi_plot(args, 'contour')
 
-    ### Ahelp ingest: 2015-05-07 DJB
     def contour_data(self, id=None, **kwargs):
         """Contour the values of an image data set.
 
@@ -13239,7 +13041,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._datacontour, **kwargs)
         
-    ### Ahelp ingest: 2015-05-07 DJB
     def contour_model(self, id=None, **kwargs):
         """Contour the values of the model, including any PSF.
 
@@ -13280,7 +13081,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._modelcontour, **kwargs)
 
-    ### Ahelp ingest: 2015-05-07 DJB
     def contour_source(self, id=None, **kwargs):
         """Contour the values of the model, without any PSF.
 
@@ -13322,7 +13122,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._sourcecontour, **kwargs)
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def contour_fit(self, id=None, **kwargs):
         """Contour the fit to a data set.
 
@@ -13366,7 +13165,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._fitcontour, **kwargs)
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def contour_resid(self, id=None, **kwargs):
         """Contour the residuals of the fit.
 
@@ -13409,7 +13207,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._residcontour, **kwargs)
     
-    ### Ahelp ingest: 2015-05-08 DJB
     def contour_ratio(self, id=None, **kwargs):
         """Contour the ratio of data to model.
 
@@ -13452,7 +13249,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._ratiocontour, **kwargs)
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def contour_psf(self, id=None, **kwargs):
         """Contour the PSF applied to the model of an image data set.
 
@@ -13484,7 +13280,6 @@ class Session(NoNewAttributesAfterInit):
         self._contour(id, self._psfcontour, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def contour_kernel(self, id=None, **kwargs):
         """Contour the kernel applied to the model of an image data set.
 
@@ -13515,7 +13310,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._contour(id, self._kernelcontour, **kwargs)
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def contour_fit_resid(self, id=None, replot=False, overcontour=False):
         """Contour the fit and the residuals to a data set.
 
@@ -13574,7 +13368,6 @@ class Session(NoNewAttributesAfterInit):
     # Projection and uncertainty plots
     ###########################################################################
 
-    ### Ahelp ingest: 2015-05-07 DJB
     ### DOC-NOTE: I am not convinced that this code is working when recalc=True
     ### DOC-NOTE: needs to support the fast option of int_proj
     def get_int_proj(self, par=None, id=None, otherids=None, recalc=False,
@@ -13669,7 +13462,6 @@ class Session(NoNewAttributesAfterInit):
             self._intproj.calc(fit,par,self._methods)
         return self._intproj
 
-    ### Ahelp ingest: 2015-05-07 DJB
     ### DOC-NOTE: Check that this works (since get_int_proj may not) when recalc=True
     def get_int_unc(self, par=None, id=None, otherids=None, recalc=False,
                     min=None, max=None, nloop=20, delv=None, fac=1, log=False,
@@ -13763,7 +13555,6 @@ class Session(NoNewAttributesAfterInit):
             self._intunc.calc(fit,par)
         return self._intunc
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_reg_proj(self, par0=None, par1=None, id=None, otherids=None,
                      recalc=False, fast=True, min=None, max=None, 
                      nloop=(10,10),delv=None, fac=4, log=(False,False),
@@ -13872,7 +13663,6 @@ class Session(NoNewAttributesAfterInit):
             self._regproj.calc(fit,par0,par1,self._methods)
         return self._regproj
     
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_reg_unc(self, par0=None, par1=None, id=None, otherids=None,
                     recalc=False, min=None, max=None, nloop=(10,10), delv=None,
                     fac=4, log=(False,False), sigma=(1,2,3), levels=None,
@@ -14006,7 +13796,6 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, plotobj, replot=True, **plot_dict)
 
     
-    ### Ahelp ingest: 2015-05-07 DJB
     ### DOC-NOTE: I am not convinced I have fac described correctly
     ### DOC-NOTE: same synopsis as int_unc
     def int_proj(self, par, id=None, otherids=None, replot=False, fast=True,
@@ -14124,7 +13913,6 @@ class Session(NoNewAttributesAfterInit):
                        delv=delv, fac=fac, log=log, numcores=numcores, 
                        overplot=overplot)
 
-    ### Ahelp ingest: 2015-05-07 DJB
     ### DOC-NOTE: I am not convinced I have fac described correctly
     ### DOC-NOTE: same synopsis as int_proj
     def int_unc(self, par, id=None, otherids=None, replot=False, min=None,
@@ -14266,7 +14054,6 @@ class Session(NoNewAttributesAfterInit):
         self._contour(id, plotobj, replot=True, **cont_dict)
 
 
-    ### Ahelp ingest: 2015-05-07 DJB
     ### DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self, par0, par1, id=None, otherids=None, replot=False,
                  fast=True, min=None, max=None, nloop=(10,10), delv=None, fac=4,
@@ -14395,7 +14182,6 @@ class Session(NoNewAttributesAfterInit):
                        delv=delv, fac=fac, log=log, sigma=sigma, levels=levels,
                        numcores=numcores, overplot=overplot)
 
-    ### Ahelp ingest: 2015-05-07 DJB
     ### DOC-TODO: how is sigma converted into delta_stat
     def reg_unc(self, par0, par1, id=None, otherids=None, replot=False,
                 min=None, max=None, nloop=(10,10), delv=None, fac=4,
@@ -14558,7 +14344,6 @@ class Session(NoNewAttributesAfterInit):
     # Image object access
     #
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_data_image(self, id=None):
         """Return the data used by image_data.
 
@@ -14600,7 +14385,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._dataimage)
         return self._dataimage
     
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_image(self, id=None):
         """Return the data used by image_model.
 
@@ -14647,7 +14431,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._modelimage)
         return self._modelimage
 
-    ### Ahelp ingest: 2015-05-12 DJB
     ### DOC-TODO: it looks like get_source_image doesn't raise DataErr with
     ###           a non-2D data set
     def get_source_image(self, id=None):
@@ -14694,7 +14477,6 @@ class Session(NoNewAttributesAfterInit):
         return self._sourceimage
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_model_component_image(self, id, model=None):
         """Return the data used by image_model_component.
 
@@ -14755,7 +14537,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._mdlcompimage, model=model)
         return self._mdlcompimage
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_source_component_image(self, id, model=None):
         """Return the data used by image_source_component.
 
@@ -14816,7 +14597,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._srccompimage, model=model)
         return self._srccompimage
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_ratio_image(self, id=None):
         """Return the data used by image_ratio.
 
@@ -14857,7 +14637,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._ratioimage)
         return self._ratioimage
     
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_resid_image(self, id=None):
         """Return the data used by image_resid.
 
@@ -14898,7 +14677,6 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._residimage)
         return self._residimage
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_psf_image(self, id=None):
         """Return the data used by image_psf.
 
@@ -14937,7 +14715,6 @@ class Session(NoNewAttributesAfterInit):
         return self._psfimage
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def get_kernel_image(self, id=None):
         """Return the data used by image_kernel.
 
@@ -14982,7 +14759,6 @@ class Session(NoNewAttributesAfterInit):
     def _image(self, id, imageobj, shape, newframe, tile, model=None):
         self._prepare_imageobj(id, imageobj, model).image(shape, newframe, tile)
 
-    ### Ahelp ingest: 2015-05-09 DJB
     def image_data(self, id=None, newframe=False, tile=False):
         """Display a data set in the image viewer.
 
@@ -15046,7 +14822,6 @@ class Session(NoNewAttributesAfterInit):
         self._image(id, self._dataimage, None,
                     newframe, tile)
 
-    ### Ahelp ingest: 2015-05-09 DJB
     def image_model(self, id=None, newframe=False, tile=False):
         """Display the model for a data set in the image viewer.
 
@@ -15120,7 +14895,6 @@ class Session(NoNewAttributesAfterInit):
                     newframe, tile)
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def image_source_component(self, id, model=None, newframe=False,
                                tile=False):
         """Display a component of the source expression in the image viewer.
@@ -15205,7 +14979,6 @@ class Session(NoNewAttributesAfterInit):
         self._image(id, self._srccompimage, None, newframe, tile, model=model)
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     def image_model_component(self, id, model=None, newframe=False, tile=False):
         """Display a component of the model in the image viewer.
 
@@ -15294,7 +15067,6 @@ class Session(NoNewAttributesAfterInit):
         self._image(id, self._mdlcompimage, None, newframe, tile, model=model)
 
 
-    ### Ahelp ingest: 2015-05-09 DJB
     def image_source(self, id=None, newframe=False, tile=False):
         """Display the source expression for a data set in the image viewer.
 
@@ -15365,7 +15137,6 @@ class Session(NoNewAttributesAfterInit):
         """
         self._image(id, self._sourceimage, None, newframe, tile)
 
-    ### Ahelp ingest: 2015-05-09 DJB
     ### DOC-TODO: does newframe make sense here?
     def image_fit(self, id=None, newframe=True, tile=True, deleteframes=True):
         """Display the data, model, and residuals for a data set in the image viewer.
@@ -15442,7 +15213,6 @@ class Session(NoNewAttributesAfterInit):
         self._modelimage.image(None, newframe, tile)
         self._residimage.image(None, newframe, tile)
 
-    ### Ahelp ingest: 2015-05-09 DJB
     def image_resid(self, id=None, newframe=False, tile=False):
         """Display the residuals (data - model) for a data set in the image viewer.
 
@@ -15515,7 +15285,6 @@ class Session(NoNewAttributesAfterInit):
         self._image(id, self._residimage, None,
                     newframe, tile)
 
-    ### Ahelp ingest: 2015-05-09 DJB
     def image_ratio(self, id=None, newframe=False, tile=False):
         """Display the ratio (data/model) for a data set in the image viewer.
 
@@ -15575,7 +15344,6 @@ class Session(NoNewAttributesAfterInit):
         self._image(id, self._ratioimage, None,
                     newframe, tile)
 
-    ### Ahelp ingest: 2015-05-11 DJB
     ### DOC-TODO: what gets displayed when there is no PSF?
     def image_psf(self, id=None, newframe=False, tile=False):
         """Display the 2D PSF model for a data set in the image viewer.
@@ -15632,7 +15400,6 @@ class Session(NoNewAttributesAfterInit):
         self._image(id, self._psfimage, None, newframe, tile)
 
 
-    ### Ahelp ingest: 2015-05-11 DJB
     ### DOC-TODO: what gets displayed when there is no PSF?
     ### DOC-TODO: where to point to for PSF/kernel discussion/description
     ###           (as it appears in a number of places)?
@@ -15694,7 +15461,6 @@ class Session(NoNewAttributesAfterInit):
     # through unbound functions of the Image class--always talking to
     # the same instance of the Image backend, so OK for now
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def image_deleteframes(self):
         """Delete all the frames open in the image viewer.
 
@@ -15719,7 +15485,6 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.delete_frames()
         
-    ### Ahelp ingest: 2015-05-08 DJB
     def image_open(self):
         """Start the image viewer.
 
@@ -15756,7 +15521,6 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.open()
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def image_close(self):
         """Close the image viewer.
 
@@ -15780,7 +15544,6 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.close()
 
-    ### Ahelp ingest: 2015-05-11 DJB
     ### DOC-TODO: what is the "default" coordinate system
     def image_getregion(self, coord=''):
         """Return the region defined in the image viewer.
@@ -15820,7 +15583,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return sherpa.image.Image.get_region(coord)
 
-    ### Ahelp ingest: 2015-05-11 DJB
     ### DOC-TODO: what is the "default" coordinate system
     def image_setregion(self, reg, coord=''):
         """Set the region to display in the image viewer.
@@ -15863,7 +15625,6 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.set_region(reg, coord)
 
-    ### Ahelp ingest: 2015-05-09 DJB
     ### DOC-TODO: check the ds9 link when it is working
     ### DOC-TODO: is there a link of ds9 commands we can link to?
     def image_xpaget(self, arg):
@@ -15917,7 +15678,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return sherpa.image.Image.xpaget(arg)
 
-    ### Ahelp ingest: 2015-05-09 DJB
     ### DOC-TODO: check the ds9 link when it is working
     ### DOC-TODO: is there a link of ds9 commands we can link to?
     def image_xpaset(self, arg, data=None):

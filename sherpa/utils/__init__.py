@@ -898,7 +898,6 @@ def dataspace2d(dim):
 
     return x0, x1, y, shape
 
-### Ahelp ingest: 2015-04-27 DJB
 def histogram1d( x, x_lo, x_hi ):
     """Create a 1D histogram from a binned grid (`x_lo`, `xhi`)
     and array of samples (`x`).
@@ -952,7 +951,6 @@ def histogram1d( x, x_lo, x_hi ):
 
     return hist1d( numpy.asarray(x), x_lo, x_hi )
 
-### Ahelp ingest: 2015-04-27 DJB
 def histogram2d( x, y, x_grid, y_grid ):
     """Create 21D histogram from a binned grid (`x_grid`, `y_grid`)
     and array of samples (`x`, and `y`).

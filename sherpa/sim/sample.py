@@ -326,7 +326,6 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
         return _sample_stat(fit, samples, numcores)
 
 
-### Ahelp ingest: 2015-04-30 DJB
 def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None):
     """Sample the fit statistic by taking the parameter values
     from a normal distribution.
@@ -380,7 +379,6 @@ def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None):
     return sampler.get_sample(fit, num, numcores)
 
 
-### Ahelp ingest: 2015-04-30 DJB
 def uniform_sample(fit, num=1, factor=4, numcores=None):
     """Sample the fit statistic by taking the parameter values
     from an uniform distribution.
@@ -418,7 +416,6 @@ def uniform_sample(fit, num=1, factor=4, numcores=None):
     return sampler.get_sample(fit, num, factor, numcores)
 
 
-### Ahelp ingest: 2015-04-30 DJB
 def t_sample(fit, num=1, dof=2, numcores=None):
     """Sample the fit statistic by taking the parameter values from
     a Student's t-distribution.

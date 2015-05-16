@@ -190,7 +190,6 @@ def _counts2d(data, reg, func, *args):
 
     return counts
 
-### Ahelp ingest: 2015-05-05 DJB
 def calc_energy_flux( data, src, lo=None, hi=None):
     """Integrate the source model over a pass band.
 
@@ -265,7 +264,6 @@ def calc_energy_flux( data, src, lo=None, hi=None):
     """
     return _flux(data, lo, hi, src, eflux=True)
 
-### Ahelp ingest: 2015-05-05 DJB
 def calc_photon_flux( data, src, lo=None, hi=None):
     """Integrate the source model over a pass band.
 
@@ -343,7 +341,6 @@ def calc_photon_flux( data, src, lo=None, hi=None):
     """
     return _flux(data, lo, hi, src)
 
-### Ahelp ingest: 2015-05-05 DJB
 ### DOC-TODO: compare to calc_photon_flux ?
 def calc_source_sum( data, src, lo=None, hi=None):
     """Sum up the source model over a pass band.
@@ -406,7 +403,6 @@ def calc_source_sum( data, src, lo=None, hi=None):
 #def calc_source_sum2d( data, src, reg=None):
 #    return _counts2d(data, reg, data.eval_model_to_fit, src)
 
-### Ahelp ingest: 2015-05-05 DJB
 def calc_data_sum(data, lo=None, hi=None):
     """Sum up the data values over a pass band.
 
@@ -471,7 +467,6 @@ def calc_data_sum(data, lo=None, hi=None):
     """
     return _counts( data, lo, hi, data.apply_filter, data.get_dep() )
 
-### Ahelp ingest: 2015-05-05 DJB
 def calc_data_sum2d(data, reg=None):
     """Sum up the data values of a 2D data set.
 
@@ -504,7 +499,6 @@ def calc_data_sum2d(data, reg=None):
     """
     return _counts2d(data, reg, data.apply_filter, data.get_dep() )
 
-### Ahelp ingest: 2015-05-05 DJB
 ### DOC-TODO: better comparison of calc_source_sum and calc_model_sum
 ###           needed (e.g. integration or results in PHA case?)
 def calc_model_sum(data, model, lo=None, hi=None):
@@ -555,7 +549,6 @@ def calc_model_sum(data, model, lo=None, hi=None):
     """
     return _counts(data, lo, hi, data.eval_model_to_fit, model)
 
-### Ahelp ingest: 2015-05-05 DJB
 ### DOC-TODO: clean up whether the calc_model_* versions should or
 ###           should not contain the instrument response/PSF components.
 ###           Note: there is no calc_source_sum2d in this module, so
@@ -634,7 +627,6 @@ def eqwidth(data, model, combo, lo=None, hi=None):
     return eqw
 
 
-### Ahelp ingest: 2015-05-04 DJB
 def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
     """Calculate the K correction for a model.
 

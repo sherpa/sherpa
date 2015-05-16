@@ -109,7 +109,6 @@ class OptMethod(NoNewAttributesAfterInit):
 
 	return output
 
-### Ahelp ingest: 2015-05-04 DJB
 ### DOC-TODO: better description of the sequence argument; what happens
 ###           with multiple free parameters.
 ### DOC-TODO: what does the method attribute take: string or class instance?
@@ -403,7 +402,6 @@ class LevMar(OptMethod):
 	OptMethod.__init__(self, name, lmdif)
 
 
-### Ahelp ingest: 2015-05-04 DJB
 class MonCar(OptMethod):
     """Monte Carlo optimzation method.
 
@@ -467,7 +465,6 @@ class MonCar(OptMethod):
 	OptMethod.__init__(self, name, montecarlo)
 
 
-### Ahelp ingest: 2015-05-04 DJB
 ### DOC-TODO: finalximplex=4 and 5 list the same conditions, it is likely
 ###           a cut-n-paste error, so what is the correct description?
 class NelderMead(OptMethod):

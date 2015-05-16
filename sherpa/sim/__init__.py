@@ -113,7 +113,6 @@ class MCMC(NoNewAttributesAfterInit):
         self.__dict__.update(state)
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: include examples once this returns something useful
     ### TODO: this should really return a dict, not a string
     def list_priors(self):
@@ -134,7 +133,6 @@ class MCMC(NoNewAttributesAfterInit):
         return str(self.priors)
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def get_prior(self, par):
         """Return the prior function for a parameter.
 
@@ -171,7 +169,6 @@ class MCMC(NoNewAttributesAfterInit):
         return prior
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: should set_sampler_opt be mentioned here?
     def set_prior(self, par, prior):
         """Set the prior function to use with a parameter.
@@ -235,7 +232,6 @@ class MCMC(NoNewAttributesAfterInit):
         self.priors[par.fullname] = prior
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def list_samplers(self):
         """List the pyBLoCXS samplers.
 
@@ -260,7 +256,6 @@ class MCMC(NoNewAttributesAfterInit):
         return self.__samplers.keys()
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def set_sampler(self, sampler):
         """Set the pyBLoCXS sampler.
 
@@ -340,7 +335,6 @@ class MCMC(NoNewAttributesAfterInit):
             raise TypeError("Unknown sampler '%s'" % sampler)
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler(self):
         """Return the current pyBLoCXS sampler options.
 
@@ -363,7 +357,6 @@ class MCMC(NoNewAttributesAfterInit):
         return self._sampler_opt.copy()
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler_name(self):
         """Return the name of the current pyBLoCXS sampler.
 
@@ -386,7 +379,6 @@ class MCMC(NoNewAttributesAfterInit):
         return self.sampler.__name__
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def get_sampler_opt(self, opt):
         """Return an option of the current pyBLoCXS sampler.
 
@@ -411,7 +403,6 @@ class MCMC(NoNewAttributesAfterInit):
         return self._get_sampler_opt(opt)
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def set_sampler_opt(self, opt, value):
         """Set an option for the current pyBLoCXS sampler.
 

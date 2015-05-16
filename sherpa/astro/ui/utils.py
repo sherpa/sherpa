@@ -111,7 +111,6 @@ class Session(sherpa.ui.utils.Session):
         sherpa.ui.utils.Session.__setstate__(self, state)
 
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def clean(self):
         """Clear out the current Sherpa session.
 
@@ -178,7 +177,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['bkgdelchi']=self._bkgdelchiplot
         self._plot_types['bkgchisqr']=self._bkgchisqrplot
 
-    ### Ahelp ingest: 2015-04-27 DJB
     # Add ability to save attributes sepcific to the astro package.
     # Save XSPEC module settings that need to be restored.
     def save(self, filename='sherpa.save', clobber=False):
@@ -233,7 +231,6 @@ class Session(sherpa.ui.utils.Session):
             self._xspec_state = None
         sherpa.ui.utils.Session.save(self, filename, clobber)
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def restore(self, filename='sherpa.save'):
         """Load in a Sherpa session from a file.
 
@@ -396,7 +393,6 @@ class Session(sherpa.ui.utils.Session):
         return model_str
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def show_bkg(self, id=None, bkg_id=None, outfile=None, clobber=False):
         """Show the details of the PHA background data sets.
 
@@ -448,7 +444,6 @@ class Session(sherpa.ui.utils.Session):
         _send_to_pager(all, outfile, clobber)
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def show_bkg_source(self, id=None, bkg_id=None, outfile=None, clobber=False):
         """Display the background model expression for a data set.
 
@@ -502,7 +497,6 @@ class Session(sherpa.ui.utils.Session):
         _send_to_pager(all, outfile, clobber)
 
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def show_bkg_model(self, id=None, bkg_id=None, outfile=None, clobber=False):
         """Display the background model expression used to fit a data set.
 
@@ -561,7 +555,6 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-11 DJB
     #@loggable(with_id=True, with_name='load_data')
     def dataspace1d(self, start, stop, step=1, numbins=None,
                     id=None, bkg_id=None, dstype=sherpa.data.Data1DInt):
@@ -671,7 +664,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-11 DJB
     def dataspace2d(self, dims, id=None, dstype=sherpa.astro.data.DataIMG):
         """Create the independent axis for a 2D data set.
 
@@ -725,7 +717,6 @@ class Session(sherpa.ui.utils.Session):
         self.set_data(id, dataset)
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-12 DJB
     ### DOC-TODO: how to describe Crates and/or AstroPy?
     def unpack_arrays(self, *args):
         """Create a sherpa data object from arrays of data.
@@ -797,7 +788,6 @@ class Session(sherpa.ui.utils.Session):
         return dataset
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: rework the Data type notes section (also needed for
     ###           unpack_arrays)
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
@@ -891,7 +881,6 @@ class Session(sherpa.ui.utils.Session):
         """
         self.set_data(id, self.unpack_arrays(*args))
 
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: should unpack_ascii be merged into this?
     def unpack_table(self, filename, ncols=2, colkeys=None, dstype=Data1D):
         """Unpack a FITS binary file into a data structure.
@@ -959,7 +948,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.read_table(filename, ncols, colkeys, dstype)
 
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: the field listing really should be somewhere else
     ###           as it's needed in multiple places (ideally in the
     ###           DataX class documentation, but users may not find it)
@@ -1078,7 +1066,6 @@ class Session(sherpa.ui.utils.Session):
         
         self.set_data(id, self.unpack_table(filename, ncols, colkeys, dstype))
         
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: should unpack_ascii be merged into unpack_table?
     ### DOC-TODO: I am going to ignore the crates support here as
     ###           it is somewhat meaningless, since the crate could
@@ -1154,7 +1141,6 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_ascii(filename, ncols, colkeys, dstype,
                                           sep=sep, comment=comment)
     
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: I am going to ignore the crates support here as
     ###           it is somewhat meaningless, since the crate could
     ###           have been read from a FITS binary table.
@@ -1272,7 +1258,6 @@ class Session(sherpa.ui.utils.Session):
                                             sep=sep, comment=comment ))
         
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-12 DJB
     def unpack_data(self, filename, *args, **kwargs):
         """Create a sherpa data object from a file.
 
@@ -1336,7 +1321,6 @@ class Session(sherpa.ui.utils.Session):
         return data
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-13 DJB
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_data(self, id, filename=None, *args, **kwargs):
         """Load a data set from a file.
@@ -1410,7 +1394,6 @@ class Session(sherpa.ui.utils.Session):
         else:
             self.set_data(id, data)
 
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
     def unpack_image(self, arg, coord='logical',
@@ -1467,7 +1450,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
-    ### Ahelp ingest: 2015-05-13 DJB
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_image(self, id, arg=None, coord='logical',
                      dstype=sherpa.astro.data.DataIMG):
@@ -1527,7 +1509,6 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
         self.set_data(id, self.unpack_image(arg, coord, dstype))
 
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
     ### DOC-TODO: what does this return when given a PHA2 file?
@@ -1583,7 +1564,6 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_pha(arg, use_errors)
 
 
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
     ### DOC-TODO: what does this return when given a PHA2 file?
@@ -1639,7 +1619,6 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_pha(arg, use_errors, True)
 
 
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-TODO: how best to include datastack support?
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_pha(self, id, arg=None, use_errors=False):
@@ -1792,7 +1771,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-TODO: does ncols make sense here? (have removed for now)
     ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
     ###           from PyFITS lands soon.
@@ -1874,7 +1852,6 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id, ignore=ignore)
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: does ncols make sense here? (have removed for now)
     ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
     ###           from PyFITS lands soon.
@@ -1966,7 +1943,6 @@ class Session(sherpa.ui.utils.Session):
         self.set_grouping(id,
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
     ###           from PyFITS lands soon.
     def load_quality(self, id, filename=None, bkg_id=None, *args, **kwargs):
@@ -2045,7 +2021,6 @@ class Session(sherpa.ui.utils.Session):
         self.set_quality(id,
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
-    ### Ahelp ingest: 2015-05-06 DJB
     def set_filter(self, id, val=None, bkg_id=None, ignore=False):
         """Set the filter array of a data set.
 
@@ -2122,7 +2097,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-TODO: does ncols make sense here? (have removed for now)
     def load_staterror(self, id, filename=None, bkg_id=None, *args, **kwargs):
         """Load the statistical errors from a file.
@@ -2207,7 +2181,6 @@ class Session(sherpa.ui.utils.Session):
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_syserror(self, id, filename=None, bkg_id=None, *args, **kwargs):
         """Load the systematic errors from a file.
@@ -2292,7 +2265,6 @@ class Session(sherpa.ui.utils.Session):
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
     # also in sherpa.utils
-    ### Ahelp ingest: 2015-05-11 DJB
     def set_dep(self, id, val=None, bkg_id=None):
         """Set the dependent axis of a data set.
 
@@ -2367,7 +2339,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def set_staterror(self, id, val=None, fractional=False, bkg_id=None):
         """Set the statistical errors on the dependent axis of a data set.
 
@@ -2444,7 +2415,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def set_syserror(self, id, val=None, fractional=False, bkg_id=None):
         """Set the systematic errors on the dependent axis of a data set.
 
@@ -2517,7 +2487,6 @@ class Session(sherpa.ui.utils.Session):
         d.syserror = err
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def set_exposure(self, id, exptime=None, bkg_id=None):
         """Change the exposure time of a PHA data set.
 
@@ -2586,7 +2555,6 @@ class Session(sherpa.ui.utils.Session):
             self._get_pha_data(id).exposure = exptime
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def set_backscal(self, id, backscale=None, bkg_id=None):
         """Change the area scaling of a PHA data set.
 
@@ -2638,7 +2606,6 @@ class Session(sherpa.ui.utils.Session):
             self._get_pha_data(id).backscal = backscale
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     ### DOC-TODO: the description needs improving.
     def set_areascal(self, id, area=None, bkg_id=None):
         """Change the fractional area factor of a PHA data set.
@@ -2689,7 +2656,6 @@ class Session(sherpa.ui.utils.Session):
             self._get_pha_data(id).areascal = area
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def get_staterror(self, id=None, filter=False, bkg_id=None):
         """Return the statistical error on the dependent axis of a data set.
 
@@ -2763,7 +2729,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def get_syserror(self, id=None, filter=False, bkg_id=None):
         """Return the systematic error on the dependent axis of a data set.
 
@@ -2812,7 +2777,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def get_error(self, id=None, filter=False, bkg_id=None):
         """Return the errors on the dependent axis of a data set.
 
@@ -2855,7 +2819,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def get_indep(self, id=None, filter=False, bkg_id=None):
         """Return the independent axes of a data set.
 
@@ -2955,7 +2918,6 @@ class Session(sherpa.ui.utils.Session):
         return d.get_indep(filter=filter)
 
 
-    ### Ahelp ingest: 2015-05-07 DJB
     def get_axes(self, id=None, bkg_id=None):
         """Return information about the independent axes of a data set.
 
@@ -3050,7 +3012,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-05 DJB
     def get_dep(self, id=None, filter=False, bkg_id=None):
         """Return the dependent axis of a data set.
 
@@ -3131,7 +3092,6 @@ class Session(sherpa.ui.utils.Session):
 
     get_counts = get_dep
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def get_rate(self, id=None, filter=False, bkg_id=None):
         """Return the count rate of a PHA data set.
 
@@ -3192,7 +3152,6 @@ class Session(sherpa.ui.utils.Session):
         d._rate=old
         return rate
 
-    ### Ahelp ingest: 2015-05-02 DJB
     ### DOC-TODO: how to get the corresponding x bins for this data?
     ###           i.e. what are the X values for these points
     def get_specresp(self, id=None, filter=False, bkg_id=None):
@@ -3224,7 +3183,6 @@ class Session(sherpa.ui.utils.Session):
         return d.get_specresp(filter)
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     def get_exposure(self, id=None, bkg_id=None):
         """Return the exposure time of a PHA data set.
 
@@ -3260,7 +3218,6 @@ class Session(sherpa.ui.utils.Session):
         return self._get_pha_data(id).exposure
 
 
-    ### Ahelp ingest: 2015-05-07 DJB
     def get_backscal(self, id=None, bkg_id=None):
         """Return the area scaling of a PHA data set.
 
@@ -3320,7 +3277,6 @@ class Session(sherpa.ui.utils.Session):
         return self._get_pha_data(id).backscal
 
 
-    ### Ahelp ingest: 2015-05-07 DJB
     def get_bkg_scale(self, id=None):
         """Return the background scaling factor for a PHA data set.
 
@@ -3375,7 +3331,6 @@ class Session(sherpa.ui.utils.Session):
         return scale
 
 
-    ### Ahelp ingest: 2015-05-07 DJB
     ### DOC-TODO: the description needs improving.
     def get_areascal(self, id=None, bkg_id=None):
         """Return the fractional area factor of a PHA data set.
@@ -3514,7 +3469,6 @@ class Session(sherpa.ui.utils.Session):
 #
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    ### Ahelp ingest: 2015-05-12 DJB
     def save_arrays(self, filename, args, fields=None, ascii=True,
                     clobber=False):
         """Write a list of arrays to a file.
@@ -3569,7 +3523,6 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_arrays(filename, args, fields, ascii, clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    ### Ahelp ingest: 2015-05-13 DJB
     def save_source(self, id, filename=None, bkg_id=None, ascii=False,
                     clobber=False):
         """Save the model values to a file.
@@ -3654,7 +3607,6 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    ### Ahelp ingest: 2015-05-13 DJB
     def save_model(self, id, filename=None, bkg_id=None, ascii=False,
                    clobber=False):
         """Save the model values to a file.
@@ -3738,7 +3690,6 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    ### Ahelp ingest: 2015-05-12 DJB
     def save_resid(self, id, filename=None, bkg_id=None, ascii=False,
                    clobber=False):
         """Save the residuals (data-model) to a file.
@@ -3811,7 +3762,6 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    ### Ahelp ingest: 2015-05-12 DJB
     def save_delchi(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
         """Save the ratio of residuals (data-model) to error to a file.
@@ -3885,7 +3835,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    ### Ahelp ingest: 2015-05-06 DJB
     def save_filter(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
         """Save the filter array to a file.
@@ -3973,7 +3922,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    ### Ahelp ingest: 2015-05-06 DJB
     def save_staterror(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
         """Save the statistical errors to a file.
@@ -4065,7 +4013,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    ### Ahelp ingest: 2015-05-06 DJB
     def save_syserror(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
         """Save the systematic errors to a file.
@@ -4155,7 +4102,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    ### Ahelp ingest: 2015-05-06 DJB
     def save_error(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
         """Save the errors to a file.
@@ -4251,7 +4197,6 @@ class Session(sherpa.ui.utils.Session):
                          ascii, clobber)
 
 
-    ### Ahelp ingest: 2015-05-01 DJB
     def save_pha(self, id, filename=None, bkg_id=None, ascii=False, clobber=False):
         """Save a PHA data set to a file.
 
@@ -4329,7 +4274,6 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_pha(filename, d, ascii, clobber)
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
     ###           from PyFITS lands soon.
     def save_grouping(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
@@ -4416,7 +4360,6 @@ class Session(sherpa.ui.utils.Session):
                                      ['CHANNEL', 'GROUPS'], ascii, clobber)
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
     ###           from PyFITS lands soon.
     def save_quality(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
@@ -4505,7 +4448,6 @@ class Session(sherpa.ui.utils.Session):
                                      ['CHANNEL', 'GROUPS'], ascii, clobber)
 
 
-    ### Ahelp ingest: 2015-05-13 DJB
     ### DOC-TODO: setting ascii=True is not supported for crates
     ###           and in pyfits it seems to just be a 1D array (needs thinking about)
     def save_image(self, id, filename=None, ascii=False, clobber=False):
@@ -4575,7 +4517,6 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_image(filename, self.get_data(id),
                                     ascii, clobber)
 
-    ### Ahelp ingest: 2015-05-13 DJB
     ### DOC-TODO: the output for an image is "excessive"
     def save_table(self, id, filename=None, ascii=False, clobber=False):
         """Save a data set to a file as a table.
@@ -4647,7 +4588,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     ### DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-12 DJB
     def save_data(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
         """Save the data to a file.
 
@@ -4742,7 +4682,6 @@ class Session(sherpa.ui.utils.Session):
                         raise
 
 
-    ### Ahelp ingest: 2015-05-02 DJB
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
     def pack_pha(self, id=None):
@@ -4773,7 +4712,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_pha(self._get_pha_data(id))
     
-    ### Ahelp ingest: 2015-05-02 DJB
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
     def pack_image(self, id=None):
@@ -4799,7 +4737,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_image(self.get_data(id))
 
-    ### Ahelp ingest: 2015-05-02 DJB
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
     def pack_table(self, id=None):
@@ -4832,7 +4769,6 @@ class Session(sherpa.ui.utils.Session):
     #        raise ArgumentTypeError('response identifiers must be integers ' +
     #                                'or strings')
 
-    ### Ahelp ingest: 2015-05-02 DJB
     #@loggable(with_id=True)
     def get_arf(self, id=None, resp_id=None, bkg_id=None):
         """Return the ARF associated with a PHA data set.
@@ -4901,7 +4837,6 @@ class Session(sherpa.ui.utils.Session):
         return arf
 
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: add an example of a grating/multiple response
     def set_arf(self, id, arf=None, resp_id=None, bkg_id=None):
         """Set the ARF for use by a PHA data set.
@@ -4984,7 +4919,6 @@ class Session(sherpa.ui.utils.Session):
             data._set_initial_quantity()
 
 
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
     def unpack_arf(self, arg):
@@ -5031,7 +4965,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.instrument.ARF1D(sherpa.astro.io.read_arf(arg))
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: add an example of a grating/multiple response
     ### DOC-TODO: how to describe I/O backend support?
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
@@ -5110,7 +5043,6 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
         self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_bkg_arf(self, id=None):
         """Return the background ARF associated with a PHA data set.
 
@@ -5160,7 +5092,6 @@ class Session(sherpa.ui.utils.Session):
         resp_id = self._get_pha_data(id).primary_response_id
         return self.get_arf(id, resp_id, bkg_id)
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: how to describe I/O backend support?
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
@@ -5220,7 +5151,6 @@ class Session(sherpa.ui.utils.Session):
         resp_id = self._get_pha_data(id).primary_response_id
         self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def load_multi_arfs(self, id, filenames, resp_ids=None):
         """Load multiple ARFs for a PHA data set.
 
@@ -5288,7 +5218,6 @@ class Session(sherpa.ui.utils.Session):
             resp_id = resp_ids.pop(0)
             self.load_arf(id, filename, resp_id)
 
-    ### Ahelp ingest: 2015-05-02 DJB
     #@loggable(with_id=True)
     def get_rmf(self, id=None, resp_id=None, bkg_id=None):
         """Return the RMF associated with a PHA data set.
@@ -5352,7 +5281,6 @@ class Session(sherpa.ui.utils.Session):
         return rmf
 
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: add an example of a grating/multiple response
     def set_rmf(self, id, rmf=None, resp_id=None, bkg_id=None):
         """Set the RMF for use by a PHA data set.
@@ -5435,7 +5363,6 @@ class Session(sherpa.ui.utils.Session):
             data._set_initial_quantity()
 
 
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
     def unpack_rmf(self, arg):
@@ -5482,7 +5409,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.instrument.RMF1D(sherpa.astro.io.read_rmf(arg))
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: add an example of a grating/multiple response
     ### DOC-TODO: how to describe I/O backend support?
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
@@ -5561,7 +5487,6 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
         self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_bkg_rmf(self, id=None):
         """Return the background RMF associated with a PHA data set.
 
@@ -5606,7 +5531,6 @@ class Session(sherpa.ui.utils.Session):
         resp_id = self._get_pha_data(id).primary_response_id
         return self.get_rmf(id, resp_id, bkg_id)
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: how to describe I/O backend support?
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
@@ -5666,7 +5590,6 @@ class Session(sherpa.ui.utils.Session):
         resp_id = self._get_pha_data(id).primary_response_id
         self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def load_multi_rmfs(self, id, filenames, resp_ids=None):
         """Load multiple RMFs for a PHA data set.
 
@@ -5734,7 +5657,6 @@ class Session(sherpa.ui.utils.Session):
             resp_id = resp_ids.pop(0)
             self.load_rmf(id, filename, resp_id)
         
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_bkg(self, id=None, bkg_id=None):
         """Return the background for a PHA data set.
 
@@ -5784,7 +5706,6 @@ class Session(sherpa.ui.utils.Session):
                                 str(self._fix_id(id)))
         return bkg
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def set_bkg(self, id, bkg=None, bkg_id=None):
         """Set the background for a PHA data set.
 
@@ -5859,7 +5780,6 @@ class Session(sherpa.ui.utils.Session):
         bkg.plot_fac = data.plot_fac
 
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def list_bkg_ids(self, id=None):
         """List all the background identifiers for a data set.
 
@@ -5888,7 +5808,6 @@ class Session(sherpa.ui.utils.Session):
         #return self._get_pha_data(id).background_ids
         return self._get_pha_data(id)._backgrounds.keys()
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def list_response_ids(self, id=None, bkg_id=None):
         """List all the response identifiers of a data set.
 
@@ -5924,7 +5843,6 @@ class Session(sherpa.ui.utils.Session):
         #return data.response_ids
         return data._responses.keys()
 
-    ### Ahelp ingest: 2015-04-27 DJB
     ### DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
     ### DOC-TODO: should the arguments be renamed to better match optional
     ###           nature of the routine (e.g. can call set_analysis('energy'))?
@@ -6015,7 +5933,6 @@ class Session(sherpa.ui.utils.Session):
             self._get_pha_data(id).set_analysis(quantity, type, factor) 
 
 
-    ### Ahelp ingest: 2015-04-27 DJB
     ### DOC-TODO: docs need to be added to sherpa.astro.data.get_analysis
     def get_analysis(self, id=None):
         """Return the units used when fitting spectral data.
@@ -6045,7 +5962,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return self._get_pha_data(id).get_analysis()
 
-    ### Ahelp ingest: 2015-04-28 DJB
     ### DOC-TODO: docs need to be added to sherpa.astro.data.set_coord
     ### DOC-TODO: how best to document the wcssubs support?
     #@loggable(with_id=True, with_keyword='coord')
@@ -6136,7 +6052,6 @@ class Session(sherpa.ui.utils.Session):
            self._get_img_data(id).set_coord(coord)
 
 
-    ### Ahelp ingest: 2015-04-28 DJB
     ### DOC-TODO: docs need to be added to sherpa.astro.data.get_coord
     def get_coord(self, id=None):
         """Get the coordinate system used for image analysis.
@@ -6167,7 +6082,6 @@ class Session(sherpa.ui.utils.Session):
         return self._get_img_data(id).coord
 
 
-    ### Ahelp ingest: 2015-05-06 DJB
     def ignore_bad(self, id=None, bkg_id=None):
         """Exclude channels marked as bad in a PHA data set.
 
@@ -6259,7 +6173,6 @@ class Session(sherpa.ui.utils.Session):
     ignore.__doc__ = sherpa.ui.utils.Session.ignore.__doc__
 
 
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-TODO: how best to document the region support?
     ### DOC-TODO: I have not mentioned the support for radii in arcsec/minutes/degrees
     ###           or sexagessimal formats. Is this supported here?
@@ -6396,7 +6309,6 @@ class Session(sherpa.ui.utils.Session):
                         'a image data set')
             d.notice2d(val, False)
 
-    ### Ahelp ingest: 2015-05-06 DJB
     def ignore2d(self, val=None):
         """Exclude a spatial region from all data sets.
 
@@ -6450,7 +6362,6 @@ class Session(sherpa.ui.utils.Session):
                         'a image data set')
             d.notice2d(val, True)
     
-    ### Ahelp ingest: 2015-05-06 DJB
     def notice2d_id(self, ids, val=None):
         """Include a spatial region of a data set.
 
@@ -6519,7 +6430,6 @@ class Session(sherpa.ui.utils.Session):
                         'img', 'a image data set')
             self.get_data(id).notice2d(val, False)
         
-    ### Ahelp ingest: 2015-05-06 DJB
     def ignore2d_id(self, ids, val=None):
         """Exclude a spatial region from a data set.
 
@@ -6683,7 +6593,6 @@ class Session(sherpa.ui.utils.Session):
             self.ignore2d_id(id, regions)
 
 
-    ### Ahelp ingest: 2015-05-06 DJB
     ### DOC-TODO: how best to include datastack support? How is it handled here?
     #@loggable(with_id=True, with_keyword='arg')
     def load_bkg(self, id, arg=None, use_errors=False, bkg_id=None):
@@ -6760,7 +6669,6 @@ class Session(sherpa.ui.utils.Session):
         else:
             self.set_bkg(id, bkgsets, bkg_id)
 
-    ### Ahelp ingest: 2015-04-29 DJB
     #@loggable(with_id=True)
     def group(self, id=None, bkg_id=None):
         """Turn on the grouping for a PHA data set.
@@ -6887,7 +6795,6 @@ class Session(sherpa.ui.utils.Session):
         data.group()
 
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def set_grouping(self, id, val=None, bkg_id=None):
         """Apply a set of grouping flags to a PHA data set.
 
@@ -6978,7 +6885,6 @@ class Session(sherpa.ui.utils.Session):
                 data.grouping = numpy.asarray(val, SherpaInt)
 
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def get_grouping(self, id=None, bkg_id=None):
         """Return the grouping array for a PHA data set.
 
@@ -7032,7 +6938,6 @@ class Session(sherpa.ui.utils.Session):
 
         return data.grouping
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def set_quality(self, id, val=None, bkg_id=None):
         """Apply a set of quality flags to a PHA data set.
 
@@ -7125,7 +7030,6 @@ class Session(sherpa.ui.utils.Session):
     ###           direct object access
     ###           get_data().exposure [= ...]
 
-    ### Ahelp ingest: 2015-04-30 DJB
     def get_quality(self, id=None, bkg_id=None):
         """Return the quality flags for a PHA data set.
 
@@ -7173,7 +7077,6 @@ class Session(sherpa.ui.utils.Session):
 
         return data.quality
 
-    ### Ahelp ingest: 2015-04-29 DJB
     #@loggable(with_id=True)
     def ungroup(self, id=None, bkg_id=None):
         """Turn off the grouping for a PHA data set.
@@ -7284,7 +7187,6 @@ class Session(sherpa.ui.utils.Session):
     ### DOC-TODO: how to set the quality if using tabstops to indicate
     ###           "bad" channels, rather than ones to ignore
 
-    ### Ahelp ingest: 2015-04-30 DJB
     #@loggable(with_id=True, with_keyword='num')
     def group_bins(self, id, num=None, bkg_id=None, tabStops=None):
         """Group into a fixed number of bins.
@@ -7397,7 +7299,6 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_bins(num, tabStops)
 
-    ### Ahelp ingest: 2015-04-30 DJB
     ### DOC-TODO: should num= be renamed val= to better match
     ###           underlying code/differ from group_bins?
     #@loggable(with_id=True, with_keyword='num')
@@ -7508,7 +7409,6 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_width(num, tabStops)
 
-    ### Ahelp ingest: 2015-04-30 DJB
     #@loggable(with_id=True, with_keyword='num')
     def group_counts(self, id, num=None, bkg_id=None,
                      maxLength=None, tabStops=None):
@@ -7624,7 +7524,6 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_counts(num, maxLength, tabStops)
 
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: check the Poisson stats claim; I'm guessing it means
     ###           gaussian (i.e. sqrt(n))
     #@loggable(with_id=True, with_keyword='snr')
@@ -7726,7 +7625,6 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_snr(snr, maxLength, tabStops, errorCol)
 
-    ### Ahelp ingest: 2015-05-01 DJB
     #@loggable(with_id=True, with_keyword='min')
     def group_adapt(self, id, min=None, bkg_id=None,
                      maxLength=None, tabStops=None):
@@ -7824,7 +7722,6 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_adapt(min, maxLength, tabStops)
 
-    ### Ahelp ingest: 2015-05-01 DJB
     ### DOC-TODO: shouldn't this be snr=None rather than min=None
     #@loggable(with_id=True, with_keyword='min')
     def group_adapt_snr(self, id, min=None, bkg_id=None,
@@ -7929,7 +7826,6 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_adapt_snr(min, maxLength, tabStops, errorCol)
 
-    ### Ahelp ingest: 2015-04-28 DJB
     #@loggable(with_id=True)
     def subtract(self, id=None):
         """Subtract the background estimate from a data set.
@@ -8013,7 +7909,6 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('subtractset', 'data set', str(self._fix_id(id)), 'True')
         self._get_pha_data(id).subtract()
 
-    ### Ahelp ingest: 2015-04-28 DJB
     #@loggable(with_id=True)
     def unsubtract(self, id=None):
         """Undo any background subtraction for the data set.
@@ -8069,7 +7964,6 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('subtractset', 'data set', str(self._fix_id(id)), 'False')
         self._get_pha_data(id).unsubtract()
 
-    ### Ahelp ingest: 2015-05-14 DJB
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
                  grouping=None, grouped=False, quality=None, bkg=None):
         """Simulate a PHA data set from a model.
@@ -8295,7 +8189,6 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     # DOC-NOTE: also in sherpa.utils
-    ### Ahelp ingest: 2015-05-14 DJB
     #@loggable(with_id=True, with_keyword='model')
     def set_full_model(self, id, model=None):
         """Define the convolved model expression for a data set.
@@ -8433,7 +8326,6 @@ class Session(sherpa.ui.utils.Session):
 
         return model
 
-    ### Ahelp ingest: 2015-05-12 DJB
     #@loggable(with_id=True)
     def get_response(self, id=None, bkg_id=None):
         """Return the respone information applied to a PHA data set.
@@ -8503,7 +8395,6 @@ class Session(sherpa.ui.utils.Session):
         return resp
 
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def get_pileup_model(self, id=None):
         """Return the pile up model for a data set.
 
@@ -8544,7 +8435,6 @@ class Session(sherpa.ui.utils.Session):
                               'has not been set')
 
     #@loggable(with_id=True, with_keyword='model')
-    ### Ahelp ingest: 2015-05-08 DJB
     ### DOC-NOTE: should this be made a general function, since it
     ###           presumably does not care about pileup, just adds the
     ###           given model into the expression? Or is it PHA specific?
@@ -8625,7 +8515,6 @@ class Session(sherpa.ui.utils.Session):
         return (model, is_source)
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_source(self, id=None, bkg_id=None):
         """Return the model expression for the background of a PHA data set.
 
@@ -8678,7 +8567,6 @@ class Session(sherpa.ui.utils.Session):
         return model
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_model(self, id=None, bkg_id=None):
         """Return the model expression for the background of a PHA data set.
 
@@ -8741,7 +8629,6 @@ class Session(sherpa.ui.utils.Session):
                 model = resp(src)
         return model
 
-    ### Ahelp ingest: 2015-05-14 DJB
     #@loggable(with_id=True, with_keyword='model')
     def set_bkg_full_model(self, id, model=None, bkg_id=None):
         """Define the convolved background model expression for a PHA data set.
@@ -8847,7 +8734,6 @@ class Session(sherpa.ui.utils.Session):
 
         self._runparamprompt(model.pars)
 
-    ### Ahelp ingest: 2015-04-29 DJB
     ### DOC-TODO: should probably explain more about how backgrounds are fit?
     #@loggable(with_id=True, with_keyword='model')
     def set_bkg_model(self, id, model=None, bkg_id=None):
@@ -8952,7 +8838,6 @@ class Session(sherpa.ui.utils.Session):
     set_bkg_source = set_bkg_model
 
 
-    ### Ahelp ingest: 2015-05-08 DJB
     def delete_bkg_model(self, id=None, bkg_id=None):
         """Delete the background model expression for a data set.
 
@@ -9037,7 +8922,6 @@ class Session(sherpa.ui.utils.Session):
         return (x,y)
 
     # also in sherpa.utils
-    ### Ahelp ingest: 2015-05-13 DJB
     ### DOC-NOTE: can filename be a crate/hdulist?
     ### DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
     #@loggable()
@@ -9169,7 +9053,6 @@ class Session(sherpa.ui.utils.Session):
         self._add_model_component(tablemodel)
 
     ### also in sherpa.utils
-    ### Ahelp ingest: 2015-05-14 DJB
     ### DOC-TODO: how to describe *args/**kwargs
     ### DOC-TODO: how is the _y value used if set
     def load_user_model(self, func, modelname, filename=None, *args, **kwargs):
@@ -9356,7 +9239,6 @@ class Session(sherpa.ui.utils.Session):
 
 
     # also in sherpa.utils
-    ### Ahelp ingest: 2015-05-14 DJB
     ### DOC-TODO: existing docs suggest that bkg_only can be set, but looking
     ###           at the code it is always set to False.
     def fit(self, id=None, *otherids, **kwargs):
@@ -9445,7 +9327,6 @@ class Session(sherpa.ui.utils.Session):
         self._fit(id, *otherids, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-14 DJB
     def fit_bkg(self, id=None, *otherids, **kwargs):
         """Fit a model to one or more background PHA data sets.
 
@@ -9625,7 +9506,6 @@ class Session(sherpa.ui.utils.Session):
     get_model_plot.__doc__ = sherpa.ui.utils.Session.get_model_plot.__doc__
 
     # also in sherpa.utils, but without the lo/hi arguments
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_source_plot(self, id=None, lo=None, hi=None):
         """Return the data used by plot_source.
 
@@ -9712,7 +9592,6 @@ class Session(sherpa.ui.utils.Session):
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
 
 
-    ### Ahelp ingest: 2015-05-14 DJB
     def get_order_plot(self, id=None, orders=None):
         """Return the data used by plot_order.
 
@@ -9742,7 +9621,6 @@ class Session(sherpa.ui.utils.Session):
         return self._orderplot
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_arf_plot(self, id=None, resp_id=None):
         """Return the data used by plot_arf.
 
@@ -9788,7 +9666,6 @@ class Session(sherpa.ui.utils.Session):
         self._prepare_plotobj(id, self._arfplot, resp_id)
         return self._arfplot
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_fit_plot(self, id=None, bkg_id=None):
         """Return the data used by plot_bkg_fit.
 
@@ -9828,7 +9705,6 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgfitplot
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_model_plot(self, id=None, bkg_id=None):
         """Return the data used by plot_bkg_model.
 
@@ -9868,7 +9744,6 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgmodelhisto
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_plot(self, id=None, bkg_id=None):
         """Return the data used by plot_bkg.
 
@@ -9906,7 +9781,6 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgdataplot
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_source_plot(self, id=None, lo=None, hi=None, bkg_id=None):
         """Return the data used by plot_bkg_source.
 
@@ -9951,7 +9825,6 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgsourceplot
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_resid_plot(self, id=None, bkg_id=None):
         """Return the data used by plot_bkg_resid.
 
@@ -9992,7 +9865,6 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgresidplot
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_ratio_plot(self, id=None, bkg_id=None):
         """Return the data used by plot_bkg_ratio.
 
@@ -10033,7 +9905,6 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgratioplot
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_delchi_plot(self, id=None, bkg_id=None):
         """Return the data used by plot_bkg_delchi.
 
@@ -10074,7 +9945,6 @@ class Session(sherpa.ui.utils.Session):
         return self._bkgdelchiplot
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def get_bkg_chisqr_plot(self, id=None, bkg_id=None):
         """Return the data used by plot_bkg_chisqr.
 
@@ -10127,7 +9997,6 @@ class Session(sherpa.ui.utils.Session):
         return plot
 
 
-    ### Ahelp ingest: 2015-05-15 DJB
     ### DOC-TODO: See comments about plot_energy_flux.
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None, **kwargs):
@@ -10202,7 +10071,6 @@ class Session(sherpa.ui.utils.Session):
         return self._energyfluxplot
 
 
-    ### Ahelp ingest: 2015-05-15 DJB
     ### DOC-TODO: See comments about plot_photon_flux.
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None, **kwargs):
@@ -10383,7 +10251,6 @@ class Session(sherpa.ui.utils.Session):
     plot_model.__doc__ = sherpa.ui.utils.Session.plot_model.__doc__
 
 
-    ### Ahelp ingest: 2015-04-29 DJB
     def plot_arf(self, id=None, resp_id=None, **kwargs):
         """Plot the ARF associated with a data set.
 
@@ -10482,7 +10349,6 @@ class Session(sherpa.ui.utils.Session):
     plot_model_component.__doc__ = sherpa.ui.utils.Session.plot_model_component.__doc__
 
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
-    ### Ahelp ingest: 2015-05-11 DJB
     def plot_source(self, id=None, lo=None, hi=None, **kwargs):
         """Plot the source expression for a data set.
 
@@ -10550,7 +10416,6 @@ class Session(sherpa.ui.utils.Session):
         else:
             self._plot(id, self._sourceplot, **kwargs)
 
-    ### Ahelp ingest: 2015-05-14 DJB
     ### DOC-TODO: is orders the same as resp_id?
     def plot_order(self, id=None, orders=None, **kwargs):
         """Plot the model for a data set convolved by the given response.
@@ -10605,7 +10470,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._orderplot, None, None, None, None,orders, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg(self, id=None, bkg_id=None, **kwargs):
         """Plot the background values for a PHA data set.
 
@@ -10666,7 +10530,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgdataplot, None, bkg_id, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_model(self, id=None, bkg_id=None, **kwargs):
         """Plot the model for the background of a PHA data set.
 
@@ -10719,7 +10582,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgmodelhisto, None, bkg_id, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_resid(self, id=None, bkg_id=None, **kwargs):
         """Plot the residual (data-model) values for the background of a PHA data set.
 
@@ -10773,7 +10635,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgresidplot, None, bkg_id, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_ratio(self, id=None, bkg_id=None, **kwargs):
         """Plot the ratio of data to model values for the background of a PHA data set.
 
@@ -10827,7 +10688,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgratioplot, None, bkg_id, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_delchi(self, id=None, bkg_id=None, **kwargs):
         """Plot the ratio of residuals to error for the background of a PHA data set.
 
@@ -10881,7 +10741,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgdelchiplot, None, bkg_id, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_chisqr(self, id=None, bkg_id=None, **kwargs):
         """Plot the chi-squared value for each point of the background of a PHA data set.
 
@@ -10935,7 +10794,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgchisqrplot, None, bkg_id, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_fit(self, id=None, bkg_id=None, **kwargs):
         """Plot the fit results (data, model) for the background of a PHA data set.
 
@@ -10987,7 +10845,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgfitplot, None, bkg_id, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_source(self, id=None, lo=None, hi=None, bkg_id=None, **kwargs):
         """Plot the model expression for the background of a PHA data set.
 
@@ -11043,7 +10900,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot(id, self._bkgsourceplot, None, bkg_id, lo, hi, **kwargs)
 
 
-    ### Ahelp ingest: 2015-05-15 DJB
     ### DOC-TODO: I am assuming it accepts a scales parameter
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None, **kwargs):
@@ -11142,7 +10998,6 @@ class Session(sherpa.ui.utils.Session):
         else:
             sherpa.plot.end()
 
-    ### Ahelp ingest: 2015-05-15 DJB
     ### DOC-TODO: I am assuming it accepts a scales parameter, but
     ###           changing it doesn't seem to do anything (see next)
     ### DOC-NOTE: I got a TypeError about the scales option
@@ -11244,7 +11099,6 @@ class Session(sherpa.ui.utils.Session):
             sherpa.plot.end()
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_fit_resid(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True):
         """Plot the fit results, and the residuals, for the background of
@@ -11329,7 +11183,6 @@ class Session(sherpa.ui.utils.Session):
             sherpa.plot.end()
 
 
-    ### Ahelp ingest: 2015-05-12 DJB
     def plot_bkg_fit_delchi(self, id=None, bkg_id=None, replot=False,
                             overplot=False, clearwindow=True):
         """Plot the fit results, and the residuals, for the background of
@@ -11419,7 +11272,6 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
 
-    ### Ahelp ingest: 2015-05-15 DJB
     ### DOC-TODO: should this accept the confidence parameter?
     def sample_photon_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
                            correlated=False, numcores=None, bkg_id=None):
@@ -11523,7 +11375,6 @@ class Session(sherpa.ui.utils.Session):
                                              scales)
 
 
-    ### Ahelp ingest: 2015-05-15 DJB
     ### DOC-TODO: should this accept the confidence parameter?
     def sample_energy_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
                            correlated=False, numcores=None, bkg_id=None):
@@ -11626,7 +11477,6 @@ class Session(sherpa.ui.utils.Session):
                                              correlated, num, lo, hi, numcores,
                                              scales)
 
-    ### Ahelp ingest: 2015-05-15 DJB
     ### DOC-NOTE: are scales the variance or standard deviation?
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                      num=1, scales=None, correlated=False,
@@ -11769,7 +11619,6 @@ class Session(sherpa.ui.utils.Session):
                                                     samples, modelcomponent,
                                                     confidence )
 
-    ### Ahelp ingest: 2015-04-28 DJB
     def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None):
         """Calculate the equivalent width of an emission or absorption line.
 
@@ -11851,7 +11700,6 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
 
-    ### Ahelp ingest: 2015-05-04 DJB
     def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None):
         """Integrate the source model over a pass band.
 
@@ -11948,7 +11796,6 @@ class Session(sherpa.ui.utils.Session):
             
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
     
-    ### Ahelp ingest: 2015-05-04 DJB
     def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None):
         """Integrate the source model over a pass band.
 
@@ -12040,7 +11887,6 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_energy_flux(data, model, lo, hi)
 
 
-    ### Ahelp ingest: 2015-05-05 DJB
     ### DOC-TODO: how do lo/hi limits interact with bin edges;
     ###           is it all in or partially in or ...
     def calc_data_sum(self, lo=None, hi=None, id=None, bkg_id=None):
@@ -12124,7 +11970,6 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         return sherpa.astro.utils.calc_data_sum(data, lo, hi)
             
-    ### Ahelp ingest: 2015-05-05 DJB
     ### DOC-TODO: does lo!=None,hi=None make sense here,
     ###           since this is not an integration but a sum.
     ###           For now I have just not documented this capability.
@@ -12200,7 +12045,6 @@ class Session(sherpa.ui.utils.Session):
             model= self.get_model(id)
         return sherpa.astro.utils.calc_model_sum(data, model, lo, hi)
 
-    ### Ahelp ingest: 2015-05-05 DJB
     def calc_data_sum2d(self, reg=None, id=None):
         """Sum up the data values of a 2D data set.
 
@@ -12266,7 +12110,6 @@ class Session(sherpa.ui.utils.Session):
         data = self.get_data(id)
         return sherpa.astro.utils.calc_data_sum2d(data, reg)
 
-    ### Ahelp ingest: 2015-05-05 DJB
     ### DOC-TODO: show an example with psf
     ### DOC-TODO: this needs testing as doesn't seem to be working for me
     def calc_model_sum2d(self, reg=None, id=None):
@@ -12339,7 +12182,6 @@ class Session(sherpa.ui.utils.Session):
         model= self.get_model(id)
         return sherpa.astro.utils.calc_model_sum2d(data, model, reg)
 
-    ### Ahelp ingest: 2015-05-05 DJB
     def calc_source_sum2d(self, reg=None, id=None):
         """Sum up the fitted model for a 2D data set.
 
@@ -12409,7 +12251,6 @@ class Session(sherpa.ui.utils.Session):
         src= self.get_source(id)
         return sherpa.astro.utils.calc_model_sum2d(data, src, reg)
 
-    ### Ahelp ingest: 2015-05-05 DJB
     ### DOC-TODO: does lo!=None,hi=None make sense here,
     ###           since this is not an integration but a sum.
     ###           For now I have just not documented this capability.
@@ -12499,7 +12340,6 @@ class Session(sherpa.ui.utils.Session):
             model= self.get_source(id)
         return sherpa.astro.utils.calc_source_sum(data, model, lo, hi)
 
-    ### Ahelp ingest: 2015-05-04 DJB
     ### DOC-TODO: no reason can't k-correct wavelength range,
     ###           but need to work out how to identify the units
     def calc_kcorr(self, z, obslo, obshi, restlo=None, resthi=None,
@@ -12626,7 +12466,6 @@ class Session(sherpa.ui.utils.Session):
     # Session Text Save Function
     ###########################################################################
 
-    ### Ahelp ingest: 2015-04-27 DJB
     def save_all(self, outfile=None, clobber=False):
         """Save the information about the current session to a text file.
 

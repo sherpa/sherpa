@@ -506,7 +506,6 @@ class IterFit(NoNewAttributesAfterInit):
 
         return cb
 
-    ### Ahelp ingest: 2015-05-04 DJB
     def primini(self, statfunc, pars, parmins, parmaxes, statargs = (),
                 statkwargs = {}):
         """An iterative scheme, where the variance is computed from
@@ -628,7 +627,6 @@ class IterFit(NoNewAttributesAfterInit):
         # Return results from Primini's iterative fitting method
         return final_fit_results
 
-    ### Ahelp ingest: 2015-05-04 DJB
     def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs = (),
                  statkwargs = {}):
         """Exclude points that are significately far away from the best fit.
