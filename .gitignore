@@ -38,6 +38,7 @@ sherpa/optmethods/src/minpack/_minpackmodule.c
 *.egg-info
 dist
 build
+.eggs
 eggs
 parts
 bin
