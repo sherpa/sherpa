@@ -27,6 +27,5 @@ class build(_build):
     def run(self):
         configure = self.get_finalized_command('sherpa_config', True).build_configure()
         self.get_finalized_command('xspec_config', True).run()
-        if not os.path.exists('extern/built'):
-            build_deps(configure)
+        build_deps(configure)
         _build.run(self)
