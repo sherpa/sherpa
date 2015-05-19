@@ -20,6 +20,7 @@
 import unittest
 import numpy
 import os
+import sherpa
 from sherpa.image import *
 from sherpa.utils import SherpaTestCase, has_package_from_list
 
@@ -54,7 +55,7 @@ class test_image(SherpaTestCase):
         @unittest.skipIf(not has_package_from_list('sherpa.image.ds9_backend'),
                          "reqiured package sherpa.image.ds9_backend not available")
         def test_ds9(self):
-            im = sherpa.image.ds9_backend.DS9Win(sherpa.image.ds9_backend._DefTemplate, False)
+            im = sherpa.image.ds9_backend.DS9.DS9Win(sherpa.image.ds9_backend.DS9._DefTemplate, False)
             im.doOpen()
             im.showArray(data.y)
             data_out = get_arr_from_imager(im)
