@@ -19,9 +19,8 @@
 
 import unittest
 import numpy
-import sherpa.astro.xspec as xs
 from sherpa.astro import ui
-from sherpa.utils import SherpaTestCase, test_data_missing
+from sherpa.utils import SherpaTestCase, test_data_missing, has_package_from_list
 
 import logging
 error = logging.getLogger(__name__).error
@@ -34,9 +33,12 @@ def is_proper_subclass(obj, cls):
     return issubclass(obj, cls)
 
 
+@unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                         "required package sherpa.astro.xspec not available")
 class test_xspec(SherpaTestCase):
 
     def test_create_model_instances(self):
+        import sherpa.astro.xspec as xs
         count = 0
 
         for cls in dir(xs):
@@ -53,6 +55,7 @@ class test_xspec(SherpaTestCase):
         self.assertEqual(count, 164)
 
     def test_evaluate_model(self):
+        import sherpa.astro.xspec as xs
         m = xs.XSbbody()
         out = m([1,2,3,4])
         if m.calc.__name__.startswith('C_'):
@@ -64,6 +67,7 @@ class test_xspec(SherpaTestCase):
 
 
     def test_xspec_models(self):
+        import sherpa.astro.xspec as xs
         models = [model for model in dir(xs) if model[:2] == 'XS']
         models.remove('XSModel')
         models.remove('XSMultiplicativeModel')
@@ -107,12 +111,13 @@ class test_xspec(SherpaTestCase):
         self.assertAlmostEqual(y_m, y2_m)
 
     def test_xsxset_get(self):
+        import sherpa.astro.xspec as xs
 	# TEST CASE #1 Case insentitive keys
 	xs.set_xsxset('fooBar', 'somevalue')
 	self.assertEqual('somevalue', xs.get_xsxset('Foobar'))
 
 
 if __name__ == '__main__':
-
+    import sherpa.astro.xspec as xs
     from sherpa.utils import SherpaTest
     SherpaTest(xs).test()
