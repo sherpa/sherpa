@@ -17,21 +17,16 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import shutil
+import os
+from numpy.distutils.command.develop import develop as _develop
 
-from build import build
-from clean import clean
-from develop import develop
-from install import install
-from sdist import sdist
-from sherpa_config import sherpa_config
-from xspec_config import xspec_config
 
-commands = {
-             'build': build,
-             'clean' : clean,
-             'develop' : develop,
-             'install' : install,
-             'sdist' : sdist,
-             'sherpa_config' : sherpa_config,
-             'xspec_config' : xspec_config,
-            }
+class develop(_develop):
+
+    def run(self):
+        _develop.run(self)
+        sherpa_config = self.get_finalized_command('sherpa_config', True)
+        print("install stk and group extensions locally")
+        shutil.copyfile(sherpa_config.stk_location, os.path.join(os.getcwd(), 'stk.so'))
+        shutil.copyfile(sherpa_config.group_location, os.path.join(os.getcwd(), 'group.so'))
