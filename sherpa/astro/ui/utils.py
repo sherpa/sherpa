@@ -2491,7 +2491,7 @@ class Session(sherpa.ui.utils.Session):
         """Change the exposure time of a PHA data set.
 
         The exposure time of a PHA data set is taken from the
-        EXPTIME keyword in its header, but it can be changed
+        ``EXPTIME`` keyword in its header, but it can be changed
         once the file has been loaded.
 
         Parameters
@@ -2504,7 +2504,7 @@ class Session(sherpa.ui.utils.Session):
            The exposure time, in seconds.
         bkg_id : int or str, optional
            Set to identify which background component to set.  The
-           default value (`None`) means that this is for the source
+           default value (``None``) means that this is for the source
            component of the data set.
 
         See Also
@@ -2518,8 +2518,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `exptime` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `exptime` parameters,
+        the ``exptime`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``exptime`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -6188,7 +6188,7 @@ class Session(sherpa.ui.utils.Session):
            A region specification as a string or the name of a file
            containing a region filter. The coordinates system of the
            filter is taken from the coordinate setting of the data
-           sets (`set_coord`). If `None`, then all points are
+           sets (`set_coord`). If ``None``, then all points are
            included.
 
         See Also
@@ -6253,7 +6253,8 @@ class Session(sherpa.ui.utils.Session):
           shape1()*!shape1()
 
         The precedence uses the same rules as the mathematical
-        operators "+" and "*" (with - replaced by *!), so that::
+        operators ``+`` and ``*`` (with ``-`` replaced by ``*!``),
+        so that::
 
           circle(0,0,10)+rect(10,-10,20,10)-circle(10,0,10)
 
@@ -6281,7 +6282,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> notice2d('circle(4324.5,3827.5,430)')
 
-        Read in the filter from the file `ds9.reg`, using either:
+        Read in the filter from the file ``ds9.reg``, using either:
 
         >>> notice2d('ds9.reg')
 
@@ -6321,7 +6322,7 @@ class Session(sherpa.ui.utils.Session):
            A region specification as a string or the name of a file
            containing a region filter. The coordinates system of the
            filter is taken from the coordinate setting of the data
-           sets (`set_coord`). If `None`, then all points are
+           sets (`set_coord`). If ``None``, then all points are
            included.
 
         See Also
@@ -7830,11 +7831,11 @@ class Session(sherpa.ui.utils.Session):
     def subtract(self, id=None):
         """Subtract the background estimate from a data set.
 
-        The `subtract` function performs a channel-by-channel
+        The ``subtract`` function performs a channel-by-channel
         subtraction of the background estimate from the data. After
         this command, anything that uses the data set - such as a
         plot, fit, or error analysis - will use the subtracted
-        data. Models should be re-fit if `subtract` is called.
+        data. Models should be re-fit if ``subtract`` is called.
 
         Parameters
         ----------
@@ -7867,7 +7868,7 @@ class Session(sherpa.ui.utils.Session):
         numbers of channels, but must have the same number of groups
         after grouping.
 
-        The equation for the subtraction is:
+        The equation for the subtraction is::
 
            src_counts - bg_counts * (src_exposure * src_backscal)
                                     -----------------------------
@@ -7876,10 +7877,10 @@ class Session(sherpa.ui.utils.Session):
         where src_exposure and bg_exposure are the source and
         background exposure times, and src_backscal and bg_backscal
         are the source and background backscales.  The backscale, read
-        from the `BACKSCAL` header keyword of the PHA file [2]_, is
+        from the ``BACKSCAL`` header keyword of the PHA file [2]_, is
         the ratio of data extraction area to total detector area.
 
-        The `subtracted` field of a dataset is set to `True` when
+        The ``subtracted`` field of a dataset is set to ``True`` when
         the background is subtracted.
 
         References

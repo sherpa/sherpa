@@ -460,7 +460,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -509,12 +509,12 @@ class Session(NoNewAttributesAfterInit):
         ----------
         filename : str, optional
            The name of the file to read the results from. The default
-           is `sherpa.save`.
+           is 'sherpa.save'.
 
         Raises
         ------
         IOError
-           If `filename` does not exist.
+           If ``filename`` does not exist.
 
         See Also
         --------
@@ -529,16 +529,16 @@ class Session(NoNewAttributesAfterInit):
         between versions of Sherpa, but is platform independent. A
         warning message may be created if a file saved by an older
         (or newer) version of Sherpa is loaded. An example of such
-        a message is
+        a message is::
 
-        WARNING: Could not determine whether the model is discrete.
-        This probably means that you have restored a session saved with a previous version of Sherpa.
-        Falling back to assuming that the model is continuous.
+          WARNING: Could not determine whether the model is discrete.
+          This probably means that you have restored a session saved with a previous version of Sherpa.
+          Falling back to assuming that the model is continuous.
 
         Examples
         --------
 
-        Load in the Sherpa session from `sherpa.save`.
+        Load in the Sherpa session from 'sherpa.save'.
 
         >>> restore()
 
@@ -2222,14 +2222,14 @@ class Session(NoNewAttributesAfterInit):
         ----------
 
         .. [1] Cash, W. "Parameter estimation in astronomy through
-        application of the likelihood ratio", ApJ, vol 228,
-        p. 939-947 (1979).
-        http://adsabs.harvard.edu/abs/1979ApJ...228..939C
+               application of the likelihood ratio", ApJ, vol 228,
+               p. 939-947 (1979).
+               http://adsabs.harvard.edu/abs/1979ApJ...228..939C
 
         .. [2] Gehrels, N. "Confidence limits for small numbers of
-        events in astrophysical data", ApJ, vol 303,
-        p. 336-346 (1986).
-        http://adsabs.harvard.edu/abs/1986ApJ...303..336G
+               events in astrophysical data", ApJ, vol 303,
+               p. 336-346 (1986).
+               http://adsabs.harvard.edu/abs/1986ApJ...303..336G
 
         .. [3] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
 
@@ -2361,8 +2361,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `data` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `data` parameters,
+        the ``data`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``data`` parameters,
         respectively.
 
         Examples
@@ -2431,8 +2431,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2505,8 +2505,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2582,8 +2582,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2642,8 +2642,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `val` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `val` parameters,
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
         respectively.
 
         Examples
@@ -2704,8 +2704,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `val` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `val` parameters,
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
         respectively.
 
         Examples
@@ -2750,10 +2750,10 @@ class Session(NoNewAttributesAfterInit):
         val : array or scalar
            The systematic error.
         fractional : bool, optional
-           If `False` (the default value), then the `val` parameter is
-           the absolute value, otherwise the `val` parameter
+           If `False` (the default value), then the ``val`` parameter is
+           the absolute value, otherwise the ``val`` parameter
            represents the fractional error, so the absolute value is
-           calculated as `get_dep() * val` (and `val` must be
+           calculated as `get_dep() * val` (and ``val`` must be
            a scalar).
 
         See Also
@@ -2768,8 +2768,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `val` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `val` parameters,
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
         respectively.
 
         Examples
@@ -2815,10 +2815,10 @@ class Session(NoNewAttributesAfterInit):
         val : array or scalar
            The systematic error.
         fractional : bool, optional
-           If `False` (the default value), then the `val` parameter is
-           the absolute value, otherwise the `val` parameter
+           If `False` (the default value), then the ``val`` parameter is
+           the absolute value, otherwise the ``val`` parameter
            represents the fractional error, so the absolute value is
-           calculated as `get_dep() * val` (and `val` must be
+           calculated as `get_dep() * val` (and ``val`` must be
            a scalar).
 
         See Also
@@ -2833,8 +2833,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `val` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `val` parameters,
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
         respectively.
 
         Examples
@@ -3671,8 +3671,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -3810,26 +3810,26 @@ class Session(NoNewAttributesAfterInit):
         args : array of arrays
            The arrays to write out.
         fields : array of str
-           The column names (should match the size of `args`).
+           The column names (should match the size of ``args``).
         clobber : bool, optional
-           If `filename` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         linebreak : str, optional
-           Indicate a new line. The default is '\n'.
+           Indicate a new line. The default is ``'\\n'``.
         format : str, optional
            The format used to write out the numeric values. The
-           default is '%g%.
+           default is ``'%g%'``.
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -3874,24 +3874,24 @@ class Session(NoNewAttributesAfterInit):
            The name of the file to write the array to.
         clobber : bool, optional
            This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
+           overwritten (``True``) or if it raises an exception (``False``,
            the default setting).
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         linebreak : str, optional
-           Indicate a new line. The default is '\n'.
+           Indicate a new line. The default is ``'\\n'``.
         format : str, optional
            The format used to write out the numeric values. The
-           default is '%g%.
+           default is ``'%g%'``.
 
         Raises
         ------
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -3905,12 +3905,12 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `SOURCE` (for 1D
+        The output file contains the columns ``X`` and ``SOURCE`` (for 1D
         data). The residuals array respects any filter setting for the
         data set.
 
@@ -3949,25 +3949,26 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
-           the default setting).
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         linebreak : str, optional
-           Indicate a new line. The default is '\n'.
+           Indicate a new line. The default is ``'\\n'``.
         format : str, optional
            The format used to write out the numeric values. The
-           default is '%g%.
+           default is ``'%g%'``.
 
         Raises
         ------
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -3981,12 +3982,12 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `MODEL` (for 1D
+        The output file contains the columns ``X`` and ``MODEL`` (for 1D
         data). The residuals array respects any filter setting for the
         data set.
 
@@ -4022,25 +4023,26 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
-           the default setting).
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         linebreak : str, optional
-           Indicate a new line. The default is '\n'.
+           Indicate a new line. The default is ``'\\n'``.
         format : str, optional
            The format used to write out the numeric values. The
-           default is '%g%.
+           default is ``'%g%'``.
 
         Raises
         ------
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4052,12 +4054,12 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `RESID`. The
+        The output file contains the columns ``X`` and ``RESID``. The
         residuals array respects any filter setting for the data set.
 
         Examples
@@ -4092,25 +4094,26 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
-           the default setting).
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         linebreak : str, optional
-           Indicate a new line. The default is '\n'.
+           Indicate a new line. The default is ``'\\n'``.
         format : str, optional
            The format used to write out the numeric values. The
-           default is '%g%.
+           default is ``'%g%'``.
 
         Raises
         ------
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4122,12 +4125,12 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `DELCHI`. The
+        The output file contains the columns ``X`` and ``DELCHI``. The
         residuals array respects any filter setting for the data set.
 
         Examples
@@ -4167,34 +4170,34 @@ class Session(NoNewAttributesAfterInit):
            The attributes of the data set to write out. If `None`,
            write out all the columns.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
         linebreak : str, optional
-           Indicate a new line. The default is '\n'.
+           Indicate a new line. The default is ``'\\n'``.
         format : str, optional
            The format used to write out the numeric values. The
-           default is '%g%.
+           default is ``'%g%'``.
 
         Raises
         ------
         sherpa.utils.err.IdentifierErr
            If there is no matching data set.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
-        save_arrays : 
+        save_arrays : Write a list of arrays to a file.
         save_delchi : Save the ratio of residuals (data-model) to error to a file.
         save_error : Save the errors to a file.
         save_filter : Save the filter array to a file.
-        save_resid :
+        save_resid : Save the residuals (data-model) to a file.
         save_staterror : Save the statistical errors to a file.
         save_syserror : Save the statistical errors to a file.
 
@@ -4203,8 +4206,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4245,26 +4248,26 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         linebreak : str, optional
-           Indicate a new line. The default is '\n'.
+           Indicate a new line. The default is ``'\\n'``.
         format : str, optional
            The format used to write out the numeric values. The
-           default is '%g%.
+           default is ``'%g%'``.
 
         Raises
         ------
         sherpa.utils.err.DataErr
            If the data set has not been filtered.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4276,12 +4279,12 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `FILTER`.
+        The output file contains the columns ``X`` and ``FILTER``.
 
         Examples
         --------
@@ -4313,8 +4316,8 @@ class Session(NoNewAttributesAfterInit):
         """Save the statistical errors to a file.
 
         If the statistical errors have not been set explicitly, then
-        the values calculated by the statistic - such as `chi2gehrels`
-        or `chi2datavar` - will be used.
+        the values calculated by the statistic - such as ``chi2gehrels``
+        or ``chi2datavar`` - will be used.
 
         Parameters
         ----------
@@ -4325,24 +4328,24 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         linebreak : str, optional
-           Indicate a new line. The default is '\n'.
+           Indicate a new line. The default is ``'\\n'``.
         format : str, optional
            The format used to write out the numeric values. The
-           default is '%g%.
+           default is ``'%g%'``.
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4355,12 +4358,12 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `STAT_ERR`.
+        The output file contains the columns ``X`` and ``STAT_ERR``.
 
         Examples
         --------
@@ -4400,26 +4403,26 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         linebreak : str, optional
-           Indicate a new line. The default is '\n'.
+           Indicate a new line. The default is ``'\\n'``.
         format : str, optional
            The format used to write out the numeric values. The
-           default is '%g%.
+           default is ``'%g%'``.
 
         Raises
         ------
         sherpa.utils.err.IOErr
            If the data set does not contain any systematic errors.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4432,12 +4435,12 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `SYS_ERR`.
+        The output file contains the columns ``X`` and ``SYS_ERR``.
 
         Examples
         --------
@@ -4471,7 +4474,7 @@ class Session(NoNewAttributesAfterInit):
         of the statistical and systematic errors. The systematic
         errors can be 0. If the statistical errors have not been set
         explicitly, then the values calculated by the statistic - such
-        as `chi2gehrels` or `chi2datavar` - will be used.
+        as ``chi2gehrels`` or ``chi2datavar`` - will be used.
 
         Parameters
         ----------
@@ -4482,24 +4485,24 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         linebreak : str, optional
-           Indicate a new line. The default is '\n'.
+           Indicate a new line. The default is ``'\\n'``.
         format : str, optional
            The format used to write out the numeric values. The
-           default is '%g%.
+           default is ``'%g%'``.
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4515,12 +4518,12 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `ERR`.
+        The output file contains the columns ``X`` and ``ERR``.
 
         Examples
         --------
@@ -4872,9 +4875,9 @@ class Session(NoNewAttributesAfterInit):
     def paramprompt(self, val=False):
         """Should the user be asked for the parameter values when creating a model?
 
-        When `val` is `True`, calls to `set_model` will cause the user
+        When ``val`` is ``True``, calls to `set_model` will cause the user
         to be prompted for each parameter in the expression.  The
-        prompt includes the parameter name and default value, in `[]`:
+        prompt includes the parameter name and default value, in ``[]``:
         the valid responses are
 
         - return  which accepts the default
@@ -4883,7 +4886,7 @@ class Session(NoNewAttributesAfterInit):
         - value, min, max  which changes the value, minimum, and
           maximum values
 
-        The `value`, `min`, and `max` components are optional, so
+        The ``value``, ``min``, and ``max`` components are optional, so
         ",-5" will use the default parameter value and set its minimum
         to -5, while "2,,10" will change the parameter value to 2 and
         its maximum to 10, but leave the minimum at its default. If
@@ -4892,10 +4895,10 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         val : bool, optional
-           If `True`, the user will be prompted to enter each
+           If ``True``, the user will be prompted to enter each
            parameter value, including support for changing the minimum
            and maximum values, when a model component is created. The
-           default is `False`.
+           default is ``False``.
 
         See Also
         --------
@@ -4905,7 +4908,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        Setting this to `True` only makes sense in an interactive
+        Setting this to ``True`` only makes sense in an interactive
         environment.  It is designed to be similar to the parameter
         prompting provided by X-Spec [1]_.
 
@@ -4918,10 +4921,10 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         In the following, the default parameter settings are accepted
-        for the `pl.gamma` parameter, the starting values for the
-        `pl.ref` and `gline.pos` values are changed, the starting
-        value and ranges of both the `pl.ampl` and `gline.ampl`
-        parameters are set, and the `gline.fwhm` parameter is set to
+        for the ``pl.gamma`` parameter, the starting values for the
+        ``pl.ref`` and ``gline.pos`` values are changed, the starting
+        value and ranges of both the ``pl.ampl`` and ``gline.ampl``
+        parameters are set, and the ``gline.fwhm`` parameter is set to
         100, with its maximum changed to 10000.
 
         >>> paramprompt(True)
@@ -5430,7 +5433,7 @@ class Session(NoNewAttributesAfterInit):
         list_models : List the available model types.
         list_model_components : List the names of all the model components.
         set_model : Set the source model expression for a data set.
-        set_model_autoassign_func :
+        set_model_autoassign_func : Set the method used to create model component identifiers.
 
         Notes
         -----
@@ -5444,7 +5447,7 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         If a model instance called `pl` has been created - e.g. by
-        `create_model_component('powlaw1d', 'pl') - then the
+        `create_model_component('powlaw1d', 'pl')` - then the
         following will remove it:
 
         >>> delete_model_component('pl')
@@ -5736,8 +5739,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Some functions - such as `plot_source` - may not work for
@@ -5805,8 +5808,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         PHA data sets will automatically apply the instrumental
@@ -6728,7 +6731,7 @@ class Session(NoNewAttributesAfterInit):
            be read in using the chosen Sherpa I/O library, or a
            model component.
         *args, **kwargs :
-           Arguments for `unpack_data` if `filename_or_model`
+           Arguments for `unpack_data` if ``filename_or_model``
            is a file.
 
         See Also
@@ -6804,7 +6807,7 @@ class Session(NoNewAttributesAfterInit):
            be read in using the chosen Sherpa I/O library, or a
            model component.
         *args, **kwargs :
-           Arguments for `unpack_data` if `filename_or_model`
+           Arguments for `unpack_data` if ``filename_or_model``
            is a file.
 
         See Also
@@ -6886,8 +6889,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `psf` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `psf` parameters,
+        the ``psf`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``psf`` parameters,
         respectively.
 
         A PSF component should only be applied to a single data set.
@@ -6930,18 +6933,18 @@ class Session(NoNewAttributesAfterInit):
            positions.
 
         radial
-           Set to `1` to use a symmetric array. The default is `0` to
+           Set to ``1`` to use a symmetric array. The default is ``0`` to
            reduce edge effects.
 
         norm
            Should the kernel be normalized so that it sums to 1?  This
            summation is done over the full data set (not the subset
-           defined by the `size` parameter). The default is `1` (yes).
+           defined by the ``size`` parameter). The default is ``1`` (yes).
 
         Examples
         --------
 
-        Use the data in the file `line_profile.fits` as the PSF for
+        Use the data in the file 'line_profile.fits' as the PSF for
         the default data set:
 
         >>> load_psf('psf1', 'line_profile.fits')
@@ -7152,12 +7155,12 @@ class Session(NoNewAttributesAfterInit):
         max : number, optional
            Change the maximum value of the parameter (the soft limit).
         frozen : bool, optional
-           Freeze (`True`) or thaw (`Thaw`) the parameter.
+           Freeze (``True``) or thaw (``False``) the parameter.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `par` argument is invalid: the model component does
+           If the ``par`` argument is invalid: the model component does
            not exist or the given model has no parameter with that
            name.
 
@@ -7310,7 +7313,7 @@ class Session(NoNewAttributesAfterInit):
            The parameter to link.
         val :
            The value - wihch can be a numeric value or a function
-           of other model parameters, to set `par` to.
+           of other model parameters, to set ``par`` to.
 
         See Also
         --------
@@ -7321,13 +7324,13 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The `link` attribute of the parameter is set to match the
-        mathematical expression used for `val`.
+        The ``link`` attribute of the parameter is set to match the
+        mathematical expression used for ``val``.
 
         For a parameter value to be varied during a fit, it must be
         part of one of the source expressions involved in the fit.
-        So, in the following, the `src1.xpos` parameter will not
-        be varied because the `src2` model - from which it takes
+        So, in the following, the ``src1.xpos`` parameter will not
+        be varied because the ``src2`` model - from which it takes
         its value - is not included in the source expression of any
         of the data sets being fit.
 
@@ -7344,13 +7347,13 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        The `fwhm` parameter of the `g2` model is set to be the same as
-        the `fwhm` parameter of the `g1` model.
+        The ``fwhm`` parameter of the ``g2`` model is set to be the
+        same as the ``fwhm`` parameter of the ``g1`` model.
 
         >>> link(g2.fwhm, g1.fwhm)
 
-        Fix the `pos` parameter of `g2` to be 2.3 more than the `pos`
-        parameter of the `g1` model.
+        Fix the ``pos`` parameter of ``g2`` to be 2.3 more than the
+        ``pos`` parameter of the ``g1`` model.
 
         >>> gauss1d.g1
         >>> gauss1d.g2
@@ -7598,41 +7601,41 @@ class Session(NoNewAttributesAfterInit):
 
         The fields of the object include:
 
-        `name`
+        name
            The name of the data set, or sets, as a string.
 
-        `ids`
+        ids
            A sequence of the data set ids (it may be a tuple or
            array) included in the results.
 
-        `bkg_ids`
+        bkg_ids
            A sequence of the background data set ids (it may be a
            tuple or array) included in the results, if any.
 
-        `statname`
+        statname
            The name of the statistic function (as used in `set_stat`).
 
-        `statval`
+        statval
            The statistic value.
 
-        `numpoints`
+        numpoints
            The number of bins used in the fits.
 
-        `dof`
+        dof
            The number of degrees of freedom in the fit (the number of
            bins minus the number of free parameters).
 
-        `qval`
+        qval
            The Q-value (probability) that one would observe the
            reduced statistic value, or a larger value, if the assumed
            model is true and the current model parameters are the
-           true parameter values. This will be `None` if the value
+           true parameter values. This will be ``None`` if the value
            can not be calculated with the current statistic (e.g.
            the Cash statistic).
 
-        `rstat`
-           The reduced statistic value (the `statval` field divided by
-           `dof`). This is not calculated for all statistics.
+        rstat
+           The reduced statistic value (the ``statval`` field divided
+           by ``dof``). This is not calculated for all statistics.
 
         Examples
         --------
@@ -7669,61 +7672,61 @@ class Session(NoNewAttributesAfterInit):
         -----
         The fields of the object include:
 
-        `datasets`
+        datasets
            A sequence of the data set ids included in the results.
 
-        `itermethodname`
+        itermethodname
            What iterated-fit scheme was used, if any (as set by
            `set_iter_method`).
 
-        `statname`
+        statname
            The name of the statistic function (as used in `set_stat`).
 
-        `succeeded`
+        succeeded
            Was the fit successful (did it converge)?
 
-        `parnames`
+        parnames
            A tuple of the parameter names that were varied in the fit
            (the thawed parameters in the model expression).
 
-        `parvals`
+        parvals
            A tuple of the parameter values, in the same order as
-           `parnames`.
+           ``parnames``.
 
-        `statval`
+        statval
            The statistic value after the fit.
 
-        `istatval`
+        istatval
            The statistic value at the start of the fit.
 
-        `dstatval`
-           The change in the statistic value (`istatval - statval`).
+        dstatval
+           The change in the statistic value (``istatval - statval``).
 
-        `numpoints`
+        numpoints
            The number of bins used in the fits.
 
-        `dof`
+        dof
            The number of degrees of freedom in the fit (the number of
            bins minus the number of free parameters).
 
-        `qval`
+        qval
            The Q-value (probability) that one would observe the
            reduced statistic value, or a larger value, if the assumed
            model is true and the current model parameters are the
-           true parameter values. This will be `None` if the value
+           true parameter values. This will be ``None`` if the value
            can not be calculated with the current statistic (e.g.
            the Cash statistic).
 
-        `rstat`
-           The reduced statistic value (the `statval` field divided by
-           `dof`). This is not calculated for all statistics.
+        rstat
+           The reduced statistic value (the ``statval`` field divided
+           by ``dof``). This is not calculated for all statistics.
 
-        `message`
+        message
            A message about the results of the fit (e.g. if the fit was
            unable to converge). The format and contents depend on the
            optimisation method.
 
-        `nfev`
+        nfev
            The number of model evaluations made during the fit.
 
         Examples
@@ -7748,7 +7751,7 @@ class Session(NoNewAttributesAfterInit):
     def guess(self, id=None, model=None, limits=True, values=True):
         """Estimate the parameter values and ranges given the loaded data.
 
-        The `guess` function can change the parameter values and
+        The guess function can change the parameter values and
         limits to match the loaded data. This is generally limited to
         changing the amplitude and position parameters (sometimes just
         the values and sometimes just the limits). The parameters that
@@ -7760,13 +7763,15 @@ class Session(NoNewAttributesAfterInit):
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         model :
-           Change the parameters of this model component. If `None`,
+           Change the parameters of this model component. If ``None``,
            then the source expression is assumed to consist of a single
            component, and that component is used.
         limits : bool
-           Should the parameter limits be changed? The default is `True`.
+           Should the parameter limits be changed? The default is
+           ``True``.
         values : bool
-           Should the parameter values be changed? The default is `True`.
+           Should the parameter values be changed? The default is
+           ``True``.
 
         See Also
         --------
@@ -7779,37 +7784,37 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
-        The `guess` function can reduce the time required to fit a
+        The guess function can reduce the time required to fit a
         data set by moving the parameters closer to a realistic
         solution. It can also be useful because it can set bounds on
         the parameter values based on the data: for instance, many
-        two-dimensional models will limit their `xpos` and `ypos`
+        two-dimensional models will limit their ``xpos`` and ``ypos``
         values to lie within the data area. This can be done manually,
         but `guess` simplifies this, at least for those parameters
         that are supported. Instrument models - such as an ARF and
-        RMF - should be set up *before* calling `guess`.
+        RMF - should be set up *before* calling guess.
 
         Examples
         --------
 
         Since the source expression contains only one component,
-        `guess` can be called with no arguments:
+        guess can be called with no arguments:
 
         >>> set_source(polynom1d.poly)
         >>> guess()
 
-        In this case, `guess` is called on each component separately.
+        In this case, guess is called on each component separately.
 
         >>> set_source(gauss1d.line + powlaw1d.cont)
         >>> guess(line)
         >>> guess(cont)
 
-        In this example, the values of the `src` model component are
-        guessed from the "src" data set, whereas the `bgnd` component
+        In this example, the values of the ``src`` model component are
+        guessed from the "src" data set, whereas the ``bgnd`` component
         is guessed from the "bgnd" data set.
 
         >>> set_source("src", gauss2d.src + const2d.bgnd)
@@ -7950,13 +7955,13 @@ class Session(NoNewAttributesAfterInit):
            this name. The file contains the per-iteration fit results.
         clobber : bool, optional
            This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
-           the default setting).
+           overwritten (``True``) or if it raises an exception
+           (``False``, the default setting).
 
         Raises
         ------
         sherpa.utils.err.FitErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -9280,7 +9285,7 @@ class Session(NoNewAttributesAfterInit):
         ----------
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         parameters : optional
@@ -9407,7 +9412,7 @@ class Session(NoNewAttributesAfterInit):
         ----------
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         parameters : optional
@@ -9601,7 +9606,7 @@ class Session(NoNewAttributesAfterInit):
         ----------
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         parameters : optional
@@ -10386,8 +10391,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Examples
@@ -10450,8 +10455,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Examples
@@ -11858,8 +11863,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Examples
@@ -11926,8 +11931,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Examples
@@ -12941,7 +12946,7 @@ class Session(NoNewAttributesAfterInit):
         ---------
         contour_data : Contour the values of an image data set.
         contour_fit : Contour the fit to a data set.
-        contour_fit_resid :
+        contour_fit_resid : Contour the fit and the residuals to a data set.
         contour_kernel : Contour the kernel applied to the model of an image data set.
         contour_model : Contour the values of the model, including any PSF.
         contour_psf : Contour the PSF applied to the model of an image data set.
@@ -12955,38 +12960,38 @@ class Session(NoNewAttributesAfterInit):
         -----
         The supported plot types depend on the data set type, and
         include the following list. There are also individual
-        functions, with `contour_` prepended to the plot type, such as
-        `contour_data` and the `contour_fit_resid` variant.
+        functions, with ``contour_`` prepended to the plot type, such as
+        `contour_data` and the `contour_fit_resid` variant:
 
-        `data`
+        ``data``
            The data.
 
-        `fit`
+        ``fit``
            Contours of the data and the source model.
 
-        `fit_resid`
+        ``fit_resid``
            Two plots: the first is the contours of the data and the
            source model and the second is the residuals.
 
-        `kernel`
+        ``kernel``
            The kernel.
 
-        `model`
+        ``model``
            The source model including any PSF convolution set by
            `set_psf`.
 
-        `psf`
+        ``psf``
            The PSF.
 
-        `ratio`
+        ``ratio``
            Contours of the ratio image, formed by dividing the data by
            the model.
 
-        `resid`
+        ``resid``
            Contours of the residual image, formed by subtracting the
            model from the data.
 
-        `source`
+        ``source``
            The source model (without any PSF convolution set by
            `set_psf`).
 
@@ -13384,7 +13389,7 @@ class Session(NoNewAttributesAfterInit):
            The parameter to plot.
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
@@ -13477,7 +13482,7 @@ class Session(NoNewAttributesAfterInit):
            The parameter to plot.
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
@@ -13570,7 +13575,7 @@ class Session(NoNewAttributesAfterInit):
            The parameters to plot on the X and Y axes, respectively.
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
@@ -13678,7 +13683,7 @@ class Session(NoNewAttributesAfterInit):
            The parameters to plot on the X and Y axes, respectively.
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
@@ -13817,7 +13822,7 @@ class Session(NoNewAttributesAfterInit):
            The parameter to plot.
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
@@ -13934,7 +13939,7 @@ class Session(NoNewAttributesAfterInit):
            The parameter to plot.
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
@@ -14075,7 +14080,7 @@ class Session(NoNewAttributesAfterInit):
            The parameters to plot on the X and Y axes, respectively.
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
@@ -14203,7 +14208,7 @@ class Session(NoNewAttributesAfterInit):
            The parameters to plot on the X and Y axes, respectively.
         id : str or int, optional
         otherids : list of str or int, optional
-           The `id` and `otherids` arguments determine which data set
+           The ``id`` and ``otherids`` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
@@ -14512,8 +14517,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Examples
@@ -14572,8 +14577,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Examples
@@ -14941,8 +14946,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Image visualization is optional, and provided by the
@@ -15024,8 +15029,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Image visualization is optional, and provided by the
@@ -15658,7 +15663,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-
         This XPA access point [1]_ of the ds9 image viewer lets
         commands and queries to be sent to the viewer.
 
@@ -15709,7 +15713,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-
         This XPA access point [1]_ of the ds9 image viewer lets
         commands and queries to be sent to the viewer.
 
