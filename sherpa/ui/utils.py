@@ -6488,8 +6488,8 @@ class Session(NoNewAttributesAfterInit):
         There is no way using this interface to indicate that the
         model is for 1D or 2D data.
 
-        Example
-        -------
+        Examples
+        --------
 
         Create a two-parameter model of the form "y = mx + c",
         where the intercept is the first parameter and the slope the

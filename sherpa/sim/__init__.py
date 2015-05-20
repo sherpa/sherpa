@@ -486,9 +486,10 @@ class MCMC(NoNewAttributesAfterInit):
 
         returns a tuple of ndarrays e.g. (stats, accept, params)
 
-        Example:
+        Examples
+        --------
 
-        stats, accept, params = get_draws(fit, niter=1e4)
+        >>> stats, accept, params = get_draws(fit, niter=1e4)
 
         """
         if not isinstance(fit.stat, (Cash, CStat)):
