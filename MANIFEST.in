@@ -42,3 +42,8 @@ include sherpa/sherpa-standalone.rc
 include docs/SherpaQuickStart.ipynb
 
 include sherpa/_version.py
+
+# Tests
+include pytest.ini
+include test_requirements.txt
+include .coveragerc
