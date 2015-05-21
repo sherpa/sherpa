@@ -184,19 +184,34 @@ class NoNewAttributesAfterInit(object):
         object.__setattr__(self, name, val)
 
 
-
 ###############################################################################
 #
 # Testing stuff
 #
 ###############################################################################
 
+def _get_datadir():
+    import os
+    try: # First try to load the sherpatest module
+        import sherpatest
+        datadir = os.path.dirname(sherpatest.__file__)
+    except ImportError:
+        try: # Then try importing sherpa
+            import sherpa
+            datadir = os.path.join(os.path.dirname(sherpa.__file__), os.pardir, 'sherpa-test-data', 'sherpatest') # Try in a dir
+            if not os.path.exists(datadir) or not os.listdir(datadir):
+                # The dir is empty, maybe the submodule was not initialized
+                datadir = None
+        except ImportError:
+            # neither sherpatest nor sherpa can be found, falling back to None
+            datadir = None
+    return datadir
 
 
 class SherpaTestCase(numpytest.NumpyTestCase):
     "Base class for Sherpa unit tests"
 
-    datadir = None
+    datadir = _get_datadir()
 
     def assertEqualWithinTol(self, first, second, tol=1e-7, msg=None):
         """
