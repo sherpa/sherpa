@@ -26,7 +26,7 @@ from exceptions import ValueError
 import os
 
 
-_all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
+__all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
           'write_arrays')
 
 
