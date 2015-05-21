@@ -191,27 +191,401 @@ def _counts2d(data, reg, func, *args):
     return counts
 
 def calc_energy_flux( data, src, lo=None, hi=None):
+    """Integrate the source model over a pass band.
+
+    Calculate the integral of E * S(E) over a pass band, where E is
+    the energy of the bin and S(E) the spectral model evaluated for
+    that bin.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    src :
+       The source expression: this should not include any instrument
+       responses.
+    lo : number, optional
+       The minimum limit of the band. Use `None`, the default,
+       to use the low value of the data set.
+    hi : number, optional
+       The maximum limit of the band, which must be larger than
+       `lo`. Use `None`, the default, to use the upper value of
+       the data set.
+
+    Returns
+    -------
+    flux :
+       The flux from the source model integrated over the given
+       band. For X-Spec style models the units will be erg/cm^2/s. If
+       `hi` is `None` but `lo` is set then the flux density is
+       returned at that point: erg/cm^2/s/keV or erg/cm^2/s/Angstrom
+       depending on the analysis setting.
+
+    See Also
+    --------
+    calc_data_sum : Sum up the data values over a pass band.
+    calc_model_sum : Sum up the fitted model over a pass band.
+    calc_source_sum: Sum up the source model over a pass band.
+    calc_photon_flux : Integrate the source model over a pass band.
+
+    Notes
+    -----
+    The units of `lo` and `hi` are determined by the analysis
+    setting for the data set (e.g. `data.get_analysis`).
+
+    Any existing filter on the data set is ignored by this function.
+
+    The flux is calculated from the given source model, so if it
+    includes an absorbing component then the result will represent
+    the absorbed flux. The absorbing component can be removed, or
+    set to absorb no photons, to get the un-absorbed flux.
+
+    The units of the answer depend on the model components used in
+    the source expression and the axis or axes of the data set.
+    It is unlikely to give sensible results for 2D data sets.
+
+    Examples
+    --------
+
+    Calculate the energy flux over the ranges 0.5 to 2 and 0.5 to
+    7 keV:
+
+    >>> data.set_analysis('energy')
+    >>> calc_energy_flux(data, smodel, 0.5, 2)
+    5.7224906878061796e-10
+    >>> calc_energy_flux(data, smodel, 0.5, 7)
+    1.3758131915063825e-09
+
+    Calculate the energy flux density at 0.5 keV:
+
+    >>> calc_energy_flux(data, smodel, 0.5)
+    5.2573786652855304e-10
+
+    """
     return _flux(data, lo, hi, src, eflux=True)
 
 def calc_photon_flux( data, src, lo=None, hi=None):
+    """Integrate the source model over a pass band.
+
+    Calculate the integral of S(E) over a pass band, where S(E) is the
+    spectral model evaluated for each bin.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    src :
+       The source expression: this should not include any instrument
+       responses.
+    lo : number, optional
+       The minimum limit of the band. Use `None`, the default,
+       to use the low value of the data set.
+    hi : number, optional
+       The maximum limit of the band, which must be larger than
+       `lo`. Use `None`, the default, to use the upper value of
+       the data set.
+
+    Returns
+    -------
+    flux :
+       The flux from the source model integrated over the given
+       band. For X-Spec style models the units will be
+       photon/cm^2/s. If `hi` is `None` but `lo` is set then the flux
+       density is returned at that point: photon/cm^2/s/keV or
+       photon/cm^2/s/Angstrom depending on the analysis setting.
+
+    See Also
+    --------
+    calc_data_sum : Sum up the data values over a pass band.
+    calc_model_sum : Sum up the fitted model over a pass band.
+    calc_energy_flux : Integrate the source model over a pass band.
+    calc_source_sum: Sum up the source model over a pass band.
+
+    Notes
+    -----
+    The units of `lo` and `hi` are determined by the analysis
+    setting for the data set (e.g. `data.get_analysis`).
+
+    Any existing filter on the data set is ignored by this function.
+
+    The flux is calculated from the given source model, so if it
+    includes an absorbing component then the result will represent
+    the absorbed flux. The absorbing component can be removed, or
+    set to absorb no photons, to get the un-absorbed flux.
+
+    The units of the answer depend on the model components used in
+    the source expression and the axis or axes of the data set.
+    It is unlikely to give sensible results for 2D data sets.
+
+    Examples
+    --------
+
+    Calculate the photon flux over the ranges 0.5 to 2 and 0.5 to
+    7 keV, and compared to the energy fluxes for the same bands:
+
+    >>> data.set_analysis('energy')
+    >>> calc_photon_flux(data, smodel, 0.5, 2)
+    0.35190275
+    >>> calc_photon_flux(data, smodel, 0.5, 7)
+    0.49050927
+    >>> calc_energy_flux(data, smodel, 0.5, 2)
+    5.7224906878061796e-10
+    >>> calc_energy_flux(data, smodel, 0.5, 7)
+    1.3758131915063825e-09
+
+    Calculate the photon flux density at 0.5 keV:
+
+    >>> calc_photon_flux(data, smodel, 0.5)
+    0.64978176
+
+    """
     return _flux(data, lo, hi, src)
 
+### DOC-TODO: compare to calc_photon_flux ?
 def calc_source_sum( data, src, lo=None, hi=None):
+    """Sum up the source model over a pass band.
+
+    Sum up S(E) over a pass band, where S(E) is the spectral model
+    evaluated for each bin.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    src :
+       The source expression.
+    lo : number, optional
+       The minimum limit of the band. Use `None`, the default, to use
+       the low value of the data set.
+    hi : number, optional
+       The maximum limit of the band, which must be larger than
+       `lo`. Use `None`, the default, to use the upper value of the
+       data set.
+
+    Returns
+    -------
+    signal : number
+       The source model summed up over the given band. This does
+       *not* include the bin width when using histogram-style
+       ('integrated' data spaces), such as used with X-Spec
+       emission - also known as additive - models.
+
+    See Also
+    --------
+    calc_data_sum : Sum up the observed counts over a pass band.
+    calc_model_sum : Sum up the fitted model over a pass band.
+    calc_energy_flux : Integrate the source model over a pass band.
+    calc_photon_flux : Integrate the source model over a pass band.
+
+    Notes
+    -----
+    The units of `lo` and `hi` are determined by the analysis
+    setting for the data set (e.g. `data.get_analysis`).
+
+    Any existing filter on the data set - e.g. as created by
+    `ignore` or `notice` - is ignored by this function.
+
+    The units of the answer depend on the model components used in
+    the source expression and the axis or axes of the data set.
+    It is unlikely to give sensible results for 2D data sets.
+
+    Examples
+    --------
+
+    Sum up the model over the data range 0.5 to 2:
+
+    >>> calc_source_sum(data, smodel, 0.5, 2)
+    139.12819041922018
+
+    """
     return _flux(data, lo, hi, src, srcflux=True)
 
 #def calc_source_sum2d( data, src, reg=None):
 #    return _counts2d(data, reg, data.eval_model_to_fit, src)
 
 def calc_data_sum(data, lo=None, hi=None):
+    """Sum up the data values over a pass band.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    lo : number, optional
+       The minimum limit of the band. Use `None`, the default, to use
+       the low value of the data set.
+    hi : number, optional
+       The maximum limit of the band, which must be larger than
+       `lo`. Use `None`, the default, to use the upper value of the
+       data set.
+
+    Returns
+    -------
+    dsum : number
+       The sum of the data values that lie within the given limits.
+       If `hi` is `None` but `lo` is set then the data value of the
+       bin containing the `lo` value are returned.  If a background
+       estimate has been subtracted from the data set then the
+       calculation will use the background-subtracted values.
+
+    See Also
+    --------
+    calc_data_sum2d : Sum up the data values of a 2D data set.
+    calc_model_sum : Sum up the fitted model over a pass band.
+    calc_energy_flux : Integrate the source model over a pass band.
+    calc_photon_flux : Integrate the source model over a pass band.
+    calc_source_sum: Sum up the source model over a pass band.
+    set_model : Set the source model expression for a data set.
+
+    Notes
+    -----
+    The units of `lo` and `hi` are determined by the analysis
+    setting for the data set (e.g. `data.get_analysis`).
+
+    Any existing filter on the data set - e.g. as created by
+    `ignore` or `notice` - is ignored by this function.
+
+    If a grouping scheme has been applied to the data set that it will
+    be used. This can change the results, since the first and last
+    bins of the selected range may extend outside the requested range.
+
+    Examples
+    --------
+
+    Calculate the number of counts over the ranges 0.5 to 2 and 0.5 to
+    7 keV, first using the observed signal and then, for the 0.5 to 2
+    keV band - the background-subtraced estimate:
+
+    >>> set_analysis('energy')
+    >>> calc_data_sum(data, 0.5, 2)
+    745.0
+    >>> calc_data_sum(data, 0.5, 7)
+    60.0
+    >>> data.subtract()
+    >>> calc_data_sum(data, 0.5, 2)
+    730.9179738207356
+
+    """
     return _counts( data, lo, hi, data.apply_filter, data.get_dep() )
 
 def calc_data_sum2d(data, reg=None):
+    """Sum up the data values of a 2D data set.
+
+    Parameters
+    ----------
+    data : sherpa.astro.data.DataIMG instance
+       The data object to use.
+    reg : str, optional
+       The spatial filter to use. The default, `None`, is to use the
+       whole data set.
+
+    Returns
+    -------
+    dsum : number
+       The sum of the data values that lie within the given region.
+
+    See Also
+    --------
+    calc_data_sum : Sum up the data values of a data set.
+    calc_model_sum2d : Sum up the fitted model for a 2D data set.
+
+    Notes
+    -----
+    The coordinate system of the region filter is determined by the
+    coordinate setting for the data set (e.g. `data.coord`).
+
+    Any existing filter on the data set - e.g. as created by
+    `ignore2d` or `notice2d` - is ignored by this function.
+
+    """
     return _counts2d(data, reg, data.apply_filter, data.get_dep() )
 
+### DOC-TODO: better comparison of calc_source_sum and calc_model_sum
+###           needed (e.g. integration or results in PHA case?)
 def calc_model_sum(data, model, lo=None, hi=None):
+    """Sum up the fitted model over a pass band.
+
+    Sum up S(E) over a pass band, where S(E) is the spectral model
+    evaluated for each bin.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    src :
+       The source expression, which should not include the
+       instrumental responses.
+    lo : number, optional
+       The minimum limit of the band. Use `None`, the default, to use
+       the low value of the data set.
+    hi : number, optional
+       The maximum limit of the band, which must be larger than
+       `lo`. Use `None`, the default, to use the upper value of the
+       data set.
+
+    Returns
+    -------
+    signal : number
+       The sum of the model values used to fit the data.
+
+    See Also
+    --------
+    calc_data_sum : Sum up the observed counts over a pass band.
+    calc_energy_flux : Integrate the source model over a pass band.
+    calc_photon_flux : Integrate the source model over a pass band.
+    calc_source_sum: Sum up the source model over a pass band.
+
+    Notes
+    -----
+    The units of `lo` and `hi` are determined by the analysis
+    setting for the data set (e.g. `data.get_analysis`).
+
+    Any existing filter on the data set - e.g. as created by
+    `ignore` or `notice` - is ignored by this function.
+
+    The units of the answer depend on the model components used in
+    the source expression and the axis or axes of the data set.
+    It is unlikely to give sensible results for 2D data sets.
+
+    """
     return _counts(data, lo, hi, data.eval_model_to_fit, model)
 
+### DOC-TODO: clean up whether the calc_model_* versions should or
+###           should not contain the instrument response/PSF components.
+###           Note: there is no calc_source_sum2d in this module, so
+###           this needs looking at to see if the text is correct
 def calc_model_sum2d(data, model, reg=None):
+    """Sum up the fitted model for a 2D data set.
+
+    Parameters
+    ----------
+    data : sherpa.astro.data.DataIMG instance
+       The data object to use.
+    model :
+       The source expression, which should not include the PSF model.
+    reg : str, optional
+       The spatial filter to use. The default, `None`, is to use the
+       whole data set.
+
+    Returns
+    -------
+    dsum : number
+       The sum of the model values, including any PSF convolution,
+       that lie within the given region.
+
+    See Also
+    --------
+    calc_data_sum2d : Sum up the data values of a 2D data set.
+    calc_model_sum : Sum up the fitted model over a pass band.
+
+    Notes
+    -----
+    The coordinate system of the region filter is determined by the
+    coordinate setting for the data set (e.g. `data.coord`).
+
+    Any existing filter on the data set - e.g. as created by
+    `ignore2d` or `notice2d` - is ignored by this function.
+
+    """
     return _counts2d(data, reg, data.eval_model_to_fit, model)
 
 def eqwidth(data, model, combo, lo=None, hi=None):
@@ -254,6 +628,81 @@ def eqwidth(data, model, combo, lo=None, hi=None):
 
 
 def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
+    """Calculate the K correction for a model.
+
+    The K correction ([1]_, [2]_, [3]_, [4]_) is the numeric
+    factor applied to measured energy fluxes to convert values in
+    an observed energy band to that they are in a rest-frame
+    energy band (that is, correct for the change in spectral shape
+    between the rest-frame and observed-frame bands). This is
+    often used when converting a flux into a luminosity.
+
+    Parameters
+    ----------
+    data :
+       The data object to use.
+    model :
+       The source expression: this should not include any instrument
+       responses.
+    z : number or array, >= 0
+       The redshift, or redshifts, of the source.
+    obslo : number
+       The minimum energy of the observed band.
+    obshi : number
+       The maximum energy of the observed band, which must
+       be larger than `obslo`.
+    restlo : number or `None`
+       The minimum energy of the rest-frame band. If `None` then
+       use `obslo`.
+    restlo : number or `None`
+       The maximum energy of the rest-frame band. It must be
+       larger than `restlo`. If `None` then use `obshi`.
+
+    Returns
+    -------
+    kz : number or array of numbers
+
+    Notes
+    -----
+    This is only defined when the analysis is in 'energy' units.
+
+    If the model contains a redshift parameter then it should
+    be set to `0`, rather than the source redshift.
+
+    If the source model is at zero redshift, the observed energy
+    band is olo to ohi, and the rest frame band is rlo to rhi
+    (which need not match the observed band), then the K
+    correction at a redshift z can be calculated as::
+
+      frest = calc_energy_flux(data, model, rlo, rhi)
+      fobs  = calc_energy_flux(data, model, olo*(1+z), ohi*(1+z))
+      kz    = frest / fobs
+
+    The energy ranges used - rlo to rhi and olo*(1+z) to ohi*(1+z)
+    - should be fully covered by the data grid, otherwise the flux
+    calculation will be truncated at the grid boundaries, leading
+    to incorrect results.
+
+    References
+    ----------
+
+    .. [1] "The K correction", Hogg, D.W., et al.
+           http://arxiv.org/abs/astro-ph/0210394
+
+    .. [2] Appendix B of Jones et al. 1998, ApJ, vol 495,
+           p. 100-114.
+           http://adsabs.harvard.edu/abs/1998ApJ...495..100J
+
+    .. [3] "K and evolutionary corrections from UV to IR",
+           Poggianti, B.M., A&AS, 1997, vol 122, p. 399-407.
+           http://adsabs.harvard.edu/abs/1997A%26AS..122..399P
+
+    .. [4] "Galactic evolution and cosmology - Probing the
+           cosmological deceleration parameter", Yoshii, Y. &
+           Takahara, F., ApJ, 1988, vol 326, p. 1-18.
+           http://adsabs.harvard.edu/abs/1988ApJ...326....1Y
+
+    """
 
     if restlo is None:
         restlo = obslo

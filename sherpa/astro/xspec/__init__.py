@@ -35,14 +35,89 @@ from sherpa.astro.xspec._xspec import get_xschatter, get_xsabund, get_xscosmo, \
 modelstrings = {}
 
 def get_xsxset(name):
-    '''
-    Wrapper function for ensuring keys are case insensitive.
-    '''
+    """Return the X-Spec model setting.
+
+    Parameters
+    ----------
+    name : str
+       The name of the setting (converted to upper case before being
+       sent to X-Spec). There is no check that the name is valid.
+
+    Returns
+    -------
+    val : str
+       Returns the value set by a previous call to `set_xsxset` or the
+       empty string, if not set.
+
+    See Also
+    --------
+    set_xsxset : Set a X-Spec model setting.
+
+    Notes
+    -----
+    Due to the way X-Spec model settings work, `get_xsxset` will only
+    return a value if it has previously been set with a call to
+    `set_xsxset`. There is no way to retrive the default value of a
+    setting.
+    """
     name = name.upper()
     return sherpa.astro.xspec._xspec.get_xsxset(name)
 
 def set_xsxset(name, value):
-    # convert name to upper case
+    """Set a X-Spec model setting.
+
+    Set variables used by X-Spec models. It is equivalent to the
+    X-Spec `xset` command [1]_, but only for setting the model
+    database settings. See `set_xsabund`, `set_xscosmo`, and
+    `set_xsxsect` for the other settings.
+
+    Parameters
+    ----------
+    name : str
+       The name of the setting. It is converted to upper case before
+       being used. There is no check that the name is valid.
+    value : str
+       The new value of the setting. It must be given as a string.
+
+    See Also
+    --------
+    get_xsxset : Return the value of X-Spec model settings.
+    get_xsversion : Return the version of X-Spec used by this module.
+    set_xsabund : Set the X-Spec abundance table.
+    set_xschatter : Set the X-Spec chatter level.
+    set_xscosmo : Set the X-Spec cosmology settings.
+    set_xsxsect : Set the X-Spec photoelectric absorption cross-sections.
+
+    Notes
+    -----
+    The available settings are listed at [1]_. Not all the X-Spec
+    model types are supported by Sherpa - for instance X-Spec "mixing
+    models" - so changing some of these settings will make no
+    difference. The X-Spec chatter setting can be increased with
+    `set_xschatter` if it is not clear if a setting is being used.
+
+    The model settings are stored so that they can be included in the
+    output of `sherpa.astro.ui.utils.save_all`.
+
+    References
+    ----------
+
+    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSabund.html
+           Note that this may refer to a newer version than the
+           compiled version used by Sherpa; use `get_xsversion` to
+           check.
+
+    Examples
+    --------
+
+    >>> set_xsxset('NEIVERS', '2.0')
+
+    >>> set_xsxset('NEIAPECROOT', '/data/spectral/modelData/APEC_nei_v11')
+
+    >>> set_xsxset('POW_EMIN', '0.5')
+    >>> set_xsxset('POW_EMAX', '2.0')
+
+    """
     name = name.upper()
     sherpa.astro.xspec._xspec.set_xsxset(name, value)
     if (get_xsxset(name) != ""):

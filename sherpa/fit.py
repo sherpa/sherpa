@@ -57,6 +57,39 @@ def evaluates_model(func):
 
 
 class StatInfoResults(NoNewAttributesAfterInit):
+    """A summary of the current statistic value for
+    one or more data sets.
+
+    Attributes
+    ----------
+    name : str
+       The name of the data set, or sets.
+    ids : sequence of int or str
+       The data set ids (it may be a tuple or array) included in the
+       results.
+    bkg_ids: sequence of int or str, or `None`
+       The background data set ids (it may be a tuple or array)
+       included in the results, if any.
+    statname : str
+       The name of the statistic function.
+    statval : number
+       The statistic value.
+    numpoints : int
+       The number of bins used in the fits.
+    dof: int
+       The number of degrees of freedom in the fit (the number of
+       bins minus the number of free parameters).
+    qval: number or `None`
+       The Q-value (probability) that one would observe the reduced
+       statistic value, or a larger value, if the assumed model is
+       true and the current model parameters are the true parameter
+       values. This will be `None` if the value can not be calculated
+       with the current statistic (e.g. the Cash statistic).
+    rstat: number of `None`
+       The reduced statistic value (the `statval` field divided by
+       `dof`). This is not calculated for all statistics.
+
+    """
 
     _fields = ('name', 'ids', 'bkg_ids', 'statname', 'statval',
                'numpoints', 'dof', 'qval', 'rstat')
@@ -103,6 +136,51 @@ class StatInfoResults(NoNewAttributesAfterInit):
 
 
 class FitResults(NoNewAttributesAfterInit):
+    """A summary of the fit results.
+
+    Attributes
+    ----------
+    datasets : sequence of int or str
+       A sequence of the data set ids included in the results.
+    itermethodname : str or `None`
+       What iterated-fit scheme was used, if any.
+    statname : str
+       The name of the statistic function.
+    succeeded : bool
+       Was the fit successful (did it converge)?
+    parnames : tuple of str
+       the parameter names that were varied in the fit
+       (the thawed parameters in the model expression).
+    parvals : tuple of number
+       The parameter values, in the same order as `parnames`.
+    statval : number
+       The statistic value after the fit.
+    istatval : number
+       The statistic value at the start of the fit.
+    dstatval : number
+       The change in the statistic value (`istatval - statval`).
+    numpoints : int
+       The number of bins used in the fits.
+    dof : int
+       The number of degrees of freedom in the fit (the number of
+       bins minus the number of free parameters).
+    qval : number or `None`
+       The Q-value (probability) that one would observe the reduced
+       statistic value, or a larger value, if the assumed model is
+       true and the current model parameters are the true parameter
+       values. This will be `None` if the value can not be calculated
+       with the current statistic (e.g.  the Cash statistic).
+    rstat : number or `None`
+       The reduced statistic value (the `statval` field divided by
+       `dof`). This is not calculated for all statistics.
+    message : str
+       A message about the results of the fit (e.g. if the fit was
+       unable to converge). The format and contents depend on the
+       optimisation method.
+    nfev : int
+       The number of model evaluations made during the fit.
+
+    """
 
     _fields = ('datasets', 'itermethodname', 'methodname', 'statname',
                'succeeded', 'parnames', 'parvals', 'statval', 'istatval',
@@ -430,6 +508,47 @@ class IterFit(NoNewAttributesAfterInit):
 
     def primini(self, statfunc, pars, parmins, parmaxes, statargs = (),
                 statkwargs = {}):
+        """An iterative scheme, where the variance is computed from
+        the model amplitudes.
+
+        This is a chi-square statistic where the variance is computed
+        from model amplitudes derived in the previous iteration of the
+        fit. This 'Iterative Weighting' ([1]_) attempts to remove
+        biased estimates of model parameters which is inherent in
+        chi-square2 statistics ([2]_).
+
+        The variance in bin i is estimated to be:
+
+        sigma^2_i^j = S(i, t_s^(j-1)) + (A_s/A_b)^2 B_off(i, t_b^(j-1))
+
+        where j is the number of iterations that have been carried out
+        in the fitting process, B_off is the background model
+        amplitude in bin i of the off-source region, and t_s^(j-1) and
+        t_b^(j-1) are the set of source and background model parameter
+        values derived during the iteration previous to the current
+        one. The variances are set to an array of ones on the first
+        iteration.
+
+        In addition to reducing parameter estimate bias, this
+        statistic can be used even when the number of counts in each
+        bin is small (< 5), although the user should proceed with
+        caution.
+
+        References
+        ----------
+
+        .. [1] "Multiparameter linear least-squares fitting to Poisson
+               data one count at a time", Wheaton et al. 1995, ApJ 438,
+               322
+               http://adsabs.harvard.edu/abs/1995ApJ...438..322W
+
+        .. [2] "Bias-Free Parameter Estimation with Few Counts, by
+               Iterative Chi-Squared Minimization", Kearns, Primini, &
+               Alexander, 1995, ADASS IV, 331
+               http://adsabs.harvard.edu/abs/1995ASPC...77..331K
+
+        """
+
         # Primini's method can only be used with chi-squared;
         # raise exception if it is attempted with least-squares,
         # or maximum likelihood
@@ -510,6 +629,22 @@ class IterFit(NoNewAttributesAfterInit):
 
     def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs = (),
                  statkwargs = {}):
+        """Exclude points that are significately far away from the best fit.
+
+        The `sigmarej` scheme is based on the IRAF `sfit` function
+        [1]_, where after a fit data points are excluded if the value
+        of `(data-model)/error)` exceeds a threshold, and the data
+        re-fit. This removal of data points continues until the fit
+        has converged. The error removal can be asymmetric, since
+        there are separate parameters for the lower and upper limits.
+
+        References
+        ----------
+
+        .. [1] http://iraf.net/irafhelp.php?val=sfit
+
+        """
+
         # Sigma-rejection can only be used with chi-squared;
         # raise exception if it is attempted with least-squares,
         # or maximum likelihood
@@ -752,11 +887,49 @@ class Fit(NoNewAttributesAfterInit):
 
 
     def calc_stat(self):
+        """Calculate the fit statistic for a data set.
+
+        Evaluate the model for one or more data sets, compare it to
+        the data using the current statistic, and return the value.
+        No fitting is done, as the current model parameter, and any
+        filters, are used.
+
+        Returns
+        -------
+        stat : number
+           The current statistic value.
+
+        See Also
+        --------
+        calc_chisqr : Calculate the per-bin chi-squared statistic.
+
+        """
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         model = self.data.eval_model_to_fit(self.model)
         return self.stat.calc_stat(dep, model, staterror, syserror)[0]
 
     def calc_chisqr(self):
+        """Calculate the per-bin chi-squared statistic.
+
+        Evaluate the model for one or more data sets, compare it to
+        the data using the current statistic, and return the value for
+        each bin.  No fitting is done, as the current model parameter,
+        and any filters, are used.
+
+        Returns
+        -------
+        chisq : array or `None`
+           The chi-square value for each bin of the data, using the
+           current statistic (as set by `set_stat`).  A value of
+           `None` is returned if the statistic is not a chi-square
+           distribution.
+
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+
+        """
+
         if not isinstance(self.stat, Chi2):
             return None
         

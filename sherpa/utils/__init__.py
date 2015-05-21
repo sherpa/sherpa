@@ -606,14 +606,20 @@ def parse_expr(expr):
 
 
 def calc_total_error(staterror=None, syserror=None):
-    """
+    """Add statistical and systematic errors in quadrature.
 
-    Add statistical and systematic errors in quadrature.  The
-    arguments should be numpy arrays or None.  If both arguments are
-    arrays, a new array containing the element-wise square root of the
-    sum of their squares is returned.  If one argument is None, the
-    other is returned unaltered.  If both arguments are None, None is
-    returned.
+    Parameters
+    ----------
+    staterror : array, optional
+       The statistical error, or `None`.
+    syserror : array, optional
+       The systematic error, or `None`.
+
+    Returns
+    -------
+    error : array or `None`
+       The errors, added in quadrature. If both `staterror` and
+       `syserror` are `None` then the return value is `None`.
 
     """
 
@@ -652,14 +658,24 @@ def quantile(sorted_array, f):
 
 
 def get_error_estimates(x, sorted=False):
-    """
-    Compute the quantiles and return the median, -1 sigma value, and +1 sigma
-    value for the array *x*.
+    """Compute the median and (-1,+1) sigma values for the data.
 
-    `x`        input ndarray
-    `sorted`   boolean flag to sort array, default=False
+    Parameters
+    ----------
+    x : array of numbers
+       The input values.
+    sorted : bool, optional
+       If `False`, the default, then `x` is assumed to not be sorted.
 
-    returns a 3-tuple (median, -1 sigma value, and +1 sigma value)
+    Returns
+    -------
+    (median, lsig, usig)
+       The median, value that corresponds to -1 sigma, and value that
+       is +1 sigma, for the input distribution.
+
+    Examples
+    --------
+    >>> (m, l, h) = get_error_estimates(x)
 
     """
     xs = numpy.asarray(x)
@@ -676,11 +692,27 @@ def get_error_estimates(x, sorted=False):
 
 
 def poisson_noise(x):
-    """
+    """Draw samples from a Poisson distribution.
 
-    Return a random value from a Poisson distribution with mean x.  If
-    x is an array, return an array of such values.  Uses
-    numpy.random.poisson to generate the values.
+    Parameters
+    ----------
+    x : scalar or array
+       The expectation value for the distribution.
+
+    Returns
+    -------
+    out : scalar or array
+       A random realisation of the input array, drawn from
+       the Poisson distribution, as a `SherpaFloat`.
+
+    Notes
+    -----
+    The distribution is calculated by `numpy.poisson.poisson`.
+
+    Examples
+    --------
+    >>> poisson_noise([10, 20, 5])
+    array([ 13.,  21.,   6.])
 
     """
 
@@ -866,8 +898,51 @@ def dataspace2d(dim):
 
     return x0, x1, y, shape
 
-
 def histogram1d( x, x_lo, x_hi ):
+    """Create a 1D histogram from a binned grid (`x_lo`, `xhi`)
+    and array of samples (`x`).
+
+    See the NumPy `histogram` routine for a version with more options.
+
+    Parameters
+    ----------
+    x : sequence of numbers
+       The array of samples
+    x_lo : sequence of numbers
+       The lower-edges of each bin.
+    x_hi : sequence of numbers
+       The upper-edges of each bin, which must be the same size
+       as `x_lo`.
+
+    Returns
+    -------
+    y : NumPy array
+       The number of samples in each histogram bin defined by
+       the `x_lo` and `x_hi` arrays.
+
+    Examples
+    --------
+
+    A simple example, calculating the histogram of 1000 values
+    randomly distributed over [0,1).
+
+    >>> x = np.random.random(1000)
+    >>> edges = np.arange(0, 1.1, 0.1)
+    >>> xlo = edges[:-1]
+    >>> xhi = edges[1:]
+    >>> y = histogram1d(x, xlo, xhi)
+
+    Given a list of samples (`vals`), bin them up so that
+    they can be used as the dependent axis (the value to
+    be fitted) in a Sherpa data set:
+
+    >>> dataspace1d(0.1, 10, 0.1)
+    >>> (lo, hi) = get_indep()
+    >>> n = histogram1d(vals, lo, hi)
+    >>> set_dep(n)
+
+    """
+
     x_lo = numpy.asarray(x_lo)
     x_hi = numpy.asarray(x_hi)
 
@@ -876,8 +951,44 @@ def histogram1d( x, x_lo, x_hi ):
 
     return hist1d( numpy.asarray(x), x_lo, x_hi )
 
-
 def histogram2d( x, y, x_grid, y_grid ):
+    """Create 21D histogram from a binned grid (`x_grid`, `y_grid`)
+    and array of samples (`x`, and `y`).
+
+    See the NumPy `histogram2d` routine for a version with more options.
+
+    Parameters
+    ----------
+    x : sequence of numbers
+       The array of samples (X coordinate)
+    y : sequence of numbers
+       The array of samples (Y coordinate), which must have the same
+       size as the `x` sequence.
+    x_grid : sequence of numbers
+       The X bin edges.
+    y_grid : sequence of numbers
+       The Y bin edges.
+
+    Returns
+    -------
+    y : NumPy array
+       The number of samples in each histogram bin defined by
+       the `x_grid` and `y_grid` arrays.
+
+    Examples
+    --------
+
+    Given a list of coordinates (`xvals`, `yvals`), bin
+    them up so that they match the 5 by 10 pixel image
+    data space. In this case the X grid is [1,2,...,5]
+    and the Y grid is [1,2,..,10].
+
+    >>> dataspace2d([5, 10])
+    >>> (xgrid, ygrid) = get_axes()
+    >>> n = histogram2d(xvals, yvals, xgrid, ygrid)
+    >>> set_dep(n)
+
+    """
     x_grid = numpy.asarray(x_grid)
     y_grid = numpy.asarray(y_grid)
 
@@ -907,6 +1018,7 @@ def interp_util( xout, xin, yin ):
     return x0, x1, y0, y1
 
 def linear_interp( xout, xin, yin ):
+    """Linear interpolation of (xin,yin) onto xout."""
     x0, x1, y0, y1 = interp_util( xout, xin, yin )
     val = (xout - x0) / (x1 - x0) * (y1 - y0) + y0
     if True == numpy.any( numpy.isnan( val ) ):
@@ -915,21 +1027,31 @@ def linear_interp( xout, xin, yin ):
     return val
 
 def nearest_interp( xout, xin, yin ):
+    """Nearest-neighbor interpolation of (xin,yin) onto xout."""
     x0, x1, y0, y1 = interp_util( xout, xin, yin )
     return numpy.where((numpy.abs(xout - x0) < numpy.abs(xout - x1)), y0, y1)
     
 def interpolate(xout, xin, yin, function=linear_interp):
-    """
-    Interpolate the curve defined by (xin, yin) at points xout.
-    The array xin must be monotonically increasing.  The output
-    has the same data type as the input yin.
+    """Interpolate the curve defined by (xin, yin) at points xout.
 
-    :param yin: y values of input curve
-    :param xin: x values of input curve
-    :param xout: x values of output interpolated curve
-    :param method: interpolation method (linear_interp | nearest_interp | neville)
+    Parameters
+    ----------
+    xout : array_like
+       The positions at which to interpolate.
+    xin : array_like
+       The x values of the data to interpolate. This must be
+       sorted so that it is monotonically increasing.
+    yin : array_like
+       The y values of the data to interpolate.
+    function : func
+       The function to perfoem the interpolation.
 
-    @:rtype: numpy array with interpolated curve
+    Returns
+    -------
+    yout : array_like
+       This has the dimensions of xout and matches the data type of
+       yin.
+
     """
 
     if not callable(function):
@@ -940,9 +1062,7 @@ def interpolate(xout, xin, yin, function=linear_interp):
 
 
 def is_binary_file( filename ):
-    """
-    boolean determining if the file 'filename' is binary
-
+    """Estimate if a file is a binary file.
     """
     fd = open( filename, 'r')
     lines = fd.readlines(1024)

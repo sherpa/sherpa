@@ -195,7 +195,25 @@ class Data(BaseData):
     #
 
     def get_indep(self, filter=False):
-        "Return a tuple containing the independent variables/axes"
+        """Return the independent axes of a data set.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+
+        Returns
+        -------
+        axis: tuple of arrays
+           The independent axis values for the data set. This gives
+           the coordinates of each point in the data set.
+
+        See Also
+        --------
+        get_dep : Return the dependent axis of a data set.
+
+        """
         indep = getattr(self, 'indep', None)
         filter=bool_cast(filter)
         if filter:
@@ -203,7 +221,28 @@ class Data(BaseData):
         return indep
 
     def get_dep(self, filter=False):
-        "Return an array of dependent variable values"
+        """Return the dependent axis of a data set.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+
+        Returns
+        -------
+        axis: array
+           The dependent axis values for the data set. This gives
+           the value of each point in the data set.
+
+        See Also
+        --------
+        get_indep : Return the independent axis of a data set.
+        get_error : Return the errors on the dependent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+
+        """
         dep = getattr(self, 'dep', None)
         filter=bool_cast(filter)
         if filter:
@@ -211,8 +250,32 @@ class Data(BaseData):
         return dep
 
     def get_staterror(self, filter=False, staterrfunc=None):
-        "Return the statistical error array"
+        """Return the statistical error on the dependent axis of a data set.
 
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        staterrfunc : function
+           If no statistical error has been set, the errors will
+           be calculated by applying this function to the
+           dependent axis of the data set.
+
+        Returns
+        -------
+        axis : array or `None`
+           The statistical error for each data point. A value of
+           `None` is returned if the data set has no statistical error
+           array and `staterrfunc` is `None`.
+
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+
+        """
         staterror = getattr(self, 'staterror', None)
         filter=bool_cast(filter)
         if filter:
@@ -226,7 +289,28 @@ class Data(BaseData):
         return staterror
 
     def get_syserror(self, filter=False):
-        "Return the systematic error array"
+        """Return the statistical error on the dependent axis of a data set.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+
+        Returns
+        -------
+        axis : array or `None`
+           The systematic error for each data point. A value of
+           `None` is returned if the data set has no systematic
+           errors.
+
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+
+        """
         syserr = getattr(self, 'syserror', None)
         filter=bool_cast(filter)
         if filter:
@@ -256,7 +340,31 @@ class Data(BaseData):
         self._no_dim_error()
 
     def get_error(self, filter=False, staterrfunc=None):
-        "Return total error in dependent variable"
+        """Return the total error on the dependent variable.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        staterrfunc : function
+           If no statistical error has been set, the errors will
+           be calculated by applying this function to the
+           dependent axis of the data set.
+
+        Returns
+        -------
+        axis : array or `None`
+           The error for each data point, formed by adding the
+           statistical and systematic errors in quadrature.
+
+        See Also
+        --------
+        get_dep : Return the independent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+
+        """
         return calc_total_error(self.get_staterror(filter, staterrfunc),
                                 self.get_syserror(filter))
 

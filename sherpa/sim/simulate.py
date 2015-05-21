@@ -45,7 +45,30 @@ __all__ = ('LikelihoodRatioTest', 'LikelihoodRatioResults')
 
 
 class LikelihoodRatioResults(NoNewAttributesAfterInit):
-    
+    """The results of a likelihood ratio comparison simulation.
+
+    Attributes
+    ----------
+    samples : numpy array
+       The parameter samples array for each simulation.
+    stats : numpy array
+       The fit statistic for the null and alternative models
+       for each simulation. The shape is (nsim,2).
+    ratios : numpy array
+       The likelihood ratio for each simulation.
+    null : number
+       The fit statistic of the null model on the observed data.
+    alt : number
+       The fit statistic of the alternate model on the observed data.
+    lr : number
+       The likelihood ratio of the observed data for the null and
+       alternate models.
+    ppp : number
+       The p value of the observed data for the null and alternate
+       models.
+
+    """
+
     _fields = ('ratios', 'stats', 'samples', 'lr', 'ppp', 'null', 'alt')
 
     def __init__(self, ratios, stats, samples, lr, ppp, null, alt):
@@ -90,6 +113,14 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
 
 
     def format(self):
+        """Convert the object to a string representation for display purposes.
+
+        Returns
+        -------
+        txt : str
+           A string representation of the data stored in the object.
+
+        """
         s =  'Likelihood Ratio Test\n'
         s += 'null statistic   =  %s\n' % str(self.null)
         s += 'alt statistic    =  %s\n' % str(self.alt)
@@ -100,22 +131,28 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
 
 
 class LikelihoodRatioTest(NoNewAttributesAfterInit):
-    """
-    Likelihood Ratio Test
-    
-    http://en.wikipedia.org/wiki/Likelihood-ratio_test
-    
-              (   likelihood for null model	)
-    D = -2 ln -----------------------------------
-	      ( likelihood for alternative model)
+    """Likelihood Ratio Test.
 
-      = -2 ln(likelihood for null model) + 2 ln(likelihood for alternative model)
-	
-    Since the Cash and C fit statistics are defined as -2 ln(likelihood), the
-    equation reduces to
-	
+    The likelihood ratio [1]_, D, is defined as::
     
-    D = statistic for null model - statistic for alternative model
+                  (   likelihood for null model	)
+        D = -2 ln -----------------------------------
+                  ( likelihood for alternative model)
+
+          = -2 ln(likelihood for null model) +
+             2 ln(likelihood for alternative model)
+	
+    Since the Cash and C fit statistics are defined as -2
+    ln(likelihood), the equation reduces to::
+	
+        D = statistic for null model -
+            statistic for alternative model
+
+    References
+    ----------
+
+    .. [1] http://en.wikipedia.org/wiki/Likelihood-ratio_test
+
     """
 
     @staticmethod

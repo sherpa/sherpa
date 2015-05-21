@@ -480,6 +480,21 @@ class DataPHA(Data1DInt):
 
 
     def get_specresp(self, filter=False):
+        """Return the effective area values for the data set.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the ARF or not. The default is `False`.
+
+        Returns
+        -------
+        arf : array
+           The effective area values for the data set (or background
+           component).
+
+        """
         filter=bool_cast(filter)
         self.notice_response(False)
         arf,rmf = self.get_response()
@@ -766,6 +781,31 @@ class DataPHA(Data1DInt):
         return grouped_data
 
     def ignore_bad(self):
+        """Exclude channels marked as bad.
+
+        Ignore any bin in the PHA data set which has a quality value
+        that is larger than zero.
+
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has no quality array.
+
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+
+        Notes
+        -----
+        Bins with a non-zero quality setting are not automatically
+        excluded when a data set is created.
+
+        If the data set has been grouped, then calling `ignore_bad`
+        will remove any filter applied to the data set. If this
+        happens a warning message will be displayed.
+
+        """
         if self.quality is None:
             raise DataErr("noquality", self.name)
 
@@ -826,6 +866,43 @@ class DataPHA(Data1DInt):
     ## same grouping conditions on *all* associated background data sets.
     ## CIAO 4.5 bug fix, 05/01/2012
     def group_bins(self, num, tabStops=None):
+        """Group into a fixed number of bins.
+
+        Combine the data so that there `num` equal-width bins (or
+        groups). The binning scheme is applied to all the channels,
+        but any existing filter - created by the `ignore` or `notice`
+        set of functions - is re-applied after the data has been
+        grouped.
+
+        Parameters
+        ----------
+        num : int
+           The number of bins in the grouped data set. Each bin
+           will contain the same number of channels.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+
+        Notes
+        -----
+        Since the bin width is an integer number of channels, it is
+        likely that some channels will be "left over". This is even
+        more likely when the `tabStops` parameter is set. If this
+        happens, a warning message will be displayed to the screen and
+        the quality value for these channels will be set to 2.
+
+        """
         if not groupstatus:
             raise ImportErr('importfailed', 'group', 'dynamic grouping')
         self._dynamic_group(pygroup.grpNumBins, len(self.channel), num,
@@ -836,6 +913,41 @@ class DataPHA(Data1DInt):
                 bkg.group_bins(num, tabStops=tabStops)
 
     def group_width(self, val, tabStops=None):
+        """Group into a fixed bin width.
+
+        Combine the data so that each bin contains `num` channels.
+        The binning scheme is applied to all the channels, but any
+        existing filter - created by the `ignore` or `notice` set of
+        functions - is re-applied after the data has been grouped.
+
+        Parameters
+        ----------
+        val : int
+           The number of channels to combine into a group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+
+        Notes
+        -----
+        Unless the requested bin width is a factor of the number of
+        channels (and no `tabStops` parameter is given), then some
+        channels will be "left over". If this happens, a warning
+        message will be displayed to the screen and the quality value
+        for these channels will be set to 2.
+
+        """
         if not groupstatus:
             raise ImportErr('importfailed', 'group', 'dynamic grouping')
         self._dynamic_group(pygroup.grpBinWidth, len(self.channel), val,
@@ -846,6 +958,45 @@ class DataPHA(Data1DInt):
                 bkg.group_width(val, tabStops=tabStops)
 
     def group_counts(self, num, maxLength=None, tabStops=None):
+        """Group into a minimum number of counts per bin.
+
+        Combine the data so that each bin contains `num` or more
+        counts. The binning scheme is applied to all the channels, but
+        any existing filter - created by the `ignore` or `notice` set
+        of functions - is re-applied after the data has been grouped.
+        The background is *not* included in this calculation; the
+        calculation is done on the raw data even if `subtract` has
+        been called on this data set.
+
+        Parameters
+        ----------
+        num : int
+           The number of channels to combine into a group.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+
+        Notes
+        -----
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2.
+
+        """
         if not groupstatus:
             raise ImportErr('importfailed', 'group', 'dynamic grouping')
         self._dynamic_group(pygroup.grpNumCounts, self.counts, num,
@@ -855,7 +1006,53 @@ class DataPHA(Data1DInt):
             if (hasattr(bkg, "group_counts")):
                 bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
 
+    ### DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_snr(self, snr, maxLength=None, tabStops=None, errorCol=None):
+        """Group into a minimum signal-to-noise ratio.
+
+        Combine the data so that each bin has a signal-to-noise ratio
+        of at least `snr`. The binning scheme is applied to all the
+        channels, but any existing filter - created by the `ignore` or
+        `notice` set of functions - is re-applied after the data has
+        been grouped.  The background is *not* included in this
+        calculation; the calculation is done on the raw data even if
+        `subtract` has been called on this data set.
+
+        Parameters
+        ----------
+        snr : number
+           The minimum signal-to-noise ratio that must be reached
+           to form a group of channels.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+        errorCol : array of num, optional
+           If set, the error to use for each channel when calculating
+           the signal-to-noise ratio. If not given then Poisson
+           statistics is assumed. A warning is displayed for each
+           zero-valued error estimate.
+
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_width : Group into a fixed bin width.
+
+        Notes
+        -----
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2.
+
+        """
         if not groupstatus:
             raise ImportErr('importfailed', 'group', 'dynamic grouping')
         self._dynamic_group(pygroup.grpSnr, self.counts, snr,
@@ -867,6 +1064,48 @@ class DataPHA(Data1DInt):
                 bkg.group_snr(snr, maxLength=maxLength, tabStops=tabStops, errorCol=errorCol)
 
     def group_adapt(self, minimum, maxLength=None, tabStops=None):
+        """Adaptively group to a minimum number of counts.
+
+        Combine the data so that each bin contains `num` or more
+        counts. The difference to `group_counts` is that this
+        algorithm starts with the bins with the largest signal, in
+        order to avoid over-grouping bright features, rather than at
+        the first channel of the data. The adaptive nature means that
+        low-count regions between bright features may not end up in
+        groups with the minimum number of counts.  The binning scheme
+        is applied to all the channels, but any existing filter -
+        created by the `ignore` or `notice` set of functions - is
+        re-applied after the data has been grouped.
+
+        Parameters
+        ----------
+        minimum : int
+           The number of channels to combine into a group.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+
+        See Also
+        --------
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+
+        Notes
+        -----
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2.
+
+        """
         if not groupstatus:
             raise ImportErr('importfailed', 'group', 'dynamic grouping')
         self._dynamic_group(pygroup.grpAdaptive, self.counts, minimum,
@@ -876,7 +1115,56 @@ class DataPHA(Data1DInt):
             if (hasattr(bkg, "group_adapt")):
                 bkg.group_adapt(minimum, maxLength=maxLength, tabStops=tabStops)
 
+    ### DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_adapt_snr(self, minimum, maxLength=None, tabStops=None, errorCol=None):
+        """Adaptively group to a minimum signal-to-noise ratio.
+
+        Combine the data so that each bin has a signal-to-noise ratio
+        of at least `minimum`. The difference to `group_snr` is that
+        this algorithm starts with the bins with the largest signal,
+        in order to avoid over-grouping bright features, rather than
+        at the first channel of the data. The adaptive nature means
+        that low-count regions between bright features may not end up
+        in groups with the minimum number of counts.  The binning
+        scheme is applied to all the channels, but any existing filter
+        - created by the `ignore` or `notice` set of functions - is
+        re-applied after the data has been grouped.
+
+        Parameters
+        ----------
+        minimum : number
+           The minimum signal-to-noise ratio that must be reached
+           to form a group of channels.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+        errorCol : array of num, optional
+           If set, the error to use for each channel when calculating
+           the signal-to-noise ratio. If not given then Poisson
+           statistics is assumed. A warning is displayed for each
+           zero-valued error estimate.
+
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+
+        Notes
+        -----
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2.
+
+        """
         if not groupstatus:
             raise ImportErr('importfailed', 'group', 'dynamic grouping')
         self._dynamic_group(pygroup.grpAdaptiveSnr, self.counts, minimum,

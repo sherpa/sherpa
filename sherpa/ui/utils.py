@@ -293,25 +293,23 @@ class Session(NoNewAttributesAfterInit):
         return allnames
 
     def clean(self):
-        """
-        clean
+        """Clear out the current Sherpa session.
 
-        SYNOPSIS
-           Clear all stored session data
+        The `clean` function removes all data sets and model
+        assignments, and restores the default settings for the
+        optimisation and fit statistic.
 
-        SYNTAX
+        See Also
+        --------
+        save : Save the current Sherpa session to a file.
+        restore : Load in a Sherpa session from a file.
+        sherpa.astro.ui.utils.save_all : Save the Sherpa session as an ASCII file.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           None
+        >>> clean()
 
-        DESCRIPTION
-           Clear all stored session data from internal structure.
-
-        SEE ALSO
-           save, restore
         """
         # Make version, version string names and formats identical
         # between Python and S-Lang interfaces.
@@ -447,30 +445,49 @@ class Session(NoNewAttributesAfterInit):
 
 
     def save(self, filename='sherpa.save', clobber=False):
-        """
-        save
+        """Save the current Sherpa session to a file.
 
-        SYNOPSIS
-           Save the current Sherpa session to a pickled file
+        Parameters
+        ----------
+        filename : str, optional
+           The name of the file to write the results to. The default
+           is `sherpa.save`.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-        Arguments:
-           filename   - name of save file
-                        default = 'sherpa.save'           
+        See Also
+        --------
+        clean : Clear all stored session data.
+        restore : Load in a Sherpa session from a file.
+        sherpa.astro.ui.utils.save_all : Save the Sherpa session as an ASCII file.
 
-           clobber    - clobber the file if it exists
-                        default = False
+        Notes
+        -----
+        The current Sherpa session is saved using the Python `pickle`
+        module. The output is a binary file, which may not be portable
+        between versions of Sherpa, but is platform independent, and
+        contains all the data. This means that files created by `save`
+        can be sent to collaborators to share results.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Save the current Sherpa session information to a pickled file
-           to be restored for future use.
+        Save the current session to the file `sherpa.save`.
 
-        SEE ALSO
-           restore, clean
+        >>> save()
+
+        Save the current session to the file `bestfit.sherpa`,
+        overwriting any existing version of the file.
+
+        >>> save('bestfit.sherpa', clobber=True)
+
         """
         
         _check_type(filename, basestring, 'filename', 'a string')
@@ -486,27 +503,49 @@ class Session(NoNewAttributesAfterInit):
             fout.close()
 
     def restore(self, filename='sherpa.save'):
-        """
-        restore
+        """Load in a Sherpa session from a file.
 
-        SYNOPSIS
-           Restore a previous Sherpa session from a pickled file
+        Parameters
+        ----------
+        filename : str, optional
+           The name of the file to read the results from. The default
+           is 'sherpa.save'.
 
-        SYNTAX
+        Raises
+        ------
+        IOError
+           If ``filename`` does not exist.
 
-        Arguments:
-           filename   - name of saved file
-                        default = 'sherpa.save'           
+        See Also
+        --------
+        clean : Clear all stored session data.
+        save : Save the current Sherpa session to a file.
 
-        Returns:
-           None
+        Notes
+        -----
 
-        DESCRIPTION
-           Restore previous Sherpa session information from a pickled file
-           for continued use.
+        The input to `restore` must have been created with the `save`
+        command. This is a binary file, which may not be portable
+        between versions of Sherpa, but is platform independent. A
+        warning message may be created if a file saved by an older
+        (or newer) version of Sherpa is loaded. An example of such
+        a message is::
 
-        SEE ALSO
-           save, clean
+          WARNING: Could not determine whether the model is discrete.
+          This probably means that you have restored a session saved with a previous version of Sherpa.
+          Falling back to assuming that the model is continuous.
+
+        Examples
+        --------
+
+        Load in the Sherpa session from 'sherpa.save'.
+
+        >>> restore()
+
+        Load in the session from the given file:
+
+        >>> restore('/data/m31/setup.sherpa')
+
         """
         _check_type(filename, basestring, 'filename', 'a string')
 
@@ -651,39 +690,47 @@ class Session(NoNewAttributesAfterInit):
         return covar_str
 
     def show_stat(self, outfile=None, clobber=False):
-        """
-        show_stat
+        """Display the current fit statistic.
 
-        SYNOPSIS
-           Show the current Sherpa statistic
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-        Arguments:
-           outfile   - filename to capture the output
-                      default = None
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        calc_stat_info : Display the statistic values for the current models.
+        get_stat : Return a fit-statistic method.
+        show_all : Report the current state of the Sherpa session.
 
-           clobber  - overwrite outfile if exists
-                      default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Show the current Sherpa fit statistic.
+        >>> set_stat('cash')
+        >>> show_stat()
+        Statistic: Cash
+        Maximum likelihood function
 
-           Examples:
-              show_stat()
-
-              show_stat("sherpa.stat", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_model,
-           show_conf, show_proj, show_data, show_covar
         """
         all = ''
         all += self._get_show_stat()
@@ -691,39 +738,53 @@ class Session(NoNewAttributesAfterInit):
 
 
     def show_method(self, outfile=None, clobber=False):
-        """
-        show_method
+        """Display the current optimization method and options.
 
-        SYNOPSIS
-           Show the current Sherpa method
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-        Arguments:
-           outfile   - filename to capture the output
-                      default = None
+        See Also
+        --------
+        get_method : Return an optimization method.
+        get_method_opt : Return one or all options of the current optimization method.
+        show_all : Report the current state of the Sherpa session.
 
-           clobber  - overwrite outfile if exists
-                      default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Show the current Sherpa optimization method.
+        >>> set_method('levmar')
+        >>> show_method()
+        Optimization Method: LevMar
+        name    = levmar
+        ftol    = 1.19209289551e-07
+        xtol    = 1.19209289551e-07
+        gtol    = 1.19209289551e-07
+        maxfev  = x
+        epsfcn  = 1.19209289551e-07
+        factor  = 100.0
+        verbose = 0
 
-           Examples:
-              show_method()
-
-              show_method("sherpa.method", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_model,
-           show_conf, show_proj, show_data, show_covar
         """
         all = ''
         all += self._get_show_method()
@@ -731,40 +792,45 @@ class Session(NoNewAttributesAfterInit):
 
 
     def show_fit(self, outfile=None, clobber=False):
-        """
-        show_fit
+        """Summarize the fit results.
 
-        SYNOPSIS
-           Show results from the last Sherpa fit performed
+        Display the results of the last call to `fit`, including:
+        optimization method, statistic, and details of the fit (it
+        does not reflect any changes made after the fit, such as to
+        the model expression or fit parameters).
 
-        SYNTAX
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           outfile  - filename to capture the output
-                     default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_fit_results : Return the results of the last fit.
+        list_data_ids : List the identifiers for the loaded data sets.
+        list_model_ids : List of all the data sets with a source expression.
+        show_all : Report the current state of the Sherpa session.
 
-        Returns:
-           None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        DESCRIPTION
-           Show results from the last Sherpa fit performed.  Fit results
-           can be written to file.
-
-           Examples:
-              show_fit()
-
-              show_fit("sherpa.fit", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_model, show_conf,
-           show_proj, show_data, show_covar
         """
         all = ''
         all += self._get_show_fit()
@@ -772,44 +838,44 @@ class Session(NoNewAttributesAfterInit):
 
 
     def show_data(self, id=None, outfile=None, clobber=False):
-        """
-        show_data
+        """Summarize the available data sets.
 
-        SYNOPSIS
-           Show Sherpa datasets
+        Display information on the data sets that have been
+        loaded. The details depend on the type of the data set
+        (e.g. 1D, image, PHA files).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           outfile  - filename to capture the output
-                     default = None
+        See Also
+        --------
+        list_data_ids : List the identifiers for the loaded data sets.
+        show_all : Report the current state of the Sherpa session.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Show all current Sherpa datasets or by Sherpa data id.
-
-           Examples:
-              show_data()
-
-              show_data(1)
-
-              show_data(2, "sherpa.data", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_model, show_conf,
-           show_proj, show_fit, show_covar
         """
         all = ''
         all += self._get_show_data(id)
@@ -817,44 +883,47 @@ class Session(NoNewAttributesAfterInit):
 
 
     def show_filter(self, id=None, outfile=None, clobber=False):
-        """
-        show_filter
+        """Show any filters applied to a data set.
 
-        SYNOPSIS
-           Show filters on Sherpa datasets
+        Display any filters that have been applied to the independent
+        axis or axes of the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           outfile  - filename to capture the output
-                     default = None
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        list_data_ids : List the identifiers for the loaded data sets.
+        notice : Include data in the fit.
+        sherpa.astro.utils.notice2d : Include a spatial region of an image.
+        show_all : Report the current state of the Sherpa session.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Show all current filters on Sherpa datasets or by Sherpa data id.
-
-           Examples:
-              show_filter()
-
-              show_filter(1)
-
-              show_filter(2, "sherpa.filter", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_model,
-           show_conf, show_proj, show_fit, show_covar, show_data
         """
         all = ''
         all += self._get_show_filter(id)
@@ -862,44 +931,49 @@ class Session(NoNewAttributesAfterInit):
 
 
     def show_model(self, id=None, outfile=None, clobber=False):
-        """
-        show_model
+        """Display the model expression used to fit a data set.
 
-        SYNOPSIS
-           Show Sherpa models
+        This displays the model used to fit the data set, that is
+        that is, the expression set by `set_model` or `set_source`
+        combined with any instrumental responses, together with the
+        parameter values of the model. The `show_source` function
+        displays just the source expression, without the instrumental
+        components (if any).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all source expressions are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           outfile  - filename to capture the output
-                     default = None
+        See Also
+        --------
+        list_model_ids : List of all the data sets with a source expression.
+        set_model : Set the source model expression for a data set.
+        show_all : Report the current state of the Sherpa session.
+        show_source : Display the source model expression for a data set.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Show all current Sherpa models or by Sherpa data id.
-
-           Examples:
-              show_model()
-
-              show_model(1)
-
-              show_model(2, "sherpa.model", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data,
-           show_conf, show_proj, show_fit, show_covar
         """
         all = ''
         #all += self._get_show_kernel(id)
@@ -909,132 +983,170 @@ class Session(NoNewAttributesAfterInit):
 
 
     def show_source(self, id=None, outfile=None, clobber=False):
-        """
-        show_source
+        """Display the source model expression for a data set.
 
-        SYNOPSIS
-           Show Sherpa sources
+        This displays the source model for a data set, that is, the
+        expression set by `set_model` or `set_source`, as well as the
+        parameter values for the model. The `show_model` function
+        displays the model that is fit to the data; that is, it
+        includes any instrument responses.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all source expressions are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           outfile  - filename to capture the output
-                     default = None
+        See Also
+        --------
+        list_model_ids : List of all the data sets with a source expression.
+        set_model : Set the source model expression for a data set.
+        show_all : Report the current state of the Sherpa session.
+        show_model : Display the model expression used to fit a data set.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Show all current Sherpa source models or by Sherpa data id.
-
-           Examples:
-              show_source()
-
-              show_source(1)
-
-              show_source(2, "sherpa.source", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data,
-           show_conf, show_proj, show_fit, show_covar
         """
         all = ''
         all += self._get_show_source(id)
         _send_to_pager(all, outfile, clobber)
 
+    ### DOC-TODO: how and where to describe the PSF/kernel difference
+    ###           as the Notes section below is inadequate
     def show_kernel(self, id=None, outfile=None, clobber=False):
-        """
-        show_kernel
+        """Display any kernel applied to a data set.
 
-        SYNOPSIS
-           Show Sherpa PSF kernels
+        The kernel represents the subset of the PSF model that is used
+        to fit the data. The `show_psf` function shows the un-filtered
+        version.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           outfile  - filename to capture the output
-                     default = None
+        See Also
+        --------
+        image_kernel : Plot the 2D kernel applied to a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        load_psf : Create a PSF model.
+        plot_kernel : Plot the 1D kernel applied to a data set.
+        set_psf : Add a PSF model to a data set.
+        show_all : Report the current state of the Sherpa session.
+        show_psf : Display any PSF model applied to a data set.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
+        The point spread function (PSF) is defined by the full
+        (unfiltered) PSF image or model expression evaluated over the
+        full range of the dataset; both types of PSFs are established
+        with `load_psf`.  The kernel is the subsection of the PSF
+        image or model which is used to convolve the data: this is
+        changed using `set_psf`.  While the kernel and PSF might be
+        congruent, defining a smaller kernel helps speed the
+        convolution process by restricting the number of points within
+        the PSF that must be evaluated.
 
-        DESCRIPTION
-           Show all current Sherpa PSF kernel models or by Sherpa data id.
-
-           Examples:
-              show_kernel()
-
-              show_kernel(1)
-
-              show_kernel(2, "sherpa.kernel", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data,
-           show_conf, show_proj, show_fit, show_covar, show_model, show_source
         """
         all = ''
         all += self._get_show_kernel(id)
         _send_to_pager(all, outfile, clobber)
 
+    ### DOC-TODO: how and where to describe the PSF/kernel difference
+    ###           as the Notes section below is inadequate
     def show_psf(self, id=None, outfile=None, clobber=False):
-        """
-        show_psf
+        """Display any PSF model applied to a data set.
 
-        SYNOPSIS
-           Show Sherpa PSF model with PSF kernel
+        The PSF model represents the full model or data set that is
+        applied to the source expression. The `show_kernel` function
+        shows the filtered version.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id      - data id
-                     default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           outfile  - filename to capture the output
-                     default = None
+        See Also
+        --------
+        image_psf : View the 2D PSF model applied to a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        load_psf : Create a PSF model.
+        plot_psf : Plot the 1D PSF model applied to a data set.
+        set_psf : Add a PSF model to a data set.
+        show_all : Report the current state of the Sherpa session.
+        show_kernel : Display any kernel applied to a data set.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        Returns:
-           None
+        The point spread function (PSF) is defined by the full
+        (unfiltered) PSF image or model expression evaluated over the
+        full range of the dataset; both types of PSFs are established
+        with `load_psf`.  The kernel is the subsection of the PSF
+        image or model which is used to convolve the data: this is
+        changed using `set_psf`.  While the kernel and PSF might be
+        congruent, defining a smaller kernel helps speed the
+        convolution process by restricting the number of points within
+        the PSF that must be evaluated.
 
-        DESCRIPTION
-           Show all current Sherpa PSF models with PSF kernels or by Sherpa data id.
-
-           Examples:
-              show_psf()
-
-              show_psf(1)
-
-              show_psf(2, "sherpa.psf", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data,
-           show_conf, show_proj, show_fit, show_covar
         """
         all = ''
         #all += self._get_show_kernel(id)
@@ -1042,121 +1154,123 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
     def show_conf(self, outfile=None, clobber=False):
-        """
-        show_conf
+        """Display the results of the last conf evaluation.
 
-        SYNOPSIS
-           Show results from last time confidence was run
+        The output includes the best-fit model parameter values,
+        associated confidence limits, choice of statistic, and details
+        on the best fit location.
 
-        SYNTAX
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           outfile  - filename to capture the output
-                     default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        See Also
+        --------
+        conf : Estimate confidence intervals using the confidence method.
+        show_all : Report the current state of the Sherpa session.
 
-        Returns:
-           None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        DESCRIPTION
-           Shows results from the last time confidence was run to
-           determine parameter confidence limits.
-
-           Examples:
-              show_conf()
-
-              show_conf("sherpa.conf", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data, show_model,
-           show_fit, show_covar
         """
         all = ''
         all += self._get_show_conf()
         _send_to_pager(all, outfile, clobber)
 
     def show_proj(self, outfile=None, clobber=False):
-        """
-        show_proj
+        """Display the results of the last proj evaluation.
 
-        SYNOPSIS
-           Show results from last time projection was run
+        The output includes the best-fit model parameter values,
+        associated confidence limits, choice of statistic, and details
+        on the best fit location.
 
-        SYNTAX
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           outfile  - filename to capture the output
-                     default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        See Also
+        --------
+        proj : Estimate confidence intervals using the projection method.
+        show_all : Report the current state of the Sherpa session.
 
-        Returns:
-           None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        DESCRIPTION
-           Shows results from the last time projection was run to
-           determine parameter confidence limits.
-
-           Examples:
-              show_proj()
-
-              show_proj("sherpa.proj", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data, show_model,
-           show_fit, show_covar
         """
         all = ''
         all += self._get_show_proj()
         _send_to_pager(all, outfile, clobber)
 
     def show_covar(self, outfile=None, clobber=False):
-        """
-        show_covar
+        """Display the results of the last covar evaluation.
 
-        SYNOPSIS
-           Show results from the last time covariance was run to
-           determine parameter confidence limits
+        The output includes the best-fit model parameter values,
+        associated confidence limits, choice of statistic, and details
+        on the best fit location.
 
-        SYNTAX
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           outfile  - filename to capture the output
-                     default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           clobber - overwrite outfile if exists
-                     default = False
+        See Also
+        --------
+        covar : Estimate confidence intervals using the covariance method.
+        show_all : Report the current state of the Sherpa session.
 
-        Returns:
-           None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        DESCRIPTION
-           Shows results from the last time covariance was run to
-           determine parameter confidence limits
-
-           Examples:
-              show_covar()
-
-              show_covar("sherpa.covar", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_all, show_data, show_model,
-           show_fit, show_conf, show_proj
         """
         all = ''
         all += self._get_show_covar()
@@ -1164,40 +1278,62 @@ class Session(NoNewAttributesAfterInit):
 
 
     def show_all(self, id=None, outfile=None, clobber=False):
-        """
-        show_all
+        """Report the current state of the Sherpa session.
 
-        SYNOPSIS
-           Show current state of Sherpa fitting session
+        Display information about one or all of the data sets that
+        have been loaded into the Sherpa session. The information
+        shown includes that provided by the other `show_xxx` routines,
+        and depends on the type of data that is loaded.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all data sets are
+           displayed.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           filename   - name of saved file
-                        default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-        Returns:
-           None
+        See Also
+        --------
+        clean : Clear all stored session data.
+        list_data_ids : List the identifiers for the loaded data sets.
+        save : Save the current Sherpa session to a file.
+        sherpa.astro.ui.utils.save_all : Save the Sherpa session as an ASCII file.
+        sherpa.astro.ui.show_bkg
+        sherpa.astro.ui.show_bkg_model
+        sherpa.astro.ui.show_bkg_source
+        show_conf
+        show_covar
+        show_data
+        show_filter
+        show_fit
+        show_kernel
+        show_method
+        show_model
+        show_proj
+        show_psf
+        show_source
+        show_stat
 
-        DESCRIPTION
-           Show current state of Sherpa fitting session including Opt Method,
-           Statistic, and associated Data Sets and Models by Sherpa data id.
-           If no data id is given then all available data ids will be used.
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-           Examples:
-              show_all()
-
-              show_all(1)
-
-              show_all(1, "sherpa.session", True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, list_functions, show_data, show_model, show_fit,
-           show_conf, show_proj, show_covar
         """
         all = ''
         all += self._get_show_data(id)
@@ -1209,26 +1345,16 @@ class Session(NoNewAttributesAfterInit):
         _send_to_pager(all, outfile, clobber)
 
     def get_functions(self):
-        """
-        get_functions
-        
-        SYNOPSIS
-           Return all available Sherpa functions in a list
-        
-        SYNTAX
-        
-        Arguments:
-           None
-        
-        Returns:
-           List of all Sherpa function names
+        """Return the functions provided by Sherpa.
 
-        DESCRIPTION
-           Returns a list containing names of all functions
-           defined in the high-level Sherpa UI.
+        Returns
+        -------
+        functions : list of str
 
-        SEE ALSO
-            list_functions
+        See Also
+        --------
+        list_functions : Display the functions provided by Sherpa.
+
         """
         funcs = []
         for func in dir(self):
@@ -1237,37 +1363,41 @@ class Session(NoNewAttributesAfterInit):
         return funcs
         
     def list_functions(self, outfile=None, clobber=False):
-        """
-        list_functions
+        """Display the functions provided by Sherpa.
 
-        SYNOPSIS
-           List all available Sherpa functions
+        Unlike the other `list_` commands, this does not
+        return an array. Instead it acts like the `show_`
+        family of commands. 
 
-        SYNTAX
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           outfile    - name of saved file
-                        default = None
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           clobber    - overwrite outfile if exists
-                        default = False
+        See Also
+        --------
+        get_functions : Return the functions provided by Sherpa.
+        show_all : Report the current state of the Sherpa session.
 
-        Returns:
-           None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-        DESCRIPTION
-           List all available Sherpa functions from currrent Sherpa namespace.
-
-              list_functions()
-
-              list_functions("funcs.txt")
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           save, clean, show_all
         """
         funcs_list = self.get_functions()
         funcs = ''
@@ -1308,52 +1438,71 @@ class Session(NoNewAttributesAfterInit):
         itemdict[id] = item
 
     def get_default_id(self):
-        """
-        get_default_id
+        """Return the default data set identifier.
 
-        SYNOPSIS
-           Return the default Sherpa data id
+        The Sherpa data id ties data, model, fit, and plotting
+        information into a data set easily referenced by id. The
+        default identifier, used by many commands, is returned by this
+        command and can be changed by `set_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        id : int or str
+           The default data set identifier used by certain Sherpa
+           functions when an identifier is not given, or set to
+           `None`.
 
-        Arguments:
-           None
+        See Also
+        --------
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_default_id : Set the default data set identifier.
 
-        Returns:
-           Sherpa data id
+        Notes
+        -----
+        The default Sherpa data set identifier is the integer
+        `1`.
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
-
-        SEE ALSO
-           set_default_id, list_data_ids
         """
         return self._default_id
 
     def set_default_id(self, id):
-        """
-        set_default_id
+        """Set the default data set identifier.
 
-        SYNOPSIS
-           Set the default Sherpa data id
+        The Sherpa data id ties data, model, fit, and plotting
+        information into a data set easily referenced by id. The
+        default identifier, used by many commands, is changed by this
+        command. The current setting can be found by using
+        `get_default_id`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           The default data set identifier to be used by certain
+           Sherpa functions when an identifier is not given, or set to
+           `None`.
 
-        Arguments:
-           id         - new Sherpa data id
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-        Returns:
-           None
+        Notes
+        -----
+        The default Sherpa data set identifier is the integer
+        `1`.
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        Examples
+        --------
 
-        SEE ALSO
-           get_default_id, list_data_ids
+        After the following, many commands, such as `set_source`, will
+        use `src` as the default data set identifier:
+
+        >>> set_default_id('src')
+
+        Restore the default data set identifier.
+
+        >>> set_default_id(1)
+
         """
         self._default_id = self._fix_id(id)
 
@@ -1364,25 +1513,25 @@ class Session(NoNewAttributesAfterInit):
 
 
     def list_methods(self):
-        """
-        list_methods
+        """List the optimization methods.
 
-        SYNOPSIS
-           List the available optimization methods in Sherpa
+        Returns
+        -------
+        methods : list of str
+           A list of the names that can be used with
+           `set_method`.
 
-        SYNTAX
+        See Also
+        --------
+        get_method_name : Return the name of the current optimization method.
+        set_method : Set the optimization method.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           list of methods
+        >>> list_methods()
+        ['gridsearch', 'levmar', 'moncar', 'neldermead', 'simplex']
 
-        DESCRIPTION
-
-        SEE ALSO
-           get_method, get_method_name, set_method, get_method_opt,
-           set_method_opt
         """
         keys = self._methods.keys()[:]
         keys.sort()
@@ -1395,75 +1544,162 @@ class Session(NoNewAttributesAfterInit):
         return meth
 
     def get_method(self, name=None):
-        """
-        get_method
+        """Return an optimization method.
 
-        SYNOPSIS
-           Return the Sherpa optimization method by name
+        Parameters
+        ----------
+        name : str, optional
+           If not given, the current method is returned, otherwise
+           it should be one of the names returned by the
+           `list_methods` function.
 
-        SYNTAX
+        Returns
+        -------
+        method : object
+           An object representing the optimization method.
 
-        Arguments:
-           name       - name of opt method
-                        default = default method
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
 
-        Returns:
-           Sherpa opt method
+        See Also
+        --------
+        get_method_opt : Get the options for the current optimization method.
+        list_methods : List the supported optimization methods.
+        set_method : Change the optimization method.
+        set_method_opt : Change an option of the current optimization method.
 
-        DESCRIPTION
+        Examples
+        --------
 
-        SEE ALSO
-           list_methods, get_method_name, set_method, get_method_opt,
-           set_method_opt
+        The fields of the object returned by `get_method` can be
+        used to view or change the method options.
+
+        >>> method = ui.get_method()
+        >>> print(method.name)
+        levmar
+        >>> print(method)
+        name    = levmar
+        ftol    = 1.19209289551e-07
+        xtol    = 1.19209289551e-07
+        gtol    = 1.19209289551e-07
+        maxfev  = None
+        epsfcn  = 1.19209289551e-07
+        factor  = 100.0
+        verbose = 0
+        >>> method.maxfev = 5000
+
         """
         if name is None:
             return self._current_method
         _check_type(name, basestring, 'name', 'a string')
         return self._get_method_by_name(name)
 
+    ### DOC-TODO: is this guaranteed to be the same as get_method().name
+    ###           or get_method().name.lower() and, if so, shouldn't this be
+    ###           how it is coded?
     def get_method_name(self):
-        """
-        get_method_name
+        """Return the name of current Sherpa optimization method.
 
-        SYNOPSIS
-           Return the name of current Sherpa optimization method
+        Returns
+        -------
+        name : str
+           The name of the current optimization method, in lower
+           case. This may not match the value sent to `set_method`
+           because some methods can be set by multiple names.
 
-        SYNTAX
+        See Also
+        --------
+        get_method : Return an optimization method.
+        get_method_opt : Get the options for the current optimization method.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           name
+        >>> get_method_name()
+        'levmar'
 
-        DESCRIPTION
+        The 'neldermead' method can also be referred to as 'simplex':
 
-        SEE ALSO
-           list_methods, get_method, set_method, get_method_opt,
-           set_method_opt
+        >>> set_method('simplex')
+        >>> get_method_name()
+        'neldermead'
+
         """
         return type(self.get_method()).__name__.lower()
 
+    ### DOC-TODO: remove the list of supported methods once the
+    ### relevant documenation has been updated.
     def set_method(self, meth):
-        """
-        set_method
+        """Set the optimization method.
 
-        SYNOPSIS
-           Set the Sherpa optimization method by name
+        The primary task of Sherpa is to fit a model M(p) to a set of
+        observed data, where the vector p denotes the model
+        parameters. An optimization method is one that is used to
+        determine the vector of model parameter values, p0, for which
+        the chosen fit statistic is minimized.
 
-        SYNTAX
+        Parameters
+        ----------
+        meth : str
+           The name of the method (case is not important). The
+           `list_methods` function returns the list of supported values.
 
-        Arguments:
-           name       - name of opt method
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `meth` argument is not recognized.
 
-        Returns:
-           None
+        See Also
+        --------
+        get_method_name : Return the name of the current optimization method.
+        list_methods : List the supported optimization methods.
+        set_stat : Set the fit statistic.
 
-        DESCRIPTION
+        Notes
+        -----
+        The available methods include:
 
-        SEE ALSO
-           list_methods, get_method, get_method_name, get_method_opt,
-           set_method_opt
+        `levmar`
+           The Levenberg-Marquardt method is an interface to the
+           MINPACK subroutine lmdif to find the local minimum of
+           nonlinear least squares functions of several variables by a
+           modification of the Levenberg-Marquardt algorithm [1]_.
+
+        `moncar`
+           The implementation of the moncar method is based on [2]_.
+
+        `neldermead`
+           The implementation of the Nelder Mead Simplex direct search
+           is based on [3]_.
+
+        `simplex`
+           This is another name for `neldermead`.
+
+        References
+        ----------
+
+        .. [1] J.J. More, "The Levenberg Marquardt algorithm:
+           implementation and theory," in Lecture Notes in Mathematics
+           630: Numerical Analysis, G.A. Watson (Ed.), Springer-Verlag:
+           Berlin, 1978, pp.105-116. 
+
+        .. [2] Storn, R. and Price, K. "Differential Evolution: A
+           Simple and Efficient Adaptive Scheme for Global Optimization
+           over Continuous Spaces." J. Global Optimization 11, 341-359,
+           1997. 
+
+        .. [3] Jeffrey C. Lagarias, James A. Reeds, Margaret H. Wright,
+           Paul E. Wright "Convergence Properties of the Nelder-Mead
+           Simplex Algorithm in Low Dimensions", SIAM Journal on
+           Optimization,Vol. 9, No. 1 (1998), pages 112-147.
+
+        Examples
+        --------
+
+        >>> set_method('neldermead')
+
         """
         if isinstance(meth, basestring):
             meth = self._get_method_by_name(meth)
@@ -1478,25 +1714,43 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr('badopt', optname, self.get_method_name())
 
     def get_method_opt(self, optname=None):
-        """
-        get_method_opt
+        """Return one or all of the options for the current optimization
+        method.
 
-        SYNOPSIS
-           Return a Sherpa optimization method option by name
+        This is a helper function since the optimization options can also
+        be read directly using the object returned by `get_method`.
 
-        SYNTAX
+        Parameters
+        ----------
+        optname : str, optional
+           If not given, a dictionary of all the options are returned.
+           When given, the individual value is returned.
+            
+        Returns
+        -------
+        value : dictionary or value
+           
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `optname` argument is not recognized.
 
-        Arguments:
-           name       - opt method option name
+        See Also
+        --------
+        get_method : Return an optimization method.
+        set_method : Change the optimization method.
+        set_method_opt : Change an option of the current optimization method.
 
-        Returns:
-           opt method option value
+        Examples
+        --------
 
-        DESCRIPTION
+        >>> get_method_opt('maxfev') == None
+        True
 
-        SEE ALSO
-           list_methods, get_method, get_method_name, set_method,
-           set_method_opt
+        >>> mopts = get_method_opt()
+        >>> mopts['maxfev'] == None
+        True
+
         """
         if optname is None:
             return self._current_method.config
@@ -1504,73 +1758,88 @@ class Session(NoNewAttributesAfterInit):
         return self._current_method.config[optname]
 
     def set_method_opt(self, optname, val):
-        """
-        set_method_opt
+        """Set an option for the current optimization method.
 
-        SYNOPSIS
-           Set a Sherpa optimization method option by name
+        This is a helper function since the optimization options can also
+        be set directly using the object returned by `get_method`.
 
-        SYNTAX
+        Parameters
+        ----------
+        optname : str
+           The name of the option to set. The `get_method`
+           and `get_method_opt` routines can be used to find
+           out valid values for this argument.
+        val :
+           The new value for the option.
 
-        Arguments:
-           name       - opt method option name
-           val        - opt method option value
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `optname` argument is not recognized.
 
-        Returns:
-           None
+        See Also
+        --------
+        get_method : Return an optimization method.
+        get_method_opt : Return one or all options of the current optimization method.
+        set_method : Change the optimization method.
 
-        DESCRIPTION
+        Examples
+        --------
 
-        SEE ALSO
-           list_methods, get_method, get_method_name, set_method,
-           get_method_opt
+        Change the maxfev parameter for the current optimizer
+        to 2000.
+
+        >>> set_method_opt('maxfev', 2000)
+
         """
         self._check_method_opt(optname)
         self._current_method.config[optname] = val
 
     #### Iterative Fitting Methods for CIAO 4.3 testing
+
     def get_iter_method_name(self):
-        """
-        get_iter_method_name
+        """Return the name of the iterative fitting scheme.
 
-        SYNOPSIS
-           Return the name of the current Sherpa iterative fitting method
+        Returns
+        -------
+        name : str
+           The name of the iterative fitting scheme set by
+           `set_iter_method`.
 
-        SYNTAX
+        See Also
+        --------
+        list_iter_methods : List the iterative fitting schemes.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
 
-        Arguments:
-
-        Returns:
-           Name of Sherpa iterative fitting method
-           
-        DESCRIPTION
-
-        SEE ALSO
-           list_iter_methods, set_iter_method, get_iter_method_opt,
-           set_iter_method_opt
         """
         return self._current_itermethod['name']
 
     def get_iter_method_opt(self, optname=None):
-        """
-        get_iter_method_opt
+        """Return one or all options for the iterative-fitting scheme.
 
-        SYNOPSIS
-           Return a Sherpa iterative fitting method option by name
+        Parameters
+        ----------
+        optname : str, optional
+           If not given, a dictionary of all the options are returned.
+           When given, the individual value is returned.
 
-        SYNTAX
+        Returns
+        -------
+        value : dictionary or value
+           The dictionary is empty when no iterative scheme is being
+           used.
 
-        Arguments:
-           name       - option name
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `optname` argument is not recognized.
 
-        Returns:
-           iterative fitting method option value
-        
-        DESCRIPTION
+        See Also
+        --------
+        get_iter_method_name : Return the name of the iterative fitting scheme.
+        set_iter_method_opt : Set an option for the iterative-fitting scheme.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
 
-        SEE ALSO
-           list_iter_methods, get_iter_method_name, set_iter_method,
-           set_iter_method_opt
         """
         itermethod_opts = dict(self._current_itermethod)
         del itermethod_opts['name']
@@ -1584,50 +1853,113 @@ class Session(NoNewAttributesAfterInit):
         return itermethod_opts[optname]
 
     def list_iter_methods(self):
-        """
-        list_iter_methods
+        """List the iterative fitting schemes.
 
-        SYNOPSIS
-           List the available iterative fitting methods in Sherpa
+        Returns
+        -------
+        schemes : list of str
+           A list of the names that can be used with
+           `set_iter_method`.
 
-        SYNTAX
+        See Also
+        --------
+        get_iter_method_name : Return the name of the iterative fitting scheme.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           list of iterative fitting methods
+        >>> list_iter_methods()
+        ['none', 'primini', 'sigmarej']
 
-        DESCRIPTION
-
-        SEE ALSO
-           get_iter_method_name, set_iter_method, get_iter_method_opt,
-           set_iter_method_opt
         """
         keys = self._itermethods.keys()[:]
         keys.sort()
         return keys
 
+    ### DOC-TODO: this information is also in sherpa/fit.py
+    ### DOC-TODO: this raises a ValueError rather than a Sherpa error class
     def set_iter_method(self, meth):
-        """
-        set_iter_method
+        """Set the iterative-fitting scheme used in the fit.
 
-        SYNOPSIS
-           Set the Sherpa iterative fitting method by name
+        Control whether an iterative scheme should be applied to
+        the fit.
 
-        SYNTAX
+        Parameters
+        ----------
+        meth : { 'none', 'primini', 'sigmarej' }
+           The name of the scheme used during the fit; 'none' means no
+           scheme is used. It is only valid to change the scheme
+           when a chi-square statistic is in use.
 
-        Arguments:
-           name       - name of iterative method ['none'|'primini'|'sigmarej']
+        Raises
+        ------
+        TypeError
+           When the `meth` argument is not recognized.
 
-        Returns:
-           None
+        See Also
+        --------
+        fit : Fit a model to one or more data sets.
+        get_iter_method_name : Return the name of the iterative fitting scheme.
+        get_iter_method_opt : Return one or all options for the iterative-fitting scheme.
+        list_iter_methods : List the iterative fitting schemes.
+        set_iter_method_opt : Set an option for the iterative-fitting scheme.
+        set_stat : Set the statistical method.
 
-        DESCRIPTION
+        Notes
+        -----
+        The parameters of each scheme are described in
+        `set_iter_method_opt`.
 
-        SEE ALSO
-           list_iter_methods, get_iter_method_name, get_iter_method_opt,
-           set_iter_method_opt
+        The `primini` scheme is used for re-calculating statistical
+        errors, using the best-fit model parameters from the
+        *previous* fit, until the fit can no longer be improved.
+
+        This is a chi-square statistic where the variance is computed
+        from model amplitudes derived in the previous iteration of the
+        fit. This 'Iterative Weighting' ([1]_) attempts to remove
+        biased estimates of model parameters which is inherent in
+        chi-square2 statistics ([2]_).
+
+        The variance in bin i is estimated to be:
+
+        sigma^2_i^j = S(i, t_s^(j-1)) + (A_s/A_b)^2 B_off(i, t_b^(j-1))
+
+        where j is the number of iterations that have been carried out
+        in the fitting process, B_off is the background model
+        amplitude in bin i of the off-source region, and t_s^(j-1) and
+        t_b^(j-1) are the set of source and background model parameter
+        values derived during the iteration previous to the current
+        one. The variances are set to an array of ones on the first
+        iteration.
+
+        In addition to reducing parameter estimate bias, this
+        statistic can be used even when the number of counts in each
+        bin is small (< 5), although the user should proceed with
+        caution.
+
+        The `sigmarej` scheme is based on the IRAF `sfit` function
+        [3]_, where after a fit data points are excluded if the value
+        of `(data-model)/error)` exceeds a threshold, and the data
+        re-fit. This removal of data points continues until the fit
+        has converged. The error removal can be asymmetric, since
+        there are separate parameters for the lower and upper limits.
+
+        References
+        ----------
+
+        .. [1] "Multiparameter linear least-squares fitting to Poisson
+               data one count at a time", Wheaton et al. 1995, ApJ 438,
+               322
+               http://adsabs.harvard.edu/abs/1995ApJ...438..322W
+
+        .. [2] "Bias-Free Parameter Estimation with Few Counts, by
+               Iterative Chi-Squared Minimization", Kearns, Primini, &
+               Alexander, 1995, ADASS IV, 331
+               http://adsabs.harvard.edu/abs/1995ASPC...77..331K
+
+        .. [3] http://iraf.net/irafhelp.php?val=sfit
+
         """
         if isinstance(meth, basestring):
             if (self._itermethods.has_key(meth) == True):
@@ -1638,26 +1970,73 @@ class Session(NoNewAttributesAfterInit):
             _argument_type_error(meth, 'a string')
 
     def set_iter_method_opt(self, optname, val):
-        """
-        set_iter_method_opt
+        """Set an option for the iterative-fitting scheme.
 
-        SYNOPSIS
-           Set a Sherpa iterative fitting method option by name
+        Parameters
+        ----------
+        optname : str
+           The name of the option to set. The
+           `get_iter_method_opt_method` routine can be used to find
+           out valid values for this argument.
+        val :
+           The new value for the option.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `optname` argument is not recognized.
 
-        Arguments:
-           name       - option name
-           val        - option value
+        See Also
+        --------
+        get_iter_method_name : Return the name of the iterative fitting scheme.
+        get_iter_method_opt : Return one or all options for the iterative-fitting scheme.
+        list_iter_methods : List the iterative fitting schemes.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
 
-        Returns:
-           None
+        Notes
+        -----
+        The supported fields for the `primini` scheme are:
 
-        DESCRIPTION
+        `maxiters`
+           The maximum number of iterations to perform.
 
-        SEE ALSO
-           list_methods, get_method, get_method_name, set_method,
-           get_method_opt
+        `tol`
+           The iteration stops when the change in the best-fit
+           statistic varies by less than this value.
+
+        The supported fields for the `sigmarej` scheme are:
+
+        `grow`
+           The number of points adjacent to a rejected point that
+           should also be removed. A value of `0` means that only the
+           discrepant point is removed whereas a value of `1` means
+           that the two adjacent points (one lower and one higher)
+           will also be removed.
+
+        `hrej`
+           The rejection criterion in units of sigma, for data
+           points above the model (`hrej` is >= 0).
+
+        `lrej`
+           The rejection criterion in units of sigma, for data
+           points below the model (`lrej` is >= 0).
+
+        `maxiters`
+           The maximum number of iterations to perform. If this
+           value is `0` then the fit will run until it has
+           converged.
+
+        Examples
+        --------
+
+        Reject any points that are more than 5 sigma away from the
+        best fit model and re-fit.
+
+        >>> set_iter_method('sigmarej')
+        >>> set_iter_method_opt('lrej', 5)
+        >>> set_iter_method_opt('hrej', 5)
+        >>> fit()
+
         """
         _check_type(optname, basestring, 'optname', 'a string')
         if (optname not in self._current_itermethod or
@@ -1671,42 +2050,33 @@ class Session(NoNewAttributesAfterInit):
 
 
     def list_stats(self):
-        """
-        list_stats
+        """List the fit statistics.
 
-        SYNOPSIS
-           List statistics available in Sherpa
+        Returns
+        -------
+        stat : list of str
+           A list of the names that can be used with
+           `set_stat`.
 
-        SYNTAX
+        See Also
+        --------
+        get_stat_name : Return the name of the current statistical method.
+        set_stat : Set the statistical method.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           list of available stats
+        >>> list_stats()
+        ['cash',
+         'chi2',
+         'chi2constvar',
+         'chi2datavar',
+         'chi2gehrels',
+         'chi2modvar',
+         'chi2xspecvar',
+         'cstat',
+         'leastsq']
 
-        DESCRIPTION
-           Available statistics include
-
-           * 'chi2constvar'  \chi^2 with constant variance computed
-                             from the counts data.
-
-           * 'chi2modvar'    \chi^2 with model amplitude variance.
-
-           * 'chi2gehrels'   \chi^2 with gehrels method (Sherpa default).
-
-           * 'chi2datavar'   \chi^2 with data variance.
-
-           * 'chi2xspecvar'  \chi^2 with data variance (XSPEC-style,
-                             variance = 1.0 if data less than or equal to 0.0).
-
-           * 'cstat'         CStat - A maximum likelihood function
-                             (XSPEC implementation of Cash).
-
-           * 'cash'          Cash  - A maximum likelihood function.
-
-        SEE ALSO
-           get_stat, get_stat_name, set_stat
         """
         keys = self._stats.keys()[:]
         keys.sort()
@@ -1719,42 +2089,40 @@ class Session(NoNewAttributesAfterInit):
         return stat
 
     def get_stat(self, name=None):
-        """
-        get_stat
+        """Return a fit statisic.
 
-        SYNOPSIS
-           Return a Sherpa statistic by name
+        Parameters
+        ----------
+        name : str, optional
+           If not given, the current fit statistic is returned, otherwise
+           it should be one of the names returned by the
+           `list_stats` function.
 
-        SYNTAX
+        Returns
+        -------
+        stat : object
+           An object representing the fit statistic.
 
-        Arguments:
-           name       - name of statistic
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
 
-        Returns:
-           statistic
+        See Also
+        --------
+        get_stat_name : Return the name of the current fit statistic.
+        list_stats : List the fit statistics.
+        set_stat : Change the fit statistic.
 
-        DESCRIPTION
-           Available statistics include
+        Examples
+        --------
 
-           * 'chi2constvar'  \chi^2 with constant variance computed
-                             from the counts data.
+        >>> stat = ui.stat()
+        >>> stat
+        Chi Squared with Gehrels variance
+        >>> stat.name
+        'chi2gehrels'
 
-           * 'chi2modvar'    \chi^2 with model amplitude variance.
-
-           * 'chi2gehrels'   \chi^2 with gehrels method (Sherpa default).
-
-           * 'chi2datavar'   \chi^2 with data variance.
-
-           * 'chi2xspecvar'  \chi^2 with data variance (XSPEC-style,
-                             variance = 1.0 if data less than or equal to 0.0).
-
-           * 'cstat'         CStat - A maximum likelihood function
-                             (XSPEC implementation of Cash).
-
-           * 'cash'          Cash  - A maximum likelihood function.
-
-        SEE ALSO
-           list_stats, get_stat_name, set_stat
         """
         if name is None:
             return self._current_stat
@@ -1762,82 +2130,114 @@ class Session(NoNewAttributesAfterInit):
         return self._get_stat_by_name(name)
 
     def get_stat_name(self):
-        """
-        get_stat_name
+        """Return the name of the current fit statistic.
 
-        SYNOPSIS
-           Return the current Sherpa statistic by name
+        Returns
+        -------
+        name : str
+           The name of the current fit statistic method, in lower
+           case.
 
-        SYNTAX
+        See Also
+        --------
+        get_stat : Return a fit statistic.
+        set_stat : Set the fit statistic.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           statistic name
+        >>> get_method_name()
+        'chi2gehrels'
 
-        DESCRIPTION
-           Available statistics include
+        >>> set_stat('cash')
+        >>> get_stat_name()
+        'cash'
 
-           * 'chi2constvar'  \chi^2 with constant variance computed
-                             from the counts data.
-
-           * 'chi2modvar'    \chi^2 with model amplitude variance.
-
-           * 'chi2gehrels'   \chi^2 with gehrels method (Sherpa default).
-
-           * 'chi2datavar'   \chi^2 with data variance.
-
-           * 'chi2xspecvar'  \chi^2 with data variance (XSPEC-style,
-                             variance = 1.0 if data less than or equal to 0.0).
-
-           * 'cstat'         CStat - A maximum likelihood function
-                             (XSPEC implementation of Cash).
-
-           * 'cash'          Cash  - A maximum likelihood function.
-
-        SEE ALSO
-           list_stats, get_stat, set_stat
         """
         return type(self.get_stat()).__name__.lower()
 
+    ### DOC-TODO: remove the list of supported methods once the
+    ### relevant documenation has been updated.
     def set_stat(self, stat):
-        """
-        set_stat
+        """Set the statistical method.
 
-        SYNOPSIS
-           Set the current Sherpa statistic by name
+        Changes the method used to evaluate the fit statistic, that is
+        the numerical measure that determines how closely the model
+        represents the data.
 
-        SYNTAX
+        Parameters
+        ----------
+        stat : str
+           The name of the statistic (case is not important). The
+           `list_stats` function returns the list of supported values.
 
-        Arguments:
-           name       - name of statistic
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `stat` argument is not recognized.
 
-        Returns:
-           None
+        See Also
+        --------
+        calc_stat : Calculate the statistic value for a dataset.
+        get_stat_name : Return the current statistic method.
+        list_stats : List the supported fit statistics.
+        load_user_stat : Create a user-defined statistic.
 
-        DESCRIPTION
-           Available statistics include
+        Notes
+        -----
+        The available statistics include:
 
-           * 'chi2constvar'  \chi^2 with constant variance computed
-                             from the counts data.
+        `cash`
+           A maximum likelihood function [1]_.
 
-           * 'chi2modvar'    \chi^2 with model amplitude variance.
+        `chi2`
+           \chi^2 statistic using the supplied error values.
 
-           * 'chi2gehrels'   \chi^2 with gehrels method (Sherpa default).
+        `chi2constvar`
+           \chi^2 with constant variance computed from the counts
+           data.
 
-           * 'chi2datavar'   \chi^2 with data variance.
+        `chi2datavar`
+           \chi^2 with data variance.
 
-           * 'chi2xspecvar'  \chi^2 with data variance (XSPEC-style,
-                             variance = 1.0 if data less than or equal to 0.0).
+        `chi2gehrels`
+           \chi^2 with gehrels method [2]_. This is the default method.
 
-           * 'cstat'         CStat - A maximum likelihood function
-                             (XSPEC implementation of Cash).
+        `chi2modvar`
+           \chi^2 with model amplitude variance.
 
-           * 'cash'          Cash  - A maximum likelihood function.
+        `chi2xspecvar`
+           \chi^2 with data variance (XSPEC-style,
+           variance = 1.0 if data less than or equal to 0.0).
 
-        SEE ALSO
-           list_stats, get_stat, get_stat_name
+        `cstat`
+           A maximum likelihood function
+           (the XSPEC implementation of the Cash function) [3]_.
+
+        `leastsq`
+           The least-squares statisic (the error is not used in
+           this statistic).
+
+        References
+        ----------
+
+        .. [1] Cash, W. "Parameter estimation in astronomy through
+               application of the likelihood ratio", ApJ, vol 228,
+               p. 939-947 (1979).
+               http://adsabs.harvard.edu/abs/1979ApJ...228..939C
+
+        .. [2] Gehrels, N. "Confidence limits for small numbers of
+               events in astrophysical data", ApJ, vol 303,
+               p. 336-346 (1986).
+               http://adsabs.harvard.edu/abs/1986ApJ...303..336G
+
+        .. [3] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
+
+        Examples
+        --------
+
+        >>> set_stat('cash')
+
         """
         if isinstance(stat, basestring):
             stat = self._get_stat_by_name(stat)
@@ -1854,85 +2254,128 @@ class Session(NoNewAttributesAfterInit):
 
 
     def list_data_ids(self):
-        """
-        list_data_ids
+        """List the identifiers for the loaded data sets.
 
-        SYNOPSIS
-           List the available Sherpa data ids
+        Returns
+        -------
+        ids : list of int or str
+           A list of the data set identifiers that have been created
+           by commands like `load_data` and `load_arrays`.
 
-        SYNTAX
+        See Also
+        --------
+        delete_data : Delete a data set by identifier.
+        load_arrays : Create a data set from arrays of data.
+        load_data : Create a data set from a file.
 
-        Arguments:
-           None
-          
-        Returns:
-           list of data ids
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        In this case only one data set has been loaded:
 
-        SEE ALSO
-           set_default_id, get_default_id
+        >>> list_data_ids()
+        [1]
+
+        Two data sets have been loaded, using string identifiers:
+
+        >>> list_data_ids()
+        ['nucleus', 'jet']
+
         """
         keys = self._data.keys()[:]
         keys.sort()
         return keys
 
     def get_data(self, id=None):
-        """
-        get_data
+        """Return the data set by identifier.
 
-        SYNOPSIS
-           Return a Sherpa dataset by data id
+        The object returned by the call can be used to query and
+        change properties of the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Returns
+        -------
+        data :
+           An instance of a sherpa.Data.Data-derived class.
 
-        Returns:
-           dataset
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model expression has been set for the data set
+           (with `set_model` or `set_source`).
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        See Also
+        --------
+        copy_data : Copy a data set to a new identifier.
+        delete_data : Delete a data set by identifier.
+        load_data : Create a data set from a file.
+        set_data : Set a data set.
 
-        SEE ALSO
-           list_data_ids, set_data, copy_data, delete_data,
-           read_data, load_data
+        Examples
+        --------
+
+        >>> d = get_data()
+
+        >>> dimg = get_data('img')
+
+        >>> load_arrays('tst', [10, 20, 30], [5.4, 2.3, 9.8])
+        >>> print(get_data('tst'))
+        name      =
+        x         = Int64[3]
+        y         = Float64[3]
+        staterror = None
+        syserror  = None
+
         """
         return self._get_item(id, self._data, 'data set', 'has not been set')
 
+    ### DOC-TODO: terrible synopsis
     def set_data(self, id, data=None):
-        """
-        set_data
+        """Set a data set.
 
-        SYNOPSIS
-           Set a dataset by Sherpa data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        data : instance of a sherpa.Data.Data-derived class
+           The new contents of the data set. This can be
+           copied from an existing data set or loaded
+           in from a file (e.g. `unpack_data`).
 
-        SYNTAX
+        See Also
+        --------
+        copy_data : Copy a data set to a new identifier.
+        delete_data : Delete a data set by identifier.
+        get_data : Return the data set by identifier.
+        load_data : Create a data set from a file.
+        unpack_data : Read in a file.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``data`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``data`` parameters,
+        respectively.
 
-           data       - data object
+        Examples
+        --------
 
-        Returns:
-           None
+        >>> d1 = get_data(2)
+        >>> set_data(d1)
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        Copy the background data from the default data set into
+        a new data set identified as 'bkg':
 
-        SEE ALSO
-           list_data_ids, get_data, copy_data, delete_data,
-           read_data, load_data
+        >>> set_data('bkg', get_bkg())
+
         """
         if data is None:
             id, data = data, id
@@ -1945,46 +2388,75 @@ class Session(NoNewAttributesAfterInit):
         return err
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_staterror(self, id, filename=None, ncols=2, *args, **kwargs):
-        """
-        load_staterror
+        """Load the statistical errors from a file.
 
-        SYNOPSIS
-           Load the statistical errors for a dataset from file
+        Read in a column or image from a file and use the values
+        as the statistical errors for a data set. This over rides
+        the errors calculated by any statistic, such as
+        `chi2gehrels` or `chi2datavar`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy) and the
+           type of data set (e.g. 1D or 2D).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_staterror : Return the statistical error on the dependent axis of a data set.
+        load_syserror : Load the systematic errors from a file.
+        set_staterror : Set the statistical errors on the dependent axis of a data set.
+        set_stat : Set the statistical method.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ncols      - number of columns to read from
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - column keys
-                        default = None
+        Read in the first column from 'tbl.dat':
 
-           sep        - separator character
-                        default = ' '
+        >>> load_staterror('tbl.dat')
 
-           comment    - comment character
-                        default = '#'
+        Use the column labelled 'col3'
 
-        Returns:
-           None
+        >>> load_staterror('tbl.dat', colkeys=['col3'])
 
-        DESCRIPTION
-           Load the statistical error for a dataset from file by data id.  
-           Users can specify the column name by using the colkeys argument to 
-           set the statistical error.
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection:
 
-        EXAMPLE
-           load_staterror("data.dat", colkeys=["STAT_ERR"])
+        >>> load_staterror('tbl.dat[cols col3]')
 
-        SEE ALSO
-           load_syserror, set_staterror, set_syserror
+        Read in the first column from the file 'errors.fits' as the
+        statistical errors for the 'core' data set:
+
+        >>> load_staterror('core', 'errors.fits')
+
         """
         if filename is None:
             id, filename = filename, id
@@ -1993,46 +2465,72 @@ class Session(NoNewAttributesAfterInit):
                                                 *args, **kwargs))
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_syserror(self, id, filename=None, ncols=2, *args, **kwargs):
-        """
-        load_syserror
+        """Load the systematic errors from a file.
 
-        SYNOPSIS
-           Load the systematic errors for a dataset from file
+        Read in a column or image from a file and use the values
+        as the systematic errors for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy) and the
+           type of data set (e.g. 1D or 2D).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_syserror : Return the systematic error on the dependent axis of a data set.
+        load_staterror : Load the statistical errors from a file.
+        set_syserror : Set the systematic errors on the dependent axis of a data set.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ncols      - number of columns to read from
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - column keys
-                        default = None
+        Read in the first column from 'tbl.dat':
 
-           sep        - separator character
-                        default = ' '
+        >>> load_syserror('tbl.dat')
 
-           comment    - comment character
-                        default = '#'
+        Use the column labelled 'col3'
 
-        Returns:
-           None
+        >>> load_syserror('tbl.dat', colkeys=['col3'])
 
-        DESCRIPTION
-           Load the systematic error for a dataset from file by data id.  Users 
-           can specify the column name by using the colkeys argument to set the
-           systematic error.
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection:
 
-        EXAMPLE
-           load_syserror("data.dat", colkeys=["SYS_ERR"])
+        >>> load_syserror('tbl.dat[cols col3]')
 
-        SEE ALSO
-           load_staterror, set_staterror, set_syserror
+        Read in the first column from the file 'errors.fits' as the
+        systematic errors for the 'core' data set:
+
+        >>> load_syserror('core', 'errors.fits')
+
         """
         if filename is None:
             id, filename = filename, id
@@ -2041,48 +2539,71 @@ class Session(NoNewAttributesAfterInit):
                                                *args, **kwargs))
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### DOC-TODO: does ncols make sense here? (have removed for now)
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def load_filter(self, id, filename=None, ignore=False, ncols=2,
                     *args, **kwargs):
-        """
-        load_filter
+        """Load the filter array from a file and add to a data set.
 
-        SYNOPSIS
-           Load the dataset filter from file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file that contains the filter
+           information. This file can be a FITS table or an ASCII
+           file. Selection of the relevant column depends on the I/O
+           library in use (Crates or AstroPy).
+        ignore : bool, optional
+           If `False` (the default) then include bins with a non-zero
+           filter value, otherwise exclude these bins.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        SYNTAX
+        See Also
+        --------
+        get_filter : Return the filter expression for a data set.
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+        save_filter : Save the filter array to a file.
+        set_filter : Set the filter array of a data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           filename   - filename with path
+        Examples
+        --------
 
-           ignore     - non-zero values ignore instead of notice
-                        default = False
+        Read in the first column of the file and apply it to the
+        default data set:
 
-           ncols      - number of columns to read from
-                        default = 2
+        >>> load_filter('filt.dat')
 
-           colkeys    - column keys
-                        default = None
+        Select the `FILTER` column of the file:
 
-           sep        - separator character
-                        default = ' '
+        >>> load_filter(2, 'filt.dat', colkeys=['FILTER'])
 
-           comment    - comment character
-                        default = '#'
+        When using Crates as the I/O library, the above can
+        also be written as
 
-        Returns:
-           None
+        >>> load_filter(2, 'filt.dat[cols filter]')
 
-        DESCRIPTION
-           Load the filter for a dataset from file by data id.
-
-        EXAMPLE
-           load_filter("data.dat", colkeys=["FILTER"])
-
-        SEE ALSO
-            set_filter
         """
         if filename is None:
             id, filename = filename, id
@@ -2093,34 +2614,47 @@ class Session(NoNewAttributesAfterInit):
 
 
     def set_filter(self, id, val=None, ignore=False):
-        """
-        set_filter
+        """Set the filter array of a data set.
 
-        SYNOPSIS
-           Set the dataset filter by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        val : array
+           The array of filter values (`0` or `1`). The size should
+           match the array returned by `get_dep`.
+        ignore : bool, optional
+           If `False` (the default) then include bins with a non-zero
+           filter value, otherwise exclude these bins.
 
-        SYNTAX
+        See Also
+        --------
+        get_dep : Return the dependent axis of a data set.
+        get_filter : Return the filter expression for a data set.
+        ignore : Exclude data from the fit.
+        load_filter : Load the filter array from a file and add to a data set.
+        notice : Include data in the fit.
+        save_filter : Save the filter array to a file.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
+        respectively.
 
-           val        - array of 0s or 1s
+        Examples
+        --------
 
-           ignore     - non-zero values ignore instead of notice
-                        default = False
+        Ignore those bins with a value less 20.
 
-        Returns:
-           None
+        >>> d = get_dep()
+        >>> f = d >= 20
+        >>> set_filter(f)
 
-        DESCRIPTION
-           Set the filter of a dataset by data id.  
-
-        EXAMPLE
-           set_filter([0, 1, 1, ...])
-
-        SEE ALSO
-           load_filter
         """
         if val is None:
             val, id = id, val
@@ -2146,34 +2680,47 @@ class Session(NoNewAttributesAfterInit):
                                                len(d.get_y(False)), len(filter))
 
 
+    # also in sherpa.astro.utils
     def set_dep(self, id, val=None):
-        """
-        set_dep
+        """Set the dependent axis of a data set.
 
-        SYNOPSIS
-           Set the dependent variable of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        val : array
+           The array of values for the dependent axis.
 
-        SYNTAX
+        See Also
+        --------
+        dataspace1d : Create the independent axis for a 1D data set.
+        dataspace2d : Create the independent axis for a 2D data set.
+        get_dep : Return the dependent axis of a data set.
+        load_arrays : Create a data set from array values.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
+        respectively.
 
-           val        - dependent variable array or scalar
+        Examples
+        --------
 
-        Returns:
-           None
+        Create a 1D data set with values at (0,4), (2,10), (4,12),
+        (6,8), (8,2), and (10,12):
 
-        DESCRIPTION
-           Set the dependent variable of a data set by data id.
+        >>> dataspace1d(0, 10, 2, dstype=Data1D)
+        >>> set_dep([4, 10, 12, 8, 2, 12])
 
-        EXAMPLE
-           set_dep([1,2,3,...])
+        Set the values for the data set 'src':
 
-           set_dep(1,1)
+        >>> set_dep('src', y1)
 
-        SEE ALSO
-           get_dep, get_indep
         """
         if val is None:
             val, id = id, val
@@ -2187,43 +2734,57 @@ class Session(NoNewAttributesAfterInit):
         d.y = dep
 
 
+    # DOC-NOTE: also in sherpa.utils
     def set_staterror(self, id, val=None, fractional=False):
-        """
-        set_staterror
+        """Set the statistical errors on the dependent axis of a data set.
 
-        SYNOPSIS
-           Set the statistical errors of a dataset by data id
+        These values over-ride the errors calculated by any statistic,
+        such as `chi2gehrels` or `chi2datavar`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        val : array or scalar
+           The systematic error.
+        fractional : bool, optional
+           If `False` (the default value), then the ``val`` parameter is
+           the absolute value, otherwise the ``val`` parameter
+           represents the fractional error, so the absolute value is
+           calculated as `get_dep() * val` (and ``val`` must be
+           a scalar).
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        load_staterror : Set the statistical errors on the dependent axis of a data set.
+        load_syserror : Set the systematic errors on the dependent axis of a data set.
+        set_syserror : Set the systematic errors on the dependent axis of a data set.
+        get_error : Return the errors on the dependent axis of a data set.
 
-           val        - array or scalar error values
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
+        respectively.
 
-           fractional - use fractional portion of dependent array as error,
-                        val must be a scalar value
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Set the statistical error for the default data set to the value
+        in `dys` (a scalar or an array):
 
-        DESCRIPTION
-           Set the statistical error of a dataset by data id.  Users can specify
-           the entire error as an array or as a single value to be repeated for
-           every bin.  Also, setting the fractional argument will use the single
-           value as the fractional portion of the dependent array as the error.
+        >>> set_staterror(dys)
 
-        EXAMPLE
-           set_staterror([0.040, 0.039, 0.041, ...])
+        Set the statistical error on the `core` data set to be 5% of
+        the data values:
 
-           set_staterror(2, 0.04)
+        >>> set_staterror('core', 0.05, fractional=True)
 
-           set_staterror(0.05, fractional=True)
-
-        SEE ALSO
-           set_syserror
         """
         if val is None:
             val, id = id, val
@@ -2241,43 +2802,54 @@ class Session(NoNewAttributesAfterInit):
         d.staterror = err
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def set_syserror(self, id, val=None, fractional=False):
-        """
-        set_syserror
+        """Set the systematic errors on the dependent axis of a data set.
 
-        SYNOPSIS
-           Set the systematic errors of a dataset by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        val : array or scalar
+           The systematic error.
+        fractional : bool, optional
+           If `False` (the default value), then the ``val`` parameter is
+           the absolute value, otherwise the ``val`` parameter
+           represents the fractional error, so the absolute value is
+           calculated as `get_dep() * val` (and ``val`` must be
+           a scalar).
 
-        SYNTAX
+        See Also
+        --------
+        load_staterror : Set the statistical errors on the dependent axis of a data set.
+        load_syserror : Set the systematic errors on the dependent axis of a data set.
+        set_staterror : Set the statistical errors on the dependent axis of a data set.
+        get_error : Return the errors on the dependent axis of a data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
+        respectively.
 
-           val        - array or scalar error values
+        Examples
+        --------
 
-           fractional - use fractional portion of dependent array as error,
-                        val must be a scalar value
-                        default = False
+        Set the systematic error for the default data set to the value
+        in `dys` (a scalar or an array):
 
-        Returns:
-           None
+        >>> set_syserror(dys)
 
-        DESCRIPTION
-           Set the systematic error of a dataset by data id.  Users can specify
-           the entire error as an array or as a single value to be repeated for
-           every bin.  Also, setting the fractional argument will use the single
-           value as the fractional portion of the dependent array as the error.
+        Set the systematic error on the `core` data set to be 5% of
+        the data values:
 
-        EXAMPLE
-           set_syserror([0.040, 0.039, 0.041, ...])
+        >>> set_syserror('core', 0.05, fractional=True)
 
-           set_syserror(2, 0.04)
-
-           set_syserror(0.05, fractional=True)
-
-        SEE ALSO
-           set_syserror
         """
         if val is None:
             val, id = id, val
@@ -2294,74 +2866,106 @@ class Session(NoNewAttributesAfterInit):
                 err = numpy.array([val]*len(d.get_dep()))
         d.syserror = err
 
-
+    # DOC-NOTE: also in sherpa.astro.utils
     def get_staterror(self, id=None, filter=False):
-        """
-        get_staterror
+        """Return the statistical error on the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the statistical errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The statistical error for each data point. This may be
+           estimated from the data (e.g. with the `chi2gehrels`
+           statistic) or have been set explicitly (`set_staterror`).
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_staterror : Set the statistical errors on the dependent axis of a data set.
 
-        Returns:
-           Statistical error array
+        Examples
+        --------
 
-        DESCRIPTION
-           Get the statistical error of a dataset by data id.
+        If not explicitly given, the statistical errors on a data set
+        may be calculated from the data values (the independent axis),
+        depending on the chosen statistic:
 
-        EXAMPLE
-           get_staterror()
+        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> set_stat('chi2datavar')
+        >>> get_staterror()
+        array([ 2.        ,  2.23606798,  3.        ])
+        >>> set_stat('chi2gehrels')
+        >>> get_staterror()
+        array([ 3.17944947,  3.39791576,  4.122499  ])
 
-           get_staterror(1)
+        If the statistical errors are set - either when the data set
+        is created or with a call to `set_errors` - then these values
+        will be used, no matter the statistic:
 
-           get_staterror(1, True)
+        >>> load_arrays(1, [10,15,19], [4,5,9], [2,3,5])
+        >>> set_stat('chi2datavar')
+        >>> get_staterror()
+        array([2, 3, 5])
+        >>> set_stat('chi2gehrels')
+        >>> get_staterror()
+        array([2, 3, 5])
 
-        SEE ALSO
-           set_syserror, get_syserror
         """
         return self.get_data(id).get_staterror(filter,
                                                self.get_stat().calc_staterror)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def get_syserror(self, id=None, filter=False):
-        """
-        get_syserror
+        """Return the systematic error on the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the systematic errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The systematic error for each data point.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has no systematic errors.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_syserror : Set the systematic errors on the dependent axis of a data set.
 
-        Returns:
-           Systematic error array
-
-        DESCRIPTION
-           Get the systematic error of a dataset by data id.
-
-        EXAMPLE
-           get_syserror()
-
-           get_syserror(1)
-
-           get_syserror(1, True)
-
-        SEE ALSO
-           set_syserror, get_syserror
         """
         d = self.get_data(id)
         id = self._fix_id(id)
@@ -2371,277 +2975,381 @@ class Session(NoNewAttributesAfterInit):
         return err
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def get_error(self, id=None, filter=False):
-        """
-        get_error
+        """Return the errors on the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the total errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The error for each data point, formed by adding the
+           statistical and systematic errors in quadrature.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-        Returns:
-           Total error array
-
-        DESCRIPTION
-           Get the total error (statistical + systematic in quadrature) of a
-           dataset by data id.
-
-        EXAMPLE
-           get_error()
-
-           get_error(1)
-
-           get_error(1, True)
-
-        SEE ALSO
-           set_syserror, get_syserror, set_staterror, set_syserror
         """
         return self.get_data(id).get_error(filter,
                                            self.get_stat().calc_staterror)
 
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### DOC-NOTE: shouldn't this expose a filter parameter?
     def get_indep(self, id=None):
-        """
-        get_indep
+        """Return the independent axes of a data set.
 
-        SYNOPSIS
-           Get the independent grid of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        axis : tuple of arrays
+           The independent axis values. These are the values at which
+           the model is evaluated during fitting.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-        Returns:
-           Array of the independent variable
+        See Also
+        --------
+        get_dep : Return the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-        DESCRIPTION
-           Get the data set independend grid by data id.
+        Examples
+        --------
 
-        EXAMPLE
-           get_indep()
+        For a one-dimensional data set, the X values are returned:
 
-           get_indep(1)
+        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> get_indep()
+        (array([10, 15, 19]),)
 
-        SEE ALSO
+        For a 2D data set the X0 and X1 values are returned:
+
+        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> get_indep(2)
+        (array([10, 15, 12, 19]), array([12, 14, 10, 17]))
 
         """
         return self.get_data(id).get_indep()
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def get_dep(self, id=None, filter=False):
-        """
-        get_dep
+        """Return the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the dependent variable of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The dependent axis values. The model estimate is compared
+           to these values during fitting.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-        Returns:
-           Array of the dependent variable
+        Examples
+        --------
 
-        DESCRIPTION
-           Get the dependent variable array of data set by data id.
+        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> ignore_id(1, 17, None)
+        >>> get_dep()
+        array([4, 5, 9])
+        >>> get_dep(filter=True)
+        array([4, 5])
 
-        EXAMPLE
-           get_dep()
-
-           get_dep(1)
-
-        SEE ALSO
+        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> get_dep(2)
+        array([ 4,  5,  9, -2])
 
         """
         return self.get_data(id).get_y(filter)
 
 
     def get_dims(self, id=None, filter=False):
-        """
-        get_dims
+        """Return the dimensions of the data set.
 
-        SYNOPSIS
-           Get the dimensionality of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        filter : bool, optional
+           If `True` then apply any filter to the data set before
+           returning the dimensions. The default is `False`.
 
-        SYNTAX
+        Returns
+        -------
+        dims : a tuple of int
 
-        Arguments:
-           id        - session data id
-                       default = default data id
-
-           filter    - apply filter
-                       default = False
-
-        Returns:
-           List of dimensional lengths
-
-        DESCRIPTION
-           Get the dimensionality (dim0, dim1, ...) of data set by data id.
-
-        EXAMPLE
-           get_dims()
-
-           get_dims(1, True)
-
-        SEE ALSO
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        notice : Include data in the fit.
+        sherpa.astro.utils.notice2d : Include a spatial region of an image.
 
         """
         return self.get_data(id).get_dims(filter)
 
-
+    ### DOC-NOTE: should there be a version in sherpa.astro.utils with a bkg_id
+    ###           parameter?
     def get_filter(self, id=None):
-        """
-        get_filter
+        """Return the filter expression for a data set.
 
-        SYNOPSIS
-           Get the filter of a dataset by id
+        This returns the filter expression, created by one or more
+        calls to `ignore` and `notice`, for the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id        - session data id
-                       default = default data id
+        Returns
+        -------
+        filter : str
+           The empty string or a string expression representing the
+           filter used. For PHA data dets the units are controlled by
+           the analysis setting for the data set.
 
-        Returns:
-           filter string
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not exist.
 
-        DESCRIPTION
-           Get the filter expression of data set by data id.
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        load_filter : Load the filter array from a file and add to a data set.
+        notice : Include data in the fit.
+        save_filter : Save the filter array to a file.
+        show_filter : Show any filters applied to a data set.
+        set_filter : Set the filter array of a data set.
 
-        EXAMPLE
-           get_filter()
+        Examples
+        --------
 
-           get_filter(1)
+        The default filter is the full dataset, given in the
+        format `lowval:hival` (both are includive limits):
 
-        SEE ALSO
+        >>> load_arrays(1, [10,15,20,25], [5,7,4,2])
+        >>> get_filter()
+        '10.0000:25.0000'
+
+        The `notice` call restricts the data to the range between
+        14 and 30. The resulting filter is the combination of this
+        range and the data:
+
+        >>> notice(14,30)
+        >>> get_filter()
+        '15.0000:25.0000'
+
+        Ignoring the point at `x=20` means that only the points at
+        `x=15` and `x=25` remain, so a comma-separated list is used:
+
+        >>> ignore(19,22)
+        >>> get_filter()
+        '15.0000,25.0000'
+
+        The filter equivalent to the per-bin array of filter values:
+
+        >>> set_filter([1,1,0,1])
+        >>> get_filter()
+        '10.0000,15.0000,25.0000'
 
         """
         return self.get_data(id).get_filter()
 
 
     def copy_data(self, fromid, toid):
-        """
-        copy_data
+        """Copy a data set to a new identifier.
 
-        SYNOPSIS
-           Copy a dataset by data id to a new data id (deep copy)
+        This is a "deep" copy, so that once it has been
+        made, changes to one of the data sets will not
+        be made to the other data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        fromid : int or str
+           The input data set.
+        toid : int or str
+           The output data set.
 
-        Arguments:
-           fromid     - source data id
-           toid       - destination data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If there is no data set with a `fromid` identifier.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        >>> copy_data(1, 2)
 
-        SEE ALSO
-           list_data_ids, get_data, set_data, delete_data,
-           read_data, load_data
+        >>> copy_data(2, "orig")
+
         """
         data = self.get_data(fromid)
         data = copy.deepcopy(data)
         self.set_data(toid, data)
 
+    ### DOC-TODO: this does not delete the source expression;
+    ###           is this intended or a bug?
     def delete_data(self, id=None):
-        """
-        delete_data
+        """Delete a data set by identifier.
 
-        SYNOPSIS
-           Delete a dataset by data id
+        The data set, and any associated structures - such as the ARF
+        and RMF for PHA data sets - are removed.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to delete. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id         - Sherpa data id
-                        default = default data id
+        See Also
+        --------
+        clean : Clear all stored session data.
+        copy_data : Copy a data set to a new identifier.
+        delete_model : Delete the model expression from a data set.
+        get_default_id : Return the default data set identifier.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-        Returns:
-           None
+        Notes
+        -----
+        The source expression is not removed by this function.
 
-        DESCRIPTION
-           The Sherpa data id ties data, model, fit, and plotting information
-           into a dataset easily referenced by id.  The id can be a user
-           defined string or integer.
+        Examples
+        --------
 
-        SEE ALSO
-           list_data_ids, get_data, set_data, copy_data,
-           read_data, load_data
+        Delete the data from the default data set:
+
+        >>> delete_data()
+
+        Delete the data set identified as 'src':
+
+        >>> delete_data('src')
+
         """
         id = self._fix_id(id)
         self._data.pop(id, None)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def dataspace1d(self, start, stop, step=1, numbins=None, 
                     id=None, dstype=sherpa.data.Data1DInt):
-        """
-        dataspace1d
+        """Create the independent axis for a 1D data set.
 
-        SYNOPSIS
-           Populates a blank 1D Sherpa data set by data id
+        Create an "empty" one-dimensional data set by defining the
+        grid on which the points are defined (the independent axis).
+        The values are set to 0.
 
-        SYNTAX
+        Parameters
+        ----------
+        start : number
+           The minimum value of the axis.
+        stop : number
+           The maximum value of the axis.
+        step : number, optional
+           The separation between each grid point. This is not used if
+           `numbins` is set.
+        numbins : int, optional
+           The number of grid points. This over-rides the `step`
+           setting.
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1DInt` (the default) and `Data1D`.
 
-        Arguments:
-           start   -  lower bound of grid
+        See Also
+        --------
+        dataspace2d : Create the independent axis for a 2D data set.
+        get_dep : Return the dependent axis of a data set.
+        get_indep : Return the independent axes of a data set.
+        set_dep : Set the dependent axis of a data set.
 
-           stop    -  upper bound of grid
+        Notes
+        -----
+        The meaning of the `stop` parameter depends on whether it is a
+        binned or unbinned data set (as set by the `dstype`
+        parameter).
 
-           step    -  bin width size
-                      default is 1
+        Examples
+        --------
 
-           numbins -  number of bins desired
-                      default is None
+        Create a binned data set, starting at 1 and with a
+        bin-width of 1.
 
-           id      -  Sherpa data id
-                      defaut is default data id
+        >>> dataspace1d(1, 5, 1)
+        >>> print(get_indep())
+        (array([ 1.,  2.,  3.,  4.]), array([ 2.,  3.,  4.,  5.]))
 
-           dstype  -  Type of data set to use
-                      default is Data1DInt
+        This time for an un-binned data set:
 
-        Returns:
-           None
+        >>> dataspace1d(1, 5, 1, dstype=Data1D)
+        >>> print(get_indep())
+        (array([ 1.,  2.,  3.,  4.,  5.]),)
 
-        DESCRIPTION
-           Populates a blank 1D Sherpa data set with the specified grid
-           by Sherpa data id.
-           
-           Specifying a dataspace using step size:
-           if numbins is None (default) -> numpy.arange(start,stop,step)
+        Specify the number of bins rather than the grid spacing:
 
-           Specifying a dataspace by indicating the number of bins:
-           if numbins is not None -> numpy.linspace(start, stop, numbins)
+        >>> dataspace1d(1, 5, numbins=5, id=2)
+        >>> (xlo, xhi) = get_indep(2)
+        >>> xlo
+        array([ 1. ,  1.8,  2.6,  3.4,  4.2])
+        >>> xhi
+        array([ 1.8,  2.6,  3.4,  4.2,  5. ])
 
-        EXAMPLES
-           Blank integrated data set
-           
-              dataspace1d(0.1,10,0.1)
+        >>> dataspace1d(1, 5, numbins=5, id=3, dstype=Data1D)
+        >>> (x, ) = get_indep(3)
+        >>> x
+        array([ 1.,  2.,  3.,  4.,  5.])
 
-           Blank non-integrated data set
-
-              dataspace1d(0.1,10,0.1,dstype=Data1D)
-
-        SEE ALSO
-           dataspace2d
         """
         # support non-integrated grids with inclusive boundaries
         if dstype in (sherpa.data.Data1D,):
@@ -2657,32 +3365,46 @@ class Session(NoNewAttributesAfterInit):
         self.set_data(id, dstype('dataspace1d', *args))
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def dataspace2d(self, dims, id=None, dstype=sherpa.data.Data2D):
-        """
-        dataspace2d
+        """Create the independent axis for a 2D data set.
 
-        SYNOPSIS
-           Populates a blank 2D Sherpa image data set by data id
+        Create an "empty" two-dimensional data set by defining the
+        grid on which the points are defined (the independent axis).
+        The values are set to 0.
 
-        SYNTAX
+        Parameters
+        ----------
+        dims : sequence of 2 number
+           The dimensions of the grid in `(width,height)` order.
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data2D` (the default) and `Data2DInt`.
 
-        Arguments:
-           dims    -  array of image dimensions, i.e. [width,height]
+        See Also
+        --------
+        dataspace1d : Create the independent axis for a 1D data set.
+        get_dep : Return the dependent axis of a data set.
+        get_indep : Return the independent axes of a data set.
+        set_dep : Set the dependent axis of a data set.
 
-           id      -  Sherpa data id
-                      defaut is default data id
+        Examples
+        --------
 
-           dstype  -  Type of data set to use
-                      default is Data2D
+        Create a 200 pixel by 150 pixel grid (number of columns by
+        number of rows) and display it (each pixel has a value of 0):
 
-        Returns:
-           None
+        >>> dataspace2d([200,150])
+        >>> image_data()
 
-        DESCRIPTION
-           Populates a blank 2D Sherpa image data set by Sherpa data id.
+        Create a data space called "fakeimg":
 
-        SEE ALSO
-           dataspace1d
+        >>> dataspace2d([nx,ny], id="fakeimg")
+
         """
         x0, x1, y, shape = sherpa.utils.dataspace2d(dims)
 
@@ -2697,39 +3419,71 @@ class Session(NoNewAttributesAfterInit):
 
 
     def fake(self, id=None, method=sherpa.utils.poisson_noise):
-        """
-        fake
+        """Simulate a data set.
 
-        SYNOPSIS
-           Fake source data using supplied noise function by data id
+        Take a data set, evaluate the model for each bin, and then use
+        this value to create a data value from each bin. The default
+        behavior is to use a Poisson distribution, with the model
+        value as the expectation value of the distribution.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        method : func
+           The function used to create a random realisation of
+           a data set.
 
-        Arguments:
-           id      -  data id with corresponding model to evaluate and store
-                      faked data.
-                      default = default data id
+        See Also
+        --------
+        dataspace1d : Create the independent axis for a 1D data set.
+        dataspace2d : Create the independent axis for a 2D data set.
+        get_dep : Return the dependent axis of a data set.
+        load_arrays : Create a data set from array values.
+        set_model : Set the source model expression for a data set.
 
-           method  -  noise function
-                      default = poisson_noise
+        Notes
+        -----
+        The function for the `method` argument accepts a single
+        argument, the data values, and should return an array of the
+        same shape as the input, with the data values to use.
 
-        Returns:
-           None
+        The function can be called on any data set, it does not need
+        to have been created with `dataspace1d` or `dataspace2d`.
 
-        DESCRIPTION
-           Evalutes the source model by data id, adds noise defined by 'method'
-           and stores the resulting array in the data set.  The data set can
-           created from file or populated using dataspace1d or dataspace2d.
+        Specific data set types may have their own, specialized,
+        version of this function.
 
-        EXAMPLES
-           Blank data set with faked data.
+        Examples
+        --------
+        Create a random realisation of the model - a constant plus
+        gaussian line - for the range x=-5 to 5.
 
-              dataspace1d(0.1,10,0.1,dstype=Data1D)
-              set_model(gauss1d.g1)
-              fake()
+        >>> dataspace1d(-5, 5, 0.5, dstype=Data1D)
+        >>> set_source(gauss1d.gline + const1d.bgnd)
+        >>> bgnd.c0 = 2
+        >>> gline.fwhm = 4
+        >>> gline.ampl = 5
+        >>> gline.pos = 1
+        >>> fake()
+        >>> plot_data()
+        >>> plot_model(overplot=True)
 
-        SEE ALSO
-           dataspace1d, dataspace2d, set_model
+        For a 2D data set, display the simulated data, model, and
+        residuals:
+
+        >>> dataspace2d([150,80], id='fakeimg')
+        >>> set_source('fakeimg', beta2d.src + polynom2d.bg)
+        >>> src.xpos, src.ypos = 75, 40
+        >>> src.r0, src.alpha = 15, 2.3
+        >>> src.ellip, src.theta = 0.4, 1.32
+        >>> src.ampl = 100
+        >>> bg.c, bg.cx1, bg.cy1 = 3, 0.4, 0.3
+        >>> fake('fakeimg')
+        >>> image_fit('fakeimg')
+
         """
         data = self.get_data(id)
         model = self.get_model(id)
@@ -2741,120 +3495,197 @@ class Session(NoNewAttributesAfterInit):
         _check_type(filename, basestring, 'filename', 'a string')
         return readfunc(filename, *args, **kwargs)
 
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### DOC-TODO: What data types are supported here?
     def unpack_arrays(self, *args):
-        """
-        unpack_arrays
-        
-        SYNOPSIS
-           Read NumPy arrays into a dataset
+        """Create a sherpa data object from arrays of data.
 
-        SYNTAX
+        The object returned by `unpack_arrays` can be used in a
+        `set_data` call.
 
-        Arguments:
-           array0     - first NumPy array
+        Parameters
+        ----------
+        a1, .., aN : array_like
+           Arrays of data. The order, and number, is determined by
+           the `dstype` parameter, and listed in the `load_arrays`
+           routine.
+        dstype :
+           The data set type. The default is `Data1D` and values
+           include: `Data1D`, `Data1DInt`, `Data2D`, and `Data2DInt`.
 
-           ...
+        Returns
+        -------
+        data
+           The data set object matching the requested `dstype`.
 
-           arrayN     - last NumPy array
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_arrays : Create a data set from array values.
+        set_data : Set a data set.
+        unpack_data : Create a sherpa data object from a file.
 
-           dstype     - dataset type desired
-                        default = Data1D
+        Examples
+        --------
 
-        Returns:
-           Sherpa dataset
+        Create a 1D (unbinned) data set from the values in
+        the x and y arrays. Use the returned object to create
+        a data set labelled "oned":
 
-        DESCRIPTION
-           Read NumPy arrays into a Sherpa dataset.
+        >>> x = [1,3,7,12]
+        >>> y = [2.3,3.2,-5.4,12.1]
+        >>> dat = unpack_arrays(x, y)
+        >>> set_data("oned", dat)
 
-        SEE ALSO
-           unpack_data, load_data, load_arrays
+        Include statistical errors on the data:
+
+        >>> edat = unpack_arrays(x, y, dy)
+
+        Create a "binned" 1D data set, giving the low,
+        and high edges of the independent axis (xlo
+        and xhi respectively) and the dependent values
+        for this grid (y):
+
+        >>> hdat = unpack_arrays(xlo, xhi, y, Data1DInt)
+
         """
         return sherpa.io.read_arrays(*args)
 
 
+    # DOC-NOTE: also in sherpa.utils
     def unpack_data(self, filename, ncols=2, colkeys=None,
                     dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
-        """
-        unpack_data
+        """Create a sherpa data object from a file.
 
-        SYNOPSIS
-           Read a data text file into a dataset
+        The object returned by `unpack_data` can be used in a
+        `set_data` call.
 
-        SYNTAX
+        Parameters
+        ----------
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy) and the
+           type of data set (e.g. 1D or 2D).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1D` (the default), `Data1DInt`, `Data2D`, and
+           `Data2DInt`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        require_floats : bool, optional
+           If `True` (the default), non-numeric data values will
+           raise a `ValueError`.
 
-        Arguments:
-           filename   - name of text file
+        Returns
+        -------
+        data
+           The data set object.
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        Raises
+        ------
+        ValueError
+           If a column value can not be converted into a numeric value
+           and the `require_floats` parameter is True.
 
-           colkeys    - list of column names
-                        default = None
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_arrays : Create a data set from array values.
+        load_data : Load a data set from a file.
+        set_data : Set a data set.
+        unpack_arrays : Create a sherpa data object from arrays of data.
 
-           dstype     - dataset type desired
-                        default = Data1D
+        Examples
+        --------
 
-           sep        - separation character between columns
-                        default = ' '
+        Create a data object from the first two columns of the file
+        "src.dat" and use it to create a Sherpa data set called "src":
 
-           comment    - comment character
-                        default = '#'
+        >>> dat = unpack_data('src.dat')
+        >>> set_data('src', dat)
 
-        Returns:
-           Sherpa dataset
+        Read in the first three columns - the independent axis (x),
+        the dependent variable (y), and the error on y:
 
-        DESCRIPTION
-           Read tabular data from column based text file into a
-           Sherpa dataset given a filename.
+        >>> dat = unpack_data('src.dat', ncols=3)
 
-        SEE ALSO
-           load_data, unpack_arrays, load_arrays
         """
         return self._read_data(sherpa.io.read_data, filename, ncols, colkeys,
                                sep, dstype, comment, require_floats)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils
     def load_data(self, id, filename=None, ncols=2, colkeys=None,
                   dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
-        """
-        load_data
+        """Load a data set from a file.
 
-        SYNOPSIS
-           Load a data text file by id
+        Parameters
+        ----------
+        id : int or str
+           The identifier for the data set to use.
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy) and the
+           type of data set (e.g. 1D or 2D).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1D` (the default), `Data1DInt`, `Data2D`, and
+           `Data2DInt`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        require_floats : bool, optional
+           If `True` (the default), non-numeric data values will
+           raise a `ValueError`.
 
-        SYNTAX
+        Raises
+        ------
+        ValueError
+           If a column value can not be converted into a numeric value
+           and the `require_floats` parameter is True.
 
-        Arguments:
-           id         - data id
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_arrays : Create a data set from array values.
+        unpack_arrays : Create a sherpa data object from arrays of data.
+        unpack_data : Create a sherpa data object from a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - list of column names
-                        default = None
+        >>> load_data('tbl.dat')
 
-           dstype     - dataset type desired
-                        default = Data1D
+        >>> load_data('hist.dat', dstype=Data1DInt)
 
-           sep        - separation character between columns
-                        default = ' '
+        >>> cols = ['rmid', 'sur_bri', 'sur_bri_err']
+        >>> load_data(2, 'profile.fits', colkeys=cols)
 
-           comment    - comment character
-                        default = '#'
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Load tabular data from column-based text file
-           into a Sherpa dataset by data id.
-
-        SEE ALSO
-           load_arrays, unpack_data, unpack_arrays
         """
         if filename is None:
             id, filename = filename, id
@@ -2862,36 +3693,76 @@ class Session(NoNewAttributesAfterInit):
                                            colkeys=colkeys, dstype=dstype,
                                            sep=sep, comment=comment, require_floats=require_floats))
 
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### DOC-TODO: rework the Data type notes section (also needed by unpack_arrays)
     ##@loggable(with_id = True)
     def load_arrays(self, id, *args):
-        """
-        load_arrays
-        
-        SYNOPSIS
-           Load NumPy arrays into a dataset
+        """Create a data set from array values.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           The identifier for the data set to use.
+        *args :
+           Two or more arrays, followed by the type of data set to
+           create.
 
-        Arguments:
-           id         - data id
-        
-           array0     - first NumPy array
+        See Also
+        --------
+        copy_data : Copy a data set to a new identifier.
+        delete_data : Delete a data set by identifier.
+        get_data : Return the data set by identifier.
+        load_data : Create a data set from a file.
+        set_data : Set a data set.
+        unpack_arrays : Create a sherpa data object from arrays of data.
 
-           ...
+        Notes
+        -----
+        The data type identifier, which defaults to `Data1D`,
+        determines the number, and order, of the required inputs.
 
-           arrayN     - last NumPy array
+        `Data1D`
+           required fields: x, y
+           optional fields: statistical error, systematic error
 
-           dstype     - dataset type desired
-                        default = Data1D
+        `Data1DInt`
+           required fields: xlo, xhi, y
+           optional fields: statistical error, systematic error
 
-        Returns:
-           None
+        `Data2D`
+           required fields: x0, x1, y
+           optional fields: shape, statistical error, systematic error
+           The `shape` argument should be a tuple giving the
+           size of the data (ny,nx).
 
-        DESCRIPTION
-           Load NumPy arrays into a Sherpa dataset by data id.
+        `Data2DInt`
+           required fields: x0lo, x1lo, x0hi, x1hi, y
+           optional fields: shape, statistical error, systematic error
+           The `shape` argument should be a tuple giving the
+           size of the data (ny,nx).
 
-        SEE ALSO
-           load_data, unpack_arrays
+        Examples
+        --------
+
+        Create a 1D data set with three points:
+
+        >>> load_arrays(1, [10, 12, 15], [4.2, 12.1, 8.4])
+
+        Create a 1D data set, with the identifier 'prof', from the
+        arrays `x` (independent axis), `y` (dependent axis), and `dy`
+        (statistical error on the dependent axis):
+
+        >>> load_arrays('prof', x, y, dy)
+
+        Explicitly define the type of the data set:
+
+        >>> load_arrays('prof', x, y, dy, Data1D)
+
+        Data set 1 is a histogram, where the bins cover the range
+        1-3, 3-5, and 5-7 with values 4, 5, and 9 respectively.
+
+        >>> load_arrays(1, [1,3,5], [3,5,7], [4,5,9], Data1DInt)
+
         """
         self.set_data(id, self.unpack_arrays(*args))
 
@@ -2927,257 +3798,353 @@ class Session(NoNewAttributesAfterInit):
         sherpa.io.write_arrays(filename, args, fields, **kwargs)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_arrays(self, filename, args, fields=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """
-        save_arrays
+        """Write a list of arrays to a file.
 
-        SYNOPSIS
-           Write a list of arrays to file as columns
+        Parameters
+        ----------
+        filename : str
+           The name of the file to write the array to.
+        args : array of arrays
+           The arrays to write out.
+        fields : array of str
+           The column names (should match the size of ``args``).
+        clobber : bool, optional
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        linebreak : str, optional
+           Indicate a new line. The default is ``'\\n'``.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is ``'%g%'``.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-        Arguments:
-           filename   - filename with path
+        See Also
+        --------
+        save_data : Save the data to a file.
 
-           args       - list of arrays that correspond to columns
+        Examples
+        --------
 
-           fields     - list of column headings
-                        default = None
+        Write the x and y columns from the default data set to the
+        file 'src.dat':
 
-           clobber    - clobber the existing output file
-                        default = False
+        >>> x = get_indep()
+        >>> y = get_dep()
+        >>> save_arrays('src.dat', [x,y])
 
-           sep        - separation character between columns
-                        default = ' '
+        Use the column names "r" and "surbri" for the columns:
 
-           comment    - comment character
-                        default = '#'
+        >>> save_arrays('prof.txt', [x,y], fields=["r", "surbri"],
+                        clobber=True)
 
-           linebreak  - line break character between rows
-                        default = '\n'
-
-           format     - array element format string
-                        default = '%g'
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Write a list of arrays to file as columns.
-
-        EXAMPLE
-
-           save_arrays("foo.dat", [a,b,c], fields=['a','b','c'])
-
-        SEE ALSO
-           save_image, save_data, save_table, save_source, save_model,
-           save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         _check_type(filename, basestring, 'filename', 'a string')
         sherpa.io.write_arrays(filename, args, fields, sep, comment, clobber,
                                linebreak, format)
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
     def save_source(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """
-        save_source
+        """Save the model values to a file.
 
-        SYNOPSIS
-           Write the unconvolved source model to file
+        The model is evaluated on the grid of the data set, but does
+        not include any instrument response (such as a PSF).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (``True``) or if it raises an exception (``False``,
+           the default setting).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        linebreak : str, optional
+           Indicate a new line. The default is ``'\\n'``.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is ``'%g%'``.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-           filename   - filename with path
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_model : Save the model values to a file.
+        set_full_model : Define the convolved model expression for a data set.
+        set_model : Set the source model expression for a data set.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           sep        - separation character between columns
-                        default = ' '
+        The output file contains the columns ``X`` and ``SOURCE`` (for 1D
+        data). The residuals array respects any filter setting for the
+        data set.
 
-           comment    - comment character
-                        default = '#'
+        Examples
+        --------
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        Write the model to the file "model.dat":
 
-           format     - array element format string
-                        default = '%g'
+        >>> save_source('model.dat')
 
-        Returns:
-           None
+        Write the model from the data set 'jet' to the
+        file "jet.mdl":
 
-        DESCRIPTION
-           Write the unconvolved source model to file.  NOTE that the source 
-           model array written to file respects the filter.
+        >>> save_source('jet', "jet.mdl", clobber=True)
 
-        EXAMPLE
-
-           save_source("source.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_model,
-           save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         _check_type(filename, basestring, 'filename', 'a string')
         self._save_type('source', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
     def save_model(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """
-        save_model
+        """Save the model values to a file.
 
-        SYNOPSIS
-           Write the convolved source model to file
+        The model is evaluated on the grid of the data set, including
+        any instrument response (such as a PSF).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        linebreak : str, optional
+           Indicate a new line. The default is ``'\\n'``.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is ``'%g%'``.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-           filename   - filename with path
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_source : Save the model values to a file.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           sep        - separation character between columns
-                        default = ' '
+        The output file contains the columns ``X`` and ``MODEL`` (for 1D
+        data). The residuals array respects any filter setting for the
+        data set.
 
-           comment    - comment character
-                        default = '#'
+        Examples
+        --------
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        Write the model to the file "model.dat":
 
-           format     - array element format string
-                        default = '%g'
+        >>> save_model('model.dat')
 
-        Returns:
-           None
+        Write the model from the data set 'jet' to the
+        file "jet.mdl":
 
-        DESCRIPTION
-           Write the convolved source model to file.  NOTE that the source 
-           model array written to file respects the filter.
+        >>> save_model('jet', "jet.mdl", clobber=True)
 
-        EXAMPLE
-
-           save_model("model.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         _check_type(filename, basestring, 'filename', 'a string')
         self._save_type('model', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
     def save_resid(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """
-        save_resid
+        """Save the residuals (data-model) to a file.
 
-        SYNOPSIS
-           Write the data - model residuals to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        linebreak : str, optional
+           Indicate a new line. The default is ``'\\n'``.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is ``'%g%'``.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_delchi : Save the ratio of residuals (data-model) to error to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           clobber    - clobber the existing output file
-                        default = False
+        The output file contains the columns ``X`` and ``RESID``. The
+        residuals array respects any filter setting for the data set.
 
-           sep        - separation character between columns
-                        default = ' '
+        Examples
+        --------
 
-           comment    - comment character
-                        default = '#'
+        Write the residuals to the file "resid.dat":
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        >>> save_resid('resid.dat')
 
-           format     - array element format string
-                        default = '%g'
+        Write the residuals from the data set 'jet' to the
+        file "resid.dat":
 
-        Returns:
-           None
+        >>> save_resid('jet', "resid.dat", clobber=True)
 
-        DESCRIPTION
-           Write the data - model residuals to file. NOTE that the residuals
-           array written to file respects the filter.
-
-        EXAMPLE
-
-           save_resid("resid.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         _check_type(filename, basestring, 'filename', 'a string')
         self._save_type('resid', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
     def save_delchi(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """
-        save_delchi
+        """Save the ratio of residuals (data-model) to error to a file.
 
-        SYNOPSIS
-           Write the delta chi squared residuals to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        linebreak : str, optional
+           Indicate a new line. The default is ``'\\n'``.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is ``'%g%'``.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_resid : Save the residuals (data-model) to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           clobber    - clobber the existing output file
-                        default = False
+        The output file contains the columns ``X`` and ``DELCHI``. The
+        residuals array respects any filter setting for the data set.
 
-           sep        - separation character between columns
-                        default = ' '
+        Examples
+        --------
 
-           comment    - comment character
-                        default = '#'
+        Write the residuals to the file "delchi.dat":
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        >>> save_delchi('delchi.dat')
 
-           format     - array element format string
-                        default = '%g'
+        Write the residuals from the data set 'jet' to the
+        file "delchi.dat":
 
-        Returns:
-           None
+        >>> save_resid('jet', "delchi.dat", clobber=True)
 
-        DESCRIPTION
-           Write the delta chi squared residuals to file.  NOTE that the 
-           delta chi squared residuals array written to file respects the
-           filter.
-
-        EXAMPLE
-
-           save_delchi("delchi.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_resid
         """
         clobber=sherpa.utils.bool_cast(clobber)
         _check_type(filename, basestring, 'filename', 'a string')
@@ -3185,50 +4152,79 @@ class Session(NoNewAttributesAfterInit):
                         comment=comment, linebreak=linebreak, format=format)
 
 
+    ### DOC-NOTE: also in sherpa.astro.utils
     def save_data(self, id, filename=None, fields=None, sep=' ', comment='#',
                   clobber=False, linebreak='\n', format='%g'):
-        """
-        save_data
+        """Save the data to a file.
 
-        SYNOPSIS
-           Write tabular data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The data is
+           written out as an ASCII file.
+        fields : array of str, optional
+           The attributes of the data set to write out. If `None`,
+           write out all the columns.
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        clobber : bool, optional
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+        linebreak : str, optional
+           Indicate a new line. The default is ``'\\n'``.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is ``'%g%'``.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If there is no matching data set.
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
-           filename   - filename with path
+        See Also
+        --------
+        save_arrays : Write a list of arrays to a file.
+        save_delchi : Save the ratio of residuals (data-model) to error to a file.
+        save_error : Save the errors to a file.
+        save_filter : Save the filter array to a file.
+        save_resid : Save the residuals (data-model) to a file.
+        save_staterror : Save the statistical errors to a file.
+        save_syserror : Save the statistical errors to a file.
 
-        Keyword Arguments:
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           fields     - dataset attribute names
-                        default = None
+        Examples
+        --------
 
-           sep        - separation character
-                        default = ' '
+        Write the default data set out to the ASCII file 'src.dat':
 
-           comment    - comment character
-                        default = '#'
+        >>> save_data('src.dat')
 
-           clobber    - clobber output file
-                        default = False
+        Only write out the x, y, and staterror columns for data set
+        'rprof' to the file 'prof.out', over-writing it if it already
+        exists:
 
-           linebreak  - new line character
-                        default = '\n'
+        >>> save_data('rprof', 'prof.out', clobber=True,
+                      fields=['x', 'y', 'staterror'])
 
-           format     - format strings for array element
-                        default = '%g'
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Write tabular data to a column-based text file from a
-           Sherpa dataset by id.
-
-        SEE ALSO
-           save_pha, save_arf, save_rmf, save_table, save_image
         """
         clobber=sherpa.utils.bool_cast(clobber)
         if filename is None:
@@ -3238,50 +4234,65 @@ class Session(NoNewAttributesAfterInit):
                              comment, clobber, linebreak, format)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_filter(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """
-        save_filter
+        """Save the filter array to a file.
 
-        SYNOPSIS
-           Write the data set filter to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        linebreak : str, optional
+           Indicate a new line. The default is ``'\\n'``.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is ``'%g%'``.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has not been filtered.
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        load_filter : Load the filter array from a file and add to a data set.
+        save_data : Save the data to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           clobber    - clobber the existing output file
-                        default = False
+        The output file contains the columns ``X`` and ``FILTER``.
 
-           sep        - separation character between columns
-                        default = ' '
+        Examples
+        --------
 
-           comment    - comment character
-                        default = '#'
+        Write the filter from the default data set as an ASCII file:
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        >>> save_filter('filt.dat')
 
-           format     - array element format string
-                        default = '%g'
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Write the data set filter to file.
-
-        EXAMPLE
-
-           save_filter("filter.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         if filename is None:
@@ -3299,50 +4310,74 @@ class Session(NoNewAttributesAfterInit):
                          clobber, sep, comment, linebreak, format)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_staterror(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
-        """
-        save_staterror
+        """Save the statistical errors to a file.
 
-        SYNOPSIS
-           Write the data set statistical errors to file
+        If the statistical errors have not been set explicitly, then
+        the values calculated by the statistic - such as ``chi2gehrels``
+        or ``chi2datavar`` - will be used.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        linebreak : str, optional
+           Indicate a new line. The default is ``'\\n'``.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is ``'%g%'``.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-           filename   - filename with path
+        See Also
+        --------
+        load_staterror : Load the statistical errors from a file.
+        save_error : Save the errors to a file.
+        save_syserror : Save the systematic errors to a file.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           sep        - separation character between columns
-                        default = ' '
+        The output file contains the columns ``X`` and ``STAT_ERR``.
 
-           comment    - comment character
-                        default = '#'
+        Examples
+        --------
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        Write out the statistical errors from the default data set to the
+        file 'errs.dat'.
 
-           format     - array element format string
-                        default = '%g'
+        >>> save_staterror('errs.dat')
 
-        Returns:
-           None
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-        DESCRIPTION
-           Write the data set statistical errors to file by id.
+        >>> save_staterror('jet', 'err.out', clobber=True)
 
-        EXAMPLE
-
-           save_staterror("staterror.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         if filename is None:
@@ -3354,50 +4389,72 @@ class Session(NoNewAttributesAfterInit):
                          clobber, sep, comment, linebreak, format)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_syserror(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
-        """
-        save_syserror
+        """Save the statistical errors to a file.
 
-        SYNOPSIS
-           Write the data set systematic errors to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        linebreak : str, optional
+           Indicate a new line. The default is ``'\\n'``.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is ``'%g%'``.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If the data set does not contain any systematic errors.
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        load_syserror : Load the systematic errors from a file.
+        save_error : Save the errors to a file.
+        save_staterror : Save the statistical errors to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           clobber    - clobber the existing output file
-                        default = False
+        The output file contains the columns ``X`` and ``SYS_ERR``.
 
-           sep        - separation character between columns
-                        default = ' '
+        Examples
+        --------
 
-           comment    - comment character
-                        default = '#'
+        Write out the systematic errors from the default data set to the
+        file 'errs.dat'.
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        >>> save_syserror('errs.dat')
 
-           format     - array element format string
-                        default = '%g'
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-        Returns:
-           None
+        >>> save_syserror('jet', 'err.out', clobber=True)
 
-        DESCRIPTION
-           Write the data set systematic errors to file by id.
-
-        EXAMPLE
-
-           save_syserror("syserror.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         if filename is None:
@@ -3408,51 +4465,79 @@ class Session(NoNewAttributesAfterInit):
         self.save_arrays(filename, [x, err], ['X', 'SYS_ERR'],
                          clobber, sep, comment, linebreak, format)
 
+    # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_error(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
-        """
-        save_error
+        """Save the errors to a file.
 
-        SYNOPSIS
-           Write the total errors of a data set to file
+        The total errors for a data set are the quadrature combination
+        of the statistical and systematic errors. The systematic
+        errors can be 0. If the statistical errors have not been set
+        explicitly, then the values calculated by the statistic - such
+        as ``chi2gehrels`` or ``chi2datavar`` - will be used.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to.
+        clobber : bool, optional
+           If ``filename`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+        sep : str, optional
+           The separator character. The default is ``' '``.
+        comment : str, optional
+           The comment character. The default is ``'#'``.
+        linebreak : str, optional
+           Indicate a new line. The default is ``'\\n'``.
+        format : str, optional
+           The format used to write out the numeric values. The
+           default is ``'%g%'``.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-           filename   - filename with path
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        load_staterror : Load the statistical errors from a file.
+        load_syserror : Load the systematic errors from a file.
+        save_data : Save the data to a file.
+        save_staterror : Save the statistical errors to a file.
+        save_syserror : Save the systematic errors to a file.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           sep        - separation character between columns
-                        default = ' '
+        The output file contains the columns ``X`` and ``ERR``.
 
-           comment    - comment character
-                        default = '#'
+        Examples
+        --------
 
-           linebreak  - line break character between rows
-                        default = '\n'
+        Write out the errors from the default data set to the file
+        'errs.dat'.
 
-           format     - array element format string
-                        default = '%g'
+        >>> save_error('errs.dat')
 
-        Returns:
-           None
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-        DESCRIPTION
-           Write the total errors (statistical + systematic in quadrature) of a
-           data set to file by id.
+        >>> save_error('jet', 'err.out', clobber=True)
 
-        EXAMPLE
-
-           save_error("error.dat")
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi, save_syserror, save_staterror
         """
         clobber=sherpa.utils.bool_cast(clobber)
         if filename is None:
@@ -3476,38 +4561,84 @@ class Session(NoNewAttributesAfterInit):
 
 
     def notice(self, lo=None, hi=None, **kwargs):
-        """
-        notice
+        """Include data in the fit.
 
-        SYNOPSIS
-           Exclusive 1D notice on interval(s) for all available
-           Sherpa data ids
+        Select one or more ranges of data to include by filtering on
+        the independent axis value. The filter is applied to all data
+        sets.
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number or str, optional
+           The lower bound of the filter (when a number) or a string
+           expression listing ranges in the form `a:b`, with multiple
+           ranges allowed, where the ranges are separated by a
+           `,`. The term `:b` means include everything up to, and
+           including `b`, and `a:` means include everything that is
+           higher than, or equal to, `a`.
+        hi : number, optional
+           The upper bound of the filter when `lo` is not a string.
 
-        Arguments:
+        See Also
+        --------
+        notice_id : Include data for a data set.
+        sherpa.astro.utils.notice2d : Include a spatial region in an image.
+        ignore : Exclude data from the fit.
+        show_filter : Show any filters applied to a data set.
 
-           lo    -   lower bound OR interval expression string
-                     default = None
+        Notes
+        -----
+        The order of `ignore` and `notice` calls is important, and the
+        results are a union, rather than intersection, of the
+        combination.
 
-           hi    -   upper bound
-                     default = None
+        If `notice` is called on an un-filtered data set, then the
+        ranges outside the noticed range are excluded: it can be
+        thought of as if `ignore` had been used to remove all data
+        points. If `notice` is called after a filter has been applied
+        then the filter is applied to the existing data.
 
-        Returns:
-           None
+        For binned data sets, the bin is included if the noticed
+        range falls anywhere within the bin.
 
-        DESCRIPTION
+        The units used depend on the `analysis` setting of the data
+        set, if appropriate.
 
-           notice()
+        To filter a 2D data set by a shape use `notice2d`.
 
-           notice(0.5, 7.0)
+        Examples
+        --------
 
-           notice("0.5:7.0, 8.0:10.0")
+        Since the `notice` call is applied to an un-filtered
+        data set, the filter choses only those points that lie
+        within the range 12 <= X <= 18.
 
-           notice(":0.5, 7.0:")
+        >>> load_arrays(1, [10,15,20,30], [5,10,7,13])
+        >>> notice(12, 28)
+        >>> get_dep(filter=True)
+        array([10,  7])
 
-        SEE ALSO
-           notice_id, ignore, ignore_id
+        As no limits are given, the whole data set is included:
+
+        >>> notice()
+        >>> get_dep(filter=True)
+        array([ 5, 10,  7, 13])
+
+        The `ignore` call excludes the first two points, but the
+        `notice` call adds back in the second point:
+
+        >>> ignore(None, 17)
+        >>> notice(12, 16)
+        >>> get_dep(filter=True)
+        array([10,  7, 13])
+
+        Only include data points in the range 8<=X<=12 and 18<=X=22:
+
+        >>> ignore()
+        >>> notice("8:12, 18:22")
+        >>> get_dep(filter=True)
+        array([5, 7])
+
         """
         if lo is not None and type(lo) in (str,numpy.string_):
             return self._notice_expr(lo, **kwargs)
@@ -3518,38 +4649,73 @@ class Session(NoNewAttributesAfterInit):
 
 
     def ignore(self, lo=None, hi=None, **kwargs):
-        """
-        ignore
+        """Exclude data from the fit.
 
-        SYNOPSIS
-           Exclusive 1D ignore on interval(s) for all available 
-           Sherpa data ids
+        Select one or more ranges of data to exclude by filtering on
+        the independent axis value. The filter is applied to all data
+        sets.
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number or str, optional
+           The lower bound of the filter (when a number) or a string
+           expression listing ranges in the form `a:b`, with multiple
+           ranges allowed, where the ranges are separated by a
+           `,`. The term `:b` means exclude everything up to, and
+           including `b`, and `a:` means exclude everything that is
+           higher than, or equal to, `a`.
+        hi : number, optional
+           The upper bound of the filter when `lo` is not a string.
 
-        Arguments:
+        See Also
+        --------
+        ignore_id : Exclude data from the fit for a data set.
+        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        notice : Include data in the fit.
+        show_filter : Show any filters applied to a data set.
 
-           lo    -   lower bound OR interval expression string
-                     default = None
+        Notes
+        -----
+        The order of `ignore` and `notice` calls is important, and the
+        results are a union, rather than intersection, of the
+        combination.
 
-           hi    -   upper bound
-                     default = None
+        For binned data sets, the bin is excluded if the ignored
+        range falls anywhere within the bin.
 
-        Returns:
-           None
+        The units used depend on the `analysis` setting of the data
+        set, if appropriate.
 
-        DESCRIPTION
+        To filter a 2D data set by a shape use `ignore2d`.
 
-           ignore()
+        Examples
+        --------
 
-           ignore(0.5, 7.0)
+        Ignore all data points with an X value (the independent axis)
+        between 12 and 18. For this one-dimensional data set, this
+        means that the second bin is ignored:
 
-           ignore(":0.5, 7.0:")
+        >>> load_arrays(1, [10,15,20,30], [5,10,7,13])
+        >>> ignore(12, 18)
+        >>> get_dep(filter=True)
+        array([ 5,  7, 13])
 
-           ignore(":0.5, 7.0:")
+        Filtering X values that are 25 or larger means that the last
+        point is also ignored:
 
-        SEE ALSO
-           notice_id, notice, ignore_id
+        >>> ignore(25, None)
+        >>> get_dep(filter=True)
+        array([ 5,  7])
+
+        The `notice` call removes the previous filter, and then a
+        multi-range filter is applied to exclude values between 8 and
+        12 and 18 and 22:
+
+        >>> notice()
+        >>> ignore("8:12,18:22")
+        >>> get_dep(filter=True)
+        array([10, 13])
+
         """
         kwargs['ignore'] = True
         if lo is not None and type(lo) in (str,numpy.string_):
@@ -3557,39 +4723,66 @@ class Session(NoNewAttributesAfterInit):
         self.notice(lo, hi, **kwargs)
 
     def notice_id(self, ids, lo=None, hi=None, **kwargs):
-        """
-        notice_id
+        """Include data from the fit for a data set.
 
-        SYNOPSIS
-           Exclusive 1D notice on interval(s) for specific Sherpa data id(s)
+        Select one or more ranges of data to include by filtering on
+        the independent axis value. The filter is applied to the
+        given data set, or data sets.
 
-        SYNTAX
+        Parameters
+        ----------
+        ids : int or str, or array of int or str
+           The data set, or sets, to use.
+        lo : number or str, optional
+           The lower bound of the filter (when a number) or a string
+           expression listing ranges in the form `a:b`, with multiple
+           ranges allowed, where the ranges are separated by a
+           `,`. The term `:b` means include everything up to, and
+           including `b`, and `a:` means inlude everything that is
+           higher than, or equal to, `a`.
+        hi : number, optional
+           The upper bound of the filter when `lo` is not a string.
+        bkg_id : int or str, optional
+           The filter will be applied to the associated background
+           component of the data set if `bkg_id` is set. Only PHA
+           data sets support this option; if not given, then the
+           filter is applied to all background components as well
+           as the source data.
 
-        Arguments:
+        See Also
+        --------
+        ignore_id : Exclude data from the fit for a data set.
+        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        notice : Include data in the fit.
+        show_filter : Show any filters applied to a data set.
 
-           ids   -  list of specific Sherpa data ids
+        Notes
+        -----
+        The order of `ignore` and `notice` calls is important.
 
-           lo    -  lower bound OR interval expression string
-                    default = None
+        The units used depend on the `analysis` setting of the data
+        set, if appropriate.
 
-           hi    -  upper bound
-                    default = None
+        To filter a 2D data set by a shape use `ignore2d`.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
+        Include all data points with an X value (the independent axis)
+        between 12 and 18 for data set 1:
 
-           notice_id(1)
+        >>> notice_id(1, 12, 18)
 
-           notice_id(1, 0.5, 7.0)
+        Include the range 0.5 to 7, for data sets 1,
+        2, and 3:
 
-           notice_id(2, "0.5:7.0, 8.0:10.0")
+        >>> notice_id([1,2,3], 0.5, 7)
 
-           notice_id([2,3], ":0.5, 7.0:")
+        Apply the filter 0.5 to 2 and 2.2 to 7 to the data sets "core"
+        and "jet":
 
-        SEE ALSO
-           notice, ignore, ignore_id
+        >>> notice_id(["core","jet"], "0.5:2, 2.2:7")
+
         """
         if self._valid_id(ids):
             ids = (ids,)
@@ -3607,39 +4800,67 @@ class Session(NoNewAttributesAfterInit):
 
 
     def ignore_id(self, ids, lo=None, hi=None, **kwargs):
-        """
-        ignore_id
+        """Exclude data from the fit for a data set.
 
-        SYNOPSIS
-           Exclusive 1D ignore on interval(s) for specific Sherpa data id(s)
+        Select one or more ranges of data to exclude by filtering on
+        the independent axis value. The filter is applied to the given
+        data set, or sets.
 
-        SYNTAX
+        Parameters
+        ----------
+        ids : int or str, or array of int or str
+           The data set, or sets, to use.
+        lo : number or str, optional
+           The lower bound of the filter (when a number) or a string
+           expression listing ranges in the form `a:b`, with multiple
+           ranges allowed, where the ranges are separated by a
+           `,`. The term `:b` means exclude everything up to, and
+           including `b`, and `a:` means exclude everything that is
+           higher than, or equal to, `a`.
+        hi : number, optional
+           The upper bound of the filter when `lo` is not a string.
+        bkg_id : int or str, optional
+           The filter will be applied to the associated background
+           component of the data set if `bkg_id` is set. Only PHA
+           data sets support this option; if not given, then the
+           filter is applied to all background components as well
+           as the source data.
 
-        Arguments:
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        notice_id : Include data from the fit for a data set.
+        show_filter : Show any filters applied to a data set.
 
-           ids   -  list of specific Sherpa data ids
+        Notes
+        -----
+        The order of `ignore` and `notice` calls is important.
 
-           lo    -  lower bound OR interval expression string
-                    default = None
+        The units used depend on the `analysis` setting of the data
+        set, if appropriate.
 
-           hi    -  upper bound
-                    default = None
+        To filter a 2D data set by a shape use `ignore2d`.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
+        Ignore all data points with an X value (the independent axis)
+        between 12 and 18 for data set 1:
 
-           ignore_id(1)
+        >>> ignore_id(1, 12, 18)
 
-           ignore_id(1, 0.5, 7.0)
+        Ignore the range up to 0.5 and 7 and above, for data sets 1,
+        2, and 3:
 
-           ignore_id(2, ":0.5, 7.0:")
+        >>> ignore_id([1,2,3], None, 0.5)
+        >>> ignore_id([1,2,3], 7, None)
 
-           ignore_id([2,3], ":0.5, 7.0:")
+        Apply the same filter as the previous example, but to
+        data sets "core" and "jet":
 
-        SEE ALSO
-           notice, ignore, notice_id
+        >>> ignore_id(["core","jet"], ":0.5,7:")
+
         """
         kwargs['ignore'] = True
         if lo is not None and type(lo) in (str,numpy.string_):
@@ -3652,34 +4873,69 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
     def paramprompt(self, val=False):
-        """
-        paramprompt
+        """Should the user be asked for the parameter values when creating a model?
 
-        SYNOPSIS
-           Prompts the user for initial, minimum, and maximum parameter values
+        When ``val`` is ``True``, calls to `set_model` will cause the user
+        to be prompted for each parameter in the expression.  The
+        prompt includes the parameter name and default value, in ``[]``:
+        the valid responses are
 
-        SYNTAX
+        - return  which accepts the default
+        - value   which changes the parameter value
+        - value, min  which changes the value and the minimum value
+        - value, min, max  which changes the value, minimum, and
+          maximum values
 
-        Arguments:
+        The ``value``, ``min``, and ``max`` components are optional, so
+        ",-5" will use the default parameter value and set its minimum
+        to -5, while "2,,10" will change the parameter value to 2 and
+        its maximum to 10, but leave the minimum at its default. If
+        any value is invalid then the parameter is re-prompted.
 
-           val    - boolean value indicating prompt behavior
-                    default = False
+        Parameters
+        ----------
+        val : bool, optional
+           If ``True``, the user will be prompted to enter each
+           parameter value, including support for changing the minimum
+           and maximum values, when a model component is created. The
+           default is ``False``.
 
-        Returns:
-           None
+        See Also
+        --------
+        set_model : Set the source model expression for a data set.
+        set_par : Set the value, limits, or behavior of a model parameter.
+        show_model : Display the model expression used to fit a data set.
 
-        DESCRIPTION
-           Prompts for the initial, minimum, and maximum parameter values.  User provides
-           the values in a respectively delimited with commas.  The minimum and maximum
-           values are optional.
+        Notes
+        -----
+        Setting this to ``True`` only makes sense in an interactive
+        environment.  It is designed to be similar to the parameter
+        prompting provided by X-Spec [1]_.
 
-        EXAMPLE
-            abs1.nh parameter value 0.07
+        References
+        ----------
 
-            abs1.nh parameter value  0.07, 1, 10
+        .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/
 
-        SEE ALSO
-           set_model
+        Examples
+        --------
+
+        In the following, the default parameter settings are accepted
+        for the ``pl.gamma`` parameter, the starting values for the
+        ``pl.ref`` and ``gline.pos`` values are changed, the starting
+        value and ranges of both the ``pl.ampl`` and ``gline.ampl``
+        parameters are set, and the ``gline.fwhm`` parameter is set to
+        100, with its maximum changed to 10000.
+
+        >>> paramprompt(True)
+        >>> set_source(powlaw1d.pl + gauss1d.gline)
+        pl.gamma parameter value [1]
+        pl.ref parameter value [1] 4500
+        pl.ampl parameter value [1] 1.0e-5,1.0e-8,0.01
+        gline.fwhm parameter value [10] 100,,10000
+        gline.pos parameter value [0] 4900
+        gline.ampl parameter value [1] 1.0e-3,1.0e-7,1
+
         """
         self._paramprompt = sherpa.utils.bool_cast(val)
 
@@ -3702,26 +4958,55 @@ class Session(NoNewAttributesAfterInit):
             self._model_types[name] = ModelWrapper(self, cls)
             self._model_globals.update(self._model_types)
 
-
     def add_model(self, modelclass, args=(), kwargs={}):
-        """
-        add_model
+        """Create a user-defined model class.
 
-        SYNOPSIS
-           Add a user-defined model class as a Sherpa model
+        Create a model from a class. The name of the class can then be
+        used to create model components - e.g.  with
+        `create_model_component` or `set_model` - as with any existing
+        Sherpa model.
 
-        SYNTAX
+        Parameters
+        ----------
+        modelclass :
+           A class derived from `sherpa.models.ArithmeticModel`. This
+           class defines the functional form and the parameters of the
+           model.
+        args, kwargs : optional
+           Arguments for the class constructor.
 
-        Arguments:
-           modelclass     - User-defined model class
+        See Also
+        --------
+        create_model_component : Create a model component.
+        list_models : List the available model types.
+        load_table : Load a FITS binary file as a data set.
+        load_table_model : Load tabular data and use it as a model component.
+        load_user_model : Create a user-defined model.
+        set_model : Set the source model expression for a data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        The `load_user_model` function is designed to make it easy to
+        add a model, but the interface is not the same as the existing
+        models (such as having to call both `load_user_model` and
+        `add_user_pars` for each new instance).  The `add_model`
+        function is used to add a model as a Python class, which is
+        more work to set up, but then acts the same way as the
+        existing models.
 
-        DESCRIPTION
+        Examples
+        --------
 
-        SEE ALSO
-           list_models
+        The following example creates a model type called "mygauss1d"
+        which will behave excatly the same as the existing "gauss1d"
+        model.  Normally the class used with `add_model` would add new
+        functionality.
+
+        >>> from sherpa.models import Gauss1D
+        >>> class MyGauss1D(Gauss1D): pass
+        >>> add_model(MyGauss1D)
+        >>> set_source(mygauss1d.g1 + mygauss1d.g2)
+
         """
         name = modelclass.__name__.lower()
 
@@ -3739,74 +5024,93 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def get_model_autoassign_func(self):
-        """
-        get_model_autoassign_func
+        """Return the method used to create model component identifiers.
 
-        SYNOPSIS
-           Return a function pointer to the model assignment function
+        Provides access to the function which is used by
+        `create_model_component` and when creating model components
+        directly to add an identifier in the current Python namespace.
 
-        SYNTAX
+        Returns
+        -------
+        func :
+           The model function set by `set_model_autoassign_func`.
 
-        Arguments:
-           None
+        See Also
+        --------
+        create_model_component : Create a model component.
+        set_model : Set the source model expression for a data set.
+        set_model_autoassign_func : Set the method used to create model component identifiers.
 
-        Returns:
-           function ptr
-
-        DESCRIPTION
-
-        SEE ALSO
-           set_model_autoassign_func
         """
         return self._model_autoassign_func
 
+    ### DOC-TODO: what does func=None mean? If you try None then it
+    ###           fails with AttributeError: 'Session' object attribute
+    ###           '_model_autoassign_func' cannot be replaced with a non-callable attribute
     def set_model_autoassign_func(self, func=None):
-        """
-        set_model_autoassign_func
+        """Set the method used to create model component identifiers.
 
-        SYNOPSIS
-           Sets the model assignment function to a user defined function
-           pointer
+        When a model component is created, the default behavior is to
+        add the component to the default Python namespace. This is
+        controlled by a function which can be changed with this
+        routine.
 
-        SYNTAX
+        Parameters
+        ----------
+        func : function reference
+           The function to use: this should accept two arguments, a
+           string (component name), and the model instance.
 
-        Arguments:
-           func       - model assignment function pointer
-                        default = None
+        See Also
+        --------
+        create_model_component : Create a model component.
+        get_model_autoassign_func : Return the method used to create model component identifiers
+        set_model : Set the source model expression for a data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        The default assignment function first renames a model
+        component to include the model type and user-defined
+        identifier. It then updates the '__main__' module's dictionary
+        with the model identifier as the key and the model instance as
+        the value. Similarly, it updates the '__builtin__' module's
+        dictionary just like '__main__' for compatibility with
+        IPython.
 
-        DESCRIPTION
-
-        SEE ALSO
-           get_model_autoassign_func
         """
         if (func is not None) and (not callable(func)):
             _argument_type_error('func', 'a function or other callable object')
         self._model_autoassign_func = func
 
     def list_models(self, show="all"):
-        """
-        list_models
+        """List the available model types.
 
-        SYNOPSIS
-           List the available Sherpa model types
+        Parameters
+        ----------
+        show : { 'all', '1d', '2d', 'xspec' }, optional
+           What type of model should be returned. The default is
+           'all'. An unrecognized value is treated as 'all'.
 
-        SYNTAX
+        Returns
+        -------
+        models : list of str
 
-        Arguments:
-           show  -  filter list by keywords "all", "xspec", "1d", and "2d"
-                    default = "all"
+        See Also
+        --------
+        create_model_components : Create a model component.
+        list_model_components : List the current model components.
 
-        Returns:
-           list of available model types
+        Examples
+        --------
 
-        DESCRIPTION
+        >>> models = list_models()
+        >>> models[0:5]
+        ['absorptionedge',
+         'absorptiongaussian',
+         'absorptionlorentz',
+         'absorptionvoigt',
+         'accretiondisk']
 
-        SEE ALSO
-           list_model_components, create_model_component,
-           delete_model_component
         """
         keys = self._model_types.keys()[:]
         keys.sort()
@@ -3827,25 +5131,54 @@ class Session(NoNewAttributesAfterInit):
         return keys
 
     def list_model_components(self):
-        """
-        list_model_components
+        """List the names of all the model components.
 
-        SYNOPSIS
-           List the Sherpa model components of active models
+        Models are created either directly - by using the form
+        `mname.mid`, where `mname` is the name of the model, such as
+        `gauss1d`, and `mid` is the name of the component - or with
+        the `create_model_component` function, which accepts `mname`
+        and `mid` as separate arguments. This function returns all the
+        `mid` values that have been created.
 
-        SYNTAX
+        Returns
+        -------
+        ids : list of str
+           The identifiers for all the model components that have been
+           created. They do not need to be associated with a source
+           expression (i.e. they do not need to have been included in
+           a call to `set_model`).
 
-        Arguments:
-           None
+        See Also
+        --------
+        create_model_component : Create a model component.
+        delete_model_component : Delete a model component.
+        list_models : List the available model types.
+        list_model_ids : List of all the data sets with a source expression.
+        set_model : Set the source model expression for a data set.
 
-        Returns:
-           list of available model components
+        Examples
+        --------
 
-        DESCRIPTION
+        The `gal` and `pl` models are created - as versions
+        of the `xsphabs` and `powlaw1d` model types - which means
+        that the list of model components returned as `mids` will
+        contain both strings.
 
-        SEE ALSO
-           list_models, create_model_component,
-           delete_model_component
+        >>> set_model(xsphabs.gal * powlaw1d.pl)
+        >>> mids = list_model_components()
+        >>> 'gal' in mids
+        True
+        >>> 'pl' in mids
+        True
+
+        The model component does not need to be included as
+        part of a source expression for it to be included in
+        the output of this function:
+
+        >>> create_model_component('gauss2d', 'gsrc')
+        >>> 'gsrc' in list_model_components()
+        True
+
         """
         keys = self._model_components.keys()[:]
         keys.sort()
@@ -3887,26 +5220,56 @@ class Session(NoNewAttributesAfterInit):
         return userstat
 
 
+    ### DOC-TODO: can send in a model variable, but this is just the
+    ###           identity function, so not worth documenting
     def get_model_component(self, name):
-        """
-        get_model_component
+        """Returns a model component given its name.
 
-        SYNOPSIS
-           Access a Sherpa model component by name
+        Parameters
+        ----------
+        name : str
+           The name of the model component.
 
-        SYNTAX
+        Returns
+        -------
+        component : a sherpa.models.model.Model instance
+           The model component object.
 
-        Arguments:
-           name       - component label as a string
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If there is no model component with the given `name`.
 
-        Returns:
-           Sherpa model component
+        See Also
+        --------
+        create_model_component : Create a model component.
+        get_model : Return the model expression for a data set.
+        get_source : Return the source model expression for a data set.
+        list_model_components : List the names of all the model components.
+        set_model : Set the source model expression for a data set.
 
-        DESCRIPTION
+        Notes
+        -----
+        The model instances are named as modeltype.username, and it is
+        the `username` component that is used here to access the
+        instance.
 
-        SEE ALSO
-           list_models, list_model_components,
-           delete_model_component, create_model_component
+        Examples
+        --------
+
+        When a model component is created, a variable is created that
+        contains the model instance. The instance can also be returned
+        with `get_model_component`, as shown here:
+
+        >>> create_model_component('gauss1d', 'gline')
+        >>> gmodel = get_model_component('gline')
+        >>> gmodel.name
+        'gauss1d.gline'
+        >>> gmodel.pars
+        (<Parameter 'fwhm' of model 'gline'>,
+         <Parameter 'pos' of model 'gline'>,
+         <Parameter 'ampl' of model 'gline'>)
+
         """   
         # If user mistakenly passes an actual model reference,
         # just return the reference
@@ -3918,26 +5281,56 @@ class Session(NoNewAttributesAfterInit):
 
 
     def create_model_component(self, typename=None, name=None):
-        """
-        create_model_component
+        """Create a model component.
 
-        SYNOPSIS
-           Create a new Sherpa model component
+        Model components created by this function are set to their
+        default values. Components can also be created directly using
+        the syntax `typename.name`, such as in calls to `set_model`,
+        when using the default model auto assignment setting (see
+        `set_model_autoassign_func`).
 
-        SYNTAX
+        Parameters
+        ----------
+        typename : str
+           The name of the model. This should match an entry from the
+           return value of `list_models`, and defines the type of
+           model.
+        name : str
+           The name used to refer to this instance, or component,
+           of the model. A Python variable will be created with this
+           name that can be used to inspect and change the model
+           parameters, as well as use it in model expressions.
 
-        Arguments:
-           typename   - name of component type
-           name       - component label
+        See Also
+        --------
+        delete_model_component : Delete a model component.
+        get_model_component : Returns a model component given its name.
+        list_models : List the available model types.
+        list_model_components : List the names of all the model components.
+        set_model : Set the source model expression for a data set.
+        set_model_autoassign_func : Set the method used to create model component identifiers.
 
-        Returns:
-           None
+        Notes
+        -----
+        This function can over-write an existing component. If the
+        over-written component is part of a source expression - as set
+        by `set_model` - then the model evaluation will still use the
+        old model definition (and be able to change the fit
+        parameters), but direct access to its parameters is not
+        possible since the name now refers to the new component (this
+        is true using direct access, such as `mname.parname`, or with
+        `set_par`).
 
-        DESCRIPTION
+        Examples
+        --------
 
-        SEE ALSO
-           list_models, list_model_components,
-           delete_model_component
+        Create an instance of the `powlaw1d` model called `pl`,
+        and then freeze its `gamma` parameter to 2.6.
+
+        >>> create_model_component("powlaw1d", "pl")
+        >>> pl.gamma = 2.6
+        >>> freeze(pl.gamma)
+
         """
 
         # If user mistakenly passes an actual model reference,
@@ -3962,38 +5355,54 @@ class Session(NoNewAttributesAfterInit):
         #self._add_model_component(cls(name))
 
     def reset(self, model=None, id=None):
-        """
-        reset
+        """Reset the model parameters to their default settings.
 
-        SYNOPSIS
-           Resets model parameter values to defaults
+        The `reset` function restores the parameter values to the
+        default value set by `guess` or to the user-defined default.
+        If the user set initial model values or soft limits -
+        e.g. either with `set_par` or by using parameter prompting
+        via `paramprompt` - then `reset` will restore these values
+        and limits even after `guess` or `fit` has been called.
 
-        SYNTAX
+        Parameters
+        ----------
+        model : optional
+           The model component or expression to reset. The default
+           is to use all source expressions.
+        id : int or string, optional
+           The data set to use. The default is to use all
+           data sets with a source expression.
 
-        Arguments:
-           name       - model instance
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        guess : Set model parameters to values matching the data. 
+        paramprompt : Control how parameter values are set.
+        set_par : Set the value, limits, or behavior of a model parameter.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Resets model parameter values to defaults or user defined defaults.
+        The following examples assume that the source model has been
+        set using:
 
-           Example 1:
-               reset( get_model() )
+        >>> set_source(powlaw1d.pl * xsphabs.gal)
 
-           Example 2:
-               powlaw1d.p1
-               beta1d.b1
-               reset( p1*b1 )
+        Fit the model and then reset the values of both components
+        (`pl` and `gal`):
 
-           Example 3:
-               beta1d.b1
-               reset( b1 )
+        >>> fit()
+        >>> reset()
 
-        SEE ALSO
-           list_models, list_model_components,
-           delete_model_component
+        Reset just the parameters of the `pl` model component:
+
+        >>> reset(pl)
+
+        Reset all the components of the source expression for data
+        set 2.
+
+        >>> reset(get_source(2))
+
         """
         ids = [id]
         if id is None:
@@ -4008,25 +5417,41 @@ class Session(NoNewAttributesAfterInit):
 
 
     def delete_model_component(self, name):
-        """
-        delete_model_component
+        """Delete a model component.
 
-        SYNOPSIS
-           Delete a Sherpa model component from active models
+        Parameters
+        ----------
+        name : str
+           The name used to refer to this instance, or component, of
+           the model. The corresponding Python variable will be
+           deleted by this function.
 
-        SYNTAX
+        See Also
+        --------
+        create_model_component : Create a model component.
+        delete_model : Delete the model expression for a data set.
+        list_models : List the available model types.
+        list_model_components : List the names of all the model components.
+        set_model : Set the source model expression for a data set.
+        set_model_autoassign_func : Set the method used to create model component identifiers.
 
-        Arguments:
-           name       - component label
+        Notes
+        -----
+        It is an error to try to delete a component that is part of a
+        model expression - i.e. included as part of an expression in a
+        `set_model` or `set_source` call. In such a situation, use the
+        `delete_model` function to remove the source expression before
+        calling `delete_model_component`.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
+        If a model instance called `pl` has been created - e.g. by
+        `create_model_component('powlaw1d', 'pl')` - then the
+        following will remove it:
 
-        SEE ALSO
-           list_models, list_model_components,
-           create_model_component        
+        >>> delete_model_component('pl')
+
         """
         _check_type(name, basestring, 'name', 'a string')
         mod = self._model_components.pop(name, None)
@@ -4058,25 +5483,20 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr('badexpr', typestr, sys.exc_info()[1])
 
     def list_model_ids(self):
-        """
-        list_model_ids
+        """List of all the data sets with a source expression.
 
-        SYNOPSIS
-           List the Sherpa session model ids
+        Returns
+        -------
+        ids : list of int or str
+           The identifiers for all the data sets which have a source
+           expression set by `set_model` or `set_source`.
 
-        SYNTAX
+        See Also
+        --------
+        list_data_ids : List the identifiers for the loaded data sets.
+        list_model_components : List the names of all the model components.
+        set_model : Set the source model expression for a data set.
 
-        Arguments:
-           None
-
-        Returns:
-           list of model ids
-
-        DESCRIPTION
-           List all the current active Sherpa session model ids.
-
-        SEE ALSO
-           get_model, set_model, delete_model, get_model_type, get_model_pars
         """
         keys = self._models.keys()[:]
         keys.extend(self._sources.keys()[:])
@@ -4133,52 +5553,96 @@ class Session(NoNewAttributesAfterInit):
                               ' or set_model()')
 
     def get_source(self, id=None):
-        """
-        get_source
+        """Return the source model expression for a data set.
 
-        SYNOPSIS
-           Return a Sherpa model by model id
+        This returns the model expression created by `set_model` or
+        `set_source`. It does not include any instrument response.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id         - model id
-                        default = default model id
+        Returns
+        -------
+        model : a sherpa.models.Model object
+           This can contain multiple model components. Changing
+           attributes of this model changes the model used by the data
+           set.
 
-        Returns:
-           Sherpa model
+        See Also
+        --------
+        delete_model : Delete the model expression from a data set.
+        get_model : Return the model expression for a data set.
+        get_model_pars : Return the names of the parameters of a model.
+        get_model_type : Describe a model expression.
+        list_model_ids : List of all the data sets with a source expression.
+        sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+        show_model : Display the source model expression for a data set.
 
-        DESCRIPTION
-           Retrieve a Sherpa model by model id
+        Examples
+        --------
 
-        SEE ALSO
-           list_model_ids, set_model, delete_model, get_model_type,
-           get_model_pars
+        Return the source expression for the default data set:
+
+        >>> src = get_source()
+        >>> len(src.pars)
+        5
+
+        Set the source expression for data set 'obs2' to be equal to
+        the model of data set 'obs1' multiplied by a scalar value:
+
+        >>> set_source('obs2', const1d.norm * get_source('obs1'))
+
         """
         return self._get_source(id)
 
     def get_model(self, id=None):
-        """
-        get_model
+        """Return the model expression for a data set.
 
-        SYNOPSIS
-           Return a Sherpa model by model id
+        This returns the model expression for a data set, including
+        any instrument response (e.g. PSF or ARF and RMF) whether
+        created automatically or explicitly, with `set_full_model`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id         - model id
-                        default = default model id
+        Returns
+        -------
+        model :
+           This can contain multiple model components and any
+           instrument response. Changing attributes of this model
+           changes the model used by the data set.
 
-        Returns:
-           Sherpa model
+        See Also
+        --------
+        delete_model : Delete the model expression from a data set.
+        get_model_pars : Return the names of the parameters of a model.
+        get_model_type : Describe a model expression.
+        get_source : Return the source model expression for a data set.
+        list_model_ids : List of all the data sets with a source expression.
+        sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+        show_model : Display the source model expression for a data set.
 
-        DESCRIPTION
-           Retrieve the full convolved Sherpa model by model id
+        Examples
+        --------
 
-        SEE ALSO
-           list_model_ids, set_model, delete_model, get_model_type,
-           get_model_pars, get_model
+        Return the model fitted to the default data set:
+
+        >>> mdl = get_model()
+        >>> len(mdl.pars)
+        5
+
         """
         return self._get_model(id)
 
@@ -4240,32 +5704,59 @@ class Session(NoNewAttributesAfterInit):
                     else:
                         break
 
+    # DOC-NOTE: also in sherpa.astro.utils
+    ### DOC-TODO: what examples/info should be talked about here?
+    ###           (e.g. no PHA/ARF/RMF)
     ##@loggable(with_id=True, with_keyword='model')
     def set_full_model(self, id, model=None):
-        """
-        set_full_model
+        """Define the convolved model expression for a data set.
 
-        SYNOPSIS
-           Set a convolved Sherpa model by model id
+        The model expression created by `set_model` can be modified by
+        "instrumental effects", such as a PSF set by `set_psf`.  The
+        `set_full_model` function is for when this is not sufficient,
+        and full control is needed. An example of when this would be
+        if different PSF models should be applied to different source
+        components.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : str or sherpa.models.Model object
+           This defines the model used to fit the data. It can be a
+           Python expression or a string version of it.
 
-        Arguments:
-           id         - model id
-                        default = default model id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        set_psf : Add a PSF model to a data set.
+        set_model : Set the source model expression for a data set.
 
-           model      - Sherpa model
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-        Returns:
-           None
+        Some functions - such as `plot_source` - may not work for
+        model expressions created by `set_full_model`.
 
-        DESCRIPTION
-           Add a Sherpa model to the list of current active Sherpa model
-           by model id.
+        Examples
+        --------
 
-        SEE ALSO
-           list_model_ids, get_model, delete_model, get_model_type,
-           get_model_pars        
+        Apply different PSFs to different components, as well as an
+        unconvolved component:
+
+        >>> load_psf("psf1", "psf1.fits")
+        >>> load_psf("psf2", "psf2.fits")
+        >>> smodel = psf1(gauss2d.src1) + psf2(beta2d.src2) + const2d.bgnd
+        >>> set_full_model("src", smodel)
+
         """
         if model is None:
             id, model = model, id
@@ -4276,32 +5767,122 @@ class Session(NoNewAttributesAfterInit):
                        'a model object or model expression string')
         self._runparamprompt(model.pars)
 
+    ### DOC-TODO: the .cache value appears to default to 5
     ##@loggable(with_id=True, with_keyword="model")
     def set_model(self, id, model=None):
-        """
-        set_model
+        """Set the source model expression for a data set.
 
-        SYNOPSIS
-           Set a Sherpa source model by model id
+        The function is available as both `set_model` and
+        `set_source`. The model fit to the data can be further
+        modified by instrument responses which can be set explicitly -
+        e.g. by `set_psf` - or be defined automatically by the type of
+        data being used (e.g. the ARF and RMF of a PHA data set). The
+        `set_full_model` command can be used to explicitly include the
+        instrument response if necessary.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : str or sherpa.models.Model object
+           This defines the model used to fit the data. It can be a
+           Python expression or a string version of it.
 
-        Arguments:
-           id         - model id
-                        default = default model id
+        See Also
+        --------
+        delete_model : Delete the model expression from a data set.
+        fit : Fit one or more data sets.
+        freeze : Fix model parameters so they are not changed by a fit.
+        get_source : Return the source model expression for a data set.
+        integrate1d : Integrate 1D source expressions.
+        sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+        show_model : Display the source model expression for a data set.
+        set_par : Set the value, limits, or behavior of a model parameter.
+        thaw : Allow model parameters to be varied during a fit.
 
-           model      - Sherpa model
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-        Returns:
-           None
+        PHA data sets will automatically apply the instrumental
+        response (ARF and RMF) to the source expression. For some
+        cases this is not useful - for example, when different
+        responses should be applied to different model components - in
+        which case `set_full_model` should be used instead.
 
-        DESCRIPTION
-           Add a Sherpa source model to the list of current active 
-           Sherpa source models by model id.
+        Model caching is available via the model `cache` attribute. A
+        non-zero value for this attribute means that the results of
+        evaluating the model will be cached if all the parameters are
+        frozen, which may lead to a reduction in the time taken to
+        evaluate a fit. A zero value turns off the cacheing.  The
+        default setting for X-Spec and 1D analytic models is that
+        `cache` is `5`, but `0` for the 2D analytic models.
 
-        SEE ALSO
-           list_model_ids, get_model, delete_model, get_model_type,
-           get_model_pars        
+        The `integrate1d` model can be used to apply a numerical
+        integration to an arbitrary model expression.
+
+        Examples
+        --------
+
+        Create an instance of the `powlaw1d` model type, called `pl`,
+        and use it as the model for the default data set.
+
+        >>> set_model(polynom1d.pl)
+
+        Create a model for the default dataset which is the `xsphabs`
+        model multiplied by the sum of an `xsapec` and `powlaw1d`
+        models (the model components are identified by the labels
+        `gal`, `clus`, and `pl`).
+
+        >>> set_model(xsphabs.gal * (xsapec.clus + powlaw1d.pl))
+
+        Repeat the previous example, using a string to define the
+        model expression:
+
+        >>> set_model('xsphabs.gal * (xsapec.clus + powlaw1d.pl)')
+
+        Use the same model component (`src`, a `gauss2d` model)
+        for the two data sets ('src1' and 'src2').
+
+        >>> set_model('src1',  gauss2d.src + const2d.bgnd1)
+        >>> set_model('src2', src + const2d.bgnd2)
+
+        Share an expression - in this case three gaussian lines -
+        between three data sets. The normalization of this line
+        complex is allowed to vary in data sets 2 and 3 (the `norm2`
+        and `norm3` components of the `const1d` model), and each data
+        set has a separate `polynom1d` component (`bgnd1`, `bgnd2`,
+        and `bgnd3`). The `c1` parameters of the `polynom1d` model
+        components are thawed and then linked together (to reduce the
+        number of free parameters):
+
+        >>> lines = gauss1d.l1 + gauss1d.l2 + gauss1d.l3
+        >>> set_model(1, lines + polynom1d.bgnd1)
+        >>> set_model(2, lines * const1d.norm2 + polynom1d.bgnd2)
+        >>> set_model(3, lines * const1d.norm3 + polynom1d.bgnd3)
+        >>> thaw(bgnd1.c1, bgnd2.c1, bgnd3.c1)
+        >>> link(bgnd2.c2, bgnd1.c1)
+        >>> link(bgnd3.c3, bgnd1.c1)
+
+        For this expression, the `gal` component is frozen, so it is
+        not varied in the fit. The `cache` attribute is set to a
+        non-zero value to ensure that it is cached during a fit (this
+        is actually the default value for this model so it not
+        normally needed).
+
+        >>> set_model(xsphabs.gal * (xsapec.clus + powlaw1d.pl))
+        >>> gal.nh = 0.0971
+        >>> freeze(gal)
+        >>> gal.cache = 1
+
         """
         if model is None:
             id, model = model, id
@@ -4326,27 +5907,39 @@ class Session(NoNewAttributesAfterInit):
 
 
     def delete_model(self, id=None):
-        """
-        delete_model
+        """Delete the model expression for a data set.
 
-        SYNOPSIS
-           Delete a Sherpa model by model id
+        This removes the model expression, created by `set_model`,
+        for a data set. It does not delete the components of the
+        expression.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id         - id of model
-                        default = default model id
+        See Also
+        --------
+        clean : Clear all stored session data.
+        delete_data : Delete a data set by identifier.
+        get_default_id : Return the default data set identifier.
+        set_model : Set the source model expression for a data set.
+        show_model : Display the source model expression for a data set.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Delete a Sherpa model from the list of currently active models by
-           model id.
+        Remove the model expression for the default data set:
 
-        SEE ALSO
-           list_model_ids, set_model, get_model, get_model_type, get_model_pars
+        >>> delete_model()
+
+        Remove the model expression for the data set with the
+        identifier called 'src':
+
+        >>> delete_model('src')
+
         """
         id = self._fix_id(id)
         self._models.pop(id, None)
@@ -4361,153 +5954,166 @@ class Session(NoNewAttributesAfterInit):
         return model
 
     def get_model_type(self, model):
-        """
-        get_model_type
+        """Describe a model expression.
 
-        SYNOPSIS
-           Return a Sherpa model type by model or model expression string
+        Parameters
+        ----------
+        model : str or a sherpa.models.model.Model object
 
-        SYNTAX
+        Returns
+        -------
+        type : str
+           The name of the model expression.
 
-        Arguments:
-           model      - model variable
+        See Also
+        --------
+        create_model_component : Create a model component.
+        get_model : Return the model expression for a data set.
+        get_model_pars : Return the names of the parameters of a model.
+        get_source : Return the source model expression for a data set.
 
-        Returns:
-           type of model
+        Examples
+        --------
 
-        DESCRIPTION
-           Get the Sherpa model type by the model variable or model expression
-           string.
+        >>> create_model_component("powlaw1d", "pl")
+        >>> get_model_type("pl")
+        'powlaw1d'
 
-           Example 1
+        For expressions containing more than one component, the
+        result is likely to be 'binaryopmodel'
 
-               foo = gauss1d.foo
-               get_model_type( foo )
-           'gauss1d'
-           
-           Example 2
-           
-               get_model_type( gauss1d.foo * const1d.bar )
-           'binaryopmodel'
+        >>> get_model_type(const1d.norm * (polynom1d.poly + gauss1d.gline))
+        'binaryopmodel'
 
-           Example 3 ( from astro package )
+        For sources with some form of an instrument model - such as a
+        PSF convolution for an image or a PHA file with response
+        information from the ARF and RMF - the response can depend on
+        whether the expression contains this extra information or not:
 
-               arf = get_arf()
-               rmf = get_rmf()
-               src = xsphabs.abs1 + powlaw1d.p1
-               foo = (src.apply( arf.apply_arf )).apply( rmf.apply_rmf )
-               get_model_type(foo)
-           'nestedmodel'
+        >>> get_model_type(get_source('spec'))
+        'binaryopmodel'
+        >>> get_model_type(get_model('spec'))
+        'rspmodelpha'
 
-        SEE ALSO
-           list_model_ids, set_model, get_model, delete_model, get_model_pars
         """
         model = self._check_model(model)
         return type(model).__name__.lower()
 
     def get_model_pars(self, model):
-        """
-        get_model_pars
+        """Return the names of the parameters of a model.
 
-        SYNOPSIS
-           Return a list of Sherpa model parameters by model or model 
-           expression
+        Parameters
+        ----------
+        model : str or a sherpa.models.model.Model object
 
-        SYNTAX
+        Returns
+        -------
+        names : list of str
+           The names of the parameters in the model expression.  These
+           names do not include the name of the parent component.
 
-        Arguments:
-           model      - label of model object
+        See Also
+        --------
+        create_model_component : Create a model component.
+        get_model : Return the model expression for a data set.
+        get_model_type : Describe a model expression.
+        get_source : Return the source model expression for a data set.
 
-        Returns:
-           list of model parameters
+        Examples
+        --------
 
-        DESCRIPTION
-           Get a list of Sherpa model parameters by model variable or model
-           expression string.
+        >>> set_source(gauss2d.src + const2d.bgnd)
+        >>> get_model_pars(get_source())
+        ['fwhm', 'xpos', 'ypos', 'ellip', 'theta', 'ampl', 'c0']
 
-           Example 1
-
-               get_model_pars( gauss1d.foo.apply( psf1d.pp ) )
-           ['fwhm', 'pos', 'ampl', 'xsize', 'xoff']
-
-        SEE ALSO
-           list_model_ids, set_model, get_model, delete_model, get_model_type
         """
         model = self._check_model(model)
         return [p.name for p in model.pars]
 
     def get_num_par(self, id=None):
-        """
-        get_num_par
+        """Return the number of parameters in a model expression.
 
-        SYNOPSIS
-           Return the number of parameters in a Sherpa model
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        npar : int
 
-        Arguments:
-           id         - id of model
-                        default = default model id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model expression has been set for the data set
+           (with `set_model` or `set_source`).
 
-        Returns:
-           Number of model parameters
+        See Also
+        --------
+        get_num_par_frozen : Return the number of frozen parameters.
+        get_num_par_thawed : Return the number of thawed parameters.
+        set_model : Set the source model expression for a data set.
 
-        DESCRIPTION
-           Returns the number of parameters in the model regardless
-           of combination
-        
-        SEE ALSO
-           get_num_par_thawed, get_num_par_frozen
         """
         return len(self._get_source(id).pars)
     
     def get_num_par_thawed(self, id=None):
-        """
-        get_num_par_thawed
+        """Return the number of thawed parameters in a model expression.
 
-        SYNOPSIS
-           Return the number of thawed parameters in a Sherpa model
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        npar : int
 
-        Arguments:
-           id         - id of model
-                        default = default model id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model expression has been set for the data set
+           (with `set_model` or `set_source`).
 
-        Returns:
-           Number of thawed model parameters
+        See Also
+        --------
+        get_num_par : Return the number of parameters.
+        get_num_par_frozen : Return the number of frozen parameters.
+        set_model : Set the source model expression for a data set.
 
-        DESCRIPTION
-           Returns the number of thawed parameters in the model regardless
-           of combination
-        
-        SEE ALSO
-           get_num_par, get_num_par_frozen
         """
         return len(self._get_source(id).thawedpars)
 
     def get_num_par_frozen(self, id=None):
-        """
-        get_num_par_frozen
+        """Return the number of frozen parameters in a model expression.
 
-        SYNOPSIS
-           Return the number of frozen parameters in a Sherpa model
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        npar : int
 
-        Arguments:
-           id         - id of model
-                        default = default model id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model expression has been set for the data set
+           (with `set_model` or `set_source`).
 
-        Returns:
-           Number of frozen model parameters
+        See Also
+        --------
+        get_num_par : Return the number of parameters.
+        get_num_par_thawed : Return the number of thawed parameters.
+        set_model : Set the source model expression for a data set.
 
-        DESCRIPTION
-           Returns the number of frozen parameters in the model regardless
-           of combination
-        
-        SEE ALSO
-           get_num_par, get_num_par_thawed
         """
         model = self._get_source(id)
         return len(model.pars)-len(model.thawedpars)
@@ -4535,8 +6141,107 @@ class Session(NoNewAttributesAfterInit):
             raise
         return (x,y)
 
+    ### DOC-TODO: I am not sure I have the data format correct.
+    ### DOC-TODO: description of template interpolation needs a lot of work.
     def load_template_model(self, modelname, templatefile, dstype=sherpa.data.Data1D,
                             sep=' ', comment='#', method=sherpa.utils.linear_interp, template_interpolator_name='default'):
+        """Load a set of templates and use it as a model component.
+
+        A template model can be considered to be an extension
+        of the table model supported by `load_table_model`. In
+        the template case, a set of models (the "templates")
+        are read in and then compared to the data, with the
+        best-fit being used to return a set of parameters.
+
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this table model.
+        templatefile : str
+           The name of the file to read in. This file lists the
+           template data files.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1D` (the default) and `Data1Dint`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        method : func
+           The interpolation method to use to map the input data onto
+           the coordinate grid of the data set. Linear,
+           nearest-neighbor, and polynomial schemes are provided in
+           the sherpa.utils module.
+        template_interpolator_name : str
+           The method used to interpolate within the set of templates.
+           The default is `default`. A value of `None` turns off the
+           interpolation; in this case the grid-search optimiser
+           must be used to fit the data.
+
+        See Also
+        --------
+        load_conv : Load a 1D convolution model.
+        load_psf : Create a PSF model
+        load_table_model : Load tabular data and use it as a model component.
+        load_template_interpolator : Set the template interpolation scheme.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+
+        Notes
+        -----
+        Examples of interpolation schemes provided by `sherpa.utils`
+        are: `linear_interp`, `nearest_interp`, and `neville`.
+
+        The template index file is the argument to
+        `load_template_model`, and is used to list the data files. It
+        is an ASCII file with one line per template, and each line
+        containing the model parameters (numeric values), followed by
+        the MODELFLAG column and then the file name for the data file
+        (its name must begin with FILE). The MODELFLAG column is used
+        to indicate whether a file should be used or not; a value of
+        `1` means that the file should be used, and a value of `0`
+        that the line should be ignored. The parameter names are set
+        by the column names.
+
+        The data file - the last column of the template index file -
+        is read in and the first two columns used to set up the x and
+        y values (`Data1D`) or xlo, xhi, and y values (`Data1DInt`).
+
+        The `method` parameter determines how the template data values
+        are interpolated onto the source data grid.
+
+        The `template_interpolator_name` parameter determines how the
+        dependent axis (Y) values are interpolated when the parameter
+        values are varied. This interpolation can be turned off by
+        using a value of `None`, in which case the grid-search
+        optimiser *must* be used. See `load_template_intepolator` for
+        how to create a valid interpolator. The "default" interpolator
+        uses `sherpa.models.KNNInterpolator` with k=2 and order=2.
+
+        Examples
+        --------
+
+        Load in the templates from the file "index.tmpl" as the model
+        component "kerr", and set it as the source model for the
+        default data set. The optimisation method is switched to
+        use a grid search for the parameters of this model.
+
+        >>> load_template_model("kerr", "index.tmpl")
+        >>> set_source(kerr)
+        >>> set_method('gridsearch')
+        >>> set_method_opt('sequence', kerr.parvals)
+        >>> fit()
+
+        Fit a constant plus the templates, using the neville scheme
+        for integrating the template onto the data grid. The
+        Monte-Carlo based optimiser is used.
+
+        >>> load_template_model('tbl', 'table.lis',
+                                sherpa.utils.neville)
+        >>> set_source(tbl + const1d.bgnd)
+        >>> set_method('moncar')
+
+        """
 
         if sherpa.utils.is_binary_file(templatefile):
             raise sherpa.utils.err.IOErr('notascii', templatefile)
@@ -4602,55 +6307,102 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(templatemodel)
 
 
+    ### DOC-TODO: description of template interpolation needs a lot of work.
     ##@loggable()
     def load_template_interpolator(self, name, interpolator_class, **kwargs):
+        """Set the template interpolation scheme.
+
+        Parameters
+        ----------
+        name : str
+        interpolator_class :
+           An interpolator class.
+        **kwargs :
+           The arguments for the interpolator.
+
+        See Also
+        --------
+        load_template_model : Load a set of templates and use it as a model component.
+
+        Examples
+        --------
+
+        Create an interpolator name that can be used as the
+        `template_interpolator_name` argument to
+        `load_template_model`.
+
+        >>> from sherpa.models import KNNInterpolator
+        >>> load_template_intepoator('myint', KNNInterpolator, k=4, order=3)
+
+        """
 	sherpa.models.template.interpolators[name] = (interpolator_class, kwargs)
 
 
+    # also in sherpa.astro.utils
+    # DOC-NOTE: does it make sense to allow ncols to vary here?
     def load_table_model(self, modelname, filename, ncols=2, colkeys=None,
                          dstype=sherpa.data.Data1D, sep=' ', comment='#',
                          method=sherpa.utils.linear_interp):
-        """
-        load_table_model
+        """Load tabular data and use it as a model component.
 
-        SYNOPSIS
-           Load a table model from file into a Sherpa session
+        A table model is defined on a grid of points which is
+        interpolated onto the independent axis of the data set. The
+        model has a single parameter, `ampl`, which is used to
+        scale the data, and it can be fixed or allowed to vary
+        during a fit.
 
-        SYNTAX
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this table model.
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1D` (the default) and `Data1Dint`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        method : func
+           The interpolation method to use to map the input data onto
+           the coordinate grid of the data set. Linear,
+           nearest-neighbor, and polynomial schemes are provided in
+           the sherpa.utils module.
 
-        Arguments:
-           modelname  - model label
+        See Also
+        --------
+        load_conv : Load a 1D convolution model.
+        load_psf : Create a PSF model
+        load_template_model : Load a set of templates and use it as a model component.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-           filename   - file from which table model data are read
+        Notes
+        -----
+        Examples of interpolation schemes provided by `sherpa.utils`
+        are: `linear_interp`, `nearest_interp`, `neville`, and
+        `neville2d`.
 
-           ncols      - number of columns to read from
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - column keys
-                        default = None
+        Load in the data from filt.fits and use it to multiply
+        the source model (a power law and a gaussian). Allow
+        the amplitude for the table model to vary between 1
+        and 1e6, starting at 1e3.
 
-           dstype     - Sherpa data class to contain table model data
-                        default = sherpa.data.Data1D
-        
-           sep        - separator character
-                        default = ' '
+        >>> load_table_model('filt', 'filt.fits')
+        >>> set_source(filt * (powlaw1d.pl + gauss1d.gline))
+        >>> set_par(filt.ampl, 1e3, min=1, max=1e6)
 
-           comment    - comment character
-                        default = '#'
-
-           method     - interpolation method
-                        default = linear {neville, linear}
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Load data from a file, and put it in a new model.  This
-           model can be used in fitting, just as models that containing
-           functions can be used.
-        
-        SEE ALSO
-           set_model, load_user_model, add_user_pars
         """
         tablemodel = sherpa.models.TableModel(modelname)
         # interpolation method
@@ -4662,56 +6414,100 @@ class Session(NoNewAttributesAfterInit):
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
+    # also in sherpa.astro.utils
+    ### DOC-TODO: how is the _y value used if set
     ##@loggable()
     def load_user_model(self, func, modelname, filename=None, ncols=2,
                         colkeys=None, dstype=sherpa.data.Data1D,
                         sep=' ', comment='#'):
-        """
-        load_user_model
+        """Create a user-defined model.
 
-        SYNOPSIS
-           Load a user model from file into a Sherpa session
+        Assign a name to a function; this name can then be used as any
+        other name of a model component, either in a source expression
+        - such as with `set_model` - or to change a parameter
+        value. The `add_user_pars` function should be called after
+        `load_user_model` to set up the parameter names and
+        defaults.
 
-        SYNTAX
+        Parameters
+        ----------
+        func : func
+           The function that evaluates the model.
+        modelname : str
+           The name to use to refer to the model component.
+        filename : str, optional
+           Set this to include data from this file in the model. The
+           file should contain two columns, and the second column is
+           stored in the `_y` attribute of the model.
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1D` (the default), `Data1DInt`, `Data2D`, and
+           `Data2DInt`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        Arguments:
-           func       - reference to a user model function
-           
-           modelname  - model label
+        See Also
+        --------
+        add_model : Create a user-defined model class.
+        add_user_pars : Add parameter information to a user model.
+        load_table : Load a FITS binary file as a data set.
+        load_table_model : Load tabular data and use it as a model component.
+        load_template_model : Load a set of templates and use it as a model component.
+        set_model : Set the source model expression for a data set.
 
-           filename   - file from which optional data are read
-                        default = None
+        Notes
+        -----
+        The `load_user_model` function is designed to make it easy to
+        add a model, but the interface is not the same as the existing
+        models (such as having to call both `load_user_model` and
+        `add_user_pars` for each new instance).  The `add_model`
+        function is used to add a model as a Python class, which is
+        more work to set up, but then acts the same way as the
+        existing models.
 
-           ncols      - number of columns to read from
-                        default = 2
+        The function used for the model depends on the dimensions of
+        the data. For a 1D model, the signature is::
 
-           colkeys    - column keys
-                        default = None
+           def func1d(pars, x, xhi=None):
 
-           dstype     - Sherpa data class to contain table model data
-                        default = sherpa.data.Data1D
-        
-           sep        - separator character
-                        default = ' '
-        
-           comment    - comment character
-                        default = '#'
+        where, if xhi is not None, then the dataset is binned and the
+        x argument is the low edge of each bin. The pars argument is
+        the parameter array - the names, defaults, and limits can be
+        set with `add_user_pars` - and should not be changed.  The
+        return value is an array the same size as x.
 
-        Returns:
-           None
+        For 2D models, the signature is::
 
-        DESCRIPTION
-           Take a function written by the user, and assign to a new
-           user model class.  Instances of the new class can be created,
-           and used as models during fits--just as ordinary Sherpa
-           models can.  Optionally, data from a file can be attached to
-           the model, and used in an arbitrary way by the user model
-           function; but data from file is not required, the user model
-           can be just a function.  After a user model is created,
-           parameters need to be added with the add_user_pars function.
-        
-        SEE ALSO
-           set_model, load_table_model, add_user_pars
+           def func2d(pars, x0, x1, x0hi=None, x1hi=None):
+
+        There is no way using this interface to indicate that the
+        model is for 1D or 2D data.
+
+        Examples
+        --------
+
+        Create a two-parameter model of the form "y = mx + c",
+        where the intercept is the first parameter and the slope the
+        second, set the parameter names and default values, then
+        use it in a source expression:
+
+        >>> def func1d(pars, x, xhi=None):
+                if xhi != None:
+                    x = (x + xhi)/2
+                return x * pars[1] + pars[0]
+
+        >>> load_user_model(func1d, "myfunc")
+        >>> add_user_pars(myfunc, ["c","m"], [0,1])
+        >>> set_source(myfunc + gauss1d.gline)
+
         """
         usermodel = sherpa.models.UserModel(modelname)
         usermodel.calc = func
@@ -4725,43 +6521,58 @@ class Session(NoNewAttributesAfterInit):
     def add_user_pars(self, modelname, parnames,
                       parvals = None, parmins = None, parmaxs = None,
                       parunits = None, parfrozen = None):
-        """
-        add_user_pars
+        """Add parameter information to a user model.
 
-        SYNOPSIS
-           Add parameters to a user model
+        Parameters
+        ----------
+        modelname : str
+           The name of the user model (created by `load_user_model`).
+        parnames : array of str
+           The names of the parameters. The order of all the parameter
+           arrays must match that expected by the model function (the
+           first argument to `load_user_model`).
+        parvals : array of number, optional
+           The default values of the parameters. If not given each
+           parameter is set to 0.
+        parmins : array of number, optional
+           The minimum values of the parameters (hard limit). The
+           default value is -3.40282e+38.
+        parmaxs : array of number, optional
+           The maximum values of the parameters (hard limit). The
+           default value is 3.40282e+38.
+        parunits : array of str, optional
+           The units of the parameters. This is only used in screen
+           output (i.e. is informational in nature).
+        parfrozen : array of bool, optional
+           Should each parameter be frozen. The default is that
+           all parameters are thawed.
 
-        SYNTAX
+        See Also
+        --------
+        add_model : Create a user-defined model class.
+        load_user_model : Create a user-defined model.
+        set_par : Set the value, limits, or behavior of a model parameter.
 
-        Arguments:
-           modelname  - model label
+        Examples
+        --------
 
-           parnames   - list of parameter names
+        Create a user model for the function `profile` called
+        "myprof", which has two parameters called "core" and "ampl",
+        both of which will start with a value of 0.
 
-           parvals    - list of parameter values
-                        default = None
+        >>> load_user_model(profile, "myprof")
+        >>> add_user_pars("myprof", ["core", "ampl"])
 
-           parmins    - list of parameter minimum values
-                        default = None
+        Set the starting values, minimum values, and whether or not
+        the parameter is frozen by default, for the "prof" model:
 
-           parmaxs    - list of parameter maxinum values
-                        default = None
+        >>> pnames = ["core", "ampl", "intflag"]
+        >>> pvals = [10, 200, 1]
+        >>> pmins = [0.01, 0, 0]
+        >>> pfreeze = [False, False, True]
+        >>> add_user_pars("prof", pnames, pvals,
+                          parmins=pmins, parfrozen=pfreeze)
 
-           parunits   - list of parameter units
-                        default = None
-
-           parfrozen  - list of frozen parameter names
-                        default = None
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Add a new set of parameters to a user model that can be 
-           used in Sherpa model definitions.
-        
-        SEE ALSO
-           set_model, load_user_model
         """
         pars = []
         vals=None
@@ -4816,44 +6627,67 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(newusermodel)
 
 
+    ### DOC-TODO: Improve priors documentation
     def load_user_stat(self, statname, calc_stat_func, calc_err_func=None,
                        priors={}):
-        """
-        load_user_stat
+        """Create a user-defined statistic.
 
-        SYNOPSIS
-           Load a user defined statistic into a Sherpa session
+        The choice of statistics - that is, the numeric value that is
+        minimised during the fit - can be extended by providing a
+        function to calculate a numeric value given the data. The
+        statistic is given a name and then can be used just like any
+        of the pre-defined statistics.
 
-        SYNTAX
+        Parameters
+        ----------
+        statname : str
+           The name to use for the new statisitic when calling
+           `set_stat`.
+        calc_stat_func : func
+           The function that calculates the statistic.
+        calc_err_func : func, optional
+           How to calculate the statistical error on a data point.
+        priors : dict
+           A dictionary of hyper-parameters for the priors.
 
-        Arguments:
-           statname        - reference to a user statistic
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        set_stat : Set the statistical method.
 
-           calc_stat_func  - function to calculate and return the statistic
-                             value and the statistic contribution per bin as
-                             a tuple.
+        Notes
+        -----
+        The `calc_stat_func` should have the following signature::
 
-           calc_err_func   - function to calculate the statistical error.
-                             default = None
+           def func(data, model, staterror=None, syserrr=None, weight=None)
 
-           priors          - dictionary of model parameters and 
-                             hyper-parameters for priors.
-                             default = {}
+        where data is the array of dependent values, model the array
+        of the predicted values, staterror and syserror are arrays of
+        statistical and systematic errors respectively (if valid), and
+        weight an array of weights. The return value is the pair
+        (stat_value, stat_per_bin), where stat_value is a scalar and
+        stat_per_bin is an array the same length as data.
 
-        Returns:
-           None
+        The `calc_err_func` should have the following signature::
 
-        DESCRIPTION
-           Load a user-defined statistic from user_calc_stat and 
-           user_calc_err functions with identifier statname.  Optionally,
-           include a dictionary of hyper-parameters and references to 
-           source model parameters for priors statistics.  The symbols
-           supplied in the dictionary are available in the first argument
-           of the user_calc_stat function signature for use at every model
-           evaluation.
+           def func(data)
 
-        SEE ALSO
-           set_set, calc_stat, calc_chisqr
+        and returns an array the same length as data.
+
+        Examples
+        --------
+
+        Define a chi-square statistic with the label "qstat":
+
+        >>> def qstat(d, m, staterr=None, syserr=None, w=None):
+                if staterr == None:
+                    staterr = 1
+                c = ((d-m) / staterr)
+                return ((c*c).sum(), c)
+
+        >>> load_user_stat("qstat", qstat)
+        >>> set_stat("qstat")
+
         """
         userstat = sherpa.stats.UserStat(calc_stat_func, 
                                          calc_err_func, statname)
@@ -4873,40 +6707,69 @@ class Session(NoNewAttributesAfterInit):
     # Conv
     #
 
+    ### DOC-NOTE: why isn't the "flux" of the convolved model ~
+    ###           that of the unconvolved model?
+    ### DOC-NOTE: better description of conv vs psf
     ##@loggable()
     def load_conv(self, modelname, filename_or_model, *args, **kwargs):
-        """
-        load_conv
+        """Load a 1D convolution model.
 
-        SYNOPSIS
-           load a file-based or model-based 1D kernel into a 1D convolution model
+        The convolution model can be defined either by a data set,
+        read from a file, or an analytic model, using a Sherpa model
+        instance. A source model can be convolved with this model
+        by including `modelname` in the `set_model` call, using the
+        form::
 
-        SYNTAX
+           modelname(modelexpr)
 
-        Arguments:
-           modelname - name of convolution kernel
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this PSF model.
+        filename_or_model : str or model instance
+           The form of the model. This can be a file name, which will
+           be read in using the chosen Sherpa I/O library, or a
+           model component.
+        *args, **kwargs :
+           Arguments for `unpack_data` if ``filename_or_model``
+           is a file.
 
-           filename_or_model - filename with path for file-based kernel
-                               a Sherpa model for a model-based kernel
+        See Also
+        --------
+        delete_psf : Delete the PSF model for a data set.
+        load_psf : Create a PSF model.
+        load_table_model : Load tabular data and use it as a model component.
+        set_full_model : Define the convolved model expression for a data set.
+        set_model : Set the source model expression for a data set.
+        set_psf : Add a PSF model to a data set.
 
-           args      - additional arguments when reading a file kernel
+        Examples
+        --------
 
-           kwargs    - additional keyword arguments when reading a file
-                       kernel
+        Create a 1D data set, assign a box model - which is flat
+        between the xlow and xhi values and zero elsewhere - and then
+        display the model values. Then add in a convolution component
+        by a gaussian and overplot the resulting source model with two
+        different widths.
 
-        Returns:
-           None
+        >>> dataspace1d(-10, 10, 0.5, id='tst', dstype=Data1D)
+        >>> set_source('tst', box1d.bmdl)
+        >>> bmdl.xlow = -2
+        >>> bmdl.xhi = 3
+        >>> plot_source('tst')
+        >>> load_conv('conv', normgauss1d.gconv)
+        >>> gconv.fwhm = 2
+        >>> set_source('tst', conv(bmdl))
+        >>> plot_source('tst', overplot=True)
+        >>> gconv.fwhm = 5
+        >>> plot_source('tst', overplot=True)
 
-        DESCRIPTION
-           Create a convolution model object with identifier 'modelname' and 
-           initializes the convolution kernel to be either a Sherpa dataset
-           loaded from file or a Sherpa model.
+        Create a convolution component called "cmodel" which uses the
+        data in the file "conv.dat", which should have two columns
+        (the X and Y values).
 
-           NOTE: load_conv() is intended for 1D convolution only.  It uses the
-                 midpoint as the origin.
+        >>> load_conv('cmodel', 'conv.dat')
 
-        SEE ALSO
-           set_psf, get_psf, delete_psf
         """        
         kernel = filename_or_model
         if isinstance(filename_or_model, basestring):
@@ -4924,40 +6787,57 @@ class Session(NoNewAttributesAfterInit):
 
 
     #
-    # PSF
+    # PSF1
     #
 
-    
     def load_psf(self, modelname, filename_or_model, *args, **kwargs):
-        """
-        load_psf
+        """Create a PSF model.
 
-        SYNOPSIS
-           load a file-based or model-based kernel into a PSF model
+        Create a PSF model representing either an array of data, read
+        from a file, or a model component (such as a gaussian). The
+        `set_psf` function is used to associate this model with a data
+        set.
 
-        SYNTAX
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this PSF model.
+        filename_or_model : str or model instance
+           The form of the PSF. This can be a file name, which will
+           be read in using the chosen Sherpa I/O library, or a
+           model component.
+        *args, **kwargs :
+           Arguments for `unpack_data` if ``filename_or_model``
+           is a file.
 
-        Arguments:
-           modelname - name of PSF
+        See Also
+        --------
+        delete_psf : Delete the PSF model for a data set.
+        load_conv : Load a 1D convolution model.
+        load_table_model : Load tabular data and use it as a model component.
+        set_full_model : Define the convolved model expression for a data set.
+        set_model : Set the source model expression for a data set.
+        set_psf : Add a PSF model to a data set.
 
-           filename_or_model - filename with path for file-based kernel
-                               a Sherpa model for a model-based kernel
+        Examples
+        --------
 
-           args      - additional arguments when reading a file kernel
+        Create a PSF model using a 2D gaussian:
 
-           kwargs    - additional keyword arguments when reading a file
-                       kernel
+        >>> load_psf('psf1', gauss2d.gpsf)
+        >>> set_psf('psf1')
+        >>> gpsf.fwhm = 4.2
+        >>> gpsf.ellip = 0.2
+        >>> gpsf.theta = 30 * np.pi / 180
+        >>> image_psf()
 
-        Returns:
-           None
+        Create a PSF model from the data in the file
+        `line_profile.fits` and apply it to the data set called
+        `bgnd`:
 
-        DESCRIPTION
-           Create a PSF model object with identifier 'modelname' and 
-           initializes the PSF kernel to be either a Sherpa dataset
-           loaded from file or a Sherpa model.
+        >>> load_psf('pmodel', 'line_profile.fits')
+        >>> set_psf('bgnd', 'pmodel')
 
-        SEE ALSO
-           set_psf, get_psf, delete_psf
         """        
         kernel = filename_or_model
         if isinstance(filename_or_model, basestring):
@@ -4974,30 +6854,117 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(psf)
         self._psf_models.append(psf)
 
+    ### DOC-TODO: am I correct about the multiple use warning?
     ##@loggable(with_id=True, with_keyword='psf')
     def set_psf(self, id, psf=None):
-        """
-        set_psf
+        """Add a PSF model to a data set.
 
-        SYNOPSIS
-           Add a PSF model by Sherpa data id
+        After this call, the model that is fit to the data (as set by
+        `set_model`) will be convolved by the given PSF model. The
+        term "psf" is used in functions to refer to the data sent to
+        this function whereas the term "kernel" refers to the data
+        that is used in the actual convolution (this can be
+        re-normalized and a sub-set of the PSF data).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        psf : str or sherpa.instrument.PSFModel instance
+           The PSF model created by `load_psf`.
 
-        Arguments:
-           id   - Sherpa data id
-                  default = default data id
+        See Also
+        --------
+        delete_psf : Delete the PSF model for a data set.
+        get_psf : Return the PSF model defined for a data set.
+        image_psf : Display the 2D PSF model for a data set in the image viewer.
+        load_psf : Create a PSF model.
+        plot_psf : Plot the 1D PSF model applied to a data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_model : Set the source model expression for a data set.
 
-           psf  - Sherpa PSF model
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``psf`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``psf`` parameters,
+        respectively.
 
-        Returns:
-           None
+        A PSF component should only be applied to a single data set.
+        This is not enforced by the system, and incorrect results
+        can occur if this condition is not true.
 
-        DESCRIPTION
-           Add a PSF model to the instrument list by Sherpa data id.
+        The point spread function (PSF) is defined by the full
+        (unfiltered) PSF image loaded into Sherpa or the PSF model
+        expression evaluated over the full range of the dataset; both
+        types of PSFs are established with the `load_psf` command.
+        The kernel is the subsection of the PSF image or model which
+        is used to convolve the data. This subsection is created from
+        the PSF when the size and center of the kernel are defined by
+        the command `set_psf`. While the kernel and PSF might be
+        congruent, defining a smaller kernel helps speed the
+        convolution process by restricting the number of points within
+        the PSF that must be evaluated.
 
-        SEE ALSO
-           get_psf, load_psf, delete_psf
+        In a 1-D PSF model, a radial profile or 1-D model array is
+        used to convolve (fold) the given source model using the Fast
+        Fourier Transform (FFT) technique. In a 2-D PSF model, an
+        image or 2-D model array is used.
+
+        The parameters of a PSF model include:
+
+        kernel
+           The data used for the convolution (file name or model
+           instance).
+
+        size
+           The number of pixels used in the convolution (this can be a
+           subset of the full PSF). This is a scalar (1D) or a
+           sequence (2D, width then height) value.
+
+        center
+           The center of the kernel. This is a scalar (1D) or a
+           sequence (2D, width then height) value. The kernel centroid
+           must always be at the center of the extracted sub-image,
+           otherwise, systematic shifts will occur in the best-fit
+           positions.
+
+        radial
+           Set to ``1`` to use a symmetric array. The default is ``0`` to
+           reduce edge effects.
+
+        norm
+           Should the kernel be normalized so that it sums to 1?  This
+           summation is done over the full data set (not the subset
+           defined by the ``size`` parameter). The default is ``1`` (yes).
+
+        Examples
+        --------
+
+        Use the data in the file 'line_profile.fits' as the PSF for
+        the default data set:
+
+        >>> load_psf('psf1', 'line_profile.fits')
+        >>> set_psf(psf1)
+
+        Use the same PSF for different data sets:
+
+        >>> load_psf('p1', 'psf.img')
+        >>> load_psf('p2', 'psf.img')
+        >>> set_psf(1, 'p1')
+        >>> set_psf(2, 'p2')
+
+        Restrict the convolution to a sub-set of the PSF data and
+        compare the two:
+
+        >>> set_psf(psf1)
+        >>> psf1.size = (41,41)
+        >>> image_psf()
+        >>> image_kernel(newframe=True, tile=True)
+
         """
         if psf is None:
             id, psf, = psf, id
@@ -5038,51 +7005,71 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_psf(self, id=None):
-        """
-        get_psf
+        """Return the PSF model defined for a data set.
 
-        SYNOPSIS
-           Return a PSF model by Sherpa data id
+        Return the parameter settings for the PSF model assigned to
+        the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id   - Sherpa data id
-                  default = default data id
+        Returns
+        -------
+        psf : sherpa.instrument.PSFModel instance
 
-        Returns:
-           None
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no PSF model has been set for the data set.
 
-        DESCRIPTION
-           Return a PSF model from the instrument list by Sherpa data id.
+        See Also
+        --------
+        delete_psf : Delete the PSF model for a data set.
+        image_psf : Display the 2D PSF model for a data set in the image viewer.
+        load_psf : Create a PSF model.
+        plot_psf : Plot the 1D PSF model applied to a data set.
+        set_psf : Add a PSF model to a data set.
 
-        SEE ALSO
-           set_psf, load_psf, delete_psf
+        Examples
+        --------
+
+        Change the size and center of the PSF for th default data set:
+
+        >>> psf = get_psf()
+        >>> psf.size = (21,21)
+        >>> psf.center = (10,10)
+
         """
         return self._get_item(id, self._psf, 'psf model', 'has not been set')
 
 
     def delete_psf(self, id=None):
-        """
-        delete_psf
+        """Delete the PSF model for a data set.
 
-        SYNOPSIS
-           Delete the specified PSF model by Sherpa data id.
+        Remove the PSF convolution applied to a source model.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        load_psf : Create a PSF model.
+        set_psf : Add a PSF model to a data set.
+        get_psf : Return the PSF model defined for a data set.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Delete the PSF model from the instrument list by Sherpa data id.
+        >>> delete_psf()
 
-        SEE ALSO
-           set_psf, get_psf, load_psf
+        >>> delete_psf('core')
+
         """
         id = self._fix_id(id)
         self._psf.pop(id, None)
@@ -5109,63 +7096,107 @@ class Session(NoNewAttributesAfterInit):
                     'a parameter object or parameter expression string')
         return par
 
+    ### DOC-NOTE: I have not documented that par can be an actual parameter
+    ###           since in that case get_par(x) === x, so seems somewhat pointless!
     def get_par(self, par):
-        """
-        get_par
+        """Return a parameter of a model component.
 
-        SYNOPSIS
-           Return a model parameter
+        Parameters
+        ----------
+        par : str
+           The name of the parameter, using the format
+           "componentname.parametername".
 
-        SYNTAX
+        Returns
+        -------
+        par : a sherpa.models.parameter.Parameter instance
+           The parameter values - e.g. current value, limits, and
+           whether it is frozen - can be changed using this
+           object.
 
-        Arguments:
-           par       - model parameter
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `par` argument is invalid: the model component does
+           not exist or the given model has no parameter with that
+           name.
 
-        Returns:
-           Sherpa model parameter
+        See Also
+        --------
+        set_par : Set the value, limits, or behavior of a model parameter.
 
-        DESCRIPTION
-           Return a Sherpa model parameter given a parameter string.
+        Examples
+        --------
 
-        SEE ALSO
-           set_par
+        Return the "c0" parameter of the "bgnd" model component
+        and change it to be frozen:
+
+        >>> p = get_par('bgnd.c0')
+        >>> p.frozen = True
+
         """
         return self._check_par(par)
 
+    ### DOC-NOTE: I have not documented that par can be an actual parameter
+    ###           since you can just change the values directly then (although
+    ###           may have to car about order of operations)
     def set_par(self, par, val=None, min=None, max=None, frozen=None):
-        """
-        set_par
+        """Set the value, limits, or behavior of a model parameter.
 
-        SYNOPSIS
-           Set initial values for a model parameter
+        Parameters
+        ----------
+        par : str
+           The name of the parameter, using the format
+           "componentname.parametername".
+        val : number, optional
+           Change the current value of the parameter.
+        min : number, optional
+           Change the minimum value of the parameter (the soft limit).
+        max : number, optional
+           Change the maximum value of the parameter (the soft limit).
+        frozen : bool, optional
+           Freeze (``True``) or thaw (``False``) the parameter.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the ``par`` argument is invalid: the model component does
+           not exist or the given model has no parameter with that
+           name.
 
-        Arguments:
-           par       - model parameter
+        See Also
+        --------
+        freeze : Fix model parameters so they are not changed by a fit.
+        get_par : Return a parameter of a model component.
+        link : Link a parameter value to an associated value.
+        thaw : Allow model parameters to be varied during a fit.
+        unlink : Unlink a parameter value.
 
-           val       - initial parameter value
-                       default = None
+        Notes
+        -----
+        The parameter object can be used to change these values
+        directly, by setting the attribute with the same
+        name as the argument - so that::
 
-           min       - minimum limit
-                       default = None
+           set_par('emis.flag', val=2, frozen=True)
 
-           max       - maximum limit
-                       default = None
+        is the same as::
 
-           frozen    - is the parameter frozen?
-                       default = None
+           emis.flag.val = 2
+           emis.flag.frozen = True
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Set initial values for parameter fields which include initial
-           value, minimum limit, maximum limit, and whether it should be
-           frozen during a fit.
+        Change the parameter value to 23.
 
-        SEE ALSO
-           get_par
+        >>> set_par('bgnd.c0', 23)
+
+        Restrict the line.ampl parameter to be between 1e-4
+        and 10 and to have a value of 0.1.
+
+        >>> set_par('line.ampl', 0.1, min=1e-4, max=10)
+
         """
         self._check_par(par).set(val, min, max, frozen)
 
@@ -5183,83 +7214,157 @@ class Session(NoNewAttributesAfterInit):
                 if not p.alwaysfrozen:
                     getattr(p, action)()
 
+    ### DOC-TODO: is this the best way to document the arguments?
     def freeze(self, *args):
-        """
-        freeze
+        """Fix model parameters so they are not changed by a fit.
 
-        SYNOPSIS
-           Freeze a list of parameters
+        If called with no arguments, then all parameters
+        of models in source expressions are frozen. The
+        arguments can be parameters or models (in which case
+        all parameters of the model are frozen).
 
-        SYNTAX
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        link : Link a parameter value to an associated value.
+        set_par : Set the value, limits, or behavior of a model parameter.
+        thaw : Allow model parameters to be varied during a fit.
+        unlink : Unlink a parameter value.
 
-        Arguments:
-           args      - list of Sherpa parameters
+        Examples
+        --------
 
-        Returns:
-           None
+        Fix the FWHM parameter of the line model (in this case a
+        `gauss1d` model) so that it will not be varied in the fit.
 
-        DESCRIPTION
-           Freeze a list of Sherpa parameters.  Frozen parameters will not
-           vary during a fit.
+        >>> set_source(const1d.bgnd + gauss1d.line)
+        >>> line.fwhm = 2.1
+        >>> freeze(line.fwhm)
+        >>> fit()
 
-        SEE ALSO
-           thaw, link, unlink
+        Freeze all parameters of the line model and then re-fit:
+
+        >>> freeze(line)
+        >>> fit()
+
+        Freeze the nh parameter of the gal model and the abund
+        parameter of the src model:
+
+        >>> freeze(gal.nh, src.abund)
+
         """
         par = list(args)
         for p in par:
             self._freeze_thaw_par_or_model(p, 'freeze')
 
+    ### DOC-TODO: is this the best way to document the arguments?
     def thaw(self, *args):
-        """
-        thaw
+        """Allow model parameters to be varied during a fit.
 
-        SYNOPSIS
-           Thaw a list of parameters
+        If called with no arguments, then all parameters
+        of models in source expressions are thawed. The
+        arguments can be parameters or models (in which case
+        all parameters of the model are thawed).
 
-        SYNTAX
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        freeze : Fix model parameters so they are not changed by a fit.
+        link : Link a parameter value to an associated value.
+        set_par : Set the value, limits, or behavior of a model parameter.
+        unlink : Unlink a parameter value.
 
-        Arguments:
-           args      - list of Sherpa parameters
+        Examples
+        --------
 
-        Returns:
-           None
+        Ensure that the FWHM parameter of the line model (in this case a
+        `gauss1d` model) will be varied in any fit.
 
-        DESCRIPTION
-           Thaw a list of Sherpa parameters.  Thawed parameters will vary
-           during a fit.
+        >>> set_source(const1d.bgnd + gauss1d.line)
+        >>> thaw(line.fwhm)
+        >>> fit()
 
-        SEE ALSO
-           freeze, link, unlink
+        Thaw all parameters of the line model and then re-fit:
+
+        >>> thaw(line)
+        >>> fit()
+
+        Thaw the nh parameter of the gal model and the abund
+        parameter of the src model:
+
+        >>> thaw(gal.nh, src.abund)
+
         """
         par = list(args)
         for p in par:
             self._freeze_thaw_par_or_model(p, 'thaw')
 
     def link(self, par, val):
-        """
-        link
+        """Link a parameter to a value.
 
-        SYNOPSIS
-           Link a parameter with an associated value
+        A parameter can be linked to another parameter value, or
+        function of that value, rather than be an independent value.
+        As the linked-to values change, the parameter value will
+        change.
 
-        SYNTAX
+        Parameters
+        ----------
+        par :
+           The parameter to link.
+        val :
+           The value - wihch can be a numeric value or a function
+           of other model parameters, to set ``par`` to.
 
-        Arguments:
-           par       - Sherpa parameter to be linked
+        See Also
+        --------
+        freeze : Fix model parameters so they are not changed by a fit.
+        set_par : Set the value, limits, or behavior of a model parameter.
+        thaw : Allow model parameters to be varied during a fit.
+        unlink : Unlink a parameter value.
 
-           val       - value
+        Notes
+        -----
+        The ``link`` attribute of the parameter is set to match the
+        mathematical expression used for ``val``.
 
-        Returns:
-           None
+        For a parameter value to be varied during a fit, it must be
+        part of one of the source expressions involved in the fit.
+        So, in the following, the ``src1.xpos`` parameter will not
+        be varied because the ``src2`` model - from which it takes
+        its value - is not included in the source expression of any
+        of the data sets being fit.
 
-        DESCRIPTION
-           Link a Sherpa parameter with a value.  Linked parameters will
-           assume this value during the fit.
+        >>> set_source(1, gauss1d.src1)
+        >>> gauss1d.src2
+        >>> link(src1.xpos, src2.xpos)
+        >>> fit(1)
 
-           Note: linked values may be variable or static.
+        One way to work around this is to include the model but
+        with zero signal: for example
 
-        SEE ALSO
-           freeze, thaw, unlink
+        >>> set_source(1, gauss1d.src1 + 0 * gauss1d.src2)
+
+        Examples
+        --------
+
+        The ``fwhm`` parameter of the ``g2`` model is set to be the
+        same as the ``fwhm`` parameter of the ``g1`` model.
+
+        >>> link(g2.fwhm, g1.fwhm)
+
+        Fix the ``pos`` parameter of ``g2`` to be 2.3 more than the
+        ``pos`` parameter of the ``g1`` model.
+
+        >>> gauss1d.g1
+        >>> gauss1d.g2
+        >>> g1.pos = 12.2
+        >>> link(g2.pos, g1.pos + 2.3)
+        >>> g2.pos.val
+        14.5
+        >>> g1.pos = 12.1
+        >>> g2.pos.val
+        14.399999999999999
+
         """
         par = self._check_par(par)
         if isinstance(val, basestring):
@@ -5267,25 +7372,30 @@ class Session(NoNewAttributesAfterInit):
         par.link = val
 
     def unlink(self, par):
-        """
-        unlink
+        """Unlink a parameter value.
 
-        SYNOPSIS
-           Unlink a parameter
+        Remove any parameter link - created by `link` - for the
+        parameter. The parameter value is reset to the value it
+        had before `link` was called.
 
-        SYNTAX
+        Parameters
+        ----------
+        par :
+           The parameter to unlink. If the parameter is not linked
+           then nothing happens.
 
-        Arguments:
-           par       - Sherpa parameter to be unlinked
+        See Also
+        --------
+        freeze : Fix model parameters so they are not changed by a fit.
+        link : Link a parameter to a value.
+        set_par : Set the value, limits, or behavior of a model parameter.
+        thaw : Allow model parameters to be varied during a fit.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Unlink a Sherpa parameter. See link for more information.
+        >>> unlink(bgnd.ampl)
 
-        SEE ALSO
-           freeze, thaw, link
         """
         par = self._check_par(par)
         par.unlink()
@@ -5428,37 +7538,27 @@ class Session(NoNewAttributesAfterInit):
 
 
     def calc_stat_info(self):
-        """
-        calc_stat_info
+        """Display the statistic values for the current models.
 
-        SYNOPSIS
-           Shows calculated information of the goodness-of-fit
+        Displays the statistic value for each data set, and the
+        combined fit, using the current set of models, parameters, and
+        ranges. The output is printed to stdout, and so is intended
+        for use in interactive analysis. The `get_stat_info` function
+        returns the values as a list of objects.
 
-        SYNTAX
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        get_stat_info : Return the statistic values for the current models.
 
-        Arguments:
-           None
+        Notes
+        -----
+        If a fit to a particular data set has not been made, or values
+        - such as parameter settings, the noticed data range, or
+        choice of statistic - have been changed since the last fit,
+        then the results for that data set may not be meaningful and
+        will therefore bias the results for the simultaneous results.
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Shows calculated results of the current goodness-of-fit by data id.
-
-           Example 1:
-
-              calc_stat_info()
-              Dataset               = Sherpa data id
-              Statistic             = Fit statistic
-              Fit statistic value   = Fit statistic value
-              Data points           = Number of data points
-              Degrees of freedom    = (number of points - number of thawed
-                                       parameters)
-              Probability [Q-value] = Null hypothesis probability
-              Reduced statistic     = Reduced statistic value (statval/dof)
-
-        SEE ALSO
-           get_stat_info
         """
         output = self._get_stat_info()
         output = [statinfo.format() for statinfo in output]
@@ -5470,87 +7570,178 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_stat_info(self):
-        """
-        calc_stat_info
+        """Return the statistic values for the current models.
 
-        SYNOPSIS
-           Access calculated information of the goodness-of-fit
+        Calculate the statistic value for each data set, and the
+        combined fit, using the current set of models, parameters, and
+        ranges.
 
-        SYNTAX
+        Returns
+        -------
+        stats : array of sherpa.fit.StatInfoResults
+           The values for each data set. If there are multiple model
+           expressions then the last element will be the value for the
+           combined data sets.
 
-        Arguments:
-           None
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        calc_stat_info : Display the statistic values for the current models.
+        get_fit_results : Return the results of the last fit.
+        list_data_ids : List the identifiers for the loaded data sets.
+        list_model_ids : List of all the data sets with a source expression.
 
-        Returns:
-           List of StatInfoResults objects
+        Notes
+        -----
+        If a fit to a particular data set has not been made, or values
+        - such as parameter settings, the noticed data range, or
+        choice of statistic - have been changed since the last fit,
+        then the results for that data set may not be meaningful and
+        will therefore bias the results for the simultaneous results.
 
-        DESCRIPTION
-           Return a list of calculated results of the current goodness-of-fit
-           by data id.
+        The fields of the object include:
 
-           Example 1:
+        name
+           The name of the data set, or sets, as a string.
 
-              print get_stat_info()[0]
-              name      = Sherpa dataset label
-              ids       = Sherpa dataset ids
-              bkg_ids   = Sherpa background dataset ids
-              statname  = Fit statistic
-              statval   = Fit statistic value
-              numpoints = Number of data points
-              dof       = (numpoints - number of thawed parameters)
-              qval      = Null hypothesis probability
-              rstat     = Reduced statistic value (statval/dof)
+        ids
+           A sequence of the data set ids (it may be a tuple or
+           array) included in the results.
 
-        SEE ALSO
-           calc_stat_info
+        bkg_ids
+           A sequence of the background data set ids (it may be a
+           tuple or array) included in the results, if any.
+
+        statname
+           The name of the statistic function (as used in `set_stat`).
+
+        statval
+           The statistic value.
+
+        numpoints
+           The number of bins used in the fits.
+
+        dof
+           The number of degrees of freedom in the fit (the number of
+           bins minus the number of free parameters).
+
+        qval
+           The Q-value (probability) that one would observe the
+           reduced statistic value, or a larger value, if the assumed
+           model is true and the current model parameters are the
+           true parameter values. This will be ``None`` if the value
+           can not be calculated with the current statistic (e.g.
+           the Cash statistic).
+
+        rstat
+           The reduced statistic value (the ``statval`` field divided
+           by ``dof``). This is not calculated for all statistics.
+
+        Examples
+        --------
+
+        >>> res = get_stat_info()
+        >>> res[0].statval
+        498.21750663761935
+        >>> res[0].dof
+        439
+
         """
         return self._get_stat_info()
 
 
     def get_fit_results(self):
-        """
-        get_fit_results
+        """Return the results of the last fit.
 
-        SYNOPSIS
-           Return results from the last fit performed
+        Returns
+        -------
+        stats : sherpa.fit.FitResults instance
+           The results of the last fit. It does not reflect any
+           changes made to the model parameter, or settings, since the
+           last fit.
 
-        SYNTAX
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        calc_stat_info : Display the statistic values for the current models.
+        fit : Fit a model to one or more data sets.
+        get_stat_info : Return the statistic values for the current models.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
 
-        Arguments:
-           None
+        Notes
+        -----
+        The fields of the object include:
 
-        Returns:
-           Sherpa fit_results object
+        datasets
+           A sequence of the data set ids included in the results.
 
-        DESCRIPTION
-           Printing out a Sherpa fit_results object displays results from a
-           fit in table form.
+        itermethodname
+           What iterated-fit scheme was used, if any (as set by
+           `set_iter_method`).
 
-           Example 1:
-           
-              print get_fit_results()
-              succeeded = boolean of fit success
-              parnames  = list of thawed parameter names
-              parvals   = list of thawed parameter values
-              statval   = statistic value
-              numpoints = number of points on grid
-              dof       = degrees of freedom
-              qval      = probability                Note: N/A for Cash,CStat
-              rstat     = reduced statistic value    Note: N/A for Cash,CStat
-              message   = message from optimization method
-              nfev      = number of function evalutions
+        statname
+           The name of the statistic function (as used in `set_stat`).
 
-           Example 2:
+        succeeded
+           Was the fit successful (did it converge)?
 
-              print get_fit_results().format()
-              Statistic value = statval at function evaluation nfev
-              Data points = numpoints
-              Degrees of freedom = dof
-              Probability [Q-value] = qval
-              Reduced statistic  = rstat
+        parnames
+           A tuple of the parameter names that were varied in the fit
+           (the thawed parameters in the model expression).
 
-        SEE ALSO
-           freeze, thaw, link
+        parvals
+           A tuple of the parameter values, in the same order as
+           ``parnames``.
+
+        statval
+           The statistic value after the fit.
+
+        istatval
+           The statistic value at the start of the fit.
+
+        dstatval
+           The change in the statistic value (``istatval - statval``).
+
+        numpoints
+           The number of bins used in the fits.
+
+        dof
+           The number of degrees of freedom in the fit (the number of
+           bins minus the number of free parameters).
+
+        qval
+           The Q-value (probability) that one would observe the
+           reduced statistic value, or a larger value, if the assumed
+           model is true and the current model parameters are the
+           true parameter values. This will be ``None`` if the value
+           can not be calculated with the current statistic (e.g.
+           the Cash statistic).
+
+        rstat
+           The reduced statistic value (the ``statval`` field divided
+           by ``dof``). This is not calculated for all statistics.
+
+        message
+           A message about the results of the fit (e.g. if the fit was
+           unable to converge). The format and contents depend on the
+           optimisation method.
+
+        nfev
+           The number of model evaluations made during the fit.
+
+        Examples
+        --------
+
+        >>> res = get_fit_results()
+        >>> res.statval
+        498.21750663761935
+        >>> res.dof
+        439
+        >>> res.parnames
+        ('pl.gamma', 'pl.ampl', 'gline.fwhm', 'gline.pos', 'gline.ampl')
+        >>> res.parvals
+        (-0.20659543380329071, 0.00030398852609788524, 100.0, 4900.0, 0.001)
+
         """
         if self._fit_results == None:
             raise SessionErr('nofit', 'fit')
@@ -5558,40 +7749,79 @@ class Session(NoNewAttributesAfterInit):
             return self._fit_results
 
     def guess(self, id=None, model=None, limits=True, values=True):
-        """
-        guess
+        """Estimate the parameter values and ranges given the loaded data.
 
-        SYNOPSIS
-           Guess the parameters values of model from the data
+        The guess function can change the parameter values and
+        limits to match the loaded data. This is generally limited to
+        changing the amplitude and position parameters (sometimes just
+        the values and sometimes just the limits). The parameters that
+        are changed depend on the type of model.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model :
+           Change the parameters of this model component. If ``None``,
+           then the source expression is assumed to consist of a single
+           component, and that component is used.
+        limits : bool
+           Should the parameter limits be changed? The default is
+           ``True``.
+        values : bool
+           Should the parameter values be changed? The default is
+           ``True``.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        reset : Reset the model parameters to their default settings.
+        set_par : Set the value, limits, or behavior of a model parameter.
 
-           model     - Sherpa model to perform guess
-                       default = None
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-        Returns:
-           None
+        The guess function can reduce the time required to fit a
+        data set by moving the parameters closer to a realistic
+        solution. It can also be useful because it can set bounds on
+        the parameter values based on the data: for instance, many
+        two-dimensional models will limit their ``xpos`` and ``ypos``
+        values to lie within the data area. This can be done manually,
+        but `guess` simplifies this, at least for those parameters
+        that are supported. Instrument models - such as an ARF and
+        RMF - should be set up *before* calling guess.
 
-        DESCRIPTION
-           Guess works only for single, non-composite models
+        Examples
+        --------
 
-           Examples:
-              set_model(powlaw1d.p1)
-              guess()
+        Since the source expression contains only one component,
+        guess can be called with no arguments:
 
-              set_model("src", powlaw1d.p1)
-              guess("src")
+        >>> set_source(polynom1d.poly)
+        >>> guess()
 
-              set_model(powlaw1d.p1*gauss1d.g1)
-              guess(g1)
-              guess(p1)
+        In this case, guess is called on each component separately.
 
-        SEE ALSO
-           set_model, fit
+        >>> set_source(gauss1d.line + powlaw1d.cont)
+        >>> guess(line)
+        >>> guess(cont)
+
+        In this example, the values of the ``src`` model component are
+        guessed from the "src" data set, whereas the ``bgnd`` component
+        is guessed from the "bgnd" data set.
+
+        >>> set_source("src", gauss2d.src + const2d.bgnd)
+        >>> set_source("bgnd", bgnd)
+        >>> guess("src", src)
+        >>> guess("bgnd", bgnd)
+
         """
         if model is None:
             id, model = model, id
@@ -5617,89 +7847,162 @@ class Session(NoNewAttributesAfterInit):
 
 
     def calc_stat(self, id=None, *otherids):
-        """
-        calc_stat
+        """Calculate the fit statistic for a data set.
 
-        SYNOPSIS
-           Return the statistic value
+        Evaluate the model for one or more data sets, compare it to
+        the data using the current statistic, and return the value.
+        No fitting is done, as the current model parameter, and any
+        filters, are used.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        *otherids : int or str, optional
+           Include multiple data sets in the calculation.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Returns
+        -------
+        stat : number
+           The current statistic value.
 
-           otherids  - List of other Sherpa data ids
+        See Also
+        --------
+        calc_chisqr : Calculate the per-bin chi-squared statistic.
+        calc_stat_info : Display the statistic values for the current models.
+        set_stat : Set the statistical method.
 
-        Returns:
-           Statistic value
+        Examples
+        --------
 
-        DESCRIPTION
-           
-        SEE ALSO
-           calc_chisqr, get_stat, set_stat
+        Calculate the statistic for the model and data in the default
+        data set:
+
+        >>> stat = calc_stat()
+
+        Use the data sets labelled "core" and "jet":
+
+        >>> stat = calc_stat("core", "jet")
+
+        Calculate the statistic value using two different statistics:
+
+        >>> set_stat('cash')
+        >>> s1 = calc_stat()
+        >>> set_stat('cstat')
+        >>> s2 = calc_stat()
+
         """
         ids, f = self._get_fit(id, otherids)
         return f.calc_stat()
 
     def calc_chisqr(self, id=None, *otherids):
-        """
-        calc_chisqr
+        """Calculate the per-bin chi-squared statistic.
 
-        SYNOPSIS
-           Return the chi squared statistic contribution by bin
+        Evaluate the model for one or more data sets, compare it to
+        the data using the current statistic, and return the value for
+        each bin.  No fitting is done, as the current model parameter,
+        and any filters, are used.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        *otherids : int or str, optional
+           Include multiple data sets in the calculation.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Returns
+        -------
+        chisq : array or `None`
+           The chi-square value for each bin of the data, using the
+           current statistic (as set by `set_stat`).  A value of
+           `None` is returned if the statistic is not a chi-square
+           distribution.
 
-           otherids  - List of other Sherpa data ids
+        See Also
+        --------
+        calc_stat : Calculate the fit statistic for a data set.
+        calc_stat_info : Display the statistic values for the current models.
+        set_stat : Set the statistical method.
 
-        Returns:
-           Statistic array
-
-        DESCRIPTION
-           NOTE:  Only available for Chi Squared statistics
-           
-        SEE ALSO
-           calc_stat, get_stat, set_stat
         """
         ids, f = self._get_fit(id, otherids)
         return f.calc_chisqr()
 
+    # also in sherpa.astro.utils
     def fit(self, id=None, *otherids, **kwargs):
-        """
-        fit
+        """Fit a model to one or more data sets.
 
-        SYNOPSIS
-           Perform fitting process using current optimization method and 
-           current fit statistic.
+        Use forward fitting to find the best-fit model to one or more
+        data sets, given the chosen statisitic and optimization
+        method. The fit proceeds until the results converge or the
+        number of iterations exceeds the maximum value (these values
+        can be changed with `set_method_opt`). An iterative scheme can
+        be added using `set_iter_method` to try and improve the
+        fit. The final fit results are displayed to the screen and can
+        be retrieved with `get_fit_results`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are fit simultaneously.
+        *otherids : int or str, optional
+           Other data sets to use in the calculation.
+        outfile : str, optional
+           If set, then the fit results will be written to a file with
+           this name. The file contains the per-iteration fit results.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (``True``) or if it raises an exception
+           (``False``, the default setting).
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.FitErr
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
-           otherids  - List of other Sherpa data ids
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        contour_fit : Contour the fit to a data set.
+        covar : Estimate the confidence intervals using the confidence method.
+        freeze : Fix model parameters so they are not changed by a fit.
+        get_fit_results : Return the results of the last fit.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        set_stat : Set the statistical method.
+        set_method : Change the optimization method.
+        set_method_opt : Change an option of the current optimization method.
+        set_full_model : Define the convolved model expression for a data set.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
+        set_model : Set the model expression for a data set.
+        show_fit : Summarize the fit results.
+        thaw : Allow model parameters to be varied during a fit.
 
-           outfile   - filename and path of parameter value output vs. number
-                       of function evaluations
-                       default = None
+        Examples
+        --------
 
-           clobber   - boolean whether to clobber outfile
-                       default = False
+        Simultaneously fit all data sets with models and then
+        store the results in the variable fres:
 
-        Returns:
-           Formatted fit results output 
+        >>> fit()
+        >>> fres = get_fit_results()
 
-        DESCRIPTION
-           Initiate optimization of model parameter values by id(s).
+        Fit just the data set 'img':
 
-        SEE ALSO
-           get_fit_results, conf, proj, covar
+        >>> fit('img')
+
+        Simultaneously fit data sets 1, 2, and 3:
+
+        >>> fit(1, 2, 3)
+
+        Fit data set 'jet' and write the fit results to the text file
+        'jet.fit', over-writing it if it already exists:
+
+        >>> fit('jet', outfile='jet.fit', clobber=True)
+
         """
         ids, f = self._get_fit(id, otherids)
         res = f.fit(**kwargs)
@@ -5708,6 +8011,7 @@ class Session(NoNewAttributesAfterInit):
         info(res.format())
 
     # Back-compatibility
+    # DOC-NOTE: can this be noted as deprecated now?
     simulfit = fit
 
 
@@ -5731,82 +8035,121 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_pvalue_results(self):
-        """
-        get_pvalue_results
+        """Return the data calculated by the last plot_pvalue call.
 
-        SYNOPSIS
-           Access the simulation results of the likelihood ratio test.
+        Returns
+        -------
+        plot : a sherpa.sim.simulate.LikelihoodRatioResults instance
+           None is returned if neither `plot_pvalue` or
+           `get_pvalue_pvalue` have been run.
 
-        SYNTAX
+        See Also
+        --------
+        plot_value : Compute and plot a histogram of likelihood ratios by simulating data.
+        get_pvalue_plot : Return the data used by plot_pvalue.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           Likelihood Ratio Test results 
+        >>> res = get_pvalue_results()
+        >>> res.ppp
+        0.472
 
-        DESCRIPTION
-           Access the simulation results of the likelihood ratio test.
-
-        SEE ALSO
-           plot_pvalue, get_pvalue_plot
         """
         return self._pvalue_results
 
 
+    ### DOC-TODO: improve discussion of how the simulations are done.
     def plot_pvalue(self, null_model, alt_model, conv_model=None,
                     id=1, otherids=(), num=500, bins=25, numcores=None,
                     replot=False, overplot=False, clearwindow=True):
-        """
-        plot_pvalue
+        """Compute and plot a histogram of likelihood ratios by simulating data.
 
-        SYNOPSIS
-           Plot a histogram of likelihood ratios comparing fits of the null
-           model to fits of the alternative model to faked data using poisson
-           noise.  Computes the likelihood ratio on the real data and the 
-           p-value.
+        Compare the likelihood of the null model to an alternative model
+        by running a number of simulations, comparing the likelihoods
+        of the two models when compared to the observed data. The fit
+        statistic must be set to a likelihood-based method, such
+        as "cash" or "cstat". Screen output is created as well as the
+        plot; these values can be retrieved with `get_pvalue_results`.
 
-        SYNTAX
+        Parameters
+        ----------
+        null_model :
+           The model expression for the null hypothesis.
+        alt_model :
+           The model expression for the alternative hypothesis.
+        conv_model : optional
+           An expression used to modify the model so that it can be
+           compared to the data (e.g. a PSF or PHA response).
+        id : int or str, optional
+           The data set that provides the data. The default is `1`.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
+        num : int, optional
+           The number of simulations to run. The default is `500`.
+        bins : int, optional
+           The number of bins to use to create the histogram. The
+           default is `25`.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_pvalue`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
 
-        Arguments:
+        See Also
+        --------
+        get_pvalue_plot : Return the data used by plot_pvalue.
+        get_pvalue_results : Return the data calculated by the last plot_pvalue call.
 
-           null_model  - model representing the null hypothesis
+        Raises
+        ------
+        TypeError
+           An invalid statistic.
 
-           alt_model   - alternative model to compare to null
+        Notes
+        -----
+        Each simulation involves creating a data set using the
+        observed data simulated with Poisson noise.
 
-           conv_model  - convolution model to include for fitting.
-                         default = None
+        For the likelihood ratio test to be valid, the following
+        conditions must hold:
 
-           id          - Sherpa data id
-                         default = default data id
+           1. The null model is nested within the alternative model.
 
-           otherids    - List of other Sherpa data ids
-                         default = ()
+           2. The extra parameters of the alternative model have
+              Gaussian (normal) distributions that are not truncated
+              by the boundaries of the parameter spaces.
 
-           num         - Number of iterations to run
-                         default = 500
+        Examples
+        --------
 
-           bins        - Number of bins for the histogram
-                         default = 25
+        Use the likelihood ratio to see if the data in data set 1 has
+        a statistically-significant gaussian component:
 
-           numcores    - Number of cpus to use during simulation
-                         default = number of detected cpus
+        >>> create_model_component('powlaw1d', 'pl')
+        >>> create_model_component('gauss1d', 'gline')
+        >>> plot_pvalue(pl, pl+gline)
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Use 1000 simulations and use the data from data sets
+        1, 2, and 3:
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        >>> mdl1 = pl
+        >>> mdl2 = pl + gline
+        >>> plot_pvalue(mdl1, mdl2, id=1, otherids=(2,3),
+                        num=1000)
 
+        Apply a convolution to the models before fitting:
 
-        Returns:
-           Likelihood Ratio Test results 
+        >>> rsp = get_psf()
+        >>> plot_pvalue(mdl1, mdl2, conv_model=rsp)
 
-        DESCRIPTION
-           Access the simulation results of the likelihood ratio test.
-
-        SEE ALSO
-           get_pvalue_results, get_pvalue_plot
         """
         if not sherpa.utils.bool_cast(replot) or self._pvalue_results is None:
             self._run_pvalue(null_model, alt_model, conv_model,
@@ -5831,52 +8174,55 @@ class Session(NoNewAttributesAfterInit):
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                      id=1, otherids=(), num=500, bins=25, numcores=None,
                      recalc=False):
-        """
-        get_pvalue_plot
+        """Return the data used by plot_pvalue.
 
-        SYNOPSIS
-           Acess the histogram plot of the likelihood ratios comparing fits 
-           of the null model to fits of the alternative model to faked data
-           using poisson noise.  Access the likelihood ratio on the real data
-           and the p-value.
+        Parameters
+        ----------
+        null_model :
+           The model expression for the null hypothesis.
+        alt_model :
+           The model expression for the alternative hypothesis.
+        conv_model : optional
+           An expression used to modify the model so that it can be
+           compared to the data (e.g. a PSF or PHA response).
+        id : int or str, optional
+           The data set that provides the data. The default is `1`.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
+        num : int, optional
+           The number of simulations to run. The default is `500`.
+        bins : int, optional
+           The number of bins to use to create the histogram. The
+           default is `25`.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        recalc : bool, optional
+           The default value (`False`) means that the results from the
+           last call to `plot_pvalue` or `get_pvalue_plot` are
+           returned. If `True`, the values are re-calculated.
 
-        SYNTAX
+        Returns
+        -------
+        plot : a sherpa.plot.LRHistogram instance
 
-        Arguments:
+        See Also
+        --------
+        get_pvalue_results : Return the data calculated by the last plot_pvalue call.
+        plot_pvalue : Compute and plot a histogram of likelihood ratios by simulating data.
 
-           null_model  - model representing the null hypothesis
+        Examples
+        --------
 
-           alt_model   - alternative model to compare to null
+        Return the values from the last call to `plot_pvalue`:
 
-           conv_model  - convolution model to include for fitting.
-                         default = None
+        >>> pvals = get_pvalue_plot()
+        >>> pvals.ppp
+        0.472
 
-           id          - Sherpa data id
-                         default = default data id
+        Run 500 simulations for the two models:
 
-           otherids    - List of other Sherpa data ids
-                         default = ()
-
-           num         - Number of iterations to run
-                         default = 500
-
-           bins        - Number of bins for the histogram
-                         default = 25
-
-           numcores    - Number of cpus to use during simulation
-                         default = number of detected cpus
-
-           recalc      - Recalculate the likelihood ratio test simulation
-                         default = False
-
-        Returns:
-           LRHistogram object
-
-        DESCRIPTION
-           Access the histogram plot of the likelihood ratio test.
-
-        SEE ALSO
-           plot_pvalue, get_pvalue_results
+        >>> pvals = get_pvalue_plot(mdl1, mdl2, recalc=True, num=500)
 
         """
         lrplot = self._lrplot
@@ -5901,92 +8247,134 @@ class Session(NoNewAttributesAfterInit):
     #
     ## Sampling functions
     #
+    ### DOC-TODO: This copies from sherpa/sim/sample.py, so can
+    ###           docstrings be shared (whether directly or via functools)?
+    ###           Unfortunately not quite a direct copy, so hard
+    ###           to see how to do
 
     def normal_sample(self, num=1, sigma=1, correlate=True,
                       id=None, otherids=(), numcores=None):
-        """
-        normal_sample
+        """Sample the fit statistic by taking the parameter values
+        from a normal distribution.
 
-        SYNOPSIS
-           Samples the current thawed parameter from a uni-variate or
-           multi-variate normal distribution and computes the current
-           statistic value on the set.
+        For each iteration (sample), change the thawed parameters by
+        drawing values from a uni- or multi-variate normal (Gaussian)
+        distribution, and calculate the fit statistic.
 
-        SYNTAX
+        Parameters
+        ----------
+        num : int, optional
+           The number of samples to use (default is `1`).
+        sigma : number, optional
+           The width of the normal distribution (the default
+           is `1`).
+        correlate : bool, optional
+           Should a multi-variate normal be used, with parameters
+           set by the covariance matrix (`True`) or should a
+           uni-variate normal be used (`False`)?
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        otherids : sequence of int or str, optional
+           For when multiple source expressions are being used.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-
-           num         - Number of samples to calculate
-                         default = 1
-
-           sigma       - Spread of the normal distribution
-                         default = 1
-
-           correlate   - If True, sample from multi-variate normal using 
-                         covariance; if False, sample from uni-variate normal.
-                         default = True
-
-           id          - Sherpa data id
-                         default = default data id
-
-           otherids    - List of other Sherpa data ids
-                         default = ()
-
-           numcores    - Number of cpus to use to calculate the statistic
-                         default = number of detected cpus
-
-        Returns:
+        Returns
+        -------
+        samples :
            A NumPy array table with the first column representing the
-           statistic and subsequent columns as the parameters.
+           statistic and later columns the parameters used.
 
-        DESCRIPTION
-           
+        See Also
+        --------
+        fit : Fit a model to one or more data sets.
+        set_model : Set the source model expression for a data set.
+        set_stat : Set the statistical method.
+        t_sample : Sample from the Student's t-distribution.
+        uniform_sample : Sample from a uniform distribution.
 
-        SEE ALSO
-           uniform_sample, t_sample
+        Notes
+        -----
+        All thawed model parameters are sampled from the Gaussian
+        distribution, where the mean is set as the best-fit parameter
+        value and the variance is determined by the diagonal elements
+        of the covariance matrix. The multi-variate Gaussian is
+        assumed by default for correlated parameters, using the
+        off-diagonal elements of the covariance matrix.
+
+        Examples
+        --------
+
+        The model fit to the default data set has three free
+        parameters. The median value of the statistic calculated by
+        `normal_sample` is returned:
+
+        >>> ans = normal_sample(num=10000)
+        >>> ans.shape
+        (1000, 4)
+        >>> np.median(ans[:,0])
+        119.82959326927781
 
         """
         ids, fit = self._get_fit(id, otherids)
         return sherpa.sim.normal_sample(fit, num, sigma, correlate, numcores)
 
 
+    ### DOC-TODO: improve the description of factor parameter
     def uniform_sample(self, num=1, factor=4,
                        id=None, otherids=(), numcores=None):
-        """
-        uniform_sample
+        """Sample the fit statistic by taking the parameter values
+        from an uniform distribution.
 
-        SYNOPSIS
-           Samples the current thawed parameter from a uniform distribution
-           and computes the current statistic value on the set.
+        For each iteration (sample), change the thawed parameters by
+        drawing values from a uniform distribution, and calculate the
+        fit statistic.
 
-        SYNTAX
+        Parameters
+        ----------
+        num : int, optional
+           The number of samples to use (default is `1`).
+        factor : number, optional
+           Multiplier to expand the scale parameter (default is `4`).
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        otherids : sequence of int or str, optional
+           For when multiple source expressions are being used.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-
-           num         - Number of samples to calculate
-                         default = 1
-
-           factor      - Multiplier to expand the parameter scale
-                         default = 4
-
-           id          - Sherpa data id
-                         default = default data id
-
-           otherids    - List of other Sherpa data ids
-                         default = ()
-
-           numcores    - Number of cpus to use to calculate the statistic
-                         default = number of detected cpus
-
-        Returns:
+        Returns
+        -------
+        samples :
            A NumPy array table with the first column representing the
-           statistic and subsequent columns as the parameters.
+           statistic and later columns the parameters used.
 
-        DESCRIPTION
-           
+        See Also
+        --------
+        fit : Fit a model to one or more data sets.
+        normal_sample : Sample from a normal distribution.
+        set_model : Set the source model expression for a data set.
+        set_stat : Set the statistical method.
+        t_sample : Sample from the Student's t-distribution.
 
-        SEE ALSO
-           normal_sample, t_sample
+        Examples
+        --------
+
+        The model fit to the default data set has three free
+        parameters. The median value of the statistic calculated by
+        `uniform_sample` is returned:
+
+        >>> ans = uniform_sample(num=10000)
+        >>> ans.shape
+        (1000, 4)
+        >>> np.median(ans[:,0])
+        284.66534775948134
 
         """
         ids, fit = self._get_fit(id, otherids)
@@ -5994,42 +8382,57 @@ class Session(NoNewAttributesAfterInit):
 
 
     def t_sample(self, num=1, dof=None, id=None, otherids=(), numcores=None):
-        """
-        t_sample
+        """Sample the fit statistic by taking the parameter values from
+        a Student's t-distribution.
 
-        SYNOPSIS
-           Samples the current thawed parameter from a Student's t 
-           distribution and computes the current statistic value on the set.
+        For each iteration (sample), change the thawed parameters
+        by drawing values from a Student's t-distribution, and
+        calculate the fit statistic.
 
-        SYNTAX
+        Parameters
+        ----------
+        num : int, optional
+           The number of samples to use (default is `1`).
+        dof : optional
+           The number of degrees of freedom to use (the default
+           is to use the number from the current fit).
+        id : int or str, optional
+           The data set containing the model expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        otherids : sequence of int or str, optional
+           For when multiple source expressions are being used.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-
-           num         - Number of samples to calculate
-                         default = 1
-
-           dof         - Degrees of freedom, will calculate from current fit
-                         by default.
-                         default = None
-
-           id          - Sherpa data id
-                         default = default data id
-
-           otherids    - List of other Sherpa data ids
-                         default = ()
-
-           numcores    - Number of cpus to use to calculate the statistic
-                         default = number of detected cpus
-
-        Returns:
+        Returns
+        -------
+        samples :
            A NumPy array table with the first column representing the
-           statistic and subsequent columns as the parameters.
+           statistic and later columns the parameters used.
 
-        DESCRIPTION
-           
+        See Also
+        --------
+        fit : Fit a model to one or more data sets.
+        normal_sample : Sample from the normal distribution.
+        set_model : Set the source model expression for a data set.
+        set_stat : Set the statistical method.
+        uniform_sample : Sample from a uniform distribution.
 
-        SEE ALSO
-           normal_sample, uniform_sample
+        Examples
+        --------
+
+        The model fit to the default data set has three free
+        parameters. The median value of the statistic calculated by
+        `t_sample` is returned:
+
+        >>> ans = t_sample(num=10000)
+        >>> ans.shape
+        (1000, 4)
+        >>> np.median(ans[:,0])
+        119.9764357725326
+
         """
         ids, fit = self._get_fit(id, otherids)
         if dof is None:
@@ -6043,122 +8446,259 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
 
+    ### DOC-TODO: how best to document the settings?
+    ### DOC-TODO: have I got soft_limits described correctly?
     def get_covar(self):
-        """
-        get_covar
+        """Return the covariance estimation object.
 
-        SYNOPSIS
-           Access current covar estimation method object
+        Returns
+        -------
+        covar : object
 
-        SYNTAX
+        See Also
+        --------
+        covar : Estimate confidence intervals using the covariance method.
+        get_covar_opt : Return one or all of the options for the covariance method.
+        set_covar_opt : Set an option of the covar estimation object.
 
-        Arguments:
-           None
+        Notes
+        -----
+        The attributes of the covariance object include:
 
-        Returns:
-           Current covar estimation method object
+        `eps`
+           The precision of the calculated limits. The default is
+           `0.01`.
 
-        DESCRIPTION
-           Estimation method objects include the following attributes:
+        `maxiters`
+           The maximum number of iterations allowed before stopping
+           for that parameter. The default is `200`.
 
-           * sigma                      - default = 1
+        `sigma`
+           What is the error limit being calculated. The default is
+           `1`.
 
-           * eps                        - default = 0.01
+        `soft_limits`
+           Should the search be restricted to the soft limits of the
+           parameters (`True`), or can parameter values go out all the
+           way to the hard limits if necessary (`False`).  The default
+           is `False`
 
-           * maxiters                   - default = 200
+        Examples
+        --------
 
-           * remin                      - default = 0.01
+        >>> print(get_covar())
+        name        = covariance
+        sigma       = 1
+        maxiters    = 200
+        soft_limits = False
+        eps         = 0.01
 
-           * soft_limits                - default = False
+        Change the `sigma` field of the `covar` method to 1.9.
 
-        SEE ALSO
-           conf, proj, covar, get_covar_results, get_proj_results, get_proj,
-           get_conf_results, get_conf
+        >>> cv = get_covar()
+        >>> cv.sigma = 1.6
+
         """
         return self._estmethods['covariance']
 
+    ### DOC-TODO: how best to document the settings?
+    ### DOC-TODO: have I got soft_limits described correctly?
+    ### DOC-TODO: when verbose=True how is extra output displayed?
+    ###           stdout, stderr, sherpa logging?
     def get_conf(self):
-        """
-        get_conf
+        """Return the confidence-interval estimation object.
 
-        SYNOPSIS
-           Access current conf estimation method object
+        Returns
+        -------
+        conf : object
+           
+        See Also
+        --------
+        conf : Estimate confidence intervals using the confidence method.
+        get_conf_opt : Return one or all of the options for the confidence interval method.
+        set_conf_opt : Set an option of the conf estimation object.
 
-        SYNTAX
+        Notes
+        -----
+        The attributes of the confidence-interval object include:
 
-        Arguments:
-           None
+        `eps`
+           The precision of the calculated limits. The default is
+           `0.01`.
+        
+        `fast`
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
 
-        Returns:
-           Current conf estimation method object
+        `max_rstat`
+           If the reduced chi square is larger than this value, do not
+           use (only used with chi-square statistics). The default is
+           `3`.
 
-        DESCRIPTION
-           Estimation method objects include the following attributes:
+        `maxfits`
+           The maximum number of re-fits allowed (that is, when the
+           `remin` filter is met). The default is `5`.
 
-           * sigma                      - default = 1
+        `maxiters`
+           The maximum number of iterations allowed when bracketing
+           limits, before stopping for that parameter. The default is
+           `200`.
 
-           * eps                        - default = 0.01
+        `numcores`
+           The number of computer cores to use when evaluating results
+           in parallel. This is only used if `parallel` is `True`.
+           The default is to use all cores.
 
-           * maxiters                   - default = 200
+        `openinterval`
+           How the `conf` method should cope with intervals that do
+           not converge (that is, when the `maxiters` limit has been
+           reached). The default is `False`.
 
-           * remin                      - default = 0.01
+        `parallel`
+           If there is more than one free parameter then the results
+           can be evaluated in parallel, to reduce the time required.
+           The default is `True`.
 
-           * maxfits                    - default = 5
-                      
-           * max_rstat                  - default = 3
+        `remin`
+           The minimum difference in statistic value for a new fit
+           location to be considered better than the current best fit
+           (which starts out as the starting location of the fit at
+           the time `conf` is called). The default is `0.01`.
 
-           * soft_limits                - default = False
+        `sigma`
+           What is the error limit being calculated. The default is
+           `1`.
 
-           * fast                       - default = True
+        `soft_limits`
+           Should the search be restricted to the soft limits of the
+           parameters (`True`), or can parameter values go out all the
+           way to the hard limits if necessary (`False`).  The default
+           is `False`
 
-           * tol                        - default = 0.2
+        `tol`
+           The tolerance for the fit. The default is `0.2`.
 
-           * verbose                    - default = False           
+        `verbose`
+           Should extra information be displayed during fitting?
+           The default is `False`.
 
-        SEE ALSO
-           conf, proj, covar, get_covar_results, get_conf_results,
-           get_proj_results, get_covar
+        Examples
+        --------
+
+        >>> print(get_conf())
+        name         = confidence
+        numcores     = 8
+        verbose      = False
+        openinterval = False
+        max_rstat    = 3
+        maxiters     = 200
+        soft_limits  = False
+        eps          = 0.01
+        fast         = False
+        maxfits      = 5
+        remin        = 0.01
+        tol          = 0.2
+        sigma        = 1
+        parallel     = True
+
+        Change the `remin` field of the `conf` method to 0.05.
+
+        >>> cf = get_conf()
+        >>> cf.remin = 0.05
+
         """
         return self._estmethods['confidence']
 
     def get_proj(self):
-        """
-        get_proj
+        """Return the confidence-interval estimation object.
 
-        SYNOPSIS
-           Access current proj estimation method object
+        .. note:: The `conf` function should be used instead of `proj`.
 
-        SYNTAX
+        Returns
+        -------
+        proj : object
 
-        Arguments:
-           None
+        See Also
+        --------
+        conf : Estimate confidence intervals for fit parameters.
+        get_proj_opt : Return one or all of the options for the confidence interval method.
+        proj : Estimate confidence intervals for fit parameters.
+        set_proj_opt : Set an option of the proj estimation object.
 
-        Returns:
-           Current proj estimation method object
+        Notes
+        -----
+        The attributes of the object include:
 
-        DESCRIPTION
-           Estimation method objects include the following attributes:
+        `eps`
+           The precision of the calculated limits. The default is
+           `0.01`.
 
-           * sigma                      - default = 1
+        `fast`
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
 
-           * eps                        - default = 0.01
+        `max_rstat`
+           If the reduced chi square is larger than this value, do not
+           use (only used with chi-square statistics). The default is
+           `3`.
 
-           * maxiters                   - default = 200
+        `maxfits`
+           The maximum number of re-fits allowed (that is, when the
+           `remin` filter is met). The default is `5`.
 
-           * remin                      - default = 0.01
+        `maxiters`
+           The maximum number of iterations allowed when bracketing
+           limits, before stopping for that parameter. The default is
+           `200`.
 
-           * maxfits                    - default = 5
-                      
-           * max_rstat                  - default = 3
+        `numcores`
+           The number of computer cores to use when evaluating results
+           in parallel. This is only used if `parallel` is `True`.
+           The default is to use all cores.
 
-           * soft_limits                - default = False
+        `parallel`
+           If there is more than one free parameter then the results
+           can be evaluated in parallel, to reduce the time required.
+           The default is `True`.
 
-           * fast                       - default = True
+        `remin`
+           The minimum difference in statistic value for a new fit
+           location to be considered better than the current best fit
+           (which starts out as the starting location of the fit at
+           the time `proj` is called). The default is `0.01`.
 
-           * tol                        - default = 0.2
+        `sigma`
+           What is the error limit being calculated. The default is
+           `1`.
 
-        SEE ALSO
-           proj, covar, get_covar_results, get_proj_results, get_covar
+        `soft_limits`
+           Should the search be restricted to the soft limits of the
+           parameters (`True`), or can parameter values go out all the
+           way to the hard limits if necessary (`False`).  The default
+           is `False`
+
+        `tol`
+           The tolerance for the fit. The default is `0.2`.
+
+        Examples
+        --------
+
+        >>> print(get_proj())
+        name        = projection
+        numcores    = 8
+        max_rstat   = 3
+        maxiters    = 200
+        soft_limits = False
+        eps         = 0.01
+        fast        = False
+        maxfits     = 5
+        remin       = 0.01
+        tol         = 0.2
+        sigma       = 1
+        parallel    = True
+
         """
         return self._estmethods['projection']
 
@@ -6187,246 +8727,423 @@ class Session(NoNewAttributesAfterInit):
         meth.config[optname] = val
         
     def get_covar_opt(self, name=None):
-        """
-        get_covar_opt
+        """Return one or all of the options for the covariance
+        method.
 
-        SYNOPSIS
-           Return a covariance option by name
+        This is a helper function since the options can also
+        be read directly using the object returned by `get_covar`.
 
-        SYNTAX
+        Parameters
+        ----------
+        name : str, optional
+           If not given, a dictionary of all the options are returned.
+           When given, the individual value is returned.
 
-        Arguments:
-           name       - covariance option name
+        Returns
+        -------
+        value : dictionary or value
 
-        Returns:
-           covariance option value
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
 
-        DESCRIPTION
-           If given no argument, returns dictionary of all options
-           that govern how covariance is run.  If given the name
-           of an option, returns the value of that option.
+        See Also
+        --------
+        covar : Estimate confidence intervals using the covariance method.
+        get_covar : Return the covariance estimation object.
+        set_covar_opt : Set an option of the covar estimation object.
 
-        SEE ALSO
-           covar, set_covar_opt
+        Examples
+        --------
+
+        >>> get_covar_opt('sigma')
+        1
+
+        >>> copts = get_covar_opt()
+        >>> copts['sigma']
+        1
+
         """
         return self._get_estmethod_opt('covariance', name)
 
     def get_conf_opt(self, name=None):
-        """
-        get_conf_opt
+        """Return one or all of the options for the confidence interval
+        method.
 
-        SYNOPSIS
-           Return a confidence option by name
+        This is a helper function since the options can also
+        be read directly using the object returned by `get_conf`.
 
-        SYNTAX
+        Parameters
+        ----------
+        name : str, optional
+           If not given, a dictionary of all the options are returned.
+           When given, the individual value is returned.
+            
+        Returns
+        -------
+        value : dictionary or value
+           
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
 
-        Arguments:
-           name       - confidence option name
+        See Also
+        --------
+        conf : Estimate confidence intervals using the confidence method.
+        get_conf : Return the confidence-interval estimation object.
+        set_conf_opt : Set an option of the conf estimation object.
 
-        Returns:
-           confidence option value
+        Examples
+        --------
 
-        DESCRIPTION
-           If given no argument, returns dictionary of all options
-           that govern how confidence is run.  If given the name
-           of an option, returns the value of that option.
+        >>> get_conf_opt('verbose')
+        False
 
-        SEE ALSO
-           conf, set_conf_opt
+        >>> copts = get_conf_opt()
+        >>> copts['verbose']
+        False
+
         """
         return self._get_estmethod_opt('confidence', name)
     
     def get_proj_opt(self, name=None):
-        """
-        get_proj_opt
+        """Return one or all of the options for the confidence interval
+        method.
 
-        SYNOPSIS
-           Return a projection option by name
+        .. note:: The `conf` function should be used instead of `proj`.
 
-        SYNTAX
+        This is a helper function since the options can also
+        be read directly using the object returned by `get_proj`.
 
-        Arguments:
-           name       - projection option name
+        Parameters
+        ----------
+        name : str, optional
+           If not given, a dictionary of all the options are returned.
+           When given, the individual value is returned.
 
-        Returns:
-           projection option value
+        Returns
+        -------
+        value : dictionary or value
 
-        DESCRIPTION
-           If given no argument, returns dictionary of all options
-           that govern how projection is run.  If given the name
-           of an option, returns the value of that option.
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
 
-        SEE ALSO
-           proj, set_proj_opt
+        See Also
+        --------
+        conf : Estimate confidence intervals for fit parameters.
+        proj : Estimate confidence intervals for fit parameters.
+        get_proj : Return the confidence-interval estimation object.
+        set_proj_opt : Set an option of the proj estimation object.
+
+        Examples
+        --------
+
+        >>> get_proj_opt('sigma')
+        1
+
+        >>> popts = get_proj_opt()
+        >>> popts['sigma']
+        1
+
         """
         return self._get_estmethod_opt('projection', name)
     
     def set_covar_opt(self, name, val):
-        """
-        set_covar_opt
-        
-        SYNOPSIS
-           Set a covariance option by name
-        
-        SYNTAX
-        
-        Arguments:
-           name       - covariance option name
-           val        - covariance option value
-        
-        Returns:
-           None
-        
-        DESCRIPTION
-           For the named covariance option, set that option to the new
-           value.
-        
-        SEE ALSO
-           covar, get_covar_opt
+        """Set an option for the covariance method.
+
+        This is a helper function since the options can also
+        be set directly using the object returned by `get_covar`.
+
+        Parameters
+        ----------
+        name : str
+           The name of the option to set. The `get_covar`
+           routine can be used to find out valid values for
+           this argument.
+        val :
+           The new value for the option.
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
+
+        See Also
+        --------
+        covar : Estimate confidence intervals using the covariance method.
+        get_covar : Return the covar estimation object.
+        get_covar_opt : Return one or all options of the covar estimation object.
+
+        Examples
+        --------
+
+        >>> set_covar_opt('sigma', 1.6)
+
         """
         self._set_estmethod_opt('covariance', name, val)
 
     def set_conf_opt(self, name, val):
-        """
-        set_conf_opt
-        
-        SYNOPSIS
-           Set a confidence option by name
-        
-        SYNTAX
-        
-        Arguments:
-           name       - confidence option name
-           val        - confidence option value
-        
-        Returns:
-           None
-        
-        DESCRIPTION
-           For the named confidence option, set that option to the new
-           value.
-        
-        SEE ALSO
-           conf, get_conf_opt
+        """Set an option for the confidence interval method.
+
+        This is a helper function since the options can also
+        be set directly using the object returned by `get_conf`.
+
+        Parameters
+        ----------
+        name : str
+           The name of the option to set. The `get_conf`
+           routine can be used to find out valid values for
+           this argument.
+        val :
+           The new value for the option.
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
+
+        See Also
+        --------
+        conf : Estimate confidence intervals using the confidence method.
+        get_conf : Return the conf estimation object.
+        get_conf_opt : Return one or all options of the conf estimation object.
+
+        Examples
+        --------
+
+        >>> set_conf_opt('parallel', False)
+
         """
         self._set_estmethod_opt('confidence', name, val)
 
     def set_proj_opt(self, name, val):
-        """
-        set_proj_opt
-        
-        SYNOPSIS
-           Set a projection option by name
-        
-        SYNTAX
-        
-        Arguments:
-           name       - projection option name
-           val        - projection option value
-        
-        Returns:
-           None
-        
-        DESCRIPTION
-           For the named projection option, set that option to the new
-           value.
-        
-        SEE ALSO
-           proj, get_proj_opt
+        """Set an option for the projection method.
+
+        .. note:: The `conf` function should be used instead of `proj`.
+
+        This is a helper function since the options can also
+        be set directly using the object returned by `get_proj`.
+
+        Parameters
+        ----------
+        name : str
+           The name of the option to set. The `get_proj`
+           routine can be used to find out valid values for
+           this argument.
+        val :
+           The new value for the option.
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the `name` argument is not recognized.
+
+        See Also
+        --------
+        conf : Estimate confidence intervals using the confidence method.
+        proj : Estimate confidence intervals using the projection method.
+        get_proj : Return the proj estimation object.
+        get_proj_opt : Return one or all options of the proj estimation object.
+
+        Examples
+        --------
+
+        >>> set_proj_opt('parallel', False)
+
         """
         self._set_estmethod_opt('projection', name, val)
 
-    # Functions to get confidence limit results after last run
-    # of named confidence limit function.
     def get_covar_results(self):
-        """
-        get_covar_results
+        """Return the results of the last `covar` run.
 
-        SYNOPSIS
-           Access covariance estimation results object
+        Returns
+        -------
+        results : sherpa.fit.ErrorEstResults object
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.SessionErr
+           If no `covar` call has been made.
 
-        Arguments:
-           None
+        See Also
+        --------
+        get_covar_opt : Return one or all of the options for the covariance method.
+        set_covar_opt : Set an option of the covar estimation object.
 
-        Returns:
-           Covar estimation results object
+        Notes
+        -----
+        The fields of the object include:
 
-        DESCRIPTION
-           Access results from the last time covar was run.  The results
-           include the following attributes:
+        `datasets`
+           A tuple of the data sets used in the analysis.
 
-           * datasets                        - Data sets in fit
-           
-           * methodname                      - Estimation method name
+        `methodname`
+           This will be `covariance`.
 
-           * fitname                         - Fitting method name
+        `iterfitname`
+           The name of the iterated-fit method used, if any.
 
-           * statname                        - Statistic name
+        `fitname`
+           The name of the optimization method used.
 
-           * sigma                           - Change in statistic
+        `statname`
+           The name of the fit statistic used.
 
-           * parnames                        - Model parameter names
+        `sigma`
+           The `sigma` value used to calculate the confidence
+           intervals.
 
-           * parvals                         - Model parameter fit values
+        `percent`
+           The percentage of the signal contained within the
+           confidence intervals (calculated from the `sigma`
+           value assuming a normal distribution).
 
-           * parmins                         - Model parameter minimum values
+        `parnames`
+           A tuple of the parameter names included in the analysis.
 
-           * parmaxes                        - Model parameter maximum values
+        `parvals`
+           A tuple of the best-fit parameter values, in the same
+           order as `parnames`.
 
-           * warnings                        - Warning messages
+        `parmins`
+           A tuple of the lower error bounds, in the same
+           order as `parnames`.
 
-        SEE ALSO
-           conf, proj, covar, get_proj, get_conf_results,
-           get_proj_results, get_covar
+        `parmaxes`
+           A tuple of the upper error bounds, in the same
+           order as `parnames`.
+
+        `nfits`
+
+        There is also an `extra_output` field which is used to return
+        the covariance matrix.
+
+        Examples
+        --------
+
+        >>> res = get_covar_results()
+        >>> print(res)
+        datasets    = (1,)
+        methodname  = covariance
+        iterfitname = none
+        fitname     = levmar
+        statname    = chi2gehrels
+        sigma       = 1
+        percent     = 68.2689492137
+        parnames    = ('bgnd.c0',)
+        parvals     = (10.228675427602724,)
+        parmins     = (-2.4896739438296795,)
+        parmaxes    = (2.4896739438296795,)
+        nfits       = 0
+
+        In this case, of a single parameter, the covariance
+        matrix is just the variance of the parameter:
+
+        >>> copt.extra_output
+        array([[ 6.19847635]])
+
         """
         if self._covariance_results == None:
             raise SessionErr('noaction', "covariance")
         else:
             return self._covariance_results
 
+    ### DOC_TODO: what is the best description for nfits?
     def get_conf_results(self):
-        """
-        get_conf_results
+        """Return the results of the last `conf` run.
 
-        SYNOPSIS
-           Access confidence estimation results object
-
-        SYNTAX
-
-        Arguments:
-           None
-
-        Returns:
-           Conf estimation results object
-
-        DESCRIPTION
-           Access results from the last time confidence was run.  The results
-           include the following attributes:
-
-           * datasets                        - Data sets in fit
+        Returns
+        -------
+        results : sherpa.fit.ErrorEstResults object
            
-           * methodname                      - Estimation method name
+        Raises
+        ------
+        sherpa.utils.err.SessionErr
+           If no `conf` call has been made.
 
-           * fitname                         - Fitting method name
+        See Also
+        --------
+        get_conf_opt : Return one or all of the options for the confidence interval method.
+        set_conf_opt : Set an option of the conf estimation object.
 
-           * statname                        - Statistic name
+        Notes
+        -----
+        The fields of the object include:
 
-           * sigma                           - Change in statistic
+        `datasets`
+           A tuple of the data sets used in the analysis.
 
-           * parnames                        - Model parameter names
+        `methodname`
+           This will be `confidence`.
 
-           * parvals                         - Model parameter fit values
+        `iterfitname`
+           The name of the iterated-fit method used, if any.
 
-           * parmins                         - Model parameter minimum values
+        `fitname`
+           The name of the optimization method used.
 
-           * parmaxes                        - Model parameter maximum values
+        `statname`
+           The name of the fit statistic used.
 
-           * warnings                        - Warning messages
+        `sigma`
+           The `sigma` value used to calculate the confidence
+           intervals.
 
-        SEE ALSO
-           conf, proj, covar, get_conf, get_proj, get_covar_results, get_covar
+        `percent`
+           The percentage of the signal contained within the
+           confidence intervals (calculated from the `sigma`
+           value assuming a normal distribution).
+
+        `parnames`
+           A tuple of the parameter names included in the analysis.
+
+        `parvals`
+           A tuple of the best-fit parameter values, in the same
+           order as `parnames`.
+
+        `parmins`
+           A tuple of the lower error bounds, in the same
+           order as `parnames`.
+
+        `parmaxes`
+           A tuple of the upper error bounds, in the same
+           order as `parnames`.
+
+        `nfits`
+
+
+        Examples
+        --------
+
+        >>> res = get_conf_results()
+        >>> print(res)
+        datasets    = (1,)
+        methodname  = confidence
+        iterfitname = none
+        fitname     = levmar
+        statname    = chi2gehrels
+        sigma       = 1
+        percent     = 68.2689492137
+        parnames    = ('p1.gamma', 'p1.ampl')
+        parvals     = (2.1585155113403327, 0.00022484014787994827)
+        parmins     = (-0.082785567348122591, -1.4825550342799376e-05)
+        parmaxes    = (0.083410634144100104, 1.4825550342799376e-05)
+        nfits       = 13
+
+        The following converts the above into a dictionary where the
+        keys are the parameter names and the values are the tuple
+        (best-fit value, lower-limit, upper-limit):
+        
+        >>> pvals1 = zip(res.parvals, res.parmins, res.parmaxes)
+        >>> pvals2 = [(v, v+l, v+h) for (v,l,h) in pvals1]
+        >>> dres = dict(zip(res.parnames, pvals2))
+        >>> dres['p1.gamma']
+        (2.1585155113403327, 2.07572994399221, 2.241926145484433)
+
         """
         if self._confidence_results == None:
             raise SessionErr('noaction', "confidence")
@@ -6434,46 +9151,89 @@ class Session(NoNewAttributesAfterInit):
             return self._confidence_results
 
     def get_proj_results(self):
-        """
-        get_proj_results
+        """Return the results of the last `proj` run.
 
-        SYNOPSIS
-           Access projection estimation results object
+        .. note:: The `conf` function should be used instead of `proj`.
 
-        SYNTAX
+        Returns
+        -------
+        results : sherpa.fit.ErrorEstResults object
 
-        Arguments:
-           None
+        Raises
+        ------
+        sherpa.utils.err.SessionErr
+           If no `proj` call has been made.
 
-        Returns:
-           Proj estimation results object
+        See Also
+        --------
+        conf : Estimate confidence intervals for fit parameters.
+        proj : Estimate confidence intervals for fit parameters.
+        get_proj_opt : Return one or all of the options for the projection method.
+        set_proj_opt : Set an option of the proj estimation object.
 
-        DESCRIPTION
-           Access results from the last time projection was run.  The results
-           include the following attributes:
+        Notes
+        -----
+        The fields of the object include:
 
-           * datasets                        - Data sets in fit
-           
-           * methodname                      - Estimation method name
+        `datasets`
+           A tuple of the data sets used in the analysis.
 
-           * fitname                         - Fitting method name
+        `methodname`
+           This will be `projection`.
 
-           * statname                        - Statistic name
+        `iterfitname`
+           The name of the iterated-fit method used, if any.
 
-           * sigma                           - Change in statistic
+        `fitname`
+           The name of the optimization method used.
 
-           * parnames                        - Model parameter names
+        `statname`
+           The name of the fit statistic used.
 
-           * parvals                         - Model parameter fit values
+        `sigma`
+           The `sigma` value used to calculate the confidence
+           intervals.
 
-           * parmins                         - Model parameter minimum values
+        `percent`
+           The percentage of the signal contained within the
+           confidence intervals (calculated from the `sigma`
+           value assuming a normal distribution).
 
-           * parmaxes                        - Model parameter maximum values
+        `parnames`
+           A tuple of the parameter names included in the analysis.
 
-           * warnings                        - Warning messages
+        `parvals`
+           A tuple of the best-fit parameter values, in the same
+           order as `parnames`.
 
-        SEE ALSO
-           proj, covar, get_proj, get_covar_results, get_covar
+        `parmins`
+           A tuple of the lower error bounds, in the same
+           order as `parnames`.
+
+        `parmaxes`
+           A tuple of the upper error bounds, in the same
+           order as `parnames`.
+
+        `nfits`
+
+        Examples
+        --------
+
+        >>> res = get_proj_results()
+        >>> print(res)
+        datasets    = ('src',)
+        methodname  = projection
+        iterfitname = none
+        fitname     = levmar
+        statname    = chi2gehrels
+        sigma       = 1
+        percent     = 68.2689492137
+        parnames    = ('bgnd.c0',)
+        parvals     = (9.1958148476800918,)
+        parmins     = (-2.0765029551804268,)
+        parmaxes    = (2.0765029551935186,)
+        nfits       = 0
+
         """
         if self._projection_results == None:
             raise SessionErr('noaction', "projection")
@@ -6507,153 +9267,423 @@ class Session(NoNewAttributesAfterInit):
         info(res.format())
         return res
 
+    ### DOC-TODO: include screen output of covar() ?
     def covar(self, *args):
-        """
-        covar
+        """Estimate the confidence intervals for parameters using the
+        covariance method.
 
-        SYNOPSIS
-           Estimate confidence intervals for selected thawed parameters
+        The `covar` command computes confidence interval bounds for
+        the specified model parameters in the dataset, using the
+        covariance matrix of the statistic. The `get_covar` and
+        `set_covar_opt` commands can be used to configure the error
+        analysis; an example being changing the 'sigma' field to `1.6`
+        (i.e. 90%) from its default value of `1`.  The output from the
+        routine is displayed on screen, and the `get_covar_results`
+        routine can be used to retrieve the results.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        parameters : optional
+           The default is to calculate the confidence limits on all
+           thawed parameters of the model, or models, for all the
+           data sets. The evaluation can be restricted by listing
+           the parameters to use. Note that each parameter should be
+           given as a separate argument, rather than as a list.
+           For example `covar(g1.ampl, g1.sigma)`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        covar : Estimate the confidence intervals using the confidence method.
+        get_covar : Return the covariance estimation object.
+        get_covar_results : Return the results of the last `covar` run.
+        int_proj : Plot the statisitic value as a single parameter is varied.
+        int_unc : Plot the statisitic value as a single parameter is varied.
+        reg_proj : Plot the statistic value as two parameters are varied.
+        reg_unc : Plot the statistic value as two parameters are varied.
+        set_covar_opt : Set an option of the `covar` estimation object.
 
-           otherids  - Other Sherpa data ids
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with multiple `ids` or `parameters` values, the
+        order is unimportant, since any argument that is not defined
+        as a model parameter is assumed to be a data id.
 
-           pars      - Sherpa model parameters
+        The `covar` command is different to `conf`, in that in that
+        all other thawed parameters are fixed, rather than being
+        allowed to float to new best-fit values.  While `conf` is more
+        general (e.g. allowing the user to examine the parameter space
+        away from the best-fit point), it is in the strictest sense no
+        more accurate than `covar` for determining confidence
+        intervals.
 
-        Returns:
-           Formatted estimation results output
+        An estimated confidence interval is accurate if and only if:
 
-        DESCRIPTION
+        1. the chi^2 or logL surface in parameter space is
+           approximately shaped like a multi-dimensional paraboloid,
+           and
 
-        SEE ALSO
-           proj, get_proj, get_covar, get_covar_results,
-           get_proj_results
+        2. the best-fit point is sufficiently far from parameter space
+           boundaries.
+
+        One may determine if these conditions hold, for example, by
+        plotting the fit statistic as a function of each parameter's
+        values (the curve should approximate a parabola) and by
+        examining contour plots of the fit statistics made by varying
+        the values of two parameters at a time (the contours should be
+        elliptical, and parameter space boundaries should be no closer
+        than approximately 3 sigma from the best-fit point). The
+        `int_proj` and `reg_proj` commands may be used for this.
+
+        If either of the conditions given above does not hold, then
+        the output from `covar` may be meaningless except to give an
+        idea of the scale of the confidence intervals. To accurately
+        determine the confidence intervals, one would have to
+        reparameterize the model, use Monte Carlo simulations, or
+        Bayesian methods.
+
+        As `covar` estimates intervals for each parameter
+        independently, the relationship between sigma and the change
+        in statistic value delta_S can be particularly simple: sigma =
+        the square root of delta_S for statistics sampled from the
+        chi-square distribution and for the Cash statistic, and is
+        approximately equal to the square root of (2 * delta_S) for
+        fits based on the general log-likelihood. The default setting
+        is to calculate the one-sigma interval, which can be changed
+        with the `sigma` option to `set_covar_opt` or `get_covar`.
+
+        Examples
+        --------
+
+        Evaluate confidence intervals for all thawed parameters in all
+        data sets with an associated source model. The results are
+        then stored in the variable `res`.
+
+        >>> covar()
+        >>> res = get_covar_results()
+
+        Only evaluate the parametes associated with data set 2.
+
+        >>> covar(2)
+
+        Only evaluate the intervals for the `pos.xpos` and `pos.ypos`
+        parameters:
+
+        >>> covar(pos.xpos, pos.ypos)
+
+        Change the limits to be 1.6 sigma (90%) rather than the default
+        1 sigma.
+
+        >>> get_covar().sigma = 1.6
+        >>> covar()
+
+        Only evaluate the `clus.kt` parameter for the data sets with
+        identifiers "obs1", "obs5", and "obs6". This will still use
+        the 1.6 sigma setting from the previous run.
+
+        >>> covar("obs1", ["obs5","obs6"], clus.kt)
+
         """
         self._covariance_results = self._est_errors(args, 'covariance')
     
+    ### DOC-TODO: include screen output of conf() ?
     def conf(self, *args):
-        """
-        conf
+        """Estimate the confidence intervals for parameters using the
+        confidence method.
 
-        SYNOPSIS
-           Estimate confidence intervals for selected thawed parameters
+        The `conf` command computes confidence interval bounds for the
+        specified model parameters in the dataset.  A given
+        parameter's value is varied along a grid of values while the
+        values of all the other thawed parameters are allowed to float
+        to new best-fit values. The `get_conf` and `set_conf_opt`
+        commands can be used to configure the error analysis; an
+        example being changing the 'sigma' field to `1.6` (i.e. 90%)
+        from its default value of `1`.  The output from the routine is
+        displayed on screen, and the `get_conf_results` routine can be
+        used to retrieve the results.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        parameters : optional
+           The default is to calculate the confidence limits on all
+           thawed parameters of the model, or models, for all the
+           data sets. The evaluation can be restricted by listing
+           the parameters to use. Note that each parameter should be
+           given as a separate argument, rather than as a list.
+           For example `conf(g1.ampl, g1.sigma)`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        covar : Estimate the confidence intervals using the covariance method.
+        get_conf : Return the confidence-interval estimation object.
+        get_conf_results : Return the results of the last `conf` run.
+        int_proj : Plot the statisitic value as a single parameter is varied.
+        int_unc : Plot the statisitic value as a single parameter is varied.
+        reg_proj : Plot the statistic value as two parameters are varied.
+        reg_unc : Plot the statistic value as two parameters are varied.
+        set_conf_opt : Set an option of the `conf` estimation object.
 
-           otherids  - Other Sherpa data ids
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with multiple `ids` or `parameters` values, the
+        order is unimportant, since any argument that is not defined
+        as a model parameter is assumed to be a data id.
 
-           pars      - Sherpa model parameters
+        The `conf` command is different to `covar`, in that in that
+        all other thawed parameters are allowed to float to new
+        best-fit values, instead of being fixed to the initial
+        best-fit values as they are in `covar`.  While `conf` is more
+        general (e.g. allowing the user to examine the parameter space
+        away from the best-fit point), it is in the strictest sense no
+        more accurate than `covar` for determining confidence
+        intervals.
 
-        Returns:
-           Formatted estimation results output
+        An estimated confidence interval is accurate if and only if:
 
-        DESCRIPTION
-           Confidence interval bounds are determined for each selected
-           parameter in turn. A given parameter's value is varied along a grid
-           of values while the values of all the other nominally thawed
-           parameters are allowed to float to new best-fit values (compare to
-           covar, where the values of all the other nominally thawed parameters
-           remain fixed to their best-fit values). This method of estimating
-           confidence interval bounds gives truly accurate results only in
-           special cases:
+        1. the chi^2 or logL surface in parameter space is
+           approximately shaped like a multi-dimensional paraboloid,
+           and
 
-           An estimated confidence interval is accurate if and only if:
+        2. the best-fit point is sufficiently far from parameter space
+           boundaries.
 
-           1. the chi^2 or logL surface in parameter space is approximately
-              shaped like a multi-dimensional paraboloid, and
-           2. the best-fit point is sufficiently far from parameter space
-              boundaries.
+        One may determine if these conditions hold, for example, by
+        plotting the fit statistic as a function of each parameter's
+        values (the curve should approximate a parabola) and by
+        examining contour plots of the fit statistics made by varying
+        the values of two parameters at a time (the contours should be
+        elliptical, and parameter space boundaries should be no closer
+        than approximately 3 sigma from the best-fit point). The
+        `int_proj` and `reg_proj` commands may be used for this.
 
-           One may determine if these conditions hold, for example, by plotting
-           the fit statistic as a function of each parameter's values (the
-           curve should approximate a parabola) and by examining contour plots
-           of the fit statistics made by varying the values of two parameters
-           at a time (the contours should be elliptical, and parameter space
-           boundaries should be no closer than approximately 3 sigma from the
-           best-fit point).
+        If either of the conditions given above does not hold, then
+        the output from `conf` may be meaningless except to give an
+        idea of the scale of the confidence intervals. To accurately
+        determine the confidence intervals, one would have to
+        reparameterize the model, use Monte Carlo simulations, or
+        Bayesian methods.
 
-           If no arguments are given this function, it is assumed that the
-           data id is the default data id, and that limits should be computed
-           for all thawed parameters.
+        As the calculation can be computer intensive, the default
+        behavior is to use all available CPU cores to speed up the
+        analysis. This can be changed be varying the `numcores` option
+        - or setting `parallel` to `False` - either with
+        `set_conf_opt` or `get_conf`.
 
-           If arguments are given, each argument is examined to see if it
-           is a Sherpa model parameter.  If model parameters are given, it
-           is assumed that limits for only those parameters should be
-           computed.  Any argument that is not a model parameter is assumed
-           to be a data id.
+        As `conf` estimates intervals for each parameter
+        independently, the relationship between sigma and the change
+        in statistic value delta_S can be particularly simple: sigma =
+        the square root of delta_S for statistics sampled from the
+        chi-square distribution and for the Cash statistic, and is
+        approximately equal to the square root of (2 * delta_S) for
+        fits based on the general log-likelihood. The default setting
+        is to calculate the one-sigma interval, which can be changed
+        with the `sigma` option to `set_conf_opt` or `get_conf`.
 
-        SEE ALSO
-           covar, get_conf, get_proj, get_covar, get_covar_results,
-           get_conf_results, get_proj_results
+        The limit calculated by `conf` is basically a 1-dimensional
+        root in the translated coordinate system (translated by the
+        value of the statistic at the minimum plus sigma^2).  The
+        Taylor series expansion of the multi-dimensional function at
+        the minimum is:
+
+        f(x + dx) ~ f(x) + grad( f(x) )^T dx + dx^T Hessian( f(x) ) dx + ...
+
+        where x is understood to be the n-dimensional vector
+        representing the free parameters to be fitted and the
+        super-script 'T' is the transpose of the row-vector. At or
+        near the minimum, the gradient of the function is zero or
+        negligible, respectively. So the leading term of the expansion
+        is quadratic.  The best root finding algorithm for a curve
+        which is approximately parabolic is Muller's method [1]_.
+        Muller's method is a generalization of the secant method [2]_:
+        the secant method is an iterative root finding method that
+        approximates the function by a straight line through two
+        points, whereas Muller's method is an iterative root finding
+        method that approxmiates the function by a quadratic
+        polynomial through three points.
+
+        Three data points are the minimum input to Muller's root
+        finding method. The first point to be submitted to the
+        Muller's root finding method is the point at the minimum. To
+        strategically choose the other two data points, the confidence
+        function uses the output from covariance as the second data
+        point. To generate the third data points for the input to
+        Muller's root finding method, the secant root finding method
+        is used since it only requires two data points to generate the
+        next best approximation of the root.
+
+        However, there are cases where `conf` cannot locate the root
+        even though the root is bracketed within an interval (perhaps
+        due to the bad resolution of the data). In such cases, when
+        the option `openinterval` is set to `False` (which is the
+        default), the routine will print a warning message about not
+        able to find the root within the set tolerance and the
+        function will return the average of the open interval which
+        brackets the root. If `openinterval` is set to `True` then
+        `conf` will print the minimal open interval which brackets the
+        root (not to be confused with the lower and upper bound of the
+        confidence interval). The most accurate thing to do is to
+        return an open interval where the root is localized/bracketed
+        rather then the average of the open interval (since the
+        average of the interval is not a root within the specified
+        tolerance).
+
+        References
+        ----------
+
+        .. [1] Muller, David E., "A Method for Solving Algebraic
+               Equations Using an Automatic Computer," MTAC, 10
+               (1956), 208-215.
+
+        .. [2] Numerical Recipes in Fortran, 2nd edition, 1986, Press
+               et al., p. 347
+
+        Examples
+        --------
+
+        Evaluate confidence intervals for all thawed parameters in all
+        data sets with an associated source model. The results are
+        then stored in the variable `res`.
+
+        >>> conf()
+        >>> res = get_conf_results()
+
+        Only evaluate the parametes associated with data set 2.
+
+        >>> conf(2)
+
+        Only evaluate the intervals for the `pos.xpos` and `pos.ypos`
+        parameters:
+
+        >>> conf(pos.xpos, pos.ypos)
+
+        Change the limits to be 1.6 sigma (90%) rather than the default
+        1 sigma.
+
+        >>> get_conf().sigma = 1.6
+        >>> conf()
+
+        Only evaluate the `clus.kt` parameter for the data sets with
+        identifiers "obs1", "obs5", and "obs6". This will still use
+        the 1.6 sigma setting from the previous run.
+
+        >>> conf("obs1", ["obs5","obs6"], clus.kt)
+
         """
         self._confidence_results = self._est_errors(args, 'confidence')
 
+    ### DOC-TODO: add a deprecation note?
     def proj(self, *args):
-        """
-        proj
+        """Estimate the confidence intervals for parameters using the
+        projection method.
 
-        SYNOPSIS
-           Estimate confidence intervals for selected thawed parameters
+        .. note:: The `conf` function should be used instead of `proj`.
 
-        SYNTAX
+        The `proj` command computes confidence interval bounds for the
+        specified model parameters in the dataset. A given parameter's
+        value is varied along a grid of values while the values of all
+        the other thawed parameters are allowed to float to new
+        best-fit values. The `get_proj` and `set_proj_opt`
+        commands can be used to configure the error analysis; an
+        example being changing the 'sigma' field to `1.6` (i.e. 90%)
+        from its default value of `1`.  The output from the routine is
+        displayed on screen, and the `get_proj_results` routine can be
+        used to retrieve the results.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Parameters
+        ----------
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        parameters : optional
+           The default is to calculate the confidence limits on all
+           thawed parameters of the model, or models, for all the
+           data sets. The evaluation can be restricted by listing
+           the parameters to use. Note that each parameter should be
+           given as a separate argument, rather than as a list.
+           For example `proj(g1.ampl, g1.sigma)`.
 
-           otherids  - Other Sherpa data ids
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        get_proj : Return the confidence-interval estimation object.
+        get_proj_results : Return the results of the last `proj` run.
+        int_proj : Plot the statisitic value as a single parameter is varied.
+        reg_proj : Plot the statistic value as two parameters are varied.
+        set_proj_opt : Set an option of the `proj` estimation object.
 
-           pars      - Sherpa model parameters
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with multiple `ids` or `parameters` values, the
+        order is unimportant, since any argument that is not defined
+        as a model parameter is assumed to be a data id.
 
-        Returns:
-           Formatted estimation results output
+        The `proj` command is different to `covar`, in that all other
+        thawed parameters are allowed to float to new best-fit values,
+        instead of being fixed to the initial best-fit values.  While
+        `proj` is more general (e.g. allowing the user to examine the
+        parameter space away from the best-fit point), it is in the
+        strictest sense no more accurate than `covar` for
+        determining confidence intervals.
 
-        DESCRIPTION
-           Confidence interval bounds are determined for each selected
-           parameter in turn. A given parameter's value is varied along a grid
-           of values while the values of all the other nominally thawed
-           parameters are allowed to float to new best-fit values (compare to
-           covar, where the values of all the other nominally thawed parameters
-           remain fixed to their best-fit values). This method of estimating
-           confidence interval bounds gives truly accurate results only in
-           special cases:
+        An estimated confidence interval is accurate if and only if:
 
-           An estimated confidence interval is accurate if and only if:
+        1. the chi^2 or logL surface in parameter space is
+           approximately shaped like a multi-dimensional paraboloid,
+           and
 
-           1. the chi^2 or logL surface in parameter space is approximately
-              shaped like a multi-dimensional paraboloid, and
-           2. the best-fit point is sufficiently far from parameter space
-              boundaries.
+        2. the best-fit point is sufficiently far from parameter space
+           boundaries.
 
-           One may determine if these conditions hold, for example, by plotting
-           the fit statistic as a function of each parameter's values (the
-           curve should approximate a parabola) and by examining contour plots
-           of the fit statistics made by varying the values of two parameters
-           at a time (the contours should be elliptical, and parameter space
-           boundaries should be no closer than approximately 3 sigma from the
-           best-fit point).
+        One may determine if these conditions hold, for example, by
+        plotting the fit statistic as a function of each parameter's
+        values (the curve should approximate a parabola) and by
+        examining contour plots of the fit statistics made by varying
+        the values of two parameters at a time (the contours should be
+        elliptical, and parameter space boundaries should be no closer
+        than approximately 3 sigma from the best-fit point). The
+        `int_proj` and `reg_proj` commands may be used for this.
 
-           If no arguments are given this function, it is assumed that the
-           data id is the default data id, and that limits should be computed
-           for all thawed parameters.
+        If either of the conditions given above does not hold, then
+        the output from `proj` may be meaningless except to give an
+        idea of the scale of the confidence intervals. To accurately
+        determine the confidence intervals, one would have to
+        reparameterize the model, use Monte Carlo simulations, or
+        Bayesian methods.
 
-           If arguments are given, each argument is examined to see if it
-           is a Sherpa model parameter.  If model parameters are given, it
-           is assumed that limits for only those parameters should be
-           computed.  Any argument that is not a model parameter is assumed
-           to be a data id.
+        As the calculation can be computer intensive, the default
+        behavior is to use all available CPU cores to speed up the
+        analysis. This can be changed be varying the `numcores` option
+        - or setting `parallel` to `False` - either with
+        `set_proj_opt` or `get_proj`.
 
-        SEE ALSO
-           covar, get_proj, get_covar, get_covar_results,
-           get_proj_results
+        As `proj` estimates intervals for each parameter
+        independently, the relationship between sigma and the change
+        in statistic value delta_S can be particularly simple: sigma =
+        the square root of delta_S for statistics sampled from the
+        chi-square distribution and for the Cash statistic, and is
+        approximately equal to the square root of (2 * delta_S) for
+        fits based on the general log-likelihood. The default setting
+        is to calculate the one-sigma interval, which can be changed
+        with the `sigma` option to `set_proj_opt` or `get_proj`.
+
         """
         self._projection_results = self._est_errors(args, 'projection')
 
@@ -6668,37 +9698,431 @@ class Session(NoNewAttributesAfterInit):
 
     ###########################################################################
     # PyBLoCXS routines for Markov Chain Monte Carlo
+    #
+    # DOC-TODO: should this use functools.wraps or something similar,
+    #           to avoid copying the docs?
+    # DOC-TODO: integrate the existing pyblocks python documentation - e.g.
+    #           http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
     ###########################################################################
 
 
     def set_sampler_opt(self, opt, value):
+        """Set an option for the current pyBLoCXS sampler.
+
+        Parameters
+        ----------
+        opt : str
+           The option to change. Use `get_sampler` to view the
+           available options for the current sampler.
+        value :
+           The value for the option.
+
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_prior: Set the prior function to use with a parameter.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Notes
+        -----
+        The options depend on the sampler [1]_. The options include:
+
+        `defaultprior`
+           Set to `False` when the default prior (flat, between the
+           parameter's soft limits) should not be used. Use
+           `set_prior` to set the form of the prior for each
+           parameter.
+
+        `inv`
+           A bool, or array of bools, to indicate which parameter is
+           on the inverse scale.
+
+        `log`
+           A bool, or array of bools, to indicate which parameter is
+           on the logarithm (natural log) scale.
+
+        `original`
+           A bool, or array of bools, to indicate which parameter is
+           on the original scale.
+
+        `p_M`
+           The proportion of jumps generatd by the Metropolis
+           jumping rule.
+
+        `priorshape`
+           An array of bools indicating which parameters have a
+           user-defined prior functions set with `set_prior`.
+
+        `scale`
+           Multiply the output of `covar` by this factor and
+           use the result as the scale of the t-distribution.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+
+        Examples
+        --------
+
+        >>> set_sampler_opt('scale', 3)
+
+        """
         self._pyblocxs.set_sampler_opt(opt, value)
 
     def get_sampler_opt(self, opt):
+        """Return an option of the current pyBLoCXS sampler.
+
+        Returns
+        -------
+        opt : str
+           The name of the option. The fields depend on the current
+           sampler.
+
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        >>> get_sampler_opt('log')
+        False
+
+        """
         return self._pyblocxs.get_sampler_opt(opt)
 
     def get_sampler_name(self):
+        """Return the name of the current pyBLoCXS sampler.
+
+        Returns
+        -------
+        name : str
+
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        >>> get_sampler_name()
+        'MetropolisMH'
+
+        """
         return self._pyblocxs.get_sampler_name()
         
     def set_sampler(self, sampler):
+        """Set the pyBLoCXS sampler.
+
+        The sampler determines the type of jumping rule to
+        be used when running the MCMC analysis.
+
+        Parameters
+        ----------
+        sampler : str or sherpa.sim.Sampler instance
+           When a string, the name of the sampler to use (case
+           insensitive). The supported options are given by the
+           `list_samplers` function.
+
+        See Also
+        --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
+        list_samplers : List the pyBLoCXS samplers.
+        set_sampler : Set the pyBLoCXS sampler.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+
+        Notes
+        -----
+        The jumping rules are [1]_:
+
+        MH
+           The 'MH' option refers to the Metropolis-Hastings rule,
+           which always jumps from the best-fit location.
+
+        MetropolisMH
+           This is the Metropolis with Metropolis-Hastings algorithm,
+           that jumps from the best-fit with probability 'p_M',
+           otherwise it jumps from the last accepted jump. The
+           value of `p_M` can be changed using `set_sampler_opt`.
+
+        PragBayes
+           This is used when the effective area calibration
+           uncertainty is to be included in the calculation. At each
+           nominal MCMC iteration, a new calibration product is
+           generated, and a series of N (the `nsubiters` option) MCMC
+           sub-iteration steps are carried out, choosing between
+           Metropolis and Metropolis-Hastings types of samplers with
+           probability `p_M`.  Only the last of these sub-iterations
+           are kept in the chain.  The `nsubiters` and `p_M` values
+           can be changed using `set_sampler_opt`.
+
+        FullBayes
+           Another sampler for use when including uncertainties due
+           to the effective area.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+
+        Examples
+        --------
+
+        >>> set_sampler('metropolismh')
+
+        """
         self._pyblocxs.set_sampler(sampler)
 
     def get_sampler(self):
+        """Return the current pyBLoCXS sampler options.
+
+        Returns
+        -------
+        options : dict
+           A copy of the  options for the chosen sampler.  Use
+           `set_sampler_opt` to change these values. The fields depend
+           on the current sampler.
+
+        See Also
+        --------
+        get_sampler_name : Return the name of the current pyBLoCXS sampler.
+        get_sampler_opt : Return an option of the current pyBLoCXS sampler.
+        set_sampler : Set the pyBLoCXS sampler.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+
+        """
         return self._pyblocxs.get_sampler()
 
+    ### DOC-TODO: should set_sampler_opt be mentioned here?
     def set_prior(self, par, prior):
+        """Set the prior function to use with a parameter.
+
+        The pyBLoCXS Markov Chain Monte Carlo (MCMC) algorithm [1]_
+        supports Bayesian Low-Count X-ray Spectral analysis. By
+        default, a flat prior is used for each parameter in the fit,
+        varying between its soft minimum and maximum values.  The
+        `set_prior` function is used to change the form of the prior
+        for a parameter.
+
+        Parameters
+        ----------
+        par : sherpa.models.parameter.Parameter instance
+           A parameter of a model instance.
+        prior : function or sherpa.models.model.Model instance
+           The function to use for a prior. It must accept a
+           single argument and return a value of the same size
+           as the input.
+
+        See Also
+        --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
+        get_prior : Set the prior function to use with a parameter.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+
+        Examples
+        --------
+
+        Set the prior for the `kT` parameter of the `therm` instance
+        to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
+        keV:
+
+        >>> create_model_component('xsapec', 'therm')
+        >>> create_model_component('gauss1d', 'p_temp')
+        >>> p_temp.pos = 1.7
+        >>> p.temo_fwhm = 0.35
+        >>> set_prior(therm.kT, p_temp)
+
+        Create a function (`lognorm`) and use it as the prior the the
+        `nH` parameter of the `abs1` instance:
+
+        >>> create_model_component('xsphabs', 'abs1')
+        >>> def lognorm(x):
+           # center on 10^20 cm^2 with a sigma of 0.5
+           sigma = 0.5
+           x0 = 20
+           # nH is in units of 10^-22 so convert
+           dx = np.log10(x) + 22 - x0
+           norm = sigma / np.sqrt(2 * np.pi)
+           return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
+
+        >>> set_prior(abs1.nH, lognorm)
+
+        """
         self._pyblocxs.set_prior(par, prior)
 
     def get_prior(self, par):
+        """Return the prior function for a parameter.
+
+        Parameters
+        ----------
+        par : sherpa.models.parameter.Parameter
+           A parameter of a model instance.
+
+        Returns
+        -------
+        prior :
+           The function or parameter instance set by
+           a previous call to `set_prior`.
+
+        Raises
+        ------
+        ValueError
+           If a prior has not been set for the parameter.
+
+        See Also
+        --------
+        set_prior : Set the prior function to use with a parameter.
+
+        Examples
+        --------
+
+        >>> pfunc = get_prior(bgnd.c0)
+
+        """
         return self._pyblocxs.get_prior(par)
 
+    ### DOC-TODO: include examples once this returns something useful
     def list_priors(self):
+        """Return the priors set for model parameters, if any.
+
+        Returns
+        -------
+        priors : string
+           A string representation of the dictionary mapping between
+           parameters (keys) and priot functions (values).
+
+        See Also
+        --------
+        get_prior : Return the prior function for a parameter.
+        set_prior : Set the prior function to use with a parameter.
+
+        """
         return self._pyblocxs.list_priors()
 
     def list_samplers(self):
+        """List the pyBLoCXS samplers.
+
+        Returns
+        -------
+        samplers : list of str
+           A list of the names (in lower case) that can be used with
+           `set_sampler`.
+
+        See Also
+        --------
+        get_sampler_name : Return the name of the current pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        >>> list_samplers()
+        ['metropolismh', 'fullbayes', 'mh', 'pragbayes']
+
+        """
         return self._pyblocxs.list_samplers()
 
+    ### DOC-TODO: fix up the URL since it should be an internal
+    ###           reference (ie documented here)
+    ### DOC-TODO: add pointers on what to do with the return values
     def get_draws(self, id=None, otherids=(), niter=1000):
+        """Run the pyBLoCXS MCMC algorithm.
+
+        The function runs a Markov Chain Monte Carlo (MCMC) algorithm
+        designed to carry out Bayesian Low-Count X-ray Spectral
+        (BLoCXS) analysis [1]_. Unlike many MCMC algorithms, it is
+        designed to explore the parameter space at the suspected
+        statistic minimum (i.e.  after using `fit`) [2]_. The return
+        values include the statistic value, parameter values, and a
+        flag indicating whether the row represents a jump from the
+        current location or not.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the data and model. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
+        niter : int, optional
+           The number of draws to use. The default is `1000`.
+
+        Returns
+        -------
+        stats, accept, params :
+           The results of the MCMC chain. The stats and accept arrays
+           contain niter+1 elements, with the first row being the
+           starting values. The params array has (nparams,niter+1)
+           elements, where nparams is the number of free parameters in
+           the model expression, and the first column contains the
+           values that the chain starts at. The accept array contains
+           boolean values, indicating whether the jump, or step, was
+           accepted (`True`), so the parameter values and statistic
+           change, or it wasn't, in which case there is no change to
+           the previous row.
+
+        See Also
+        --------
+        covar : Estimate the confidence intervals using the covariance method.
+        fit : Fit a model to one or more data sets.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_pdf : Plot the probability density function of an array.
+        plot_scatter : Create a scatter plot.
+        plot_trace : Create a trace plot of row number versus value.
+        set_prior : Set the prior function to use with a parameter.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Notes
+        -----
+        The chain is run using fit information associated with the
+        specified data set, or sets, the currently set sampler
+        (`set_sampler`) and parameter priors (`set_prior`), for a
+        specified number of iterations. The model should have been fit
+        to find the best-fit parameters, and `covar` called, before
+        running `get_draws`. The results from `get_draws` is used to
+        estimate the parameter distributions.
+
+        References
+        ----------
+
+        .. [1] "Analysis of Energy Spectra with Low Photon Counts via
+               Bayesian Posterior Simulation", van Dyk, D.A., Connors,
+               A., Kashyap, V.L., & Siemiginowska, A.  2001, Ap.J.,
+               548, 224
+               http://adsabs.harvard.edu/abs/2001ApJ...548..224V
+
+        .. [2] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+
+        Examples
+        --------
+        Fit a source and then run a chain to investigate the parameter
+        distributions.  The distribution of the stats values created
+        by the chain is then displayed, using `plot_trace`, and the
+        parameter distributions for the first two thawed parameters
+        are displayed. The first one as a cumulative distribution
+        using `plot_cdf` and the second one as a probability
+        distribution using `plot_pdf`. Finally the acceptance fraction
+        (number of draws where the chain moved) is displayed:
+
+        >>> fit()
+        >>> covar()
+        >>> (stats, accept, params) = get_draws(1, niter=1e4)
+        >>> plot_trace(stats, name='stat')
+        >>> names = [p.fullname for p in get_source().pars if not p.frozen]
+        >>> plot_cdf(params[0,:], name=names[0], xlabel=names[0])
+        >>> plot_pdf(params[1,:], name=names[1], xlabel=names[1])
+        >>> accept[1:].sum() / 1.0e4
+        0.4287
+
+        """
 
         ids, fit = self._get_fit(id, otherids)
 
@@ -6726,314 +10150,270 @@ class Session(NoNewAttributesAfterInit):
     # Plot object access
     #
 
+    ### DOC-TODO: how is this used? simple testing didn't seem to make any
+    ###           difference with chips
     def get_split_plot(self):
-        """
-        get_split_plot
+        """Return the plot attributes for displays with multiple plots.
 
-        SYNOPSIS
-           Return a Sherpa split plot
+        Returns
+        -------
+        splot : a sherpa.plot.SplitPlot instance
 
-        SYNTAX
-
-        Arguments:
-           None
-
-        Returns:
-           Sherpa SplitPlot plot
-
-        DESCRIPTION
-           The Sherpa split plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              rows         - number of rows of plots
-                             default = 2
-
-              cols         - number of columns of plots
-                             default = 1
-
-              plot_prefs   - dictionary of plotting preferences
-                  None
-
-           Functions:
-
-              addplot(self, plot, *args, **kwargs)
-                 add a plot to the series in the split plot panel
-
-              addcontour(self, plot, *args, **kwargs)
-                 add a contour plot to the series in the split plot panel
-
-              plot(self, row, col, plot, *args, **kwargs)
-                 send the split plot panel to the visualizer
-
-              contour(self, row, col, plot, *args, **kwargs)
-                 send the split plot panel to the visualizer
-
-              overlayplot(self, plot, *args, **kwargs)
-                 plot over current plot
-
-              overlaycontour(self, plot, *args, **kwargs)
-                 plot contour over current contour plot
-
-              overplot(self, row, col, plot, *args, **kwargs)
-                 plot over current plot at specific coordinates
-
-              overcontour(self, row, col, plot, *args, **kwargs)
-                plot contour over current contour plot at specific coordinates
-
-        SEE ALSO
-           plot, plot_fit_resid, plot_fit_delchi
         """
         return self._splitplot
 
     def get_data_plot(self, id=None):
-        """
-        get_data_plot
+        """Return the data used by plot_data.
 
-        SYNOPSIS
-           Return a Sherpa data plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        data : a sherpa.plot.DataPlot instance
+           An object representing the data used to create the plot by
+           `plot_data`. The relationship between the returned values
+           and the values in the data set depend on the data type. For
+           example PHA data are plotted in units controlled by
+           `set_analysis`, but are stored as channels and counts, and
+           may have been grouped and the background estimate removed.
 
-        Arguments:
-           id        - Sherpa data id
+        See Also
+        --------
+        get_data_plot_prefs : Return the preferences for plot_data.
+        get_default_id : Return the default data set identifier.
+        plot_data : Plot the data values.
 
-        Returns:
-           Sherpa DataPlot object
-
-        DESCRIPTION
-           The Sherpa data plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_data
         """
         self._prepare_plotobj(id, self._dataplot)
         return self._dataplot
 
+    ### DOC-TODO: discussion of preferences needs better handling
+    ###           of how it interacts with the chosen plot backend.
     def get_data_plot_prefs(self):
-        """
-        get_data_plot_prefs
+        """Return the preferences for plot_data.
 
-        SYNOPSIS
-           Return data plot preferences
+        Returns
+        -------
+        prefs : dict
+           Changing the values of this dictionary will change any new
+           data plots. This dictionary will be empty if no plot
+           backend is available.
 
-        SYNTAX
+        See Also
+        --------
+        plot_data : Plot the data values.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-        Arguments:
-           None
+        Notes
+        -----
+        The meaning of the fields depend on the chosen plot backend.
+        A value of `None` means to use the default value for that
+        attribute, unless indicated otherwise. These preferences
+        are used by the following commands: `plot_data`, `plot_bkg`,
+        `plot_ratio`, and the "fit" variants, such as `plot_fit`,
+        `plot_fit_resid`, and `plot_bkg_fit`.
 
-        Returns:
-           Dictionary of data plot preferences
+        `errcolor`
+           The color to draw error bars. The default is `None`.
 
-        DESCRIPTION
-              plot_prefs   - dictionary of plotting preferences
+        `errstyle`
+           How to draw errors. The default is `line`.
 
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - False
-                 symbolsize     - 3
-                 symbolstyle    - 4
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
+        `errthickness`
+           What thickness of line to draw error bars. The default is
+           `None`.
 
-           Examples:
+        `linecolor`
+           What color to use for the line connecting the data points.
+           The default is `None`.
 
-               get_data_plot_prefs()
-           {'errstyle': 'line', 'symbolfill': False, 'symbolstyle': 4,
-            'linestyle': 0, 'symbolsize': 3, 'yerrorbars': True}
+        `linestyle`
+           How should the line connecting the data points be drawn.
+           The default is `0`, which means no line is drawn.
 
-               get_data_plot_prefs()['xlog']=True
+        `linethickness`
+           What thickness should be used to draw the line connecting
+           the data points. The default is `None`.
 
-               get_data_plot_prefs()
-           {'errstyle': 'line', 'symbolfill': False, 'symbolstyle': 4,
-            'xlog': True, 'linestyle': 0, 'symbolsize': 3, 'yerrorbars': True}
+        `ratioline`
+           Should a horizontal line be drawn at y=1?  The default is
+           `False`.
 
+        `symbolcolor`
+           What color to draw the symbol representing the data points.
+           The default is `None`.
 
-        SEE ALSO
-           plot_data, get_data_plot
+        `symbolfill`
+           Should the symbol be drawn filled? The default is `False`.
+
+        `symbolsize`
+           What size is the symbol drawn. The default is `3`.
+
+        `symbolstyle`
+           What style is used for the symbols. The default is `4`
+           which means `circle` for the ChIPS back end.
+
+        `xaxis`
+           The default is `False`
+
+        `xerrorbars`
+           Should error bars be drawn for the X axis. The default is
+           `False`.
+
+        `xlog`
+           Should the X axis be drawn with a logarithmic scale? The
+           default is `False`. This field can also be changed with the
+           `set_xlog` and `set_xlinear` functions.
+
+        `yerrorbars`
+           Should error bars be drawn for the Y axis. The default is
+           `True`.
+
+        `ylog`
+           Should the Y axis be drawn with a logarithmic scale? The
+           default is `False`. This field can also be changed with the
+           `set_ylog` and `set_ylinear` functions.
+
+        Examples
+        --------
+
+        After these commands, any data plot will use a green symbol
+        and not display Y error bars.
+
+        >>> prefs = get_data_plot_prefs()
+        >>> prefs['symbolcolor'] = 'green'
+        >>> prefs['yerrorbars'] = False
+
         """
         return self._dataplot.plot_prefs
 
+    # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self, id=None):
-        """
-        get_model_plot
+        """Return the data used by plot_model.
 
-        SYNOPSIS
-           Return a Sherpa model plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        data :
+           An object representing the data used to create the plot by
+           `plot_model`. The return value depends on the data
+           set (e.g. 1D binned or un-binned).
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_model_plot_prefs : Return the preferences for plot_model.
+        plot_model : Plot the model for a data set.
 
-        Returns:
-           Sherpa ModelPlot object
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa model plot object holds references to various
-           plot preferences and data arrays.
+        >>> mplot = get_model_plot()
 
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-           Functions:
-
-              prepare()
-                 calculate the model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_model
         """
         self._prepare_plotobj(id, self._modelplot)
         return self._modelplot
 
+    # also in sherpa.astro.utils (does not copy this docstring)
     def get_source_plot(self, id=None):
-        """
-        get_source_plot
+        """Return the data used by plot_source.
 
-        SYNOPSIS
-           Return a Sherpa source plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        data :
+           An object representing the data used to create the plot by
+           `plot_source`. The return value depends on the data
+           set (e.g. 1D binned or un-binned).
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_model_plot : Return the data used by plot_model.
+        plot_model : Plot the model for a data set.
+        plot_source : Plot the source expression for a data set.
 
-        Returns:
-           Sherpa SourcePlot object
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa source plot object holds references to various
-           plot preferences and data arrays.
+        >>> splot = get_source_plot()
 
-           Attributes:
-              title        - title of plot, read-only
+        >>> splot1 = get_source_plot(id='jet')
+        >>> splot2 = get_source_plot(id='core')
 
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-           Functions:
-
-              prepare()
-                 calculate the source and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_source
         """
         self._prepare_plotobj(id, self._sourceplot)
         return self._sourceplot
 
 
+    # sherpa.astro.utils version copies this docstring
     def get_model_component_plot(self, id, model=None):
-        """
-        get_model_component_plot
+        """Return the data used by plot_model_component.
 
-        SYNOPSIS
-           Return a Sherpa model component plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to use (the name, if a string).
 
-        SYNTAX
+        Returns
+        -------
+        data :
+           An object representing the data used to create the plot by
+           `plot_model_component`. The return value depends on the
+           data set (e.g. 1D binned or un-binned).
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_model_plot : Return the data used by plot_model.
+        plot_model : Plot the model for a data set.
+        plot_model_component : Plot a component of the model for a data set.
 
-           model     - Sherpa model component
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-        Returns:
-           Sherpa ComponentModelPlot object
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa model component plot object holds references to 
-           various plot preferences and data arrays.
+        Return the plot data for the `pl` component used in the
+        default data set:
 
-           Attributes:
-              title        - title of plot, read-only
+        >>> cplot = get_model_component(pl)
 
-              xlabel       - x axis label, read-only
+        Return the full source model (`fplot`) and then for the
+        components `gal * pl` and `gal * gline`, for the data set
+        'jet':
 
-              ylabel       - y axis label, read-only
+        >>> fmodel = xsphabs.gal * (powlaw1d.pl + gauss1d.gline)
+        >>> set_source('jet', fmodel)
+        >>> fit('jet')
+        >>> fplot = get_model('jet')
+        >>> plot1 = get_model_component('jet', pl*gal)
+        >>> plot2 = get_model_component('jet', gline*gal)
 
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-           Functions:
-
-              prepare()
-                 calculate the source and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_model_component, plot_source_component
         """
         if model is None:
             id, model = model, id
@@ -7045,53 +10425,59 @@ class Session(NoNewAttributesAfterInit):
         return self._compmdlplot
 
 
+    # sherpa.astro.utils version copies this docstring
     def get_source_component_plot(self, id, model=None):
-        """
-        get_source_component_plot
+        """Return the data used by plot_source_component.
 
-        SYNOPSIS
-           Return a Sherpa source model component plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to use (the name, if a string).
 
-        SYNTAX
+        Returns
+        -------
+        data :
+           An object representing the data used to create the plot by
+           `plot_source_component`. The return value depends on the
+           data set (e.g. 1D binned or un-binned).
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_source_plot : Return the data used by plot_source.
+        plot_source : Plot the source expression for a data set.
+        plot_source_component : Plot a component of the source expression for a data set.
 
-           model     - Sherpa source model component
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-        Returns:
-           Sherpa ComponentSourcePlot object
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa source model component plot object holds references to 
-           various plot preferences and data arrays.
+        Return the plot data for the `pl` component used in the
+        default data set:
 
-           Attributes:
-              title        - title of plot, read-only
+        >>> cplot = get_source_component(pl)
 
-              xlabel       - x axis label, read-only
+        Return the full source model (`fplot`) and then for the
+        components `gal * pl` and `gal * gline`, for the data set
+        'jet':
 
-              ylabel       - y axis label, read-only
+        >>> fmodel = xsphabs.gal * (powlaw1d.pl + gauss1d.gline)
+        >>> set_source('jet', fmodel)
+        >>> fit('jet')
+        >>> fplot = get_source('jet')
+        >>> plot1 = get_source_component('jet', pl*gal)
+        >>> plot2 = get_source_component('jet', gline*gal)
 
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-           Functions:
-
-              prepare()
-                 calculate the source and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_model_component, plot_source_component
         """
         if model is None:
             id, model = model, id
@@ -7108,996 +10494,804 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_model_plot_prefs(self):
-        """
-        get_model_plot_prefs
+        """Return the preferences for plot_model.
 
-        SYNOPSIS
-           Return model plot preferences
+        Returns
+        -------
+        prefs : dict
+           Changing the values of this dictionary will change any new
+           model plots. This dictionary will be empty if no plot
+           backend is available.
 
-        SYNTAX
+        See Also
+        --------
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-        Arguments:
-           None
+        Notes
+        -----
+        The meaning of the fields depend on the chosen plot backend.
+        A value of `None` means to use the default value for that
+        attribute, unless indicated otherwise. These preferences are
+        used by the following commands: `plot_model`, `plot_ratio`,
+        `plot_bkg_model`, and the "fit" variants, such as `plot_fit`,
+        `plot_fit_resid`, and `plot_bkg_fit`.
 
-        Returns:
-           Dictionary of model plot preferences
+        `errcolor`
+           The color to draw error bars. The default is `None`.
 
-        DESCRIPTION
-              plot_prefs   - dictionary of plotting preferences
+        `errstyle`
+           How to draw errors. The default is `None`.
 
-                 errcolor       - None
-                 errstyle       - None
-                 errthickness   - None
-                 linecolor      - 'red'
-                 linestyle      - 1
-                 linethickness  - 3
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - None
-                 symbolstyle    - 0
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False
+        `errthickness`
+           What thickness of line to draw error bars. The default is
+           `None`.
 
-           Examples:
+        `linecolor`
+           What color to use for the line connecting the data points.
+           The default is `red`.
 
-               get_model_plot_prefs()
-           {'symbolstyle': 0, 'linethickness': 3, 'linestyle': 1,
-            'linecolor': 'red'}
+        `linestyle`
+           How should the line connecting the data points be drawn.
+           The default is `1`, which means a solid line is drawn.
 
-               get_model_plot_prefs()['linecolor']='yellow'
+        `linethickness`
+           What thickness should be used to draw the line connecting
+           the data points. The default is `3`.
 
-               get_model_plot_prefs()
-           {'symbolstyle': 0, 'linethickness': 3, 'linestyle': 1,
-            'linecolor': 'yellow'}
+        `ratioline`
+           Should a horizontal line be drawn at y=1?  The default is
+           `False`.
 
+        `symbolcolor`
+           What color to draw the symbol representing the data points.
+           The default is `None`.
 
-        SEE ALSO
-           plot_model, get_model_plot
+        `symbolfill`
+           Should the symbol be drawn filled? The default is `True`.
+
+        `symbolsize`
+           What size is the symbol drawn. The default is `None`.
+
+        `symbolstyle`
+           What style is used for the symbols. The default is `0`,
+           which means no symbol is used.
+
+        `xaxis`
+           The default is `False`
+
+        `xerrorbars`
+           Should error bars be drawn for the X axis. The default is
+           `False`.
+
+        `xlog`
+           Should the X axis be drawn with a logarithmic scale? The
+           default is `False`. This field can also be changed with the
+           `set_xlog` and `set_xlinear` functions.
+
+        `yerrorbars`
+           Should error bars be drawn for the Y axis. The default is
+           `False`.
+
+        `ylog`
+           Should the Y axis be drawn with a logarithmic scale? The
+           default is `False`. This field can also be changed with the
+           `set_ylog` and `set_ylinear` functions.
+
+        Examples
+        --------
+
+        After these commands, any model plot will use a green line
+        to display the model:
+
+        >>> prefs = get_model_plot_prefs()
+        >>> prefs['linecolor'] = 'green'
+
         """
         return self._modelplot.plot_prefs
 
     def get_fit_plot(self, id=None):
-        """
-        get_fit_plot
+        """Return the data used by plot_fit.
 
-        SYNOPSIS
-           Return a Sherpa fit plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        data : a sherpa.plot.FitPlot instance
+           An object representing the data used to create the plot by
+           `plot_fit`. It contains the data from `get_data_plot`
+           and `get_model_plot` in the `dataplot` and `modelplot`
+           attributes.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        get_data_plot_prefs : Return the preferences for plot_data.
+        get_model_plot_prefs : Return the preferences for plot_model.
+        get_default_id : Return the default data set identifier.
+        plot_data : Plot the data values.
+        plot_model : Plot the model for a data set.
 
-        Returns:
-           Sherpa FitPlot plot
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa fit plot object holds a reference to a data plot and
-           model plot instance.
+        >>> fplot = get_fit_plot()
 
-           Attributes:
-              dataplot
-
-              modelplot
-
-        SEE ALSO
-           plot_fit
         """
         self._prepare_plotobj(id, self._fitplot)
         return self._fitplot
 
     def get_resid_plot(self, id=None):
-        """
-        get_resid_plot
+        """Return the data used by plot_resid.
 
-        SYNOPSIS
-           Return a Sherpa resid plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.ResidPlot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ResidPlot object
+        See Also
+        --------
+        get_chisqr_plot : Return the data used by plot_chisqr.
+        get_delchi_plot : Return the data used by plot_delchi.
+        get_ratio_plot : Return the data used by plot_ratio.
+        plot_resid : Plot the residuals (data - model) for a data set.
 
-        DESCRIPTION
-           The Sherpa resid plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the residual data for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> rplot = get_resid_plot()
+        >>> np.min(rplot.y)
+        -2.9102595936209896
+        >>> np.max(rplot.y)
+        4.0897404063790104
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - False
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3
-                 symbolstyle    - 2
-                 xaxis          - True
-                 xerrorbars     - True
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the residuals and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_resid
         """
         self._prepare_plotobj(id, self._residplot)
         return self._residplot
 
     def get_delchi_plot(self,id=None):
-        """
-        get_delchi_plot
+        """Return the data used by plot_delchi.
 
-        SYNOPSIS
-           Return a Sherpa delta chi plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.DelchiPlot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa DelchiPlot object
+        See Also
+        --------
+        get_chisqr_plot : Return the data used by plot_chisqr.
+        get_ratio_plot : Return the data used by plot_ratio.
+        get_resid_plot : Return the data used by plot_resid.
+        plot_delchi : Plot the ratio of residuals to error for a data set.
 
-        DESCRIPTION
-           The Sherpa delta chi plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the residual data, measured in units of the error, for
+        the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> rplot = get_delchi_plot()
+        >>> np.min(rplot.y)
+        -2.85648373819671875
+        >>> np.max(rplot.y)
+        2.89477053577520982
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - False
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3
-                 symbolstyle    - 2
-                 xaxis          - True
-                 xerrorbars     - True
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the delta chi and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_delchi
         """
         self._prepare_plotobj(id, self._delchiplot)
         return self._delchiplot
 
     def get_chisqr_plot(self,id=None):
-        """
-        get_chisqr_plot
+        """Return the data used by plot_chisqr.
 
-        SYNOPSIS
-           Return a Sherpa chi square plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.ChisqrPlot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ChisqrPlot object
+        See Also
+        --------
+        get_delchi_plot : Return the data used by plot_delchi.
+        get_ratio_plot : Return the data used by plot_ratio.
+        get_resid_plot : Return the data used by plot_resid.
+        plot_chisqr : Plot the chi-squared value for each point in a data set.
 
-        DESCRIPTION
-           The Sherpa chi square plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the residual data, measured as chi square, for the
+        default data set:
 
-              xlabel       - x axis label, read-only
+        >>> rplot = get_chisqr_plot()
+        >>> np.min(rplot.y)
+        0.0005140622701128954
+        >>> np.max(rplot.y)
+        8.379696454792295
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - None
-                 linecolor      - 'red'
-                 errthickness   - None
-                 linestyle      - 1
-                 linethickness  - 3
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - None
-                 symbolstyle    - 0
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the chi square and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_chisqr
         """
         self._prepare_plotobj(id, self._chisqrplot)
         return self._chisqrplot
     
     def get_ratio_plot(self, id=None):
-        """
-        get_ratio_plot
+        """Return the data used by plot_ratio.
 
-        SYNOPSIS
-           Return a Sherpa ratio plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.RatioPlot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa RatioPlot object
+        See Also
+        --------
+        get_chisqr_plot : Return the data used by plot_chisqr.
+        get_delchi_plot : Return the data used by plot_delchi.
+        get_resid_plot : Return the data used by plot_resid.
+        plot_ratio : Plot the ratio of data to model for a data set.
 
-        DESCRIPTION
-           The Sherpa ratio plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the ratio of the data to the model for the default data
+        set:
 
-              xlabel       - x axis label, read-only
+        >>> rplot = get_ratio_plot()
+        >>> np.min(rplot.y)
+        0.6320905073750186
+        >>> np.max(rplot.y)
+        1.5170172177000447
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - True
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3
-                 symbolstyle    - 2
-                 xaxis          - False
-                 xerrorbars     - True
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False                 
-
-           Functions:
-
-              prepare()
-                 calculate the ratios and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_ratio
         """
         self._prepare_plotobj(id, self._ratioplot)
         return self._ratioplot
     
     def get_data_contour(self, id=None):
-        """
-        get_data_contour
+        """Return the data used by contour_data.
 
-        SYNOPSIS
-           Return a Sherpa data contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.DataContour instance
+           The `y` attribute contains the residual values and the `x0`
+           and `x1` arrays the corresponsing coordinate values, as
+           one-dimensional arrays.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa DataContour object
+        See Also
+        --------
+        get_data_image : Return the data used by image_data.
+        contour_data : Contour the values of an image data set.
+        image_data : Display a data set in the image viewer.
 
-        DESCRIPTION
-           The Sherpa data contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the data for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> dinfo = get_data_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           contour_data
         """
         self._prepare_plotobj(id, self._datacontour)
         return self._datacontour
 
     def get_data_contour_prefs(self):
-        """
-        get_data_contour_prefs
+        """Return the preferences for contour_data.
 
-        SYNOPSIS
-           Return data contour preferences
+        Returns
+        -------
+        prefs : dict
+           Changing the values of this dictionary will change any new
+           contour plots. The default is an empty dictionary.
 
-        SYNTAX
+        See Also
+        --------
+        contour_data : Contour the values of an image data set.
 
-        Arguments:
-           None
+        Notes
+        -----
+        The meaning of the fields depend on the chosen plot backend.
+        A value of `None` (or not set) means to use the default value
+        for that attribute, unless indicated otherwise.
 
-        Returns:
-           Dictionary of data contour preferences
+        `color`
+           The color to draw the contours. The default is `None`.
 
-        DESCRIPTION
-              contour_prefs   - dictionary of plotting preferences
+        `style`
+           How to draw the contours. The default is `None`.
 
-                 color      - None
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
+        `thickness`
+           What thickness of line to draw the contours. The default is
+           `None`.
 
-           Examples:
+        `xlog`
+           Should the X axis be drawn with a logarithmic scale? The
+           default is `False`.
 
-               get_data_contour_prefs()
-           {}
+        `ylog`
+           Should the Y axis be drawn with a logarithmic scale? The
+           default is `False`.
 
-               get_data_contour_prefs()['color']='blue'
+        Examples
+        --------
 
-               get_data_contour_prefs()
-           {'color': 'blue'}
+        Change the contours to be drawn in 'green':
 
+        >>> contour_data()
+        >>> prefs = get_data_contour_prefs()
+        >>> prefs['color'] = 'green'
+        >>> contour_data()
 
-        SEE ALSO
-           contour_data, get_data_contour
         """
         return self._datacontour.contour_prefs
 
     def get_model_contour(self, id=None):
-        """
-        get_model_contour
+        """Return the data used by contour_model.
 
-        SYNOPSIS
-           Return a Sherpa model contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.ModelContour instance
+           The `y` attribute contains the model values and the `x0`
+           and `x1` arrays the corresponsing coordinate values, as
+           one-dimensional arrays.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ModelContour object
+        See Also
+        --------
+        get_model_image : Return the data used by image_model.
+        contour_model : Contour the values of the model, including any PSF.
+        image_model : Display the model for a data set in the image viewer.
 
-        DESCRIPTION
-           The Sherpa model contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the model pixel values for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> minfo = get_model_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           contour_model
         """
         self._prepare_plotobj(id, self._modelcontour)
         return self._modelcontour
 
     def get_source_contour(self, id=None):
-        """
-        get_source_contour
+        """Return the data used by contour_source.
 
-        SYNOPSIS
-           Return a Sherpa source contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.SourceContour instance
+           The `y` attribute contains the model values and the `x0`
+           and `x1` arrays the corresponsing coordinate values, as
+           one-dimensional arrays.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa SourceContour object
+        See Also
+        --------
+        get_source_image : Return the data used by image_source.
+        contour_source : Contour the values of the model, without any PSF.
+        image_source : Display the source expression for a data set in the image viewer.
 
-        DESCRIPTION
-           The Sherpa source contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the source model pixel values for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> sinfo = get_source_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           contour_source
         """
         self._prepare_plotobj(id, self._sourcecontour)
         return self._sourcecontour
 
     def get_model_contour_prefs(self):
-        """
-        get_model_contour_prefs
+        """Return the preferences for contour_model.
 
-        SYNOPSIS
-           Return model contour preferences
+        Returns
+        -------
+        prefs : dict
+           Changing the values of this dictionary will change any new
+           contour plots.
 
-        SYNTAX
+        See Also
+        --------
+        contour_model : Contour the values of the model, including any PSF.
 
-        Arguments:
-           None
+        Notes
+        -----
+        The meaning of the fields depend on the chosen plot backend.
+        A value of `None` (or not set) means to use the default value
+        for that attribute, unless indicated otherwise.
 
-        Returns:
-           Dictionary of model contour preferences
+        `color`
+           The color to draw the contours. The default is `red`.
 
-        DESCRIPTION
-              contour_prefs   - dictionary of plotting preferences
+        `style`
+           How to draw the contours. The default is `None`.
 
-                 color      - 'red'
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
+        `thickness`
+           What thickness of line to draw the contours. The default is
+           `3`.
 
-           Examples:
+        `xlog`
+           Should the X axis be drawn with a logarithmic scale? The
+           default is `False`.
 
-               get_model_contour_prefs()
-           {'color': 'red', 'style': None, 'thickness': 3}
+        `ylog`
+           Should the Y axis be drawn with a logarithmic scale? The
+           default is `False`.
 
-               get_model_contour_prefs()['xlog']=True
+        Examples
+        --------
 
-               get_model_contour_prefs()['ylog']=True
+        Change the contours for the model to be drawn in 'orange':
 
-               get_model_contour_prefs()
-           {'color': 'red', 'style': None, 'ylog': True, 'xlog': True,
-            'thickness': 3}
+        >>> prefs = get_model_contour_prefs()
+        >>> prefs['color'] = 'orange'
+        >>> contour_data()
+        >>> contour_model(overcontour=True)
 
-
-        SEE ALSO
-           contour_model, get_model_contour
         """
         return self._modelcontour.contour_prefs
 
     def get_fit_contour(self, id=None):
-        """
-        get_fit_contour
+        """Return the data used by contour_fit.
 
-        SYNOPSIS
-           Return a Sherpa fit contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        fit_data : a sherpa.plot.FitContour instance
+           An object representing the data used to create the plot by
+           `contour_fit`. It contains the data from `get_data_contour`
+           and `get_model_contour` in the `datacontour` and
+           `modelcontour` attributes.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa FitContour plot
+        See Also
+        --------
+        get_data_image : Return the data used by image_data.
+        get_model_image : Return the data used by image_model.
+        contour_data : Contour the values of an image data set.
+        contour_model : Contour the values of the model, including any PSF.
+        image_data : Display a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
 
-        DESCRIPTION
-           The Sherpa fit contour object holds a reference to a data contour
-           and model contour instance.
+        Examples
+        --------
 
-           Attributes:
-              datacontour
+        Return the contour data for the default data set:
 
-              modelcontour
+        >>> finfo = get_fit_contour()
 
-        SEE ALSO
-           contour_fit
         """
         self._prepare_plotobj(id, self._fitcontour)
         return self._fitcontour
 
     def get_resid_contour(self, id=None):
-        """
-        get_resid_contour
+        """Return the data used by contour_resid.
 
-        SYNOPSIS
-           Return a Sherpa resid contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_data : a sherpa.plot.ResidContour instance
+           The `y` attribute contains the residual values and the `x0`
+           and `x1` arrays the corresponsing coordinate values, as
+           one-dimensional arrays.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ResidContour object
+        See Also
+        --------
+        get_ratio_contour : Return the data used by contour_ratio.
+        get_resid_image : Return the data used by image_resid.
+        contour_resid : Contour the residuals of the fit.
+        image_resid : Display the residuals (data - model) for a data set in the image viewer.
 
-        DESCRIPTION
-           The Sherpa resid contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the residual data for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> rinfo = get_resid_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-              contour_prefs   - dictionary of plotting preferences
-
-                 color      - None
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           contour_resid
         """
         self._prepare_plotobj(id, self._residcontour)
         return self._residcontour
 
     def get_ratio_contour(self, id=None):
-        """
-        get_ratio_contour
+        """Return the data used by contour_ratio.
 
-        SYNOPSIS
-           Return a Sherpa ratio contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        ratio_data : a sherpa.plot.RatioContour instance
+           The `y` attribute contains the ratio values and the `x0`
+           and `x1` arrays the corresponsing coordinate values, as
+           one-dimensional arrays.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa RatioContour object
+        See Also
+        --------
+        get_ratio_image : Return the data used by image_ratio.
+        get_resid_contour : Return the data used by contour_resid.
+        contour_ratio : Contour the ratio of data to model.
+        image_ratio : Display the ratio (data/model) for a data set in the image viewer.
 
-        DESCRIPTION
-           The Sherpa ratio contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the ratio data for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> rinfo = get_ratio_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-              contour_prefs   - dictionary of plotting preferences
-
-                 color      - None
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           contour_ratio
         """
         self._prepare_plotobj(id, self._ratiocontour)
         return self._ratiocontour
 
     def get_psf_contour(self, id=None):
-        """
-        get_psf_contour
+        """Return the data used by contour_psf.
 
-        SYNOPSIS
-           Return a Sherpa PSF contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        psf_data : a sherpa.plot.PSFContour instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFContour object
+        See Also
+        --------
+        get_kernel_contour : Return the data used by contour_kernel.
+        contour_kernel : Contour the kernel applied to the model of an image data set.
+        contour_psf : Contour the PSF applied to the model of an image data set.
 
-        DESCRIPTION
-           The Sherpa PSF contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the contour data for the PSF for the default data set:
 
-              xlabel       - x axis label, read-only
+        >>> cplot = get_psf_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-              contour_prefs   - dictionary of plotting preferences
-
-                 color      - None or 'red'
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           contour_psf
         """
         self._prepare_plotobj(id, self._psfcontour)
         return self._psfcontour
 
 
     def get_kernel_contour(self, id=None):
-        """
-        get_kernel_contour
+        """Return the data used by contour_kernel.
 
-        SYNOPSIS
-           Return a Sherpa PSF kernel contour
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        psf_data : a sherpa.plot.PSFKernelContour instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFKernelContour object
+        See Also
+        --------
+        get_psf_contour : Return the data used by contour_psf.
+        contour_kernel : Contour the kernel applied to the model of an image data set.
+        contour_psf : Contour the PSF applied to the model of an image data set.
 
-        DESCRIPTION
-           The Sherpa PSF kernel contour object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the contour data for the kernel for the default data
+        set:
 
-              xlabel       - x axis label, read-only
+        >>> kplot = get_kernel_contour()
 
-              ylabel       - y axis label, read-only
-
-              x0           - independent variable array
-
-              x1           - independent variable array
-
-              y            - dependent variable array
-
-              levels       - list of contour slices 
-
-              contour_prefs   - dictionary of plotting preferences
-
-                 color      - None or 'red'
-                 thickness  - None
-                 style      - None
-                 xlog       - False
-                 ylog       - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              contour( overcontour=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           contour_kernel
         """
         self._prepare_plotobj(id, self._kernelcontour)
         return self._kernelcontour
 
 
     def get_psf_plot(self, id=None):
-        """
-        get_psf_plot
+        """Return the data used by plot_psf.
 
-        SYNOPSIS
-           Return a Sherpa PSF plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        psf_plot : a sherpa.plot.PSFPLot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFPlot object
+        See Also
+        --------
+        get_kernel_plot : Return the data used by plot_kernel.
+        plot_kernel : Plot the 1D kernel applied to a data set.
+        plot_psf : Plot the 1D PSF model applied to a data set.
 
-        DESCRIPTION
-           The Sherpa PSF plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the plot data and then create a plot with it:
 
-              xlabel       - x axis label, read-only
+        >>> pplot = get_psf_plot()
+        >>> pplot.plot()
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line' or None
-                 errthickness   - None
-                 linecolor      - None or 'red'
-                 linestyle      - 0 or 1
-                 linethickness  - None or 3
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3 or None
-                 symbolstyle    - 4 or 0
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - True or False
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_psf, plot_data, plot_model
         """
         self._prepare_plotobj(id, self._psfplot)
         return self._psfplot
 
 
     def get_kernel_plot(self, id=None):
-        """
-        get_kernel_plot
+        """Return the data used by plot_kernel.
 
-        SYNOPSIS
-           Return a Sherpa PSF kernel plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        kernel_plot : a sherpa.plot.PSFKernelPLot instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFKernelPlot object
+        See Also
+        --------
+        get_psf_plot : Return the data used by plot_psf.
+        plot_kernel : Plot the 1D kernel applied to a data set.
+        plot_psf : Plot the 1D PSF model applied to a data set.
 
-        DESCRIPTION
-           The Sherpa PSF kernel plot object holds references to various
-           plot preferences and data arrays.
+        Examples
+        --------
 
-           Attributes:
-              title        - title of plot, read-only
+        Return the plot data and then create a plot with it:
 
-              xlabel       - x axis label, read-only
+        >>> kplot = get_kernel_plot()
+        >>> kplot.plot()
 
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line' or None
-                 errthickness   - None
-                 linecolor      - None or 'red'
-                 linestyle      - 0 or 1
-                 linethickness  - None or 3
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3 or None
-                 symbolstyle    - 4 or 0
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - True or False
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_kernel, plot_data, plot_model
         """
         self._prepare_plotobj(id, self._kernelplot)
         return self._kernelplot
@@ -8240,157 +11434,448 @@ class Session(NoNewAttributesAfterInit):
 
 
     def set_xlog(self, plottype="all"):
+        """New plots will display a logarithmically-scaled X axis.
+
+        This setting only affects plots created after the call to
+        `set_xlog`.
+
+        Parameters
+        ----------
+        plottype : optional
+           The type of plot that is to use a log-scaled X axis. The
+           options are the same as accepted by `plot`, together with
+           the 'all' option (which is the default setting).
+
+        See Also
+        --------
+        plot : Create one or more plot types.
+        set_xlinear : New plots will display a linear X axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
+
+        Examples
+        --------
+
+        Use a logarithmic scale for the X axis of `data` plots:
+
+        >>> set_xlog('data')
+        >>> plot('data', 'arf')
+
+        All plots use a logarithmic scale for the X axis.
+
+        >>> set_xlog()
+        >>> plot_fit()
+
+        """
         self._set_plot_item(plottype, 'xlog', True)
 
 
     def set_ylog(self, plottype="all"):
+        """New plots will display a logarithmically-scaled Y axis.
+
+        This setting only affects plots created after the call to
+        `set_ylog`.
+
+        Parameters
+        ----------
+        plottype : optional
+           The type of plot that is to use a log-scaled X axis. The
+           options are the same as accepted by `plot`, together with
+           the 'all' option (which is the default setting).
+
+        See Also
+        --------
+        plot : Create one or more plot types.
+        set_xlog : New plots will display a logarithmically-scaled x axis.
+        set_ylinear : New plots will display a linear Y axis.
+
+        Examples
+        --------
+
+        Use a logarithmic scale for the Y axis of `data` plots:
+
+        >>> set_ylog('data')
+        >>> plot('data', 'arf')
+
+        All plots use a logarithmic scale for the Y axis.
+
+        >>> set_ylog()
+        >>> plot_fit()
+
+        """
         self._set_plot_item(plottype, 'ylog', True)
 
 
     def set_xlinear(self, plottype="all"):
+        """New plots will display a linear X axis.
+
+        This setting only affects plots created after the call to
+        `set_xlinear`.
+
+        Parameters
+        ----------
+        plottype : optional
+           The type of plot that is to use a log-scaled X axis. The
+           options are the same as accepted by `plot`, together with
+           the 'all' option (which is the default setting).
+
+        See Also
+        --------
+        plot : Create one or more plot types.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+
+        Examples
+        --------
+
+        Use a linear X axis for 'data' plots:
+
+        >>> set_xlinear('data')
+        >>> plot('data', 'arf')
+
+        All plots use a linear scale for the X axis.
+
+        >>> set_xlinear()
+        >>> plot_fit()
+
+        """
         self._set_plot_item(plottype, 'xlog', False)
 
 
     def set_ylinear(self, plottype="all"):
+        """New plots will display a linear Y axis.
+
+        This setting only affects plots created after the call to
+        `set_ylinear`.
+
+        Parameters
+        ----------
+        plottype : optional
+           The type of plot that is to use a log-scaled X axis. The
+           options are the same as accepted by `plot`, together with
+           the 'all' option (which is the default setting).
+
+        See Also
+        --------
+        plot : Create one or more plot types.
+        set_xlinear : New plots will display a linear X axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
+
+        Examples
+        --------
+
+        Use a linear Y axis for 'data' plots:
+
+        >>> set_ylinear('data')
+        >>> plot('data', 'arf')
+
+        All plots use a linear scale for the Y axis.
+
+        >>> set_ylinear()
+        >>> plot_fit()
+
+        """
         self._set_plot_item(plottype, 'ylog', False)
 
 
+    ### DOC-TODO: how to describe optional plot types
+    ### DOC-TODO: should we add plot_order
+    ### DOC-TODO: how to list information/examples about the backends?
+    ###           have some introductory text, but prob. need a link
+    ###           to more information
     def plot(self, *args):
-        """
-        plot
+        """Create one or more plot types.
 
-        SYNOPSIS
-           Send a combination plot to the visualizer
+        The plot function creates one or more plots, depending on the
+        arguments it is sent: a plot type, followed by an optional
+        data set identifier, and this can be repeated. If no data set
+        identifier is given for a plot type, the default identifier -
+        as returned by `get_default_id` - is used.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           The data set does not support the requested plot type.
 
-        Arguments:
-           plot0       - string of first plot type
+        See Also
+        ---------
+        get_default_id : Return the default data set identifier.
+        sherpa.astro.ui.set_analysis : Set the units used when fitting and displaying spectral data.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           id0         - Sherpa data id
-                         default = default data id
+        Notes
+        -----
+        The supported plot types depend on the data set type, and
+        include the following list. There are also individual
+        functions, with `plot_` prepended to the plot type, such as
+        `plot_data` (the `bkg` variants use a prefix of
+        `plot_bkg_`). There are also several multiple-plot commands
+        (e.g. `plot_fit_resid`).
 
-           ...
+        `arf`
+           The ARF for the data set (only for `DataPHA` dataset).
 
-           plotn       - string of nth plot type
+        `bkg`
+           The background.
 
-           idn         - Sherpa data id
-                         default = default data id
+        `bkgchisqr`
+           The chi-squared statistic calculated for each bin when
+           fitting the background.
 
-        Returns:
-           None
+        `bkgdelchi`
+           The residuals for each bin, calculated as (data-model)
+           divided by the error, for the background.
 
-        DESCRIPTION
-           Visualize multiple plots by Sherpa data ids.
+        `bkgfit`
+           The data (as points) and the convolved model (as a line),
+           for the background data set.
 
-           Applicable types include: 'data', 'model', 'fit', 'resid',
-                                     'ratio', 'delchi', 'chisqr','psf'
+        `bkgmodel`
+           The convolved background model.
 
-           Example 1:
+        `bkgratio`
+           The residuals for each bin, calculated as data/model,
+           for the background data set.
 
-               plot('data', 'model')
+        `bkgresid`
+           The residuals for each bin, calculated as (data-model),
+           for the background data set.
 
-           Example 2: using ids
+        `bkgsource`
+           The un-convolved background model.
 
-               plot('data', 1, 'model', 1)
+        `chisqr`
+           The chi-squared statistic calculated for each bin.
 
-        SEE ALSO
-           plot_data, plot_model, plot_fit, plot_resid, plot_ratio,
-           plot_delchi, plot_chisqr
+        `data`
+           The data (which may be background subtracted).
+
+        `delchi`
+           The residuals for each bin, calculated as (data-model)
+           divided by the error.
+
+        `fit`
+           The data (as points) and the convolved model (as a line).
+ 
+        `kernel`
+           The PSF kernel associated with the data set.
+
+        `model`
+           The convolved model.
+
+        `psf`
+           The unfiltered PSF kernel associated with the data set.
+
+        `ratio`
+           The residuals for each bin, calculated as data/model.
+
+        `resid`
+           The residuals for each bin, calculated as (data-model).
+
+        `source`
+           The un-convolved model.
+
+        The plots can be specialized for a particular data type,
+        such as the `set_analysis` command controlling the units
+        used for PHA data sets.
+
+        See the documentation for the individual routines for
+        information on how to configure the plots.
+
+        The plot capabilities depend on what plotting backend, if any,
+        is installed. If there is none available, a warning message
+        will be displayed when `sherpa.ui` or `sherpa.astro.ui` is
+        imported, and the `plot` set of commands will not create any
+        plots. The choice of back end is made by changing the
+        `options.plot_pkg` setting in the Sherpa configuration file.
+
+        Examples
+        --------
+
+        Plot the data for the default data set. This is the same as
+        `plot_data`.
+
+        >>> plot("data")
+
+        Plot the data for data set 2.
+
+        >>> plot("data", 2)
+
+        Plot the data and ARF for the default data set, in two
+        seaparate plots.
+
+        >>> plot("data", "arf")
+
+        Plot the fit (data and model) for data sets 1 and 2, in two
+        separate plots.
+
+        >>> plot("fit", 1, "fit", 2)
+
+        Plot the fit (data and model) for data sets "fit" and "jet",
+        in two separate plots.
+
+        >>> plot("fit", "nucleus", "fit", "jet")
+
         """
         self._multi_plot(args)        
 
     def plot_data(self, id=None, **kwargs):
-        """
-        plot_data
+        """Plot the data values.
 
-        SYNOPSIS
-           Send a data plot to the visualizer
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_data`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        See Also
+        --------
+        get_data_plot : Return the data used by plot_data.
+        get_data_plot_prefs : Return the preferences for plot_data.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        sherpa.astro.ui.set_analysis : Set the units used when fitting and displaying spectral data.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Examples
+        --------
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Plot the data from the default data set:
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        >>> plot_data()
 
-        Returns:
-           None
+        Plot the data from data set 1:
 
-        DESCRIPTION
-           Visualize a dataset by Sherpa data id.
+        >>> plot_data(1)
 
-        SEE ALSO
-           get_data_plot, plot_model, plot_fit, plot_fit_resid, plot_fit_delchi
+        Plot the data from data set labelled "jet" and then overplot
+        the "core" data set. The `set_xlog` command is used to select
+        a logarithmic scale for the X axis.
+
+        >>> set_xlog("data")
+        >>> plot_data("jet")
+        >>> plot_data("core", overplot=True)
+
         """
         self._plot(id, self._dataplot, **kwargs)
     
+    # DOC-NOTE: also in sherpa.astro.utils
     def plot_model(self, id=None, **kwargs):
-        """
-        plot_model
+        """Plot the model for a data set.
 
-        SYNOPSIS
-           Send a model plot to the visualizer
+        This function plots the model for a data set, which includes
+        any instrument response (e.g. a convolution created by
+        `set_psf`).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_model`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_model_plot : Return the data used by plot_model.
+        get_model_plot_prefs : Return the preferences for plot_model.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_model_component : Plot a component of the model for a data set.
+        plot_source : Plot the source expression for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Plot the convolved source model for the default data set:
 
-        Returns:
-           None
+        >>> plot_model()
 
-        DESCRIPTION
-           Visualize a dataset model by Sherpa data id.
+        Overplot the model for data set 2 on data set 1:
 
-        SEE ALSO
-           get_model_plot, plot_data, plot_fit, plot_fit_resid, plot_fit_delchi
+        >>> plot_model(1)
+        >>> plot_model(2, overplot=True)
+
+        Create the equivalent of `plot_fit('jet')`:
+
+        >>> plot_data('jet')
+        >>> plot_model('jet', overplot=True)
+
         """
         self._plot(id, self._modelplot, **kwargs)
 
-
+    # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
+    #           but does the astro version support a bkg_id parameter?
     def plot_source_component(self, id, model=None, **kwargs):
-        """
-        plot_source_component
+        """Plot a component of the source expression for a data set.
 
-        SYNOPSIS
-           Send a source model component plot to the visualizer
+        This function evaluates and plots a component of the model
+        expression for a data set, without any instrument response.
+        Use `plot_model_component` to include any response.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_source_component`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_source_component_plot : Return the data used by plot_source_component.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_model_component : Plot a component of the model for a data set.
+        plot_source : Plot the source expression for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           model       - Sherpa model component or expression string
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Overplot the `pl` component of the source expression for
+        the default data set:
 
-        Returns:
-           None
+        >>> plot_source()
+        >>> plot_source_component(pl, overplot=True)
 
-        DESCRIPTION
-           Visualize a source model component by Sherpa data id.
-
-        SEE ALSO
-           get_model_component_plot, plot_model_component, plot_data,
-           plot_fit, plot_fit_resid, plot_fit_delchi
         """
 
         if model is None:
@@ -8406,36 +11891,67 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, plotobj, model, **kwargs)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
+    #           but does the astro version support a bkg_id parameter?
     def plot_model_component(self, id, model=None, **kwargs):
-        """
-        plot_model_component
+        """Plot a component of the model for a data set.
 
-        SYNOPSIS
-           Send a model component plot to the visualizer
+        This function evaluates and plots a component of the model
+        expression for a data set, including any instrument response.
+        Use `plot_source_component` to display without any response.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_model_component`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_model_component_plot : Return the data used by plot_model_component.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_source_component : Plot a component of the source expression for a data set.
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           model       - Sherpa model component or expression string
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Overplot the `pl` component of the model expression for
+        the default data set:
 
-        Returns:
-           None
+        >>> plot_model()
+        >>> plot_model_component(pl, overplot=True)
 
-        DESCRIPTION
-           Visualize a model component by Sherpa data id.
+        Display the results for the 'jet' data set (data and model),
+        and then overplot the `pl` component evaluated for the 'jet'
+        and 'core' data sets:
 
-        SEE ALSO
-           get_model_component_plot, plot_source_component, plot_data,
-           plot_fit, plot_fit_resid, plot_fit_delchi
+        >>> plot_fit('jet')
+        >>> plot_model_component('jet', pl, overplot=True)
+        >>> plot_model_component('core', pl, overplot=True)
+
         """
         if model is None:
             id, model = model, id
@@ -8450,33 +11966,50 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._compmdlplot, model, **kwargs)
 
 
+    # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
     def plot_source(self, id=None, **kwargs):
-        """
-        plot_source
+        """Plot the source expression for a data set.
 
-        SYNOPSIS
-           Send a source plot to the visualizer
+        This function plots the source model for a data set. This does
+        not include any instrument response (e.g. a convolution
+        created by `set_psf`).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_source`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_source_plot : Return the data used by plot_source.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_model : Plot the model for a data set.
+        plot_source_component : Plot a component of the source expression for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Plot the unconvolved source model for the default data set:
 
-        Returns:
-           None
+        >>> plot_source()
 
-        DESCRIPTION
-           Visualize a dataset source by Sherpa data id.
+        Overplot the source model for data set 2 on data set 1:
 
-        SEE ALSO
-           get_source_plot, plot_data, plot_fit, plot_fit_resid, plot_fit_delchi
+        >>> plot_source(1)
+        >>> plot_source(2, overplot=True)
+
         """
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
@@ -8486,256 +12019,443 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, self._sourceplot, **kwargs)
 
     def plot_fit(self, id=None, **kwargs):
-        """
-        plot_fit
+        """Plot the fit results (data, model) for a data set.
 
-        SYNOPSIS
-           Send a fit plot to the visualizer
+        This function creates a plot containing the data and the model
+        (including any instrument response) for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_fit`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_fit_plot : Return the data used by plot_fit.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
+        plot_data : Plot the data values.
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the fit results for the default data set:
 
-        DESCRIPTION
-           Visualize a dataset and dataset model by Sherpa data id.
+        >>> plot_fit()
 
-        SEE ALSO
-           get_fit_plot, plot_model, plot_data, plot_fit_resid, plot_fit_delchi
+        Overplot the 'core' results on those from the 'jet' data set,
+        using a logarithmic scale for the X axis:
+
+        >>> set_xlog()
+        >>> plot_fit('jet')
+        >>> plot_fit('core', overplot=True)
+
         """
         self._plot(id, self._fitplot, **kwargs)
 
     def plot_resid(self, id=None, **kwargs):
-        """
-        plot_resid
+        """Plot the residuals (data - model) for a data set.
 
-        SYNOPSIS
-           Send a residuals plot to the visualizer
+        This function displays the residuals (data - model) for a data
+        set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_resid`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_resid_plot : Return the data used by plot_resid.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_chisqr : Plot the chi-squared value for each point in a data set.
+        plot_delchi : Plot the ratio of residuals to error for a data set.
+        plot_ratio : Plot the ratio of data to model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the residuals for the default data set:
 
-        DESCRIPTION
-           Visualize the residuals (dataset minus dataset model) by Sherpa data
-           id.
+        >>> plot_resid()
 
-        SEE ALSO
-           get_resid_plot, plot_ratio, plot_delchi, plot_fit_resid,
-           plot_fit_delchi, plot_chisqr, plot_fit, plot_data, plot_model
+        Overplot the residuals from the 'core' data set on those
+        from the 'jet' dataset:
+
+        >>> plot_resid('jet')
+        >>> plot_resid('core', overplot=True)
+
+        Add the residuals to the plot of the data, for the default
+        data set:
+
+        >>> plot_data()
+        >>> plot_resid(overplot=True)
+
         """
         self._plot(id, self._residplot, **kwargs)
 
     def plot_chisqr(self, id=None, **kwargs):
-        """
-        plot_chisqr
+        """Plot the chi-squared value for each point in a data set.
 
-        SYNOPSIS
-           Send a chi^2 plot to the visualizer
+        This function displays the square of the residuals (data -
+        model) divided by the error, for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_chisqr`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_chisqr_plot : Return the data used by plot_chisqr.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_delchi : Plot the ratio of residuals to error for a data set.
+        plot_ratio : Plot the ratio of data to model for a data set.
+        plot_resid : Plot the residuals (data - model) for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the chi-quare values for each point in the default data
+        set:
 
-        DESCRIPTION
-           Visualize the chi^2 (residuals divided by dataset uncertainties, the
-           quantity squared) by Sherpa data id.
+        >>> plot_chisqr()
 
-        SEE ALSO
-           get_chisqr_plot, plot_resid, plot_ratio, plot_fit_resid,
-           plot_fit_delchi, plot_delchi, plot_fit, plot_data, plot_model
+        Overplot the values from the 'core' data set on those
+        from the 'jet' dataset:
+
+        >>> plot_chisqr('jet')
+        >>> plot_chisqr('core', overplot=True)
+
         """
         self._plot(id, self._chisqrplot, **kwargs)
 
     def plot_delchi(self, id=None, **kwargs):
-        """
-        plot_delchi
+        """Plot the ratio of residuals to error for a data set.
 
-        SYNOPSIS
-           Send a delta chi plot to the visualizer
+        This function displays the residuals (data - model) divided by
+        the error, for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_delchi`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_delchi_plot : Return the data used by plot_delchi.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_chisqr : Plot the chi-squared value for each point in a data set.
+        plot_ratio : Plot the ratio of data to model for a data set.
+        plot_resid : Plot the residuals (data - model) for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the residuals for the default data set, divided by
+        the error value for each bin:
 
-        DESCRIPTION
-           Visualize the delta chi (residuals divided by dataset uncertainties)
-           by Sherpa data id.
+        >>> plot_delchi()
 
-        SEE ALSO
-           get_delchi_plot, plot_resid, plot_ratio, plot_fit_resid,
-           plot_fit_delchi, plot_chisqr, plot_fit, plot_data, plot_model
+        Overplot the values from the 'core' data set on those
+        from the 'jet' dataset:
+
+        >>> plot_delchi('jet')
+        >>> plot_delchi('core', overplot=True)
+
         """
         self._plot(id, self._delchiplot, **kwargs)
         
     def plot_ratio(self, id=None, **kwargs):
-        """
-        plot_ratio
+        """Plot the ratio of data to model for a data set.
 
-        SYNOPSIS
-           Send a ratio plot to the visualizer
+        This function displays the ratio data / model for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_ratio`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_ratio_plot : Return the data used by plot_ratio.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_chisqr : Plot the chi-squared value for each point in a data set.
+        plot_delchi : Plot the ratio of residuals to error for a data set.
+        plot_resid : Plot the residuals (data - model) for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the ratio of data to model for the default data set:
 
-        DESCRIPTION
-           Visualize the ratio (dataset divided by dataset model) by Sherpa
-           data id.
+        >>> plot_ratio()
 
-        SEE ALSO
-           get_ratio_plot, plot_resid, plot_delchi, plot_fit_resid,
-           plot_fit_delchi, plot_chisqr, plot_fit, plot_data, plot_model
+        Overplot the ratios from the 'core' data set on those from the
+        'jet' dataset:
+
+        >>> plot_ratio('jet')
+        >>> plot_ratio('core', overplot=True)
+
         """
         self._plot(id, self._ratioplot, **kwargs)
 
     def plot_psf(self, id=None, **kwargs):
-        """
-        plot_psf
+        """Plot the 1D PSF model applied to a data set.
 
-        SYNOPSIS
-           Send a PSF plot to the visualizer
+        The `plot_kernel` function shows the data used to convolve
+        the model.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_psf`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_psf_plot : Return the data used by plot_psf.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_kernel : Plot the 1D kernel applied to a data set.
+        set_psf : Add a PSF model to a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Create a model (a step function) that is convolved by
+        a gaussian, and display the PSF:
 
-        DESCRIPTION
-           Visualize the PSF dataset or PSF model by Sherpa data id.
+        >>> dataspace1d(1, 10, step=1, dstype=Data1D)
+        >>> set_model(steplo1d.stp)
+        >>> stp.xcut = 4.4
+        >>> load_psf('psf1', gauss1d.gline)
+        >>> set_psf('psf1')
+        >>> gline.fwhm = 1.2
+        >>> plot_psf()
 
-        SEE ALSO
-           get_psf_plot, plot_data
         """
         self._plot(id, self._psfplot, **kwargs)
 
 
     def plot_kernel(self, id=None, **kwargs):
-        """
-        plot_kernel
+        """Plot the 1D kernel applied to a data set.
 
-        SYNOPSIS
-           Send a PSF kernel plot to the visualizer
+        The `plot_psf` function shows the full PSF, from which the
+        kernel is derived.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_kernel`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_kernel_plot : Return the data used by plot_kernel.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_psf : Plot the 1D PSF model applied to a data set.
+        set_psf : Add a PSF model to a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Create a model (a step function) that is convolved by
+        a gaussian, and display the kernel overplotted on the
+        PSF:
 
-        DESCRIPTION
-           Visualize the extracted sub-kernel dataset or extracted kernel model 
-           by Sherpa data id.
+        >>> dataspace1d(1, 10, step=1, dstype=Data1D)
+        >>> set_model(steplo1d.stp)
+        >>> stp.xcut = 4.4
+        >>> load_psf('psf1', gauss1d.gline)
+        >>> set_psf('psf1')
+        >>> gline.fwhm = 1.2
+        >>> plot_psf()
+        >>> plot_kernel(overplot=True)
 
-        SEE ALSO
-           get_psf_plot, plot_data
         """
         self._plot(id, self._kernelplot, **kwargs)
 
 
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True):
-        """
-        plot_fit_resid
+        """Plot the fit results, and the residuals, for a data set.
 
-        SYNOPSIS
-           Send fit and residuals plots to the visualizer
+        This creates two plots - the first from `plot_fit` and the
+        second from `plot_resid` - for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_fit_resid`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_fit_plot : Return the data used by plot_fit.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_fit : Plot the fit results for a data set.
+        plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
+        plot_data : Plot the data values.
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the results for the default data set:
 
-        DESCRIPTION
-           Visualize the fit plot and residuals plot in a joint plot
-           window by Sherpa data id.
+        >>> plot_fit_resid()
 
-        SEE ALSO
-           plot_resid, plot_delchi, plot_ratio, plot_chisqr, plot_fit,
-           plot_data, plot_model, plot_fit_delchi
+        Overplot the 'core' results on those from the 'jet' data set,
+        using a logarithmic scale for the X axis:
+
+        >>> set_xlog()
+        >>> plot_fit_resid('jet')
+        >>> plot_fit_resid('core', overplot=True)
+
         """
         self._jointplot.reset()
         fp = self._fitplot
@@ -8766,34 +12486,60 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_fit_delchi(self, id=None, replot=False, overplot=False,
                         clearwindow=True):
-        """
-        plot_fit_delchi
+        """Plot the fit results, and the residuals, for a data set.
 
-        SYNOPSIS
-           Send fit and delta chi plots to the visualizer
+        This creates two plots - the first from `plot_fit` and the
+        second from `plot_delchi` - for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_fit_delchi`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        See Also
+        --------
+        get_fit_plot : Return the data used by plot_fit.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_fit : Plot the fit results for a data set.
+        plot_fit_resid : Plot the fit results, and the residuals, for a data set.
+        plot_data : Plot the data values.
+        plot_model : Plot the model for a data set.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Plot the results for the default data set:
 
-        DESCRIPTION
-           Visualize the fit plot and delta chi plot in a joint plot
-           window by Sherpa data id.
+        >>> plot_fit_delchi()
 
-        SEE ALSO
-           plot_resid, plot_delchi, plot_ratio, plot_chisqr, plot_fit,
-           plot_data, plot_model, plot_fit_resid
+        Overplot the 'core' results on those from the 'jet' data set,
+        using a logarithmic scale for the X axis:
+
+        >>> set_xlog()
+        >>> plot_fit_delchi('jet')
+        >>> plot_fit_delchi('core', overplot=True)
+
         """
         self._jointplot.reset()
         fp = self._fitplot
@@ -8829,7 +12575,50 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_pdf(self, points, name="x", xlabel="x", bins=12, normed=True, 
                  replot=False, overplot=False, clearwindow=True ):
+        """Plot the probability density function of an array of values.
 
+        Create and plot the probability density function (PDF) of
+        the input array.
+
+        Parameters
+        ----------
+        points : array
+           The values used to create the probability density function.
+        name : str, optional
+           The label to use as part of the plot title.
+        xlabel : str, optional
+           The label for the X axis
+        bins : int, optional
+           The number of bins to use to create the PDF.
+        normed : bool, optional
+           Should the PDF be normalized (the default is `True`).
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_pdf`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
+
+        See Also
+        --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
+        get_pdf_plot : Return the data used to plot the last PDF.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_scatter : Create a scatter plot.
+
+        Examples
+        --------
+
+        >>> mu, sigma, n = 100, 15, 500
+        >>> x = np.random.normal(loc=mu, scale=sigma, size=n)
+        >>> plot_pdf(x, bins=25)
+
+        >>> plot_pdf(x, normed=False, xlabel="mu", name="Simulations")
+
+        """
         if not sherpa.utils.bool_cast(replot):
             self._pdfplot.prepare(points, bins, normed, xlabel, name)
 
@@ -8844,11 +12633,66 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_pdf_plot(self):
+        """Return the data used to plot the last PDF.
+
+        Returns
+        -------
+        plot : sherpa.plot.PDFPlot instance
+           An object containing the data used by the last call to
+           `plot_pdf`. The fields will be `None` if the function
+           has not been called.
+
+        See Also
+        --------
+        plot_pdf : Plot the probability density function of an array.
+
+        """
         return self._pdfplot
 
 
     def plot_cdf(self, points, name="x", xlabel="x", 
                  replot=False, overplot=False, clearwindow=True ):
+        """Plot the cumulative density function of an array of values.
+
+        Create and plot the cumulative density function (CDF) of
+        the input array. Median and upper- and lower- quartiles
+        are marked on the plot.
+
+        Parameters
+        ----------
+        points : array
+           The values used to create the cumulative density function.
+        name : str, optional
+           The label to use as part of the plot title.
+        xlabel : str, optional
+           The label for the X and part of the Y axes.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_pdf`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
+
+        See Also
+        --------
+        get_cdf_plot : Return the data used to plot the last CDF.
+        get_draws : Run the pyBLoCXS MCMC algorithm.
+        plot_pdf : Plot the probability density function of an array.
+        plot_scatter : Create a scatter plot.
+
+        Examples
+        --------
+
+        >>> mu, sigma, n = 100, 15, 500
+        >>> x = np.random.normal(loc=mu, scale=sigma, size=n)
+        >>> plot_cdf(x)
+
+        >>> plot_cdf(x, xlabel="x pos", name="Simulations")
+
+        """
 
         if not sherpa.utils.bool_cast(replot):
             self._cdfplot.prepare(points, xlabel, name)
@@ -8864,11 +12708,74 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_cdf_plot(self):
+        """Return the data used to plot the last CDF.
+
+        Returns
+        -------
+        plot : sherpa.plot.CDFPlot instance
+           An object containing the data used by the last call to
+           `plot_cdf`. The fields will be `None` if the function
+           has not been called.
+
+        See Also
+        --------
+        plot_cdf : Plot the cumulative density function of an array.
+
+        """
         return self._cdfplot
 
 
+    ### DOC-TODO: what does xlabel do?
+    ### DOC-TODO: is clearwindow a ChIPS-only setting?
     def plot_trace(self, points, name="x", xlabel="x", 
                    replot=False, overplot=False, clearwindow=True ):
+        """Create a trace plot of row number versus value.
+
+        Dispay a plot of the `points` array values (Y axis) versus row
+        number (X axis). This can be useful to view how a value
+        changes, such as the value of a parameter returned by
+        `get_draws`.
+
+        Parameters
+        ----------
+        points : array
+           The values to plot on the Y axis.
+        name : str, optional
+           The label to use on the Y axis and as part of the plot
+           title.
+        xlabel : str, optional
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_trace`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
+
+        See Also
+        --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
+        get_trace_plot : Return the data used to plot the last trace.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_pdf : Plot the probability density function of an array.
+        plot_scatter : Create a scatter plot.
+
+        Examples
+        --------
+
+        Plot the trace of the 500 elements in the `x` array:
+
+        >>> mu, sigma = 100, 15
+        >>> x = mu + sigma * np.random.randn(500)
+        >>> plot_trace(x)
+
+        Use "ampl" as the Y axis label:
+
+        >>> plot_trace(ampl, name='ampl')
+
+        """
 
         if not sherpa.utils.bool_cast(replot):
             self._traceplot.prepare(points, xlabel, name)
@@ -8884,12 +12791,70 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_trace_plot(self):
+        """Return the data used to plot the last trace.
+
+        Returns
+        -------
+        plot : sherpa.plot.TracePlot instance
+           An object containing the data used by the last call to
+           `plot_trace`. The fields will be `None` if the function
+           has not been called.
+
+        See Also
+        --------
+        plot_trace : Create a trace plot of row number versus value.
+
+        """
         return self._traceplot
 
 
     def plot_scatter(self, x, y, name="(x,y)", xlabel="x", ylabel="y",
                    replot=False, overplot=False, clearwindow=True ):
+        """Create a scatter plot.
 
+        Parameters
+        ----------
+        x : array
+           The values to plot on the X axis.
+        y : array
+           The values to plot on the Y axis. This must match the size
+           of the `x` array.
+        name : str, optional
+           The plot title.
+        xlabel : str, optional
+           The label for the X axis.
+        ylabel : str, optional
+           The label for the Y axis.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_scatter`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
+
+        See Also
+        --------
+        get_scatter_plot : Return the data used to plot the last scatter plot.
+        plot_trace : Create a trace plot of row number versus value.
+
+        Examples
+        --------
+
+        Plot the X and Y points:
+
+        >>> mu, sigma, n = 100, 15, 500
+        >>> x = mu + sigma * np.random.randn(n)
+        >>> y = mu + sigma * np.random.randn(n)
+        >>> plot_scatter(x, y)
+
+        Change the axis labels and the plot title:
+
+        >>> plot_scatter(nh, kt, xlabel='nH', ylabel='kT', name='Simulations')
+
+        """
         if not sherpa.utils.bool_cast(replot):
             self._scatterplot.prepare(x, y, xlabel, ylabel, name)
 
@@ -8904,6 +12869,20 @@ class Session(NoNewAttributesAfterInit):
 
 
     def get_scatter_plot(self):
+        """Return the data used to plot the last scatter plot.
+
+        Returns
+        -------
+        plot : sherpa.plot.ScatterPlot instance
+           An object containing the data used by the last call to
+           `plot_scatter`. The fields will be `None` if the function
+           has not been called.
+
+        See Also
+        --------
+        plot_scatter : Create a scatter plot.
+
+        """
         return self._scatterplot
 
 
@@ -8944,328 +12923,434 @@ class Session(NoNewAttributesAfterInit):
         else:            
             sherpa.plot.end()
 
+    ### DOC-TODO: how to describe optional plot types
+    ### DOC-TODO: how to list information/examples about the backends?
+    ###           have some introductory text, but prob. need a link
+    ###           to more information
     def contour(self, *args):
-        """
-        contour
+        """Create a contour plot for an image data set.
 
-        SYNOPSIS
-           Send a combination contour plot to the visualizer
+        Create one or more contour plots, depending on the arguments
+        it is set: a plot type, followed by an optional data set
+        identifier, and this can be repeated. If no data set
+        identifier is given for a plot type, the default identifier -
+        as returned by `get_default_id` - is used. This is for
+        2D data sets.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           The data set does not support the requested plot type.
 
-        Arguments:
-           contour0    - string of first plot type
+        See Also
+        ---------
+        contour_data : Contour the values of an image data set.
+        contour_fit : Contour the fit to a data set.
+        contour_fit_resid : Contour the fit and the residuals to a data set.
+        contour_kernel : Contour the kernel applied to the model of an image data set.
+        contour_model : Contour the values of the model, including any PSF.
+        contour_psf : Contour the PSF applied to the model of an image data set.
+        contour_ratio : Contour the ratio of data to model.
+        contour_resid : Contour the residuals of the fit.
+        contour_source : Contour the values of the model, without any PSF.
+        get_default_id : Return the default data set identifier.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-           id0         - Sherpa data id
-                         default = default data id
+        Notes
+        -----
+        The supported plot types depend on the data set type, and
+        include the following list. There are also individual
+        functions, with ``contour_`` prepended to the plot type, such as
+        `contour_data` and the `contour_fit_resid` variant:
 
-           ...
+        ``data``
+           The data.
 
-           contourn    - string of nth plot type
+        ``fit``
+           Contours of the data and the source model.
 
-           idn         - Sherpa data id
-                         default = default data id
+        ``fit_resid``
+           Two plots: the first is the contours of the data and the
+           source model and the second is the residuals.
 
-        Returns:
-           None
+        ``kernel``
+           The kernel.
 
-        DESCRIPTION
-           Visualize multiple contour plots by Sherpa data ids.
+        ``model``
+           The source model including any PSF convolution set by
+           `set_psf`.
 
-           Applicable types include: 'data', 'model', 'fit', 'resid',
-                                     'ratio', 'psf'
+        ``psf``
+           The PSF.
 
-           Example 1:
+        ``ratio``
+           Contours of the ratio image, formed by dividing the data by
+           the model.
 
-               contour('data', 'model')
+        ``resid``
+           Contours of the residual image, formed by subtracting the
+           model from the data.
 
-           Example 2: using ids
+        ``source``
+           The source model (without any PSF convolution set by
+           `set_psf`).
 
-               contour('data', 1, 'model', 1)
+        Examples
+        --------
 
-        SEE ALSO
-           contour_fit, contour_data, contour_model, contour_resid,
-           contour_ratio, contour_fit_resid
+        >>> contour('data')
+
+        >>> contour('data', 1, 'data', 2)
+
+        >>> contour('data', 'model')
+
         """
         self._multi_plot(args, 'contour')
 
     def contour_data(self, id=None, **kwargs):
-        """
-        contour_data
+        """Contour the values of an image data set.
 
-        SYNOPSIS
-           Send a data contour plot to the visualizer
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_data`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        SYNTAX
+        See Also
+        --------
+        get_data_contour : Return the data used by contour_data.
+        get_data_contour_prefs : Return the preferences for contour_data.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Examples
+        --------
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Plot the data from the default data set:
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        >>> contour_data()
 
-        Returns:
-           None
+        Contour the data and then overplot the data from the second
+        data set:
 
-        DESCRIPTION
-           Visualize a dataset by Sherpa data id.
+        >>> contour_data()
+        >>> contour_data(2, overcontour=True)
 
-        SEE ALSO
-           get_data_contour, contour_model, contour_fit, contour_fit_resid
         """
         self._contour(id, self._datacontour, **kwargs)
         
     def contour_model(self, id=None, **kwargs):
-        """
-        contour_model
+        """Contour the values of the model, including any PSF.
 
-        SYNOPSIS
-           Send a model contour plot to the visualizer
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the model. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_model`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        SYNTAX
+        See Also
+        --------
+        get_model_contour : Return the data used by contour_model.
+        get_model_contour_prefs : Return the preferences for contour_model.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
+        set_psf : Add a PSF model to a data set.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Examples
+        --------
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Plot the model from the default data set:
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        >>> contour_model()
 
-        Returns:
-           None
+        Compare the model without and with the PSF component,
+        for the "img" data set:
 
-        DESCRIPTION
-           Visualize a dataset model by Sherpa data id.
+        >>> contour_source("img")
+        >>> contour_model("img", overcontour=True)
 
-        SEE ALSO
-           get_model_contour, contour_data, contour_fit, contour_fit_resid
         """
         self._contour(id, self._modelcontour, **kwargs)
 
     def contour_source(self, id=None, **kwargs):
-        """
-        contour_source
+        """Contour the values of the model, without any PSF.
 
-        SYNOPSIS
-           Send a source contour plot to the visualizer
+        The preferences are the same as `contour_model`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the model. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_source`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_source_contour : Return the data used by contour_source.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
+        set_psf : Add a PSF model to a data set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        Plot the model from the default data set:
 
-        Returns:
-           None
+        >>> contour_source()
 
-        DESCRIPTION
-           Visualize a dataset source by Sherpa data id.
+        Compare the model without and with the PSF component,
+        for the "img" data set:
 
-        SEE ALSO
-           get_source_contour, contour_data, contour_fit, contour_fit_resid
+        >>> contour_model("img")
+        >>> contour_source("img", overcontour=True)
+
         """
         self._contour(id, self._sourcecontour, **kwargs)
 
     def contour_fit(self, id=None, **kwargs):
-        """
-        contour_fit
+        """Contour the fit to a data set.
 
-        SYNOPSIS
-           Send a fit contour plot to the visualizer
+        Overplot the model - including any PSF - on the data. The
+        preferences are the same as `contour_data` and
+        `contour_model`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data and model. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_fit`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_fit_contour : Return the data used by contour_fit.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        Plot the fit for the default data set:
 
-        Returns:
-           None
+        >>> contour_fit()
 
-        DESCRIPTION
-           Visualize a dataset and dataset model by Sherpa data id.
+        Overplot the fit to data set 's2' on that of the default data
+        set:
 
-        SEE ALSO
-           get_fit_contour, contour_model, contour_data, contour_fit_resid
+        >>> contour_fit()
+        >>> contour_fit('s2', overcontour=True)
+
         """
         self._contour(id, self._fitcontour, **kwargs)
 
     def contour_resid(self, id=None, **kwargs):
-        """
-        contour_resid
+        """Contour the residuals of the fit.
 
-        SYNOPSIS
-           Send a residuals contour plot to the visualizer
+        The residuals are formed by subtracting the current model -
+        including any PSF - from the data.  The preferences are the
+        same as `contour_data`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data and model. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_resid`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_resid_contour : Return the data used by contour_resid.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        Plot the residuals from the default data set:
 
-        Returns:
-           None
+        >>> contour_resid()
 
-        DESCRIPTION
-           Visualize the residuals (dataset minus dataset model) by Sherpa data
-           id.
+        Overplot the residuals on the model:
 
-        SEE ALSO
-           get_resid_contour, contour_ratio, contour_fit_resid, contour_fit,
-           contour_data, contour_model
+        >>> contour_model('img')
+        >>> contour_resid('img', overcontour=True)
+
         """
         self._contour(id, self._residcontour, **kwargs)
     
     def contour_ratio(self, id=None, **kwargs):
-        """
-        contour_ratio
+        """Contour the ratio of data to model.
 
-        SYNOPSIS
-           Send a ratio plot to the visualizer
+        The ratio image is formed by dividing the data by the current
+        model, including any PSF. The preferences are the same as
+        `contour_data`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data and model. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_ratio`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_ratio_contour : Return the data used by contour_ratio.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        Plot the ratio from the default data set:
 
-        Returns:
-           None
+        >>> contour_ratio()
 
-        DESCRIPTION
-           Visualize the ratio (dataset divided by dataset model) by Sherpa
-           data id.
+        Overplot the ratio on the residuals:
 
-        SEE ALSO
-           get_ratio_contour, contour_resid, contour_fit_resid, contour_fit,
-           contour_data, contour_model
+        >>> contour_resid('img')
+        >>> contour_ratio('img', overcontour=True)
+
         """
         self._contour(id, self._ratiocontour, **kwargs)
 
     def contour_psf(self, id=None, **kwargs):
-        """
-        contour_psf
+        """Contour the PSF applied to the model of an image data set.
 
-        SYNOPSIS
-           Send a PSF contour to the visualizer
+        If the data set has no PSF applied to it, the model is
+        displayed.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the model. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_psf`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_psf_contour : Return the data used by contour_psf.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        contour_kernel : Contour the kernel applied to the model of an image data set.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
+        set_psf : Add a PSF model to a data set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
-
-           overcontour - Contour data without clearing previous plot
-                         default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Visualize the PSF image or PSF model contour by Sherpa data id.
-
-        SEE ALSO
-           get_ratio_contour, contour_resid, contour_fit_resid, contour_fit,
-           contour_data, contour_model
         """
         self._contour(id, self._psfcontour, **kwargs)
 
 
     def contour_kernel(self, id=None, **kwargs):
-        """
-        contour_kernel
+        """Contour the kernel applied to the model of an image data set.
 
-        SYNOPSIS
-           Send a PSF kernel contour to the visualizer
+        If the data set has no PSF applied to it, the model is
+        displayed.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the model. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_kernel`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_psf_contour : Return the data used by contour_psf.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        contour_psf : Contour the PSF applied to the model of an image data set.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
+        set_psf : Add a PSF model to a data set.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
-
-           overcontour - Contour data without clearing previous plot
-                         default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Visualize the PSF sub-kernel contour by Sherpa data id.
-
-        SEE ALSO
-           get_ratio_contour, contour_resid, contour_fit_resid, contour_fit,
-           contour_data, contour_model
         """
         self._contour(id, self._kernelcontour, **kwargs)
 
-
     def contour_fit_resid(self, id=None, replot=False, overcontour=False):
-        """
-        contour_fit_resid
+        """Contour the fit and the residuals to a data set.
 
-        SYNOPSIS
-           Send fit and residual contours plot to the visualizer
+        Overplot the model - including any PSF - on the data. In a
+        separate plot contour the residuals. The preferences are the
+        same as `contour_data` and `contour_model`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data and model. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `contour_fit_resid`. The default is `False`.
+        overcontour : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is `False`.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        See Also
+        --------
+        get_fit_contour : Return the data used by contour_fit.
+        get_default_id : Return the default data set identifier.
+        contour : Create one or more plot types.
+        contour_fit : Contour the fit to a data set.
+        contour_resid : Contour the residuals of the fit.
+        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overcontour - Contour data without clearing previous plot
-                         default = False
+        Plot the fit and residuals for the default data set:
 
-        Returns:
-           None
+        >>> contour_fit_resid()
 
-        DESCRIPTION
-           Visualize the fit contour and residuals contour in a joint contour
-           window by Sherpa data id.
-
-        SEE ALSO
-           contour_resid, contour_ratio, contour_fit, contour_data,
-           contour_model
         """
         self._splitplot.reset()
         fc = self._fitcontour
@@ -9288,66 +13373,89 @@ class Session(NoNewAttributesAfterInit):
     # Projection and uncertainty plots
     ###########################################################################
 
+    ### DOC-NOTE: I am not convinced that this code is working when recalc=True
+    ### DOC-NOTE: needs to support the fast option of int_proj
     def get_int_proj(self, par=None, id=None, otherids=None, recalc=False,
                      min=None, max=None, nloop=20, delv=None, fac=1, 
                      log=False, numcores=None):
-        """
-        get_int_proj
+        """Return the interval-projection object.
 
-        SYNOPSIS
-           Return a confidence plot of fit statistic vs. a thawed parameter
-           value.  At each step a fit is performed to obtain a new statistic
-           if other thawed parameter(s) exist in the source model, otherwise,
-           calculate the statistic (see get_int_unc).
+        This returns (and optionally calculates) the data used to
+        display the `int_proj` plot.
 
-        SYNTAX
+        Parameters
+        ----------
+        par
+           The parameter to plot.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        recalc : bool, optional
+           The default value (`False`) means that the results from the
+           last call to `int_proj` (or `get_int_proj`) are returned,
+           ignoring the other parameter values. Otherwise, the
+           statistic curve is re-calculated, but not plotted.
+        min : number, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-           par       - source model parameter
-                       default = None
+        Returns
+        -------
+        iproj : sherpa.plot.IntervalProjection instance
+           The fields of this object can be used to re-create the plot
+           created by `int_proj`.
 
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        int_unc : Calculate and plot the fit statistic versus fit parameter value.
+        reg_proj : Plot the statistic value as two parameters are varied.
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Examples
+        --------
 
-           recalc    - calculate confidence data
-                       default=False
+        Return the results of the `int_proj` run:
 
-           min       - minimum bound
-                       default=None
+        >>> int_proj(src.xpos)
+        >>> iproj = get_int_proj()
+        >>> min(iproj.y)
+        119.55942437129544
 
-           max       - maximum bound
-                       default=None
+        Create the data without creating a plot:
 
-           nloop     - bin size, used in calculating stepsize
-                       default=20
+        >>> iproj = get_int_proj(pl.gamma, recalc=True)
 
-           delv      - stepsize, calculated by default
-                       default=None
+        Control how the data is created
 
-           fac       - factor used to expand or condense interval,
-                       default=1
+        >>> iproj = get_int_proj(pl.gamma, id="src", min=12, max=14,
+                                 nloop=51, recalc=True)
 
-           log       - boolean to use log space for interval
-                       default=False
-
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
-
-        Returns:
-           int_proj object
-
-        DESCRIPTION
-
-           Example: for users who do not want to create plots
-
-               print get_int_proj( par, recalc=True )
-
-        SEE ALSO
-           int_unc, reg_proj, reg_unc, get_int_inc
         """
         if sherpa.utils.bool_cast(recalc):
             par = self._check_par(par)
@@ -9359,65 +13467,88 @@ class Session(NoNewAttributesAfterInit):
             self._intproj.calc(fit,par,self._methods)
         return self._intproj
 
+    ### DOC-NOTE: Check that this works (since get_int_proj may not) when recalc=True
     def get_int_unc(self, par=None, id=None, otherids=None, recalc=False,
                     min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                     numcores=None):
-        """
-        get_int_unc
+        """Return the interval-uncertainty object.
 
-        SYNOPSIS
-           Return a confidence plot of fit statistic vs. parameter value.  At
-           each step calculate the statistic with the other parameter(s) frozen
-           at best fit values.
+        This returns (and optionally calculates) the data used to
+        display the `int_unc` plot.
 
-        SYNTAX
+        Parameters
+        ----------
+        par
+           The parameter to plot.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        recalc : bool, optional
+           The default value (`False`) means that the results from the
+           last call to `int_proj` (or `get_int_proj`) are returned,
+           ignoring the other parameter values. Otherwise, the
+           statistic curve is re-calculated, but not plotted.
+        min : number, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-           par       - source model parameter
-                       default = None
+        Returns
+        -------
+        iunc : sherpa.plot.IntervalUncertainty instance
+           The fields of this object can be used to re-create the plot
+           created by `int_unc`.
 
-           id        - Sherpa data id
-                       default = default data id
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        int_unc : Calculate and plot the fit statistic versus fit parameter value.
+        reg_proj : Plot the statistic value as two parameters are varied.
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Examples
+        --------
 
-           recalc    - calculate confidence data
-                       default=False
+        Return the results of the `int_unc` run:
 
-           min       - minimum bound
-                       default=None
+        >>> int_unc(src.xpos)
+        >>> iunc = get_int_unc()
+        >>> min(iunc.y)
+        119.55942437129544
 
-           max       - maximum bound
-                       default=None
+        Create the data without creating a plot:
 
-           nloop     - bin size, used in calculating stepsize
-                       default=20
+        >>> iunc = get_int_unc(pl.gamma, recalc=True)
 
-           delv      - stepsize, calculated by default
-                       default=None
+        Control how the data is created
 
-           fac       - factor used to expand or condense interval,
-                       default=1
+        >>> iunc = get_int_unc(pl.gamma, id="src", min=12, max=14,
+                               nloop=51, recalc=True)
 
-           log       - boolean to use log space for interval
-                       default=False
-
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
-
-        Returns:
-           int_unc object
-
-        DESCRIPTION
-
-           Example: for users who do not want to create plots
-
-               print get_int_unc( par, recalc=True )
-
-        SEE ALSO
-           int_proj, reg_proj, reg_unc, get_int_proj
         """
         if sherpa.utils.bool_cast(recalc):
             par = self._check_par(par)
@@ -9433,77 +13564,97 @@ class Session(NoNewAttributesAfterInit):
                      recalc=False, fast=True, min=None, max=None, 
                      nloop=(10,10),delv=None, fac=4, log=(False,False),
                      sigma=(1,2,3), levels=None, numcores=None):
-        """
-        get_reg_proj
+        """Return the region-projection object.
 
-        SYNOPSIS
-           Return a confidence contour of fit statistic vs. two thawed
-           parameter values.  At each step a fit is performed to obtain a new
-           statistic if other thawed parameter(s) exist in the source model,
-           otherwise, calculate the statistic (see get_reg_unc).
+        This returns (and optionally calculates) the data used to
+        display the `reg_proj` contour plot.
 
-        SYNTAX
+        Parameters
+        ----------
+        par0, par1
+           The parameters to plot on the X and Y axes, respectively.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        recalc : bool, optional
+           The default value (`False`) means that the results from the
+           last call to `reg_proj` (or `get_reg_proj`) are returned,
+           ignoring the other parameter values. Otherwise, the
+           statistic curve is re-calculated, but not plotted.
+        fast : bool, optional
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
+        min : pair of numbers, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : pair of number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : pair of int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : pair of number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : pair of bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        sigma : sequence of number, optional
+           The levels at which to draw the contours. The units are the
+           change in significance relative to the starting value,
+           in units of sigma.
+        levels : sequence of number, optional
+           The numeric values at which to draw the contours. This
+           over-rides the `sigma` parameter, if set (the default is
+           `None`).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-           par0      - first source model parameter
-                     - default = None
+        Returns
+        -------
+        rproj : sherpa.plot.RegionProjection instance
+           The fields of this object can be used to re-create the plot
+           created by `reg_proj`.
 
-           par1      - second source model parameter
-                       default = None
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        int_unc : Calculate and plot the fit statistic versus fit parameter value.
+        reg_proj : Plot the statistic value as two parameters are varied.
+        reg_unc : Plot the statistic value as two parameters are varied.
 
-           id        - Sherpa data id
-                       default = default data id
+        Examples
+        --------
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Return the results for the `reg_proj` run:
 
-           recalc    - calculate confidence data
-                       default=False
+        >>> reg_proj(src.xpos, src.ypos)
+        >>> rproj = get_reg_proj()
 
-           fast      - change opt method to levmar for Chi2 statistics
-                       default=True
+        Create the data without creating a plot:
 
-           min       - list of minimums [min par0, min par1]
-                       default=None
+        >>> rproj = get_reg_proj(pl.gamma, gal.nh, recalc=True)
 
-           max       - list of maximums [max par0, max par1]
-                       default=None
+        Control how the data is created:
 
-           nloop     - list of bin sizes, used in calculating stepsize for each
-                       dimension
-                       default=(10,10)
+        >>> rproj = get_reg_proj(pl.gamma, gal.nh, id="src",
+                                 min=(0.5,0.01), max=(2.5,1),
+                                 nloop=(51,51), log=(False,True),
+                                 recalc=True)
 
-           delv      - list of stepsizes, calculated by default
-                       default=None
-
-           fac       - factor used to expand or condense interval,
-                       default=4
-
-           log       - list of booleans to use log space for interval
-                       default=(False,False)
-
-           sigma     - list of sigmas used to calculate the confidence levels
-                       (slices)
-                       default=(1,2,3)
-
-           levels    - confidence level values
-                       default=None
-
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
-
-        Returns:
-           reg_proj object
-
-        DESCRIPTION
-
-           Example: for users who do not want to create contours:
-
-                print get_reg_proj( par0, par1, recalc=True )
-
-        SEE ALSO
-           int_unc, int_proj, reg_unc, get_reg_unc
         """
         if sherpa.utils.bool_cast(recalc):
             par0 = self._check_par(par0, 'par0')
@@ -9521,73 +13672,97 @@ class Session(NoNewAttributesAfterInit):
                     recalc=False, min=None, max=None, nloop=(10,10), delv=None,
                     fac=4, log=(False,False), sigma=(1,2,3), levels=None,
                     numcores=None):
-        """
-        get_reg_unc
+        """Return the region-uncertainty object.
 
-        SYNOPSIS
-           Return a confidence contour of fit statistic vs. two thawed
-           parameter values.  At each step calculate the statistic with the
-           other parameter(s) frozen at best fit values.
+        This returns (and optionally calculates) the data used to
+        display the `reg_unc` contour plot.
 
-        SYNTAX
+        Parameters
+        ----------
+        par0, par1
+           The parameters to plot on the X and Y axes, respectively.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        recalc : bool, optional
+           The default value (`False`) means that the results from the
+           last call to `reg_unc` (or `get_reg_unc`) are returned,
+           ignoring the other parameter values. Otherwise, the
+           statistic curve is re-calculated, but not plotted.
+        fast : bool, optional
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
+        min : pair of numbers, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : pair of number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : pair of int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : pair of number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : pair of bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        sigma : sequence of number, optional
+           The levels at which to draw the contours. The units are the
+           change in significance relative to the starting value,
+           in units of sigma.
+        levels : sequence of number, optional
+           The numeric values at which to draw the contours. This
+           over-rides the `sigma` parameter, if set (the default is
+           `None`).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
 
-        Arguments:
-           par0      - first source model parameter
-                       default = None
+        Returns
+        -------
+        rproj : sherpa.plot.RegionUncertainty instance
+           The fields of this object can be used to re-create the plot
+           created by `reg_unc`.
 
-           par1      - second source model parameter
-                       default = None
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        int_unc : Calculate and plot the fit statistic versus fit parameter value.
+        reg_proj : Plot the statistic value as two parameters are varied.
+        reg_unc : Plot the statistic value as two parameters are varied.
 
-           id        - Sherpa data id
-                       default = default data id
+        Examples
+        --------
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Return the results for the `reg_unc` run:
 
-           recalc    - calculate confidence data
-                       default=False
+        >>> reg_unc(src.xpos, src.ypos)
+        >>> runc = get_reg_unc()
 
-           min       - list of minimums [min par0, min par1]
-                       default=None
+        Create the data without creating a plot:
 
-           max       - list of maximums [max par0, max par1]
-                       default=None
+        >>> runc = get_reg_unc(pl.gamma, gal.nh, recalc=True)
 
-           nloop     - list of bin sizes, used in calculating stepsize for each
-                       dimension
-                       default=(10,10)
+        Control how the data is created:
 
-           delv      - list of stepsizes, calculated by default
-                       default=None
+        >>> runc = get_reg_unc(pl.gamma, gal.nh, id="src",
+                               min=(0.5,0.01), max=(2.5,1),
+                               nloop=(51,51), log=(False,True),
+                               recalc=True)
 
-           fac       - factor used to expand or condense interval,
-                       default=4
-
-           log       - list of booleans to use log space for interval
-                       default=(False,False)
-
-           sigma     - list of sigmas used to calculate the confidence levels
-                       (slices)
-                       default=(1,2,3)
-
-           levels    - confidence level values
-                       default=None
-
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
-
-        Returns:
-           reg_unc object 
-
-        DESCRIPTION
-
-           Example: for users who do not want to create contours:
-
-              print get_reg_unc( par0, par1, recalc=True )
-
-        SEE ALSO
-           int_unc, int_proj, reg_proj, get_reg_proj
         """
         if sherpa.utils.bool_cast(recalc):
             par0 = self._check_par(par0, 'par0')
@@ -9626,132 +13801,232 @@ class Session(NoNewAttributesAfterInit):
         self._plot(id, plotobj, replot=True, **plot_dict)
 
     
+    ### DOC-NOTE: I am not convinced I have fac described correctly
+    ### DOC-NOTE: same synopsis as int_unc
     def int_proj(self, par, id=None, otherids=None, replot=False, fast=True,
                  min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                  numcores=None, overplot=False):
-        """
-        int_proj
+        """Calculate and plot the fit statistic versus fit parameter value.
 
-        SYNOPSIS
-           Create a confidence plot of fit statistic vs. a thawed parameter
-           value.  At each step a fit is performed to obtain a new statistic
-           if other thawed parameter(s) exist in the source model, otherwise,
-           calculate the statistic (see int_unc).
+        Create a confidence plot of the fit statistic as a function of
+        parameter value. Dashed lines are added to indicate the
+        current statistic value and the parameter value at this
+        point. The parameter value is varied over a grid of points and
+        the free parameters re-fit. It is expected that this is run
+        after a successful fit, so that the parameter values are at
+        the best-fit location.
 
-        SYNTAX
+        Parameters
+        ----------
+        par
+           The parameter to plot.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `int_proj`. The default is `False`.
+        fast : bool, optional
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
+        min : number, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           par       - source model parameter
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        get_int_proj : Return the interval-projection object.
+        int_unc : Calculate and plot the fit statistic versus fit parameter value.
+        reg_proj : Plot the statistic value as two parameters are varied.
 
-        Keyword arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Notes
+        -----
+        The difference to `int_unc` is that at each step, a fit is
+        made to the remaining thawed parameters in the source
+        model. This makes the result a more-accurate rendering of the
+        projected shape of the hypersurface formed by the statistic,
+        but the run-time is longer than, the results of `int_unc`,
+        which does not vary any other parameter. If there are no free
+        parameters in the source expression, other than the parameter
+        being plotted, then the results will be the same.
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Examples
+        --------
 
-           replot    - replot the previously calculated data in cache
-                       default=False
+        Vary the `gamma` parameter of the `p1` model component for
+        all data sets with a source expression.
 
-           fast      - change opt method to levmar for Chi2 statistics
-                       default=True
+        >>> int_proj(p1.gamma)
 
-           min       - minimum bound
-                       default=None
+        Use only the data in data set 1:
 
-           max       - maximum bound
-                       default=None
+        >>> int_proj(p1.gamma, id=1)
 
-           nloop     - bin size, used in calculating stepsize
-                       default=20
+        Use two data sets ('obs1' and 'obs2'):
 
-           delv      - stepsize, calculated by default
-                       default=None
+        >>> int_proj(clus.kt, id='obs1', otherids=['obs2'])
 
-           fac       - factor used to expand or condense interval,
-                       default=1
+        Vary the `bgnd.c0` parameter between 1e-4 and 2e-4,
+        using 41 points:
 
-           log       - boolean to use log space for interval
-                       default=False
+        >>> int_proj(bgnd.c0, min=1e-4, max=2e-4, step=41)
 
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
+        This time define the step size, rather than the number of
+        steps to use:
 
-           overplot  - plot over existing plot
-                       default=False
+        >>> int_proj(bgnd.c0, min=1e-4, max=2e-4, delv=2e-6)
 
-        Returns:
-           None
+        Overplot the `int_proj` results for the parameter on top of
+        the `int_unc` values:
 
-        DESCRIPTION
+        >>> int_unc(mdl.xpos)
+        >>> int_proj(mdl.xpos, overplot=True)
 
-        SEE ALSO
-           int_unc, reg_proj, reg_unc
         """
         self._int_plot(self._intproj, par, id=id, otherids=otherids,
                        replot=replot, fast=fast, min=min, max=max, nloop=nloop,
                        delv=delv, fac=fac, log=log, numcores=numcores, 
                        overplot=overplot)
 
+    ### DOC-NOTE: I am not convinced I have fac described correctly
+    ### DOC-NOTE: same synopsis as int_proj
     def int_unc(self, par, id=None, otherids=None, replot=False, min=None,
                  max=None, nloop=20, delv=None, fac=1, log=False,
                  numcores=None, overplot=False):
-        """
-        int_unc
+        """Calculate and plot the fit statistic versus fit parameter value.
 
-        SYNOPSIS
-           Create a confidence plot of fit statistic vs. parameter value.  At
-           each step calculate the statistic with the other parameter(s) frozen
-           at best fit values.
+        Create a confidence plot of the fit statistic as a function of
+        parameter value. Dashed lines are added to indicate the
+        current statistic value and the parameter value at this
+        point. The parameter value is varied over a grid of points and
+        the statistic evaluated while holding the other parameters
+        fixed. It is expected that this is run after a successful fit,
+        so that the parameter values are at the best-fit location.
 
-        SYNTAX
+        Parameters
+        ----------
+        par
+           The parameter to plot.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `int_proj`. The default is `False`.
+        min : number, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           par       - source model parameter
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        get_int_unc : Return the interval-uncertainty object.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        reg_unc : Plot the statistic value as two parameters are varied.
 
-        Keyword arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Notes
+        -----
+        The difference to `int_proj` is that at each step *only* the
+        single parameter value is varied while all other parameters
+        remain at their starting value. This makes the result a
+        less-accurate rendering of the projected shape of the
+        hypersurface formed by the statistic, but the run-time is
+        likely shorter than, the results of `int_proj`, which fits the
+        model to the remaining thawed parameters at each step. If
+        there are no free parameters in the source expression, other
+        than the parameter being plotted, then the results will be the
+        same.
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Examples
+        --------
 
-           replot    - replot the previously calculated data in cache
-                       default=False
+        Vary the `gamma` parameter of the `p1` model component for
+        all data sets with a source expression.
 
-           min       - minimum bound
-                       default=None
+        >>> int_unc(p1.gamma)
 
-           max       - maximum bound
-                       default=None
+        Use only the data in data set 1:
 
-           nloop     - bin size, used in calculating stepsize
-                       default=20
+        >>> int_unc(p1.gamma, id=1)
 
-           delv      - stepsize, calculated by default
-                       default=None
+        Use two data sets ('obs1' and 'obs2'):
 
-           fac       - factor used to expand or condense interval,
-                       default=1
+        >>> int_unc(clus.kt, id='obs1', otherids=['obs2'])
 
-           log       - boolean to use log space for interval
-                       default=False
+        Vary the `bgnd.c0` parameter between 1e-4 and 2e-4,
+        using 41 points:
 
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
+        >>> int_unc(bgnd.c0, min=1e-4, max=2e-4, step=41)
 
-           overplot  - plot over existing plot
-                       default=False
+        This time define the step size, rather than the number of
+        steps to use:
 
-        Returns:
-           None
+        >>> int_unc(bgnd.c0, min=1e-4, max=2e-4, delv=2e-6)
 
-        DESCRIPTION
+        Overplot the `int_unc` results for the parameter on top of
+        the `int_proj` values:
 
-        SEE ALSO
-           int_proj, reg_proj, reg_unc
+        >>> int_proj(mdl.xpos)
+        >>> int_unc(mdl.xpos, overplot=True)
+
         """
         self._int_plot(self._intunc, par, id=id, otherids=otherids,
                        replot=replot, min=min, max=max, nloop=nloop,
@@ -9784,152 +14059,259 @@ class Session(NoNewAttributesAfterInit):
         self._contour(id, plotobj, replot=True, **cont_dict)
 
 
+    ### DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self, par0, par1, id=None, otherids=None, replot=False,
                  fast=True, min=None, max=None, nloop=(10,10), delv=None, fac=4,
                  log=(False,False), sigma=(1,2,3), levels=None, numcores=None, 
                  overplot=False):
-        """
-        reg_proj
+        """Plot the statistic value as two parameters are varied.
 
-        SYNOPSIS
-           Create a confidence contour of fit statistic vs. two thawed
-           parameter values.  At each step a fit is performed to obtain a new
-           statistic if other thawed parameter(s) exist in the source model,
-           otherwise, calculate the statistic (see reg_unc).
+        Create a confidence plot of the fit statistic as a function of
+        parameter value. Dashed lines are added to indicate the
+        current statistic value and the parameter value at this
+        point. The parameter value is varied over a grid of points and
+        the free parameters re-fit. It is expected that this is run
+        after a successful fit, so that the parameter values are at
+        the best-fit location.
 
-        SYNTAX
+        Parameters
+        ----------
+        par0, par1
+           The parameters to plot on the X and Y axes, respectively.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `int_proj`. The default is `False`.
+        fast : bool, optional
+           If `True` then the fit optimization used may be changed from
+           the current setting (only for the error analysis) to use
+           a faster optimization method. The default is `False`.
+        min : pair of numbers, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : pair of number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : pair of int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : pair of number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : pair of bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        sigma : sequence of number, optional
+           The levels at which to draw the contours. The units are the
+           change in significance relative to the starting value,
+           in units of sigma.
+        levels : sequence of number, optional
+           The numeric values at which to draw the contours. This
+           over-rides the `sigma` parameter, if set (the default is
+           `None`).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           par0      - first source model parameter
-           par1      - second source model parameter
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        get_reg_proj : Return the interval-projection object.
+        int_proj : Calculate and plot the fit statistic versus fit parameter value.
+        reg_unc : Plot the statistic value as two parameters are varied.
 
-        Keyword arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Notes
+        -----
+        The difference to `reg_unc` is that at each step, a fit is
+        made to the remaining thawed parameters in the source
+        model. This makes the result a more-accurate rendering of the
+        projected shape of the hypersurface formed by the statistic,
+        but the run-time is longer than, the results of `reg_unc`,
+        which does not vary any other parameter. If there are no
+        free parameters in the model, other than the parameters
+        being plotted, then the results will be the same.
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        Examples
+        --------
 
-           replot    - replot the previously calculated data in cache
-                       default=False
+        Vary the `xpos` and `ypos` parameters of the `gsrc` model
+        component for all data sets with a source expression.
 
-           fast      - change opt method to levmar for Chi2 statistics
-                       default=True
+        >>> reg_proj(gsrc.xpos, gsrc.ypos)
 
-           min       - list of minimums [min par0, min par1]
-                       default=None
+        Use only the data in data set 1:
 
-           max       - list of maximums [max par0, max par1]
-                       default=None
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, id=1)
 
-           nloop     - list of bin sizes, used in calculating stepsize for each
-                       dimension
-                       default=(10,10)
+        Only display the one- and three-sigma contours:
 
-           delv      - list of stepsizes, calculated by default
-                       default=None
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, sigma=(1,3))
 
-           fac       - factor used to expand or condense interval,
-                       default=4
+        Display contours at values of 5, 10, and 20 more than the
+        statistic value of the source model for data set 1:
 
-           log       - list of booleans to use log space for interval
-                       default=(False,False)
+        >>> s0 = calc_stat(id=1)
+        >>> lvls = s0 + np.asarray([5, 10, 20])
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, levels=lvls, id=1)
 
-           sigma     - list of sigmas used to calculate the confidence levels
-                       (slices)
-                       default=(1,2,3)
+        Increase the limits of the plot and the number of steps along
+        each axis:
 
-           levels    - confidence level values
-                       default=None
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41,41))
 
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
+        Compare the `ampl` parameters of the `g` and `b` model
+        components, for data sets 'core' and 'jet', over the given
+        ranges:
 
-           overplot  - plot over existing plot
-                       default=False
+        >>> reg_proj(g.ampl, b.ampl, min=(0,1e-4), max=(0.2,5e-4),
+                     nloop=(51,51), id='core', otherids=['jet'])
 
-        Returns:
-           None
-
-        DESCRIPTION
-
-        SEE ALSO
-           int_unc, int_proj, reg_unc
         """
         self._reg_plot(self._regproj, par0, par1, id=id, otherids=otherids,
                        replot=replot, fast=fast, min=min, max=max, nloop=nloop,
                        delv=delv, fac=fac, log=log, sigma=sigma, levels=levels,
                        numcores=numcores, overplot=overplot)
 
+    ### DOC-TODO: how is sigma converted into delta_stat
     def reg_unc(self, par0, par1, id=None, otherids=None, replot=False,
                 min=None, max=None, nloop=(10,10), delv=None, fac=4,
                 log=(False,False), sigma=(1,2,3), levels=None, numcores=None, 
                 overplot=False):
-        """
-        reg_unc
+        """Plot the statistic value as two parameters are varied.
 
-        SYNOPSIS
-           Create a confidence contour of fit statistic vs. two thawed
-           parameter values.  At each step calculate the statistic with the
-           other parameter(s) frozen at best fit values.
+        Create a confidence plot of the fit statistic as a function of
+        parameter value. Dashed lines are added to indicate the
+        current statistic value and the parameter value at this
+        point. The parameter value is varied over a grid of points and
+        the statistic evaluated while holding the other parameters
+        fixed. It is expected that this is run after a successful fit,
+        so that the parameter values are at the best-fit location.
 
-        SYNTAX
+        Parameters
+        ----------
+        par0, par1
+           The parameters to plot on the X and Y axes, respectively.
+        id : str or int, optional
+        otherids : list of str or int, optional
+           The ``id`` and ``otherids`` arguments determine which data set
+           or data sets are used. If not given, all data sets which
+           have a defined source model are used.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `int_proj`. The default is `False`.
+        min : pair of numbers, optional
+           The minimum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        max : pair of number, optional
+           The maximum parameter value for the calcutation. The
+           default value of `None` means that the limit is calculated
+           from the covariance, using the `fac` value.
+        nloop : pair of int, optional
+           The number of steps to use. This is used when `delv` is set
+           to `None`.
+        delv : pair of number, optional
+           The step size for the parameter. Setting this over-rides
+           the `nloop` parameter. The default is `None`.
+        fac : number, optional
+           When `min` or `max` is not given, multiply the covariance
+           of the parameter by this value to calculate the limit
+           (which is then added or subtracted to the parameter value,
+           as required).
+        log : pair of bool, optional
+           Should the step size be logarithmically spaced? The
+           default (`False`) is to use a linear grid.
+        sigma : sequence of number, optional
+           The levels at which to draw the contours. The units are the
+           change in significance relative to the starting value,
+           in units of sigma.
+        levels : sequence of number, optional
+           The numeric values at which to draw the contours. This
+           over-rides the `sigma` parameter, if set (the default is
+           `None`).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           par0      - first source model parameter
-           par1      - second source model parameter
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        covar : Estimate the confidence intervals using the covariance method.
+        get_reg_unc : Return the interval-uncertainty object.
+        int_unc : Calculate and plot the fit statistic versus fit parameter value.
+        reg_proj : Plot the statistic value as two parameters are varied.
 
-        Keyword arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Notes
+        -----
 
-           otherids  - list of ids required for simultaneous fit
-                       default=None
+        The difference to `reg_proj` is that at each step *only* the
+        pair of parameters are varied, while all the other parameters
+        remain at their starting value. This makes the result a
+        less-accurate rendering of the projected shape of the
+        hypersurface formed by the statistic, but the run-time is
+        likely shorter than, the results of `reg_proj`, which fits the
+        model to the remaining thawed parameters at each step. If
+        there are no free parameters in the model, other than the
+        parameters being plotted, then the results will be the same.
 
-           replot    - replot the previously calculated data in cache
-                       default=False
+        Examples
+        --------
 
-           min       - list of minimums [min par0, min par1]
-                       default=None
+        Vary the `xpos` and `ypos` parameters of the `gsrc` model
+        component for all data sets with a source expression.
 
-           max       - list of maximums [max par0, max par1]
-                       default=None
+        >>> reg_unc(gsrc.xpos, gsrc.ypos)
 
-           nloop     - list of bin sizes, used in calculating stepsize for each
-                       dimension
-                       default=(10,10)
+        Use only the data in data set 1:
 
-           delv      - list of stepsizes, calculated by default
-                       default=None
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, id=1)
 
-           fac       - factor used to expand or condense interval,
-                       default=4
+        Only display the one- and three-sigma contours:
 
-           log       - list of booleans to use log space for interval
-                       default=(False,False)
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, sigma=(1,3))
 
-           sigma     - list of sigmas used to calculate the confidence levels
-                       (slices)
-                       default=(1,2,3)
+        Display contours at values of 5, 10, and 20 more than the
+        statistic value of the source model for data set 1:
 
-           levels    - confidence level values
-                       default=None
+        >>> s0 = calc_stat(id=1)
+        >>> lvls = s0 + np.asarray([5, 10, 20])
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, levels=lvls, id=1)
 
-           numcores  - specify the number of cores for parallel processing.
-                       All available cores are used by default.
-                       default=None
+        Increase the limits of the plot and the number of steps along
+        each axis:
 
-           overplot  - plot over existing plot
-                       default=False
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41,41))
 
-        Returns:
-           None
+        Compare the `ampl` parameters of the `g` and `b` model
+        components, for data sets 'core' and 'jet', over the given
+        ranges:
 
-        DESCRIPTION
+        >>> reg_unc(g.ampl, b.ampl, min=(0,1e-4), max=(0.2,5e-4),
+                    nloop=(51,51), id='core', otherids=['jet'])
 
-        SEE ALSO
-           int_unc, int_proj, reg_proj
+        Overplot the results on the `reg_proj` plot:
+
+        >>> reg_proj(s1.c0, s2.xpos)
+        >>> reg_unc(s1.c0, s2.xpos, overplot=True)
+
         """
         self._reg_plot(self._regunc, par0, par1, id=id, otherids=otherids,
                        replot=replot, min=min, max=max, nloop=nloop, delv=delv,
@@ -9968,114 +14350,188 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def get_data_image(self, id=None):
-        """
-        get_data_image
+        """Return the data used by image_data.
 
-        SYNOPSIS
-           Return a Sherpa data image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        data_img : a sherpa.image.DataImage instance
+           The `y` attribute contains the ratio values as a 2D NumPy
+           array.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa DataImage object
+        See Also
+        --------
+        contour_data : Contour the values of an image data set.
+        image_data : Display a data set in the image viewer.
 
-        DESCRIPTION
-           The data image object holds the reference to the image array.
+        Examples
+        --------
 
-           Attributes:
-              y            - image array
+        Return the image data for the default data set:
 
-        SEE ALSO
-           image_data
+        >>> dinfo = get_data_image()
+        >>> dinfo.y.shape
+        (150, 175)
+
         """
         self._prepare_imageobj(id, self._dataimage)
         return self._dataimage
     
     def get_model_image(self, id=None):
-        """
-        get_model_image
+        """Return the data used by image_model.
 
-        SYNOPSIS
-           Return a Sherpa model image obj
+        Evaluate the source expression for the image pixels -
+        including any PSF convolution defined by `set_psf` - and
+        return the results.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Returns
+        -------
+        src_img : a sherpa.image.ModelImage instance
+           The `y` attribute contains the source model values as a 2D
+           NumPy array.
 
-        Returns:
-           Sherpa ModelImage object
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        DESCRIPTION
-           The model image object holds the reference to the image array.
+        See Also
+        --------
+        get_source_image : Return the data used by image_source.
+        contour_model : Contour the values of the model, including any PSF.
+        image_model : Display the model for a data set in the image viewer.
+        set_psf : Add a PSF model to a data set.
 
-           Attributes:
-              y            - image array
+        Examples
+        --------
 
-        SEE ALSO
-           image_model
+        Calculate the residuals (data - model) for the default
+        data set:
+
+        >>> minfo = get_model_image()
+        >>> dinfo = get_data_image()
+        >>> resid = dinfo.y - minfo.y
+
         """
         self._prepare_imageobj(id, self._modelimage)
         return self._modelimage
 
+    ### DOC-TODO: it looks like get_source_image doesn't raise DataErr with
+    ###           a non-2D data set
     def get_source_image(self, id=None):
-        """
-        get_source_image
+        """Return the data used by image_source.
 
-        SYNOPSIS
-           Return a Sherpa source image obj
+        Evaluate the source expression for the image pixels - without
+        any PSF convolution - and return the results.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Returns
+        -------
+        src_img : a sherpa.image.SourceImage instance
+           The `y` attribute contains the source model values as a 2D
+           NumPy array.
 
-        Returns:
-           Sherpa SourceImage object
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        DESCRIPTION
-           The source image object holds the reference to the image array.
+        See Also
+        --------
+        get_model_image : Return the data used by image_model.
+        contour_source : Contour the values of the model, without any PSF.
+        image_source : Display the source expression for a data set in the image viewer.
 
-           Attributes:
-              y            - image array
+        Examples
+        --------
 
-        SEE ALSO
-           image_source
+        Return the model data for the default data set:
+
+        >>> sinfo = get_source_image()
+        >>> sinfo.y.shape
+        (150, 175)
+
         """
         self._prepare_imageobj(id, self._sourceimage)
         return self._sourceimage
 
 
     def get_model_component_image(self, id, model=None):
-        """
-        get_model_component_image
+        """Return the data used by image_model_component.
 
-        SYNOPSIS
-           Return a Sherpa model image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
 
-        SYNTAX
+        Returns
+        -------
+        cpt_img : a sherpa.image.ComponentModelImage instance
+           The `y` attribute contains the component model values as a
+           2D NumPy array.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ModelImage object
+        See Also
+        --------
+        get_source_component_image : Return the data used by image_source_component.
+        get_model_image : Return the data used by image_model.
+        image_model : Display the model for a data set in the image viewer.
+        image_model_component : Display a component of the model in the image viewer.
 
-        DESCRIPTION
-           The model image object holds the reference to the image array.
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-           Attributes:
-              y            - image array
+        Examples
+        --------
 
-        SEE ALSO
-           image_model
+        Return the gsrc component values for the default data set:
+
+        >>> minfo = get_model_component_image(gsrc)
+
+        Get the `bgnd` model pixel values for data set 2:
+
+        >>> minfo = get_model_component_image(2, bgnd)
+
         """
         if model is None:
             id, model = model, id
@@ -10087,30 +14543,55 @@ class Session(NoNewAttributesAfterInit):
         return self._mdlcompimage
 
     def get_source_component_image(self, id, model=None):
-        """
-        get_source_component_image
+        """Return the data used by image_source_component.
 
-        SYNOPSIS
-           Return a Sherpa model component image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
 
-        SYNTAX
+        Returns
+        -------
+        cpt_img : a sherpa.image.ComponentSourceImage instance
+           The `y` attribute contains the component model values as a
+           2D NumPy array.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ModelImage object
+        See Also
+        --------
+        get_model_component_image : Return the data used by image_model_component.
+        get_source_image : Return the data used by image_source.
+        image_source : Display the source expression for a data set in the image viewer.
+        image_source_component : Display a component of the source expression in the image viewer.
 
-        DESCRIPTION
-           The model component image object holds the reference to the 
-           image array.
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-           Attributes:
-              y            - image array
+        Examples
+        --------
 
-        SEE ALSO
-           image_model
+        Return the gsrc component values for the default data set:
+
+        >>> sinfo = get_source_component_image(gsrc)
+
+        Get the `bgnd` model pixel values for data set 2:
+
+        >>> sinfo = get_source_component_image(2, bgnd)
+
         """
         if model is None:
             id, model = model, id
@@ -10121,116 +14602,157 @@ class Session(NoNewAttributesAfterInit):
         self._prepare_imageobj(id, self._srccompimage, model=model)
         return self._srccompimage
 
-
     def get_ratio_image(self, id=None):
-        """
-        get_ratio_image
+        """Return the data used by image_ratio.
 
-        SYNOPSIS
-           Return a Sherpa ratio image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        ratio_img : a sherpa.image.RatioImage instance
+           The `y` attribute contains the ratio values as a 2D NumPy
+           array.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa RatioImage object
+        See Also
+        --------
+        get_resid_image : Return the data used by image_resid.
+        contour_ratio : Contour the ratio of data to model.
+        image_ratio : Display the ratio (data/model) for a data set in the image viewer.
 
-        DESCRIPTION
-           The ratio image object holds the reference to the image array.
+        Examples
+        --------
 
-           Attributes:
-              y            - image array
+        Return the ratio data for the default data set:
 
-        SEE ALSO
-           image_ratio
+        >>> rinfo = get_ratio_image()
+
         """
         self._prepare_imageobj(id, self._ratioimage)
         return self._ratioimage
     
     def get_resid_image(self, id=None):
-        """
-        get_resid_image
+        """Return the data used by image_resid.
 
-        SYNOPSIS
-           Return a Sherpa resid image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        resid_img : a sherpa.image.ResidImage instance
+           The `y` attribute contains the residual values as a 2D
+           NumPy array.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set is not 2D.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-        Returns:
-           Sherpa ResidImage object
+        See Also
+        --------
+        get_ratio_image : Return the data used by image_ratio.
+        contour_resid : Contour the residuals of the fit.
+        image_resid : Display the residuals (data - model) for a data set in the image viewer.
 
-        DESCRIPTION
-           The resid image object holds the reference to the image array.
+        Examples
+        --------
 
-           Attributes:
-              y            - image array
+        Return the residual data for the default data set:
 
-        SEE ALSO
-           image_resid
+        >>> rinfo = get_resid_image()
+
         """
         self._prepare_imageobj(id, self._residimage)
         return self._residimage
 
     def get_psf_image(self, id=None):
-        """
-        get_psf_image
+        """Return the data used by image_psf.
 
-        SYNOPSIS
-           Return a Sherpa PSF image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        psf_data : a sherpa.image.PSFImage instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFImage object
+        See Also
+        --------
+        get_kernel_image : Return the data used by image_kernel.
+        image_kernel : Display the 2D kernel for a data set in the image viewer.
+        image_psf : Display the 2D PSF model for a data set in the image viewer.
 
-        DESCRIPTION
-           The PSF image object holds the reference to the image array.
+        Examples
+        --------
 
-           Attributes:
-              y            - image array
+        Return the image data for the PSF for the default data set:
 
-        SEE ALSO
-           image_psf
+        >>> iplot = get_psf_image()
+        >>> iplot.y.shape
+        (175, 200)
+
         """
         self._prepare_imageobj(id, self._psfimage)
         return self._psfimage
 
 
     def get_kernel_image(self, id=None):
-        """
-        get_kernel_image
+        """Return the data used by image_kernel.
 
-        SYNOPSIS
-           Return a Sherpa PSF kernel image obj
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default identifier is
+           used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        psf_data : a sherpa.image.PSFKernelImage instance
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If a PSF model has not been created for the data set.
 
-        Returns:
-           Sherpa PSFKernelImage object
+        See Also
+        --------
+        get_psf_image : Return the data used by image_psf.
+        image_kernel : Display the 2D kernel for a data set in the image viewer.
+        image_psf : Display the 2D PSF model for a data set in the image viewer.
 
-        DESCRIPTION
-           The PSF kernel image object holds the reference to the image array.
+        Examples
+        --------
 
-           Attributes:
-              y            - image array
+        Return the image data for the kernel for the default data set:
 
-        SEE ALSO
-           image_kernel
+        >>> lplot = get_kernel_image()
+        >>> iplot.y.shape
+        (51, 51)
+
         """
         self._prepare_imageobj(id, self._kernelimage)
         return self._kernelimage
@@ -10241,67 +14763,138 @@ class Session(NoNewAttributesAfterInit):
 
     def _image(self, id, imageobj, shape, newframe, tile, model=None):
         self._prepare_imageobj(id, imageobj, model).image(shape, newframe, tile)
-        
+
     def image_data(self, id=None, newframe=False, tile=False):
-        """
-        image_data
+        """Display a data set in the image viewer.
 
-        SYNOPSIS
-           Send a data image to the visualizer
+        The image viewer is automatically started if it is not
+        already open.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           newframe    - Add a new frame
-                         default = False
+        See Also
+        --------
+        get_data_image :
+        image_close : Close the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_source : Display the model for a data set in the image viewer.
 
-           tile        - Tile image frame
-                         default = False
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        Returns:
-           None
+        References
+        ----------
 
-        DESCRIPTION
-           Visualize an image dataset by Sherpa data id.
+        .. [1] http://ds9.si.edu/site/Home.html
 
-        SEE ALSO
-           get_data_image, image_model, image_fit, image_resid,
-           image_ratio, image_fit_resid, image_psf
+        Examples
+        --------
+
+        Display the data in default data set.
+
+        >>> image_data()
+
+        Display data set 2 in a new frame so that the data in the
+        current frame is not destroyed. The new data will be displayed
+        in a single frame (i.e. the only data shown by the viewer).
+
+        >>> image_data(2, newframe=True)
+
+        Display data sets 'i1' and 'i2' side by side:
+
+        >>> image_data('i1')
+        >>> image_data('i2', newframe=True, tile=True)
+
         """
         self._image(id, self._dataimage, None,
                     newframe, tile)
-    
+
     def image_model(self, id=None, newframe=False, tile=False):
-        """
-        image_model
+        """Display the model for a data set in the image viewer.
 
-        SYNOPSIS
-           Send a model image to the visualizer
+        This function evaluates and displays the model expression for
+        a data set, including any instrument response (e.g. PSF or ARF
+        and RMF) whether created automatically or with
+        `set_full_model`.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-           newframe    - Add a new frame
-                         default = False
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           tile        - Tile image frame
-                         default = False
+        See Also
+        --------
+        get_model_image :
+        image_close : Close the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model_component : Display a component of the model in the image viewer.
+        image_open : Open the image viewer.
+        image_source : Display the model for a data set in the image viewer.
+        image_source_component : Display a component of the source expression in the image viewer.
 
-        Returns:
-           None
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a model image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_model_image, image_data, image_fit, image_resid,
-           image_ratio, image_fit_resid, image_psf, image_source
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the model for the default data set.
+
+        >>> image_model()
+
+        Display the model for data set 2 in a new frame so that the
+        data in the current frame is not destroyed. The new data will
+        be displayed in a single frame (i.e. the only data shown by
+        the viewer).
+
+        >>> image_model(2, newframe=True)
+
+        Display the models for data sets 'i1' and 'i2' side by side:
+
+        >>> image_model('i1')
+        >>> image_model('i2', newframe=True, tile=True)
+
         """
         self._image(id, self._modelimage, None,
                     newframe, tile)
@@ -10309,35 +14902,78 @@ class Session(NoNewAttributesAfterInit):
 
     def image_source_component(self, id, model=None, newframe=False,
                                tile=False):
-        """
-        image_source_component
+        """Display a component of the source expression in the image viewer.
 
-        SYNOPSIS
-           Send a source model component image to the visualizer
+        This function evaluates and displays a component of the model
+        expression for a data set, without any instrument response.
+        Use `image_model_component` to include any response.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-           source       - Sherpa source component to image
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           newframe    - Add a new frame
-                         default = False
+        See Also
+        --------
+        get_source_component_image : Return the data used by image_source_component.
+        image_close : Close the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_model_component : Display a component of the model in the image viewer.
+        image_open : Open the image viewer.
+        image_source : Display the source expression for a data set in the image viewer.
 
-           tile        - Tile image frame
-                         default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-        Returns:
-           None
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a source model component image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_model_image, image_data, image_fit, image_resid,
-           image_ratio, image_fit_resid, image_psf, image_source
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the full source model and then just the `gsrc`
+        component for the default data set:
+
+        >>> image_source()
+        >>> image_source_component(gsrc)
+
+        Display the 'clus' and 'bgnd' components of the model for the
+        'img' data set side by side:
+
+        >>> image_source_component('img', 'clus')
+        >>> image_source_component('img', 'bgnd', newframe=True,
+                                   tile=True)
+
         """
         if model is None:
             id, model = model, id
@@ -10349,35 +14985,79 @@ class Session(NoNewAttributesAfterInit):
 
 
     def image_model_component(self, id, model=None, newframe=False, tile=False):
-        """
-        image_model_component
+        """Display a component of the model in the image viewer.
 
-        SYNOPSIS
-           Send a model component image to the visualizer
+        This function evaluates and displays a component of the model
+        expression for a data set, including any instrument response.
+        Use `image_source_component` to exclude the response.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        model : str or sherpa.models.model.Model instance
+           The component to display (the name, if a string).
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-           model       - Sherpa model component to image
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           newframe    - Add a new frame
-                         default = False
+        See Also
+        --------
+        get_model_component_image :
+        image_close : Close the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_source : Display the source expression for a data set in the image viewer.
+        image_source_component : Display a component of the source expression in the image viewer.
 
-           tile        - Tile image frame
-                         default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
+        respectively.
 
-        Returns:
-           None
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a model component image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_model_image, image_data, image_fit, image_resid,
-           image_ratio, image_fit_resid, image_psf, image_source
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the full source model and then just the `gsrc`
+        component for the default data set:
+
+        >>> image_model()
+        >>> image_model_component(gsrc)
+
+        Display the 'clus' component of the model for the 'img' data
+        set side by side without the with any instrument response
+        (such as convolution with a PSF model):
+
+        >>> image_source_component('img', 'clus')
+        >>> image_model_component('img', 'clus', newframe=True,
+                                  tile=True)
+
         """
         if model is None:
             id, model = model, id
@@ -10393,64 +15073,139 @@ class Session(NoNewAttributesAfterInit):
 
 
     def image_source(self, id=None, newframe=False, tile=False):
-        """
-        image_source
+        """Display the source expression for a data set in the image viewer.
 
-        SYNOPSIS
-           Send a source image to the visualizer
+        This function evaluates and displays the model expression for
+        a data set, without any instrument response.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-           newframe    - Add a new frame
-                         default = False
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           tile        - Tile image frame
-                         default = False
+        See Also
+        --------
+        get_source_image : Return the data used by image_source.
+        image_close : Close the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_model_component : Display a component of the model in the image viewer.
+        image_open : Open the image viewer.
+        image_source_component : Display a component of the source expression in the image viewer.
 
-        Returns:
-           None
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a source image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_source_image, image_data, image_fit, image_resid,
-           image_ratio, image_fit_resid, image_psf, image_model
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the source model for the default data set.
+
+        >>> image_source()
+
+        Display the source model for data set 2 in a new frame so that
+        the data in the current frame is not destroyed. The new data
+        will be displayed in a single frame (i.e. the only data shown
+        by the viewer).
+
+        >>> image_source(2, newframe=True)
+
+        Display the source models for data sets 'i1' and 'i2' side by
+        side:
+
+        >>> image_source('i1')
+        >>> image_source('i2', newframe=True, tile=True)
+
         """
         self._image(id, self._sourceimage, None, newframe, tile)
 
+    ### DOC-TODO: does newframe make sense here?
     def image_fit(self, id=None, newframe=True, tile=True, deleteframes=True):
-        """
-        image_fit
+        """Display the data, model, and residuals for a data set in the image viewer.
 
-        SYNOPSIS
-           Send a fit image to the visualizer
+        This function displays the data, model (including any
+        instrument response), and the residuals (data - model), for a
+        data set.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
+        deleteframes : bool, optional
+           Should existing frames be deleted? The default is `True`.
 
-           newframe    - Add a new frame
-                         default = False
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           tile        - Tile image frame
-                         default = False
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_data : Display a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_resid : Display the residuals (data - model) for a data set in the image viewer.
 
-        Returns:
-           None
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a fit image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_fit_image, image_data, image_model, image_resid, image_ratio,
-           image_fit_resid, image_psf
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the fit results - that is, the data, model, and
+        residuals - for the default data set.
+
+        >>> image_fit()
+
+        Do not tile the frames (the three frames are loaded, but only
+        the last displayed, the residuals), and then change the frame
+        being displayed to the second one (the model).
+
+        >>> image_fit('img', tile=False)
+        >>> image_xpaset('frame 2')
+
         """
         self._prepare_imageobj(id, self._dataimage)
         self._prepare_imageobj(id, self._modelimage)
@@ -10464,302 +15219,527 @@ class Session(NoNewAttributesAfterInit):
         self._residimage.image(None, newframe, tile)
 
     def image_resid(self, id=None, newframe=False, tile=False):
-        """
-        image_resid
+        """Display the residuals (data - model) for a data set in the image viewer.
 
-        SYNOPSIS
-           Send a resid image to the visualizer
+        This function displays the residuals (data - model) for a data
+        set.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-           newframe    - Add a new frame
-                         default = False
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           tile        - Tile image frame
-                         default = False
+        See Also
+        --------
+        get_resid_image : Return the data used by image_resid.
+        image_close : Close the image viewer.
+        image_data : Display a data set in the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_ratio : Display the ratio (data/model) for a data set in the image viewer.
+        image_source : Display the model for a data set in the image viewer.
 
-        Returns:
-           None
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a resid image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_resid_image, image_data, image_model, image_fit, image_ratio,
-           image_fit_resid, image_psf
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the residuals for the default data set.
+
+        >>> image_resid()
+
+        Display the residuals for data set 2 in a new frame so that
+        the data in the current frame is not destroyed. The new data
+        will be displayed in a single frame (i.e. the only data shown
+        by the viewer).
+
+        >>> image_resid(2, newframe=True)
+
+        Display the residuals for data sets 'i1' and 'i2' side by
+        side:
+
+        >>> image_resid('i1')
+        >>> image_resid('i2', newframe=True, tile=True)
+
         """
         self._image(id, self._residimage, None,
                     newframe, tile)
 
     def image_ratio(self, id=None, newframe=False, tile=False):
-        """
-        image_ratio
+        """Display the ratio (data/model) for a data set in the image viewer.
 
-        SYNOPSIS
-           Send a ratio image to the visualizer
+        This function displays the ratio data/model for a data
+        set.
 
-        SYNTAX
+        The image viewer is automatically started if it is not
+        already open.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-           newframe    - Add a new frame
-                         default = False
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist or a source expression has
+           not been set.
 
-           tile        - Tile image frame
-                         default = False
+        See Also
+        --------
+        get_ratio_image : Return the data used by image_ratio.
+        image_close : Close the image viewer.
+        image_data : Display a data set in the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_resid : Display the residuals (data - model) for a data set in the image viewer.
+        image_source : Display the model for a data set in the image viewer.
 
-        Returns:
-           None
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        DESCRIPTION
-           Visualize a ratio image by Sherpa data id.
+        References
+        ----------
 
-        SEE ALSO
-           get_ratio_image, image_data, image_model, image_fit, image_resid,
-           image_fit_resid, image_psf
+        .. [1] http://ds9.si.edu/site/Home.html
+
+        Examples
+        --------
+
+        Display the ratio (data/model) for the default data set.
+
+        >>> image_ratio()
+
         """
         self._image(id, self._ratioimage, None,
                     newframe, tile)
 
+    ### DOC-TODO: what gets displayed when there is no PSF?
     def image_psf(self, id=None, newframe=False, tile=False):
-        """
-        image_psf
+        """Display the 2D PSF model for a data set in the image viewer.
 
-        SYNOPSIS
-           Send a PSF image to the visualizer
+        The image viewer is automatically started if it is not
+        already open.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           newframe    - Add a new frame
-                         default = False
+        See Also
+        --------
+        get_psf_image :
+        image_close : Close the image viewer.
+        image_data : Display a data set in the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_source : Display the model for a data set in the image viewer.
+        plot_psf : Plot the 1D PSF model applied to a data set.
 
-           tile        - Tile image frame
-                         default = False
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        Returns:
-           None
+        References
+        ----------
 
-        DESCRIPTION
-           Visualize a PSF image by Sherpa data id.
+        .. [1] http://ds9.si.edu/site/Home.html
 
-        SEE ALSO
-           get_psf_image, image_data, image_model,
-           image_fit, image_resid, image_ratio, image_fit_resid
+        Examples
+        --------
+
+        >>> image_psf()
+
+        >>> image_psf(2)
+
         """
         self._image(id, self._psfimage, None, newframe, tile)
 
 
+    ### DOC-TODO: what gets displayed when there is no PSF?
+    ### DOC-TODO: where to point to for PSF/kernel discussion/description
+    ###           (as it appears in a number of places)?
     def image_kernel(self, id=None, newframe=False, tile=False):
-        """
-        image_kernel
+        """Display the 2D kernel for a data set in the image viewer.
 
-        SYNOPSIS
-           Send a PSF kernel image to the visualizer
+        The image viewer is automatically started if it is not
+        already open.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        newframe : bool, optional
+           Create a new frame for the data? If `False`, the default,
+           then the data will be displayed in the current frame.
+        tile : bool, optional
+           Should the frames be tiles? If `False`, the default, then
+           only a single frame is displayed.
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           newframe    - Add a new frame
-                         default = False
+        See Also
+        --------
+        get_kernel_image :
+        image_close : Close the image viewer.
+        image_data : Display a data set in the image viewer.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        image_model : Display the model for a data set in the image viewer.
+        image_open : Open the image viewer.
+        image_source : Display the model for a data set in the image viewer.
+        plot_kernel : Plot the 1D kernel applied to a data set.
 
-           tile        - Tile image frame
-                         default = False
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        Returns:
-           None
+        References
+        ----------
 
-        DESCRIPTION
-           Visualize a PSF sub-kernel image by Sherpa data id.
+        .. [1] http://ds9.si.edu/site/Home.html
 
-        SEE ALSO
-           get_kernel_image, image_data, image_model,
-           image_fit, image_resid, image_ratio, image_fit_resid
+        Examples
+        --------
+
+        >>> image_kernel()
+
+        >>> image_kernel(2)
+
         """
         self._image(id, self._kernelimage, None, newframe, tile)
 
     # Manage these functions (open, close, delete frames, regions, XPA)
     # through unbound functions of the Image class--always talking to
     # the same instance of the Image backend, so OK for now
+
     def image_deleteframes(self):
-        """
-        image_deleteframes
+        """Delete all the frames open in the image viewer.
 
-        SYNOPSIS
-           Delete frames in image visualizer
+        Delete all the frames - in other words, images - being
+        displayed in the image viewer (e.g. as created by
+        `image_data` or `image_fit`).
 
-        SYNTAX
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_getregion : Return the region defined in the image viewer.
+        image_open : Create the image viewer.
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaget : Return the result of an XPA call to the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           None
+        >>> image_deleteframes()
 
-        DESCRIPTION
-           Delete all frames in the image visualizer window.
-
-        SEE ALSO
-           image_open, image_close, image_getregion, image_setregion,
-           image_xpaget, image_xpaset
         """
         sherpa.image.Image.delete_frames()
         
     def image_open(self):
-        """
-        image_open
+        """Start the image viewer.
 
-        SYNOPSIS
-           Open a image visualizer window
+        The image viewer will be started, if found. Calling this
+        function when the viewer has already been started will not
+        cause a second viewer to be started. The image viewer
+        will be started automatically by any of the commands
+        like `image_data`.
 
-        SYNTAX
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_deleteframes : Delete all the frames open in the image viewer.
+        image_getregion : Return the region defined in the image viewer.
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaget : Return the result of an XPA call to the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        Arguments:
-           None
+        Notes
+        -----
+        Image visualization is optional, and provided by the
+        DS9 application [1]_.
 
-        Returns:
-           None
+        References
+        ----------
 
-        DESCRIPTION
-           Open a window for image visualization.
+        .. [1] http://ds9.si.edu/site/Home.html
 
-        SEE ALSO
-           image_deleteframes, image_close, image_getregion, image_setregion,
-           image_xpaget, image_xpaset
+        Examples
+        --------
+
+        >>> image_open()
+
         """
         sherpa.image.Image.open()
 
     def image_close(self):
-        """
-        image_close
+        """Close the image viewer.
 
-        SYNOPSIS
-           Close a image visualizer window
+        Close the image viewer created by a previous call to one
+        of the `image_xxx` functions.
 
-        SYNTAX
+        See Also
+        --------
+        image_deleteframes : Delete all the frames open in the image viewer.
+        image_getregion : Return the region defined in the image viewer.
+        image_open : Start the image viewer.
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaget : Return the result of an XPA call to the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        Arguments:
-           None
+        Examples
+        --------
 
-        Returns:
-           None
+        >>> image_close()
 
-        DESCRIPTION
-           Close a image visualizer window.
-
-        SEE ALSO
-           image_open, image_deleteframes, image_getregion, image_setregion,
-           image_xpaget, image_xpaset
         """
         sherpa.image.Image.close()
 
+    ### DOC-TODO: what is the "default" coordinate system
     def image_getregion(self, coord=''):
-        """
-        image_getregion
+        """Return the region defined in the image viewer.
 
-        SYNOPSIS
-           Return a visualizer image region
+        The regions defined in the current frame are returned.
 
-        SYNTAX
+        Parameters
+        ----------
+        coord : str, optional
+           The coordinate system to use.
 
-        Arguments:
-           None
+        Returns
+        -------
+        region : str
+           The region, or regions, or the empty string.
 
-        Returns:
-           visualizer image region
+        Raises
+        ------
+        sherpa.utils.err.DS9Err
+           Invalid coordinate system.
 
-        DESCRIPTION
-           Return a visualizer image region.
+        See Also
+        --------
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaget : Return the result of an XPA call to the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        SEE ALSO
-           image_open, image_close, image_deleteframes, image_setregion,
-           image_xpaget, image_xpaset
+        Examples
+        --------
+
+        >>> image_getregion()
+        'circle(123,128,12.377649);-box(130,121,14,14,329.93142);'
+
+        >>> image_getregion('physical')
+        'circle(3920.5,4080.5,396.08476);-rotbox(4144.5,3856.5,448,448,329.93142);'
+
         """
         return sherpa.image.Image.get_region(coord)
 
+    ### DOC-TODO: what is the "default" coordinate system
     def image_setregion(self, reg, coord=''):
-        """
-        image_setregion
+        """Set the region to display in the image viewer.
 
-        SYNOPSIS
-           Set a visualizer image region
+        Parameters
+        ----------
+        reg : str
+           The region to display.
+        coord : str, optional
+           The coordinate system to use.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.DS9Err
+           Invalid coordinate system.
 
-        Arguments:
-           reg      - image visualizer region
+        See Also
+        --------
+        image_getregion : Return the region defined in the image viewer.
+        image_xpaget : Return the result of an XPA call to the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Set a visualizer image region.
+        Add a circle, in the physical coordinate system, to the data
+        from the default data set:
 
-        SEE ALSO
-           image_open, image_close, image_getregion, image_deleteframes,
-           image_xpaget, image_xpaset
+        >>> image_data()
+        >>> image_setregion('circle(4234.53,3245.29,46.74)', 'physical')
+
+        Copy the region from the current frame, create a new frame
+        displaying the residuals from data set 'img', and then display
+        the region on it:
+
+        >>> r = image_getregion()
+        >>> image_resid('img', newframe=True)
+        >>> image_setregion(r)
+
         """
         sherpa.image.Image.set_region(reg, coord)
 
+    ### DOC-TODO: check the ds9 link when it is working
+    ### DOC-TODO: is there a link of ds9 commands we can link to?
     def image_xpaget(self, arg):
-        """
-        image_xpaget
+        """Return the result of an XPA call to the image viewer.
 
-        SYNOPSIS
-           Return an XPA data stream
+        Send a query to the image viewer.
 
-        SYNTAX
+        Parameters
+        ----------
+        arg : str
+           A command to send to the image viewer via XPA.
 
-        Arguments:
-           arg      - XPA agrument
+        Returns
+        -------
+        returnval : str
 
-        Returns:
-           XPA data stream
+        Raises
+        ------
+        sherpa.utils.err.DS9Err
+           The image viewer is not running.
+        sherpa.utils.err.RuntimeErr
+           If the command is not recognized.
 
-        DESCRIPTION
-           Retrieve an XPA data stream from image visualizer.
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_getregion : Return the region defined in the image viewer.
+        image_open : Create the image viewer.
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        SEE ALSO
-           image_open, image_close, image_getregion, image_setregion,
-           image_deleteframes, image_xpaset
+        Notes
+        -----
+        This XPA access point [1]_ of the ds9 image viewer lets
+        commands and queries to be sent to the viewer.
+
+        References
+        ----------
+
+        .. [1] http://ds9.si.edu/ref/xpa.html
+
+        Examples
+        --------
+
+        Return the current zoom setting of the active frame:
+
+        >>> image_xpaget('zoom')
+        '1\n'
+
         """
         return sherpa.image.Image.xpaget(arg)
 
+    ### DOC-TODO: check the ds9 link when it is working
+    ### DOC-TODO: is there a link of ds9 commands we can link to?
     def image_xpaset(self, arg, data=None):
-        """
-        image_deleteframes
+        """Return the result of an XPA call to the image viewer.
 
-        SYNOPSIS
-           Send an XPA data stream
+        Send a command to the image viewer.
 
-        SYNTAX
+        Parameters
+        ----------
+        arg : str
+           A command to send to the image viewer via XPA.
+        data : optional
+           The data for the command.
 
-        Arguments:
-           arg      - XPA agrument
+        Raises
+        ------
+        sherpa.utils.err.DS9Err
+           The image viewer is not running.
+        sherpa.utils.err.RuntimeErr
+           If the command is not recognized or could not be completed.
 
-           data     - data to be sent as stdin to the
-                      XPA argument (None by default)
-        Returns:
-           None
+        See Also
+        --------
+        image_close : Close the image viewer.
+        image_getregion : Return the region defined in the image viewer.
+        image_open : Create the image viewer.
+        image_setregion : Set the region to display in the image viewer.
+        image_xpaset : Send an XPA command to the image viewer.
 
-        DESCRIPTION
-           Send an XPA data stream to image visualizer.
+        Notes
+        -----
+        This XPA access point [1]_ of the ds9 image viewer lets
+        commands and queries to be sent to the viewer.
 
-        SEE ALSO
-           image_open, image_close, image_getregion, image_setregion,
-           image_xpaget, image_deleteframes
+        References
+        ----------
+
+        .. [1] http://ds9.si.edu/ref/xpa.html
+
+        Examples
+        --------
+
+        Change the zoom setting of the active frame:
+
+        >>> image_xpaset('zoom 4')
+
+        Overlay the coordinate grid on the current frame:
+
+        >>> image_xpaset('grid yes')
+
+        Add the region file `src.reg` to the display:
+
+        >>> image_xpaset('regions src.reg')
+
+        Create a png version of the image being displayed:
+
+        >>> image_xpaset('saveimage png /tmp/img.png')
+
         """
         return sherpa.image.Image.xpaset(arg, data)
 

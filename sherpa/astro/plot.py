@@ -83,7 +83,20 @@ class ModelHistogram(HistogramPlot):
 
 
 class SourcePlot(HistogramPlot):
-    "Derived class for creating plots of the unconvolved source model"
+    """Create 1D plots of unconcolved model values.
+
+    Attributes
+    ----------
+    histo_prefs : dict
+       The preferences for the plot.
+    xlo, xhi : array_like
+       The lower and upper edges for each bin (the independent variable).
+    y : array_like
+       The Y value for each point (the model value).
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
 
     histo_prefs = backend.get_model_histo_defaults()
 
@@ -191,10 +204,36 @@ class ComponentSourcePlot(_ComponentSourcePlot, SourcePlot):
 
 
 class ARFPlot(HistogramPlot):
-    "Derived class for creating plots of ancillary response"
+    """Create plots of the ancillary response file (ARF).
+
+    Attributes
+    ----------
+    histo_prefs : dict
+       The preferences for the plot.
+    xlo, xhi : array_like
+       The lower and upper edges of each bin.
+    y : array_like
+       The effective area (ARF) value for the bin.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     histo_prefs = backend.get_model_histo_defaults()
 
     def prepare(self, arf, data=None):
+        """Fill the fields given the ARF.
+
+        Parameters
+        ----------
+        arf :
+           The ARF to plot
+        data : DataPHA instance, optional
+           The `units` attribute of this object is used
+           to determine whether the X axis should be
+           in Angstrom instead of KeV (the default).
+
+        """
         self.xlo = arf.energ_lo
         self.xhi = arf.energ_hi
         self.y = arf.specresp

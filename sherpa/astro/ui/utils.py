@@ -112,6 +112,24 @@ class Session(sherpa.ui.utils.Session):
 
 
     def clean(self):
+        """Clear out the current Sherpa session.
+
+        The `clean` function removes all data sets and model
+        assignments, and restores the default settings for the
+        optimisation and fit statistic.
+
+        See Also
+        --------
+        save : Save the current Sherpa session to a file.
+        restore : Load in a Sherpa session from a file.
+        save_all : Save the Sherpa session as an ASCII file.
+
+        Examples
+        --------
+
+        >>> clean()
+
+        """
         self._pileup_models     = {}
         self._background_models = {}
         self._background_sources = {}
@@ -162,30 +180,50 @@ class Session(sherpa.ui.utils.Session):
     # Add ability to save attributes sepcific to the astro package.
     # Save XSPEC module settings that need to be restored.
     def save(self, filename='sherpa.save', clobber=False):
-        """
-        save
+        """Save the current Sherpa session to a file.
 
-        SYNOPSIS
-           Save the current Sherpa session to a pickled file
+        Parameters
+        ----------
+        filename : str, optional
+           The name of the file to write the results to. The default
+           is `sherpa.save`.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           filename   - name of save file
-                        default = 'sherpa.save'           
+        See Also
+        --------
+        clean : Clear all stored session data.
+        restore : Load in a Sherpa session from a file.
+        save_all : Save the Sherpa session as an ASCII file.
 
-           clobber    - clobber the file if it exists
-                        default = False
+        Notes
+        -----
 
-        Returns:
-           None
+        The current Sherpa session is saved using the Python `pickle`
+        module. The output is a binary file, which may not be portable
+        between versions of Sherpa, but is platform independent, and
+        contains all the data. This means that files created by `save`
+        can be sent to collaborators to share results.
 
-        DESCRIPTION
-           Save the current Sherpa session information to a pickled file
-           to be restored for future use.
+        Examples
+        --------
 
-        SEE ALSO
-           restore, clean
+        Save the current session to the file `sherpa.save`.
+
+        >>> save()
+
+        Save the current session to the file `bestfit.sherpa`,
+        overwriting any existing version of the file.
+
+        >>> save('bestfit.sherpa', clobber=True)
+
         """
         if (hasattr(sherpa.astro, "xspec")):
             self._xspec_state = sherpa.astro.xspec.get_xsstate()
@@ -194,27 +232,48 @@ class Session(sherpa.ui.utils.Session):
         sherpa.ui.utils.Session.save(self, filename, clobber)
 
     def restore(self, filename='sherpa.save'):
-        """
-        restore
+        """Load in a Sherpa session from a file.
 
-        SYNOPSIS
-           Restore a previous Sherpa session from a pickled file
+        Parameters
+        ----------
+        filename : str, optional
+           The name of the file to read the results from. The default
+           is `sherpa.save`.
 
-        SYNTAX
+        Raises
+        ------
+        IOError
+           If `filename` does not exist.
 
-        Arguments:
-           filename   - name of saved file
-                        default = 'sherpa.save'           
+        See Also
+        --------
+        clean : Clear all stored session data.
+        save : Save the current Sherpa session to a file.
 
-        Returns:
-           None
+        Notes
+        -----
+        The input to `restore` must have been created with the `save`
+        command. This is a binary file, which may not be portable
+        between versions of Sherpa, but is platform independent. A
+        warning message may be created if a file saved by an older
+        (or newer) version of Sherpa is loaded. An example of such
+        a message is
 
-        DESCRIPTION
-           Restore previous Sherpa session information from a pickled file
-           for continued use.
+        WARNING: Could not determine whether the model is discrete.
+        This probably means that you have restored a session saved with a previous version of Sherpa.
+        Falling back to assuming that the model is continuous.
 
-        SEE ALSO
-           save, clean
+        Examples
+        --------
+
+        Load in the Sherpa session from `sherpa.save`.
+
+        >>> restore()
+
+        Load in the session from the given file:
+
+        >>> restore('/data/m31/setup.sherpa')
+
         """
         sherpa.ui.utils.Session.restore(self, filename)
         if (hasattr(sherpa.astro, "xspec")):
@@ -335,45 +394,50 @@ class Session(sherpa.ui.utils.Session):
 
 
     def show_bkg(self, id=None, bkg_id=None, outfile=None, clobber=False):
-        """
-        show_bkg
+        """Show the details of the PHA background data sets.
 
-        SYNOPSIS
-           Show the Sherpa PHA background data set
+        This displays information about the background, or
+        backgrounds, for the loaded data sets. This includes: any
+        filters, the grouping settings, mission-specific header
+        keywords, and the details of any associated instrument
+        responses files (ARF, RMF).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all background data sets
+           are displayed.
+        bkg_id : int or str, optional
+           The background component to display. The default is all
+           components.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id       - data id
-                      default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           bkg_id   - background data id
-                      default = All available background data ids per data id
+        See Also
+        --------
+        list_model_ids : List of all the data sets with a source expression.
+        load_bkg : Load the background from a file and add it to a PHA data set.
+        show_all : Report the current state of the Sherpa session.
 
-           outfile   - filename to capture the output
-                      default = None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-           clobber  - overwrite outfile if exists
-                      default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Show the Sherpa PHA background data set by data id and background
-           data id
-
-           Examples:
-              show_bkg(1, 2)
-
-              show_bkg(outfile="bkg.out", clobber=True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           show_all, show_data, show_bkg_model, show_bkg_source
         """
         all = ''
         all += self._get_show_bkg(id, bkg_id)
@@ -381,45 +445,52 @@ class Session(sherpa.ui.utils.Session):
 
 
     def show_bkg_source(self, id=None, bkg_id=None, outfile=None, clobber=False):
-        """
-        show_bkg_source
+        """Display the background model expression for a data set.
 
-        SYNOPSIS
-           Show the background source model (unconvolved)
+        This displays the background model for a data set, that is,
+        the expression set by `set_bkg_model` or `set_bkg_source`, as
+        well as the parameter values for the model. The
+        `show_bkg_model` function displays the model that is fit to
+        the data; that is, it includes any instrument responses.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all background expressions
+           are displayed.
+        bkg_id : int or str, optional
+           The background component to display. The default is all
+           components.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id       - data id
-                      default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           bkg_id   - background data id
-                      default = All available background data ids per data id
+        See Also
+        --------
+        list_model_ids : List of all the data sets with a source expression.
+        set_bkg_model : Set the background model expression for a data set.
+        show_all : Report the current state of the Sherpa session.
+        show_model : Display the model expression used to fit a data set.
+        show_bkg_model : Display the background model expression used to fit a data set.
 
-           outfile  - filename to capture the output
-                      default = None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-           clobber  - overwrite outfile if exists
-                      default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Show the background unconvolved source model by data id
-           and background data id
-
-           Examples:
-              show_bkg_source(1, 2)
-
-              show_bkg_source(outfile="bkg_src.out", clobber=True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           show_all, show_data, show_bkg_model, show_bkg
         """
         all = ''
         all += self._get_show_bkg_source(id, bkg_id)
@@ -427,45 +498,53 @@ class Session(sherpa.ui.utils.Session):
 
 
     def show_bkg_model(self, id=None, bkg_id=None, outfile=None, clobber=False):
-        """
-        show_bkg_model
+        """Display the background model expression used to fit a data set.
 
-        SYNOPSIS
-           Show the background model (convolved)
+        This displays the model used to the the background data set,
+        that is, the expression set by `set_bkg_model` or
+        `set_bkg_source` combined with any instrumental responses,
+        together with the parameter values for the model. The
+        `show_bkg_source` function displays just the background model,
+        without the instrument components (if any).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then all background expressions are
+           displayed.
+        bkg_id : int or str, optional
+           The background component to display. The default is all
+           components.
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id       - data id
-                      default = All available data ids
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
 
-           bkg_id   - background data id
-                      default = All available background data ids per data id
+        See Also
+        --------
+        list_model_ids : List of all the data sets with a source expression.
+        set_bkg_model : Set the background model expression for a data set.
+        show_all : Report the current state of the Sherpa session.
+        show_model : Display the model expression used to fit a data set.
+        show_bkg_source : Display the background model expression for a data set.
 
-           outfile   - filename to capture the output
-                      default = None
+        Notes
+        -----
+        When `outfile` is `None`, the text is displayed via an external
+        program to support paging of the information. The program
+        used is determined by the `PAGER` environment variable. If
+        `PAGER` is not found then '/usr/bin/more' is used.
 
-           clobber  - overwrite outfile if exists
-                      default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Show the background convolved model by data id and
-           background data id
-
-           Examples:
-              show_bkg_model(1, 2)
-
-              show_bkg_model(outfile="bkg.out", clobber=True)
-
-           The means of paging the text is handled with the PAGER environment
-           variable.  If PAGER is not found, '/usr/bin/more' is attempted
-           before error.
-
-        SEE ALSO
-           show_all, show_data, show_bkg, show_bkg_source
         """
         all = ''
         all += self._get_show_bkg_model(id, bkg_id)
@@ -475,70 +554,89 @@ class Session(sherpa.ui.utils.Session):
     # Data
     ###########################################################################
 
+    # DOC-NOTE: also in sherpa.utils
     #@loggable(with_id=True, with_name='load_data')
     def dataspace1d(self, start, stop, step=1, numbins=None,
                     id=None, bkg_id=None, dstype=sherpa.data.Data1DInt):
-        """
-        dataspace1d
+        """Create the independent axis for a 1D data set.
 
-        SYNOPSIS
-           Populates a blank 1D Sherpa data set by id
+        Create an "empty" one-dimensional data set by defining the
+        grid on which the points are defined (the independent axis).
+        The values are set to 0.
 
-        SYNTAX
+        Parameters
+        ----------
+        start : number
+           The minimum value of the axis.
+        stop : number
+           The maximum value of the axis.
+        step : number, optional
+           The separation between each grid point. This is not used if
+           `numbins` is set.
+        numbins : int, optional
+           The number of grid points. This over-rides the `step`
+           setting.
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           If set, the grid is for the background component of the
+           data set.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `Data1DInt` (the default), `Data1D`, and `DataPHA`.
 
-        Arguments:
-           start   -  lower bound of grid
+        See Also
+        --------
+        dataspace2d : Create the independent axis for a 2D data set.
+        get_dep : Return the dependent axis of a data set.
+        get_indep : Return the independent axes of a data set.
+        set_dep : Set the dependent axis of a data set.
 
-           stop    -  upper bound of grid
+        Notes
+        -----
+        The meaning of the `stop` parameter depends on whether it is a
+        binned or unbinned data set (as set by the `dstype`
+        parameter).
 
-           step    -  bin width size
-                      default is 1
+        Examples
+        --------
 
-           numbins -  number of bins desired
-                      default is None
+        Create a binned data set, starting at 1 and with a
+        bin-width of 1.
 
-           id      -  Sherpa data id
-                      defaut is default data id
+        >>> dataspace1d(1, 5, 1)
+        >>> print(get_indep())
+        (array([ 1.,  2.,  3.,  4.]), array([ 2.,  3.,  4.,  5.]))
 
-           bkg_id  -  Sherpa background id
-                      defaut is default background id
+        This time for an un-binned data set:
 
-           dstype  -  Type of data set to use
-                      default is Data1DInt
+        >>> dataspace1d(1, 5, 1, dstype=Data1D)
+        >>> print(get_indep())
+        (array([ 1.,  2.,  3.,  4.,  5.]),)
 
-        Returns:
-           None
+        Specify the number of bins rather than the grid spacing:
 
-        DESCRIPTION
-           Populates a blank 1D Sherpa data set with the specified grid
-           by Sherpa data id.  Alternatively, populate a blank PHA background
-           data set by bkg_id.
-           
-           Specifying a dataspace using step size:
-           if numbins is None (default) -> numpy.arange(start,stop,step)
+        >>> dataspace1d(1, 5, numbins=5, id=2)
+        >>> (xlo, xhi) = get_indep(2)
+        >>> xlo
+        array([ 1. ,  1.8,  2.6,  3.4,  4.2])
+        >>> xhi
+        array([ 1.8,  2.6,  3.4,  4.2,  5. ])
 
-           Specifying a dataspace by indicating the number of bins:
-           if numbins is not None -> numpy.linspace(start, stop, numbins)
+        >>> dataspace1d(1, 5, numbins=5, id=3, dstype=Data1D)
+        >>> (x, ) = get_indep(3)
+        >>> x
+        array([ 1.,  2.,  3.,  4.,  5.])
 
-        EXAMPLES
-           Blank integrated data set
-           
-              dataspace1d(0.1,10,0.1)
+        Create a grid for a PHA data set called 'jet', and
+        for its background component:
 
-           Blank non-integrated data set
+        >>> dataspace1d(0.01, 11, 0.01, id='jet', dstype=DataPHA)
+        >>> dataspace1d(0.01, 11, 0.01, id='jet', bkg_id=1,
+                        dstype=DataPHA)
 
-              dataspace1d(0.1,10,0.1,dstype=Data1D)
-
-           Blank PHA data set
-
-              dataspace1d(0.1,10,0.1,dstype=DataPHA)
-
-           Blank PHA background data set
-
-              dataspace1d(0.1,10,0.1, 1, 1, DataPHA)
-
-        SEE ALSO
-           dataspace2d
         """
         # support non-integrated grids with inclusive boundaries
         if dstype in (sherpa.data.Data1D, sherpa.astro.data.DataPHA):
@@ -565,33 +663,46 @@ class Session(sherpa.ui.utils.Session):
             self.set_data(id, dstype('dataspace1d', *args, **kwargs))
 
 
+    # DOC-NOTE: also in sherpa.utils
     def dataspace2d(self, dims, id=None, dstype=sherpa.astro.data.DataIMG):
-        """
-        dataspace2d
+        """Create the independent axis for a 2D data set.
 
-        SYNOPSIS
-           Populates a blank 2D Sherpa image data set by data id
+        Create an "empty" two-dimensional data set by defining the
+        grid on which the points are defined (the independent axis).
+        The values are set to 0.
 
-        SYNTAX
+        Parameters
+        ----------
+        dims : sequence of 2 number
+           The dimensions of the grid in `(width,height)` order.
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        dstype : data class to use, optional
+           What type of data is to be used. Supported values include
+           `DataIMG` (the default), `Data2D`, and `Data2DInt`.
 
-        Arguments:
-           dims    -  array of image dimensions, i.e. [width,height]
+        See Also
+        --------
+        dataspace1d : Create the independent axis for a 1D data set.
+        get_dep : Return the dependent axis of a data set.
+        get_indep : Return the independent axes of a data set.
+        set_dep : Set the dependent axis of a data set.
 
-           id      -  Sherpa data id
-                      defaut is default data id
+        Examples
+        --------
 
-           dstype  -  Type of data set to use
-                      default is DataIMG
+        Create a 200 pixel by 150 pixel grid (number of columns by
+        number of rows) and display it (each pixel has a value of 0):
 
-        Returns:
-           None
+        >>> dataspace2d([200,150])
+        >>> image_data()
 
-        DESCRIPTION
-           Populates a blank 2D Sherpa image data set with logical coordinates
-           by default and by Sherpa data id.
+        Create a data space called "fakeimg":
 
-        SEE ALSO
-           dataspace1d
+        >>> dataspace2d([nx,ny], id="fakeimg")
+
         """
         x0, x1, y, shape = sherpa.utils.dataspace2d(dims)
 
@@ -605,36 +716,68 @@ class Session(sherpa.ui.utils.Session):
 
         self.set_data(id, dataset)
 
-
+    # DOC-NOTE: also in sherpa.utils
+    ### DOC-TODO: how to describe Crates and/or AstroPy?
     def unpack_arrays(self, *args):
-        """
-        unpack_arrays
-        
-        SYNOPSIS
-           Read NumPy arrays into a dataset
+        """Create a sherpa data object from arrays of data.
 
-        SYNTAX
+        The object returned by `unpack_arrays` can be used in a
+        `set_data` call.
 
-        Arguments:
-           array0     - first NumPy array | first CrateData obj
+        Parameters
+        ----------
+        a1, .., aN : array_like
+           Arrays of data. The order, and number, is determined by
+           the `dstype` parameter, and listed in the `load_arrays`
+           routine.
+        dstype :
+           The data set type. The default is `Data1D` and values
+           include: `Data1D`, `Data1DInt`, `Data2D`, `Data2DInt`,
+           `DataPHA`, and `DataIMG`.
 
-           ...
+        Returns
+        -------
+        data
+           The data set object matching the requested `dstype`.
 
-           arrayN     - last NumPy array | last CrateData obj
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_arrays : Create a data set from array values.
+        set_data : Set a data set.
+        unpack_data : Create a sherpa data object from a file.
 
-           dstype     - dataset type desired
-                        default = Data1D
+        Examples
+        --------
 
-        Returns:
-           Sherpa dataset
+        Create a 1D (unbinned) data set from the values in
+        the x and y arrays. Use the returned object to create
+        a data set labelled "oned":
 
-        DESCRIPTION
-           Read NumPy arrays into a Sherpa dataset or read CrateData objects
-           into a Sherpa dataset.  The list can include both NumPy arrays and
-           CrateData objects together.
+        >>> x = [1,3,7,12]
+        >>> y = [2.3,3.2,-5.4,12.1]
+        >>> dat = unpack_arrays(x, y)
+        >>> set_data("oned", dat)
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_image, unpack_data
+        Include statistical errors on the data:
+
+        >>> edat = unpack_arrays(x, y, dy)
+
+        Create a "binned" 1D data set, giving the low,
+        and high edges of the independent axis (xlo
+        and xhi respectively) and the dependent values
+        for this grid (y):
+
+        >>> hdat = unpack_arrays(xlo, xhi, y, Data1DInt)
+
+        Create a 3 column by 4 row image:
+
+        >>> ivals = np.arange(12)
+        >>> (y, x) = np.mgrid[0:3, 0:4]
+        >>> x = x.flatten()
+        >>> y = y.flatten()
+        >>> idat = unpack_arrays(x, y, ivals, (3,4), DataIMG)
+
         """
         dataset = None
         try:
@@ -644,211 +787,468 @@ class Session(sherpa.ui.utils.Session):
             dataset = sherpa.io.read_arrays(*args)
         return dataset
 
+    # DOC-NOTE: also in sherpa.utils
+    ### DOC-TODO: rework the Data type notes section (also needed for
+    ###           unpack_arrays)
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_arrays(self, id, *args):
-        """
-        load_arrays
-        
-        SYNOPSIS
-           Load NumPy arrays into a dataset
+        """Create a data set from array values.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           The identifier for the data set to use.
+        *args :
+           Two or more arrays, followed by the type of data set to
+           create.
 
-        Arguments:
-           id         - data id
-        
-           array0     - first NumPy array | first CrateData obj
+        See Also
+        --------
+        copy_data : Copy a data set to a new identifier.
+        delete_data : Delete a data set by identifier.
+        get_data : Return the data set by identifier.
+        load_data : Create a data set from a file.
+        set_data : Set a data set.
+        unpack_arrays : Create a sherpa data object from arrays of data.
 
-           ...
+        Notes
+        -----
+        The data type identifier, which defaults to `Data1D`,
+        determines the number, and order, of the required inputs.
 
-           arrayN     - last NumPy array | last CrateData obj
+        `Data1D`
+           required fields: x, y
+           optional fields: statistical error, systematic error
 
-           dstype     - dataset type desired
-                        default = Data1D
+        `Data1DInt`
+           required fields: xlo, xhi, y
+           optional fields: statistical error, systematic error
 
-        Returns:
-           None
+        `Data2D`
+           required fields: x0, x1, y
+           optional fields: shape, statistical error, systematic error
+           The `shape` argument should be a tuple giving the
+           size of the data (ny,nx).
 
-        DESCRIPTION
-           Load NumPy arrays into a Sherpa dataset by data id or load CrateData
-           objects into a Sherpa dataset by data id.  The list can include both
-           NumPy arrays and CrateData objects together.
+        `Data2DInt`
+           required fields: x0lo, x1lo, x0hi, x1hi, y
+           optional fields: shape, statistical error, systematic error
+           The `shape` argument should be a tuple giving the
+           size of the data (ny,nx).
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_image, unpack_data
+        `DataPHA`
+           required fields: channel, counts
+           optional fields: staterror, syserror, bin_lo, bin_hi,
+             grouping, quality
+
+        `DataIMG`
+           The arrays should be 1D, not 2D.
+           required fields: x0, x1, y
+           optional fields: shape, statistical error, systematic error
+           The `shape` argument should be a tuple giving the
+           size of the data (ny,nx).
+
+        Examples
+        --------
+
+        Create a 1D data set with three points:
+
+        >>> load_arrays(1, [10, 12, 15], [4.2, 12.1, 8.4])
+
+        Create a 1D data set, with the identifier 'prof', from the
+        arrays `x` (independent axis), `y` (dependent axis), and `dy`
+        (statistical error on the dependent axis):
+
+        >>> load_arrays('prof', x, y, dy)
+
+        Explicitly define the type of the data set:
+
+        >>> load_arrays('prof', x, y, dy, Data1D)
+
+        Data set 1 is a histogram, where the bins cover the range
+        1-3, 3-5, and 5-7 with values 4, 5, and 9 respectively.
+
+        >>> load_arrays(1, [1,3,5], [3,5,7], [4,5,9], Data1DInt)
+
+        Create an image data set:
+
+        >>> ivals = np.arange(12)
+        >>> (y, x) = np.mgrid[0:3, 0:4]
+        >>> x = x.flatten()
+        >>> y = y.flatten()
+        >>> load_arrays('img', x, y, ivals, (3,4), DataIMG)
+
         """
         self.set_data(id, self.unpack_arrays(*args))
 
+    ### DOC-TODO: should unpack_ascii be merged into this?
     def unpack_table(self, filename, ncols=2, colkeys=None, dstype=Data1D):
-        """
-        unpack_table
+        """Unpack a FITS binary file into a data structure.
 
-        SYNOPSIS
-           Read data into a dataset
+        Parameters
+        ----------
+        filename :
+           Identify the file to read: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file). The meaning of the columns is determined by
+           the `dstype` parameter.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : optional
+           The data class to use. The default is `Data1D`.
 
-        SYNTAX
+        Returns
+        -------
+        data :
+           The class of the returned object is controlled by the
+           `dstype` parameter.
 
-        Arguments:
-           filename   - filename and path | TABLECrate obj | PyFITS HDUList obj
+        See Also
+        --------
+        load_table : Load a FITS binary file as a data set.
+        set_data : Set a data set.
+        unpack_ascii : Unpack an ASCII file into a data structure.
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - list of column names
-                      - vector columns return additional arrays
-                        default = None
+        Read in the first two columns of the file, as the independent
+        (X) and dependent (Y) columns of a data set:
 
-           dstype     - dataset type desired
-                        default = Data1D
+        >>> d = unpack_table('sources.fits')
 
-        Returns:
-           Sherpa dataset
+        Read in the first three columns (the third column is taken to
+        be the error on the dependent variable):
 
-        DESCRIPTION
-           Read tabular data from a FITS or column-based text file into
-           a Sherpa dataset given a filename and path or read in data from a
-           Crate into a Sherpa dataset given a TABLECrate object or read in
-           data from a HDUList into a Sherpa dataset.
+        >>> d = unpack_table('sources.fits', ncols=3)
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_image, unpack_data
+        Read in from columns 'RMID' and 'SUR_BRI':
+
+        >>> d = unpack_table('rprof.fits', colkeys=['RMID', 'SUR_BRI'])
+
+        The first three columns are taken to be the two independent
+        axes of a two-dimensional data set (`x0` and `x1) and
+        the dependent value (`y`):
+
+        >>> d = unpack_table('fields.fits', ncols=3,
+                             dstype=sherpa.astro.data.Data2D)
+
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection. This can
+        also be done using the `colkeys` parameter, as shown above:
+
+        >>> d = unpack_table('rprof.fits[cols rmid,sur_bri,sur_bri_err]',
+                             ncols=3)
+
         """
         return sherpa.astro.io.read_table(filename, ncols, colkeys, dstype)
 
+    ### DOC-TODO: the field listing really should be somewhere else
+    ###           as it's needed in multiple places (ideally in the
+    ###           DataX class documentation, but users may not find it)
+    ### DOC-TODO: what do the shape arguments for Data2D/Data2DInt mean?
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_table(self, id, filename=None, ncols=2, colkeys=None,
                    dstype=Data1D):
-        """
-        load_table
+        """Load a FITS binary file as a data set.
 
-        SYNOPSIS
-           Load data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename :
+           Identify the file to read: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file). The meaning of the columns is determined by
+           the `dstype` parameter.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        dstype : optional
+           The data class to use. The default is `Data1D`.
 
-        SYNTAX
+        See Also
+        --------
+        load_arrays : Create a data set from array values.
+        load_ascii : Load an ASCII file as a data set.
+        load_image : Load an image as a data set.
+        set_data : Set a data set.
+        unpack_table : Unpack a FITS binary table into a data structure.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           filename   - filename and path | TABLECrate obj | PyFITS HDUList obj
+        The column order for the different data types are as follows,
+        where `x` indicates an independent axis and `y` the dependent
+        axis:
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        `Data1D`
+           required fields: x, y
+           optional fields: statistical error, systematic error
 
-           colkeys    - list of column names
-                      - vector columns return additional arrays
-                        default = None
+        `Data1DInt`
+           required fields: xlo, xhi, y
+           optional fields: statistical error, systematic error
 
-           dstype     - dataset type desired
-                        default = Data1D
+        `Data2D`
+           required fields: x0, x1, y
+           optional fields: shape, statistical error, systematic error
 
-        Returns:
-           None
+        `Data2DInt`
+           required fields: x0lo, x1lo, x0hi, x1hi, y
+           optional fields: shape, statistical error, systematic error
 
-        DESCRIPTION
-           Load tabular data from a FITS or column-based text file into
-           a Sherpa dataset given a filename and path by data id or load in
-           data from a Crate into a Sherpa dataset given a TABLECrate object
-           by data id or load in data from a HDUList into a Sherpa dataset
-           by data id.
-        
-        SEE ALSO
-           load_pha, load_arf, load_rmf, load_data, load_image,
-           load_bkg
+        Examples
+        --------
+
+        Read in the first two columns of the file, as the independent
+        (X) and dependent (Y) columns of the default data set:
+
+        >>> load_table('sources.fits')
+
+        Read in the first three columns (the third column is taken to
+        be the error on the dependent variable):
+
+        >>> load_table('sources.fits', ncols=3)
+
+        Read in from columns 'RMID' and 'SUR_BRI' into data set
+        'prof':
+
+        >>> load_table('prof', 'rprof.fits',
+                       colkeys=['RMID', 'SUR_BRI'])
+
+        The first three columns are taken to be the two independent
+        axes of a two-dimensional data set (`x0` and `x1) and
+        the dependent value (`y`):
+
+        >>> load_table('fields.fits', ncols=3,
+                       dstype=sherpa.astro.data.Data2D)
+
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection. This can
+        also be done using the `colkeys` parameter, as shown above:
+
+        >>> load_table('prof',
+                       'rprof.fits[cols rmid,sur_bri,sur_bri_err]',
+                       ncols=3)
+
+        Read in a data set using Crates:
+
+        >>> cr = pycrates.read_file('table.fits')
+        >>> load_table(cr)
+
+        Read in a data set using Crates:
+
+        >>> hdus = astropy.io.fits.open('table.fits')
+        >>> load_table(hdus)
+
         """
         if filename is None:
             id, filename = filename, id
         
         self.set_data(id, self.unpack_table(filename, ncols, colkeys, dstype))
         
+    ### DOC-TODO: should unpack_ascii be merged into unpack_table?
+    ### DOC-TODO: I am going to ignore the crates support here as
+    ###           it is somewhat meaningless, since the crate could
+    ###           have been read from a FITS binary table.
     def unpack_ascii(self, filename, ncols=2, colkeys=None,
                      dstype=Data1D, sep=' ', comment='#'):
-        """
-        unpack_ascii
+        """Unpack an ASCII file into a data structure.
         
-        SYNOPSIS
-           Read ASCII data into a dataset
-        
-        SYNTAX
+        Parameters
+        ----------
+        filename : str
+           The name of the file to read in. Selection of the relevant
+           column depends on the I/O library in use (Crates or
+           AstroPy).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file). The meaning of the columns is determined by
+           the `dstype` parameter.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        dstype : optional
+           The data class to use. The default is `Data1D`.
 
-        Arguments:
-           filename   - filename and path
+        Returns
+        -------
+        data :
+           The class of the returned object is controlled by the
+           `dstype` parameter.
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        See Also
+        --------
+        load_ascii : Load an ASCII file as a data set.
+        set_data : Set a data set.
+        unpack_table : Unpack a FITS binary file into a data structure.
 
-           colkeys    - list of column names
-                        default = None
+        Examples
+        --------
 
-           dstype     - dataset type desired
-                        default = Data1D
+        Read in the first two columns of the file, as the independent
+        (X) and dependent (Y) columns of a data set:
 
-           sep        - column separating character
-                        default = ' '
+        >>> d = unpack_ascii('sources.dat')
 
-           comment    - comment character
-                        default = '#'
+        Read in the first three columns (the third column is taken to
+        be the error on the dependent variable):
 
-        Returns:
-           Sherpa dataset
+        >>> d = unpack_ascii('sources.dat', ncols=3)
 
-        DESCRIPTION
-           Read tabular data from a column-based text file into a Sherpa
-           dataset given a filename and path.
+        Read in from columns 'col2' and 'col3':
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_image, unpack_data,
-           unpack_table
+        >>> d = unpack_ascii('tbl.dat', colkeys=['col2', 'col3'])
+
+        The first three columns are taken to be the two independent
+        axes of a two-dimensional data set (`x0` and `x1) and
+        the dependent value (`y`):
+
+        >>> d = unpack_ascii('fields.dat', ncols=3,
+                             dstype=sherpa.astro.data.Data2D)
+
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection. This can
+        also be done using the `colkeys` parameter, as shown above:
+
+        >>> d = unpack_ascii('tbl.dat[cols rmid,sur_bri,sur_bri_err]',
+                             ncols=3)
+
         """
         return sherpa.astro.io.read_ascii(filename, ncols, colkeys, dstype,
                                           sep=sep, comment=comment)
     
+    ### DOC-TODO: I am going to ignore the crates support here as
+    ###           it is somewhat meaningless, since the crate could
+    ###           have been read from a FITS binary table.
+    ### DOC-TODO: how best to include datastack support?
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_ascii(self, id, filename=None, ncols=2, colkeys=None,
                    dstype=Data1D, sep=' ', comment='#'):
-        """
-        load_ascii
+        """Load an ASCII file as a data set.
 
-        SYNOPSIS
-           Load ASCII data by id
+        The standard behavior is to create a single data set, but
+        multiple data sets can be loaded with this command, as
+        described in the `sherpa.astro.datastack` module.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to read in. Selection of the relevant
+           column depends on the I/O library in use (Crates or
+           AstroPy).
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file). The meaning of the columns is determined by
+           the `dstype` parameter.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
+        dstype : optional
+           The data class to use. The default is `Data1D`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        load_table : Load a FITS binary file as a data set.
+        load_image : Load an image as a data set.
+        set_data : Set a data set.
+        unpack_ascii : Unpack an ASCII file into a data structure.
 
-           filename   - filename and path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-        Keyword Arguments:
-           ncols      - number of columns
-                        default = 2
+        The column order for the different data types are as follows,
+        where `x` indicates an independent axis and `y` the dependent
+        axis:
 
-           colkeys    - list of column names
-                        default = None
+        `Data1D`
+           required fields: x, y
+           optional fields: statistical error, systematic error
 
-           dstype     - dataset type desired
-                        default = Data1D
+        `Data1DInt`
+           required fields: xlo, xhi, y
+           optional fields: statistical error, systematic error
 
-           sep        - column separating character
-                        default = ' '
+        `Data2D`
+           required fields: x0, x1, y
+           optional fields: shape, statistical error, systematic error
 
-           comment    - comment character
-                        default = '#'
+        `Data2DInt`
+           required fields: x0lo, x1lo, x0hi, x1hi, y
+           optional fields: shape, statistical error, systematic error
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Load tabular data from a column-based text file into a Sherpa
-           dataset given a filename and path by data id.
-        
-        SEE ALSO
-           load_pha, load_arf, load_rmf, load_data, load_image,
-           load_bkg, load_table
+        Read in the first two columns of the file, as the independent
+        (X) and dependent (Y) columns of the default data set:
+
+        >>> load_ascii('sources.dat')
+
+        Read in the first three columns (the third column is taken to
+        be the error on the dependent variable):
+
+        >>> load_ascii('sources.dat', ncols=3)
+
+        Read in from columns 'RMID' and 'SUR_BRI' into data set
+        'prof':
+
+        >>> load_ascii('prof', 'rprof.dat',
+                       colkeys=['RMID', 'SUR_BRI'])
+
+        The first three columns are taken to be the two independent
+        axes of a two-dimensional data set (`x0` and `x1) and
+        the dependent value (`y`):
+
+        >>> load_ascii('fields.txt', ncols=3,
+                       dstype=sherpa.astro.data.Data2D)
+
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection. This can
+        also be done using the `colkeys` parameter, as shown above:
+
+        >>> load_ascii('prof',
+                       'rprof.dat[cols rmid,sur_bri,sur_bri_err]',
+                       ncols=3)
+
         """
         if filename is None:
             id, filename = filename, id
@@ -857,29 +1257,52 @@ class Session(sherpa.ui.utils.Session):
                                             colkeys=colkeys, dstype=dstype,
                                             sep=sep, comment=comment ))
         
+    # DOC-NOTE: also in sherpa.utils
     def unpack_data(self, filename, *args, **kwargs):
-        """
-        unpack_data
+        """Create a sherpa data object from a file.
 
-        SYNOPSIS
-           Read spectrum, table, or ASCII data into a dataset
+        The object returned by `unpack_data` can be used in a
+        `set_data` call. The data types supported are those
+        supported by `unpack_pha`, `unpack_image`, `unpack_table`,
+        and `unpack_ascii`.
 
-        SYNTAX
+        Parameters
+        ----------
+        filename :
+           A file name or a data structure representing the data to
+           use, as used by the I/O backend in use by Sherpa: e.g.  a
+           `PHACrateDataset`, `TABLECrate`, or `IMAGECrate` for
+           crates, as used by CIAO, or a list of AstroPy HDU objects.
+        *args, **kwargs
+           The options supported by
+           `unpack_pha`, `unpack_image`, `unpack_table`, and
+           `unpack_ascii`.
 
-        Arguments:
-           filename   - filename and path
+        Returns
+        -------
+        data
+           The data set object.
 
-        Returns:
-           Sherpa dataset
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_arrays : Create a data set from array values.
+        set_data : Set a data set.
+        unpack_arrays : Create a sherpa data object from arrays of data.
+        unpack_ascii : Unpack an ASCII file into a data structure.
+        unpack_image : Create an image data structure.
+        unpack_pha : Create a PHA data structure.
+        unpack_table : Unpack a FITS binary file into a data structure.
 
-        DESCRIPTION
-           Read PHA spectrum data, FITS table data , or tabular data from a
-           column-based text file into a Sherpa dataset given a filename
-           and path.
+        Examples
+        --------
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_image, unpack_data,
-           unpack_table, unpack_ascii
+        Create a data object from the contents of the file "src.dat"
+        and use it to create a Sherpa data set called "src":
+
+        >>> dat = unpack_data('src.dat')
+        >>> set_data('src', dat)
+
         """
         try:
             data = self.unpack_pha(filename, *args, **kwargs)
@@ -897,33 +1320,63 @@ class Session(sherpa.ui.utils.Session):
 
         return data
 
+    # DOC-NOTE: also in sherpa.utils
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_data(self, id, filename=None, *args, **kwargs):
-        """
-        load_data
+        """Load a data set from a file.
 
-        SYNOPSIS
-           Load spectrum, table, or ASCII data by id
+        This loads a data set from the file, trying in order
+        `load_pha`, `load_image`, `load_table`, then `load_ascii`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename :
+           A file name or a data structure representing the data to
+           use, as used by the I/O backend in use by Sherpa: e.g.  a
+           `PHACrateDataset`, `TABLECrate`, or `IMAGECrate` for
+           crates, as used by CIAO, or a list of AstroPy HDU objects.
+        *args, **kwargs
+           The options supported by
+           `load_pha`, `load_image`, `load_table`, and
+           `load_ascii`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        load_arrays : Create a data set from array values.
+        load_ascii : Load an ASCII file as a data set.
+        load_image : Load an image as a data set.
+        load_pha : Load a PHA data set.
+        load_table : Load a FITS binary file as a data set.
+        set_data : Set a data set.
+        unpack_data : Create a sherpa data object from a file.
 
-           filename   - filename and path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments,
+        then they are interpreted as the `id` and `filename`
+        parameters, respectively. The remaining parameters are
+        expected to be given as named arguments.
 
-      Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Load PHA spectrum data, FITS table data, or tabular data from a
-           column-based text file into a Sherpa dataset given a filename
-           and path by data id.
-        
-        SEE ALSO
-           load_pha, load_arf, load_rmf, load_data, load_image,
-           load_bkg, load_table, load_ascii
+        >>> load_data('tbl.dat')
+
+        >>> load_data('hist.dat', dstype=Data1DInt)
+
+        >>> load_data('img', 'img.fits')
+        >>> load_data('bg', 'img_bg.fits')
+
+        >>> cols = ['rmid', 'sur_bri', 'sur_bri_err']
+        >>> load_data(2, 'profile.fits', colkeys=cols)
+
         """
         if filename is None:
             id, filename = filename, id
@@ -941,171 +1394,335 @@ class Session(sherpa.ui.utils.Session):
         else:
             self.set_data(id, data)
 
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def unpack_image(self, arg, coord='logical',
                      dstype=sherpa.astro.data.DataIMG):
-        """
-        unpack_image
+        """Create an image data structure.
 
-        SYNOPSIS
-           Read image data into a dataset
+        Parameters
+        ----------
+        arg :
+           Identify the data: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: an `IMAGECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        coord : { 'logical', 'image', 'physical', 'world', 'wcs' }, optional
+           Ensure that the image contains the given coordinate system.
+        dstype : optional
+           The image class to use. The default is `DataIMG`.
 
-        SYNTAX
+        Returns
+        -------
+        img :
+           The class of the returned object is controlled by the
+           `dstype` parameter.
 
-        Arguments:
-           arg        - filename and path | IMAGECrate obj | PyFITS HDUList obj
-        
-           coord      - string keyword identifying coordinate system
-                      - choices include: logical, image
-                                         physical
-                                         world, wcs
-                        default = logical
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the image does not contain the requested coordinate
+           system.
 
-           dstype     - Sherpa dataset type (DataIMG, DataIMGInt)
-                        default = DataIMG
+        See Also
+        --------
+        load_image : Load an image as a data set.
+        set_data : Set a data set.
 
-        Returns:
-           Sherpa DataIMG dataset
+        Examples
+        --------
 
-        DESCRIPTION
-           Read image data from a FITS file into a Sherpa dataset given a
-           filename or read in image data from a Crate into a Sherpa dataset
-           given a IMAGECrate object or read in image data from a HDUList into
-           a Sherpa dataset.
+        >>> img1 = unpack_img("img.fits")
+        >>> set_data(img1)
 
-        SEE ALSO
-           unpack_pha, unpack_arf, unpack_rmf, unpack_table, unpack_data
+        >>> img = unpack_img('img.fits', 'physical')
+
+        Read in an image using Crates:
+
+        >>> cr = pycrates.read_file('broad.img')
+        >>> idata = unpack_img(cr)
+
+        Read in an image using AstroPy:
+
+        >>> hdus = astropy.io.fits.open('broad.img')
+        >>> idata = unpack_img(hdus)
+
         """
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_image(self, id, arg=None, coord='logical',
                      dstype=sherpa.astro.data.DataIMG):
-        """
-        load_image
+        """Load an image as a data set.
 
-        SYNOPSIS
-           Load image data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        arg :
+           Identify the image data: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: an `IMAGECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        coord : { 'logical', 'image', 'physical', 'world', 'wcs' }
+           The coordinate system to use. The 'image' option is the
+           same as 'logical', and 'wcs' the same as 'world'.
+        dstype : optional
+           The data class to use. The default is `DataIMG`.
 
-        SYNTAX
+        See Also
+        --------
+        load_arrays : Create a data set from array values.
+        load_ascii : Load an ASCII file as a data set.
+        load_table : Load a FITS binary file as a data set.
+        set_coord : Set the coordinate system to use for image analysis.
+        set_data : Set a data set.
+        unpack_image : Create an image data structure.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
-           arg        - filename and path | IMAGECrate obj | PyFITS HDUList obj
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           coord      - string keyword identifying coordinate system
-                        choices include: logical, image
-                                         physical
-                                         world, wcs
-                        default = logical
+        Examples
+        --------
 
-           dstype     - Sherpa dataset type (DataIMG, DataIMGInt)
-                        default = DataIMG
+        Load the image from the file "img.fits" into the default data
+        set:
 
-        Returns:
-           None
+        >>> load_image('img.fits')
 
-        DESCRIPTION
-           Load image data from a FITS file into a Sherpa dataset given a
-           filename by data id or load in image data from a Crate into a Sherpa
-           dataset given a IMAGECrate object by data id or read in image data
-           from a HDUList into a Sherpa dataset by data id.
+        Set the 'bg' data set to the contents of the file
+        "img_bg.fits":
 
-        SEE ALSO
-           load_pha, load_arf, load_rmf, load_data, load_table,
-           load_bkg
+        >>> load_image('bg', 'img_bg.fits')
+
         """
         if arg is None:
             id, arg = arg, id
         self.set_data(id, self.unpack_image(arg, coord, dstype))
 
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
+    ### DOC-TODO: what does this return when given a PHA2 file?
     def unpack_pha(self, arg, use_errors=False):
-        """
-        unpack_pha
+        """Create a PHA data structure.
 
-        SYNOPSIS
-           Read PHA data into a dataset
+        Any instrument or background data sets referenced in the
+        header of the PHA file - e.g. with the ANCRFILE, RESPFILE,
+        and BACKFILE keywords - will also be loaded.
 
-        SYNTAX
+        Parameters
+        ----------
+        arg :
+           Identify the PHA file: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        use_errors : bool, optional
+           If `True` then the statistical errors are taken from the
+           input data, rather than calculated by Sherpa from the
+           count values. The default is `False`.
 
-        Arguments:
-           arg        - filename and path | PHACrate obj | PyFITS HDUList obj
+        Returns
+        -------
+        pha : sherpa.astro.data.DataPHA instance
 
-           use_errors - flag to use errors
-                        default = False
+        See Also
+        --------
+        load_pha : Load a file as a PHA data set.
+        pack_pha : Convert a PHA data set into a file structure.
+        set_data : Set a data set.
 
-        Returns:
-           List or instance of Sherpa DataPHA dataset(s)
+        Examples
+        --------
 
-        DESCRIPTION
-           Read PHA data from a FITS file into a Sherpa dataset given a
-           filename or PHACrate object or PyFITS HDUList object.
+        >>> pha1 = unpack_arf("src1.pi")
+        >>> pha2 = unpack_arf("field.pi")
+        >>> set_data(1, pha1)
+        >>> set_bkg(1, pha2)
 
-        SEE ALSO
-           unpack_image, unpack_arf, unpack_rmf, unpack_table, unpack_data
+        Read in a PHA file using Crates:
+
+        >>> cr = pycrates.read_file("src.fits")
+        >>> pha = unpack_pha(cr)
+
+        Read in a PHA file using AstroPy:
+
+        >>> hdus = astropy.io.fits.open("src.fits")
+        >>> pha = unpack_pha(hdus)
+
         """
         use_errors = sherpa.utils.bool_cast(use_errors)
         return sherpa.astro.io.read_pha(arg, use_errors)
 
 
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
+    ### DOC-TODO: what does this return when given a PHA2 file?
     def unpack_bkg(self, arg, use_errors=False):
-        """
-        unpack_bkg
+        """Create a PHA data structure for a background data set.
 
-        SYNOPSIS
-           Read background PHA data into a dataset
+        Any instrument information referenced in the header of the PHA
+        file - e.g. with the ANCRFILE and RESPFILE, keywords - will
+        also be loaded. Unlike `unpack_pha`, background files will not
+        be loaded.
 
-        SYNTAX
+        Parameters
+        ----------
+        arg :
+           Identify the PHA file: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        use_errors : bool, optional
+           If `True` then the statistical errors are taken from the
+           input data, rather than calculated by Sherpa from the
+           count values. The default is `False`.
 
-        Arguments:
-           arg        - filename and path | PHACrate obj | PyFITS HDUList obj
+        Returns
+        -------
+        pha : sherpa.astro.data.DataPHA instance
 
-           use_errors - flag to use errors
-                        default = False
+        See Also
+        --------
+        load_bkg : Load the background from a file and add it to a PHA data set.
+        set_bkg : Set the background for a data set.
 
-        Returns:
-           List or instance of Sherpa background DataPHA dataset(s)
+        Examples
+        --------
 
-        DESCRIPTION
-           Read background PHA data from a FITS file into a Sherpa dataset 
-           given a filename or PHACrate object or PyFITS HDUList object.
+        >>> pha1 = unpack_arf("src1.pi")
+        >>> pha2 = unpack_bkg("field.pi")
+        >>> set_data(1, pha1)
+        >>> set_bkg(1, pha2)
 
-        SEE ALSO
-           unpack_image, unpack_arf, unpack_rmf, unpack_table, unpack_data
+        Read in a PHA file using Crates:
+
+        >>> cr = pycrates.read_file("bg.fits")
+        >>> pha = unpack_pha(cr)
+
+        Read in a PHA file using AstroPy:
+
+        >>> hdus = astropy.io.fits.open("bg.fits")
+        >>> pha = unpack_pha(hdus)
+
         """
         use_errors = sherpa.utils.bool_cast(use_errors)
         return sherpa.astro.io.read_pha(arg, use_errors, True)
 
 
+    ### DOC-TODO: how best to include datastack support?
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_pha(self, id, arg=None, use_errors=False):
-        """
-        load_pha
+        """Load a PHA data set.
 
-        SYNOPSIS
-           Load PHA data by id
+        This will load the PHA data and any related information, such
+        as ARF, RMF, and background. The background is loaded but
+        *not* subtracted. Any grouping information in the file will be
+        applied to the data. The quality information is read in, but
+        *not* automatically applied. See `subtract` and `ignore_bad`.
 
-        SYNTAX
+        The standard behavior is to create a single data set, but
+        multiple data sets can be loaded with this command, as
+        described in the `sherpa.astro.datastack` module.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        arg :
+           Identify the data to read: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `PHACrateDataset` for crates, as used by
+           CIAO, or a list of AstroPy HDU objects.
+        use_errors : bool, optional
+           If `True` then the statistical errors are taken from the
+           input data, rather than calculated by Sherpa from the
+           count values. The default is `False`.
 
-           arg        - filename and path | PHACrate obj | PyFITS HDUList obj
+        See Also
+        --------
+        ignore_bad : Exclude channels marked as bad in a PHA data set.
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_bkg : Load the background from a file and add it to a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        pack_pha : Convert a PHA data set into a file structure.
+        save_pha : Save a PHA data set to a file.
+        subtract : Subtract the background estimate from a data set.
+        unpack_pha : Create a PHA data structure.
 
-           use_errors - flag to use errors
-                        default = False
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Load PHA data from a FITS file or a PHACrate object or a PyFITS
-           HDUList object into a Sherpa dataset by data id.
+        Load the PHA file 'src.pi' into the default data set, and
+        automatically load the ARF, RMF, and background from the files
+        pointed to by the `ANCRFILE`, `RESPFILE`, and `BACKFILE`
+        keywords in the file. The background is then subtracted and
+        any 'bad quality' bins are removed:
 
-        SEE ALSO
-           load_image, load_arf, load_rmf, load_data, load_table,
-           load_bkg
+        >>> load_pha('src.pi')
+        read ARF file src.arf
+        read RMF file src.rmf
+        read background file src_bkg.pi
+        >>> subtract()
+        >>> ignore_bad()
+
+        Load two files into data sets 'src' and 'bg':
+
+        >>> load_pha('src', 'x1.fits')
+        >>> load_pha('bg', 'x2.fits')
+
+        If a type II PHA data set is loaded, then multiple
+        data sets will be created, one for each order.
+
+        >>> clean()
+        >>> load_pha('src.pha2')
+        >>> list_data_ids()
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+        Create the data set from the data read in by Crates:
+
+        >>> pha = pycrates.read_pha('src.pi')
+        >>> load_pha(pha)
+        read ARF file src.arf
+        read RMF file src.rmf
+        read background file src_bkg.pi
+
+        Create the data set from the data read in by AstroPy:
+
+        >>> hdus = astropy.io.fits.open('src.pi')
+        >>> load_pha(hdus)
+        read ARF file src.arf
+        read RMF file src.rmf
+        read background file src_bkg.pi
+
+        The default behavior is to calculate the errors based on the
+        counts values and the choice of statistic - e.g. `chi2gehrels`
+        or `chi2datavar` - but the statistical errors from the input
+        file can be used instead by setting `use_errors` to `True`:
+
+        >>> load_pha('source.fits', use_errors=True)
+
         """
         if arg is None:
             id, arg = arg, id
@@ -1153,51 +1770,80 @@ class Session(sherpa.ui.utils.Session):
     #     return err
 
 
+    # DOC-NOTE: also in sherpa.utils
+    ### DOC-TODO: does ncols make sense here? (have removed for now)
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def load_filter(self, id, filename=None, bkg_id=None, ignore=False, 
                     ncols=2, *args, **kwargs):
-        """
-        load_filter
+        """Load the filter array from a file and add to a data set.
 
-        SYNOPSIS
-           Load the dataset filter from file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file that contains the filter
+           information. This file can be a FITS table or an ASCII
+           file. Selection of the relevant column depends on the I/O
+           library in use (Crates or AstroPy).
+        bkg_id : int or str, optional
+           Set if the filter array should be associated with the
+           background associated with the data set.
+        ignore : bool, optional
+           If `False` (the default) then include bins with a non-zero
+           filter value, otherwise exclude these bins.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        SYNTAX
+        See Also
+        --------
+        get_filter : Return the filter expression for a data set.
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+        save_filter : Save the filter array to a file.
+        set_filter : Set the filter array of a data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           filename   - filename with path
+        Examples
+        --------
 
-           bkg_id     - background data id
-                        default = default background data id
+        Read in the first column of the file and apply it to the
+        default data set:
 
-           ignore     - non-zero values ignore instead of notice
-                        default = False
+        >>> load_filter('filt.dat')
 
-           ncols      - number of columns to read from
-                        default = 2
+        Select the `FILTER` column of the file:
 
-           colkeys    - column keys
-                        default = None
+        >>> load_filter(2, 'filt.dat', colkeys=['FILTER'])
 
-           sep        - separator character
-                        default = ' '
+        When using Crates as the I/O library, the above can
+        also be written as
 
-           comment    - comment character
-                        default = '#'
+        >>> load_filter(2, 'filt.dat[cols filter]')
 
-        Returns:
-           None
+        Read in a filter for an image. The image must match the size
+        of the data and, as `ignore=True`, pixels with a non-zero
+        value are excluded (rather than included):
 
-        DESCRIPTION
-           Load the filter for a dataset from file by data id.
+        >>> load_filter('img', 'filt.img', ignore=True)
 
-        EXAMPLE
-           load_filter("data.dat", colkeys=["FILTER"])
-
-        SEE ALSO
-            set_filter
         """
         if filename is None:
             id, filename = filename, id
@@ -1206,47 +1852,90 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id, ignore=ignore)
 
 
+    ### DOC-TODO: does ncols make sense here? (have removed for now)
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
+    ### DOC-TODO: prob. needs a review as the existing ahelp documentation
+    ###           talks about 2 cols, but experimentation suggests 1 col.
     def load_grouping(self, id, filename=None, bkg_id=None, *args, **kwargs):
-        """
-        load_grouping
+        """Load the grouping scheme from a file and add to a PHA data set.
 
-        SYNOPSIS
-           Load the dataset grouping flags from file
+        This function sets the grouping column but does not
+        automatically group the data, since the quality array may also
+        need updating. The `group` function will apply the grouping
+        information.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file that contains the grouping
+           information. This file can be a FITS table or an ASCII
+           file. Selection of the relevant column depends on the I/O
+           library in use (Crates or AstroPy).
+        bkg_id : int or str, optional
+           Set if the grouping scheme should be associated with the
+           background associated with the data set.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_grouping : Return the gouping array for a PHA data set.
+        group : Turn on the grouping for a PHA data set.
+        load_quality : Load the quality array from a file and add to a PHA data set.
+        save_grouping : Save the grouping scheme to a file.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        There is no check made to see if the grouping array contains
+        valid data.
 
-           ncols      - number of columns to read from
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - column keys
-                        default = None
+        When using Crates as the I/O library, select the grouping
+        column from the file `src.pi`, and use it to set the
+        values in the default data set:
 
-           sep        - separator character
-                        default = ' '
+        >>> load_grouping('src.pi[cols grouping]')
 
-           comment    - comment character
-                        default = '#'
+        Use the `colkeys` option to define the column in the input
+        file:
 
-        Returns:
-           None
+        >>> load_grouping('src.pi', colkeys=['grouping'])
 
-        DESCRIPTION
-           Load the grouping flags for a dataset from file by data id.
+        Load the first column in `grp.dat` and use it to populate
+        the grouping array of the data set called 'core'.
 
-        EXAMPLE
-           load_grouping("data.dat", colkeys=["GROUPS"])
+        >>> load_grouping('core', 'grp.dat')
 
-        SEE ALSO
-            set_grouping
+        Use `group_counts` to calculate a grouping scheme for the
+        data set labelled 'src1', save this scheme to the file
+        'grp.dat', and then load this scheme in for data set
+        'src2'.
+
+        >>> group_counts('src1', 10)
+        >>> save_grouping('src1', 'grp.dat')
+        >>> load_grouping('src2', 'grp.dat', colkeys=['groups'])
+
         """
         if filename is None:
             id, filename = filename, id
@@ -1254,47 +1943,77 @@ class Session(sherpa.ui.utils.Session):
         self.set_grouping(id,
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def load_quality(self, id, filename=None, bkg_id=None, *args, **kwargs):
-        """
-        load_quality
+        """Load the quality array from a file and add to a PHA data set.
 
-        SYNOPSIS
-           Load the dataset quality flags from file
+        This function sets the quality column but does not
+        automatically ignore any columns marked as "bad". Use the
+        `ignore_bad` function to apply the new quality information.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file that contains the quality
+           information. This file can be a FITS table or an ASCII
+           file. Selection of the relevant column depends on the I/O
+           library in use (Crates or AstroPy).
+        bkg_id : int or str, optional
+           Set if the quality array should be associated with the
+           background associated with the data set.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_quality : Return the quality array for a PHA data set.
+        ignore_bad : Exclude channels marked as bad in a PHA data set.
+        load_grouping : Load the grouping scheme from a file and add to a PHA data set.
+        save_quality: Save the quality array to a file.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        There is no check made to see if the quality array contains
+        valid data.
 
-           ncols      - number of columns to read from
-                        default = 2
+        Examples
+        --------
 
-           colkeys    - column keys
-                        default = None
+        When using Crates as the I/O library, select the quality
+        column from the file `src.pi`, and use it to set the
+        values in the default data set:
 
-           sep        - separator character
-                        default = ' '
+        >>> load_quality('src.pi[cols quality]')
 
-           comment    - comment character
-                        default = '#'
+        Use the `colkeys` option to define the column in the input
+        file:
 
-        Returns:
-           None
+        >>> load_quality('src.pi', colkeys=['quality'])
 
-        DESCRIPTION
-           Load the quality flags for a dataset from file by data id.
+        Load the first column in `grp.dat` and use it to populate
+        the quality array of the data set called 'core'.
 
-        EXAMPLE
-           load_quality("data.dat", colkeys=["GROUPS"])
+        >>> load_quality('core', 'grp.dat')
 
-        SEE ALSO
-            set_quality
         """
         if filename is None:
             id, filename = filename, id
@@ -1303,34 +2022,51 @@ class Session(sherpa.ui.utils.Session):
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
     def set_filter(self, id, val=None, bkg_id=None, ignore=False):
-        """
-        set_filter
+        """Set the filter array of a data set.
 
-        SYNOPSIS
-           Set the dataset filter by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        val : array
+           The array of filter values (`0` or `1`). The size should
+           match the array returned by `get_dep`.
+        bkg_id : int or str, optional
+           Set to identify which background component to set. The
+           default value (`None`) means that this is for the source
+           component of the data set.
+        ignore : bool, optional
+           If `False` (the default) then include bins with a non-zero
+           filter value, otherwise exclude these bins.
 
-        SYNTAX
+        See Also
+        --------
+        get_dep : Return the dependent axis of a data set.
+        get_filter : Return the filter expression for a data set.
+        ignore : Exclude data from the fit.
+        load_filter : Load the filter array from a file and add to a data set.
+        notice : Include data in the fit.
+        save_filter : Save the filter array to a file.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-           ignore     - non-zero values ignore instead of notice
-                        default = False
+        Examples
+        --------
 
-           val        - array of 0s or 1s
+        Ignore those bins with a value less 20.
 
-        Returns:
-           None
+        >>> d = get_dep()
+        >>> f = d >= 20
+        >>> set_filter(f)
 
-        DESCRIPTION
-           Set the filter of a dataset by data id.  
-
-        EXAMPLE
-           set_filter([0, 1, 1, ...])
-
-        SEE ALSO
-           load_filter
         """
         if val is None:
             val, id = id, val
@@ -1360,45 +2096,83 @@ class Session(sherpa.ui.utils.Session):
                                                len(d.get_y(False)), len(filter))
 
 
+    # DOC-NOTE: also in sherpa.utils
+    ### DOC-TODO: does ncols make sense here? (have removed for now)
     def load_staterror(self, id, filename=None, bkg_id=None, *args, **kwargs):
-        """
-        load_staterror
+        """Load the statistical errors from a file.
 
-        SYNOPSIS
-           Load the statistical errors for a dataset from file
+        Read in a column or image from a file and use the values
+        as the statistical errors for a data set. This over rides
+        the errors calculated by any statistic, such as
+        `chi2gehrels` or `chi2datavar`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy) and the
+           type of data set (e.g. 1D or 2D).
+        bkg_id : int or str, optional
+           Set to identify which background component to set. The
+           default value (`None`) means that this is for the source
+           component of the data set.
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_staterror : Return the statistical error on the dependent axis of a data set.
+        load_syserror : Load the systematic errors from a file.
+        set_staterror : Set the statistical errors on the dependent axis of a data set.
+        set_stat : Set the statistical method.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Examples
+        --------
 
-           ncols      - number of columns to read from
-                        default = 2
+        Read in the first column from 'tbl.dat':
 
-           colkeys    - column keys
-                        default = None
+        >>> load_staterror('tbl.dat')
 
-        Returns:
-           None
+        Use the column labelled 'col3'
 
-        DESCRIPTION
-           Load the statistical error for a dataset from file by data id.  
-           Users can specify the column name by using the colkeys argument to 
-           set the statistical error.
+        >>> load_staterror('tbl.dat', colkeys=['col3'])
 
-        EXAMPLE
-           load_staterror("data.dat", colkeys=["STAT_ERR"])
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection:
 
-           load_staterror("bkg.fits", bkg_id=1, colkeys=["STAT_ERR"])
+        >>> load_staterror('tbl.dat[cols col3]')
 
-        SEE ALSO
-           load_syserror, set_staterror, set_syserror
+        Read in the first column from the file 'errors.fits' as the
+        statistical errors for the 'core' data set:
+
+        >>> load_staterror('core', 'errors.fits')
+
+        The data set labelled 'img' is loaded from the file
+        'image.fits' and the statistical errors from 'err.fits'.
+        The dimensions of the two images must be the same.
+
+        >>> load_image('img', 'image.fits')
+        >>> load_staterror('img', 'err.fits')
+
         """
         if filename is None:
             id, filename = filename, id
@@ -1406,45 +2180,83 @@ class Session(sherpa.ui.utils.Session):
         self.set_staterror(id,
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
+    # DOC-NOTE: also in sherpa.utils
+    ### DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_syserror(self, id, filename=None, bkg_id=None, *args, **kwargs):
-        """
-        load_syserror
+        """Load the systematic errors from a file.
 
-        SYNOPSIS
-           Load the systematic errors for a dataset from file
+        Read in a column or image from a file and use the values
+        as the systematic errors for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to read in. Supported formats depends
+           on the I/O library in use (Crates or AstroPy) and the
+           type of data set (e.g. 1D or 2D).
+        bkg_id : int or str, optional
+           Set to identify which background component to set. The
+           default value (`None`) means that this is for the source
+           component of the data set.
+        ncols : int, optional
+           The number of columns to read in (the first `ncols` columns
+           in the file).
+        colkeys : array of str, optional
+           An array of the column name to read in. The default is
+           `None`.
+        sep : str, optional
+           The separator character. The default is ' '.
+        comment : str, optional
+           The comment character. The default is '#'.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_syserror : Return the systematic error on the dependent axis of a data set.
+        load_staterror : Load the statistical errors from a file.
+        set_syserror : Set the systematic errors on the dependent axis of a data set.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Examples
+        --------
 
-           ncols      - number of columns to read from
-                        default = 2
+        Read in the first column from 'tbl.dat':
 
-           colkeys    - column keys
-                        default = None
+        >>> load_syserror('tbl.dat')
 
-        Returns:
-           None
+        Use the column labelled 'col3'
 
-        DESCRIPTION
-           Load the systematic error for a dataset from file by data id and by 
-           bkg_id.  Users can specify the column name by using the colkeys 
-           argument to set the systematic error.
+        >>> load_syserror('tbl.dat', colkeys=['col3'])
 
-        EXAMPLE
-           load_syserror("data.dat", colkeys=["SYS_ERR"])
+        When using the Crates I/O library, the file name can include
+        CIAO Data Model syntax, such as column selection:
 
-           load_syserror("bkg.fits", bkg_id=1, colkeys=["SYS_ERR"])
+        >>> load_syserror('tbl.dat[cols col3]')
 
-        SEE ALSO
-           load_staterror, set_staterror, set_syserror
+        Read in the first column from the file 'errors.fits' as the
+        systematic errors for the 'core' data set:
+
+        >>> load_syserror('core', 'errors.fits')
+
+        The data set labelled 'img' is loaded from the file
+        'image.fits' and the systematic errors from 'syserr.fits'.
+        The dimensions of the two images must be the same.
+
+        >>> load_image('img', 'image.fits')
+        >>> load_syserror('img', 'syserr.fits')
+
         """
         if filename is None:
             id, filename = filename, id
@@ -1452,39 +2264,53 @@ class Session(sherpa.ui.utils.Session):
         self.set_syserror(id,
             self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
+    # also in sherpa.utils
     def set_dep(self, id, val=None, bkg_id=None):
-        """
-        set_dep
+        """Set the dependent axis of a data set.
 
-        SYNOPSIS
-           Set the dependent variable of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        val : array
+           The array of values for the dependent axis.
+        bkg_id : int or str, optional
+           Set to identify which background component to set. The
+           default value (`None`) means that this is for the source
+           component of the data set.
 
-        SYNTAX
+        See Also
+        --------
+        dataspace1d : Create the independent axis for a 1D data set.
+        dataspace2d : Create the independent axis for a 2D data set.
+        get_dep : Return the dependent axis of a data set.
+        load_arrays : Create a data set from array values.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-           val        - dependent variable array or scalar
+        Examples
+        --------
 
-           bkg_id     - background id
-                        default = None
+        Create a 1D data set with values at (0,4), (2,10), (4,12),
+        (6,8), (8,2), and (10,12):
 
-        Returns:
-           None
+        >>> dataspace1d(0, 10, 2, dstype=Data1D)
+        >>> set_dep([4, 10, 12, 8, 2, 12])
 
-        DESCRIPTION
-           Set the dependent variable of a data set by data id or bkg_id.
+        Set the values for the source and background of the data set
+        'src':
 
-        EXAMPLE
-           set_dep([1,2,3,...])
+        >>> set_dep('src', y1)
+        >>> set_dep('src', bg1, bkg_id=1)
 
-           set_dep(1,1)
-
-           set_dep([1,2,3,...], bkg_id=1)
-
-        SEE ALSO
-           get_dep, get_indep, get_axes
         """
         if val is None:
             val, id = id, val
@@ -1512,49 +2338,61 @@ class Session(sherpa.ui.utils.Session):
     set_counts = set_dep
 
 
+    # DOC-NOTE: also in sherpa.utils
     def set_staterror(self, id, val=None, fractional=False, bkg_id=None):
-        """
-        set_staterror
+        """Set the statistical errors on the dependent axis of a data set.
 
-        SYNOPSIS
-           Set the statistical errors of a dataset by id
+        These values over-ride the errors calculated by any statistic,
+        such as `chi2gehrels` or `chi2datavar`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        val : array or scalar
+           The systematic error.
+        fractional : bool, optional
+           If `False` (the default value), then the `val` parameter is
+           the absolute value, otherwise the `val` parameter
+           represents the fractional error, so the absolute value is
+           calculated as `get_dep() * val` (and `val` must be
+           a scalar).
+        bkg_id : int or str, optional
+           Set to identify which background component to set. The
+           default value (`None`) means that this is for the source
+           component of the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        load_staterror : Load the statistical errors from a file.
+        load_syserror : Load the systematic errors from a file.
+        set_syserror : Set the systematic errors on the dependent axis of a data set.
+        get_error : Return the errors on the dependent axis of a data set.
 
-           val        - array or scalar error values
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-           fractional - use fractional portion of dependent array as error,
-                        val must be a scalar value
-                        default = False
+        Examples
+        --------
 
-           bkg_id     - background id
-                        default = None
+        Set the statistical error for the default data set to the value
+        in `dys` (a scalar or an array):
 
-        Returns:
-           None
+        >>> set_staterror(dys)
 
-        DESCRIPTION
-           Set the statistical error of a source or background dataset by data
-           id or by bkg_id.  Users can specify the entire error as an array or
-           as a single value to be repeated for every bin.  Also, setting the
-           fractional argument will use the single value as the fractional
-           portion of the dependent array as the error.
+        Set the statistical error on the `core` data set to be 5% of
+        the data values:
 
-        EXAMPLE
-           set_staterror([0.040, 0.039, 0.041, ...])
+        >>> set_staterror('core', 0.05, fractional=True)
 
-           set_staterror(2, 0.04)
-
-           set_staterror(0.05, fractional=True)
-
-           set_staterror(0.05, bkg_id=1)
-
-        SEE ALSO
-           set_syserror, set_exposure, set_backscal, set_areascal
         """
         if val is None:
             val, id = id, val
@@ -1576,48 +2414,58 @@ class Session(sherpa.ui.utils.Session):
         d.staterror = err
 
 
+    # DOC-NOTE: also in sherpa.utils
     def set_syserror(self, id, val=None, fractional=False, bkg_id=None):
-        """
-        set_syserror
+        """Set the systematic errors on the dependent axis of a data set.
 
-        SYNOPSIS
-           Set the systematic errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        val : array or scalar
+           The systematic error.
+        fractional : bool, optional
+           If `False` (the default value), then the `val` parameter is
+           the absolute value, otherwise the `val` parameter
+           represents the fractional error, so the absolute value is
+           calculated as `get_dep() * val` (and `val` must be
+           a scalar).
+        bkg_id : int or str, optional
+           Set to identify which background component to set. The
+           default value (`None`) means that this is for the source
+           component of the data set.
 
-        SYNTAX
+        See Also
+        --------
+        load_staterror : Set the statistical errors on the dependent axis of a data set.
+        load_syserror : Set the systematic errors on the dependent axis of a data set.
+        set_staterror : Set the statistical errors on the dependent axis of a data set.
+        get_error : Return the errors on the dependent axis of a data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-           val        - array or scalar error values
+        Examples
+        --------
 
-           fractional - use fractional portion of dependent array as error,
-                        val must be a scalar value
-                        default = False
+        Set the systematic error for the default data set to the value
+        in `dys` (a scalar or an array):
 
-           bkg_id     - background id
-                        default = None
+        >>> set_syserror(dys)
 
-        Returns:
-           None
+        Set the systematic error on the `core` data set to be 5% of
+        the data values:
 
-        DESCRIPTION
-           Set the systematic error of a dataset by data id.  Users can specify
-           the entire error as an array or as a single value to be repeated for
-           every bin.  Also, setting the fractional argument will use the single
-           value as the fractional portion of the dependent array as the error.
+        >>> set_syserror('core', 0.05, fractional=True)
 
-        EXAMPLE
-           set_syserror([0.040, 0.039, 0.041, ...])
-
-           set_syserror(2, 0.04)
-
-           set_syserror(0.05, fractional=True)
-
-           set_syserror(0.05, bkg_id=1)
-
-        SEE ALSO
-           set_syserror, set_exposure, set_backscal, set_areascal
         """
         if val is None:
             val, id = id, val
@@ -1640,39 +2488,60 @@ class Session(sherpa.ui.utils.Session):
 
 
     def set_exposure(self, id, exptime=None, bkg_id=None):
-        """
-        set_exposure
+        """Change the exposure time of a PHA data set.
 
-        SYNOPSIS
-           Set the source or background exposure times by id
+        The exposure time of a PHA data set is taken from the
+        ``EXPTIME`` keyword in its header, but it can be changed
+        once the file has been loaded.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        exptime : num
+           The exposure time, in seconds.
+        bkg_id : int or str, optional
+           Set to identify which background component to set.  The
+           default value (``None``) means that this is for the source
+           component of the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_exposure : Return the exposure time of a PHA data set.
+        set_areascal : Change the fractional area factor of a PHA data set.
+        set_backscal : Change the area scaling of a PHA data set.
 
-           exptime    - exposure time
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the ``exptime`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``exptime`` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Increase the exposure time of the default data set by 5 per
+        cent.
 
-        DESCRIPTION
-           Set the exposure time of a source PHA dataset by data id or of a 
-           background data by bkg_id.
+        >>> etime = get_exposure()
+        >>> set_exposure(etime * 1.05)
 
-        EXAMPLE
-           set_exposure(10e5)
+        Use the EXPOSURE value from the ARF, rather than the EXPTIME
+        value from the PHA file, for data set 2:
 
-           set_exposure(2, 10e5)
+        >>> set_exposure(2, get_arf(2).exposure)
 
-           set_exposure(1, 10e5, 1)
+        Set the exposure time of the second background component
+        of the 'jet' data set.
 
-        SEE ALSO
-           set_backscal, set_areascal
+        >>> set_exposure('jet', 12324.45, bkg_id=2)
+
         """
         if exptime is None:
             exptime, id = id, exptime
@@ -1687,47 +2556,41 @@ class Session(sherpa.ui.utils.Session):
 
 
     def set_backscal(self, id, backscale=None, bkg_id=None):
-        """
-        set_backscal
+        """Change the area scaling of a PHA data set.
 
-        SYNOPSIS
-           Set the source or background extraction region areas by id
+        The area scaling factor of a PHA data set is taken from the
+        BACKSCAL keyword or column, but it can be changed once the
+        file has been loaded.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        backscale : number or array
+           The scaling factor.
+        bkg_id : int or str, optional
+           Set to identify which background component to set.  The
+           default value (`None`) means that this is for the source
+           component of the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_backscal : Return the area scaling of a PHA data set.
+        set_areascal : Change the fractional area factor of a PHA data set.
+        set_exposure : Change the exposure time of a PHA data set.
 
-           backscale  - backscal value
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `backscale` parameter. If given two un-named arguments,
+        then they are interpreted as the `id` and `backscale`
+        parameters, respectively. The remaining parameters are
+        expected to be given as named arguments.
 
-           bkg_id     - background data id
-                        default = None
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Set the extraction region areas of a source PHA dataset by data id
-           or of a background dataset by bkg_id. Backscale can be defined as the
-           ratio of the area of the source (or background) extraction region in
-           image pixels to the total number of image pixels. The fact that
-           there is no ironclad definition for this quantity does not matter so
-           long as the backscale for a source dataset and its associated
-           background dataset are defined in the similar manner, because only
-           the ratio of source and background backscale is used in analyses.
-
-        EXAMPLE
-           set_backscal(2e-6)
-
-           set_backscal(2, 2e-6)
-
-           set_backscal(1, 1e-5, 1)
-
-           set_backscal([1e-6, 1e-6, 1e-6, ...])
-
-        SEE ALSO
-           set_exposure, set_areascal
         """
         if backscale is None:
             backscale, id = id, backscale
@@ -1743,40 +2606,43 @@ class Session(sherpa.ui.utils.Session):
             self._get_pha_data(id).backscal = backscale
 
 
+    ### DOC-TODO: the description needs improving.
     def set_areascal(self, id, area=None, bkg_id=None):
-        """
-        set_areascal
+        """Change the fractional area factor of a PHA data set.
 
-        SYNOPSIS
-           Set the source or background fractional area by id
+        The area scaling factor of a PHA data set is taken from the
+        AREASCAL keyword, but it can be changed once the file has been
+        loaded.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        area : number
+           The scaling factor.
+        bkg_id : int or str, optional
+           Set to identify which background component to set.  The
+           default value (`None`) means that this is for the source
+           component of the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        See Also
+        --------
+        get_areascal : Return the fractional area factor of a PHA data set.
+        set_backscal : Change the area scaling of a PHA data set.
+        set_exposure : Change the exposure time of a PHA data set.
 
-           area       - areascal value [pixel]
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `area` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `area` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = None
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Set the fractional area of a source PHA dataset by data id or of a 
-           background data by bkg_id.
-
-        EXAMPLE
-           set_areascal(0.75)
-
-           set_areascal(2, 0.75)
-
-           set_areascal(1, 0.75, 1)
-
-        SEE ALSO
-           set_backscal, set_exposure
         """
         if area is None:
             area, id = id, area
@@ -1789,43 +2655,72 @@ class Session(sherpa.ui.utils.Session):
         else:
             self._get_pha_data(id).areascal = area
 
-
+    # DOC-NOTE: also in sherpa.utils
     def get_staterror(self, id=None, filter=False, bkg_id=None):
-        """
-        get_staterror
+        """Return the statistical error on the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the statistical errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The statistical error for each data point. This may be
+           estimated from the data (e.g. with the `chi2gehrels`
+           statistic) or have been set explicitly (`set_staterror`).
+           For PHA data sets, the return array will match the grouping
+           scheme applied to the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_staterror : Set the statistical errors on the dependent axis of a data set.
 
-           bkg_id     - background id
-                        default = None
+        Examples
+        --------
 
-        Returns:
-           Statistical error array
+        If not explicitly given, the statistical errors on a data set
+        may be calculated from the data values (the independent axis),
+        depending on the chosen statistic:
 
-        DESCRIPTION
-           Get the statistical error of a source or background dataset by data
-           id or by bkg_id.
+        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> set_stat('chi2datavar')
+        >>> get_staterror()
+        array([ 2.        ,  2.23606798,  3.        ])
+        >>> set_stat('chi2gehrels')
+        >>> get_staterror()
+        array([ 3.17944947,  3.39791576,  4.122499  ])
 
-        EXAMPLE
-           get_staterror()
+        If the statistical errors are set - either when the data set
+        is created or with a call to `set_errors` - then these values
+        will be used, no matter the statistic:
 
-           get_staterror(1, True)
+        >>> load_arrays(1, [10,15,19], [4,5,9], [2,3,5])
+        >>> set_stat('chi2datavar')
+        >>> get_staterror()
+        array([2, 3, 5])
+        >>> set_stat('chi2gehrels')
+        >>> get_staterror()
+        array([2, 3, 5])
 
-           get_staterror(1, 2)
-
-        SEE ALSO
-           set_syserror, set_exposure, set_backscal, set_areascal,
-           get_syserror, get_exposure, get_backscal, get_areascal
         """
         d = self.get_data(id)
         if bkg_id is not None:
@@ -1833,41 +2728,43 @@ class Session(sherpa.ui.utils.Session):
         return d.get_staterror(filter, self.get_stat().calc_staterror)
 
 
+    # DOC-NOTE: also in sherpa.utils
     def get_syserror(self, id=None, filter=False, bkg_id=None):
-        """
-        get_syserror
+        """Return the systematic error on the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the systematic errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The systematic error for each data point.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has no systematic errors.
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_syserror : Set the systematic errors on the dependent axis of a data set.
 
-           bkg_id     - background id
-                        default = None
-
-        Returns:
-           Systematic error array
-
-        DESCRIPTION
-           Get the systematic error of a dataset by data id or bkg_id.
-
-        EXAMPLE
-           get_syserror()
-
-           get_syserror(1, True)
-
-           get_syserror(1, bkg_id=2)
-
-        SEE ALSO
-           set_syserror, set_exposure, set_backscal, set_areascal,
-           get_syserror, get_exposure, get_backscal, get_areascal
         """
         d = self.get_data(id)
         id = self._fix_id(id)
@@ -1879,42 +2776,41 @@ class Session(sherpa.ui.utils.Session):
         return err
 
 
+    # DOC-NOTE: also in sherpa.utils
     def get_error(self, id=None, filter=False, bkg_id=None):
-        """
-        get_error
+        """Return the errors on the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the total errors of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The error for each data point, formed by adding the
+           statistical and systematic errors in quadrature.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_dep : Return the dependent axis of a data set.
+        get_staterror : Return the statistical errors on the dependent axis of a data set.
+        get_syserror : Return the systematic errors on the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-           bkg_id     - background id
-                        default = None
-
-        Returns:
-           Total error array
-
-        DESCRIPTION
-           Get the total error (statistical + systematic in quadrature) of a
-           dataset by data id or bkg_id.
-
-        EXAMPLE
-           get_error()
-
-           get_error(1, True)
-
-           get_error(1, bkg_id=2)
-
-        SEE ALSO
-           set_syserror, set_exposure, set_backscal, set_areascal,
-           get_syserror, get_exposure, get_backscal, get_areascal
         """
         d = self.get_data(id)
         if bkg_id is not None:
@@ -1922,36 +2818,98 @@ class Session(sherpa.ui.utils.Session):
         return d.get_error(filter, self.get_stat().calc_staterror)
 
 
+    # DOC-NOTE: also in sherpa.utils
     def get_indep(self, id=None, filter=False, bkg_id=None):
-        """
-        get_indep
+        """Return the independent axes of a data set.
 
-        SYNOPSIS
-           Get the independent grid of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNTAX
+        Returns
+        -------
+        axis : tuple of arrays
+           The independent axis values. These are the values at which
+           the model is evaluated during fitting. The values returned
+           depend on the coordinate system in use for the data set (as
+           set by `set_coord`). For PHA data sets the value returned
+           is always in channels, whatever the `set_analysis` setting
+           is, and does not follow any grouping setting for the data
+           set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           bkg_id     - background id
-                        default = None
+        See Also
+        --------
+        get_axes : Return information about the independent axes of a data set.
+        get_dep : Return the dependent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
+        set_coord : Set the coordinate system to use for image analysis.
 
-        Returns:
-           Array of the independent variable
+        Examples
+        --------
 
-        DESCRIPTION
-           Get the data set independend grid by data id or bkg_id.
+        For a one-dimensional data set, the X values are returned:
 
-        EXAMPLE
-           get_indep()
+        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> get_indep()
+        (array([10, 15, 19]),)
 
-           get_indep(1)
+        For a 2D data set the X0 and X1 values are returned:
 
-           get_indep(1, 2)
+        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> get_indep(2)
+        (array([10, 15, 12, 19]), array([12, 14, 10, 17]))
 
-        SEE ALSO
+        For PHA data sets the return value is in channel units:
+
+        >>> load_pha('spec', 'src.pi')
+        >>> set_analysis('spec', 'energy')
+        >>> (chans,) = get_indep('spec')
+        >>> chans[0:6]
+        array([ 1.,  2.,  3.,  4.,  5.,  6.])
+
+        If the `filter` flag is set then the return will be limited to
+        the data that is used in the fit:
+
+        >>> notice_id('spec', 0.5, 7)
+        >>> (nchans,) = get_indep('spec', filter=True)
+        >>> nchans[0:5]
+        array([ 35.,  36.,  37.,  38.,  39.])
+
+        For images the pixel coordinates of each pixel are returned,
+        as a 1D array.
+
+        >>> load_image('img', 'image.fits')
+        >>> (xvals,yvals) = get_indep('img')
+        >>> xvals.shape
+        (65536,)
+        >>> yvals.shape
+        (65536,)
+        >>> xvals[0:5]
+        array([ 1.,  2.,  3.,  4.,  5.])
+        >>> yvals[0:5]
+        array([ 1.,  1.,  1.,  1.,  1.])
+
+        The coordinate system for image axes is determinated by the
+        `set_coord` setting for the data set:
+
+        >>> set_coord('img', 'physical')
+        >>> (avals,bvals) = get_indep('img')
+        >>> avals[0:5]
+        array([  16.5,   48.5,   80.5,  112.5,  144.5])
 
         """
         d = self.get_data(id)
@@ -1961,37 +2919,85 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_axes(self, id=None, bkg_id=None):
-        """
-        get_axes
+        """Return information about the independent axes of a data set.
 
-        SYNOPSIS
-           Get the alternate grid of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNTAX
+        Returns
+        -------
+        axis : tuple of arrays
+           The independent axis values. The difference to `get_dep` is
+           that this represents the "alternate grid" for the axis. For
+           PHA data, this is the energy grid (E_MIN and E_MAX). For
+           image data it is an array for each axis, of the length of
+           the axis, using the current coordinate system for the data
+           set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           bkg_id     - background id
-                        default = None
+        See Also
+        --------
+        get_indep : Return the independent axis of a data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-        Returns:
-           Array of the alternate independent variable
+        Examples
+        --------
 
-        DESCRIPTION
-           Get the data set alternate grid by data id or bkg_id.
-           For PHA spectra, this cooresponds to E_MIN,E_MAX.
-           for images, this respresents the axes lengths.
+        For 1D data sets, the "alternate" view is the same as the
+        independent axis:
 
-        EXAMPLE
-           get_axes()
+        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> get_indep()
+        array([10, 15, 19])
+        >>> get_axes()
+        array([10, 15, 19])
 
-           get_axes(1)
+        For a PHA data set, the approximate energy grid of the
+        channels is returned (this is determined by the EBOUNDS
+        extension of the RMF).
 
-           get_axes(1, 2)
+        >>> load_pha('core', 'src.pi')
+        read ARF file src.arf
+        read RMF file src.rmf
+        read background file src_bkg.pi
+        >>> (chans,) = get_indep()
+        >>> (elo, ehi) = get_axes()
+        >>> chans[0:5]
+        array([ 1.,  2.,  3.,  4.,  5.])
+        >>> elo[0:5]
+        array([ 0.0073,  0.0146,  0.0292,  0.0438,  0.0584])
+        >>> ehi[0:5]
+        array([ 0.0146,  0.0292,  0.0438,  0.0584,  0.073 ])
 
-        SEE ALSO
+        The image has 101 columns by 108 rows. The `get_indep`
+        function returns one-dimensional arrays, for the full dataset,
+        where as `get_axes` returns values for the individual axis:
+
+        >>> load_image('img', 'img.fits')
+        >>> get_data('img').shape
+        (108, 101)
+        >>> set_coord('img', 'physical')
+        >>> (x0, x1) = get_indep('img')
+        >>> (a0, a1) = get_axes('img')
+        >>> (x0.size, x1.size)
+        (10908, 10908)
+        >>> (a0.size, a1.size)
+        (101, 108)
+        >>> np.all(x0[:101] == a0)
+        True
+        >>> np.all(x1[::101] == a1)
+        True
 
         """
         d = self.get_data(id)
@@ -2005,39 +3011,71 @@ class Session(sherpa.ui.utils.Session):
         return d.get_indep()
 
 
+    # DOC-NOTE: also in sherpa.utils
     def get_dep(self, id=None, filter=False, bkg_id=None):
-        """
-        get_dep
+        """Return the dependent axis of a data set.
 
-        SYNOPSIS
-           Get the dependent variable of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the values returned should be from the given
+           background component, instead of the source data set.
 
-        SYNTAX
+        Returns
+        -------
+        axis : array
+           The dependent axis values. The model estimate is compared
+           to these values during fitting. For PHA data sets, the 
+           return array will match the grouping scheme applied to
+           the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the data set does not exist.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        get_indep : Return the independent axis of a data set.
+        get_rate : Return the count rate of a PHA data set.
+        list_data_ids : List the identifiers for the loaded data sets.
 
-           bkg_id     - background id
-                        default = None
+        Examples
+        --------
 
-        Returns:
-           Array of the dependent variable
+        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> get_dep()
+        array([10, 15, 19])
 
-        DESCRIPTION
-           Get the dependent variable array of data set by data id or bkg_id.
+        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> get_dep(2)
+        array([4, 5, 9, -2])
 
-        EXAMPLE
-           get_dep()
+        If the `filter` flag is set then the return will be limited to
+        the data that is used in the fit:
 
-           get_dep(1, True)
+        >>> notice_id('spec', 0.5, 7)
+        >>> yall = get_dep('spec')
+        >>> yfilt = get_dep('spec', filter=True)
+        >>> yall.size
+        1024
+        >>> yfilt.size
+        446
 
-           get_dep(1, bkg_id=2)
+        For images, the data is returned as a one-dimensional array:
 
-        SEE ALSO
+        >>> load_image('img', 'image.fits')
+        >>> ivals = get_dep('img')
+        >>> ivals.shape
+        (65536,)
 
         """
         d = self.get_data(id)
@@ -2055,40 +3093,55 @@ class Session(sherpa.ui.utils.Session):
     get_counts = get_dep
 
     def get_rate(self, id=None, filter=False, bkg_id=None):
-        """
-        get_rate
+        """Return the count rate of a PHA data set.
 
-        SYNOPSIS
-           Get the measured count rate of a dataset by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the rate should be taken from the background
+           associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        rate : array
+           The rate array. The output matches the grouping of the data
+           set. The units are controlled by the `set_analysis` setting
+           for this data set; that is, the units used in `plot_data`.
+           The return array will match the grouping scheme applied to
+           the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
 
-           filter     - apply filter
-                        default = False
+        See Also
+        --------
+        get_dep : Return the data for a data set.
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+        plot_data : Plot the data values.
+        set_analysis : Set the units used when fitting and displaying spectral data.
 
-           bkg_id     - background id
-                        default = None
+        Examples
+        --------
 
-        Returns:
-           count rate array
+        >>> rate = get_rate()
 
-        DESCRIPTION
-           Get the measured count rate of data set or background by data id or
-           bkg_id.
+        The rate of data set 2 will be in units of count/s/Angstrom
+        and only cover the range 20 to 22 Angstroms:
 
-        EXAMPLE
-           get_rate()
+        >>> set_analysis(2, 'wave')
+        >>> notice_id(2, 20, 22)
+        >>> r2 = get_rate(2, filter=True)
 
-           get_rate(1, True)
-
-           get_rate(1, bkg_id=2)
-
-        SEE ALSO
-           get_counts
         """
         d = self._get_pha_data(id)
         if bkg_id is not None:
@@ -2099,41 +3152,30 @@ class Session(sherpa.ui.utils.Session):
         d._rate=old
         return rate
 
+    ### DOC-TODO: how to get the corresponding x bins for this data?
+    ###           i.e. what are the X values for these points
     def get_specresp(self, id=None, filter=False, bkg_id=None):
-        """
-        get_specresp
+        """Return the effective area values for a PHA data set.
 
-        SYNOPSIS
-           Get the effective area of a PHA spectrum by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the ARF or not. The default is `False`.
+        bkg_id : int or str, optional
+           Set if the ARF should be taken from a background set
+           associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        arf : array
+           The effective area values for the data set (or background
+           component).
 
-        Arguments:
-           id         - session data id
-                        default = default data id
-
-           filter     - apply filter
-                        default = False
-
-           bkg_id     - background id
-                        default = None
-
-        Returns:
-           effective area array
-
-        DESCRIPTION
-           Get the effective area array of a PHA spectrum by data set or
-           background by data id or bkg_id.
-
-        EXAMPLE
-           get_specresp()
-
-           get_specresp(1, True)
-
-           get_specresp(1, bkg_id=2)
-
-        SEE ALSO
-           get_counts, get_rate
         """
         d = self._get_pha_data(id)
         if bkg_id is not None:
@@ -2142,38 +3184,34 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_exposure(self, id=None, bkg_id=None):
-        """
-        get_exposure
+        """Return the exposure time of a PHA data set.
 
-        SYNOPSIS
-           Get the source or background exposure times by id
+        The exposure time of a PHA data set is taken from the
+        EXPTIME keyword in its header, but it can be changed
+        once the file has been loaded.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to identify which background component to use.  The
+           default value (`None`) means that the time is for the
+           source component of the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Returns
+        -------
+        exposure : number
+           The exposure time, in seconds.
 
-           bkg_id     - background data id
-                        default = None
+        See Also
+        --------
+        get_areascal : Return the fractional area factor of a PHA data set.
+        get_backscal : Return the area scaling of a PHA data set.
+        set_exposure : Change the exposure time of a PHA data set.
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Get the exposure time of a source PHA dataset by data id or of a 
-           background data by bkg_id.
-
-        EXAMPLE
-           get_exposure()
-
-           get_exposure(1)
-
-           get_exposure(1, 2)
-
-        SEE ALSO
-           set_backscal, set_areascal,
-           get_backscal, get_areascal
         """
         if bkg_id is not None:
             return self.get_bkg(id,bkg_id).exposure
@@ -2181,44 +3219,58 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_backscal(self, id=None, bkg_id=None):
-        """
-        get_backscal
+        """Return the area scaling of a PHA data set.
 
-        SYNOPSIS
-           Get the source or background extraction region areas by id
+        Return the BACKSCAL setting [1]_ for the source or background
+        component of a PHA data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to identify which background component to use.  The
+           default value (`None`) means that the value is for the
+           source component of the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Returns
+        -------
+        backscal : number or array
+           The BACKSCAL value.
 
-           bkg_id     - background data id
-                        default = None
+        See Also
+        --------
+        get_areascal : Return the fractional area factor of a PHA data set.
+        get_bkg_scale : Return the background scaling factor for a PHA data set.
+        set_backscal : Change the area scaling of a PHA data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        The BACKSCAL value can be defined as the ratio of the area of
+        the source (or background) extraction region in image pixels
+        to the total number of image pixels. The fact that there is no
+        ironclad definition for this quantity does not matter so long
+        as the value for a source dataset and its associated
+        background dataset are defined in the similar manner, because
+        only the ratio of source and background BACKSCAL values is
+        used. It can be a scalar or be an array.
 
-        DESCRIPTION
-           Get the extraction region areas of a source PHA dataset by data id
-           or of a background dataset by bkg_id. Backscale can be defined as the
-           ratio of the area of the source (or background) extraction region in
-           image pixels to the total number of image pixels. The fact that
-           there is no ironclad definition for this quantity does not matter so
-           long as the backscale for a source dataset and its associated
-           background dataset are defined in the similar manner, because only
-           the ratio of source and background backscale is used in analyses.
+        References
+        ----------
 
-        EXAMPLE
-           get_backscal()
+        .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
-           get_backscal(1)
+        Examples
+        --------
 
-           get_backscal(1, 2)
+        >>> get_backscal()
+        7.8504301607718007e-06
+        >>> get_backscal(bkg_id=1)
+        0.00022745132446289
 
-        SEE ALSO
-           set_exposure, set_areascal,
-           get_exposure, get_areascal
         """
         if bkg_id is not None:
             return self.get_bkg(id,bkg_id).backscal
@@ -2226,37 +3278,51 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_bkg_scale(self, id=None):
-        """
-        get_bkg_scale
+        """Return the background scaling factor for a PHA data set.
 
-        SYNOPSIS
-           Get the PHA background scale factor by id
+        Return the factor applied to the background component to scale
+        it to match it to the source (either when subtracting the
+        background, or fitting it simultaneously).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to identify which background component to use.  The
+           default value (`None`) means that the value is for the
+           source component of the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Returns
+        -------
+        ratio : number
+           The scaling factor.
 
-        Returns:
-           None
+        See Also
+        --------
+        get_areascal : Return the fractional area factor of a PHA data set.
+        get_backscal : Return the area scaling factor for a PHA data set.
+        set_backscal : Change the area scaling of a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
 
-        DESCRIPTION
-           Get the background scaling factor for a source PHA dataset by data id.
-           The background source model is scaled by this factor summed in quadrature
-           of all revelent backgrounds.
+        Notes
+        -----
+        The scale factor::
 
-           scale =  BACKSCAL*EXPOSURE/N  *  \sum_i^N 1./BBACKSCAL_i/BEXPOSURE_i
-           
+          exp_src * bscale_src / (exp_bgnd * bscale_bgnd)
 
-        EXAMPLE
-           get_bkg_scale()
+        where exp_x and bscale_x are the exposure and BACKSCAL values
+        for the source (x=src) and background (x=bgnd).
 
-           get_bkg_scale(1)
+        Examples
+        --------
 
-        SEE ALSO
-           set_exposure, set_areascal,
-           get_exposure, get_areascal
+        >>> get_bkg_scale('pi')
+        0.034514770047217924
+
         """
         scale = self._get_pha_data(id).get_background_scale()
         if scale is None:
@@ -2265,39 +3331,45 @@ class Session(sherpa.ui.utils.Session):
         return scale
 
 
+    ### DOC-TODO: the description needs improving.
     def get_areascal(self, id=None, bkg_id=None):
-        """
-        get_areascal
+        """Return the fractional area factor of a PHA data set.
 
-        SYNOPSIS
-           Get the source or background fractional area by id
+        Return the AREASCAL setting [1]_ for the source or background
+        component of a PHA data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to identify which background component to use.  The
+           default value (`None`) means that the value is for the
+           source component of the data set.
 
-        Arguments:
-           id         - session data id
-                        default = default data id
+        Returns
+        -------
+        areascal : number
+           The AREASCAL value.
 
-           bkg_id     - background data id
-                        default = None
+        See Also
+        --------
+        get_backscal : Return the area scaling of a PHA data set.
+        set_areascal : Change the fractional area factor of a PHA data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        The fractional area scale is normally set to 1, with the ARF used
+        to scale the model.
 
-        DESCRIPTION
-           Get the fractional area of a source PHA dataset by data id or of a 
-           background data by bkg_id.
+        References
+        ----------
 
-        EXAMPLE
-           get_areascal()
+        .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
-           get_areascal(1)
-
-           get_areascal(1, 2)
-
-        SEE ALSO
-           set_backscal, set_exposure,
-           get_backscal, get_exposure
         """
         if bkg_id is not None:
             return self.get_bkg(id,bkg_id).areascal
@@ -2395,253 +3467,366 @@ class Session(sherpa.ui.utils.Session):
 # program with ease.  ASCII is probably better for that.
 # SMD 05/15/13
 #
+
+    # DOC-NOTE: also in sherpa.utils with a different interface
     def save_arrays(self, filename, args, fields=None, ascii=True,
                     clobber=False):
-        """
-        save_arrays
+        """Write a list of arrays to a file.
 
-        SYNOPSIS
-           Write a list of arrays to file as columns
+        Parameters
+        ----------
+        filename : str
+           The name of the file to write the array to.
+        args : array of arrays
+           The arrays to write out.
+        fields : array of str
+           The column names (should match the size of `args`).
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `True`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           filename   - filename with path
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_image : Save the pixel values of a 2D data set to a file.
+        save_table :
 
-           args       - list of arrays that correspond to columns
+        Examples
+        --------
 
-           fields     - list of column headings
-                        default = None
+        Write the x and y columns from the default data set to the
+        file 'src.dat':
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = True
+        >>> x = get_indep()
+        >>> y = get_dep()
+        >>> save_arrays('src.dat', [x,y])
 
-           clobber    - clobber the existing output file
-                        default = False
+        Use the column names "r" and "surbri" for the columns:
 
-        Returns:
-           None
+        >>> save_arrays('prof.fits', [x,y], fields=["r", "surbri"],
+                        ascii=False, clobber=True)
 
-        DESCRIPTION
-           Write a list of arrays to file as columns.
-
-        EXAMPLE
-
-           save_arrays("foo.dat", [a,b,c], fields=['a','b','c'])
-       
-
-        SEE ALSO
-           save_image, save_data, save_table, save_source, save_model,
-           save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
         sherpa.astro.io.write_arrays(filename, args, fields, ascii, clobber)
 
+    # DOC-NOTE: also in sherpa.utils with a different API
     def save_source(self, id, filename=None, bkg_id=None, ascii=False,
                     clobber=False):
-        """
-        save_source
+        """Save the model values to a file.
 
-        SYNOPSIS
-           Write the unconvolved source model to file
+        The model is evaluated on the grid of the data set, but does
+        not include any instrument response (such as a PSF or ARF and
+        RMF).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background model should be written out
+           rather than the source.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `False`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_model : Save the model values to a file.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-           bkg_id     - background id
-                        default = default background id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        The output file contains the columns `X` and `SOURCE` for 1D
+        data sets. The residuals array respects any filter or (for PHA
+        files), grouping settings.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Write the model values for the default data set to the file
+        "model.fits":
 
-        DESCRIPTION
-           Write the unconvolved source model or background source model 
-           to file by data id or background id.  NOTE that the source 
-           model array written to file ignores the filter.
+        >>> save_source('model.fits')
 
-        EXAMPLE
+        Write the model from the data set 'jet' to the ASCII file
+        "model.dat":
 
-           save_source("source.dat", ascii=True)
+        >>> save_source('jet', "model.dat", ascii=True)
 
-           save_source("source.fits")
+        For 2D (image) data sets, the model is written out as an
+        image:
 
-           save_source("bkg.dat", ascii=True, bkg_id=1)
+        >>> save_source('img', 'model.img')
 
-           save_source("bkg.fits", bkg_id=1)
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_model,
-           save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
         self._save_type('source', id, filename, ascii=ascii, clobber=clobber,
                         bkg_id=bkg_id)
 
+    # DOC-NOTE: also in sherpa.utils with a different API
     def save_model(self, id, filename=None, bkg_id=None, ascii=False,
                    clobber=False):
-        """
-        save_model
+        """Save the model values to a file.
 
-        SYNOPSIS
-           Write the convolved source model to file
+        The model is evaluated on the grid of the data set, including
+        any instrument response (such as a PSF or ARF and RMF).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background model should be written out
+           rather than the source.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `False`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_source : Save the model values to a file.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-           bkg_id     - background id
-                        default = default background id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        The output file contains the columns `X` and `MODEL` for 1D
+        data sets. The residuals array respects any filter or (for PHA
+        files), grouping settings.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Write the model values for the default data set to the file
+        "model.fits":
 
-        DESCRIPTION
-           Write the convolved source model or background model to file by
-           data id or background id.  NOTE that the source model array 
-           written to file respects the filter.  For PHA data, the source 
-           model array is noticed and ungrouped.
+        >>> save_model('model.fits')
 
-        EXAMPLE
+        Write the model from the data set 'jet' to the ASCII file
+        "model.dat":
 
-           save_model("model.dat", ascii=True)
+        >>> save_model('jet', "model.dat", ascii=True)
 
-           save_model("model.fits")
+        For 2D (image) data sets, the model is written out as an
+        image:
 
-           save_model("bkg_model.dat", ascii=True, bkg_id=1)
+        >>> save_model('img', 'model.img')
 
-           save_model("bkg_model.fits", bkg_id=1)
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_resid, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
         self._save_type('model', id, filename, ascii=ascii, clobber=clobber,
                         bkg_id=bkg_id)
 
+    # DOC-NOTE: also in sherpa.utils with a different API
     def save_resid(self, id, filename=None, bkg_id=None, ascii=False,
                    clobber=False):
-        """
-        save_resid
+        """Save the residuals (data-model) to a file.
 
-        SYNOPSIS
-           Write the data - model residuals to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background residuals should be written out
+           rather than the source.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `False`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_delchi : Save the ratio of residuals (data-model) to error to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background id
-                        default = default background id
+        The output file contains the columns `X` and `RESID`. The
+        residuals array respects any filter or (for PHA files),
+        grouping settings.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Examples
+        --------
 
-           clobber    - clobber the existing output file
-                        default = False
+        Write the residuals to the file "resid.fits":
 
-        Returns:
-           None
+        >>> save_resid('resid.fits')
 
-        DESCRIPTION
-           Write the data - model or bkg - bkg_model residuals to file by data
-           or background id.  NOTE that the residuals array written to file 
-           respects the filter and/or grouping flags.
+        Write the residuals from the data set 'jet' to the
+        ASCII file "resid.dat":
 
-        EXAMPLE
+        >>> save_resid('jet', "resid.dat", ascii=True)
 
-           save_resid("resid.dat", ascii=True)
-
-           save_resid("resid.fits")
-
-           save_resid("bkg_resid.dat", ascii=True, bkg_id=1)
-
-           save_resid("bkg_resid.fits", bkg_id=1)
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
         self._save_type('resid', id, filename, ascii=ascii, clobber=clobber,
                         bkg_id=bkg_id)
 
+    # DOC-NOTE: also in sherpa.utils with a different API
     def save_delchi(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
-        """
-        save_delchi
+        """Save the ratio of residuals (data-model) to error to a file.
 
-        SYNOPSIS
-           Write the delta chi squared residuals to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background residuals should be written out
+           rather than the source.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `True`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no model has been set for this data set.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_resid : Save the residuals (data-model) to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background id
-                        default = default background id
+        The output file contains the columns `X` and `DELCHI`. The
+        residuals array respects any filter or (for PHA files),
+        grouping settings.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Examples
+        --------
 
-           clobber    - clobber the existing output file
-                        default = False
+        Write the residuals to the file "delchi.dat":
 
-        Returns:
-           None
+        >>> save_delchi('delchi.dat')
 
-        DESCRIPTION
-           Write the source or background delta chi squared residuals to file
-           by data id or background id.  NOTE that the delta chi squared 
-           residuals array written to file respects the filter and/or grouping
-           flags.
+        Write the residuals from the data set 'jet' to the
+        FITS file "delchi.fits":
 
-        EXAMPLE
+        >>> save_delchi('jet', "delchi.fits", ascii=False)
 
-           save_delchi("delchi.dat", ascii=True)
-
-           save_delchi("delchi.fits")
-
-           save_delchi("bkg_delchi.dat", ascii=True, bkg_id=1)
-
-           save_delchi("bkg_delchi.fits", bkg_id=1)
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_resid
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -2649,49 +3834,69 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
     def save_filter(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
-        """
-        save_filter
+        """Save the filter array to a file.
 
-        SYNOPSIS
-           Write the data set filter to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `True`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has not been filtered.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        load_filter : Load the filter array from a file and add to a data set.
+        save_data : Save the data to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        The output file contains the columns `X` and `FILTER`.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Examples
+        --------
 
-           clobber    - clobber the existing output file
-                        default = False
+        Write the filter from the default data set as an ASCII file:
 
-        Returns:
-           None
+        >>> save_filter('filt.dat')
 
-        DESCRIPTION
-           Write the data set filter to file by id or background id. NOTE that
-           the filter array written to file respects the grouping flags, if any.
+        Write the filter for data set 'src' to a FITS format file:
 
-        EXAMPLE
+        >>> save_filter('src', 'filter.fits', ascii=False)
 
-           save_filter("filter.fits")
-
-           save_filter("bkgfilter.fits", bkg_id=1)
-
-           save_filter("filter.dat", ascii=True)
-
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -2716,49 +3921,78 @@ class Session(sherpa.ui.utils.Session):
                          ascii, clobber)
 
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
     def save_staterror(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
-        """
-        save_staterror
+        """Save the statistical errors to a file.
 
-        SYNOPSIS
-           Write the data set statistical errors to file
+        If the statistical errors have not been set explicitly, then
+        the values calculated by the statistic - such as `chi2gehrels`
+        or `chi2datavar` - will be used.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        load_staterror : Load the statistical errors from a file.
+        save_error : Save the errors to a file.
+        save_syserror : Save the systematic errors to a file.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        The output file contains the columns `X` and `STAT_ERR`.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Write out the statistical errors from the default data set to the
+        file 'errs.dat'.
 
-        DESCRIPTION
-           Write the data set statistical errors to file by id or background
-           id.
+        >>> save_staterror('errs.dat')
 
-        EXAMPLE
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-           save_staterror("staterror.fits")
-           
-           save_staterror("bkgstaterr.fits", bkg_id = 1)
+        >>> save_staterror('jet', 'err.out', clobber=True)
 
-           save_staterror("staterror.dat", ascii = True)
+        Write the data out in FITS format:
 
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi, save_error, save_syserror
+        >>> save_staterror('staterr.fits', ascii=False)
+
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)        
@@ -2778,49 +4012,76 @@ class Session(sherpa.ui.utils.Session):
                          ascii, clobber)
 
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
     def save_syserror(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
-        """
-        save_syserror
+        """Save the systematic errors to a file.
 
-        SYNOPSIS
-           Write the data set systematic errors to file
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If the data set does not contain any systematic errors.
+        sherpa.utils.err.DataErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        See Also
+        --------
+        load_syserror : Load the systematic errors from a file.
+        save_error : Save the errors to a file.
+        save_staterror : Save the statistical errors to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        The output file contains the columns `X` and `SYS_ERR`.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Examples
+        --------
 
-           clobber    - clobber the existing output file
-                        default = False
+        Write out the systematic errors from the default data set to the
+        file 'errs.dat'.
 
-        Returns:
-           None
+        >>> save_syserror('errs.dat')
 
-        DESCRIPTION
-           Write the data set systematic errors to file by id or background
-           id.
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-        EXAMPLE
+        >>> save_syserror('jet', 'err.out', clobber=True)
 
-           save_syserror("syserror.fits")
-           
-           save_syserror("bkgsyserr.fits", bkg_id = 1)
+        Write the data out in FITS format:
 
-           save_syserror("syserror.dat", ascii = True)
+        >>> save_syserror('syserr.fits', ascii=False)
 
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi, save_error, save_staterror
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -2840,49 +4101,83 @@ class Session(sherpa.ui.utils.Session):
                          ascii, clobber)
 
 
+    # DOC-NOTE: also in sherpa.utils with a different interface
     def save_error(self, id, filename=None, bkg_id=None, ascii=True,
                     clobber=False):
-        """
-        save_error
+        """Save the errors to a file.
 
-        SYNOPSIS
-           Write the total errors of a data set to file
+        The total errors for a data set are the quadrature combination
+        of the statistical and systematic errors. The systematic
+        errors can be 0. If the statistical errors have not been set
+        explicitly, then the values calculated by the statistic - such
+        as `chi2gehrels` or `chi2datavar` - will be used.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id         - data id
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        get_error : Return the errors on the dependent axis of a data set.
+        load_staterror : Load the statistical errors from a file.
+        load_syserror : Load the systematic errors from a file.
+        save_data : Save the data to a file.
+        save_staterror : Save the statistical errors to a file.
+        save_syserror : Save the systematic errors to a file.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        The output file contains the columns `X` and `ERR`.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Write out the errors from the default data set to the file
+        'errs.dat'.
 
-        DESCRIPTION
-           Write the total errors (statistical + systematic in quadrature) of a
-           data set to file by id or background id.
+        >>> save_error('errs.dat')
 
-        EXAMPLE
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-           save_error("error.fits")
-           
-           save_error("bkgerr.fits", bkg_id = 1)
+        >>> save_error('jet', 'err.out', clobber=True)
 
-           save_error("error.dat", ascii = True)
+        Write the data out in FITS format:
 
-        SEE ALSO
-           save_image, save_data, save_table, save_arrays, save_source,
-           save_model, save_delchi, save_staterror, save_syserror
+        >>> save_error('err.fits', ascii=False)
+
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -2903,44 +4198,69 @@ class Session(sherpa.ui.utils.Session):
 
 
     def save_pha(self, id, filename=None, bkg_id=None, ascii=False, clobber=False):
-        """
-        save_pha
+        """Save a PHA data set to a file.
 
-        SYNOPSIS
-           Write PHA data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        load_pha : Load a PHA data set.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Examples
+        --------
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Write out the PHA data from the default data set to the
+        file 'src.pi':
 
-           clobber    - clobber the existing output file
-                        default = False
+        >>> save_pha('src.pi')
 
-        Returns:
-           None
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
 
-        DESCRIPTION
-           Write PHA data to a FITS file or ASCII file from a Sherpa dataset
-           by id.
+        >>> save_pha('jet', 'out.pi', clobber=True)
 
-        EXAMPLE
+        Write the data out as an ASCII file:
 
-           save_pha(1, "pha.fits")
+        >>> save_pha('pi.dat', ascii=True)
 
-           save_pha(1, "pha.out", ascii=True)
-
-        SEE ALSO
-           save_image, save_data, save_table
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -2954,45 +4274,74 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_pha(filename, d, ascii, clobber)
 
 
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def save_grouping(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
-        """
-        save_grouping
+        """Save the grouping scheme to a file.
 
-        SYNOPSIS
-           Write PHA grouping flags by id
+        The output is a two-column file, containing the channel and
+        grouping columns from the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the grouping array should be taken from the
+           background associated with the data set.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        get_grouping : Return the gouping array for a PHA data set.
+        load_quality : Load the quality array from a file and add to a PHA data set.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        The column names are 'CHANNEL' and 'GROUPS'.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Save the channel and grouping columns from the default data
+        set to the file 'group.dat' as an ASCII file:
 
-        DESCRIPTION
-           Write PHA grouping flags to a FITS file or ASCII file from a
-           Sherpa dataset by id.
+        >>> save_grouping('group.dat')
 
-        EXAMPLE
+        Over-write the 'grp.fits' file, if it exists, and write
+        out the grouping data from the 'jet' data set, as a FITS
+        format file:
 
-           save_grouping(1, "grouping.fits")
+        >>> save_grouping('jet', 'grp.fits', ascii=False, clobber=True)
 
-           save_grouping(1, "grouping.out", ascii=True)
-
-        SEE ALSO
-           save_image, save_data, save_table
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -3011,45 +4360,75 @@ class Session(sherpa.ui.utils.Session):
                                      ['CHANNEL', 'GROUPS'], ascii, clobber)
 
 
+    ### DOC-TODO: labelling as AstroPy; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def save_quality(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
-        """
-        save_quality
+        """Save the quality array to a file.
 
-        SYNOPSIS
-           Write PHA quality flags by id
+        The output is a two-column file, containing the channel and
+        quality columns from the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        bkg_id : int or str, optional
+           Set if the quality array should be taken from the
+           background associated with the data set.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS
+           format binary table. The default is `True`. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-           filename   - filename with path
+        See Also
+        --------
+        get_quality : Return the quality array for a PHA data set.
+        load_quality : Load the quality array from a file and add to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        The quality column is labelled as 'GROUPS' rather than
+        'QUALITY'.
 
-           clobber    - clobber the existing output file
-                        default = False
+        Examples
+        --------
 
-        Returns:
-           None
+        Save the channel and quality columns from the default data
+        set to the file 'quality.dat' as an ASCII file:
 
-        DESCRIPTION
-           Write PHA quality flags to a FITS file or ASCII file from a
-           Sherpa dataset by id.
+        >>> save_quality('quality.dat')
 
-        EXAMPLE
+        Over-write the 'qual.fits' file, if it exists, and write
+        out the quality array from the 'jet' data set, as a FITS
+        format file:
 
-           save_quality(1, "quality.fits")
+        >>> save_quality('jet', 'qual.fits', ascii=False, clobber=True)
 
-           save_quality(1, "quality.out", ascii=True)
-
-        SEE ALSO
-           save_image, save_data, save_table
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -3064,46 +4443,70 @@ class Session(sherpa.ui.utils.Session):
         if d.quality is None or not numpy.iterable(d.quality):
             raise sherpa.utils.err.DataErr('noquality', id)
 
+        # BUG: TODO: change 'GROUPS' to 'QUALITY'
         sherpa.astro.io.write_arrays(filename, [d.channel, d.quality],
                                      ['CHANNEL', 'GROUPS'], ascii, clobber)
 
 
+    ### DOC-TODO: setting ascii=True is not supported for crates
+    ###           and in pyfits it seems to just be a 1D array (needs thinking about)
     def save_image(self, id, filename=None, ascii=False, clobber=False):
-        """
-        save_image
+        """Save the pixel values of a 2D data set to a file.
 
-        SYNOPSIS
-           Write image data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the data to. The format
+           is determined by the `ascii` argument.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `False`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
+           If the data set does not contain 2D data.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_model : Save the model values to a file.
+        save_source : Save the model values to a file.
+        save_table : Save a data set to a file as a table.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Examples
+        --------
 
-           clobber    - clobber the existing output file
-                        default = False
+        Write the pixel values to the file "img.fits":
 
-        Returns:
-           None
+        >>> save_image('resid.fits')
 
-        DESCRIPTION
-           Write image data to a FITS file or ASCII file from a Sherpa dataset
-           by id.
+        Write the data from the data set 'jet' to the file "jet.img":
 
-        EXAMPLE
+        >>> save_image('jet', 'jet.img', clobber=True)
 
-           save_image(1, "img.fits")
-
-           save_image(1, "img.out", ascii=True)
-
-        SEE ALSO
-           save_pha, save_data, save_table
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -3114,43 +4517,65 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_image(filename, self.get_data(id),
                                     ascii, clobber)
 
-
+    ### DOC-TODO: the output for an image is "excessive"
     def save_table(self, id, filename=None, ascii=False, clobber=False):
-        """
-        save_table
+        """Save a data set to a file as a table.
 
-        SYNOPSIS
-           Write tabular data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the data to. The format
+           is determined by the `ascii` argument.
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `False`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        save_data : Save the data to a file.
+        save_image : Save the pixel values of a 2D data set to a file.
+        save_pha : Save a PHA data set to a file.
+        save_model : Save the model values to a file.
+        save_source : Save the model values to a file.
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Examples
+        --------
 
-           clobber    - clobber the existing output file
-                        default = False
+        Write the data set to the file "table.fits":
 
-        Returns:
-           None
+        >>> save_table('table.fits')
 
-        DESCRIPTION
-           Write tabular data to a FITS file or column-based text file
-           from a Sherpa dataset by id.
+        Write the data from the data set 'jet' to the file "jet.dat",
+        as an ASCII file:
 
-        EXAMPLE
+        >>> save_table('jet', 'jet.dat', ascii=True, clobber=True)
 
-           save_table(1, "tbl.fits")
-
-           save_table(1, "tbl.out", ascii=True)
-
-        SEE ALSO
-           save_pha, save_data, save_image
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -3162,47 +4587,76 @@ class Session(sherpa.ui.utils.Session):
                                     ascii, clobber)
 
 
+    ### DOC-NOTE: also in sherpa.utils
     def save_data(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
-        """
-        save_data
+        """Save the data to a file.
 
-        SYNOPSIS
-           Write a data set to file by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The data is
+           written out as an ASCII file.
+        bkg_id : int or str, optional
+           Set if the background should be written out rather
+           than the source (for a PHA data set).
+        ascii : bool, optional
+           If `False` then the data is written as a FITS format binary
+           table. The default is `True`. The exact format of the
+           output file depends on the I/O library in use (Crates or
+           AstroPy).
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If there is no matching data set.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is `False`.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        save_arrays : 
+        save_delchi : Save the ratio of residuals (data-model) to error to a file.
+        save_error : Save the errors to a file.
+        save_filter : Save the filter array to a file.
+        save_grouping : Save the grouping scheme to a file.
+        save_image : Save the pixel values of a 2D data set to a file.
+        save_pha : Save a PHA data set to a file.
+        save_quality : Save the quality array to a file.
+        save_resid :
+        save_staterror : Save the statistical errors to a file.
+        save_syserror : Save the statistical errors to a file.
+        save_table :
 
-           filename   - filename with path
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           bkg_id     - background data id
-                        default = default background data id
+        Examples
+        --------
 
-           ascii      - boolean indicating use of an ASCII output format
-                        default = False
+        Write the default data set out to the ASCII file 'src.dat':
 
-           clobber    - clobber the existing output file
-                        default = False
+        >>> save_data('src.dat')
 
-        Returns:
-           None
+        Write the 'rprof' data out to the FITS file 'prof.fits',
+        over-writing it if it already exists:
 
-        DESCRIPTION
-           Write data to a FITS file or ASCII file from a Sherpa dataset
-           by id.
+        >>> save_data('rprof', 'prof.fits', clobber=True, ascii=True)
 
-        EXAMPLE
-
-           save_data(1, "pha.fits")
-           
-           save_data(1, "img.fits")
-
-           save_data(1, "data.out", ascii=True)
-
-        SEE ALSO
-           save_image, save_data, save_table, save_pha
         """
         clobber=sherpa.utils.bool_cast(clobber)
         ascii=sherpa.utils.bool_cast(ascii)
@@ -3228,75 +4682,84 @@ class Session(sherpa.ui.utils.Session):
                         raise
 
 
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def pack_pha(self, id=None):
-        """
-        pack_pha
+        """Convert a PHA data set into a file structure.
 
-        SYNOPSIS
-           Pack PHA data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        pha
+           The return value depends on the I/O library in use.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
 
-        Returns:
-           PHACrate or PyFITS HDU list
+        See Also
+        --------
+        load_pha : Load a file as a PHA data set.
+        set_data : Set a data set.
+        unpack_pha : Create a PHA data structure.
 
-        DESCRIPTION
-           Pack up PHA data from a Sherpa dataset by id.
-
-        SEE ALSO
-           pack_image, pack_data, pack_table
         """
         return sherpa.astro.io.pack_pha(self._get_pha_data(id))
     
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def pack_image(self, id=None):
-        """
-        pack_image
+        """Convert a data set into an image structure.
 
-        SYNOPSIS
-           Pack image data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        img
+           The return value depends on the I/O library in use.
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        load_image : Load an image as a data set.
+        set_data : Set a data set.
+        unpack_image : Create an image data structure.
 
-        Returns:
-           IMAGECrate or PyFITS HDU list
-
-        DESCRIPTION
-           Pack up image data from a Sherpa dataset by id.
-
-        SEE ALSO
-           pack_pha, pack_data, pack_table
         """
         return sherpa.astro.io.pack_image(self.get_data(id))
 
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def pack_table(self, id=None):
-        """
-        pack_table
+        """Convert a data set into a table structure.
 
-        SYNOPSIS
-           Pack tabular data by id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        tbl
+           The return value depends on the I/O library in use and the
+           type of data (such as `Data1D`, `Data2D`).
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        load_table : Load a FITS binary file as a data set.
+        set_data : Set a data set.
+        unpack_table : Unpack a FITS binary file into a data structure.
 
-        Returns:
-           TABLECrate or PyFITS HDU list
-
-        DESCRIPTION
-           Pack up tabular data  from a Sherpa dataset by id.
-
-        SEE ALSO
-           pack_pha, pack_data, pack_image
         """
         return sherpa.astro.io.pack_table(self.get_data(id))
 
@@ -3308,33 +4771,54 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True)
     def get_arf(self, id=None, resp_id=None, bkg_id=None):
-        """
-        get_arf
+        """Return the ARF associated with a PHA data set.
 
-        SYNOPSIS
-           Return an ARF1D model by data id and response id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           The identifier for the ARF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set this to return the given background component.
 
-        SYNTAX
+        Returns
+        -------
+        arf : sherpa.astro.instrument.ARF1D instance
+           This is a reference to the ARF, rather than a copy, so that
+           changing the fields of the object will change the values in
+           the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        fake_pha : Simulate a PHA data set from a model.
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        set_rmf : Set the RMF for use by a PHA data set.
+        unpack_arf : Read in an ARF from a file.
 
-           resp_id   - response id, if multiple responses exist
-                       default = default response id
+        Examples
+        --------
 
-           bkg_id    - background id, if background response(s) exist
-                       default = None
+        Return the exposure field of the ARF from the default data
+        set:
 
-        Returns:
-           Sherpa ARF1D model
+        >>> get_arf().exposure
 
-        DESCRIPTION
-           Return a ARF1D model containing ancillary response data
-           given a data id and a response id.
+        Copy the ARF from the default data set to data set `2`:
 
-        SEE ALSO
-           set_arf, unpack_arf, load_arf
+        >>> arf1 = get_arf()
+        >>> set_arf(2, arf1)
+
+        Retrieve the ARF associated to the second background
+        component of the 'core' data set:
+
+        >>> bgarf = get_arf('core', 'bkg.arf', bkg_id=2)
+
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
@@ -3353,37 +4837,70 @@ class Session(sherpa.ui.utils.Session):
         return arf
 
 
+    ### DOC-TODO: add an example of a grating/multiple response
     def set_arf(self, id, arf=None, resp_id=None, bkg_id=None):
-        """
-        set_arf
+        """Set the ARF for use by a PHA data set.
 
-        SYNOPSIS
-           Set an ARF dataset by data id and response id
+        Set the effective area curve for a PHA data set, or its
+        background.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        arf :
+           An ARF, such as returned by `get_arf` or `unpack_arf`.
+        resp_id : int or str, optional
+           The identifier for the ARF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set this to identify the ARF as being for use with the
+           background.
 
-        Arguments:
-           id        - dataset id
-                       default = default data id
+        See Also
+        --------
+        get_arf : Return the ARF associated with a PHA data set.
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_rmf : Set the RMF for use by a PHA data set.
+        unpack_arf : Read in an ARF from a file.
 
-           arf       - Sherpa DataARF dataset
-                       see get_arf for more info
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arf` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arf` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           resp_id   - response id, if multiple responses exist
-                       default = default response id
+        If a PHA data set has an associated ARF - either from when the
+        data was loaded or explicitly with the `set_arf` function -
+        then the model fit to the data will include the efect of the
+        ARF when the model is created with `set_model` or
+        `set_source`. In this case the `get_source` function returns
+        the user model, and `get_model` the model that is fit to the
+        data (i.e. it includes any response information; that is the
+        ARF and RMF, if set). To include the ARF explicitly, use
+        `set_full_model`.
 
-           bkg_id    - background id, if background response(s) exist
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Copy the ARF from the default data set to data set `2`:
 
-        DESCRIPTION
-           Set a dataset containing ancillary response data
-           by a data id and a response id.
+        >>> arf1 = get_arf()
+        >>> set_arf(2, arf1)
 
-        SEE ALSO
-           get_arf, unpack_arf, load_arf
+        Read in an ARF from the file 'bkg.arf' and set it as the
+        ARF for the background model of data set "core":
+
+        >>> arf = unpack_arf('bkg.arf')
+        >>> set_arf('core', arf, bkg_id=1)
+
         """
         if arf is None:
             id, arf = arf, id
@@ -3402,125 +4919,231 @@ class Session(sherpa.ui.utils.Session):
             data._set_initial_quantity()
 
 
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def unpack_arf(self, arg):
-        """
-        unpack_arf
+        """Create an ARF data structure.
 
-        SYNOPSIS
-           Read ARF data into a dataset
+        Parameters
+        ----------
+        arg :
+           Identify the ARF: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
 
-        SYNTAX
+        Returns
+        -------
+        arf : sherpa.astro.instrument.ARF1D instance
 
-        Arguments:
-           arg       - filename and path | ARFCrate obj | PyFITS HDUList obj
+        See Also
+        --------
+        get_arf : Return the ARF associated with a PHA data set.
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
+        load_multi_arfs : Load multiple ARFs for a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-        Returns:
-           Sherpa DataARF dataset
+        Examples
+        --------
 
-        DESCRIPTION
-           Read a FITS file containing ancillary response data given
-           a filename or read data from a ARFCrate object into a Sherpa dataset
-           or read data from a PyFITS HDUList object into a Sherpa dataset.
+        >>> arf1 = unpack_arf("arf1.fits")
+        >>> arf2 = unpack_arf("arf2.fits")
 
-        SEE ALSO
-           get_arf, set_arf, load_arf
+        Read in an ARF using Crates:
+
+        >>> acr = pycrates.read_file("src.arf")
+        >>> arf = unpack_arf(acr)
+
+        Read in an ARF using AstroPy:
+
+        >>> hdus = astropy.io.fits.open("src.arf")
+        >>> arf = unpack_arf(hdus)
+
         """
         return sherpa.astro.instrument.ARF1D(sherpa.astro.io.read_arf(arg))
 
+    ### DOC-TODO: add an example of a grating/multiple response
+    ### DOC-TODO: how to describe I/O backend support?
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     #@loggable(with_id=True, with_keyword='arg')
     def load_arf(self, id, arg=None, resp_id=None, bkg_id=None):
-        """
-        load_arf
+        """Load an ARF from a file and add it to a PHA data set.
 
-        SYNOPSIS
-           Loads ARF data by id
+        Load in the effective area curve for a PHA data set, or its
+        background. The `load_bkg_arf` function can be used for
+        setting most background ARFs.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        arg :
+           Identify the ARF: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
+        resp_id : int or str, optional
+           The identifier for the ARF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set this to identify the ARF as being for use with the
+           background.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        get_arf : Return the ARF associated with a PHA data set.
+        load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
+        load_multi_arfs : Load multiple ARFs for a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        unpack_arf : Create an ARF data structure.
 
-           arg       - filename with path | ARFCrate obj | PyFITS HDUList obj
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           resp_id   - response id, if multiple responses exist
-                       default = default response id
+        If a PHA data set has an associated ARF - either from when the
+        data was loaded or explicitly with the `set_arf` function -
+        then the model fit to the data will include the efect of the
+        ARF when the model is created with `set_model` or
+        `set_source`. In this case the `get_source` function returns
+        the user model, and `get_model` the model that is fit to the
+        data (i.e. it includes any response information; that is the
+        ARF and RMF, if set). To include the ARF explicitly, use
+        `set_full_model`.
 
-           bkg_id    - background id, if background response(s) exist
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Use the contents of the file 'src.arf' as the ARF for the
+        default data set.
 
-        DESCRIPTION
-           Load a FITS file containing ancillary response data given
-           a filename by data id and response id or read data from a ARFCrate
-           object into a Sherpa dataset by data id and response id or read data
-           from a PyFITS HDUList object into a Sherpa dataset by data id and
-           response id.
+        >>> load_arf('src.arf')
 
-        SEE ALSO
-           get_arf, set_arf, unpack_arf
+        Read in an ARF from the file 'bkg.arf' and set it as the
+        ARF for the background model of data set "core":
+
+        >>> load_arf('core', 'bkg.arf', bkg_id=1)
+
         """
         if arg is None:
             id, arg = arg, id
         self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
 
     def get_bkg_arf(self, id=None):
-        """
-        get_bkg_arf
+        """Return the background ARF associated with a PHA data set.
 
-        SYNOPSIS
-           Return a bkg ARF dataset by data id using default bkg_id and resp_id
+        This is for the case when there is only one background
+        component and one background response. If this does not hold,
+        use `get_arf` and use the `bkg_id` and `resp_id` arguments.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        arf : sherpa.astro.instrument.ARF1D instance
+           This is a reference to the ARF, rather than a copy, so that
+           changing the fields of the object will change the values in
+           the data set.
 
-        Returns:
-           Sherpa DataARF dataset
+        See Also
+        --------
+        fake_pha : Simulate a PHA data set from a model.
+        load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        set_rmf : Set the RMF for use by a PHA data set.
+        unpack_arf : Read in an ARF from a file.
 
-        DESCRIPTION
-           Return a dataset containing background ancillary response data
-           given a data id using the default background id and default
-           response id.
+        Examples
+        --------
 
-        SEE ALSO
-           set_arf, unpack_arf, load_bkg_arf
+        Return the exposure field of the ARF from the background of
+        the default data set:
+
+        >>> get_bkg_arf().exposure
+
+        Copy the ARF from the default data set to data set `2`,
+        as the first component:
+
+        >>> arf1 = get_bkg_arf()
+        >>> set_arf(2, arf1, bkg_id=1)
+
         """
         bkg_id = self._get_pha_data(id).default_background_id
         resp_id = self._get_pha_data(id).primary_response_id
         return self.get_arf(id, resp_id, bkg_id)
 
+    ### DOC-TODO: how to describe I/O backend support?
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     #@loggable(with_id=True, with_keyword='arg')
     def load_bkg_arf(self, id, arg=None):
-        """
-        load_bkg_arf
+        """Load an ARF from a file and add it to the background of a
+        PHA data set.
 
-        SYNOPSIS
-           Loads bkg ARF data by id and default bkg_id and default resp_id
+        Load in the ARF to the background of the given data set. It
+        is only for use when there is only one background component,
+        and one response, for the source. For multiple backgrounds
+        or responses, use `load_arf`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        arg :
+           Identify the ARF: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           or a list of AstroPy HDU objects.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_bkg_rmf : Load a RMF from a file and add it to the background of a PHA data set.
 
-           arg       - filename with path | ARFCrate obj | PyFITS HDUList obj
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Load a FITS file containing ancillary response data given a filename
-           by data id and response id or read data from a ARFCrate object or
-           PyFITS HDUList object into a Sherpa dataset by data id and default
-           background id and default response id.
+        Use the contents of the file 'bkg.arf' as the ARF for the
+        background of the default data set.
 
-        SEE ALSO
-           get_arf, set_arf, unpack_arf
+        >>> load_bkg_arf('bkg.arf')
+
+        Set 'core_bkg.arf' as the ARF for the background of data set
+        'core':
+
+        >>> load_bkg_arf('core', 'core_bkg.arf')
+
         """
         if arg is None:
             id, arg = arg, id
@@ -3529,31 +5152,52 @@ class Session(sherpa.ui.utils.Session):
         self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
 
     def load_multi_arfs(self, id, filenames, resp_ids=None):
-        """
-        load_multi_arfs
+        """Load multiple ARFs for a PHA data set.
 
-        SYNOPSIS
-           Loads multiple ARF data files by id and resp_id
+        A grating observation - such as a Chandra HETG data set - may
+        require multiple responses. This function lets the multiple
+        ARFs for such a data set be loaded with one command. The
+        `load_arf` function can instead be used to load them in
+        individually.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        filenames : iterable of str
+           An array of file names.
+        resp_ids : iterable of int or str
+           The identifiers for the ARF within this data set.
+           The length should match the filenames argument.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_multi_rmfs : Load multiple RMFs for a PHA data set.
 
-           filenames - list of ARF files
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with two arguments, they are assumed to be
+        `filenames` and `resp_ids`, and three positional arguments
+        means `id`, `filenames`, and `resp_ids`.
 
-           resp_ids  - list of response ids
+        Examples
+        --------
 
-        Returns:
-           Load a list of FITS files containing ancillary response data given
-           a list of filenames by data id and a list of response ids. 
+        Load two ARFs into the default data set, using response ids of
+        `1` and `2` for `m1.arf` and `p1.arf` respectively:
 
-        DESCRIPTION
-           None
+        >>> arfs = ['m1.arf', 'p1.arf']
+        >>> load_multi_arfs(arfs, [1,2])
 
-        SEE ALSO
-           set_arf, get_arf, unpack_arf, load_arf
+        Load in the ARFs to the data set with the identifier
+        `lowstate`:
+
+        >>> load_multi_arfs('lowstate', arfs, [1,2])
+
         """
 ##         if type(filenames) not in (list, tuple):
 ##             raise ArgumentError('Filenames must be contained in a list')
@@ -3576,33 +5220,49 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True)
     def get_rmf(self, id=None, resp_id=None, bkg_id=None):
-        """
-        get_rmf
+        """Return the RMF associated with a PHA data set.
 
-        SYNOPSIS
-           Return an RMF1D model by data id and response id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           The identifier for the RMF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set this to return the given background component.
 
-        SYNTAX
+        Returns
+        -------
+        rmf : sherpa.astro.instrument.RMF1D instance
+           This is a reference to the RMF, rather than a copy, so that
+           changing the fields of the object will change the values in
+           the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        fake_pha : Simulate a PHA data set from a model.
+        load_pha : Load a file as a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        set_rmf : Set the RMF for use by a PHA data set.
+        unpack_rmf : Read in a RMF from a file.
 
-           resp_id   - response id, if multiple responses exist
-                       default = default response id
+        Examples
+        --------
 
-           bkg_id    - background id, if background response(s) exist
-                       default = None
+        Copy the RMF from the default data set to data set `2`:
 
-        Returns:
-           Sherpa RMF1D model
+        >>> rmf1 = get_rmf()
+        >>> set_rmf(2, rmf1)
 
-        DESCRIPTION
-           Return a RMF1D model containing response matrix data
-           given a data id and a response id.
+        Retrieve the RMF associated to the second background
+        component of the 'core' data set:
 
-        SEE ALSO
-           set_rmf, unpack_rmf, load_rmf
+        >>> bgrmf = get_rmf('core', 'bkg.rmf', bkg_id=2)
+
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
@@ -3621,37 +5281,70 @@ class Session(sherpa.ui.utils.Session):
         return rmf
 
 
+    ### DOC-TODO: add an example of a grating/multiple response
     def set_rmf(self, id, rmf=None, resp_id=None, bkg_id=None):
-        """
-        set_rmf
+        """Set the RMF for use by a PHA data set.
 
-        SYNOPSIS
-           Set an RMF dataset by data id and response id
+        Set the effective area curve for a PHA data set, or its
+        background.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        arf :
+           An ARF, such as returned by `get_arf` or `unpack_arf`.
+        resp_id : int or str, optional
+           The identifier for the ARF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set this to identify the ARF as being for use with the
+           background.
 
-        Arguments:
-           id        - dataset id
-                       default = default data id
+        See Also
+        --------
+        get_rmf : Return the RMF associated with a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        unpack_rmf : Create a RMF data structure.
 
-           arf       - Sherpa DataRMF dataset
-                       see get_rmf for more info
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `rmf` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `rmf` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           resp_id   - response id, if multiple responses exist
-                       default = default response id
+        If a PHA data set has an associated RMF - either from when the
+        data was loaded or explicitly with the `set_rmf` function -
+        then the model fit to the data will include the efect of the
+        RMF when the model is created with `set_model` or
+        `set_source`. In this case the `get_source` function returns
+        the user model, and `get_model` the model that is fit to the
+        data (i.e. it includes any response information; that is the
+        ARF and RMF, if set). To include the RMF explicitly, use
+        `set_full_model`.
 
-           bkg_id    - background id, if background response(s) exist
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Copy the RMF from the default data set to data set `2`:
 
-        DESCRIPTION
-           Set a dataset containing response matrix data
-           by a data id and a response id.
+        >>> rmf1 = get_rmf()
+        >>> set_rmf(2, rmf1)
 
-        SEE ALSO
-           get_rmf, unpack_rmf, load_rmf
+        Read in a RMF from the file 'bkg.rmf' and set it as the
+        RMF for the background model of data set "core":
+
+        >>> rmf = unpack_rmf('bkg.rmf')
+        >>> set_rmf('core', rmf, bkg_id=1)
+
         """
         if rmf is None:
             id, rmf = rmf, id
@@ -3670,125 +5363,226 @@ class Session(sherpa.ui.utils.Session):
             data._set_initial_quantity()
 
 
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     def unpack_rmf(self, arg):
-        """
-        unpack_rmf
+        """Create a RMF data structure.
 
-        SYNOPSIS
-           Read RMF data into a dataset
+        Parameters
+        ----------
+        arg :
+           Identify the RMF: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `RMFCrateDataset` for crates, as used by
+           CIAO, or a list of AstroPy HDU objects.
 
-        SYNTAX
+        Returns
+        -------
+        rmf : sherpa.astro.instrument.RMF1D instance
 
-        Arguments:
-           arg       - filename and path | RMFCrate obj | PyFITS HDUList obj
+        See Also
+        --------
+        get_rmf : Return the RMF associated with a PHA data set.
+        load_arf : Load a RMF from a file and add it to a PHA data set.
+        load_bkg_rmf : Load a RMF from a file and add it to the background of a PHA data set.
+        load_multi_rmfs : Load multiple RMFs for a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-        Returns:
-           Sherpa DataRMF dataset
+        Examples
+        --------
 
-        DESCRIPTION
-           Read a FITS file containing response matrix data given
-           a filename or read data from a RMFCrate object into a Sherpa dataset
-           or read data from a PyFITS HDUList object into a Sherpa dataset.
+        >>> rmf1 = unpack_rmf("rmf1.fits")
+        >>> rmf2 = unpack_rmf("rmf2.fits")
 
-        SEE ALSO
-           get_rmf, set_rmf, load_rmf
+        Read in a RMF using Crates:
+
+        >>> acr = pycrates.read_rmf("src.rmf")
+        >>> rmf = unpack_rmf(acr)
+
+        Read in a RMF using AstroPy:
+
+        >>> hdus = astropy.io.fits.open("src.rmf")
+        >>> rmf = unpack_rmf(hdus)
+
         """
         return sherpa.astro.instrument.RMF1D(sherpa.astro.io.read_rmf(arg))
 
+    ### DOC-TODO: add an example of a grating/multiple response
+    ### DOC-TODO: how to describe I/O backend support?
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     #@loggable(with_id=True, with_keyword='arg')
     def load_rmf(self, id, arg=None, resp_id=None, bkg_id=None):
-        """
-        load_rmf
+        """Load a RMF from a file and add it to a PHA data set.
 
-        SYNOPSIS
-           Loads RMF data by id
+        Load in the redistribution matrix function for a PHA data set,
+        or its background. The `load_bkg_rmf` function can be used for
+        setting most background RMFs.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        arg :
+           Identify the RMF: a file name, or a data structure
+           representing the data to use, as used by the I/O
+           backend in use by Sherpa: a `RMFCrateDataset` for
+           crates, as used by CIAO, or an AstroPy `HDUList` object.
+        resp_id : int or str, optional
+           The identifier for the RMF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set this to identify the RMF as being for use with the
+           background.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        get_rmf : Return the RMF associated with a PHA data set.
+        load_bkg_rmf : Load a RMF from a file and add it to the background of a PHA data set.
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_multi_rmfs : Load multiple RMFs for a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_rmf : Load a RMF from a file and add it to a PHA data set.
+        unpack_rmf : Read in a RMF from a file.
 
-           arg       - filename with path of RMF file
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           resp_id   - response id, if multiple responses exist
-                       default = default response id
+        If a PHA data set has an associated RMF - either from when the
+        data was loaded or explicitly with the `set_rmf` function -
+        then the model fit to the data will include the efect of the
+        RMF when the model is created with `set_model` or
+        `set_source`. In this case the `get_source` function returns
+        the user model, and `get_model` the model that is fit to the
+        data (i.e. it includes any response information; that is the
+        ARF and RMF, if set). To include the RMF explicitly, use
+        `set_full_model`.
 
-           bkg_id    - background id, if background response(s) exist
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Use the contents of the file 'src.rmf' as the RMF for the
+        default data set.
 
-        DESCRIPTION
-           Load a FITS file containing response matrix data given
-           a filename by data id and response id or read data from a RMFCrate
-           object into a Sherpa dataset by data id and response id or read data
-           from a PyFITS HDUList object into a Sherpa dataset by data id and
-           response id.
+        >>> load_rmf('src.rmf')
 
-        SEE ALSO
-           get_rmf, set_rmf, unpack_rmf
+        Read in a RMF from the file 'bkg.rmf' and set it as the
+        RMF for the background model of data set "core":
+
+        >>> load_rmf('core', 'bkg.rmf', bkg_id=1)
+
         """
         if arg is None:
             id, arg = arg, id
         self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
 
     def get_bkg_rmf(self, id=None):
-        """
-        get_bkg_rmf
+        """Return the background RMF associated with a PHA data set.
 
-        SYNOPSIS
-           Return a bkg RMF dataset by data id using default bkg_id and resp_id
+        This is for the case when there is only one background
+        component and one background response. If this does not hold,
+        use `get_rmf` and use the `bkg_id` and `resp_id` arguments.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        rmf : sherpa.astro.instrument.RMF1D instance
+           This is a reference to the RMF, rather than a copy, so that
+           changing the fields of the object will change the values in
+           the data set.
 
-        Returns:
-           Sherpa DataRMF dataset
+        See Also
+        --------
+        fake_pha : Simulate a PHA data set from a model.
+        load_bkg_rmf : Load a RMF from a file and add it to the background of a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_arf : Set the ARF for use by a PHA data set.
+        set_rmf : Set the RMF for use by a PHA data set.
+        unpack_rmf : Read in a RMF from a file.
 
-        DESCRIPTION
-           Return a dataset containing background response matrix data
-           given a data id using the default background id and default
-           response id.
+        Examples
+        --------
 
-        SEE ALSO
-           set_rmf, unpack_rmf, load_bkg_rmf
+        Copy the RMF from the default data set to data set `2`,
+        as the first component:
+
+        >>> rmf1 = get_bkg_arf()
+        >>> set_rmf(2, arf1, bkg_id=1)
+
         """
         bkg_id = self._get_pha_data(id).default_background_id
         resp_id = self._get_pha_data(id).primary_response_id
         return self.get_rmf(id, resp_id, bkg_id)
 
+    ### DOC-TODO: how to describe I/O backend support?
+    ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
+    ###           from PyFITS lands soon.
     #@loggable(with_id=True, with_keyword='arg')
     def load_bkg_rmf(self, id, arg=None):
-        """
-        load_bkg_rmf
+        """Load a RMF from a file and add it to the background of a
+        PHA data set.
 
-        SYNOPSIS
-           Loads bkg RMF data by id using default bkg_id and default resp_id
+        Load in the RMF to the background of the given data set. It
+        is only for use when there is only one background component,
+        and one response, for the source. For multiple backgrounds
+        or responses, use `load_rmf`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        arg :
+           Identify the RMF: a file name, or a data structure
+           representing the data to use, as used by the I/O
+           backend in use by Sherpa: a `RMFCrateDataset` for
+           crates, as used by CIAO, or an AstroPy `HDUList` object.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
 
-           arg       - filename with path of RMF file
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Load a FITS file containing response matrix data given
-           a filename by data id and response id or read data from a RMFCrate
-           object or a PyFITS HDUList object into a Sherpa background dataset
-           by data id and default response id and default background id.
+        Use the contents of the file 'bkg.rmf' as the RMF for the
+        background of the default data set.
 
-        SEE ALSO
-           get_bkg_rmf, set_rmf, unpack_rmf
+        >>> load_bkg_rmf('bkg.rmf')
+
+        Set 'core_bkg.rmf' as the RMF for the background of data set
+        'core':
+
+        >>> load_bkg_arf('core', 'core_bkg.rmf')
+
         """
         if arg is None:
             id, arg = arg, id
@@ -3797,31 +5591,52 @@ class Session(sherpa.ui.utils.Session):
         self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
 
     def load_multi_rmfs(self, id, filenames, resp_ids=None):
-        """
-        load_multi_rmfs
+        """Load multiple RMFs for a PHA data set.
 
-        SYNOPSIS
-           Loads multiple RMF data files by id and resp_id
+        A grating observation - such as a Chandra HETG data set - may
+        require multiple responses. This function lets the multiple
+        RMFs for such a data set be loaded with one command. The
+        `load_rmf` function can instead be used to load them in
+        individually.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        filenames : iterable of str
+           An array of file names.
+        resp_ids : iterable of int or str
+           The identifiers for the RMF within this data set.
+           The length should match the filenames argument.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
+        load_multi_arfs : Load multiple ARFs for a PHA data set.
 
-           filenames - list of RMF files
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with two arguments, they are assumed to be
+        `filenames` and `resp_ids`, and three positional arguments
+        means `id`, `filenames`, and `resp_ids`.
 
-           resp_ids   - list of response ids
+        Examples
+        --------
 
-        Returns:
-           Load a list of FITS files containing response data given
-           a list of filenames by data id and a list of response ids. 
+        Load two RMFs into the default data set, using response ids of
+        `1` and `2` for `m1.rmf` and `p1.rmf` respectively:
 
-        DESCRIPTION
-           None
+        >>> rmfs = ['m1.rmf', 'p1.rmf']
+        >>> load_multi_rmfs(rmfs, [1,2])
 
-        SEE ALSO
-           set_rmf, get_rmf, unpack_rmf, load_rmf
+        Load in the RMFs to the data set with the identifier
+        `lowstate`:
+
+        >>> load_multi_rmfs('lowstate', rmfs, [1,2])
+
         """
 ##         if type(filenames) not in (list, tuple):
 ##             raise ArgumentError('Filenames must be contained in a list')
@@ -3843,30 +5658,44 @@ class Session(sherpa.ui.utils.Session):
             self.load_rmf(id, filename, resp_id)
         
     def get_bkg(self, id=None, bkg_id=None):
-        """
-        get_bkg
+        """Return the background for a PHA data set.
 
-        SYNOPSIS
-           Return an background PHA dataset by data id and bkg_id
+        The object returned by the call can be used to query and
+        change properties of the background of data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           The identifier for this background, which is needed if
+           there are multiple background estimates for the source.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        data : a sherpa.astro.data.DataPHA object
 
-           bkg_id    - background id, if multiple bkgs exist
-                       default = default background id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+        sherpa.utils.err.IdentifierErr
+           If no data set is associated with this identifier.
 
-        Returns:
-           Sherpa DataPHA dataset
+        See Also
+        --------
+        get_data : Return the data set by identifier.
+        load_bkg : Load the backgreound from a file and add it to a PHA data set.
+        set_bkg : Set the background for a PHA data set.
 
-        DESCRIPTION
-           Return a dataset containing background PHA data
-           given a data id and a background id.
+        Examples
+        --------
 
-        SEE ALSO
-           set_bkg, unpack_bkg, load_bkg
+        >>> bg = get_bkg()
+
+        >>> bg = get_bkg('flare', 2)
+
         """
         data = self._get_pha_data(id)
         bkg = data.get_background(bkg_id)
@@ -3878,35 +5707,58 @@ class Session(sherpa.ui.utils.Session):
         return bkg
 
     def set_bkg(self, id, bkg=None, bkg_id=None):
+        """Set the background for a PHA data set.
+
+        The background can either be fit with a model - using
+        `set_bkg_model` - or removed from the data before fitting,
+        using `subtract`.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg :
+           A PHA data set, such as returned by `get_data` or
+           `unpack_pha`.
+        bkg_id : int or str, optional
+           The identifier for this background, which is needed if
+           there are multiple background estimates for the source.
+
+        See Also
+        --------
+        get_bkg : Return the background for a PHA data set.
+        load_bkg : Load the background from a file and add it to a PHA data set.
+        load_pha : Load a file as a PHA data set.
+        set_bkg_model : Set the background model expression for a data set.
+        subtract : Subtract the background estimate from a data set.
+        unpack_pha : Create a PHA data structure.
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `bkg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `bkg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
+        Examples
+        --------
+
+        Copy the background from the default data set to data set `2`:
+
+        >>> bkg1 = get_bkg()
+        >>> set_bkg(2, bkg1)
+
+        Read in the PHA data from the file 'bkg.pi' and set it as the
+        second background component of data set "core":
+
+        >>> bkg = unpack_pha('bkg.pi')
+        >>> set_bkg('core', bkg, bkg_id=2)
+
         """
-        set_bkg
-
-        SYNOPSIS
-           Set a background PHA dataset by data id and 
-           background id
-
-        SYNTAX
-
-        Arguments:
-           id        - dataset id
-                       default = default data id
-
-           bkg       - Sherpa DataPHA dataset
-                       see get_bkg for more info
-
-           bkg_id    - background id, if multiple bkgs exist
-                       default = default background id
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Set a dataset containing background PHA data
-           by a data id and a background id.
-
-        SEE ALSO
-           get_bkg, unpack_bkg, load_bkg
-         """
         if bkg is None:
             id, bkg = bkg, id
         data = self._get_pha_data(id)
@@ -3929,58 +5781,61 @@ class Session(sherpa.ui.utils.Session):
 
 
     def list_bkg_ids(self, id=None):
-        """
-        list_bkg_ids
+        """List all the background identifiers for a data set.
 
-        SYNOPSIS
-           List the available Sherpa background ids for a data set by data id
+        A PHA data set can contain multiple background datasets, each
+        identified by an integer or string. This function returns a
+        list of these identifiers for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to query. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Returns
+        -------
+        ids : array of int or str
+           The identifiers for the backround data sets for the data
+           set. In many cases this will just be `[1]`.
 
-        Returns:
-           list of background ids
+        See Also
+        --------
+        list_response_ids : List all the response identifiers of a data set.
+        load_bkg : Load the background of a PHA data set.
 
-        DESCRIPTION
-           The Sherpa background id ties background data sets to a source data
-           set easily referenced by data id.  The id can be a user
-           defined string or integer.
-
-        SEE ALSO
-           get_bkg, set_bkg
         """
         #return self._get_pha_data(id).background_ids
         return self._get_pha_data(id)._backgrounds.keys()
 
     def list_response_ids(self, id=None, bkg_id=None):
-        """
-        list_response_ids
+        """List all the response identifiers of a data set.
 
-        SYNOPSIS
-           List the available Sherpa response ids for a data set by data id
+        A PHA data set can contain multiple responses, that is,
+        pairs of ARF and RMF, each of which has an identifier.
+        This function returns a list of these identifiers
+        for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to query. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Set this to identify the background component to query.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
-        
-           bkg_id    - Sherpa background id
-                       default = None
+        Returns
+        -------
+        ids : array of int or str
+           The identifiers for the response information for the data
+           set. In many cases this will just be `[1]`.
 
-        Returns:
-           list of response ids
+        See Also
+        --------
+        list_bkg_ids : List all the background identifiers for a data set.
+        load_arf : Load an ARF from a file and add it to a PHA data set.
+        load_rmf : Load a RMF from a file and add it to a PHA data set.
 
-        DESCRIPTION
-           The Sherpa response id ties ARF and RMF data sets to a source or
-           background data set easily referenced by data id or background id.
-           The id can be a user defined string or integer.
-
-        SEE ALSO
-           get_arf, set_arf, get_rmf, set_rmf, load_arf, load_rmf
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
@@ -3988,63 +5843,81 @@ class Session(sherpa.ui.utils.Session):
         #return data.response_ids
         return data._responses.keys()
 
+    ### DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
+    ### DOC-TODO: should the arguments be renamed to better match optional
+    ###           nature of the routine (e.g. can call set_analysis('energy'))?
     #@loggable(with_id=True, with_keyword='quantity')
     def set_analysis(self, id, quantity=None, type='rate', factor=0):
-        """
-        set_analysis
+        """Set the units used when fitting and displaying spectral data.
 
-        SYNOPSIS
-           Set the quantities for analysis of a PHA data set by data id
+        The set_analysis command sets the units for spectral
+        analysis. Note that in order to change the units of a data set
+        from 'channel' to 'energy' or 'wavelength', the appropriate
+        ARF and RMF instrument response files must be loaded for that
+        data set. The `type` and `factor` arguments control how
+        the data is plotted.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           If only one argument is given then this is taken to be the
+           quantity argument (in which case, the change is made to
+           all data sets). If multiple arguments are given then this
+           is the identifier for the data set to change.
 
-        Arguments:
-           id        - data id
-                       default = all data ids
+        quantity : { 'channel', 'chan', 'bin', 'energy', 'ener', 'wavelength', 'wave' }
+           The units to use for the analysis.
+        
+        type : { 'rate', 'counts' }, optional
+           The units to use on the Y axis of plots. The default
+           is 'rate'.
 
-           quantity  - string identifying the quantity
+        factor : int, optional
+           The Y axis of plots is multiplied by Energy^factor or
+           Wavelength^factor befire display. The default is `0`.
 
-           type      - string identifying the plot quantity
-                       default = 'rate'
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the `id` argument is not recognized.
 
-           factor    - integer identifying the number of times the independent
-                       axis is multiplied to the dependent axis.
-                       default = 0
+        See Also
+        --------
+        get_analysis : Return the analysis setting for a data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `quantity` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `quantity` parameters,
+        respectively.
 
-        DESCRIPTION
-           Set the quantity for analysis of a Sherpa DataPHA dataset
-           by data id.  Choices for the analysis quantity include channel,
-           wavelength, and energy.
+        Examples
+        --------
 
-           Alias
-           * 'channel' or 'chan' or 'bin'
+        Set all loaded data sets to use wavelength for any future
+        fitting or display.
 
-           * 'energy' or 'ener'
+        >>> set_analysis('wave')
 
-           * 'wavelength' or 'wave'
+        Set the data set with an identifier of `2` to use energy
+        units.
 
-           The plot quantity choices include rate and counts.
+        >>> set_analysis(2, 'energy')
 
-        EXAMPLE
-           * To set the analysis quantity to wavelength for all datasets
+        Set data set 1 to use channel units. Plots will use a Y
+        axis of count/bin rather than the default count/s/bin.
 
-             sherpa> set_analysis('wave')
+        >>> set_analysis(1, 'bin', 'counts')
 
-           * To set the analysis quantity to channel for a single dataset
+        Set data set 1 to use energy units. Plots of this data set
+        will display keV on the X axis and counts keV (i.e.
+        counts/keV * keV^2) in the Y axis.
 
-             sherpa> set_analysis(2, 'chan')
+        >>> set_analysis(1, 'energy', 'counts', 2)
 
-           * To achieve the following plots units for the 1 data set
-             x units: keV
-             y units: Counts X keV^2
-
-             sherpa> set_analysis(1, 'ener', 'counts', 2)
-
-        SEE ALSO
-           get_analysis
         """
         if quantity is None:
             id, quantity = quantity, id
@@ -4060,71 +5933,108 @@ class Session(sherpa.ui.utils.Session):
             self._get_pha_data(id).set_analysis(quantity, type, factor) 
 
 
+    ### DOC-TODO: docs need to be added to sherpa.astro.data.get_analysis
     def get_analysis(self, id=None):
-        """
-        get_analysis
+        """Return the units used when fitting spectral data.
 
-        SYNOPSIS
-           Get the current quantity for analysis of a PHA data set by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to query. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        quantity : { 'channel', 'energy', 'wavelength' }
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `id` argument is not recognized.
 
-        Returns:
-           string identifying the quantity
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        set_analysis : Change the analysis setting.
 
-        DESCRIPTION
-           Get the quantity for analysis of a Sherpa DataPHA dataset
-           by data id.  Return values include channel, wavelength, or energy.
-
-           * 'channel' or 'chan' or 'bin'
-
-           * 'energy' or 'ener'
-
-           * 'wavelength' or 'wave'
-
-        SEE ALSO
-           set_analysis
         """
         return self._get_pha_data(id).get_analysis()
 
+    ### DOC-TODO: docs need to be added to sherpa.astro.data.set_coord
+    ### DOC-TODO: how best to document the wcssubs support?
     #@loggable(with_id=True, with_keyword='coord')
     def set_coord(self, id, coord=None):
-        """
-        set_coord
+        """Set the coordinate system to use for image analysis.
 
-        SYNOPSIS
-           Set the coordinate system by data id
+        The default coordinate system - that is, the mapping between
+        pixel position and coordinate value, for images (2D data sets)
+        is 'logical'. This function can change this setting, so that
+        model parameters can be fit using other systems. This setting
+        is also used by the `notice2d` and `ignore2d` series of
+        commands.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           The data set to change. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        coord : { 'logical', 'image', 'physical', 'world', 'wcs' }
+           The coordinate system to use. The 'image' option is the
+           same as 'logical', and 'wcs' the same as 'world'.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        get_coord : Get the coordinate system used for image analysis.
+        guess : Estimate the parameter values and ranges given the loaded data.
+        ignore2d : Exclude a spatial region from an image.
+        notice2d : Include a spatial region of an image.
 
-           coord     - string keyword identifying coordinate system
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `coord` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `coord` parameters,
+        respectively.
 
-        Returns:
-           None
+        Any limits or values already set for model parameters, such as
+        those made by `guess`, may need to be changed after changing
+        the coordinate system.
 
-        DESCRIPTION
-           Set the coordinate system of a Sherpa DataIMG dataset
-           by data id.  Choices include logical, physical, and world
-           coordinates.  Alias for logical is image.  Alias for world
-           is wcs.
+        The 'logical' system is one in which the center of the
+        lower-left pixel has coordinates `(1,1)` and the center of the
+        top-right pixel has coordinates `(nx,ny)`, for a `nx`
+        (columns) by `ny` (rows) pixel image. The pixels have a side
+        of length `1`, so the first pixel covers the range `x=0.5` to
+        `x=1.5` and `y=0.5` to `y=1.5`.
 
-           * 'logical' or 'image'
+        The 'physical' and 'world' coordinate systems rely on FITS
+        World Coordinate System (WCS) standard [1]_. The 'physical'
+        system refers to a linear transformation, with possible
+        offset, of the 'logical' system. The 'world' system refers to
+        the mapping to a celestial coordinate system.
 
-           * 'physical'
+        References
+        ----------
 
-           * 'world' or 'wcs'
+        .. [1] http://fits.gsfc.nasa.gov/fits_wcs.html
 
-        SEE ALSO
-           notice2d, notice2d_id, notice2d_image, ignore2d, ignore2d_id,
-           ignore2d_image, get_coord
+        Examples
+        --------
+
+        Change the coordinate system of the default data set to
+        the world system ('wcs' is a synonym for 'world').
+
+        >>> set_coord('wcs')
+
+        Change the data set with the id of 'm82' to use the
+        physical coordinate system.
+
+        >>> set_coord('m82', 'physical')
+
         """
         if coord is None:
             id, coord = coord, id
@@ -4142,78 +6052,92 @@ class Session(sherpa.ui.utils.Session):
            self._get_img_data(id).set_coord(coord)
 
 
+    ### DOC-TODO: docs need to be added to sherpa.astro.data.get_coord
     def get_coord(self, id=None):
-        """
-        get_coord
+        """Get the coordinate system used for image analysis.
 
-        SYNOPSIS
-           Get the coordinate system by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to query. If not given then the default
+           identifier is used, as returned by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        coord : { 'logical', 'physical', 'world' }
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain image data.
+        sherpa.utils.err.IdentifierErr
+           If the `id` argument is not recognized.
 
-        Returns:
-           Coord
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        set_coord : Set the coordinate system to use for image analysis.
 
-        DESCRIPTION
-           Get the coordinate system of a Sherpa DataIMG dataset
-           by data id.  Return values include logical, physical, and world
-           coordinates.  Alias for logical is image.  Alias for world
-           is wcs.
-
-           * 'logical'
-
-           * 'physical'
-
-           * 'world'
-
-        SEE ALSO
-           notice2d, notice2d_id, notice2d_image, ignore2d, ignore2d_id,
-           ignore2d_image, set_coord
         """
         return self._get_img_data(id).coord
 
 
     def ignore_bad(self, id=None, bkg_id=None):
-        """
-        ignore_bad
+        """Exclude channels marked as bad in a PHA data set.
 
-        SYNOPSIS
-           Ignore bins according to quality flags
+        Ignore any bin in the PHA data set which has a quality value
+        that is larger than zero.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to change. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           The identifier for the background (the default of `None`
+           uses the first component).
 
-        Arguments:
-           id          Data set ID
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has no quality array.
 
-           bkg_id    - background id
-                       default = default bkg id
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        The `load_pha` command - and others that create a PHA data set
+        - do not exclude these bad-quality bins automatically.
 
-        DESCRIPTION
-           Ignore bins according to quality flags
+        If the data set has been grouped, then calling `ignore_bad`
+        will remove any filter applied to the data set. If this
+        happens a warning message will be displayed.
 
-               ignore_bad()
+        Examples
+        --------
 
-               ignore_bad("src")
+        Remove any bins that are marked bad in the default data set:
 
-               notice(0.1,4.0)
-               ignore_bad()
-           WARNING: filtering with quality flags, noticing all bins
+        >>> load_pha('src.pi')
+        >>> ignore_bad()
 
-           Ignore_bad may alter the grouping flags size, so any filters
-           in place will be removed in the case where the grouping flags
-           size is changed.
+        The data set 'jet' is grouped, and a filter applied. After
+        ignoring the bad-quality points, the filter has been removed
+        and will need to be re-applied:
 
-        SEE ALSO
-           notice2d_id, notice2d_image, ignore2d, ignore2d_id, ignore2d_image,
-           notice, ignore, notice_id, ignore_id, notice2d
+        >>> group_counts('jet', 20)
+        >>> notice_id('jet', 0.5, 7)
+        >>> get_filter('jet')
+        '0.540199995041:7.869399785995'
+        >>> ignore_bad('jet')
+        WARNING: filtering grouped data with quality flags, previous filters deleted
+        >>> get_filter('jet')
+        '0.200749998679:14.417500019073'
+
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
@@ -4249,36 +6173,137 @@ class Session(sherpa.ui.utils.Session):
     ignore.__doc__ = sherpa.ui.utils.Session.ignore.__doc__
 
 
+    ### DOC-TODO: how best to document the region support?
+    ### DOC-TODO: I have not mentioned the support for radii in arcsec/minutes/degrees
+    ###           or sexagessimal formats. Is this supported here?
     def notice2d(self, val=None):
-        """
-        notice2d
+        """Include a spatial region of all data sets.
 
-        SYNOPSIS
-           Notice a region mask for all Sherpa DataIMG datasets
+        Select a spatial region to include in the fit. The filter is
+        applied to all data sets.
 
-        SYNTAX
+        Parameters
+        ----------
+        val : str, optional
+           A region specification as a string or the name of a file
+           containing a region filter. The coordinates system of the
+           filter is taken from the coordinate setting of the data
+           sets (`set_coord`). If ``None``, then all points are
+           included.
 
-        Arguments:
-           val       - filename and path of region file or DM region syntax
-                       default = None
-        Returns:
-           None
+        See Also
+        --------
+        ignore2d : Exclude a spatial region from all data sets.
+        ignore2d_id : Exclude a spatial region from a data set.
+        ignore2d_image : Select the region to exclude from the image viewer.
+        notice2d_id : Include a spatial region of a data set.
+        notice2d_image : Select the region to include from the image viewer.
 
-        DESCRIPTION
-           Notice a region mask for all Sherpa DataIMG datasets using a
-           DM region library syntax or a region file.
+        Notes
+        -----
+        The region syntax support is provided by the CIAO region
+        library [1]_, and supports the following shapes (the
+        capitalized parts of the name indicate the minimum length of
+        the name that is supported):
 
-           Example1: notice2d with region file
+        =========  ===================================================
+        Name       Arguments
+        =========  ===================================================
+        RECTangle  (xmin,ymin,xmax,ymax)
+        BOX        (xcenter,ycenter,width,height)
+        BOX        (xcenter,ycenter,width,height,angle)
+        ROTBOX     (xcenter,ycenter,width,height,angle)
+        CIRcle     (xcenter,ycenter,radius)
+        ANNULUS    (xcenter,ycenter,iradius,oradius)
+        ELLipse    (xcenter,ycenter,xradius,yradius,angle)
+        SECTor     (xcenter,ycenter,minangle,maxangle)
+        PIE        (xcenter,ycenter,iradius,oradius,minangle,maxangle)
+        POLYgon    (x1,y1,x2,y2,x3,y3,...)
+        POInt      (xcenter,ycenter)
+        REGION     (file)
+        FIELD      ()
+        =========  ===================================================
 
-	       notice2d( 'region filename' )
+        Angles are measured in degrees from the X axis, with a
+        positive value indicating a counter-clockwise direction.
 
-           Example2: notice2d with DM region syntax in physical coordinates
+        Only simple polygons are supported, which means that a polygon
+        can not intersect itself. The last point does not need to
+        equal the first point (i.e. polygons are automatically closed
+        if necessary).
 
-               notice2d( 'circle(4071, 4250, 135)' )
+        The shapes can be combined using AND (intersection), OR
+        (union), or NOT (negation):
 
-        SEE ALSO
-           notice2d_id, notice2d_image, ignore2d, ignore2d_id, ignore2d_image,
-           notice, ignore, notice_id, ignore_id
+        intersection::
+
+          shape1()*shape2()
+          shape1()&shape2()
+
+        union::
+
+          shape1()+shape2()
+          shape1()|shape2()
+          shape1()shape2()
+
+        negation::
+
+          !shape1()
+          shape1()-shape2()
+          shape1()*!shape1()
+
+        The precedence uses the same rules as the mathematical
+        operators ``+`` and ``*`` (with ``-`` replaced by ``*!``),
+        so that::
+
+          circle(0,0,10)+rect(10,-10,20,10)-circle(10,0,10)
+
+        means that the second circle is only excluded from the
+        rectangle, and not the first circle. To remove it from both
+        shapes requires writing::
+
+          circle(0,0,10)-circle(10,0,10)+rect(10,-10,20,10)-circle(10,0,10)
+
+        A point is included if the center of the pixel lies within
+        the region. The comparison is done using the selected
+        coordinate system for the image, so a pixel may not
+        have a width and height of 1.
+
+        References
+        ----------
+
+        .. [1] http://cxc.harvard.edu/ciao/ahelp/dmregions.html
+
+        Examples
+        --------
+
+        Include the data points that lie within a circle centered
+        at 4324.5,3827.5 with a radius of 300:
+
+        >>> notice2d('circle(4324.5,3827.5,430)')
+
+        Read in the filter from the file ``ds9.reg``, using either:
+
+        >>> notice2d('ds9.reg')
+
+        or
+
+        >>> notice2d('region(ds9.reg)')
+
+        Select those points that lie both within the rotated box and
+        the annulus (i.e. an intersection of the two shapes):
+
+        >>> notice2d('rotbox(100,200,50,40,45)*annulus(120,190,20,60)')
+
+        Select those points that lie within the rotated box or the
+        annulus (i.e. a union of the two shapes):
+
+        >>> notice2d('rotbox(100,200,50,40,45)+annulus(120,190,20,60)')
+
+        All existing spatial filters are removed:
+
+        >>> notice2d()
+
         """
         for d in self._data.values():
             _check_type(d, sherpa.astro.data.DataIMG, 'img',
@@ -4286,36 +6311,52 @@ class Session(sherpa.ui.utils.Session):
             d.notice2d(val, False)
 
     def ignore2d(self, val=None):
-        """
-        ignore2d
+        """Exclude a spatial region from all data sets.
 
-        SYNOPSIS
-           Ignore a region mask for all Sherpa DataIMG datasets
+        Select a spatial region to exclude in the fit. The filter is
+        applied to all data sets.
 
-        SYNTAX
+        Parameters
+        ----------
+        val : str, optional
+           A region specification as a string or the name of a file
+           containing a region filter. The coordinates system of the
+           filter is taken from the coordinate setting of the data
+           sets (`set_coord`). If ``None``, then all points are
+           included.
 
-        Arguments:
-           val       - filename and path of region file or DM region syntax
-                       default = None
+        See Also
+        --------
+        notice2d : Include a spatial region from all data sets.
+        notice2d_id : Include a spatial region of a data set.
+        notice2d_image : Select the region to include from the image viewer.
+        ignore2d_id : Exclude a spatial region from a data set.
+        ignore2d_image : Select the region to exclude from the image viewer.
 
-        Returns:
-           None
+        Notes
+        -----
+        The region syntax is described in the `notice2d` function.
 
-        DESCRIPTION
-           Ignore a region mask for all Sherpa DataIMG datasets using a
-           DM region library syntax or a region file.
+        Examples
+        --------
 
-           Example1: ignore2d with region file
+        Exclude points that fall within the two regions:
 
-               ignore2d( 'region filename' )
+        >>> ignore2d('ellipse(200,300,40,30,-34)')
+        >>> ignore2d('box(40,100,30,40)')
 
-           Example2: ignore2d with DM region syntax in physical coordinates
+        Use a region file called 'reg.fits', by using either:
 
-               ignore2d( 'circle(4071, 4250, 135)' )
+        >>> ignore2d('reg.fits')
 
-        SEE ALSO
-           notice2d_id, notice2d, notice2d_image, ignore2d_id, ignore2d_image,
-           notice, ignore, notice_id, ignore_id
+        or
+
+        >>> ignore2d('region(reg.fits)')
+
+        Exclude all points.
+
+        >>> ignore2d()
+
         """
         for d in self._data.values():
             _check_type(d, sherpa.astro.data.DataIMG, 'img',
@@ -4323,39 +6364,58 @@ class Session(sherpa.ui.utils.Session):
             d.notice2d(val, True)
     
     def notice2d_id(self, ids, val=None):
+        """Include a spatial region of a data set.
+
+        Select a spatial region to include in the fit. The filter is
+        applied to the given data set, or sets.
+
+        Parameters
+        ----------
+        ids : int or str, or array of int or str
+           The data set, or sets, to use.
+        val : str, optional
+           A region specification as a string or the name of a file
+           containing a region filter. The coordinates system of the
+           filter is taken from the coordinate setting of the data
+           sets (`set_coord`). If `None`, then all points are
+           included.
+
+        See Also
+        --------
+        ignore2d : Exclude a spatial region from all data sets.
+        ignore2d_id : Exclude a spatial region from a data set.
+        ignore2d_image : Select the region to exclude from the image viewer.
+        notice2d : Include a spatial region of all data sets.
+        notice2d_image : Select the region to include from the image viewer.
+
+        Notes
+        -----
+        The region syntax is described in the `notice2d` function.
+
+        Examples
+        --------
+
+        Select all the pixels in the default data set:
+
+        >>> notice2d_id(1)
+
+        Select all the pixels in data sets 'i1' and 'i2':
+
+        >>> notice2d_id(['i1', 'i2'])
+
+        Apply the filter to the 'img' data set:
+
+        >>> notice2d_id('img', 'annulus(4324.2,3982.2,40.2,104.3)')
+
+        Use the regions in the file `srcs.reg` for data set 1:
+
+        >>> notice2d_id(1, 'srcs.reg')
+
+        or
+
+        >>> notice2d_id(1, 'region(srcs.reg)')
+
         """
-        notice2d_id
-
-        SYNOPSIS
-           Notice a region mask for specific Sherpa DataIMG datasets
-
-        SYNTAX
-
-        Arguments:
-           ids       - list of data ids to apply filter
-
-           val       - filename and path of region file or DM region syntax
-                       default = None
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Notice a region mask for specific Sherpa DataIMG datasets by ids
-           using a DM region library syntax or a region file.
-
-           Example1: notice2d_id with region file
-
-               notice2d_id(['foo','bar'], 'region filename' )
-
-           Example2: notice2d_id with DM region syntax in physical coordinates
-
-               notice2d_id([2,5,7], 'circle(4071, 4250, 135)' )
-
-        SEE ALSO
-           notice2d, notice2d_image, ignore2d, ignore2d_id, ignore2d_image,
-           notice, ignore, notice_id, ignore_id
-         """
         if self._valid_id(ids):
             ids = (ids,)
         else:
@@ -4372,38 +6432,49 @@ class Session(sherpa.ui.utils.Session):
             self.get_data(id).notice2d(val, False)
         
     def ignore2d_id(self, ids, val=None):
-        """
-        ignore2d_id
+        """Exclude a spatial region from a data set.
 
-        SYNOPSIS
-           Ignore a region mask for specific Sherpa DataIMG datasets
+        Select a spatial region to exclude in the fit. The filter is
+        applied to the given data set, or sets.
 
-        SYNTAX
+        Parameters
+        ----------
+        ids : int or str, or array of int or str
+           The data set, or sets, to use.
+        val : str, optional
+           A region specification as a string or the name of a file
+           containing a region filter. The coordinates system of the
+           filter is taken from the coordinate setting of the data
+           sets (`set_coord`). If `None`, then all points are
+           included.
 
-        Arguments:
-           ids       - list of data ids to apply filter
+        See Also
+        --------
+        ignore2d : Exclude a spatial region from all data sets.
+        ignore2d_image : Select the region to exclude from the image viewer.
+        notice2d : Include a spatial region of all data sets.
+        notice2d_id : Include a spatial region from a data set.
+        notice2d_image : Select the region to include from the image viewer.
 
-           val       - filename and path of region file or DM region syntax
-                       default = None
+        Notes
+        -----
+        The region syntax is described in the `notice2d` function.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Ignore a region mask for specific Sherpa DataIMG datasets by ids
-           using a DM region library syntax or a region file.
+        Ignore the pixels within the rectangle from data set 1:
 
-           Example1: ignore2d_id with region file
+        >>> ignore2d_id(1, 'rect(10,10,20,290)')
 
-               ignore2d_id(['foo','bar'], 'region filename' )
+        Ignore the spatial region in the file `srcs.reg`:
 
-           Example2: ignore2d_id with DM region syntax in physical coordinates
+        >>> ignore2d_id(1, 'srcs.reg')
 
-               ignore2d_id([2,5,7], 'circle(4071, 4250, 135)' )
+        or
 
-        SEE ALSO
-           notice2d, ignore2d, notice2d_id, notice2d_image, ignore2d_image,
-           notice, ignore, notice_id, ignore_id
+        >>> ignore2d_id(1, 'region(srcs.reg)')
+
         """
         if self._valid_id(ids):
             ids = (ids,)
@@ -4421,7 +6492,8 @@ class Session(sherpa.ui.utils.Session):
             self.get_data(id).notice2d(val, True)
 
     def notice2d_image(self, ids=None):
-        """
+        """Select the region to include from the image viewer.
+
         notice2d_image
 
         SYNOPSIS
@@ -4471,7 +6543,8 @@ class Session(sherpa.ui.utils.Session):
             self.notice2d_id(id, regions)
 
     def ignore2d_image(self, ids=None):
-        """
+        """Select the region to exclude from the image viewer.
+
         ignore2d_image
 
         SYNOPSIS
@@ -4521,39 +6594,70 @@ class Session(sherpa.ui.utils.Session):
             self.ignore2d_id(id, regions)
 
 
+    ### DOC-TODO: how best to include datastack support? How is it handled here?
     #@loggable(with_id=True, with_keyword='arg')
     def load_bkg(self, id, arg=None, use_errors=False, bkg_id=None):
-        """
-        load_bkg
+        """Load the background from a file and add it to a PHA data set.
 
-        SYNOPSIS
-           Load background PHA data by id
+        This will load the PHA data and any response information - so
+        ARF and RMF - and add it as a background component to the
+        PHA data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        arg :
+           Identify the data to read: a file name, or a data structure
+           representing the data to use, as used by the I/O backend in
+           use by Sherpa: a `PHACrateDataset` for crates, as used by
+           CIAO, or a list of AstroPy HDU objects.
+        use_errors : bool, optional
+           If `True` then the statistical errors are taken from the
+           input data, rather than calculated by Sherpa from the
+           count values. The default is `False`.
+        bkg_id : int or str, optional
+           The identifier for the background (the default of `None`
+           uses the first component).
 
-        Arguments:
-           id         - dataset ID
-                        default = default data id
+        See Also
+        --------
+        load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
+        load_bkg_rmf : Load a RMF from a file and add it to the background of a PHA data set.
+        load_pha : Load a PHA data set.
 
-           arg        - filename and path | PHACrate obj | PyFITS HDUList obj
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           use_errors - flag to use errors
-                        default = False
+        Examples
+        --------
 
-           bkg_id     - background id, if multiple bkgs exist
-                        default = default background id
+        Load a source and background data set:
 
-        Returns:
-           None
+        >>> load_pha('src.pi')
+        read ARF file src.arf
+        read RMF file src.rmf
+        >>> load_bkg('src_bkg.pi')
 
-        DESCRIPTION
-           Load background PHA data from a FITS file or a PHACrate object or a
-           PyFITS HDUList object into a Sherpa dataset by data id and
-           background id.
+        Read in the background via Crates:
 
-        SEE ALSO
-           load_image, load_arf, load_rmf, load_data, load_table,
-           load_pha
+        >>> bpha = pycrates.read_pha('src_bkg.pi')
+        >>> load_bkg(bpha)
+
+        Create the data set from the data read in by AstroPy:
+
+        >>> bhdus = astropy.io.fits.open('src_bkg.pi')
+        >>> load_bkg(bhdus)
+
         """
         if arg is None:
             id, arg = arg, id
@@ -4568,31 +6672,103 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True)
     def group(self, id=None, bkg_id=None):
-        """
-        group
+        """Turn on the grouping for a PHA data set.
 
-        SYNOPSIS
-           Turn grouping ON
+        A PHA data set can be grouped either because it contains
+        grouping information [1]_, which is automatically applied when
+        the data is read in with `load_pha` or `load_data`, or because
+        the `group` set of routines has been used to dynamically
+        re-group the data. The `ungroup` function removes this
+        grouping (however it was created). The `group` function
+        re-applies this grouping. The grouping scheme can be
+        changed dynamically, using the `group_xxx` series of
+        routines.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+        sherpa.utils.err.DataErr
+           If the data set is already grouped.
 
-           bkg_id    - background id
-                       default = default bkg id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
+        ungroup : Turn off the grouping for a PHA data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        PHA data is often grouped to improve the signal to noise of
+        the data, by decreasing the number of bins, so that a
+        chi-square statistic can be used when fitting the data.  After
+        calling `group`, anything that uses the data set - such as a
+        plot, fit, or error analysis - will use the grouped data
+        values. Models should be re-fit if `group` is called; the
+        increase in the signal of the bins may mean that a chi-square
+        statistic can now be used.
 
-        DESCRIPTION
-           Set grouping boolean to True in a Sherpa DataPHA
-           dataset by data id or background dataset by bkg id
-           utilizing native grouping flags.
+        The grouping is implemented by separate arrays to the main
+        data - the information is stored in the `grouping` and
+        `quality` arrays of the PHA data set - so that a data set can
+        be grouped and ungrouped many times, without losing
+        information. The `group` command does not create this
+        information; this is either created by modifying the PHA file
+        before it is read in, or by using the `group_xxx` routines
+        once the data has been loaded.
 
-        SEE ALSO
-           set_grouping, ungroup
+        The `grouped` field of a PHA data set is set to `True` when
+        the data is grouped.
+
+        References
+        ----------
+
+        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
+               Format",
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+        Examples
+        --------
+
+        Group the data in the default data set:
+
+        >>> group()
+        >>> get_data().grouped
+        True
+
+        Group the first background component of the 'core' data set:
+
+        >>> group('core', bkg_id=1)
+        >>> get_bkg('core', bkg_id=1).grouped
+        True
+
+        The data is fit using the ungrouped data, and then plots of
+        the data and best-fit, and the residuals, are created. The
+        first plot uses the ungrouped data, and the second plot uses
+        the grouped data.
+
+        >>> ungroup()
+        >>> fit()
+        >>> plot_fit_resid()
+        >>> group()
+        >>> plot_fit_resid()
+
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
@@ -4621,33 +6797,77 @@ class Session(sherpa.ui.utils.Session):
 
 
     def set_grouping(self, id, val=None, bkg_id=None):
-        """
-        set_grouping
+        """Apply a set of grouping flags to a PHA data set.
 
-        SYNOPSIS
-           Apply user defined grouping flags by data id
+        A group is indicated by a sequence of flag values starting
+        with `1` and then `-1` for all the channels in the group,
+        following [1]_.  Setting the grouping column automatically
+        turns on the grouping flag for that data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        val : array of int
+           This must be an array of grouping values of the same length
+           as the data array.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-           val       - properly sized integer array of grouping flags
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_grouping : Return the grouping flags for a PHA data set.
+        group : Turn on the grouping for a PHA data set.
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        load_grouping : Load the grouping scheme from a file and add to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
+        ungroup : Turn off the grouping for a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-        Returns:
-           None
+        References
+        ----------
 
-        DESCRIPTION
-           Override native grouping flags (if available) of Sherpa
-           DataPHA dataset by data id or background by bkg id to user
-           a user defined array of integers.           
+        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
+               Format",
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
-        SEE ALSO
-           ungroup, group
+        Examples
+        --------
+
+        Copy the grouping array from data set 2 into the default data
+        set:
+
+        >>> grp = get_data(2).grouping
+        >>> set_grouping(grp)
+
+        Copy the grouping from data set "src1" to the source and
+        background data sets of "src2":
+
+        >>> grp = get_data("src1").grouping
+        >>> set_grouping("src2", grp)
+        >>> set_grouping("src2", grp, bkg_id=1)
+
         """
         if val is None:
             id, val = val, id
@@ -4667,30 +6887,50 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_grouping(self, id=None, bkg_id=None):
-        """
-        get_grouping
+        """Return the grouping array for a PHA data set.
 
-        SYNOPSIS
-           Retrieve the grouping flags by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set if the grouping flags should be taken from a background
+           associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        grouping : array or `None`
+           A value of 1 indicates the start of a new group, and -1
+           indicates that the bin is part of the group.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_quality : Return the quality array for a PHA data set.
+        ignore_bad : Exclude channels marked as bad in a PHA data set.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
 
-        Returns:
-           grouping flags array
+        Examples
+        --------
 
-        DESCRIPTION
-           Obtain the native grouping flags (if available) of a Sherpa
-           DataPHA dataset by data id or background by bkg id.
+        Copy the grouping array from the default data set to data set
+        2:
 
-        SEE ALSO
-           ungroup, group, load_grouping, set_grouping
+        >>> grp1 = get_grouping()
+        >>> set_grouping(2, grp1)
+
+        Return the grouping array of the background component labelled
+        2 for the 'histate' data set:
+
+        >>> grp = get_grouping('histate', bkg_id=2)
+
         """
 
         data = self._get_pha_data(id)
@@ -4699,35 +6939,73 @@ class Session(sherpa.ui.utils.Session):
 
         return data.grouping
 
-
     def set_quality(self, id, val=None, bkg_id=None):
-        """
-        set_quality
+        """Apply a set of quality flags to a PHA data set.
 
-        SYNOPSIS
-           Apply user defined quality flags by data id
+        A quality value of 1 or greater indicates a good channel,
+        otherwise the channel is considered bad and can be
+        excluded using the `ignore_bad` function, as discussed
+        in [1]_.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        val : array of int
+           This must be an array of quality values of the same length
+           as the data array.
+        bkg_id : int or str, optional
+           Set if the quality values should be associated with the
+           background associated with the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-           val       - properly sized integer array of quality flags
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_quality : Return the quality array for a PHA data set.
+        ignore_bad : Exclude channels marked as bad in a PHA data set.
+        load_quality : Load the quality array from a file and add to a PHA data set.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
+        respectively.
 
-        Returns:
-           None
+        References
+        ----------
 
-        DESCRIPTION
-           Override native quality flags (if available) of Sherpa
-           DataPHA dataset by data id or background by bkg id to user
-           a user defined array of integers.           
+        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
+               Format",
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
-        SEE ALSO
-           ungroup, group
+        Examples
+        --------
+
+        Copy the quality array from data set 2 into the default data
+        set, and then ensure that any 'bad' channels are ignored:
+
+        >>> qual = get_data(2).quality
+        >>> set_quality(qual)
+        >>> ignore_bad()
+
+        Copy the quality array from data set "src1" to the source and
+        background data sets of "src2":
+
+        >>> qual = get_data("src1").quality
+        >>> set_quality("src2", qual)
+        >>> set_quality("src2", qual, bkg_id=1)
+
         """
         if val is None:
             id, val = val, id
@@ -4745,32 +7023,53 @@ class Session(sherpa.ui.utils.Session):
             else:
                 data.quality = numpy.asarray(val, SherpaInt)
 
+    ### DOC TODO: Need to document that routines like get_quality return
+    ###           a reference to the data - so can change the data structure
+    ###           - and not a copy
+
+    ### DOC-TODO: explain that many of these can be done with
+    ###           direct object access
+    ###           get_data().exposure [= ...]
 
     def get_quality(self, id=None, bkg_id=None):
-        """
-        get_quality
+        """Return the quality flags for a PHA data set.
 
-        SYNOPSIS
-           Retrieve the quality flags by data id
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set if the quality flags should be taken from a background
+           associated with the data set.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_grouping : Return the grouping array for a PHA data set.
+        ignore_bad : Exclude channels marked as bad in a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Examples
+        --------
 
-        Returns:
-           quality flags array
+        Copy the quality array from the default data set to data set
+        2:
 
-        DESCRIPTION
-           Obtain the native quality flags (if available) of a Sherpa
-           DataPHA dataset by data id or background by bkg id.
+        >>> qual1 = get_quality()
+        >>> set_quality(2, qual1)
 
-        SEE ALSO
-           ungroup, group, load_quality, set_quality
+        Return the quality array of the background component labelled
+        2 for the 'histate' data set:
+
+        >>> qual = get_quality('histate', bkg_id=2)
+
         """
 
         data = self._get_pha_data(id)
@@ -4781,31 +7080,82 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True)
     def ungroup(self, id=None, bkg_id=None):
-        """
-        ungroup
+        """Turn off the grouping for a PHA data set.
 
-        SYNOPSIS
-           Turn grouping OFF
+        A PHA data set can be grouped either because it contains
+        grouping information [1]_, which is automatically applied when
+        the data is read in with `load_pha` or `load_data`, or because
+        the `group_xxx` set of routines has been used to dynamically
+        re-group the data. The `ungroup` function removes this
+        grouping (however it was created).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           Set to ungroup the background associated with the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+        sherpa.utils.err.DataErr
+           If the data set is not grouped.
 
-           bkg_id    - background id
-                       default = default bkg id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        group : Turn on the grouping for a PHA data set.
 
-        Returns:
-           None
+        Notes
+        -----
+        PHA data is often grouped to improve the signal to noise of
+        the data, by decreasing the number of bins, so that a
+        chi-square statistic can be used when fitting the data.  After
+        calling `ungroup`, anything that uses the data set - such as a
+        plot, fit, or error analysis - will use the original data
+        values. Models should be re-fit if `ungroup` is called; this
+        may require a change of statistic depending on the counts per
+        channel in the spectrum.
 
-        DESCRIPTION
-           Set grouping boolean to False in a Sherpa DataPHA
-           dataset by data id or background by bkg id utilizing
-           native grouping flags.
+        The grouping is implemented by separate arrays to the main
+        data - the information is stored in the `grouping` and
+        `quality` arrays of the PHA data set - so that a data set
+        can be grouped and ungrouped many times, without losing
+        information.
 
-        SEE ALSO
-           set_grouping, group
+        The `grouped` field of a PHA data set is set to `False` when
+        the data is not grouped.
+
+        If subtracting the background estimate from a data set, the
+        grouping applied to the source data set is used for both
+        source and background data sets.
+
+        References
+        ----------
+
+        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
+               Format",
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+        Examples
+        --------
+
+        Ungroup the data in the default data set:
+
+        >>> ungroup()
+        >>> get_data().grouped
+        False
+
+        Ungroup the first background component of the 'core' data set:
+
+        >>> ungroup('core', bkg_id=1)
+        >>> get_bkg('core', bkg_id=1).grouped
+        False
+
         """
         data = self._get_pha_data(id)
         if bkg_id is not None:
@@ -4832,38 +7182,115 @@ class Session(sherpa.ui.utils.Session):
         # If we get here, checks showed data grouped, so set ungroup flag
         data.ungroup()
 
+    ### DOC-TODO: need to document somewhere that this ignores existing
+    ###           quality flags and how to use tabStops to include
+    ###           this information
+    ### DOC-TODO: how to set the quality if using tabstops to indicate
+    ###           "bad" channels, rather than ones to ignore
+
     #@loggable(with_id=True, with_keyword='num')
     def group_bins(self, id, num=None, bkg_id=None, tabStops=None):
-        """
-        group_bins
+        """Group into a fixed number of bins.
 
-        SYNOPSIS
-           Create and set grouping flags by number of bins with equal-widths
+        Combine the data so that there `num` equal-width bins (or
+        groups). The binning scheme is applied to all the channels,
+        but any existing filter - created by the `ignore` or `notice`
+        set of functions - is re-applied after the data has been
+        grouped.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        num : int
+           The number of bins in the grouped data set. Each bin
+           will contain the same number of channels.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-           num       - number of groups
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        Unlike `group`, it is possible to call `group_bins` multiple
+        times on the same data set without needing to call `ungroup`.
 
-        Returns:
-           None
+        Since the bin width is an integer number of channels, it is
+        likely that some channels will be "left over". This is even
+        more likely when the `tabStops` parameter is set. If this
+        happens, a warning message will be displayed to the screen and
+        the quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
 
-        DESCRIPTION
-           Creates and sets grouping flags on a PHA spectrum data set by data ID
-           using a number of groups with equal-widths.  Resetting the grouping
-           flags clears any filters already in place.
+        Examples
+        --------
 
-        SEE ALSO
-           group_width, group_snr, group_adapt, group_adapt_snr
+        Group the default data set so that there are 50 bins.
+
+        >>> group_bins(50)
+
+        Group the 'jet' data set to 50 bins and plot the result,
+        then re-bin to 100 bins and overplot the data:
+
+        >>> group_bins('jet', 50)
+        >>> plot_data('jet')
+        >>> group_bins('jet', 100)
+        >>> plot_data('jet', overplot=True)
+
+        The grouping is applied to the full data set, and then
+        the filter - in this case defined over the range 0.5
+        to 8 keV - will be applied. This means that the
+        noticed data range will likely contain less than
+        50 bins.
+
+        >>> set_analysis('energy')
+        >>> notice(0.5, 8)
+        >>> group_bins(50)
+        >>> plot_data()
+
+        Do not group any channels numbered less than 20 or
+        800 or more. Since there are 780 channels to be
+        grouped, the width of each bin will be 20 channels
+        and there are no "left over" channels:
+
+        >>> notice()
+        >>> channels = get_data().channel
+        >>> ign = (channels <= 20) | (channels >= 800)
+        >>> group_bins(39, tabStops=ign)
+        >>> plot_data()
+
         """
         if num is None:
             id, num = num, id
@@ -4873,38 +7300,107 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_bins(num, tabStops)
 
+    ### DOC-TODO: should num= be renamed val= to better match
+    ###           underlying code/differ from group_bins?
     #@loggable(with_id=True, with_keyword='num')
     def group_width(self, id, num=None, bkg_id=None, tabStops=None):
-        """
-        group_width
+        """Group into a fixed bin width.
 
-        SYNOPSIS
-           Create and set grouping flags by a bin width.
+        Combine the data so that each bin contains `num` channels.
+        The binning scheme is applied to all the channels, but any
+        existing filter - created by the `ignore` or `notice` set of
+        functions - is re-applied after the data has been grouped.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        num : int
+           The number of channels to combine into a group.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-           num       - bin width
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        Unlike `group`, it is possible to call `group_width` multiple
+        times on the same data set without needing to call `ungroup`.
 
-        Returns:
-           None
+        Unless the requested bin width is a factor of the number of
+        channels (and no `tabStops` parameter is given), then some
+        channels will be "left over". If this happens, a warning
+        message will be displayed to the screen and the quality value
+        for these channels will be set to 2. This information can be
+        found with the `get_quality` command.
 
-        DESCRIPTION
-           Creates and sets grouping flags on a PHA spectrum data set by data ID
-           using a specific bin width.  Resetting the grouping
-           flags clears any filters already in place.
+        Examples
+        --------
 
-        SEE ALSO
-           group_bins, group_snr, group_adapt, group_adapt_snr
+        Group the default data set so that each bin contains 20
+        channels:
+
+        >>> group_width(20)
+
+        Plot two versions of the 'jet' data set: the first uses
+        20 channels per group and the second is 50 channels per
+        group:
+
+        >>> group_width('jet', 20)
+        >>> plot_data('jet')
+        >>> group_width('jet', 50)
+        >>> plot_data('jet', overplot=True)
+
+        The grouping is applied to the full data set, and then
+        the filter - in this case defined over the range 0.5
+        to 8 keV - will be applied.
+
+        >>> set_analysis('energy')
+        >>> notice(0.5, 8)
+        >>> group_width(50)
+        >>> plot_data()
+
+        The grouping is not applied to channels 101 to
+        149, inclusive:
+
+        >>> notice()
+        >>> channels = get_data().channel
+        >>> ign = (channels > 100) & (channels < 150)
+        >>> group_width(40, tabStops=ign)
+        >>> plot_data()
+
         """
         if num is None:
             id, num = num, id
@@ -4917,39 +7413,109 @@ class Session(sherpa.ui.utils.Session):
     #@loggable(with_id=True, with_keyword='num')
     def group_counts(self, id, num=None, bkg_id=None,
                      maxLength=None, tabStops=None):
-        """
-        group_counts
+        """Group into a minimum number of counts per bin.
 
-        SYNOPSIS
-           Create and set grouping flags using minimum number of counts per bin
+        Combine the data so that each bin contains `num` or more
+        counts. The binning scheme is applied to all the channels, but
+        any existing filter - created by the `ignore` or `notice` set
+        of functions - is re-applied after the data has been grouped.
+        The background is *not* included in this calculation; the
+        calculation is done on the raw data even if `subtract` has
+        been called on this data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        num : int
+           The number of channels to combine into a group.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-           num       - number of counts per bin
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           maxLength - number of elements that can be combined into a group
-                       default = None
+        Unlike `group`, it is possible to call `group_counts` multiple
+        times on the same data set without needing to call `ungroup`.
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Creates and sets grouping flags on a PHA spectrum data set by data ID
-           using a minimum number of counts per bin.  Resetting the grouping
-           flags clears any filters already in place.
+        Group the default data set so that each bin contains at
+        least 20 counts:
 
-        SEE ALSO
-           group_snr, group_adapt, group_adapt_snr
+        >>> group_counts(20)
+
+        Plot two versions of the 'jet' data set: the first uses
+        20 counts per group and the second is 50:
+
+        >>> group_counts('jet', 20)
+        >>> plot_data('jet')
+        >>> group_counts('jet', 50)
+        >>> plot_data('jet', overplot=True)
+
+        The grouping is applied to the full data set, and then
+        the filter - in this case defined over the range 0.5
+        to 8 keV - will be applied.
+
+        >>> set_analysis('energy')
+        >>> notice(0.5, 8)
+        >>> group_counts(30)
+        >>> plot_data()
+
+        If a channel has more than 30 counts then do not group,
+        otherwise group channels so that they contain at least 40
+        counts. The `group_adapt` and `group_adapt_snr` functions
+        provide similar functionality to this example.  A maximum
+        length of 10 channels is enforced, to avoid bins getting too
+        large when the signal is low.
+
+        >>> notice()
+        >>> counts = get_data().counts
+        >>> ign = counts > 30
+        >>> group_counts(40, tabStops=ign, maxLength=10)
+
         """
         if num is None:
             id, num = num, id
@@ -4959,46 +7525,99 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_counts(num, maxLength, tabStops)
 
+    ### DOC-TODO: check the Poisson stats claim; I'm guessing it means
+    ###           gaussian (i.e. sqrt(n))
     #@loggable(with_id=True, with_keyword='snr')
     def group_snr(self, id, snr=None, bkg_id=None,
                         maxLength=None, tabStops=None, errorCol=None):
-        """
-        group_snr
+        """Group into a minimum signal-to-noise ratio.
 
-        SYNOPSIS
-           Create and set grouping flags so each group has a signal-to-noise
-           ratio of at least snr
+        Combine the data so that each bin has a signal-to-noise ratio
+        of at least `snr`. The binning scheme is applied to all the
+        channels, but any existing filter - created by the `ignore` or
+        `notice` set of functions - is re-applied after the data has
+        been grouped.  The background is *not* included in this
+        calculation; the calculation is done on the raw data even if
+        `subtract` has been called on this data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        snr : number
+           The minimum signal-to-noise ratio that must be reached
+           to form a group of channels.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+        errorCol : array of num, optional
+           If set, the error to use for each channel when calculating
+           the signal-to-noise ratio. If not given then Poisson
+           statistics is assumed. A warning is displayed for each
+           zero-valued error estimate.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-           snr       - minimum signal-to-noise ratio
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `snr` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `snr` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           maxLength - number of elements that can be combined into a group
-                       default = None
+        Unlike `group`, it is possible to call `group_snr` multiple
+        times on the same data set without needing to call `ungroup`.
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
 
-           errorCol  - gives the error for each element of the original array
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Group the default data set so that each bin has a 
+        signal-to-noise ratio of at least 5:
 
-        DESCRIPTION
-           Creates and sets grouping flags on a PHA spectrum data set by data ID
-           using a minimum signal-to-noise, snr, for each group.  Resetting the
-           grouping flags clears any filters already in place.
+        >>> group_snr(20)
 
-        SEE ALSO
-           group_counts, group_adapt, group_adapt_snr
+        Plot two versions of the 'jet' data set: the first uses
+        a signal-to-noise ratio of 3 and the second 5:
+
+        >>> group_snr('jet', 3)
+        >>> plot_data('jet')
+        >>> group_snr('jet', 5)
+        >>> plot_data('jet', overplot=True)
+
         """
         if snr is None:
             id, snr = snr, id
@@ -5010,40 +7629,92 @@ class Session(sherpa.ui.utils.Session):
     #@loggable(with_id=True, with_keyword='min')
     def group_adapt(self, id, min=None, bkg_id=None,
                      maxLength=None, tabStops=None):
-        """
-        group_adapt
+        """Adaptively group to a minimum number of counts.
 
-        SYNOPSIS
-           Create and set grouping flags adaptively so that each group contains
-           at least min counts.
+        Combine the data so that each bin contains `min` or more
+        counts. The difference to `group_counts` is that this
+        algorithm starts with the bins with the largest signal, in
+        order to avoid over-grouping bright features, rather than at
+        the first channel of the data. The adaptive nature means that
+        low-count regions between bright features may not end up in
+        groups with the minimum number of counts.  The binning scheme
+        is applied to all the channels, but any existing filter -
+        created by the `ignore` or `notice` set of functions - is
+        re-applied after the data has been grouped.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        min : int
+           The number of channels to combine into a group.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-           min       - minimum number of counts
+        See Also
+        --------
+        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `min` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `min` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           maxLength - number of elements that can be combined into a group
-                       default = None
+        Unlike `group`, it is possible to call `group_adapt` multiple
+        times on the same data set without needing to call `ungroup`.
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Creates and sets grouping flags adaptively on a PHA spectrum data
-           set by data ID using a minimum number of counts for each group.
-           Resetting the grouping flags clears any filters already in place.
+        Group the default data set so that each bin contains at
+        least 20 counts:
 
-        SEE ALSO
-           group_counts, group_snr, group_adapt_snr
+        >>> group_adapt(20)
+
+        Plot two versions of the 'jet' data set: the first uses
+        an adaptive scheme of 20 counts per bin, the second
+        the `group_counts` method:
+
+        >>> group_adapt('jet', 20)
+        >>> plot_data('jet')
+        >>> group_counts('jet', 20)
+        >>> plot_data('jet', overplot=True)
+
         """
         if min is None:
             id, min = min, id
@@ -5052,47 +7723,102 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_adapt(min, maxLength, tabStops)
 
+    ### DOC-TODO: shouldn't this be snr=None rather than min=None
     #@loggable(with_id=True, with_keyword='min')
     def group_adapt_snr(self, id, min=None, bkg_id=None,
                         maxLength=None, tabStops=None, errorCol=None):
-        """
-        group_adapt_snr
+        """Adaptively group to a minimum signal-to-noise ratio.
 
-        SYNOPSIS
-           Create and set grouping flags adaptively so that each group contains
-           a signal-to-noise ratio of at least min.
+        Combine the data so that each bin has a signal-to-noise ratio
+        of at least `num`. The difference to `group_snr` is that this
+        algorithm starts with the bins with the largest signal, in
+        order to avoid over-grouping bright features, rather than at
+        the first channel of the data. The adaptive nature means that
+        low-count regions between bright features may not end up in
+        groups with the minimum number of counts.  The binning scheme
+        is applied to all the channels, but any existing filter -
+        created by the `ignore` or `notice` set of functions - is
+        re-applied after the data has been grouped.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        num : number
+           The minimum signal-to-noise ratio that must be reached
+           to form a group of channels.
+        bkg_id : int or str, optional
+           Set to group the background associated with the data set.
+           When `bkg_id` is None (which is the default), the
+           grouping is applied to all the associated background
+           data sets as well as the source data set.
+        maxLength : int, optional
+           The maximum number of channels that can be combined into a
+           single group.
+        tabStops : array of int or bool, optional
+           If set, indicate one or more ranges of channels that should
+           not be included in the grouped output. The array should
+           match the number of channels in the data set and non-zero or
+           `True` means that the channel should be ignored from the
+           grouping (use 0 or `False` otherwise).
+        errorCol : array of num, optional
+           If set, the error to use for each channel when calculating
+           the signal-to-noise ratio. If not given then Poisson
+           statistics is assumed. A warning is displayed for each
+           zero-valued error estimate.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
 
-           min       - minimum number of counts
+        See Also
+        --------
+        group_adapt : Adaptively group to a minimum number of counts.
+        group_bins : Group into a fixed number of bins.
+        group_counts : Group into a minimum number of counts per bin.
+        group_snr : Group into a minimum signal-to-noise ratio.
+        group_width : Group into a fixed bin width.
+        set_grouping : Apply a set of grouping flags to a PHA data set.
+        set_quality : Apply a set of quality flags to a PHA data set.
 
-           bkg_id    - background id
-                       default = default bkg id
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
 
-           maxLength - number of elements that can be combined into a group
-                       default = None
+        Unlike `group`, it is possible to call `group_adapt_snr`
+        multiple times on the same data set without needing to call
+        `ungroup`.
 
-           tabStops  - integer array of noticed channels (1 means ignore)
-                       default = None
+        If channels can not be placed into a "valid" group, then a
+        warning message will be displayed to the screen and the
+        quality value for these channels will be set to 2. This
+        information can be found with the `get_quality` command.
 
-           errorCol  - gives the error for each element of the original array
-                       default = None
+        Examples
+        --------
 
-        Returns:
-           None
+        Group the default data set so that each bin contains 
+        a signal-to-noise ratio of at least 5:
 
-        DESCRIPTION
-           Creates and sets grouping flags adaptively on a PHA spectrum data
-           set by data ID using a signal-to-noise ratio of at least min for each
-           group.  Resetting the grouping flags clears any filters already in
-           place.
+        >>> group_adapt_snr(5)
 
-        SEE ALSO
-           group_counts, group_adapt, group_snr
+        Plot two versions of the 'jet' data set: the first uses an
+        adaptive scheme and the second the non-adaptive version:
+
+        >>> group_adapt_snr('jet', 4)
+        >>> plot_data('jet')
+        >>> group_snr('jet', 4)
+        >>> plot_data('jet', overplot=True)
+
         """
         if min is None:
             id, min = min, id
@@ -5103,30 +7829,82 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True)
     def subtract(self, id=None):
-        """
-        subtract
+        """Subtract the background estimate from a data set.
 
-        SYNOPSIS
-           Subtract background counts
+        The ``subtract`` function performs a channel-by-channel
+        subtraction of the background estimate from the data. After
+        this command, anything that uses the data set - such as a
+        plot, fit, or error analysis - will use the subtracted
+        data. Models should be re-fit if ``subtract`` is called.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
-     
-        Returns:
-           None
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+        sherpa.utils.err.DataErr
+           If the data set is already subtracted.
 
-        DESCRIPTION
-           Subtract background counts from total counts according
-           to the following equation:
-           
-           Measured = Total  - Back  * Data Exposure * Data Area
-           Counts     Counts   Counts  Back Exposure   Back Area
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        unsubtract : Undo any background subtraction for the data set.
 
-        SEE ALSO
-           unsubtract        
+        Notes
+        -----
+        Unlike X-Spec [1]_, Sherpa does not automatically subtract
+        the background estimate from the data.
+
+        Background subtraction can only be performed when data and
+        background are of the same length.  If the data and background
+        are ungrouped, both must have same number of channels.  If
+        they are grouped, data and background can start with different
+        numbers of channels, but must have the same number of groups
+        after grouping.
+
+        The equation for the subtraction is::
+
+           src_counts - bg_counts * (src_exposure * src_backscal)
+                                    -----------------------------
+                                     (bg_exposure * bg_backscal)
+
+        where src_exposure and bg_exposure are the source and
+        background exposure times, and src_backscal and bg_backscal
+        are the source and background backscales.  The backscale, read
+        from the ``BACKSCAL`` header keyword of the PHA file [2]_, is
+        the ratio of data extraction area to total detector area.
+
+        The ``subtracted`` field of a dataset is set to ``True`` when
+        the background is subtracted.
+
+        References
+        ----------
+
+        .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecSpectralFitting.html
+
+        .. [2] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node5.html
+
+        Examples
+        --------
+
+        Background subtract the default data set.
+
+        >>> subtract()
+        >>> get_data().subtracted
+        True
+
+        Remove the background from the data set labelled 'src':
+
+        >>> subtract('src')
+        >>> get_data('src').subtracted
+        True
+
         """
         if (self._get_pha_data(id).subtracted is True):
             raise DataErr('subtractset', 'data set', str(self._fix_id(id)), 'True')
@@ -5134,30 +7912,54 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True)
     def unsubtract(self, id=None):
-        """
-        unsubtract
+        """Undo any background subtraction for the data set.
 
-        SYNOPSIS
-           Ignore subtraction of background counts
+        The `unsubtract` function undoes any changes made by
+        `subtract`. After this command, anything that uses the data
+        set - such as a plot, fit, or error analysis - will use the
+        original data values. Models should be re-fit if `subtract` is
+        called.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a PHA data set.
+        sherpa.utils.err.DataErr
+           If the data set does not have its background subtracted.
 
-        Returns:
-           None
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        subtract : Subtract the background estimate from a data set.
 
-        DESCRIPTION
-           Ignore subtraction of background counts total counts
-           according to the following equation:
-           
-           Measured = Total  - Back  * Data Exposure * Data Area
-           Counts     Counts   Counts  Back Exposure   Back Area
+        Notes
+        -----
+        The `subtracted` field of a PHA data set is set to `False`
+        when the background is not subtracted.
 
-        SEE ALSO
-           unsubtract
+        Examples
+        --------
+
+        Remove the background subtraction from the default data set.
+
+        >>> subtract()
+        >>> get_data().subtracted
+        False
+
+        Remove the background subtraction from the data set labelled
+        'src':
+
+        >>> subtract('src')
+        >>> get_data('src').subtracted
+        False
+
         """
         if (self._get_pha_data(id).subtracted is False):
             raise DataErr('subtractset', 'data set', str(self._fix_id(id)), 'False')
@@ -5165,53 +7967,94 @@ class Session(sherpa.ui.utils.Session):
 
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
                  grouping=None, grouped=False, quality=None, bkg=None):
-        """
-        fake_pha
+        """Simulate a PHA data set from a model.
 
-        SYNOPSIS
-           Create and fill a Sherpa DataPHA dataset by data id 
-           with faked PHA counts using poisson noise.
+        Take a PHA data set, evaluate the model for each bin, and then
+        use this value to create a data value from each bin, where the
+        value is used as the expectation value of the Poisson
+        distribution. A background component can be added (these
+        values are scaled to account for area extraction and exposure
+        time, but are not themselves simulated).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str
+           The identifier for the data set to create. If it
+           already exists then it is assumed to contain a PHA
+           data set and the counts will be over-written.
+        arf : filename or ARF object
+           The name of the ARF, or an ARF data object (e.g.
+           as returned by `get_arf` or `unpack_arf`).
+        rmf : filename or RMF object
+           The name of the RMF, or an RMF data object (e.g.
+           as returned by `get_arf` or `unpack_arf`).
+        exposure : number
+           The exposure time, in seconds.
+        backscal : number, optional
+           The 'BACKSCAL' value for the data set.
+        areascal : number, optional
+           The 'AREASCAL' value for the data set.
+        grouping : array, optional
+           The grouping array for the data (see `set_grouping`).
+        grouped : bool, optional
+           Should the simulated data be grouped (see `group`)?
+           The default is `False`. This value is only used if
+           the `grouping` parameter is set.
+        quality : array, optional
+           The quality array for the data (see `set_quality`).
+        bkg : optional
+           If left empty, then only the source emission is simulated.
+           If set to a PHA data object, then the counts from this data
+           set are scaled appropriately and added to the simulated
+           source signal.
 
-        Arguments:
-           id        - data id, if exists overwrites old dataset
+        See Also
+        --------
+        fake : Simulate a data set.
+        get_arf : Return the ARF associated with a PHA data set.
+        get_rmf : Return the RMF associated with a PHA data set.
+        get_dep : Return the dependent axis of a data set.
+        load_arrays : Create a data set from array values.
+        set_model : Set the source model expression for a data set.
 
-           arf       - Sherpa DataARF dataset, defines ancillary response
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set already exists and does not contain PHA
+           data.
 
-           rmf       - Sherpa DataRMF dataset, defines response matrix
+        Examples
+        --------
+        Estimate the signal from a 5000 second observation using
+        the ARF and RMF from "src.arf" and "src.rmf" respectively:
 
-           exposure  - length of observation in seconds
+        >>> set_source(1, xsphabs.gal * xsapec.clus)
+        >>> gal.nh = 0.12
+        >>> clus.kt, clus.abundanc = 4.5, 0.3
+        >>> clus.redshift = 0.187
+        >>> clus.norm = 1.2e-3
+        >>> fake_pha(1, 'src.arf', 'src.rmf', 5000)
 
-           backscal  - background scaling factor
-                       default = None
+        Simulate a 1 mega second observation for the data and model
+        from the default data set. The simulated data will include an
+        estimated background component based on scaling the existing
+        background observations for the source. The simulated data
+        set, which has the same grouping as the default set, for
+        easier comparison, is created with the 'sim' label
+        and then written out to the file 'sim.pi':
 
-           areascal  - area scaling factor
-                       default = None
+        >>> arf = get_arf()
+        >>> rmf = get_rmf()
+        >>> bkg = get_bkg()
+        >>> bscal = get_backscal()
+        >>> grp = get_grouping()
+        >>> qual = get_quality()
+        >>> texp = 1e6
+        >>> set_source('sim', get_model())
+        >>> fake_pha('sim', arf, rmf, backscal=bscal, bkg=bkg,
+                     grouping=grp, quality=qual, grouped=True)
+        >>> save_pha('sim', 'sim.pi')
 
-           grouping  - integer array of grouping flags
-                       default = None
-
-           grouped   - dataset grouped boolean
-                       default = False
-
-           quality   - integer array of quality flags
-                       default = None
-
-           bkg       - python DataPHA object defines the background,
-                       default = None
-
-        Returns:
-           None
-
-        DESCRIPTION
-           fake_pha allows for the simulation of spectra given a source model
-           and a grid.  The generated counts will contain poisson noise. If the
-           data id exists, the dataset's counts will be clobber, if not, a new
-           dataset with that data id will be generated.
-
-        SEE ALSO
-           save_pha           
         """
         d = sherpa.astro.data.DataPHA('', None, None)
         if self._data.has_key(id):
@@ -5345,8 +8188,78 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
     # Models
     ###########################################################################
+
+    # DOC-NOTE: also in sherpa.utils
     #@loggable(with_id=True, with_keyword='model')
     def set_full_model(self, id, model=None):
+        """Define the convolved model expression for a data set.
+
+        The model expression created by `set_model` can be modified by
+        "instrumental effects", such as PSF, ARF and RMF for PHA data
+        sets, or a pile up model. These can be set automatically - for
+        example, the ARF and RMF can be set up when the source data is
+        loaded - or explicitly with calls to routines like `set_psf`,
+        `set_arf`, `set_rmf`, and `set_pileup_model`. The
+        `set_full_model` function is for when this is not sufficient,
+        and full control is needed. Examples of when this would be
+        needed include: if different PSF models should be applied to
+        different source components; some source components need to
+        include the ARF and RMF but some do not.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : str or sherpa.models.Model object
+           This defines the model used to fit the data. It can be a
+           Python expression or a string version of it.
+
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
+        set_pileup_model : Include a model of the Chandra ACIS pile up when fitting PHA data.
+        set_psf : Add a PSF model to a data set.
+        set_model : Set the source model expression for a data set.
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
+
+        Some functions - such as `plot_source` and `calc_energy_flux`
+        - may not work for model expressions created by
+        `set_full_model`.
+
+        Examples
+        --------
+
+        Extract the response - the combined RMF and ARF - for a PHA
+        data set - and apply it to a model (`xsphabs` * `xsapec`) and
+        then include a `powlaw1d` component that only includes the
+        RMF and a gaussian that has no instrumental response:
+
+        >>> rsp = get_response()
+        >>> rmf = get_rmf()
+        >>> smodel = xsphabs.galabs * xsapec.emiss
+        >>> bmodel = powlaw1d.pbgnd
+        >>> set_full_model(rsp(smodel) + rmf(bmodel) + gauss1d.iline)
+
+        Apply different PSFs to different components, as well as an
+        unconvolved component:
+
+        >>> load_psf("psf1", "psf1.fits")
+        >>> load_psf("psf2", "psf2.fits")
+        >>> smodel = psf1(gauss2d.src1) + psf2(beta2d.src2) + const2d.bgnd
+        >>> set_full_model("src", smodel)
+
+        """
         sherpa.ui.utils.Session.set_full_model(self, id, model)
 
         if model is None:
@@ -5416,31 +8329,56 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True)
     def get_response(self, id=None, bkg_id=None):
-        """
-        get_response
+        """Return the respone information applied to a PHA data set.
 
-        SYNOPSIS
-           Return a PHA instrument response, multiple PHA instrument response
-           or PHA pileup response model by data id
+        For a PHA data set, the source model - created by `set_model`
+        - is modified by a model representing the instrumental effects
+        - such as the effective area of the mirror, the energy
+        resolution of the detector, and any model of pile up - which
+        is collectively known as the instrument response.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the instrument response. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or str, optional
+           If given, return the response for the given background
+           component, rather than the source.
 
-        Arguments:
-           id        - data id
-                       default = default data id
-           
-           bkg_id    - background id
-                       default = default bkg_id
+        Returns
+        -------
+        response
+           The return value depends on whether an ARF, RMF, or pile up
+           model has been associated with the data set.
 
-        Returns:
-           Sherpa response model
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
 
-        DESCRIPTION
-           Retrieve a PHA instrument response, multiple PHA instrument response
-           or PHA pileup response model by data id and background id
+        See Also
+        --------
+        get_arf : Return the ARF associated with a PHA data set.
+        get_pileup_model : Return the pile up model for a data set.
+        get_rmf : Return the RMF associated with a PHA data set.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
 
-        SEE ALSO
-           get_pileup_model, get_arf, get_rmf
+        Examples
+        --------
+
+        Create an empty PHA data set, load in an ARF and RMF, and then
+        retrieve the response. The response is then used to model the
+        instrument response applied to a `powlaw1d` model component:
+
+        >>> dataspace1d(1, 1024, 1, dstype=DataPHA)
+        >>> load_arf('src.arf')
+        >>> load_rmf('src.rmf')
+        >>> rsp = get_response()
+        >>> mdl = rsp(powlaw1d.pl)
+
         """
         pha = self._get_pha_data(id)
         if bkg_id is not None:
@@ -5459,54 +8397,99 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_pileup_model(self, id=None):
-        """
-        get_pileup_model
+        """Return the pile up model for a data set.
 
-        SYNOPSIS
-           Return a jdpileup model by data id
+        Return the pile up model set by a call to `set_pileup_model`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        model : a sherpa.astro.models.JDPileup instance
 
-        Returns:
-           Sherpa jdpileup model
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If no pile up model has been set for the data set.
 
-        DESCRIPTION
-           Retrieve a previously set jdpileup model by data id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_model : Return the model expression for a data set.
+        get_source : Return the source model expression for a data set.
+        sherpa.astro.models.JDPileup : The ACIS pile up model.
+        set_pileup_model : Include a model of the Chandra ACIS pile up when fitting PHA data.
 
-        SEE ALSO
-           set_pileup_model, jdpileup
+        Examples
+        --------
+
+        >>> jdp1 = get_pileup_model()
+        >>> jdp2 = get_pileup_model(2)
+
         """
         return self._get_item(id, self._pileup_models, 'pileup model',
                               'has not been set')
 
     #@loggable(with_id=True, with_keyword='model')
+    ### DOC-NOTE: should this be made a general function, since it
+    ###           presumably does not care about pileup, just adds the
+    ###           given model into the expression? Or is it PHA specific?
     def set_pileup_model(self, id, model=None):
-        """
-        set_pileup_model
+        """Include a model of the Chandra ACIS pile up when fitting PHA data.
 
-        SYNOPSIS
-           Set a jdpileup model by data id
+        Chandra observations of bright sources can be affected by
+        pileup, so that there is a non-linear correlation between
+        the source model and the predicted counts. This process can
+        be modelled by including the `jdpileup` model for a
+        data set, using the `set_pileup_model`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : an instance of the sherpa.astro.models.JDPileup class
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        get_pileup_model : Return the pile up model for a data set.
+        sherpa.models.model.JDPileup : The ACIS pile up model.
+        set_full_model : Define the convolved model expression for a data set.
+        set_model : Set the source model expression for a data set.
 
-           model     - Sherpa jdpileup model
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-        Returns:
-           None
+        This is a generic function, and can be used to model other
+        non-linear detector effects, but at present the only available
+        model is for the ACIS pile up provided by the jdpileup model.
 
-        DESCRIPTION
-           Put a Sherpa jdpileup model on the stack by data id
+        Examples
+        --------
 
-        SEE ALSO
-           jdpileup, get_pileup_model
+        Plot up the model (an xsphabs model multiplied by a powlaw1d
+        component) and then overplot the same expression but including
+        the effects of pile up in the Chandra ACIS instrument:
+
+        >>> load_pha('src.pi')
+        >>> set_source(xsphabs.gal * powlaw1d.pl)
+        >>> plot_model()
+        >>> set_pileup_model(jdpileup.jpd)
+        >>> plot_model(overplot=True)
+
         """
         if model is None:
             id, model = model, id
@@ -5534,30 +8517,46 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_bkg_source(self, id=None, bkg_id=None):
-        """
-        get_bkg_source
+        """Return the model expression for the background of a PHA data set.
 
-        SYNOPSIS
-           Return the background unconvolved model by data id and bkg id
+        This returns the model expression created by `set_bkg_model`
+        or `set_bkg_source`. It does not include any instrument
+        response.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        model : a sherpa.models.Model object
+           This can contain multiple model components. Changing
+           attributes of this model changes the model used by the data
+           set.
 
-           bkg_id    - bkg id, if multiple bkgs exist
-                       default = default bkg id
+        See Also
+        --------
+        delete_bkg_model : Delete the background model expression for a data set.
+        get_bkg_model : Return the model expression for the background of a PHA data set.
+        list_model_ids : List of all the data sets with a source expression.
+        set_bkg_model : Set the background model expression for a PHA data set.
+        show_bkg_model : Display the background model expression for a data set.
 
-        Returns:
-           Sherpa bkg unconvolved model
+        Examples
+        --------
 
-        DESCRIPTION
-           Retrieve a Sherpa unconvolved background model by data id and
-           background id.
+        Return the background model expression for the default data
+        set:
 
-        SEE ALSO
-           set_bkg_model, delete_bkg_model
+        >>> bkg = get_bkg_source()
+        >>> len(bkg.pars)
+        2
+
         """
         id     = self._fix_id(id)
         bkg_id = self._fix_id(bkg_id)
@@ -5570,30 +8569,46 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_bkg_model(self, id=None, bkg_id=None):
-        """
-        get_bkg_model
+        """Return the model expression for the background of a PHA data set.
 
-        SYNOPSIS
-           Return the background convolved model by data id and bkg id
+        This returns the model expression for the background of a data
+        set, including the instrument response (e.g. ARF and RMF),
+        whether created automatically or explicitly, with
+        `set_bkg_full_model`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set to use. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        Returns
+        -------
+        model :
+           This can contain multiple model components and any
+           instrument response. Changing attributes of this model
+           changes the model used by the data set.
 
-           bkg_id    - bkg id, if multiple bkgs exist
-                       default = default bkg id
+        See Also
+        --------
+        delete_bkg_model : Delete the background model expression for a data set.
+        get_bkg_source : Return the model expression for the background of a PHA data set.
+        list_model_ids : List of all the data sets with a source expression.
+        set_bkg_model : Set the background model expression for a PHA data set.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
+        show_bkg_model : Display the background model expression for a data set.
 
-        Returns:
-           Sherpa bkg convolved model
+        Examples
+        --------
 
-        DESCRIPTION
-           Retrieve a Sherpa convolved background model by data id and
-           background id.
+        Return the background model expression for the default data
+        set, including any instrument response:
 
-        SEE ALSO
-           set_bkg_model, delete_bkg_model
+        >>> bkg = get_bkg_model()
+
         """
         id     = self._fix_id(id)
         bkg_id = self._fix_id(bkg_id)
@@ -5617,34 +8632,66 @@ class Session(sherpa.ui.utils.Session):
 
     #@loggable(with_id=True, with_keyword='model')
     def set_bkg_full_model(self, id, model=None, bkg_id=None):
-        """
-        set_bkg_full_model
+        """Define the convolved background model expression for a PHA data set.
 
-        SYNOPSIS
-           Set a convolved Sherpa background model by data id
-           and bkg id
+        Set a model expression for a background data set in the same
+        way that `set_full_model` does for a source.  This is for when
+        the background is being fitted simultaneously to the source,
+        rather than subtracted from it.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : str or sherpa.models.Model object
+           This defines the model used to fit the data. It can be a
+           Python expression or a string version of it.
+        bkg_id : int or str, optional
+           The identifier for the background of the data set, in
+           cases where multiple backgrounds are provided.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        fit : Fit one or more data sets.
+        set_full_model : Define the convolved model expression for a data set.
+        set_pileup_model : Include a model of the Chandra ACIS pile up when fitting PHA data.
+        set_psf : Add a PSF model to a data set.
+        set_model : Set the source model expression for a data set.
 
-           model     - Sherpa bkg model
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-           bkg_id    - bkg id, if multiple bkgs exist
-                       default = default bkg id
+        Some functions - such as `plot_bkg_source` - may not work for
+        model expressions created by `set_bkg_full_model`.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           Add a Sherpa background convolved model to the list of
-           current background models by data id and background id.
+        The background is fit by two power laws - one that is passed
+        through the instrument response (gbgnd) and one that is not
+        (pbgnd). The source is modelled by `xsphabs * galabs`,
+        together with the background model, scaled by the ratio of
+        area and time. Note that the background component in the
+        source expression uses the source response rather than
+        background response.
 
-        SEE ALSO
-           get_bkg_model, delete_bkg_model, set_bkg_model, 
-           set_bkg_source
+        >>> rsp = get_response()
+        >>> bresp = get_response(bkg_id=1)
+        >>> bscale = get_bkg_scale()
+        >>> smodel = xsphabs.galabs * xsapec.emiss
+        >>> bmdl = brsp(powlaw1d.gbdng) + powlaw1d.pbgnd
+        >>> smdl = rsp(smodel) + bscale*(rsp(gbgnd) + pbgnd)
+        >>> set_full_model(smdl)
+        >>> set_bkg_full_model(bmdl)
+
         """
         if model is None:
             id, model = model, id
@@ -5688,37 +8735,83 @@ class Session(sherpa.ui.utils.Session):
 
         self._runparamprompt(model.pars)
 
+    ### DOC-TODO: should probably explain more about how backgrounds are fit?
     #@loggable(with_id=True, with_keyword='model')
     def set_bkg_model(self, id, model=None, bkg_id=None):
-        """
-        set_bkg_model
+        """Set the background model expression for a PHA data set.
 
-        SYNOPSIS
-           Set a Sherpa background source model by data id
-           and bkg id
+        The background emission can be fit by a model, defined by the
+        `set_bkg_model` call, rather than subtracted from the data.
+        If the background is subtracted then the background model is
+        ignored when fitting the data.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        model : str or sherpa.models.Model object
+           This defines the model used to fit the data. It can be a
+           Python expression or a string version of it.
+        bkg_id : int or str, optional
+           The identifier for the background of the data set, in
+           cases where multiple backgrounds are provided.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        delete_model : Delete the model expression from a data set.
+        fit : Fit one or more data sets.
+        integrate1d : Integrate 1D source expressions.
+        set_model : Set the model expression for a data set.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
+        show_bkg_model : Display the background model expression for a data set.
 
-           model     - Sherpa bkg source model
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
+        respectively.
 
-           bkg_id    - bkg id, if multiple bkgs exist
-                       default = default bkg id
+        The emission defined by the background model expression is
+        included in the fit to the source dataset, scaling by exposure
+        time and area size (given by the ratio of the background to
+        source `BACKSCAL` values). That is, if `src_model` and
+        `bkg_model` represent the source and background model
+        expressions set by calls to `set_model` and `set_bkg_model`
+        respectively, the source data is fit by `src_model + scale *
+        bkg_model`, where `scale` is the scaling factor.
 
-        Returns:
-           None
+        PHA data sets will automatically apply the instrumental
+        response (ARF and RMF) to the background expression. For some
+        cases this is not useful - for example, when different
+        responses should be applied to different model components - in
+        which case `set_bkg_full_model` should be used instead.
 
-        DESCRIPTION
-           Add a Sherpa background source model to the list 
-           of current background source models by data id 
-           and background id.
+        Examples
+        --------
 
-        SEE ALSO
-           get_bkg_source, delete_bkg_model, set_bkg_full_model,
-           set_bkg_source
+        The background is model by a gaussian line (`gauss1d` model
+        component called `bline`) together with an absorbed polynomial
+        (the `bgnd` component). The absorbing component (`gal`) is
+        also used in the source expression.
+
+        >>> set_model(xsphabs.gal*powlaw1d.pl)
+        >>> set_bkg_model(gauss1d.bline + gal*polynom1d.bgnd)
+
+        In this example, the default data set has two background
+        estimates, so models are set for both components. The same
+        model is applied to both, except that the relative
+        normalisations are allowed to vary (by inclusion of the
+        `scale` component).
+
+        >>> bmodel = xsphabs.gabs * powlaw1d.pl
+        >>> set_bkg_model(2, bmodel)
+        >>> set_bkg_model(2, bmodel * const1d.scale, bkg_id=2)
+
         """
         if model is None:
             id, model = model, id
@@ -5747,30 +8840,43 @@ class Session(sherpa.ui.utils.Session):
 
 
     def delete_bkg_model(self, id=None, bkg_id=None):
-        """
-        delete_bkg_model
+        """Delete the background model expression for a data set.
 
-        SYNOPSIS
-           Remove a bkg model by data id and bkg id
+        This removes the model expression, created by `set_bkg_model`,
+        for the background component of a data set. It does not delete
+        the components of the expression, or remove the models for any
+        other background components or the source of the data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set containing the source expression. If not given
+           then the default identifier is used, as returned by
+           `get_default_id`.
+        bkg_id : int or string, optional
+           The identifier for the background component to use.
 
-        Arguments:
-           id        - data id
-                       default = default data id
+        See Also
+        --------
+        clean : Clear all stored session data.
+        delete_model : Delete the model expression for a data set.
+        get_default_id : Return the default data set identifier.
+        list_bkg_ids : List all the background identifiers for a data set.
+        set_model : Set the source model expression for a data set.
+        show_model : Display the source model expression for a data set.
 
-           bkg_id    - bkg id, if multiple bkgs exist
-                       default = default bkg id
+        Examples
+        --------
 
-        Returns:
-           None
+        Remove the background model expression for the default data set:
 
-        DESCRIPTION
-           Removes a background model from the stack by data id
-           and background id.
+        >>> delete_bkg_model()
 
-        SEE ALSO
-           get_bkg_model, set_bkg_model
+        Remove the model expression for the background component
+        labelled 'down' for the data set with the identifier 'src':
+
+        >>> delete_bkg_model('src', 'down')
+
         """
         id     = self._fix_id(id)
         bkg_id = self._fix_id(bkg_id)
@@ -5816,38 +8922,78 @@ class Session(sherpa.ui.utils.Session):
                     raise
         return (x,y)
 
+    # also in sherpa.utils
+    ### DOC-NOTE: can filename be a crate/hdulist?
+    ### DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
     #@loggable()
     def load_table_model(self, modelname, filename, method=sherpa.utils.linear_interp, *args, **kwargs):
-        """
-        load_table_model
-        
-        SYNOPSIS
-           Load a table model from file into a Sherpa session
-           
-        SYNTAX
-        
-        Arguments:
-           modelname  - model label
-        
-           filename   - file from which table model data are read
-        
-           method     - interpolation method
-                        default = linear {neville, linear}
+        """Load tabular or image data and use it as a model component.
 
-           args       - optional arguments to pass to data reader
+        A table model is defined on a grid of points which is
+        interpolated onto the independent axis of the data set.  The
+        model will have at least one parameter (the amplitude, or
+        scaling factor to multiply the data by), but may have more
+        (if X-Spec table models are used).
 
-           kwargs     - optional keyword arguments to pass to data reader
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this table model.
+        filename : str
+           The name of the file containing the data, which should
+           contain two columns, which are the x and y values for
+           the data, or be an image.
+        method : func
+           The interpolation method to use to map the input data onto
+           the coordinate grid of the data set. Linear,
+           nearest-neighbor, and polynomial schemes are provided in
+           the sherpa.utils module.
+        *args, **kwargs :
+           Arguments for reading in the data.
 
-        Returns:
-           None
-           
-        DESCRIPTION
-           Load data from a file, and put it in a new model.  This
-           model can be used in fitting, just as models that containing
-           functions can be used.
-           
-        SEE ALSO
-           set_model, load_user_model, add_user_pars        
+        See Also
+        --------
+        load_conv : Load a 1D convolution model.
+        load_psf : Create a PSF model
+        load_template_model : Load a set of templates and use it as a model component.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+
+        Notes
+        -----
+        X-Spec style additive (atable, [1]_) and multiplicative
+        (mtable, [2]_) table models are supported. These models may
+        have multiple model parameters.
+
+        Examples of interpolation schemes provided by `sherpa.utils`
+        are: `linear_interp`, `nearest_interp`, `neville`, and
+        `neville2d`.
+
+        References
+        ----------
+
+        .. [1] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+
+        .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+
+        Examples
+        --------
+
+        Load in the data from filt.fits and use it to multiply
+        the source model (a power law and a gaussian). Allow
+        the amplitude for the table model to vary between 1
+        and 1e6, starting at 1e3.
+
+        >>> load_table_model('filt', 'filt.fits')
+        >>> set_source(filt * (powlaw1d.pl + gauss1d.gline))
+        >>> set_par(filt.ampl, 1e3, min=1, max=1e6)
+
+        Load in an image ("broad.img") and use the pixel values as a
+        model component for data set "img":
+
+        >>> load_table_model('emap', 'broad.img')
+        >>> set_source('img', emap * gauss2d)
+
         """
         tablemodel = sherpa.models.TableModel(modelname)
         # interpolation method
@@ -5907,42 +9053,88 @@ class Session(sherpa.ui.utils.Session):
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
+    ### also in sherpa.utils
+    ### DOC-TODO: how to describe *args/**kwargs
+    ### DOC-TODO: how is the _y value used if set
     def load_user_model(self, func, modelname, filename=None, *args, **kwargs):
-        """
-        load_user_model
-        
-        SYNOPSIS
-           Load a table model from file into a Sherpa session
-           
-        SYNTAX
-        
-        Arguments:
-           func       - reference to a user model function
-           
-           modelname  - model label
-        
-           filename   - file from which table model data are read
-                        default = None
-        
-           args       - optional arguments to pass to data reader
+        """Create a user-defined model.
 
-           kwargs     - optional keyword arguments to pass to data reader
+        Assign a name to a function; this name can then be used as any
+        other name of a model component, either in a source expression
+        - such as with `set_model` - or to change a parameter
+        value. The `add_user_pars` function should be called after
+        `load_user_model` to set up the parameter names and
+        defaults.
 
-        Returns:
-           None
-           
-        DESCRIPTION
-           Take a function written by the user, and assign to a new
-           user model class.  Instances of the new class can be created,
-           and used as models during fits--just as ordinary Sherpa
-           models can.  Optionally, data from a file can be attached to
-           the model, and used in an arbitrary way by the user model
-           function; but data from file is not required, the user model
-           can be just a function.  After a user model is created,
-           parameters need to be added with the add_user_pars function.
-           
-        SEE ALSO
-           set_model, load_table_model, add_user_pars
+        Parameters
+        ----------
+        func : func
+           The function that evaluates the model.
+        modelname : str
+           The name to use to refer to the model component.
+        filename : str, optional
+           Set this to include data from this file in the model. The
+           file should contain two columns, and the second column is
+           stored in the `_y` attribute of the model.
+        *args, **kwargs :
+           Options for reading in the data from `filename`, if set.
+           See `load_table` and `load_image` for more information.
+
+        See Also
+        --------
+        add_model : Create a user-defined model class.
+        add_user_pars : Add parameter information to a user model.
+        load_image : Load an image as a data set.
+        load_table : Load a FITS binary file as a data set.
+        load_table_model : Load tabular data and use it as a model component.
+        load_template_model : Load a set of templates and use it as a model component.
+        set_model : Set the source model expression for a data set.
+
+        Notes
+        -----
+        The `load_user_model` function is designed to make it easy to
+        add a model, but the interface is not the same as the existing
+        models (such as having to call both `load_user_model` and
+        `add_user_pars` for each new instance).  The `add_model`
+        function is used to add a model as a Python class, which is
+        more work to set up, but then acts the same way as the
+        existing models.
+
+        The function used for the model depends on the dimensions of
+        the data. For a 1D model, the signature is::
+
+           def func1d(pars, x, xhi=None):
+
+        where, if xhi is not None, then the dataset is binned and the
+        x argument is the low edge of each bin. The pars argument is
+        the parameter array - the names, defaults, and limits can be
+        set with `add_user_pars` - and should not be changed.  The
+        return value is an array the same size as x.
+
+        For 2D models, the signature is::
+
+           def func2d(pars, x0, x1, x0hi=None, x1hi=None):
+
+        There is no way using this interface to indicate that the
+        model is for 1D or 2D data.
+
+        Examples
+        --------
+
+        Create a two-parameter model of the form "y = mx + c",
+        where the intercept is the first parameter and the slope the
+        second, set the parameter names and default values, then
+        use it in a source expression:
+
+        >>> def func1d(pars, x, xhi=None):
+                if xhi != None:
+                    x = (x + xhi)/2
+                return x * pars[1] + pars[0]
+
+        >>> load_user_model(func1d, "myfunc")
+        >>> add_user_pars(myfunc, ["c","m"], [0,1])
+        >>> set_source(myfunc + gauss1d.gline)
+
         """
         usermodel = sherpa.models.UserModel(modelname)
         usermodel.calc = func
@@ -6047,73 +9239,168 @@ class Session(sherpa.ui.utils.Session):
         return fit_to_ids, f
 
 
+    # also in sherpa.utils
+    ### DOC-TODO: existing docs suggest that bkg_only can be set, but looking
+    ###           at the code it is always set to False.
     def fit(self, id=None, *otherids, **kwargs):
-        """
-        fit
+        """Fit a model to one or more data sets.
 
-        SYNOPSIS
-           Perform fitting process using current optimization method and 
-           current fit statistic.
+        Use forward fitting to find the best-fit model to one or more
+        data sets, given the chosen statisitic and optimization
+        method. The fit proceeds until the results converge or the
+        number of iterations exceeds the maximum value (these values
+        can be changed with `set_method_opt`). An iterative scheme can
+        be added using `set_iter_method` to try and improve the
+        fit. The final fit results are displayed to the screen and can
+        be retrieved with `get_fit_results`.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then
+           all data sets with an associated model are fit simultaneously.
+        *otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
+        outfile : str, optional
+           If set, then the fit results will be written to a file with
+           this name. The file contains the per-iteration fit results.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.FitErr
+           If `filename` already exists and `clobber` is `False`.
 
-           otherids  - List of other Sherpa data ids
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        contour_fit : Contour the fit to a data set.
+        covar : Estimate the confidence intervals using the confidence method.
+        fit_bkg : Fit a model to one or more background PHA data sets.
+        freeze : Fix model parameters so they are not changed by a fit.
+        get_fit_results : Return the results of the last fit.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        set_stat : Set the statistical method.
+        set_method : Change the optimization method.
+        set_method_opt : Change an option of the current optimization method.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
+        set_model : Set the model expression for a data set.
+        show_fit : Summarize the fit results.
+        thaw : Allow model parameters to be varied during a fit.
 
-           outfile   - filename and path of parameter value output vs. number
-                       of function evaluations
-                       default = None
+        Notes
+        -----
+        For PHA data sets with background components, the function
+        will fit any background components for which a background
+        model has been created (rather than being subtracted).
 
-           clobber   - boolean whether to clobber outfile
-                       default = False
+        Examples
+        --------
 
-        Returns:
-           Formatted fit results output 
+        Simultaneously fit all data sets with models and then
+        store the results in the variable fres:
 
-        DESCRIPTION
-           Initiate optimization of model parameter values by id(s).
+        >>> fit()
+        >>> fres = get_fit_results()
 
-        SEE ALSO
-           get_fit_results, conf, proj, covar, show_fit
+        Fit just the data set 'img':
+
+        >>> fit('img')
+
+        Simultaneously fit data sets 1, 2, and 3:
+
+        >>> fit(1, 2, 3)
+
+        Fit data set 'jet' and write the fit results to the text file
+        'jet.fit', over-writing it if it already exists:
+
+        >>> fit('jet', outfile='jet.fit', clobber=True)
+
         """
         kwargs['bkg_only']=False
         self._fit(id, *otherids, **kwargs)
 
 
     def fit_bkg(self, id=None, *otherids, **kwargs):
-        """
-        fit_bkg
+        """Fit a model to one or more background PHA data sets.
 
-        SYNOPSIS
-           Perform fitting process on PHA backgrounds using current 
-           optimization method and current fit statistic.
+        Fit only the backgound components of PHA data sets.  This can
+        be used to find the best-fit background parameters, which can
+        then be frozen before fitting the data, or to ensure that
+        these parameters are well defined before performing a
+        simultaneous source and background fit.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the background data. If not
+           given then all data sets with an associated background
+           model are fit simultaneously.
+        *otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
+        outfile : str, optional
+           If set, then the fit results will be written to a file with
+           this name. The file contains the per-iteration fit results.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (`True`) or if it raises an exception (`False`,
+           the default setting).
 
-        Arguments:
-           id        - Sherpa background data id
-                       default = default background data id
+        Raises
+        ------
+        sherpa.utils.err.FitErr
+           If `filename` already exists and `clobber` is `False`.
 
-           otherids  - List of other Sherpa background data ids
+        See Also
+        --------
+        conf : Estimate the confidence intervals using the confidence method.
+        contour_fit : Contour the fit to a data set.
+        covar : Estimate the confidence intervals using the confidence method.
+        fit : Fit a model to one or more data sets.
+        freeze : Fix model parameters so they are not changed by a fit.
+        get_fit_results : Return the results of the last fit.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        image_fit : Display the data, model, and residuals for a data set in the image viewer.
+        set_stat : Set the statistical method.
+        set_method : Change the optimization method.
+        set_method_opt : Change an option of the current optimization method.
+        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
+        set_full_model : Define the convolved model expression for a data set.
+        set_iter_method : Set the iterative-fitting scheme used in the fit.
+        set_model : Set the model expression for a data set.
+        show_bkg_source : Display the background model expression for a data set.
+        show_bkg_model : Display the background model expression used to fit a data set.
+        show_fit : Summarize the fit results.
+        thaw : Allow model parameters to be varied during a fit.
 
-           outfile   - filename and path of parameter value output vs. number
-                       of function evaluations
-                       default = None
+        Notes
+        -----
+        This is only for PHA data sets where the background is being
+        modelled, rather than subtracted from the data.
 
-           clobber   - boolean whether to clobber outfile
-                       default = False
+        Examples
+        --------
 
-        Returns:
-           Formatted fit results output 
+        Simultaneously fit all background data sets with models and
+        then store the results in the variable fres:
 
-        DESCRIPTION
-           Initiate optimization of model parameter values by background id(s).
+        >>> fit_bkg()
+        >>> fres = get_fit_results()
 
-        SEE ALSO
-           get_fit_results, conf, proj, covar, show_fit
+        Fit the background for data sets 1 and 2, then do a
+        simultaneous fit to the source and background data sets:
+
+        >>> fit_bkg(1,2)
+        >>> fit(1,2)
+
         """
         kwargs['bkg_only']=True
         self._fit(id, *otherids, **kwargs)
@@ -6208,6 +9495,7 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
+    # also in sherpa.utils
     def get_model_plot(self, id=None, **kwargs):
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
             self._prepare_plotobj(id, self._modelhisto, **kwargs)
@@ -6218,77 +9506,49 @@ class Session(sherpa.ui.utils.Session):
 
     get_model_plot.__doc__ = sherpa.ui.utils.Session.get_model_plot.__doc__
 
+    # also in sherpa.utils, but without the lo/hi arguments
     def get_source_plot(self, id=None, lo=None, hi=None):
-        """
-        get_source_plot
+        """Return the data used by plot_source.
 
-        SYNOPSIS
-           Return a Sherpa source plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        lo : number, optional
+           The low value to plot (only used for PHA data sets).
+        hi : number, optional
+           The high value to plot (only use for PHA data sets).
 
-        SYNTAX
+        Returns
+        -------
+        data :
+           An object representing the data used to create the plot by
+           `plot_source`. The return value depends on the data
+           set (e.g. PHA, 1D binned, 1D un-binned).
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_model_plot : Return the data used by plot_model.
+        plot_model : Plot the model for a data set.
+        plot_source : Plot the source expression for a data set.
 
-           lo       - low limit of plot
-                      default = None
-           
-           hi       - high limit of plot
-                      default = None
+        Examples
+        --------
 
-        Returns:
-           Sherpa SourcePlot plot
+        >>> splot = get_source_plot()
 
-        DESCRIPTION
-           The Sherpa source plot object holds references to various
-           plot preferences and data arrays.
+        >>> splot1 = get_source_plot(id='jet', lo=0.5, hi=7)
+        >>> splot2 = get_source_plot(id='core', lo=0.5, hi=7)
 
-           Attributes:
-              title        - title of plot, read-only
+        For a PHA data set, the units on both the X and Y axes of the
+        plot are controlled by the `set_analysis` command. In this
+        case the Y axis will be in units of photons/s/cm^2 and the X
+        axis in keV:
 
-              xlabel       - x axis label, read-only
+        >>> set_analysis('energy', factor=1)
+        >>> splot = get_source_plot()
 
-              ylabel       - y axis label, read-only
-
-              units        - units of grid, read-only
-
-              xlo          - grid array, low bins
-
-              xhi          - grid array, high bins
-
-              flux         - unconvolved counts
-
-              y            - convolved counts
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - None
-                 linecolor      - 'red'
-                 linestyle      - 1
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolstyle    - N/A
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False                 
-
-           Functions:
-
-              prepare()
-                 calculate the source model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_source, plot_bkg, plot_arf, get_bkg_plot, get_arf_plot
         """
         ## srcplot obj is possibly reinstantiated depending on data type
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
@@ -6296,6 +9556,7 @@ class Session(sherpa.ui.utils.Session):
         return self._prepare_plotobj(id, self._sourceplot)
 
 
+    # copy doc string from sherpa.utils
     def get_model_component_plot(self, id, model=None):
         if model is None:
             id, model = model, id
@@ -6312,7 +9573,7 @@ class Session(sherpa.ui.utils.Session):
 
     get_model_component_plot.__doc__ = sherpa.ui.utils.Session.get_model_component_plot.__doc__
 
-
+    # copy doc string from sherpa.utils
     def get_source_component_plot(self, id, model=None):
         if model is None:
             id, model = model, id
@@ -6333,339 +9594,232 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_order_plot(self, id=None, orders=None):
-        """
-        get_order_plot
+        """Return the data used by plot_order.
 
-        SYNOPSIS
-           Return a Sherpa order plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        orders : optional
+           Which response to use. The argument can be a scalar or
+           array, in which case multiple curves will be displayed.
+           The default is to use all orders.
 
-        SYNTAX
+        Returns
+        -------
+        data : a sherpa.astro.plot.OrderPlot instance
+           An object representing the data used to create the plot by
+           `plot_order`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        plot_order : Plot the model for a data set convolved by the given response.
 
-           orders   - array of orders
-                      default = all orders
-
-        Returns:
-           Sherpa OrderPlot plot
-
-        DESCRIPTION
-
-        SEE ALSO
-           plot_order, plot_bkg, plot_arf, get_bkg_plot, get_arf_plot
         """
         self._prepare_plotobj(id, self._orderplot, orders=orders)
         return self._orderplot
 
 
     def get_arf_plot(self, id=None, resp_id=None):
-        """
-        get_arf_plot
+        """Return the data used by plot_arf.
 
-        SYNOPSIS
-           Return a Sherpa ancillary response plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set with an ARF. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           Which ARF to use in the case that multiple ARFs are
+           associated with a data set. The default is `None`,
+           which means the first one.
 
-        SYNTAX
+        Returns
+        -------
+        arf_plot : a sherpa.astro.plot.ARFPlot instance
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
 
-           resp_id  - response id, if multiple response exist
-                      default  = default response id
+        See Also
+        --------
+        plot : Create one or more plot types.
+        plot_arf : Plot the ARF associated with a data set.
 
-        Returns:
-           Sherpa ARFPlot plot
+        Examples
+        --------
 
-        DESCRIPTION
-           The Sherpa ARF plot object holds references to various
-           plot preferences and data arrays.
+        Return the ARF plot data for the default data set:
 
-           Attributes:
-              title        - title of plot, read-only
+        >>> aplot = get_arf_plot()
+        >>> aplot.y.max()
+        676.95794677734375
 
-              xlabel       - x axis label, read-only
+        Return the ARF data for the second response of the
+        data set labelled 'histate':
 
-              ylabel       - y axis label, read-only
+        >>> aplot = get_arf_plot('histate', 2)
 
-              units        - units of grid, read-only
-
-              xlo          - grid array, low bins
-
-              xhi          - grid array, high bins
-
-              flux         - unconvolved counts
-
-              y            - convolved counts
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - None
-                 linecolor      - 'red'
-                 linestyle      - 1
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolstyle    - N/A
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False                 
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_arf, plot_source, plot_bkg, get_source_plot, get_bkg_plot
         """
         self._prepare_plotobj(id, self._arfplot, resp_id)
         return self._arfplot
 
     def get_bkg_fit_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_fit_plot
+        """Return the data used by plot_bkg_fit.
 
-        SYNOPSIS
-           Return a Sherpa background fit plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        model : a sherpa.astro.plot.BkgFitPlot instance
+           An object representing the data used to create the plot by
+           `plot_bkg_fit`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                       default = None
+        See Also
+        --------
+        get_bkg_plot : Return the data used by plot_bkg.
+        get_bkg_model_plot : Return the data used by plot_bkg_model.
+        plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
 
-        Returns:
-           Sherpa BkgFitPlot plot
-
-        DESCRIPTION
-           The Sherpa background fit plot object holds a reference to a
-           background plot and background model plot instance.
-
-           Attributes:
-              bkgdataplot
-
-              bkgmodelplot
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit, plot_bkg_source
         """
         self._prepare_plotobj(id, self._bkgfitplot, bkg_id=bkg_id)
         return self._bkgfitplot
 
 
     def get_bkg_model_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_model_plot
+        """Return the data used by plot_bkg_model.
 
-        SYNOPSIS
-           Return a Sherpa background convolved model plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        model : a sherpa.astro.plot.BkgModelHistogram instance
+           An object representing the data used to create the plot by
+           `plot_bkg_model`.
 
-        Arguments:
-           id        - Sherpa data id
-                       default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_source_plot : Return the data used by plot_bkg_source.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_source : Plot the model expression for the background of a PHA data set.
 
-        Returns:
-           Sherpa BkgModelPlot object
-
-        DESCRIPTION
-           The Sherpa background model plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-           Functions:
-
-              prepare()
-                 calculate the model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_bkg_model, plot_bkg, plot_bkg_fit, plot_bkg_source
         """
         self._prepare_plotobj(id, self._bkgmodelhisto, bkg_id=bkg_id)
         return self._bkgmodelhisto
 
 
     def get_bkg_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_plot
+        """Return the data used by plot_bkg.
 
-        SYNOPSIS
-           Return a Sherpa background data plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        data : a sherpa.astro.plot.BkgDataPlot instance
+           An object representing the data used to create the plot by
+           `plot_data`. The relationship between the returned values
+           and the values in the data set depend on the analysis,
+           filtering, and grouping settings of the data set.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_default_id : Return the default data set identifier.
+        plot_bkg : Plot the background values for a PHA data set.
 
-        Returns:
-           Sherpa BkgDataPlot object
-
-        DESCRIPTION
-           The Sherpa data plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'capped'
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 2
-                 symbolstyle    - 4
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_data, plot_arf, plot_source, plot_bkg, get_data_plot
         """
         self._prepare_plotobj(id, self._bkgdataplot, bkg_id=bkg_id)
         return self._bkgdataplot
 
 
     def get_bkg_source_plot(self, id=None, lo=None, hi=None, bkg_id=None):
-        """
-        get_bkg_source_plot
+        """Return the data used by plot_bkg_source.
 
-        SYNOPSIS
-           Return a Sherpa background source plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        lo : number, optional
+           The low value to plot.
+        hi : number, optional
+           The high value to plot.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        source : a sherpa.astro.plot.BkgSourcePlot instance
+           An object representing the data used to create the plot by
+           `plot_bkg_source`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           lo       - low limit of plot
-                      default = None
-           
-           hi       - high limit of plot
-                      default = None
+        See Also
+        --------
+        get_bkg_model_plot : Return the data used by plot_bkg_model.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_source : Plot the model expression for the background of a PHA data set.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
-
-        Returns:
-           Sherpa BkgSourcePlot plot
-
-        DESCRIPTION
-           The Sherpa source plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              units        - units of grid, read-only
-
-              xlo          - grid array, low bins
-
-              xhi          - grid array, high bins
-
-              flux         - unconvolved counts
-
-              y            - convolved counts
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - None
-                 linecolor      - 'red'
-                 linestyle      - 1
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolstyle    - N/A
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False                 
-
-           Functions:
-
-              prepare()
-                 calculate the source model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit, plot_bkg_source
         """
         self._prepare_plotobj(id, self._bkgsourceplot, bkg_id=bkg_id,
                               lo=lo, hi=hi)
@@ -6673,288 +9827,160 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_bkg_resid_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_resid_plot
+        """Return the data used by plot_bkg_resid.
 
-        SYNOPSIS
-           Return a Sherpa background residuals plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        source : a sherpa.astro.plot.BkgResidPlot instance
+           An object representing the data used to create the plot by
+           `plot_bkg_resid`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_chisqr_plot : Return the data used by plot_bkg_chisqr.
+        get_bkg_delchi_plot : Return the data used by plot_bkg_delchi.
+        get_bkg_ratio_plot : Return the data used by plot_bkg_ratio.
+        plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
 
-        Returns:
-           Sherpa BkgResidPlot plot
-
-        DESCRIPTION
-           The Sherpa background resid plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - False
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3
-                 symbolstyle    - 2
-                 xaxis          - True
-                 xerrorbars     - True
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the residuals and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit, plot_bkg_source,
-           plot_bkg_ratio, plot_bkg_resid, plot_bkg_delchi
         """
         self._prepare_plotobj(id, self._bkgresidplot, bkg_id=bkg_id)
         return self._bkgresidplot
 
 
     def get_bkg_ratio_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_ratio_plot
+        """Return the data used by plot_bkg_ratio.
 
-        SYNOPSIS
-           Return a Sherpa background ratio plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        source : a sherpa.astro.plot.BkgRatioPlot instance
+           An object representing the data used to create the plot by
+           `plot_bkg_ratio`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_chisqr_plot : Return the data used by plot_bkg_chisqr.
+        get_bkg_delchi_plot : Return the data used by plot_bkg_delchi.
+        get_bkg_resid_plot : Return the data used by plot_bkg_resid.
+        plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
 
-        Returns:
-           Sherpa BkgRatioPlot plot
-
-        DESCRIPTION
-           The Sherpa ratio plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - False
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3
-                 symbolstyle    - 2
-                 xaxis          - True
-                 xerrorbars     - True
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the ratio and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit, plot_bkg_source,
-           plot_bkg_ratio, plot_bkg_resid, plot_bkg_delchi
         """
         self._prepare_plotobj(id, self._bkgratioplot, bkg_id=bkg_id)
         return self._bkgratioplot
 
 
     def get_bkg_delchi_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_delchi_plot
+        """Return the data used by plot_bkg_delchi.
 
-        SYNOPSIS
-           Return a Sherpa background delchi plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        source : a sherpa.astro.plot.BkgDelchiPlot instance
+           An object representing the data used to create the plot by
+           `plot_bkg_delchi`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_chisqr_plot : Return the data used by plot_bkg_chisqr.
+        get_bkg_ratio_plot : Return the data used by plot_bkg_ratio.
+        get_bkg_resid_plot : Return the data used by plot_bkg_resid.
+        plot_bkg_delchi : Plot the ratio of residuals to error for the background of a PHA data set.
 
-        Returns:
-           Sherpa BkgDelchiPlot plot
-
-        DESCRIPTION
-           The Sherpa delchi plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              x            - independent variable array
-
-              y            - dependent variable array
-
-              yerr         - dependent variable uncertainties array
-
-              xerr         - bin size array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - 'line'
-                 errthickness   - None
-                 linecolor      - None
-                 linestyle      - 0
-                 linethickness  - None
-                 ratioline      - False
-                 symbolcolor    - None
-                 symbolfill     - True
-                 symbolsize     - 3
-                 symbolstyle    - 2
-                 xaxis          - True
-                 xerrorbars     - True
-                 xlog           - False
-                 yerrorbars     - True
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the delta chi and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit, plot_bkg_source,
-           plot_bkg_ratio, plot_bkg_resid, plot_bkg_delchi
         """
         self._prepare_plotobj(id, self._bkgdelchiplot, bkg_id=bkg_id)
         return self._bkgdelchiplot
 
 
     def get_bkg_chisqr_plot(self, id=None, bkg_id=None):
-        """
-        get_bkg_chisqr_plot
+        """Return the data used by plot_bkg_chisqr.
 
-        SYNOPSIS
-           Return a Sherpa background chisqr plot
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
 
-        SYNTAX
+        Returns
+        -------
+        source : a sherpa.astro.plot.BkgChisqrPlot instance
+           An object representing the data used to create the plot by
+           `plot_bkg_chisqr`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_delchi_plot : Return the data used by plot_bkg_delchi.
+        get_bkg_ratio_plot : Return the data used by plot_bkg_ratio.
+        get_bkg_resid_plot : Return the data used by plot_bkg_resid.
+        plot_bkg_chisqr : Plot the chi-squared value for each point of the background of a PHA data set.
 
-        Returns:
-           Sherpa BkgChisqrPlot plot
-
-        DESCRIPTION
-           The Sherpa chisqr plot object holds references to various
-           plot preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              units        - units of grid, read-only
-
-              x            - x array
-
-              y            - chisqr values array
-
-              plot_prefs   - dictionary of plotting preferences
-
-                 errcolor       - None
-                 errstyle       - None
-                 linecolor      - 'red'
-                 linestyle      - 1
-                 linethickness  - None
-                 ratioline      - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolstyle    - N/A
-                 xaxis          - N/A
-                 xerrorbars     - False
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False                 
-
-           Functions:
-
-              prepare()
-                 calculate the chisqr and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit, plot_bkg_source,
-           plot_bkg_ratio, plot_bkg_resid, plot_bkg_delchi
         """
         self._prepare_plotobj(id, self._bkgchisqrplot, bkg_id=bkg_id)
         return self._bkgchisqrplot
@@ -6972,99 +9998,73 @@ class Session(sherpa.ui.utils.Session):
         return plot
 
 
+    ### DOC-TODO: See comments about plot_energy_flux.
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None, **kwargs):
-        """
-        get_energy_flux_hist
+        """Return the data displayed by plot_energy_flux.
 
-        SYNOPSIS
-           Return a Sherpa energy flux histogram
+        Parameters
+        ----------
+        lo : number, optional
+           The lower limit to use when summing up the signal. If not
+           given then the lower value of the data grid is used.
+        hi : optional
+           The upper limit to use when summing up the signal. If not
+           guven then the upper value of the data grid is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        num : int, optional
+           The number of samples to create. The default is `7500`.
+        bins : int, optional
+           The number of bins to use for the histogram.
+        correlated : bool, optional
+           If `True` (the default is `False`) then `scales` is the
+           full covariance matrix, otherwise it is just a 1D array
+           containing the variances of the parameters (the diagonal
+           elements of the covariance matrix).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
+        scales : array, optional
+           The scales used to define the normal distributions for the
+           parameters. The form depends on the `correlated`
+           parameter: when `True`, the array should be a symmetric
+           positive semi-definite (N,N) array, otherwise a 1D array
+           of length N, where N is the number of free parameters.
+        recalc : bool, optional
+           If `True`, the default, then re-calculate the values rather
+           than use the values from the last time the function was
+           run.
 
-        SYNTAX
+        Returns
+        -------
+        hist : a sherpa.astro.plot.EnergyFluxHistogram instance
+           An object representing the data used to create the plot by
+           `plot_energy_flux`.
 
-        Arguments:
-           lo          - lower energy bound
-                         default = None
+        See Also
+        --------
+        get_photon_flux_hist : Return the data displayed by plot_photon_flux.
+        plot_energy_flux : Display the energy flux distribution.
+        plot_photon_flux : Display the photon flux distribution.
+        sample_energy_flux : Return the energy flux distribution of a model.
+        sample_flux : Return the flux distribution of a model.
+        sample_photon_flux : Return the photon flux distribution of a model.
 
-           hi          - upper energy bound
-                         default = None
+        Examples
+        --------
 
-           id          - data id
-                         default = default data id
+        >>> ehist = get_energy_flux_hist(0.5, 7, num=1000)
 
-           num         - Number of simulations
-                         default = 7500
+        >>> ehist1 = get_energy_flux_hist(0.5, 2, id="jet", num=1000)
+        >>> ehist2 = get_energy_flux_hist(0.5, 2, id="core", num=1000)
 
-           bins        - Number of bins in the histogram
-                         default = 75
-
-           correlated  - Use a multi-variate distribution to sample parameter values
-                         default = False
-
-           numcores    - specify the number of cores for parallel processing.
-                         All available cores are used by default.
-                         default = None
-
-           bkg_id      - Sherpa background id
-                         default = default bkg id
-
-           recalc      - Recompute before sending data arrays to visualizer
-                         default = True
-
-        Returns:
-           Sherpa energy FluxHistogram object
-
-        DESCRIPTION
-           The Sherpa FluxHistogram object holds references to various
-           histogram preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              units        - units of grid, read-only
-
-              xlo          - grid array, low bins
-
-              xhi          - grid array, high bins
-
-              y            - flux distribution
-
-              histo_prefs  - dictionary of plotting preferences
-
-                 errcolor       - N/A
-                 errstyle       - N/A
-                 errthickness   - N/A
-                 fillcolor      - None
-                 fillopacity    - None
-                 fillstyle      - None
-                 linestyle      - 1
-                 linecolor      - 'red'
-                 linethickness  - None
-                 symbolangle    - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolsize     - N/A
-                 symbolstyle    - N/A
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the source model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_energy_flux, get_photon_flux_plot, plot_photon_flux,
-           sample_energy_flux, sample_photon_flux
         """
         if sherpa.utils.bool_cast(kwargs.pop('recalc',True)):
             self._prepare_energy_flux_plot(self._energyfluxplot, lo, hi, id, num,
@@ -7072,99 +10072,73 @@ class Session(sherpa.ui.utils.Session):
         return self._energyfluxplot
 
 
+    ### DOC-TODO: See comments about plot_photon_flux.
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None, **kwargs):
-        """
-        get_photon_flux_hist
+        """Return the data displayed by plot_photon_flux.
 
-        SYNOPSIS
-           Return a Sherpa photon flux histogram
+        Parameters
+        ----------
+        lo : number, optional
+           The lower limit to use when summing up the signal. If not
+           given then the lower value of the data grid is used.
+        hi : optional
+           The upper limit to use when summing up the signal. If not
+           guven then the upper value of the data grid is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        num : int, optional
+           The number of samples to create. The default is `7500`.
+        bins : int, optional
+           The number of bins to use for the histogram.
+        correlated : bool, optional
+           If `True` (the default is `False`) then `scales` is the
+           full covariance matrix, otherwise it is just a 1D array
+           containing the variances of the parameters (the diagonal
+           elements of the covariance matrix).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
+        scales : array, optional
+           The scales used to define the normal distributions for the
+           parameters. The form depends on the `correlated`
+           parameter: when `True`, the array should be a symmetric
+           positive semi-definite (N,N) array, otherwise a 1D array
+           of length N, where N is the number of free parameters.
+        recalc : bool, optional
+           If `True`, the default, then re-calculate the values rather
+           than use the values from the last time the function was
+           run.
 
-        SYNTAX
+        Returns
+        -------
+        hist : a sherpa.astro.plot.PhotonFluxHistogram instance
+           An object representing the data used to create the plot by
+           `plot_photon_flux`.
 
-        Arguments:
-           lo          - lower energy bound
-                         default = None
+        See Also
+        --------
+        get_energy_flux_hist : Return the data displayed by plot_energy_flux.
+        plot_energy_flux : Display the energy flux distribution.
+        plot_photon_flux : Display the photon flux distribution.
+        sample_energy_flux : Return the energy flux distribution of a model.
+        sample_flux : Return the flux distribution of a model.
+        sample_photon_flux : Return the photon flux distribution of a model.
 
-           hi          - upper energy bound
-                         default = None
+        Examples
+        --------
 
-           id          - data id
-                         default = default data id
+        >>> phist = get_photon_flux_hist(0.5, 7, num=1000)
 
-           num         - Number of simulations
-                         default = 7500
+        >>> phist1 = get_photon_flux_hist(0.5, 2, id="jet", num=1000)
+        >>> phist2 = get_photon_flux_hist(0.5, 2, id="core", num=1000)
 
-           bins        - Number of bins in the histogram
-                         default = 75
-
-           correlated  - Use a multi-variate distribution to sample parameter values
-                         default = False
-
-           numcores    - specify the number of cores for parallel processing.
-                         All available cores are used by default.
-                         default = None
-
-           bkg_id      - Sherpa background id
-                         default = default bkg id
-
-           recalc      - Recompute before sending data arrays to visualizer
-                         default = True
-
-        Returns:
-           Sherpa photon FluxHistogram object
-
-        DESCRIPTION
-           The Sherpa FluxHistogram object holds references to various
-           histogram preferences and data arrays.
-
-           Attributes:
-              title        - title of plot, read-only
-
-              xlabel       - x axis label, read-only
-
-              ylabel       - y axis label, read-only
-
-              units        - units of grid, read-only
-
-              xlo          - grid array, low bins
-
-              xhi          - grid array, high bins
-
-              y            - flux distribution
-
-              histo_prefs  - dictionary of plotting preferences
-
-                 errcolor       - N/A
-                 errstyle       - N/A
-                 errthickness   - N/A
-                 fillcolor      - None
-                 fillopacity    - None
-                 fillstyle      - None
-                 linestyle      - 1
-                 linecolor      - 'red'
-                 linethickness  - None
-                 symbolangle    - N/A
-                 symbolcolor    - N/A
-                 symbolfill     - N/A
-                 symbolsize     - N/A
-                 symbolstyle    - N/A
-                 xlog           - False
-                 yerrorbars     - False
-                 ylog           - False
-
-           Functions:
-
-              prepare()
-                 calculate the source model and populate the data arrays
-
-              plot( overplot=False, clearwindow=True )
-                 send data arrays to plotter for visualization
-
-
-        SEE ALSO
-           plot_photon_flux, get_energy_flux_plot, plot_energy_flux,
-           sample_energy_flux, sample_photon_flux
         """
         if sherpa.utils.bool_cast(kwargs.pop('recalc',True)):
             self._prepare_photon_flux_plot(self._photonfluxplot, lo, hi, id, num,
@@ -7279,43 +10253,63 @@ class Session(sherpa.ui.utils.Session):
 
 
     def plot_arf(self, id=None, resp_id=None, **kwargs):
-        """
-        plot_arf
+        """Plot the ARF associated with a data set.
 
-        SYNOPSIS
-           Plot ancillary response data
+        Display the effective area curve from the ARF
+        component of a PHA data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set with an ARF. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           Which ARF to use in the case that multiple ARFs are
+           associated with a data set. The default is `None`,
+           which means the first one.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_data`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
 
-           resp_id  - response id, if multiple response exist
-                      default  = default response id
+        See Also
+        --------
+        get_arf_plot : Return the data used by plot_arf.
+        plot : Create one or more plot types.
 
-           replot   - replot calculated arrays
-                      default = False
+        Examples
+        --------
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        Plot the ARF for the default data set:
 
-        Returns:
-           None
+        >>> plot_arf()
 
-        DESCRIPTION
-           Visualize the ancillary response (effective area) in a 1D plot by
-           data id or response id.
+        Plot the ARF from data set 1 and overplot
+        the ARF from data set 2:
 
-        SEE ALSO
-           plot_data, plot_source, plot_bkg, plot_model
+        >>> plot_arf(1)
+        >>> plot_arf(2, overplot=True)
+
+        Plot the ARFs labelled "arf1" and "arf2" for the
+        "src" data set:
+
+        >>> plot_arf("src", "arf1")
+        >>> plot_arf("src", "arf2", overplot=True)
+
         """
         arf = self._get_pha_data(id).get_arf(resp_id)
         if arf is None:
             raise DataErr('noarf', self._fix_id(id))
         self._plot(id, self._arfplot, resp_id, **kwargs)
 
-
+    ### DOC-TODO: does this support bkg_id for PHA data sets?
     def plot_source_component(self, id, model=None, **kwargs):
 
         if model is None:
@@ -7355,431 +10349,642 @@ class Session(sherpa.ui.utils.Session):
 
     plot_model_component.__doc__ = sherpa.ui.utils.Session.plot_model_component.__doc__
 
+    # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self, id=None, lo=None, hi=None, **kwargs):
-        """
-        plot_source
+        """Plot the source expression for a data set.
 
-        SYNOPSIS
-           Plot unconvolved source model
+        This function plots the source model for a data set. This does
+        not include any instrument response (e.g. a convolution
+        created by `set_psf` or ARF and RMF automatically created for
+        a PHA data set).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        lo : number, optional
+           The low value to plot (only used for PHA data sets).
+        hi : number, optional
+           The high value to plot (only use for PHA data sets).
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_source`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_source_plot : Return the data used by plot_source.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        plot_model : Plot the model for a data set.
+        set_analysis : Set the units used when fitting and displaying spectral data.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           lo       - low limit of plot
-                      default = None
+        Examples
+        --------
 
-           hi       - high limit of plot
-                      default = None
+        Plot the unconvolved source model for the default data set:
 
-           replot   - replot calculated arrays
-                      default = False
+        >>> plot_source()
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        Overplot the source model for data set 2 on data set 1:
 
-        Returns:
-           None
+        >>> plot_source(1)
+        >>> plot_source(2, overplot=True)
 
-        DESCRIPTION
-           Visualize the unconvolved source model in a 1D plot by
-           data id.
+        Restrict the plot to values between 0.5 and 7 for the
+        independent axis:
 
-        SEE ALSO
-           plot_model, plot_data, get_source_plot, plot_arf, plot_bkg,
-           plot_bkg_source
+        >>> plot_source(lo=0.5, hi=7)
+
+        For a PHA data set, the units on both the X and Y axes of the
+        plot are controlled by the `set_analysis` command. In this
+        case the Y axis will be in units of photons/s/cm^2 and the X
+        axis in keV:
+
+        >>> set_analysis('energy', factor=1)
+        >>> plot_source()
+
         """
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
             self._plot(id, self._astrosourceplot, None, None, lo, hi, **kwargs)
         else:
             self._plot(id, self._sourceplot, **kwargs)
 
-
+    ### DOC-TODO: is orders the same as resp_id?
     def plot_order(self, id=None, orders=None, **kwargs):
-        """
-        plot_order
+        """Plot the model for a data set convolved by the given response.
 
-        SYNOPSIS
-           Plot convolved source model by multiple response order
+        Some data sets - such as grating PHA data - can have multiple
+        responses. The `plot_order` function acts like `plot_model`,
+        in that it displays the model after passing through a
+        response, but allows the user to select which response to use.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        orders : optional
+           Which response to use. The argument can be a scalar or
+           array, in which case multiple curves will be displayed.
+           The default is to use all orders.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_model`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_order_plot : Return the data used by plot_order.
+        plot : Create one or more plot types.
+        plot_model : Plot the model for a data set.
 
-           orders   - list of plot orders
-                      default = None
+        Examples
+        --------
 
-           replot   - replot calculated arrays
-                      default = False
+        Display the source model convolved by the first response
+        for the default data set:
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_order(orders=1)
 
-        Returns:
-           None
+        Plot the source convolved through the first and second
+        responses for the second data set (separate curves for
+        each response):
 
-        DESCRIPTION
-           Visualize the convolved source model in a 1D plot by
-           data id and multiple response order.
+        >>> plot_order(2, orders=[1,2])
 
-        SEE ALSO
-           plot_model, plot_data, get_source_plot, plot_arf, plot_bkg,
-           plot_bkg_source
+        Add the orders plot to a model plot:
+
+        >>> plot_model()
+        >>> plot_order(orders=[2,3], overplot=True)
+
         """
         self._plot(id, self._orderplot, None, None, None, None,orders, **kwargs)
 
 
     def plot_bkg(self, id=None, bkg_id=None, **kwargs):
-        """
-        plot_bkg
+        """Plot the background values for a PHA data set.
 
-        SYNOPSIS
-           Plot background counts
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_bkg_plot : Return the data used by plot_bkg.
+        get_default_id : Return the default data set identifier.
+        plot : Create one or more plot types.
+        set_analysis : Set the units used when fitting and displaying spectral data.
+        set_xlinear : New plots will display a linear X axis.
+        set_xlog : New plots will display a logarithmically-scaled X axis.
+        set_ylinear : New plots will display a linear Y axis.
+        set_ylog : New plots will display a logarithmically-scaled Y axis.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        Examples
+        --------
 
-           replot   - replot calculated arrays
-                      default = False
+        Plot the background from the default data set:
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg()
 
-        Returns:
-           None
+        Overplot the background from the 'jet' data set on the
+        data. There is no scaling for differences in aperture or
+        exposure time:
 
-        DESCRIPTION
-           Visualize the background counts in a 1D plot by
-           data id or background id.
+        >>> plot_data('jet')
+        >>> plot_bkg('jet', overplot=True)
 
-        SEE ALSO
-           plot_bkg_model, plot_bkg_fit, plot_bkg_source
+        Compare the first two background components of data set 1:
+
+        >>> plot_bkg(1, 1)
+        >>> plot_bkg(1, 2, overplot=True)
+
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgdataplot, None, bkg_id, **kwargs)
 
 
     def plot_bkg_model(self, id=None, bkg_id=None, **kwargs):
-        """
-        plot_bkg_model
+        """Plot the model for the background of a PHA data set.
 
-        SYNOPSIS
-           Plot background convolved model
+        This function plots the model for the background of a PHA data
+        set, which includes any instrument response (the
+        ARF and RMF).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_model`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_model_plot : Return the data used by plot_bkg_model.
+        plot_bkg_source : Plot the model expression for the background of a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
 
-           replot   - replot calculated arrays
-                      default = False
+        Examples
+        --------
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg_model()
 
-        Returns:
-           None
+        >>> plot_bkg('jet')
+        >>> plot_bkg_model('jet', bkg_id=1, overplot=True)
+        >>> plot_bkg_model('jet', bkg_id=2, overplot=True)
 
-        DESCRIPTION
-           Visualize the background convolved model in a 1D plot by
-           data id and background id.
-
-        SEE ALSO
-           plot_bkg, plot_bkg_fit, plot_bkg_source
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgmodelhisto, None, bkg_id, **kwargs)
 
 
     def plot_bkg_resid(self, id=None, bkg_id=None, **kwargs):
-        """
-        plot_bkg_resid
+        """Plot the residual (data-model) values for the background of a PHA data set.
 
-        SYNOPSIS
-           Plot background residuals
+        Display the residuals for the background of a PHA data set
+        when it is being fit, rather than subtracted from the source.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_resid`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_resid_plot : Return the data used by plot_bkg_resid.
+        plot_bkg_chisqr : Plot the chi-squared value for each point of the background of a PHA data set.
+        plot_bkg_delchi : Plot the ratio of residuals to error for the background of a PHA data set.
+        plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
 
-           replot   - replot calculated arrays
-                      default = False
+        Examples
+        --------
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg_resid()
 
-        Returns:
-           None
+        >>> plot_bkg('jet')
+        >>> plot_bkg_resid('jet', bkg_id=1, overplot=True)
+        >>> plot_bkg_resid('jet', bkg_id=2, overplot=True)
 
-        DESCRIPTION
-           Visualize the background residuals (measured background
-           counts minus predicted background counts) in a 1D plot by data id and
-           background id.
-
-        SEE ALSO
-           plot_bkg, plot_bkg_fit, plot_bkg_source
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgresidplot, None, bkg_id, **kwargs)
 
 
     def plot_bkg_ratio(self, id=None, bkg_id=None, **kwargs):
-        """
-        plot_bkg_ratio
+        """Plot the ratio of data to model values for the background of a PHA data set.
 
-        SYNOPSIS
-           Plot background ratio
+        Display the ratio of data to model values for the background
+        of a PHA data set when it is being fit, rather than subtracted
+        from the source.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_ratio`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_ratio_plot : Return the data used by plot_bkg_ratio.
+        plot_bkg_chisqr : Plot the chi-squared value for each point of the background of a PHA data set.
+        plot_bkg_delchi : Plot the ratio of residuals to error for the background of a PHA data set.
+        plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
 
-           replot   - replot calculated arrays
-                      default = False
+        Examples
+        --------
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg_ratio()
 
-        Returns:
-           None
+        >>> plot_bkg_ratio('jet', bkg_id=1)
+        >>> plot_bkg_ratio('jet', bkg_id=2, overplot=True)
 
-        DESCRIPTION
-           Visualize the background ratio (background measured counts divided
-           by background predicted counts) in a 1D plot by data id and
-           background id.
-
-        SEE ALSO
-           plot_bkg, plot_bkg_fit, plot_bkg_source
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgratioplot, None, bkg_id, **kwargs)
 
 
     def plot_bkg_delchi(self, id=None, bkg_id=None, **kwargs):
-        """
-        plot_bkg_delchi
+        """Plot the ratio of residuals to error for the background of a PHA data set.
 
-        SYNOPSIS
-           Plot background delta chi
+        Display the ratio of the residuals (data-model) to the error
+        values for the background of a PHA data set when it is being
+        fit, rather than subtracted from the source.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_ratio`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_delchi_plot : Return the data used by plot_bkg_delchi.
+        plot_bkg_chisqr : Plot the chi-squared value for each point of the background of a PHA data set.
+        plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
+        plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
 
-           replot   - replot calculated arrays
-                      default = False
+        Examples
+        --------
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg_delchi()
 
-        Returns:
-           None
+        >>> plot_bkg_delchi('jet', bkg_id=1)
+        >>> plot_bkg_delchi('jet', bkg_id=2, overplot=True)
 
-        DESCRIPTION
-           Visualize the background delchi chi (residuals divided by
-           background uncertainties) in a 1D plot by data id and background id.
-
-        SEE ALSO
-           plot_bkg, plot_bkg_fit, plot_bkg_source
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgdelchiplot, None, bkg_id, **kwargs)
 
 
     def plot_bkg_chisqr(self, id=None, bkg_id=None, **kwargs):
-        """
-        plot_bkg_chisqr
+        """Plot the chi-squared value for each point of the background of a PHA data set.
 
-        SYNOPSIS
-           Plot background chi squared contributions
+        Display the square of the residuals (data-model) divided by
+        the error values for the background of a PHA data set when it
+        is being fit, rather than subtracted from the source.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_ratio`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        See Also
+        --------
+        get_bkg_chisqr_plot : Return the data used by plot_bkg_chisqr.
+        plot_bkg_delchi : Plot the ratio of residuals to error for the background of a PHA data set.
+        plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
+        plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
 
-           replot   - replot calculated arrays
-                      default = False
+        Examples
+        --------
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg_chisqr()
 
-        Returns:
-           None
+        >>> plot_bkg_chisqr('jet', bkg_id=1)
+        >>> plot_bkg_chisqr('jet', bkg_id=2, overplot=True)
 
-        DESCRIPTION
-           Visualize the background chi squared contributions in a 1D plot by
-           data id and background id.
-
-        SEE ALSO
-           plot_bkg, plot_bkg_fit, plot_bkg_source
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgchisqrplot, None, bkg_id, **kwargs)
 
 
     def plot_bkg_fit(self, id=None, bkg_id=None, **kwargs):
-        """
-        plot_bkg_fit
+        """Plot the fit results (data, model) for the background of a PHA data set.
 
-        SYNOPSIS
-           Plot background counts with fitted background model
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_fit`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        SYNTAX
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        See Also
+        --------
+        get_bkg_fit_plot : Return the data used by plot_bkg_fit.
+        plot : Create one or more plot types.
+        plot_bkg : Plot the background values for a PHA data set.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_fit_delchi :
+        plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        set_analysis : Set the units used when fitting and displaying spectral data.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        Examples
+        --------
 
-           replot   - replot calculated arrays
-                      default = False
+        Plot the background fit to the default data set:
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg_fit()
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Visualize the background fit in a 1D plot by
-           data id and background id.
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_source
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgfitplot, None, bkg_id, **kwargs)
 
 
     def plot_bkg_source(self, id=None, lo=None, hi=None, bkg_id=None, **kwargs):
-        """
-        plot_bkg_source
+        """Plot the model expression for the background of a PHA data set.
 
-        SYNOPSIS
-           Plot the unconvolved background model
+        This function plots the model for the background of a PHA data
+        set. It does not include the instrument response (the ARF and
+        RMF).
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        lo : number, optional
+           The low value to plot.
+        hi : number, optional
+           The high value to plot.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_model`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           id       - data id
-                      default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           lo       - low limit of plot
-                      default = None
-   
-           hi       - high limit of plot
-                      default = None
+        See Also
+        --------
+        get_bkg_source_plot : Return the data used by plot_bkg_source.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        set_bkg_model : Set the background model expression for a PHA data set.
 
-           bkg_id   - bkg id, if multiple bkgs exist
-                      default = None
+        Examples
+        --------
 
-           replot   - replot calculated arrays
-                      default = False
+        >>> plot_bkg_source()
 
-           overplot - Plot data without clearing previous plot
-                      default = False
+        >>> plot_bkg_source('jet', bkg_id=1)
+        >>> plot_bkg_source('jet', bkg_id=2, overplot=True)
 
-        Returns:
-           None
-
-        DESCRIPTION
-           Visualize the unconvolved source model in a 1D plot by
-           data id and bkg_id.
-
-        SEE ALSO
-           plot_bkg, plot_bkg_model, plot_bkg_fit
         """
         bkg = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgsourceplot, None, bkg_id, lo, hi, **kwargs)
 
 
+    ### DOC-TODO: I am assuming it accepts a scales parameter
     def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None, **kwargs):
-        """
-        plot_energy_flux
+        """Display the energy flux distribution.
 
-        SYNOPSIS
-           Send a energy flux distribution to the visualizer
+        For each iteration, draw the parameter values of the model
+        from a normal distribution, evaluate the model, and sum the
+        model over the given range (the flux). Plot up the
+        distribution of this flux. The units for the flux are as
+        returned by `calc_energy_flux`. The `sample_energy_flux` and
+        `get_energy_flux_hist` functions return the data used to
+        create this plot.
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number, optional
+           The lower limit to use when summing up the signal. If not
+           given then the lower value of the data grid is used.
+        hi : optional
+           The upper limit to use when summing up the signal. If not
+           guven then the upper value of the data grid is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        num : int, optional
+           The number of samples to create. The default is `7500`.
+        bins : int, optional
+           The number of bins to use for the histogram.
+        correlated : bool, optional
+           If `True` (the default is `False`) then `scales` is the
+           full covariance matrix, otherwise it is just a 1D array
+           containing the variances of the parameters (the diagonal
+           elements of the covariance matrix).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
+        scales : array, optional
+           The scales used to define the normal distributions for the
+           parameters. The form depends on the `correlated`
+           parameter: when `True`, the array should be a symmetric
+           positive semi-definite (N,N) array, otherwise a 1D array
+           of length N, where N is the number of free parameters.
+        recalc : bool, optional
+           If `True`, the default, then re-calculate the values rather
+           than use the values from the last time the function was
+           run.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           lo          - lower energy bound
-                         default = None
+        See Also
+        --------
+        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        covar : Estimate the confidence intervals using the confidence method.
+        get_energy_flux_hist : Return the data displayed by plot_energy_flux.
+        get_photon_flux_hist : Return the data displayed by plot_photon_flux.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_pdf : Plot the probability density function of an array.
+        plot_photon_flux : Display the photon flux distribution.
+        plot_trace : Create a trace plot of row number versus value.
+        sample_energy_flux : Return the energy flux distribution of a model.
+        sample_flux : Return the flux distribution of a model.
+        sample_photon_flux : Return the photon flux distribution of a model.
 
-           hi          - upper energy bound
-                         default = None
+        Examples
+        --------
 
-           id          - Sherpa data id
-                         default = default data id
+        Plot the energy energy distribution for the range 0.5 to 7 for
+        the default data set:
 
-           num         - Number of simulations
-                         default = 7500
+        >>> plot_energy_flux(0.5, 7, num=1000)
 
-           bins        - Number of bins in the histogram
-                         default = 75
+        Overplot the 0.5 to 2 energy flux distribution from the "core"
+        data set on top of the values from the "jet" data set:
 
-           correlated  - Use a multi-variate distribution to sample parameter values
-                         default = False
+        >>> plot_energy_flux(0.5, 2, id="jet", num=1000)
+        >>> plot_energy_flux(0.5, 2, id="core", num=1000, overplot=True)
 
-           numcores    - specify the number of cores for parallel processing.
-                         All available cores are used by default.
-                         default = None
-
-           bkg_id      - Sherpa background id
-                         default = default bkg id
-
-           recalc      - Recompute before sending data arrays to visualizer
-                         default = True
-
-           overplot    - Plot data without clearing previous plot
-                         default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Visualize a energy flux histogram by Sherpa data id.
-
-        SEE ALSO
-           get_energy_flux_plot, get_photon_flux_plot, plot_photon_flux,
-           sample_energy_flux, sample_photon_flux
         """
         efplot = self._energyfluxplot
         if sherpa.utils.bool_cast(kwargs.pop('recalc',True)):
@@ -7794,58 +10999,92 @@ class Session(sherpa.ui.utils.Session):
         else:
             sherpa.plot.end()
 
-
+    ### DOC-TODO: I am assuming it accepts a scales parameter, but
+    ###           changing it doesn't seem to do anything (see next)
+    ### DOC-NOTE: I got a TypeError about the scales option
     def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
                          correlated=False, numcores=None, bkg_id=None, **kwargs):
-        """
-        plot_photon_flux
+        """Display the photon flux distribution.
 
-        SYNOPSIS
-           Send a photon flux distribution to the visualizer
+        For each iteration, draw the parameter values of the model
+        from a normal distribution, evaluate the model, and sum the
+        model over the given range (the flux). Plot up the
+        distribution of this flux. The units for the flux are as
+        returned by `calc_photon_flux`. The `sample_photon_flux` and
+        `get_photon_flux_hist` functions return the data used to
+        create this plot.
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number, optional
+           The lower limit to use when summing up the signal. If not
+           given then the lower value of the data grid is used.
+        hi : optional
+           The upper limit to use when summing up the signal. If not
+           guven then the upper value of the data grid is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        num : int, optional
+           The number of samples to create. The default is `7500`.
+        bins : int, optional
+           The number of bins to use for the histogram.
+        correlated : bool, optional
+           If `True` (the default is `False`) then `scales` is the
+           full covariance matrix, otherwise it is just a 1D array
+           containing the variances of the parameters (the diagonal
+           elements of the covariance matrix).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
+        scales : array, optional
+           The scales used to define the normal distributions for the
+           parameters. The form depends on the `correlated`
+           parameter: when `True`, the array should be a symmetric
+           positive semi-definite (N,N) array, otherwise a 1D array
+           of length N, where N is the number of free parameters.
+        recalc : bool, optional
+           If `True`, the default, then re-calculate the values rather
+           than use the values from the last time the function was
+           run.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
 
-        Arguments:
-           lo          - lower energy bound
-                         default = None
+        See Also
+        --------
+        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        covar : Estimate the confidence intervals using the confidence method.
+        get_energy_flux_hist : Return the data displayed by plot_energy_flux.
+        get_photon_flux_hist : Return the data displayed by plot_photon_flux.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_pdf : Plot the probability density function of an array.
+        plot_energy_flux : Display the energy flux distribution.
+        plot_trace : Create a trace plot of row number versus value.
+        sample_energy_flux : Return the energy flux distribution of a model.
+        sample_flux : Return the flux distribution of a model.
+        sample_photon_flux : Return the photon flux distribution of a model.
 
-           hi          - upper energy bound
-                         default = None
+        Examples
+        --------
 
-           id          - Sherpa data id
-                         default = default data id
+        Plot the photon flux distribution for the range 0.5 to 7 for
+        the default data set:
 
-           num         - Number of simulations
-                         default = 7500
+        >>> plot_photon_flux(0.5, 7, num=1000)
 
-           bins        - Number of bins in the histogram
-                         default = 75
+        Overplot the 0.5 to 2 photon flux distribution from the "core"
+        data set on top of the values from the "jet" data set:
 
-           correlated  - Use a multi-variate distribution to sample parameter values
-                         default = False
+        >>> plot_photon_flux(0.5, 2, id="jet", num=1000)
+        >>> plot_photon_flux(0.5, 2, id="core", num=1000, overplot=True)
 
-           numcores    - specify the number of cores for parallel processing.
-                         All available cores are used by default.
-                         default = None
-
-           bkg_id      - Sherpa background id
-                         default = default bkg id
-
-           recalc      - Recompute before sending data arrays to visualizer
-                         default = True
-
-           overplot    - Plot data without clearing previous plot
-                         default = False
-
-        Returns:
-           None
-
-        DESCRIPTION
-           Visualize a photon flux histogram by Sherpa data id.
-
-        SEE ALSO
-           get_photon_flux_plot, get_energy_flux_plot, plot_energy_flux,
-           sample_energy_flux, sample_photon_flux
         """
         pfplot = self._photonfluxplot
         if sherpa.utils.bool_cast(kwargs.pop('recalc',True)):
@@ -7863,37 +11102,59 @@ class Session(sherpa.ui.utils.Session):
 
     def plot_bkg_fit_resid(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True):
-        """
-        plot_bkg_fit_resid
+        """Plot the fit results, and the residuals, for the background of
+        a PHA data set.
 
-        SYNOPSIS
-           Send background fit and background residuals plots to the visualizer
+        This creates two plots - the first from `plot_bkg_fit` and the
+        second from `plot_bkg_resid` - for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_fit_resid`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id      - bkg id, if multiple bkgs exist
-                         default = None
+        See Also
+        --------
+        get_bkg_fit_plot : Return the data used by plot_bkg_fit.
+        get_bkg_resid_plot : Return the data used by plot_bkg_resid.
+        plot : Create one or more plot types.
+        plot_bkg : Plot the background values for a PHA data set.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        set_analysis : Set the units used when fitting and displaying spectral data.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Plot the background fit and residuals to the default data set:
 
-        Returns:
-           None
+        >>> plot_bkg_fit_resid()
 
-        DESCRIPTION
-           Visualize the background fit plot and background residuals plot in a
-           joint plot window by Sherpa data id and bkg_id.
-
-        SEE ALSO
-           plot_bkg_resid, plot_bkg_delchi, plot_bkg_ratio, plot_bkg_chisqr,
-           plot_bkg_fit, plot_bkg, plot_bkg_model, plot_bkg_fit_delchi
         """
         self._jointplot.reset()
         fp = self._bkgfitplot
@@ -7925,37 +11186,60 @@ class Session(sherpa.ui.utils.Session):
 
     def plot_bkg_fit_delchi(self, id=None, bkg_id=None, replot=False,
                             overplot=False, clearwindow=True):
-        """
-        plot_bkg_fit_delchi
+        """Plot the fit results, and the residuals, for the background of
+        a PHA data set.
 
-        SYNOPSIS
-           Send background fit and background delta chi plots to the visualizer
+        This creates two plots - the first from `plot_bkg_fit` and the
+        second from `plot_bkg_delchi` - for a data set.
 
-        SYNTAX
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        bkg_id : int or str, optional
+           Identify the background component to use, if there are
+           multiple ones associated with the data set.
+        replot : bool, optional
+           Set to `True` to use the values calculated by the last
+           call to `plot_bkg_fit_delchi`. The default is `False`.
+        overplot : bool, optional
+           If `True` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is `False`.
+        clearwindow : bool, optional
+           When using ChIPS for plotting, should the existing frame
+           be cleared before creating the plot?
 
-        Arguments:
-           id          - Sherpa data id
-                         default = default data id
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `bkg_id` parameter is invalid.
+        sherpa.utils.err.ModelErr
+           If no model expression has been created for the background
+           data.
 
-           bkg_id      - bkg id, if multiple bkgs exist
-                         default = None
+        See Also
+        --------
+        get_bkg_fit_plot : Return the data used by plot_bkg_fit.
+        get_bkg_delchi_plot : Return the data used by plot_bkg_delchi.
+        plot : Create one or more plot types.
+        plot_bkg : Plot the background values for a PHA data set.
+        plot_bkg_model : Plot the model for the background of a PHA data set.
+        plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
+        plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
+        plot_fit : Plot the fit results (data, model) for a data set.
+        set_analysis : Set the units used when fitting and displaying spectral data.
 
-           replot      - Send cached data arrays to visualizer
-                         default = False
+        Examples
+        --------
 
-           overplot    - Plot data without clearing previous plot
-                         default = False
+        Plot the background fit and residuals (normalised by the
+        error) to the default data set:
 
-        Returns:
-           None
+        >>> plot_bkg_fit_delchi()
 
-        DESCRIPTION
-           Visualize the fit plot and delta chi plot in a joint plot
-           window by Sherpa data id.
-
-        SEE ALSO
-           plot_bkg_resid, plot_bkg_delchi, plot_bkg_ratio, plot_bkg_chisqr,
-           plot_bkg_fit, plot_bkg, plot_bkg_model, plot_bkg_fit_resid
         """
         self._jointplot.reset()
         fp = self._bkgfitplot
@@ -7989,55 +11273,91 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
 
+    ### DOC-TODO: should this accept the confidence parameter?
     def sample_photon_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
                            correlated=False, numcores=None, bkg_id=None):
-        """
-        sample_photon_flux
+        """Return the photon flux distribution of a model.
 
-        SYNOPSIS
-           Get a sample the of photon flux
+        For each iteration, draw the parameter values of the model
+        from a normal distribution, evaluate the model, and sum the
+        model over the given range (the flux). The return array
+        contains the flux and parameter values for each iteration.
+        The units for the flux are as returned by `calc_photon_flux`.
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number, optional
+           The lower limit to use when summing up the signal. If not
+           given then the lower value of the data grid is used.
+        hi : optional
+           The upper limit to use when summing up the signal. If not
+           guven then the upper value of the data grid is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        num : int, optional
+           The number of samples to create. The default is `1`.
+        scales : array, optional
+           The scales used to define the normal distributions for the
+           parameters. The form depends on the `correlated`
+           parameter: when `True`, the array should be a symmetric
+           positive semi-definite (N,N) array, otherwise a 1D array
+           of length N, where N is the number of free parameters.
+        correlated : bool, optional
+           If `True` (the default is `False`) then `scales` is the
+           full covariance matrix, otherwise it is just a 1D array
+           containing the variances of the parameters (the diagonal
+           elements of the covariance matrix).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
 
-        Arguments:
-           lo          - lower energy bound
-                         default = None
+        Returns
+        -------
+        vals :
+           The return array has the shape (num, N+1), where N is the
+           number of free parameters and num is the `num` parameter.
+           The rows of this array contain the flux value, as
+           calculated by `calc_photon_flux`, followed by the values of
+           the thawed parameters used for that iteration. The order of
+           the parameters matches the data returned by
+           `get_fit_results`.
 
-           hi          - upper energy bound
-                         default = None
+        See Also
+        --------
+        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        covar : Estimate the confidence intervals using the confidence method.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_pdf : Plot the probability density function of an array.
+        plot_energy_flux : Display the energy flux distribution.
+        plot_photon_flux : Display the photon flux distribution.
+        plot_trace : Create a trace plot of row number versus value.
+        sample_energy_flux : Return the energy flux distribution of a model.
+        sample_flux : Return the flux distribution of a model.
 
-           id          - Sherpa data id
-                         default = default data id
+        Examples
+        --------
 
-           num         - Number of simulations
-                         default = 1
+        Calculate the photon flux distribution for the range 0.5 to 7,
+        and plot up the resulting flux distribution (as a cumulative
+        distribution):
 
-           correlated  - Use a multi-variate distribution to sample parameter values.
-                         default = False
+        >>> vals = sample_photon_flux(0.5, 7, num=1000)
+        >>> plot_cdf(vals[:,0], name='flux')
 
-           scales      - User supplied scales for the sampling distributions.
-                         If correlated is True then scales must be a symmetric
-                         and postive semi-definite 2-D array_like of shape 
-                         (N,N) where N is the number of free parameters,
-                         otherwise scales can be a 1-D array_like, of length N.
-                         default = None
+        Repeat the above, but allowing the parameters to be
+        correlated, and then calculate the 5, 50, and 95 percent
+        quantiles of the photon flux distribution:
 
-           numcores    - specify the number of cores for parallel processing.
-                         All available cores are used by default.
-                         default = None
+        >>> cvals = sample_photon_flux(.5, 7, num=1000, correlated=True)
+        >>> np.percentile(cvals[:,0], [5,50,95])
 
-           bkg_id      - Sherpa background id
-                         default = default bkg id
-
-        Returns:
-           array of flux value and parameter values
-
-        DESCRIPTION
-           Get a sample of the photon flux at a particular spot in parameter space.
-
-        SEE ALSO
-           get_energy_flux_plot, get_photon_flux_plot, plot_photon_flux,
-           plot_energy_flux, sample_energy_flux
         """
         ids, fit = self._get_fit(id)
         data = self.get_data(id)
@@ -8056,55 +11376,91 @@ class Session(sherpa.ui.utils.Session):
                                              scales)
 
 
+    ### DOC-TODO: should this accept the confidence parameter?
     def sample_energy_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
                            correlated=False, numcores=None, bkg_id=None):
-        """
-        sample_energy_flux
+        """Return the energy flux distribution of a model.
 
-        SYNOPSIS
-           Get a sample the of energy flux
+        For each iteration, draw the parameter values of the model
+        from a normal distribution, evaluate the model, and sum the
+        model over the given range (the flux). The return array
+        contains the flux and parameter values for each iteration.
+        The units for the flux are as returned by `calc_energy_flux`.
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number, optional
+           The lower limit to use when summing up the signal. If not
+           given then the lower value of the data grid is used.
+        hi : optional
+           The upper limit to use when summing up the signal. If not
+           guven then the upper value of the data grid is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        num : int, optional
+           The number of samples to create. The default is `1`.
+        scales : array, optional
+           The scales used to define the normal distributions for the
+           parameters. The form depends on the `correlated`
+           parameter: when `True`, the array should be a symmetric
+           positive semi-definite (N,N) array, otherwise a 1D array
+           of length N, where N is the number of free parameters.
+        correlated : bool, optional
+           If `True` (the default is `False`) then `scales` is the
+           full covariance matrix, otherwise it is just a 1D array
+           containing the variances of the parameters (the diagonal
+           elements of the covariance matrix).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
 
-        Arguments:
-           lo          - lower energy bound
-                         default = None
+        Returns
+        -------
+        vals :
+           The return array has the shape (num, N+1), where N is the
+           number of free parameters and num is the `num` parameter.
+           The rows of this array contain the flux value, as
+           calculated by `calc_energy_flux`, followed by the values of
+           the thawed parameters used for that iteration. The order of
+           the parameters matches the data returned by
+           `get_fit_results`.
 
-           hi          - upper energy bound
-                         default = None
+        See Also
+        --------
+        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        covar : Estimate the confidence intervals using the confidence method.
+        plot_cdf : Plot the cumulative density function of an array.
+        plot_pdf : Plot the probability density function of an array.
+        plot_energy_flux : Display the energy flux distribution.
+        plot_photon_flux : Display the photon flux distribution.
+        plot_trace : Create a trace plot of row number versus value.
+        sample_photon_flux : Return the flux distribution of a model.
+        sample_flux : Return the flux distribution of a model.
 
-           id          - Sherpa data id
-                         default = default data id
+        Examples
+        --------
 
-           num         - Number of simulations
-                         default = 1
+        Calculate the energy flux distribution for the range 0.5 to 7,
+        and plot up the resulting flux distribution (as a cumulative
+        distribution):
 
-           correlated  - Use a multi-variate distribution to sample parameter values.
-                         default = False
+        >>> vals = sample_energy_flux(0.5, 7, num=1000)
+        >>> plot_cdf(vals[:,0], name='flux')
 
-           scales      - User supplied scales for the sampling distributions.
-                         If correlated is True then scales must be a symmetric
-                         and postive semi-definite 2-D array_like of shape 
-                         (N,N) where N is the number of free parameters,
-                         otherwise scales can be a 1-D array_like, of length N.
-                         default = None
+        Repeat the above, but allowing the parameters to be
+        correlated, and then calculate the 5, 50, and 95 percent
+        quantiles of the energy flux distribution:
 
-           numcores    - specify the number of cores for parallel processing.
-                         All available cores are used by default.
-                         default = None
+        >>> cvals = sample_energy_flux(.5, 7, num=1000, correlated=True)
+        >>> np.percentile(cvals[:,0], [5,50,95])
 
-           bkg_id      - Sherpa background id
-                         default = default bkg id
-
-        Returns:
-           array of flux value and parameter values
-
-        DESCRIPTION
-           Get a sample of the energy flux at a particular spot in parameter space.
-
-        SEE ALSO
-           get_energy_flux_plot, get_photon_flux_plot, plot_photon_flux,
-           plot_energy_flux, sample_photon_flux
         """
         ids, fit = self._get_fit(id)
         data = self.get_data(id)
@@ -8122,92 +11478,114 @@ class Session(sherpa.ui.utils.Session):
                                              correlated, num, lo, hi, numcores,
                                              scales)
 
+    ### DOC-NOTE: are scales the variance or standard deviation?
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                      num=1, scales=None, correlated=False,
                      numcores=None, bkg_id=None, Xrays=True, confidence=68):
-         """
-         sample_flux
+         """Return the flux distribution of a model.
 
-         SYNOPSIS
-            Get a sample of the parameters with the corresponding flux and a
-            flux uncertainty for a model component or a combination of model
-            components.
+         For each iteration, draw the parameter values of the model
+         from a normal distribution, evaluate the model, and sum the
+         model over the given range (the flux). Return the parameter
+         values used, together with the median, upper, and lower
+         quantiles of the flux distribution.
 
+         Parameters
+         ----------
+         modelcomponent : optional
+            The model to use. It can be a single component or
+            a combination. If not given, then the full source
+            expression for the data set is used.
+         lo : number, optional
+            The lower limit to use when summing up the signal. If not
+            given then the lower value of the data grid is used.
+         hi : optional
+            The upper limit to use when summing up the signal. If not
+            guven then the upper value of the data grid is used.
+         id : int or string, optional
+            The identifier of the data set to use. The default value
+            (`None`) means that the default identifier, as returned by
+            `get_default_id`, is used.
+         num : int, optional
+            The number of samples to create. The default is `1`.
+         scales : array, optional
+            The scales used to define the normal distributions for the
+            parameters. The form depends on the `correlated`
+            parameter: when `True`, the array should be a symmetric
+            positive semi-definite (N,N) array, otherwise a 1D array
+            of length N, where N is the number of free parameters.
+         correlated : bool, optional
+            If `True` (the default is `False`) then `scales` is the
+            full covariance matrix, otherwise it is just a 1D array
+            containing the variances of the parameters (the diagonal
+            elements of the covariance matrix).
+         numcores : optional
+            The number of CPU cores to use. The default is to use all
+            the cores on the machine.
+         bkg_id : int or string, optional
+            The identifier of the background component to use. This
+            should only be set when the line to be measured is in the
+            background model.
+         Xrays : bool, optional
+            When `True` (the default), assume that the model has
+            units of photon/cm^2/s, and use `calc_energy_flux`
+            to convert to erg/cm^2/s.
+         confidence : number, optional
+            The confidence level for the upper and lower quartiles,
+            as a percentage. The default is 68, so as to return
+            the one-sigma range.
 
-         SYNTAX
+         Returns
+         -------
+         (fullflux,cptflux,vals) :
+            The fullflux and cptflux arrays contain the results for
+            the full source model and the flux of the `modelcomponent`
+            argument (they can be the same). They have three elements
+            and give the median value, upper quartile, and lower
+            quartile values of the flux distribution. The vals array
+            has a shape of (num+1,N+2), where N is the number of free
+            parameters and num is the `num` parameter. The rows of
+            this array contain the flux value for the iteration (for
+            the full source model), the parameter values, and then the
+            statistic value for this set of parameters.
 
-         Arguments:
-            modelcomponent - a model component or by default the model
-                             expression built from the previously defined
-                             models.
-                             default = None
+         See Also
+         --------
+         calc_photon_flux : Integrate the source model over a pass band.
+         calc_energy_flux : Integrate the source model over a pass band.
+         covar : Estimate the confidence intervals using the confidence method.
+         plot_energy_flux : Display the energy flux distribution.
+         plot_photon_flux : Display the photon flux distribution.
+         sample_energy_flux : Return the energy flux distribution of a model.
+         sample_photon_flux : Return the photon flux distribution of a model.
 
-            lo             - lower energy bound
-                             default = None
+         Examples
+         --------
 
-            hi             - upper energy bound
-                             default = None
+         Estimate the flux distribution for the "src" component using
+         the default data set. The parameters are assumed to be
+         uncorrelated.
 
-            id             - Sherpa data id
-                             default = default data id
+         >>> set_source(xsphabs.gal * xsapec.src)
+         >>> fit()
+         >>> covar()
+         >>> (fflux,cflux,vals) = sample_flux(src, 0.5, 2, num=1000)
+         original model flux = 2.88993e-14, + 1.92575e-15, - 1.81963e-15
+         model component flux = 7.96865e-14, + 4.65144e-15, - 4.41222e-15
+         >>> (f0, fhi, flo) = cflux
+         >>> print("Flux: {:.2e} {:.2e} {:.2e}".format(f0, fhi-f0, flo-f0))
+         Flux: 7.97e-14 4.65e-15 -4.41e-15
 
-            num            - Number of realization in the sample
-                             default = 1
+         This time the parameters are assumed to be correlated, using
+         the covariance matrix created by the `covar` call:
 
-            correlated	   - If True then include a full covariance matrix
-			     to set scales for multi-variate distributions,
-                             otherwise use only diagonal elements (variances).  
-			     default = False
+         >>> ans = sample_flux(src, 0.5, 2, num=1000, correlated=True)
 
-            scales	   - User supplied scales for the sampling
-			     distributions.  If correlated is True then scales
-                             must be a symmetric and postive semi-definite 2-D
-                             array_like of shape (N,N) where N is the number of
-                             free parameters, otherwise scales can be a 1-D
-                             array_like, of length N.
-			     default = None
+         Explicitly send in a covariance matrix:
 
-            numcores       - specify the number of cores for parallel 
-			     processing. All available cores are used by
-                             default.
-                             default = None
+         >>> cmatrix = get_covar_results().extra_output
+         >>> ans = sample_flux(correlated=True, scales=cmatrix, num=500)
 
-            bkg_id         - Sherpa background id
-                             default = default bkg_id
-
-            Xrays          - If True then calc_energy_flux used and the
-                             returned flux is in units of erg/cm2/s, otherwise
-                             the units are not specified and depend the data.
-                             default = True
-
-            confidence     - confidence level for the returned flux uncertainty
-                             expressed as percentile
-			     default = 68
-
-         Returns:
-            array of parameter values and a flux value with lower and upper
-            bounds.
-
-         DESCRIPTION
-	    Get a sample of parameters with a corresponding flux and a
-	    flux uncertainty for a model component or a combination of
-	    model components. The model components have to be
-	    previously defined and used in the fit. The samples are
-	    generated from the multi-variate normal distributions with
-	    the scales defined by covariance (if at the best fit) or
-	    supplied (as "scales"). The flux is calculated for each
-	    set of new parameters.  The returned flux value is given
-	    by a sample's median with the lower and upper quantiles
-	    defined by the confidence level supplied to the function.
-
-	 EXAMPLES
-
-
-         SEE ALSO
-            get_energy_flux_plot, get_photon_flux_plot, plot_photon_flux,
-            plot_energy_flux, sample_photon_flux, sample_energy_flux, 
-	    calc_energy_flux, calc_photon_flux, plot_cdf, plot_pdf, normal_sample,
-	    t_sample, get_draws
          """
 
          ids, fit = self._get_fit(id)
@@ -8243,43 +11621,78 @@ class Session(sherpa.ui.utils.Session):
                                                     confidence )
 
     def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None):
-        """
-        eqwidth
+        """Calculate the equivalent width of an emission or absorption line.
 
-        SYNOPSIS
-           Get equivalent width
+        Parameters
+        ----------
+        src :
+           The continuum model (this may contain multiple components).
+        combo :
+           The continuum plus line (absorption or emission) model.
+        lo : optional
+           The lower limit for the calculation (the units are set by
+           `set_analysis` for the data set). The default value (`None`)
+           means that the lower range of the data set is used.
+        hi : optional
+           The upper limit for the calculation (the units are set by
+           `set_analysis` for the data set). The default value (`None`)
+           means that the upper range of the data set is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
 
-        SYNTAX
+        Returns
+        -------
+        width : number
+           The equivalent width [1]_ in the appropriate units (as given
+           by `set_analysis`).
 
-        Arguments:
-           src      - continuum, type Sherpa model
+        See Also
+        --------
+        calc_model_sum : Sum up the fitted model over a pass band.
+        calc_source_sum : Calculate the un-convolved model signal.
+        get_default_id : Return the default data set identifier.
+        set_model : Set the source model expression.
 
-           combo    - continuum plus emission line, type Sherpa model
+        References
+        ----------
 
-           id       - data id
-                      default = default data id
-                      
-           lo       - lower bin boundry
-                      default = None
+        .. [1] http://en.wikipedia.org/wiki/Equivalent_width
 
-           hi       - upper bin boundry
-                      default = None
+        Examples
+        --------
 
-           bkg_id   - bkg id
-                      default = default bkg id
+        Set a source model (a powerlaw for the continuum and a
+        gaussian for the line), fit it, and then evaluate the
+        equivalent width of the line. The example assumes that
+        this is a PHA data set, with an associated response,
+        so that the analysis can be done in wavelength units. 
 
-        Returns:
-           eqwidth value
+        >>> set_source(powlaw1d.cont + gauss1d.line)
+        >>> set_analysis('wavelength')
+        >>> fit()
+        >>> eqwidth(cont, cont+line)
+        2.1001988282497308
 
-        DESCRIPTION
-           Compute the equivalent width of an emission or
-           absorption line in a source or background dataset
-           by data id or background id.
+        The calculation is restricted to the range 20 to 20
+        Angstroms.
 
-        SEE ALSO
-           calc_model_sum, calc_data_sum, calc_energy_flux, calc_photon_flux,
-           calc_source_sum
+        >>> eqwidth(cont, cont+line, lo=20, hi=24)
+        1.9882824973082310
+
+        The calculation is done for the background model of
+        data set 2, over the range 0.5 to 2 (the units of this
+        are whatever the analysis setting for this data set id).
         
+        >>> set_bkg_source(2, const1d.flat + gauss1d.bline)
+        >>> eqwidth(flat, flat+bline, id=2, bkg_id=1, lo=0.5, hi=2)
+        0.45494599793003426
+
         """
         data = self.get_data(id)
         if bkg_id is not None:
@@ -8289,37 +11702,88 @@ class Session(sherpa.ui.utils.Session):
 
 
     def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None):
-        """
-        calc_photon_flux
+        """Integrate the source model over a pass band.
 
-        SYNOPSIS
-           Get the unconvolved photon flux
+        Calculate the integral of S(E) over a pass band, where S(E) is
+        the spectral model evaluated for each bin (that is, the model
+        without any instrumental responses applied to it).
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number, optional
+           The minimum limit of the band. Use `None`, the default,
+           to use the low value of the data set.
+        hi : number, optional
+           The maximum limit of the band, which must be larger than
+           `lo`. Use `None`, the default, to use the upper value of
+           the data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int or str, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
 
-        Arguments:
-           lo       - low limit
-                      default = None
+        Returns
+        -------
+        flux :
+           The flux from the source model integrated over the given
+           band. This represents the flux from the model without any
+           instrument response (i.e. the intrinsic flux of the
+           source). For X-Spec style models the units will be
+           photon/cm^2/s. If `hi` is `None` but `lo` is set then the
+           flux density is returned at that point: photon/cm^2/s/keV
+           or photon/cm^2/s/Angstrom depending on the analysis
+           setting.
 
-           hi       - high limit
-                      default = None
+        See Also
+        --------
+        calc_data_sum : Sum up the observed counts over a pass band.
+        calc_model_sum : Sum up the fitted model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        calc_source_sum: Sum up the source model over a pass band.
+        set_model : Set the source model expression for a data set.
 
-           id       - data id,
-                      default = default data id
+        Notes
+        -----
+        The units of `lo` and `hi` are determined by the analysis
+        setting for the data set (e.g. `get_analysis`).
 
-           bkg_id   - bkg id
-                      default = default bkg id
+        Any existing filter on the data set - e.g. as created by
+        `ignore` or `notice` - is ignored by this function.
 
-        Returns:
-           photon flux value
+        The flux is calculated from the given source model, so if it
+        includes an absorbing component then the result will represent
+        the absorbed flux. The absorbing component can be removed, or
+        set to absorb no photons, to get the un-absorbed flux.
 
-        DESCRIPTION
-           Calculate the unconvolved photon flux for a source
-           or background dataset by data id or background id.
+        The units of the answer depend on the model components used in
+        the source expression and the axis or axes of the data set.
+        It is unlikely to give sensible results for 2D data sets.
 
-        SEE ALSO
-           calc_energy_flux, eqwidth, calc_data_sum, calc_model_sum,
-           calc_source_sum         
+        Examples
+        --------
+
+        Calculate the photon flux over the ranges 0.5 to 2 and 0.5 to
+        7 keV, and compared to the energy fluxes for the same bands:
+
+        >>> set_analysis('energy')
+        >>> calc_photon_flux(0.5, 2)
+        0.35190275
+        >>> calc_photon_flux(0.5, 7)
+        0.49050927
+        >>> calc_energy_flux(0.5, 2)
+        5.7224906878061796e-10
+        >>> calc_energy_flux(0.5, 7)
+        1.3758131915063825e-09
+
+        Calculate the photon flux density at 0.5 keV for the source
+        "core":
+
+        >>> calc_photon_flux(0.5, id="core")
+        0.64978176
+
         """
         
         data = self.get_data(id)
@@ -8334,37 +11798,84 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
     
     def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None):
-        """
-        calc_energy_flux
+        """Integrate the source model over a pass band.
 
-        SYNOPSIS
-           Get the unconvolved energy flux
+        Calculate the integral of E * S(E) over a pass band, where E
+        is the energy of the bin and S(E) the spectral model evaluated
+        for that bin (that is, the model without any instrumental
+        responses applied to it).
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number, optional
+           The minimum limit of the band. Use `None`, the default,
+           to use the low value of the data set.
+        hi : number, optional
+           The maximum limit of the band, which must be larger than
+           `lo`. Use `None`, the default, to use the upper value of
+           the data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int or str, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
 
-        Arguments:
-           lo       - low limit
-                      default = None
+        Returns
+        -------
+        flux :
+           The flux from the source model integrated over the given
+           band. This represents the flux from the model without any
+           instrument response (i.e. the intrinsic flux of the
+           source). For X-Spec style models the units will be
+           erg/cm^2/s. If `hi` is `None` but `lo` is set then the flux
+           density is returned at that point: erg/cm^2/s/keV or
+           erg/cm^2/s/Angstrom depending on the analysis setting.
 
-           hi       - high limit
-                      default = None
+        See Also
+        --------
+        calc_data_sum : Sum up the data values over a pass band.
+        calc_model_sum : Sum up the fitted model over a pass band.
+        calc_source_sum: Sum up the source model over a pass band.
+        calc_photon_flux : Integrate the source model over a pass band.
+        set_model : Set the source model expression for a data set.
 
-           id       - data id
-                      default = default data id
+        Notes
+        -----
+        The units of `lo` and `hi` are determined by the analysis
+        setting for the data set (e.g. `get_analysis`).
 
-           bkg_id   - bkg id
-                      default = default bkg id
+        Any existing filter on the data set - e.g. as created by
+        `ignore` or `notice` - is ignored by this function.
 
-        Returns:
-           energy flux value
+        The flux is calculated from the given source model, so if it
+        includes an absorbing component then the result will represent
+        the absorbed flux. The absorbing component can be removed, or
+        set to absorb no photons, to get the un-absorbed flux.
 
-        DESCRIPTION
-           Calculates the unconvolved energy flux for a source
-           or background dataset by data id or background id.
+        The units of the answer depend on the model components used in
+        the source expression and the axis or axes of the data set.
+        It is unlikely to give sensible results for 2D data sets.
 
-        SEE ALSO
-           calc_photon_flux, eqwidth, calc_data_sum, calc_model_sum,
-           calc_source_sum
+        Examples
+        --------
+
+        Calculate the energy flux over the ranges 0.5 to 2 and 0.5 to
+        7 keV:
+
+        >>> set_analysis('energy')
+        >>> calc_energy_flux(0.5, 2)
+        5.7224906878061796e-10
+        >>> calc_energy_flux(0.5, 7)
+        1.3758131915063825e-09
+
+        Calculate the energy flux density at 0.5 keV for the source
+        "core":
+
+        >>> calc_energy_flux(0.5, id="core")
+        5.2573786652855304e-10
+
         """
         data = self.get_data(id)
         model= None
@@ -8377,77 +11888,154 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_energy_flux(data, model, lo, hi)
 
 
+    ### DOC-TODO: how do lo/hi limits interact with bin edges;
+    ###           is it all in or partially in or ...
     def calc_data_sum(self, lo=None, hi=None, id=None, bkg_id=None):
-        """
-        calc_data_sum
+        """Sum up the data values over a pass band.
 
-        SYNOPSIS
-           Get observed data counts
+        Parameters
+        ----------
+        lo : number, optional
+           The minimum limit of the band. Use `None`, the default,
+           to use the low value of the data set.
+        hi : number, optional
+           The maximum limit of the band, which must be larger than
+           `lo`. Use `None`, the default, to use the upper value of
+           the data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int or str, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
 
-        SYNTAX
+        Returns
+        -------
+        dsum : number
+           The sum of the data values that lie within the given
+           limits.  If `hi` is `None` but `lo` is set then the data
+           value of the bin containing the `lo` value are returned.
+           If a background estimate has been subtracted from the data
+           set then the calculation will use the background-subtracted
+           values.
 
-        Arguments:
-           lo       - low limit
-                      default = None
+        See Also
+        --------
+        calc_data_sum2d : Sum up the data values of a 2D data set.
+        calc_model_sum : Sum up the fitted model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the source model over a pass band.
+        calc_source_sum: Sum up the source model over a pass band.
+        set_model : Set the source model expression for a data set.
 
-           hi       - high limit
-                      default = None
+        Notes
+        -----
+        The units of `lo` and `hi` are determined by the analysis
+        setting for the data set (e.g. `get_analysis`).
 
-           id       - data id
-                      default = default data id
+        Any existing filter on the data set - e.g. as created by
+        `ignore` or `notice` - is ignored by this function.
 
-           bkg_id   - bkg id, if multiple backgrounds exist
-                      default = default bkg id
+        If a grouping scheme has been applied to the data set that it
+        will be used. This can change the results, since the first and
+        last bins of the selected range may extend outside the
+        requested range.
 
-        Returns:
-           sum value of observed counts
+        Examples
+        --------
 
-        DESCRIPTION
-           Calculates the sum of observed counts data for a source
-           or background dataset by data id or background id.
+        Calculate the number of counts over the ranges 0.5 to 2 and 0.5 to
+        7 keV for the default data set, first using the observed signal
+        and then, for the 0.5 to 2 keV band - the background-subtraced
+        estimate:
 
-        SEE ALSO
-           calc_model_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_source_sum, calc_data_sum2d, calc_model_sum2d
+        >>> set_analysis('energy')
+        >>> calc_data_sum(0.5, 2)
+        745.0
+        >>> calc_data_sum(0.5, 7)
+        60.0
+        >>> subtract()
+        >>> calc_data_sum(0.5, 2)
+        730.9179738207356
+
+        Calculate the data value in the bin containing 0.5 keV for the
+        source "core":
+
+        >>> calc_data_sum(0.5, id="core")
+        0.0
+
         """
         data = self.get_data(id)
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
         return sherpa.astro.utils.calc_data_sum(data, lo, hi)
             
+    ### DOC-TODO: does lo!=None,hi=None make sense here,
+    ###           since this is not an integration but a sum.
+    ###           For now I have just not documented this capability.
+    ### DOC-TODO: better comparison of calc_source_sum and calc_model_sum
+    ###           needed (e.g. integration or results in PHA case?)
     def calc_model_sum(self, lo=None, hi=None, id=None, bkg_id=None):
-        """
-        calc_model_sum
+        """Sum up the fitted model over a pass band.
 
-        SYNOPSIS
-           Get the sum of convolved model amplitudes
+        Sum up S(E) over a pass band, where S(E) is the model
+        evaluated for each bin (that is, the model that is fit to the
+        data, so that it includes instrumental responses).
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number, optional
+           The minimum limit of the band. Use `None`, the default,
+           to use the low value of the data set.
+        hi : number, optional
+           The maximum limit of the band, which must be larger than
+           `lo`. Use `None`, the default, to use the upper value of
+           the data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int or str, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
 
-        Arguments:
-           lo       - low limit
-                      default = None
+        Returns
+        -------
+        signal : number
+           The sum of the model values used to fit the data.
 
-           hi       - high limit
-                      default = None
+        See Also
+        --------
+        calc_data_sum : Sum up the observed counts over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the source model over a pass band.
+        calc_source_sum: Sum up the source model over a pass band.
+        set_model : Set the source model expression for a data set.
 
-           id       - dataset ID
-                      default = default data id
+        Notes
+        -----
+        The units of `lo` and `hi` are determined by the analysis
+        setting for the data set (e.g. `get_analysis`).
 
-           bkg_id   - bkg id, if multiple backgrounds exist
-                      default = default bkg id
+        Any existing filter on the data set - e.g. as created by
+        `ignore` or `notice` - is ignored by this function.
 
-        Returns:
-           sum value of convolved model amplitudes
+        The units of the answer depend on the model components used in
+        the source expression and the axis or axes of the data set.
+        It is unlikely to give sensible results for 2D data sets.
 
-        DESCRIPTION
-           Calculates the sum of convolved model amplitudes
-           for a source or background dataset by data id or
-           background id.
+        Examples
+        --------
 
-        SEE ALSO
-           calc_data_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_source_sum, calc_data_sum2d, calc_model_sum2d
+        Sum up the model over the data range 0.5 to 2 for the default
+        data set, and compared to the data over the same range:
+
+        >>> calc_model_sum(0.5, 2)
+        404.97796489631639
+        >>> calc_data_sum(0.5, 2)
+        745.0
+
         """
         data = self.get_data(id)
         model= None
@@ -8459,130 +12047,290 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_model_sum(data, model, lo, hi)
 
     def calc_data_sum2d(self, reg=None, id=None):
-        """
-        calc_data_sum2d
+        """Sum up the data values of a 2D data set.
 
-        SYNOPSIS
-           Get observed image counts
+        Parameters
+        ----------
+        reg : str, optional
+           The spatial filter to use. The default, `None`, is to
+           use the whole data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        dsum : number
+           The sum of the data values that lie within the given
+           region.
 
-        Arguments:
-           reg      - filename and path of region file or DM region syntax
-                      default = None
+        See Also
+        --------
+        calc_data_sum : Sum up the data values of a data set.
+        calc_model_sum2d : Sum up the fitted model for a 2D data set.
+        calc_source_sum2d: Sum up the source model for a 2D data set.
+        set_model : Set the source model expression for a data set.
 
-           id       - data id
-                      default = default data id
+        Notes
+        -----
+        The coordinate system of the region filter is determined by
+        the coordinate setting for the data set (e.g. `get_coord`).
 
-        Returns:
-           sum value of observed image counts
+        Any existing filter on the data set - e.g. as created by
+        `ignore2d` or `notice2d` - is ignored by this function.
 
-        DESCRIPTION
-           Calculates the sum of observed counts data for a source
-           image by data id
+        Examples
+        --------
 
-        SEE ALSO
-           calc_model_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_source_sum, calc_data_sum, calc_model_sum2d
+        The following examples use the data in the default data set
+        created with the following calls, which sets the y (data)
+        values to be 0 to 11 in a 3 row by 4 column image:
+
+        >>> ivals = np.arange(12)
+        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y = y.flatten()
+        >>> x = x.flatten()
+        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+
+        With no argument, the full data set is used:
+
+        >>> calc_data_sum2d()
+        66
+        >>> ivals.sum()
+        66
+
+        Only use pixels that fall within the given spatial filters:
+
+        >>> calc_data_sum2d('circle(2,2,1)')
+        36
+        >>> calc_data_sum2d('field()-circle(2,2,1)')
+        30
+
         """
         data = self.get_data(id)
         return sherpa.astro.utils.calc_data_sum2d(data, reg)
 
+    ### DOC-TODO: show an example with psf
+    ### DOC-TODO: this needs testing as doesn't seem to be working for me
     def calc_model_sum2d(self, reg=None, id=None):
-        """
-        calc_model_sum2d
+        """Sum up the fitted model for a 2D data set.
 
-        SYNOPSIS
-           Get the sum of convolved image model amplitudes
+        Parameters
+        ----------
+        reg : str, optional
+           The spatial filter to use. The default, `None`, is to
+           use the whole data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        msum : number
+           The sum of the model values, as fitted to the data, that
+           lie within the given region. This includes any PSF
+           included by `set_psf`.
 
-        Arguments:
-           reg      - filename and path of region file or DM region syntax
-                      default = None
+        See Also
+        --------
+        calc_model_sum : Sum up the fitted model over a pass band.
+        calc_model_sum2d : Sum up the fitted model for a 2D data set.
+        calc_source_sum2d: Sum up the source model for a 2D data set.
+        set_psf : Add a PSF model to a data set.
+        set_model : Set the source model expression for a data set.
 
-           id       - data id
-                      default = default data id
+        Notes
+        -----
+        The coordinate system of the region filter is determined by
+        the coordinate setting for the data set (e.g. `get_coord`).
 
-        Returns:
-           sum value of convolved image model amplitudes
+        Any existing filter on the data set - e.g. as created by
+        `ignore2d` or `notice2d` - is ignored by this function.
 
-        DESCRIPTION
-           Calculates the sum of convolved image model amplitudes
-           for a source by data id
+        Examples
+        --------
 
-        SEE ALSO
-           calc_data_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_source_sum, calc_model_sum, calc_data_sum2d
+        The following examples use the data in the default data set
+        created with the following calls, which sets the y (data)
+        values to be 0 to 11 in a 3 row by 4 column image:
+
+        >>> ivals = np.arange(12)
+        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y = y.flatten()
+        >>> x = x.flatten()
+        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+        >>> set_source(const2d.bgnd)
+        >>> bgnd.c0 = 2
+
+        With no argument, the full data set is used. Since the model
+        evaluates to 2 per pixel, and there are 12 pixels in the
+        data set, the result is 24:
+
+        >>> calc_model_sum2d()
+        24.0
+
+        Only use pixels that fall within the given spatial filters:
+
+        >>> calc_model_sum2d('circle(2,2,1)')
+        8.0
+        >>> calc_model_sum2d('field()-circle(2,2,1)')
+        16.0
+
         """
         data = self.get_data(id)
         model= self.get_model(id)
         return sherpa.astro.utils.calc_model_sum2d(data, model, reg)
 
     def calc_source_sum2d(self, reg=None, id=None):
-        """
-        calc_source_sum2d
+        """Sum up the fitted model for a 2D data set.
 
-        SYNOPSIS
-           Get the sum of unconvolved image model amplitudes
+        Parameters
+        ----------
+        reg : str, optional
+           The spatial filter to use. The default, `None`, is to
+           use the whole data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
 
-        SYNTAX
+        Returns
+        -------
+        msum : number
+           The sum of the model values that lie within the given
+           region. This does not include any PSF included by
+           `set_psf`.
 
-        Arguments:
-           reg      - filename and path of region file or DM region syntax
-                      default = None
+        See Also
+        --------
+        calc_model_sum2d : Sum up the fitted model for a 2D data set.
+        calc_source_sum : Sum up the model over a pass band.
+        set_psf : Add a PSF model to a data set.
+        set_model : Set the source model expression for a data set.
 
-           id       - data id
-                      default = default data id
+        Notes
+        -----
+        The coordinate system of the region filter is determined by
+        the coordinate setting for the data set (e.g. `get_coord`).
 
-        Returns:
-           sum value of unconvolved image model amplitudes
+        Any existing filter on the data set - e.g. as created by
+        `ignore2d` or `notice2d` - is ignored by this function.
 
-        DESCRIPTION
-           Calculates the sum of unconvolved image model amplitudes
-           for a source by data id
+        Examples
+        --------
 
-        SEE ALSO
-           calc_data_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_source_sum, calc_source_sum, calc_data_sum2d
+        The following examples use the data in the default data set
+        created with the following calls, which sets the y (data)
+        values to be 0 to 11 in a 3 row by 4 column image:
+
+        >>> ivals = np.arange(12)
+        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y = y.flatten()
+        >>> x = x.flatten()
+        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+        >>> set_source(const2d.bgnd)
+        >>> bgnd.c0 = 2
+
+        With no argument, the full data set is used. Since the model
+        evaluates to 2 per pixel, and there are 12 pixels in the
+        data set, the result is 24:
+
+        >>> calc_source_sum2d()
+        24.0
+
+        Only use pixels that fall within the given spatial filters:
+
+        >>> calc_source_sum2d('circle(2,2,1)')
+        8.0
+        >>> calc_source_sum2d('field()-circle(2,2,1)')
+        16.0
+
         """
         data = self.get_data(id)
         src= self.get_source(id)
         return sherpa.astro.utils.calc_model_sum2d(data, src, reg)
 
+    ### DOC-TODO: does lo!=None,hi=None make sense here,
+    ###           since this is not an integration but a sum.
+    ###           For now I have just not documented this capability.
     def calc_source_sum(self, lo=None, hi=None, id=None, bkg_id=None):
-        """
-        calc_source_sum
+        """Sum up the source model over a pass band.
 
-        SYNOPSIS
-           Get the sum of unconvolved model amplitudes
+        Sum up S(E) over a pass band, where S(E) is the spectral model
+        evaluated for each bin (that is, the model without any
+        instrumental responses applied to it).
 
-        SYNTAX
+        Parameters
+        ----------
+        lo : number, optional
+           The minimum limit of the band. Use `None`, the default,
+           to use the low value of the data set.
+        hi : number, optional
+           The maximum limit of the band, which must be larger than
+           `lo`. Use `None`, the default, to use the upper value of
+           the data set.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int or str, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
 
-        Arguments:
-           lo       - low limit
-                      default = None
+        Returns
+        -------
+        signal : number
+           The source model summed up over the given band. This does
+           *not* include the bin width when using histogram-style
+           ('integrated' data spaces), such as used with X-Spec
+           emission - also known as additive - models.
 
-           hi       - high limit
-                      default = None
+        See Also
+        --------
+        calc_data_sum : Sum up the observed counts over a pass band.
+        calc_model_sum : Sum up the fitted model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the source model over a pass band.
+        set_model : Set the source model expression for a data set.
 
-           id       - dataset ID
-                      default = default data id
+        Notes
+        -----
+        The units of `lo` and `hi` are determined by the analysis
+        setting for the data set (e.g. `get_analysis`).
 
-           bkg_id   - bkg id, if multiple backgrounds exist
-                      default = default bkg id
+        Any existing filter on the data set - e.g. as created by
+        `ignore` or `notice` - is ignored by this function.
 
-        Returns:
-           sum value of unconvolved model amplitudes
+        The units of the answer depend on the model components used in
+        the source expression and the axis or axes of the data set.
+        It is unlikely to give sensible results for 2D data sets.
 
-        DESCRIPTION
-           Calculates the sum of unconvolved model amplitudes
-           for a source or background dataset by data id or
-           background id.
+        Examples
+        --------
 
-        SEE ALSO
-           calc_data_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_model_sum
+        Sum up the model over the data range 0.5 to 2 for the default
+        data set:
+
+        >>> calc_source_sum(0.5, 2)
+        139.12819041922018
+
+        Compare the output of the `calc_source_sum` and
+        `calc_photon_flux` routines. A 1099-bin data space is created,
+        with a model which has a value of 1 for each bin. As the bin
+        width is constant, at `0.01`, the integrated value, calculated
+        by `calc_photon_flux`, is ` one hundredth the value from
+        `calc_data_sum`:
+
+        >>> dataspace1d(0.01, 11, 0.01, id="test")
+        >>> set_source("test", const1d.bflat)
+        >>> bflat.c0 = 1
+        >>> calc_source_sum(id="test")
+        1099.0
+        >>> calc_photon_flux(id="test")
+        10.99
+
         """
         data = self.get_data(id)
         model= None
@@ -8593,54 +12341,116 @@ class Session(sherpa.ui.utils.Session):
             model= self.get_source(id)
         return sherpa.astro.utils.calc_source_sum(data, model, lo, hi)
 
-
+    ### DOC-TODO: no reason can't k-correct wavelength range,
+    ###           but need to work out how to identify the units
     def calc_kcorr(self, z, obslo, obshi, restlo=None, resthi=None,
                    id=None, bkg_id=None):
-        """
-        calc_kcorr
+        """Calculate the K correction for a model.
 
-        SYNOPSIS
-           Calculate the k correction 
+        The K correction ([1]_, [2]_, [3]_, [4]_) is the numeric
+        factor applied to measured energy fluxes to convert values in
+        an observed energy band to that they are in a rest-frame
+        energy band (that is, correct for the change in spectral shape
+        between the rest-frame and observed-frame bands). This is
+        often used when converting a flux into a luminosity.
 
-        SYNTAX
+        Parameters
+        ----------
+        z : number or array, >= 0
+           The redshift, or redshifts, of the source.
+        obslo : number
+           The minimum energy of the observed band.
+        obshi : number
+           The maximum energy of the observed band, which must
+           be larger than `obslo`.
+        restlo : number or `None`
+           The minimum energy of the rest-frame band. If `None` then
+           use `obslo`.
+        restlo : number or `None`
+           The maximum energy of the rest-frame band. It must be
+           larger than `restlo`. If `None` then use `obshi`.
+        id : int or str, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int or str, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
 
-        Arguments:
-           z        - redshift (scalar or array)
+        Returns
+        -------
+        kz : number or array of numbers
 
-           obslo    - observed-frame lower limit
+        See Also
+        --------
+        calc_energy_flux : Integrate the source model over a pass band.
+        dataspace1d : Create the independent axis for a 1D data set.
 
-           obshi    - observed-frame upper limit
+        Notes
+        -----
+        This is only defined when the analysis is in 'energy' units.
 
-           restlo   - rest-frame lower limit
-                      default = obslo
+        If the model contains a redshift parameter then it should
+        be set to `0`, rather than the source redshift.
 
-           resthi   - rest-frame upper limit
-                      default = obshi
+        If the source model is at zero redshift, the observed energy
+        band is olo to ohi, and the rest frame band is rlo to rhi
+        (which need not match the observed band), then the K
+        correction at a redshift z can be calculated as::
 
-           id       - dataset ID
-                      default = default data id
+          frest = calc_energy_flux(rlo, rhi)
+          fobs  = calc_energy_flux(olo*(1+z), ohi*(1+z))
+          kz    = frest / fobs
 
-           bkg_id   - bkg id, if multiple backgrounds exist
-                      default = default bkg id
+        The energy ranges used - rlo to rhi and olo*(1+z) to ohi*(1+z)
+        - should be fully covered by the data grid, otherwise the flux
+        calculation will be truncated at the grid boundaries, leading
+        to incorrect results.
 
-        Returns:
-           k correction (scalar or array)
+        References
+        ----------
 
-        DESCRIPTION
-           Calculates the k correction for a spectral model,
-           redshift, and energy range for a source or background
-           dataset by data id or background id.
+        .. [1] "The K correction", Hogg, D.W., et al.
+               http://arxiv.org/abs/astro-ph/0210394
 
-        EXAMPLE
-           set_model( xsmekal.clus )
-           calc_kcorr(0.5, 0.5, 2)
-           1.0733301
-           calc_kcorr(0.5, 0.5, 2, 2, 10)
-           0.1129745
+        .. [2] Appendix B of Jones et al. 1998, ApJ, vol 495,
+               p. 100-114.
+               http://adsabs.harvard.edu/abs/1998ApJ...495..100J
 
-        SEE ALSO
-           calc_data_sum, calc_photon_flux, calc_energy_flux, eqwidth,
-           calc_model_sum
+        .. [3] "K and evolutionary corrections from UV to IR",
+               Poggianti, B.M., A&AS, 1997, vol 122, p. 399-407.
+               http://adsabs.harvard.edu/abs/1997A%26AS..122..399P
+
+        .. [4] "Galactic evolution and cosmology - Probing the
+               cosmological deceleration parameter", Yoshii, Y. &
+               Takahara, F., ApJ, 1988, vol 326, p. 1-18.
+               http://adsabs.harvard.edu/abs/1988ApJ...326....1Y
+
+        Examples
+        --------
+
+        Calculate the K correction for an X-Spec apec model, with a
+        source temperature of 6 keV and abundance of 0.3 solar, for
+        the energy band of 0.5 to 2 keV:
+
+        >>> dataspace1d(0.01, 10, 0.01)
+        >>> set_source(xsapec.clus)
+        >>> clus.kt = 6
+        >>> clus.abundanc = 0.3
+        >>> calc_kcorr(0.5, 0.5, 2)
+        0.82799195070436793
+
+        Calculate the K correction for a range of redshifts (0 to 2)
+        using an observed frame of 0. to 2 keV and a rest frame of 0.1
+        to 10 keV (the energy grid is set to ensure that it covers the
+        full energy range; that is the rest-frame band and the
+        observed frame band multiplied by the smallest and largest
+        (1+z) terms):
+
+        >>> dataspace1d(0.01, 11, 0.01)
+        >>> zs = np.linspace(0, 2, 21)
+        >>> ks = calc_kcorr(zs, 0.5, 2, restlo=0.1, resthi=10)
+
         """
         data = self.get_data(id)
         model= None
@@ -8658,6 +12468,64 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     def save_all(self, outfile=None, clobber=False):
+        """Save the information about the current session to a text file.
+
+        This differs to the `save` command in that the output is human
+        readable. Three consequences are:
+
+         1. numeric values may not be recorded to their full precision
+
+         2. data sets are not included in the file
+
+         3. some settings and values may not be recorded.
+
+        Parameters
+        ----------
+        outfile : str, optional
+           If not given the results are displayed to the screen,
+           otherwise it is taken to be the name of the file to
+           write the results to.
+        clobber : bool, optional
+           If `outfile` is not `None`, then this flag controls
+           whether an existing file can be overwritten (`True`)
+           or if it raises an exception (`False`, the default
+           setting).
+
+        Raises
+        ------
+        sherpa.utils.err.IOErr
+           If `outfile` already exists and `clobber` is `False`.
+
+        See Also
+        --------
+        save : Save the current Sherpa session to a file.
+        restore : Load in a Sherpa session from a file.
+
+        Notes
+        -----
+
+        Items which are not saved include:
+
+        - user models
+
+        - any optional keywords to comands such as `load_data`
+          or `load_pha`
+
+        - only a subset of Sherpa commands are saved.
+
+        Examples
+        --------
+
+        Write the current Sherpa session to the screen:
+
+        >>> save_all()
+
+        Save the session to the file 'fit.sherpa', overwriting
+        it if it already exists:
+
+        >>> save_all('fit.sherpa', clobber=True)
+
+        """
 
         # TODO:
         #

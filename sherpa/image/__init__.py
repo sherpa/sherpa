@@ -50,14 +50,30 @@ class Image(NoNewAttributesAfterInit):
         NoNewAttributesAfterInit.__init__(self)
         
     def close():
+        """Stop the image viewer."""
         backend.close()
     close = staticmethod(close)
     
     def delete_frames():
+        """Delete all the frames open in the image viewer."""
         backend.delete_frames()
     delete_frames = staticmethod(delete_frames)
     
     def get_region(coord):
+        """Return the region defined in the image viewer.
+
+        Parameters
+        ----------
+        coord : str
+           The name of the coordinate system (the empty string means
+           to use the current system).
+
+        Returns
+        -------
+        region : str
+           The region, or regions, or the empty string.
+
+        """
         return backend.get_region(coord)
     get_region = staticmethod(get_region)
     
@@ -70,6 +86,7 @@ class Image(NoNewAttributesAfterInit):
             backend.image(array.reshape(shape), newframe, tile)
     
     def open():
+        """Start the image viewer."""
         backend.open()
     open = staticmethod(open)
 
@@ -77,18 +94,68 @@ class Image(NoNewAttributesAfterInit):
         backend.wcs( keys )
     
     def set_region(reg, coord):
+        """Set the region to display in the image viewer.
+
+        Parameters
+        ----------
+        reg : str
+           The region to display.
+        coord : str
+           The name of the coordinate system (the empty string means
+           to use the current system).
+
+        """
         backend.set_region(reg, coord)
     set_region = staticmethod(set_region)
     
     def xpaget(arg):
+        """Return the result of an XPA call to the image viewer.
+
+        Send a query to the image viewer.
+
+        Parameters
+        ----------
+        arg : str
+           A command to send to the image viewer via XPA.
+
+        Returns
+        -------
+        returnval : str
+
+        """
         return backend.xpaget(arg)
     xpaget = staticmethod(xpaget)
     
     def xpaset(arg, data=None):
+        """Return the result of an XPA call to the image viewer.
+
+        Send a command to the image viewer.
+
+        Parameters
+        ----------
+        arg : str
+           A command to send to the image viewer via XPA.
+        data : optional
+           The data for the command.
+
+        """
         return backend.xpaset(arg, data=None)
     xpaset = staticmethod(xpaset)
 
 class DataImage(Image):
+    """Image data.
+
+    Attributes
+    ----------
+    name : str
+    y : array_like
+       The image data (pixel valuess) as a 2D array.
+    eqpos :
+       Coordinate transform to the "world" system.
+    sky :
+       Coordinate transform to the "physical" system.
+
+    """
 
     def __init__(self):
         self.y = None

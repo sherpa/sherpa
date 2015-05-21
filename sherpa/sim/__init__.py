@@ -113,22 +113,53 @@ class MCMC(NoNewAttributesAfterInit):
         self.__dict__.update(state)
 
 
+    ### DOC-TODO: include examples once this returns something useful
+    ### TODO: this should really return a dict, not a string
     def list_priors(self):
-        """
-        List the dictionary of currently set prior functions for the set
-        of thawed Sherpa model parameters
+        """Return the priors set for model parameters, if any.
+
+        Returns
+        -------
+        priors : string
+           A string representation of the dictionary mapping between
+           parameters (keys) and priot functions (values).
+
+        See Also
+        --------
+        get_prior : Return the prior function for a parameter.
+        set_prior : Set the prior function to use with a parameter.
 
         """
         return str(self.priors)
 
 
     def get_prior(self, par):
-        """
-        Get the prior function set for the input Sherpa parameter
+        """Return the prior function for a parameter.
 
-        `par`    Sherpa model parameter
+        Parameters
+        ----------
+        par : sherpa.models.parameter.Parameter
+           A parameter of a model instance.
 
-        returns associated prior function
+        Returns
+        -------
+        prior :
+           The function or parameter instance set by
+           a previous call to `set_prior`.
+
+        Raises
+        ------
+        ValueError
+           If a prior has not been set for the parameter.
+
+        See Also
+        --------
+        set_prior : Set the prior function to use with a parameter.
+
+        Examples
+        --------
+
+        >>> pfunc = get_prior(bgnd.c0)
 
         """
         prior = self.priors.get(par.fullname, None)
@@ -138,44 +169,151 @@ class MCMC(NoNewAttributesAfterInit):
         return prior
 
 
+    ### DOC-TODO: should set_sampler_opt be mentioned here?
     def set_prior(self, par, prior):
-        """
-        Set the prior function for an associated input Sherpa parameter
+        """Set the prior function to use with a parameter.
 
-        `par`    Sherpa model parameter
-        `prior`  function pointer to run as prior on associated parameter
+        The pyBLoCXS Markov Chain Monte Carlo (MCMC) algorithm [1]_
+        supports Bayesian Low-Count X-ray Spectral analysis. By
+        default, a flat prior is used for each parameter in the fit,
+        varying between its soft minimum and maximum values.  The
+        `set_prior` function is used to change the form of the prior
+        for a parameter.
 
-        returns None
+        Parameters
+        ----------
+        par : sherpa.models.parameter.Parameter instance
+           A parameter of a model instance.
+        prior : function or sherpa.models.model.Model instance
+           The function to use for a prior. It must accept a
+           single argument and return a value of the same size
+           as the input.
 
-        Example:
+        See Also
+        --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
+        get_prior : Set the prior function to use with a parameter.
+        set_sampler : Set the pyBLoCXS sampler.
 
-        set_prior(abs1.nh, inverse2)
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+
+        Examples
+        --------
+
+        Set the prior for the `kT` parameter of the `therm` instance
+        to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
+        keV:
+
+        >>> create_model_component('xsapec', 'therm')
+        >>> create_model_component('gauss1d', 'p_temp')
+        >>> p_temp.pos = 1.7
+        >>> p.temo_fwhm = 0.35
+        >>> set_prior(therm.kT, p_temp)
+
+        Create a function (`lognorm`) and use it as the prior the the
+        `nH` parameter of the `abs1` instance:
+
+        >>> create_model_component('xsphabs', 'abs1')
+        >>> def lognorm(x):
+           # center on 10^20 cm^2 with a sigma of 0.5
+           sigma = 0.5
+           x0 = 20
+           # nH is in units of 10^-22 so convert
+           dx = np.log10(x) + 22 - x0
+           norm = sigma / np.sqrt(2 * np.pi)
+           return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
+
+        >>> set_prior(abs1.nH, lognorm)
 
         """
         self.priors[par.fullname] = prior
 
 
     def list_samplers(self):
+        """List the pyBLoCXS samplers.
+
+        Returns
+        -------
+        samplers : list of str
+           A list of the names (in lower case) that can be used with
+           `set_sampler`.
+
+        See Also
+        --------
+        get_sampler_name : Return the name of the current pyBLoCXS sampler.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        >>> list_samplers()
+        ['metropolismh', 'fullbayes', 'mh', 'pragbayes']
+
         """
-        List the dictionary of available MCMC Sampler classes
-        """       
         return self.__samplers.keys()
 
 
     def set_sampler(self, sampler):
-        """
-        Set the sampler type for use within pyblocxs
+        """Set the pyBLoCXS sampler.
 
-        `sampler`   String indicating sampler type, default="MetropolisMH" or
-                    class of type Sampler.
+        The sampler determines the type of jumping rule to
+        be used when running the MCMC analysis.
 
-        returns None
+        Parameters
+        ----------
+        sampler : str or sherpa.sim.Sampler instance
+           When a string, the name of the sampler to use (case
+           insensitive). The supported options are given by the
+           `list_samplers` function.
 
-        Example:
+        See Also
+        --------
+        get_draws : Run the pyBLoCXS MCMC algorithm.
+        list_samplers : List the pyBLoCXS samplers.
+        set_sampler : Set the pyBLoCXS sampler.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
 
-        set_sampler("MH")
+        Notes
+        -----
+        The jumping rules are [1]_:
 
-        set_sampler(MH)
+        MH
+           The 'MH' option refers to the Metropolis-Hastings rule,
+           which always jumps from the best-fit location.
+
+        MetropolisMH
+           This is the Metropolis with Metropolis-Hastings algorithm,
+           that jumps from the best-fit with probability 'p_M',
+           otherwise it jumps from the last accepted jump. The
+           value of `p_M` can be changed using `set_sampler_opt`.
+
+        PragBayes
+           This is used when the effective area calibration
+           uncertainty is to be included in the calculation. At each
+           nominal MCMC iteration, a new calibration product is
+           generated, and a series of N (the `nsubiters` option) MCMC
+           sub-iteration steps are carried out, choosing between
+           Metropolis and Metropolis-Hastings types of samplers with
+           probability `p_M`.  Only the last of these sub-iterations
+           are kept in the chain.  The `nsubiters` and `p_M` values
+           can be changed using `set_sampler_opt`.
+
+        FullBayes
+           Another sampler for use when including uncertainties due
+           to the effective area.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+
+        Examples
+        --------
+
+        >>> set_sampler('metropolismh')
 
         """
         if isinstance(sampler, basestring):
@@ -198,10 +336,21 @@ class MCMC(NoNewAttributesAfterInit):
 
 
     def get_sampler(self):
-        """
-        Return the current sampler's dictionary of configuration options
+        """Return the current pyBLoCXS sampler options.
 
-        returns a dictionary of configuration options
+        Returns
+        -------
+        options : dict
+           A copy of the options for the chosen sampler.  Use
+           `set_sampler_opt` to change these values. The fields depend
+           on the current sampler.
+
+        See Also
+        --------
+        get_sampler_name : Return the name of the current pyBLoCXS sampler.
+        get_sampler_opt : Return an option of the current pyBLoCXS sampler.
+        set_sampler : Set the pyBLoCXS sampler.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
 
         """
         #return self.sampler
@@ -209,43 +358,112 @@ class MCMC(NoNewAttributesAfterInit):
 
 
     def get_sampler_name(self):
-        """
-        Return the current sampler type 
+        """Return the name of the current pyBLoCXS sampler.
 
-        returns a string indicating the current sampler type
+        Returns
+        -------
+        name : str
+
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_sampler : Set the pyBLoCXS sampler.
+
+        Examples
+        --------
+
+        >>> get_sampler_name()
+        'MetropolisMH'
+
         """
         return self.sampler.__name__
 
 
     def get_sampler_opt(self, opt):
-        """
-        Return the value of an input sampler configuration option
+        """Return an option of the current pyBLoCXS sampler.
 
-        `opt`     String indicating option
+        Returns
+        -------
+        opt : str
+           The name of the option. The fields depend on the current
+           sampler.
 
-        returns option value
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
 
-        Example:
+        Examples
+        --------
 
-        get_sampler_opt("log")
-        True
+        >>> get_sampler_opt('log')
+        False
 
         """
         return self._get_sampler_opt(opt)
 
 
     def set_sampler_opt(self, opt, value):
-        """
-        Set the sampler configuration option for use within pyblocxs
+        """Set an option for the current pyBLoCXS sampler.
 
-        `opt`     String indicating option
-        `value`   Option value
+        Parameters
+        ----------
+        opt : str
+           The option to change. Use `get_sampler` to view the
+           available options for the current sampler.
+        value :
+           The value for the option.
 
-        returns None
+        See Also
+        --------
+        get_sampler : Return the current pyBLoCXS sampler options.
+        set_prior: Set the prior function to use with a parameter.
+        set_sampler : Set the pyBLoCXS sampler.
 
-        Example:
+        Notes
+        -----
+        The options depend on the sampler [1]_. The options include:
 
-        set_sampler_opt("log", True)
+        `defaultprior`
+           Set to `False` when the default prior (flat, between the
+           parameter's soft limits) should not be used. Use
+           `set_prior` to set the form of the prior for each
+           parameter.
+
+        `inv`
+           A bool, or array of bools, to indicate which parameter is
+           on the inverse scale.
+
+        `log`
+           A bool, or array of bools, to indicate which parameter is
+           on the logarithm (natural log) scale.
+
+        `original`
+           A bool, or array of bools, to indicate which parameter is
+           on the original scale.
+
+        `p_M`
+           The proportion of jumps generatd by the Metropolis
+           jumping rule.
+
+        `priorshape`
+           An array of bools indicating which parameters have a
+           user-defined prior functions set with `set_prior`.
+
+        `scale`
+           Multiply the output of `covar` by this factor and
+           use the result as the scale of the t-distribution.
+
+        References
+        ----------
+
+        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+
+        Examples
+        --------
+
+        >>> set_sampler_opt('scale', 3)
+
 
         """
         self._set_sampler_opt(opt, value)
@@ -268,9 +486,10 @@ class MCMC(NoNewAttributesAfterInit):
 
         returns a tuple of ndarrays e.g. (stats, accept, params)
 
-        Example:
+        Examples
+        --------
 
-        stats, accept, params = get_draws(fit, niter=1e4)
+        >>> stats, accept, params = get_draws(fit, niter=1e4)
 
         """
         if not isinstance(fit.stat, (Cash, CStat)):

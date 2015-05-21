@@ -327,12 +327,50 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
 
 
 def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None):
-    """
-    Calculate `num` samples of the current thawed parameters from a Normal
-    distribution with a spread of `sigma`.
+    """Sample the fit statistic by taking the parameter values
+    from a normal distribution.
 
-    `correlate` True uses a multi-variate normal on all
-                False uses a uni-variate normal for each
+    For each iteration (sample), change the thawed parameters by
+    drawing values from a uni- or multi-variate normal (Gaussian)
+    distribution, and calculate the fit statistic.
+
+    Parameters
+    ----------
+    fit :
+       The fit results.
+    num : int, optional
+       The number of samples to use (default is `1`).
+    sigma : number, optional
+       The width of the normal distribution (the default
+       is `1`).
+    correlate : bool, optional
+       Should a multi-variate normal be used, with parameters
+       set by the covariance matrix (`True`) or should a
+       uni-variate normal be used (`False`)?
+    numcores : optional
+       The number of CPU cores to use. The default is to use all
+       the cores on the machine.
+
+    Returns
+    -------
+    samples :
+       A NumPy array table with the first column representing the
+       statistic and later columns the parameters used.
+
+    See Also
+    --------
+    t_sample : Sample from the Student's t-distribution.
+    uniform_sample : Sample from a uniform distribution.
+
+    Notes
+    -----
+    All thawed model parameters are sampled from the Gaussian
+    distribution, where the mean is set as the best-fit parameter
+    value and the variance is determined by the diagonal elements
+    of the covariance matrix. The multi-variate Gaussian is
+    assumed by default for correlated parameters, using the
+    off-diagonal elements of the covariance matrix.
+
     """
     sampler = NormalSampleFromScaleVector()
     sampler.scale.sigma = sigma
@@ -342,9 +380,36 @@ def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None):
 
 
 def uniform_sample(fit, num=1, factor=4, numcores=None):
-    """
-    Calculate `num` samples of the current thawed parameters from a Uniform
-    distribution.
+    """Sample the fit statistic by taking the parameter values
+    from an uniform distribution.
+
+    For each iteration (sample), change the thawed parameters by
+    drawing values from a uniform distribution, and calculate the
+    fit statistic.
+
+    Parameters
+    ----------
+    fit :
+       The fit results.
+    num : int, optional
+       The number of samples to use (default is `1`).
+    factor : number, optional
+       Multiplier to expand the scale parameter (default is `4`).
+    numcores : optional
+       The number of CPU cores to use. The default is to use all
+       the cores on the machine.
+
+    Returns
+    -------
+    samples :
+       A NumPy array table with the first column representing the
+       statistic and later columns the parameters used.
+
+    See Also
+    --------
+    normal_sample : Sample from a normal distribution.
+    t_sample : Sample from the Student's t-distribution.
+
     """
     sampler = UniformSampleFromScaleVector()
     sampler.scale.sigma = 1
@@ -352,9 +417,37 @@ def uniform_sample(fit, num=1, factor=4, numcores=None):
 
 
 def t_sample(fit, num=1, dof=2, numcores=None):
-    """
-    Calculate `num` samples of the current thawed parameters from a Student's T
-    distribution with degrees of freedom `dof`.
+    """Sample the fit statistic by taking the parameter values from
+    a Student's t-distribution.
+
+    For each iteration (sample), change the thawed parameters
+    by drawing values from a Student's t-distribution, and
+    calculate the fit statistic.
+
+    Parameters
+    ----------
+    fit :
+       The fit results.
+    num : int, optional
+       The number of samples to use (default is `1`).
+    dof : optional
+       The number of degrees of freedom to use (the default
+       is to use the number from the current fit).
+    numcores : optional
+       The number of CPU cores to use. The default is to use all
+       the cores on the machine.
+
+    Returns
+    -------
+    samples :
+       A NumPy array table with the first column representing the
+       statistic and later columns the parameters used.
+
+    See Also
+    --------
+    normal_sample : Sample from the normal distribution.
+    uniform_sample : Sample from a uniform distribution.
+
     """
     sampler = StudentTSampleFromScaleMatrix()
     return sampler.get_sample(fit, num, dof, numcores)

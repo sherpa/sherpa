@@ -85,7 +85,6 @@ class Plot(NoNewAttributesAfterInit):
     
     def __init__(self):
         """
-
         Initialize a Plot object.  All 1D line plot
         instances utilize Plot, which provides a generic
         interface to a backend.
@@ -93,7 +92,6 @@ class Plot(NoNewAttributesAfterInit):
         Once an instance of Plot is initialized no new
         attributes of the class can be made. (To eliminate
         the accidental creation of erroneous attributes)
-        
         """
         self.plot_prefs = self.plot_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
@@ -103,6 +101,7 @@ class Plot(NoNewAttributesAfterInit):
     def vline(x, ymin=0, ymax=1,
               linecolor=None, linestyle=None, linewidth=None,
               overplot=False, clearwindow=True):
+        "Draw a line at constant x, extending over the plot."
         backend.vline(x, ymin=ymin, ymax=ymax, linecolor=linecolor,
                       linestyle=linestyle, linewidth=linewidth,
                       overplot=overplot, clearwindow=clearwindow)
@@ -112,6 +111,7 @@ class Plot(NoNewAttributesAfterInit):
     def hline(y, xmin=0, xmax=1,
               linecolor=None, linestyle=None, linewidth=None,
               overplot=False, clearwindow=True):
+        "Draw a line at constant y, extending over the plot."
         backend.hline(y, xmin=xmin, xmax=xmax, linecolor=linecolor,
                       linestyle=linestyle, linewidth=linewidth,
                       overplot=overplot, clearwindow=clearwindow)
@@ -123,6 +123,7 @@ class Plot(NoNewAttributesAfterInit):
                      clearwindow, **self.plot_prefs)
 
     def overplot(self, *args, **kwargs):
+        "Add the data to an existing plot."
         kwargs['overplot'] = True
         self.plot(*args, **kwargs)
 
@@ -132,7 +133,6 @@ class Contour(NoNewAttributesAfterInit):
     
     def __init__(self):
         """
-
         Initialize a Contour object.  All 2D contour plot
         instances utilize Contour, which provides a generic
         interface to a backend.
@@ -140,7 +140,6 @@ class Contour(NoNewAttributesAfterInit):
         Once an instance of Contour is initialized no new
         attributes of the class can be made. (To eliminate
         the accidental creation of erroneous attributes)
-        
         """
         self.contour_prefs = self.contour_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
@@ -160,7 +159,6 @@ class Point(NoNewAttributesAfterInit):
 
     def __init__(self):
         """
-
         Initialize a Point object.  All 1D point plot
         instances utilize Point, which provides a generic
         interface to a backend.
@@ -168,7 +166,6 @@ class Point(NoNewAttributesAfterInit):
         Once an instance of Point is initialized no new
         attributes of the class can be made. (To eliminate
         the accidental creation of erroneous attributes)
-        
         """
         self.point_prefs = self.point_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
@@ -183,7 +180,6 @@ class Histogram(NoNewAttributesAfterInit):
 
     def __init__(self):
         """
-
         Initialize a Histogram object.  All 1D histogram plot
         instances utilize Histogram, which provides a generic
         interface to a backend.
@@ -191,7 +187,6 @@ class Histogram(NoNewAttributesAfterInit):
         Once an instance of Histogram is initialized no new
         attributes of the class can be made. (To eliminate
         the accidental creation of erroneous attributes)
-
         """
         self.histo_prefs = self.histo_prefs.copy()
         NoNewAttributesAfterInit.__init__(self)
@@ -403,7 +398,19 @@ class LRHistogram(HistogramPlot):
 
 
 class SplitPlot(Plot,Contour):
-    "Derived class for creating multiple plots"
+    """Create multiple plots.
+
+    Attributes
+    ----------
+    rows : int
+       Number of rows of plots. The default is 2.
+    cols : int
+       Number of columns of plots. The default is 1.
+    plot_prefs : dict
+       The preferences for the plots. This depends on the plot
+       backend.
+
+    """
     plot_prefs = backend.get_split_plot_defaults()
 
     def __init__(self, rows=2, cols=1):
@@ -420,6 +427,7 @@ class SplitPlot(Plot,Contour):
                   self.plot_prefs))
 
     def reset(self, rows=2, cols=1):
+        "Prepare for a new set of plots or contours."
         self.rows = rows
         self.cols = cols
         self._reset_used()
@@ -444,14 +452,17 @@ class SplitPlot(Plot,Contour):
         return row, col
 
     def addplot(self, plot, *args, **kwargs):
+        "Add the plot to the next space."
         row, col = self._next_subplot()
         self.plot(row, col, plot, *args, **kwargs)
 
     def addcontour(self, plot, *args, **kwargs):
+        "Add the contour plot to the next space."
         row, col = self._next_subplot()
         self.contour(row, col, plot, *args, **kwargs)
     
     def plot(self, row, col, plot, *args, **kwargs):
+        "Add the plot in the given space."
         self._clear_window()
         clearaxes = ((not kwargs.get('overplot', False)) and
                      kwargs.get('clearwindow', True))
@@ -466,6 +477,7 @@ class SplitPlot(Plot,Contour):
         self._current = (row, col)
 
     def contour(self, row, col, plot, *args, **kwargs):
+        "Add the contour in the given space."
         self._clear_window()
         clearaxes = ((not kwargs.get('overcontour', False)) and
                      kwargs.get('clearwindow', True))
@@ -480,19 +492,23 @@ class SplitPlot(Plot,Contour):
         self._current = (row, col)
     
     def overlayplot(self, plot, *args, **kwargs):
+        "Add the plot to the current space without destroying the contents."
         self.overplot(self._current[0], self._current[1], plot, *args,
                       **kwargs)
 
     def overlaycontour(self, plot, *args, **kwargs):
+        "Add the contour to the current space without destroying the contents."
         self.overcontour(self._current[0], self._current[1], plot, *args,
                       **kwargs)
         
     # FIXME: work on overplot issue
     def overplot(self, row, col, plot, *args, **kwargs):
+        "Add a plot to the given space without destroying the contents."
         kwargs['overplot'] = True
         self.plot(row, col, plot, *args, **kwargs)
 
     def overcontour(self, row, col, plot, *args, **kwargs):
+        "Add a contour plot to the given space without destroying the contents."
         kwargs['overcontour'] = True
         self.contour(row, col, plot, *args, **kwargs)
 
@@ -535,7 +551,25 @@ class JointPlot(SplitPlot):
 
 
 class DataPlot(Plot):
-    "Derived class for creating 1D data plots"
+    """Create 1D plots of data values.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point (the independent variable).
+    y : array_like
+       The Y value for each point (the dependent variable).
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value, if set.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     plot_prefs = backend.get_data_plot_defaults()
     
     def __init__(self):
@@ -641,7 +675,25 @@ class PSFKernelPlot(DataPlot):
 
 
 class DataContour(Contour):
-    "Derived class for creating 2D data contours"
+    """Create contours of 2D data.
+
+    Attributes
+    ----------
+    contour_prefs : dict
+       The preferences for the plot.
+    x0, x1 : array_like
+       The coordinates of each point (the independent variables), as
+       one-dimensional arrays.
+    y : array_like
+       The Y value for each point (the dependent variable), as a
+       one-dimensional array.
+    levels : array_like or `None`
+       The values at which to draw contours.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     contour_prefs = backend.get_data_contour_defaults()
     
     def __init__(self):
@@ -706,7 +758,25 @@ class PSFKernelContour(DataContour):
 
 
 class ModelPlot(Plot):
-    "Derived class for creating 1D model plots"
+    """Create 1D plots of model values.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point (the independent variable).
+    y : array_like
+       The Y value for each point (the dependent variable).
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value, if set.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     plot_prefs = backend.get_model_plot_defaults()
     
     def __init__(self):
@@ -781,9 +851,26 @@ class ComponentTemplateModelPlot(ComponentModelPlot):
         self.ylabel = data.get_ylabel()
         self.title = 'Model component: %s' % model.name
 
-
 class SourcePlot(ModelPlot):
-    "Derived class for creating 1D model plots"
+    """Create 1D plots of unconcolved model values.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point (the independent variable).
+    y : array_like
+       The Y value for each point (the model value).
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value, if set.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     def __init__(self):
         ModelPlot.__init__(self)
         self.title = 'Source'
@@ -965,7 +1052,27 @@ class FitContour(Contour):
 
 
 class DelchiPlot(ModelPlot):
-    "Derived class for creating 1D delchi chi plots ((data-model)/error)"
+    """Create plots of the delta-chi value per point.
+
+    The value of (data-model)/error is plotted for each point.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point.
+    y : array_like
+       The Y value for each point: (data-model)/error
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value (each element is `1`).
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     plot_prefs = backend.get_resid_plot_defaults()
 
     def _calc_delchi(self, ylist, staterr):
@@ -990,7 +1097,26 @@ class DelchiPlot(ModelPlot):
                   self.xlabel, self.ylabel, overplot, clearwindow)
 
 class ChisqrPlot(ModelPlot):
-    "Derived class for creating 1D chi**2 plots ((data-model)/error)**2"
+    """Create plots of the chi-square value per point.
+
+    The value of ((data-model)/error)^2 is plotted for each point.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point.
+    y : array_like
+       The Y value for each point: ((data-model)/error)^2
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value. Will be `None` here.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
     plot_prefs = backend.get_model_plot_defaults()
 
     def _calc_chisqr(self, ylist, staterr):
@@ -1015,7 +1141,27 @@ class ChisqrPlot(ModelPlot):
 
 
 class ResidPlot(ModelPlot):
-    "Derived class for creating 1D residual plots (data-model)"
+    """Create plots of the residuals (data - model) per point.
+
+    The value of (data-model) is plotted for each point.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point.
+    y : array_like
+       The Y value for each point: data-model.
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value, if set.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     plot_prefs = backend.get_resid_plot_defaults()
 
     def _calc_resid(self, ylist):
@@ -1061,7 +1207,27 @@ class ResidContour(ModelContour):
 
 
 class RatioPlot(ModelPlot):
-    "Derived class for creating 1D ratio plots (data:model)"
+    """Create plots of the ratio of data to model per point.
+
+    The value of data / model is plotted for each point.
+
+    Attributes
+    ----------
+    plot_prefs : dict
+       The preferences for the plot.
+    x : array_like
+       The X value for each point.
+    y : array_like
+       The Y value for each point: data-model.
+    xerr : array_like
+       The half-width of each X "bin", if set.
+    yerr : array_like
+       The error on the Y value, if set.
+    xlabel, ylabel, title : str
+       Plot labels.
+
+    """
+
     plot_prefs = backend.get_ratio_plot_defaults()
 
     def _calc_ratio(self, ylist):
