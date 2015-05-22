@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2010  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -186,16 +186,16 @@ class Session(sherpa.ui.utils.Session):
         ----------
         filename : str, optional
            The name of the file to write the results to. The default
-           is `sherpa.save`.
+           is 'sherpa.save'.
         clobber : bool, optional
            This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
+           overwritten (``True``) or if it raises an exception (``False``,
            the default setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -205,7 +205,6 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-
         The current Sherpa session is saved using the Python `pickle`
         module. The output is a binary file, which may not be portable
         between versions of Sherpa, but is platform independent, and
@@ -215,11 +214,11 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Save the current session to the file `sherpa.save`.
+        Save the current session to the file 'sherpa.save'.
 
         >>> save()
 
-        Save the current session to the file `bestfit.sherpa`,
+        Save the current session to the file 'bestfit.sherpa',
         overwriting any existing version of the file.
 
         >>> save('bestfit.sherpa', clobber=True)
@@ -238,12 +237,12 @@ class Session(sherpa.ui.utils.Session):
         ----------
         filename : str, optional
            The name of the file to read the results from. The default
-           is `sherpa.save`.
+           is 'sherpa.save'.
 
         Raises
         ------
         IOError
-           If `filename` does not exist.
+           If ``filename`` does not exist.
 
         See Also
         --------
@@ -257,16 +256,16 @@ class Session(sherpa.ui.utils.Session):
         between versions of Sherpa, but is platform independent. A
         warning message may be created if a file saved by an older
         (or newer) version of Sherpa is loaded. An example of such
-        a message is
+        a message is::
 
-        WARNING: Could not determine whether the model is discrete.
-        This probably means that you have restored a session saved with a previous version of Sherpa.
-        Falling back to assuming that the model is continuous.
+          WARNING: Could not determine whether the model is discrete.
+          This probably means that you have restored a session saved with a previous version of Sherpa.
+          Falling back to assuming that the model is continuous.
 
         Examples
         --------
 
-        Load in the Sherpa session from `sherpa.save`.
+        Load in the Sherpa session from 'sherpa.save'.
 
         >>> restore()
 
@@ -415,15 +414,15 @@ class Session(sherpa.ui.utils.Session):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -433,10 +432,10 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -466,15 +465,15 @@ class Session(sherpa.ui.utils.Session):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -486,10 +485,10 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -520,15 +519,15 @@ class Session(sherpa.ui.utils.Session):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -540,10 +539,10 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -572,9 +571,9 @@ class Session(sherpa.ui.utils.Session):
            The maximum value of the axis.
         step : number, optional
            The separation between each grid point. This is not used if
-           `numbins` is set.
+           ``numbins`` is set.
         numbins : int, optional
-           The number of grid points. This over-rides the `step`
+           The number of grid points. This over-rides the ``step``
            setting.
         id : int or str, optional
            The identifier for the data set to use. If not given then
@@ -596,8 +595,8 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The meaning of the `stop` parameter depends on whether it is a
-        binned or unbinned data set (as set by the `dstype`
+        The meaning of the ``stop`` parameter depends on whether it is a
+        binned or unbinned data set (as set by the ``dstype``
         parameter).
 
         Examples
@@ -674,7 +673,7 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         dims : sequence of 2 number
-           The dimensions of the grid in `(width,height)` order.
+           The dimensions of the grid in ``(width,height)`` order.
         id : int or str, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
@@ -728,9 +727,9 @@ class Session(sherpa.ui.utils.Session):
         ----------
         a1, .., aN : array_like
            Arrays of data. The order, and number, is determined by
-           the `dstype` parameter, and listed in the `load_arrays`
+           the ``dstype`` parameter, and listed in the `load_arrays`
            routine.
-        dstype :
+        dstype
            The data set type. The default is `Data1D` and values
            include: `Data1D`, `Data1DInt`, `Data2D`, `Data2DInt`,
            `DataPHA`, and `DataIMG`.
@@ -738,7 +737,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         data
-           The data set object matching the requested `dstype`.
+           The data set object matching the requested ``dstype``.
 
         See Also
         --------
@@ -798,7 +797,7 @@ class Session(sherpa.ui.utils.Session):
         ----------
         id : int or str
            The identifier for the data set to use.
-        *args :
+        *args
            Two or more arrays, followed by the type of data set to
            create.
 
@@ -816,37 +815,36 @@ class Session(sherpa.ui.utils.Session):
         The data type identifier, which defaults to `Data1D`,
         determines the number, and order, of the required inputs.
 
-        `Data1D`
-           required fields: x, y
-           optional fields: statistical error, systematic error
+        +------------+-----------------+--------------------+
+        | Identifier | Required Fields |   Optional Fields  |
+        +============+=================+====================+
+        | Data1D     | x, y            | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data1DInt  | xlo, xhi, y     | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data2D     | x0, x1, y       | shape,             |
+        |            |                 | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data2DInt  | x0lo, x1lo,     | shape,             |
+        |            | x0hi, x1hi, y   | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | DataPHA    | channel, counts | statistical error, |
+        |            |                 | systematic error,  |
+        |            |                 | bin_lo, bin_hi,    |
+        |            |                 | grouping, quality  |
+        +------------+-----------------+--------------------+
+        | DataIMG    | x0, x1, y       | shape,             |
+        |            |                 | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
 
-        `Data1DInt`
-           required fields: xlo, xhi, y
-           optional fields: statistical error, systematic error
-
-        `Data2D`
-           required fields: x0, x1, y
-           optional fields: shape, statistical error, systematic error
-           The `shape` argument should be a tuple giving the
-           size of the data (ny,nx).
-
-        `Data2DInt`
-           required fields: x0lo, x1lo, x0hi, x1hi, y
-           optional fields: shape, statistical error, systematic error
-           The `shape` argument should be a tuple giving the
-           size of the data (ny,nx).
-
-        `DataPHA`
-           required fields: channel, counts
-           optional fields: staterror, syserror, bin_lo, bin_hi,
-             grouping, quality
-
-        `DataIMG`
-           The arrays should be 1D, not 2D.
-           required fields: x0, x1, y
-           optional fields: shape, statistical error, systematic error
-           The `shape` argument should be a tuple giving the
-           size of the data (ny,nx).
+        The ``shape`` argument should be a tuple giving the size of
+        the data ``(ny,nx)``, and for the ``DataIMG`` case the arrays
+        are 1D, not 2D.
 
         Examples
         --------
@@ -856,8 +854,8 @@ class Session(sherpa.ui.utils.Session):
         >>> load_arrays(1, [10, 12, 15], [4.2, 12.1, 8.4])
 
         Create a 1D data set, with the identifier 'prof', from the
-        arrays `x` (independent axis), `y` (dependent axis), and `dy`
-        (statistical error on the dependent axis):
+        arrays ``x`` (independent axis), ``y`` (dependent axis), and
+        ``dy`` (statistical error on the dependent axis):
 
         >>> load_arrays('prof', x, y, dy)
 
@@ -887,26 +885,26 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        filename :
+        filename
            Identify the file to read: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file). The meaning of the columns is determined by
-           the `dstype` parameter.
+           the ``dstype`` parameter.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         dstype : optional
            The data class to use. The default is `Data1D`.
 
         Returns
         -------
-        data :
+        data
            The class of the returned object is controlled by the
-           `dstype` parameter.
+           ``dstype`` parameter.
 
         See Also
         --------
@@ -932,15 +930,15 @@ class Session(sherpa.ui.utils.Session):
         >>> d = unpack_table('rprof.fits', colkeys=['RMID', 'SUR_BRI'])
 
         The first three columns are taken to be the two independent
-        axes of a two-dimensional data set (`x0` and `x1) and
-        the dependent value (`y`):
+        axes of a two-dimensional data set (``x0`` and ``x1``) and
+        the dependent value (``y``):
 
         >>> d = unpack_table('fields.fits', ncols=3,
                              dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
-        also be done using the `colkeys` parameter, as shown above:
+        also be done using the ``colkeys`` parameter, as shown above:
 
         >>> d = unpack_table('rprof.fits[cols rmid,sur_bri,sur_bri_err]',
                              ncols=3)
@@ -963,18 +961,18 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        filename :
+        filename
            Identify the file to read: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file). The meaning of the columns is determined by
-           the `dstype` parameter.
+           the ``dstype`` parameter.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         dstype : optional
            The data class to use. The default is `Data1D`.
 
@@ -991,30 +989,32 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
         The column order for the different data types are as follows,
-        where `x` indicates an independent axis and `y` the dependent
+        where ``x`` indicates an independent axis and ``y`` the dependent
         axis:
 
-        `Data1D`
-           required fields: x, y
-           optional fields: statistical error, systematic error
-
-        `Data1DInt`
-           required fields: xlo, xhi, y
-           optional fields: statistical error, systematic error
-
-        `Data2D`
-           required fields: x0, x1, y
-           optional fields: shape, statistical error, systematic error
-
-        `Data2DInt`
-           required fields: x0lo, x1lo, x0hi, x1hi, y
-           optional fields: shape, statistical error, systematic error
+        +------------+-----------------+--------------------+
+        | Identifier | Required Fields |   Optional Fields  |
+        +============+=================+====================+
+        | Data1D     | x, y            | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data1DInt  | xlo, xhi, y     | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data2D     | x0, x1, y       | shape,             |
+        |            |                 | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data2DInt  | x0lo, x1lo,     | shape,             |
+        |            | x0hi, x1hi, y   | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
 
         Examples
         --------
@@ -1036,15 +1036,15 @@ class Session(sherpa.ui.utils.Session):
                        colkeys=['RMID', 'SUR_BRI'])
 
         The first three columns are taken to be the two independent
-        axes of a two-dimensional data set (`x0` and `x1) and
-        the dependent value (`y`):
+        axes of a two-dimensional data set (``x0`` and ``x1``) and
+        the dependent value (``y``):
 
         >>> load_table('fields.fits', ncols=3,
                        dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
-        also be done using the `colkeys` parameter, as shown above:
+        also be done using the ``colkeys`` parameter, as shown above:
 
         >>> load_table('prof',
                        'rprof.fits[cols rmid,sur_bri,sur_bri_err]',
@@ -1081,24 +1081,24 @@ class Session(sherpa.ui.utils.Session):
            column depends on the I/O library in use (Crates or
            AstroPy).
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file). The meaning of the columns is determined by
-           the `dstype` parameter.
+           the ``dstype`` parameter.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         dstype : optional
            The data class to use. The default is `Data1D`.
 
         Returns
         -------
-        data :
+        data
            The class of the returned object is controlled by the
-           `dstype` parameter.
+           ``dstype`` parameter.
 
         See Also
         --------
@@ -1124,15 +1124,15 @@ class Session(sherpa.ui.utils.Session):
         >>> d = unpack_ascii('tbl.dat', colkeys=['col2', 'col3'])
 
         The first three columns are taken to be the two independent
-        axes of a two-dimensional data set (`x0` and `x1) and
-        the dependent value (`y`):
+        axes of a two-dimensional data set (``x0`` and ``x1``) and
+        the dependent value (``y``):
 
         >>> d = unpack_ascii('fields.dat', ncols=3,
                              dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
-        also be done using the `colkeys` parameter, as shown above:
+        also be done using the ``colkeys`` parameter, as shown above:
 
         >>> d = unpack_ascii('tbl.dat[cols rmid,sur_bri,sur_bri_err]',
                              ncols=3)
@@ -1145,6 +1145,7 @@ class Session(sherpa.ui.utils.Session):
     ###           it is somewhat meaningless, since the crate could
     ###           have been read from a FITS binary table.
     ### DOC-TODO: how best to include datastack support?
+    ### DOC-TODO: what does shape mean here (how is it encoded)?
     #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_ascii(self, id, filename=None, ncols=2, colkeys=None,
                    dstype=Data1D, sep=' ', comment='#'):
@@ -1165,16 +1166,16 @@ class Session(sherpa.ui.utils.Session):
            column depends on the I/O library in use (Crates or
            AstroPy).
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file). The meaning of the columns is determined by
-           the `dstype` parameter.
+           the ``dstype`` parameter.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         dstype : optional
            The data class to use. The default is `Data1D`.
 
@@ -1190,30 +1191,32 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
         The column order for the different data types are as follows,
-        where `x` indicates an independent axis and `y` the dependent
-        axis:
+        where ``x`` indicates an independent axis and ``y`` the
+        dependent axis.
 
-        `Data1D`
-           required fields: x, y
-           optional fields: statistical error, systematic error
-
-        `Data1DInt`
-           required fields: xlo, xhi, y
-           optional fields: statistical error, systematic error
-
-        `Data2D`
-           required fields: x0, x1, y
-           optional fields: shape, statistical error, systematic error
-
-        `Data2DInt`
-           required fields: x0lo, x1lo, x0hi, x1hi, y
-           optional fields: shape, statistical error, systematic error
+        +------------+-----------------+--------------------+
+        | Identifier | Required Fields |   Optional Fields  |
+        +============+=================+====================+
+        | Data1D     | x, y            | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data1DInt  | xlo, xhi, y     | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data2D     | x0, x1, y       | shape,             |
+        |            |                 | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data2DInt  | x0lo, x1lo,     | shape,             |
+        |            | x0hi, x1hi, y   | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
 
         Examples
         --------
@@ -1235,15 +1238,15 @@ class Session(sherpa.ui.utils.Session):
                        colkeys=['RMID', 'SUR_BRI'])
 
         The first three columns are taken to be the two independent
-        axes of a two-dimensional data set (`x0` and `x1) and
-        the dependent value (`y`):
+        axes of a two-dimensional data set (``x0`` and ``x1``) and
+        the dependent value (``y``):
 
         >>> load_ascii('fields.txt', ncols=3,
                        dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
-        also be done using the `colkeys` parameter, as shown above:
+        also be done using the ``colkeys`` parameter, as shown above:
 
         >>> load_ascii('prof',
                        'rprof.dat[cols rmid,sur_bri,sur_bri_err]',
@@ -1268,10 +1271,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        filename :
+        filename
            A file name or a data structure representing the data to
            use, as used by the I/O backend in use by Sherpa: e.g.  a
-           `PHACrateDataset`, `TABLECrate`, or `IMAGECrate` for
+           ``PHACrateDataset``, ``TABLECrate``, or ``IMAGECrate`` for
            crates, as used by CIAO, or a list of AstroPy HDU objects.
         *args, **kwargs
            The options supported by
@@ -1334,10 +1337,10 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        filename :
+        filename
            A file name or a data structure representing the data to
            use, as used by the I/O backend in use by Sherpa: e.g.  a
-           `PHACrateDataset`, `TABLECrate`, or `IMAGECrate` for
+           ``PHACrateDataset``, ``TABLECrate``, or ``IMAGECrate`` for
            crates, as used by CIAO, or a list of AstroPy HDU objects.
         *args, **kwargs
            The options supported by
@@ -1359,8 +1362,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments,
-        then they are interpreted as the `id` and `filename`
+        the ``filename`` parameter. If given two un-named arguments,
+        then they are interpreted as the ``id`` and ``filename``
         parameters, respectively. The remaining parameters are
         expected to be given as named arguments.
 
@@ -1402,10 +1405,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        arg :
+        arg
            Identify the data: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: an `IMAGECrate` for crates, as used by CIAO,
+           use by Sherpa: an ``IMAGECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
         coord : { 'logical', 'image', 'physical', 'world', 'wcs' }, optional
            Ensure that the image contains the given coordinate system.
@@ -1414,9 +1417,9 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        img :
+        img
            The class of the returned object is controlled by the
-           `dstype` parameter.
+           ``dstype`` parameter.
 
         Raises
         ------
@@ -1461,10 +1464,10 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        arg :
+        arg
            Identify the image data: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: an `IMAGECrate` for crates, as used by CIAO,
+           use by Sherpa: an ``IMAGECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
         coord : { 'logical', 'image', 'physical', 'world', 'wcs' }
            The coordinate system to use. The 'image' option is the
@@ -1486,8 +1489,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `arg` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `arg` parameters,
+        the ``arg`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``arg`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1521,19 +1524,19 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        arg :
+        arg
            Identify the PHA file: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
         use_errors : bool, optional
-           If `True` then the statistical errors are taken from the
+           If ``True`` then the statistical errors are taken from the
            input data, rather than calculated by Sherpa from the
-           count values. The default is `False`.
+           count values. The default is ``False``.
 
         Returns
         -------
-        pha : sherpa.astro.data.DataPHA instance
+        pha : a `sherpa.astro.data.DataPHA` instance
 
         See Also
         --------
@@ -1577,19 +1580,19 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        arg :
+        arg
            Identify the PHA file: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
         use_errors : bool, optional
-           If `True` then the statistical errors are taken from the
+           If ``True`` then the statistical errors are taken from the
            input data, rather than calculated by Sherpa from the
-           count values. The default is `False`.
+           count values. The default is ``False``.
 
         Returns
         -------
-        pha : sherpa.astro.data.DataPHA instance
+        pha : a `sherpa.astro.data.DataPHA` instance
 
         See Also
         --------
@@ -1640,15 +1643,15 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        arg :
+        arg
            Identify the data to read: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: a `PHACrateDataset` for crates, as used by
+           use by Sherpa: a ``PHACrateDataset`` for crates, as used by
            CIAO, or a list of AstroPy HDU objects.
         use_errors : bool, optional
-           If `True` then the statistical errors are taken from the
+           If ``True`` then the statistical errors are taken from the
            input data, rather than calculated by Sherpa from the
-           count values. The default is `False`.
+           count values. The default is ``False``.
 
         See Also
         --------
@@ -1666,8 +1669,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `arg` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `arg` parameters,
+        the ``arg`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``arg`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1676,9 +1679,9 @@ class Session(sherpa.ui.utils.Session):
 
         Load the PHA file 'src.pi' into the default data set, and
         automatically load the ARF, RMF, and background from the files
-        pointed to by the `ANCRFILE`, `RESPFILE`, and `BACKFILE`
-        keywords in the file. The background is then subtracted and
-        any 'bad quality' bins are removed:
+        pointed to by the ANCRFILE, RESPFILE, and BACKFILE keywords in
+        the file. The background is then subtracted and any 'bad
+        quality' bins are removed:
 
         >>> load_pha('src.pi')
         read ARF file src.arf
@@ -1692,8 +1695,8 @@ class Session(sherpa.ui.utils.Session):
         >>> load_pha('src', 'x1.fits')
         >>> load_pha('bg', 'x2.fits')
 
-        If a type II PHA data set is loaded, then multiple
-        data sets will be created, one for each order.
+        If a type II PHA data set is loaded, then multiple data sets
+        will be created, one for each order.
 
         >>> clean()
         >>> load_pha('src.pha2')
@@ -1717,9 +1720,10 @@ class Session(sherpa.ui.utils.Session):
         read background file src_bkg.pi
 
         The default behavior is to calculate the errors based on the
-        counts values and the choice of statistic - e.g. `chi2gehrels`
-        or `chi2datavar` - but the statistical errors from the input
-        file can be used instead by setting `use_errors` to `True`:
+        counts values and the choice of statistic -
+        e.g. ``chi2gehrels`` or ``chi2datavar`` - but the statistical
+        errors from the input file can be used instead by setting
+        ``use_errors`` to ``True``:
 
         >>> load_pha('source.fits', use_errors=True)
 
@@ -1793,15 +1797,15 @@ class Session(sherpa.ui.utils.Session):
            Set if the filter array should be associated with the
            background associated with the data set.
         ignore : bool, optional
-           If `False` (the default) then include bins with a non-zero
+           If ``False`` (the default) then include bins with a non-zero
            filter value, otherwise exclude these bins.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
 
         See Also
         --------
@@ -1816,8 +1820,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1829,7 +1833,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> load_filter('filt.dat')
 
-        Select the `FILTER` column of the file:
+        Select the FILTER column of the file:
 
         >>> load_filter(2, 'filt.dat', colkeys=['FILTER'])
 
@@ -1839,7 +1843,7 @@ class Session(sherpa.ui.utils.Session):
         >>> load_filter(2, 'filt.dat[cols filter]')
 
         Read in a filter for an image. The image must match the size
-        of the data and, as `ignore=True`, pixels with a non-zero
+        of the data and, as ``ignore=True``, pixels with a non-zero
         value are excluded (rather than included):
 
         >>> load_filter('img', 'filt.img', ignore=True)
@@ -1881,11 +1885,11 @@ class Session(sherpa.ui.utils.Session):
            background associated with the data set.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
 
         See Also
         --------
@@ -1900,8 +1904,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1912,17 +1916,17 @@ class Session(sherpa.ui.utils.Session):
         --------
 
         When using Crates as the I/O library, select the grouping
-        column from the file `src.pi`, and use it to set the
+        column from the file 'src.pi', and use it to set the
         values in the default data set:
 
         >>> load_grouping('src.pi[cols grouping]')
 
-        Use the `colkeys` option to define the column in the input
+        Use the ``colkeys`` option to define the column in the input
         file:
 
         >>> load_grouping('src.pi', colkeys=['grouping'])
 
-        Load the first column in `grp.dat` and use it to populate
+        Load the first column in 'grp.dat' and use it to populate
         the grouping array of the data set called 'core'.
 
         >>> load_grouping('core', 'grp.dat')
@@ -1968,11 +1972,11 @@ class Session(sherpa.ui.utils.Session):
            background associated with the data set.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
 
         See Also
         --------
@@ -1987,8 +1991,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1999,17 +2003,17 @@ class Session(sherpa.ui.utils.Session):
         --------
 
         When using Crates as the I/O library, select the quality
-        column from the file `src.pi`, and use it to set the
+        column from the file 'src.pi', and use it to set the
         values in the default data set:
 
         >>> load_quality('src.pi[cols quality]')
 
-        Use the `colkeys` option to define the column in the input
+        Use the ``colkeys`` option to define the column in the input
         file:
 
         >>> load_quality('src.pi', colkeys=['quality'])
 
-        Load the first column in `grp.dat` and use it to populate
+        Load the first column in 'grp.dat' and use it to populate
         the quality array of the data set called 'core'.
 
         >>> load_quality('core', 'grp.dat')
@@ -2030,14 +2034,14 @@ class Session(sherpa.ui.utils.Session):
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
         val : array
-           The array of filter values (`0` or `1`). The size should
+           The array of filter values (``0`` or ``1``). The size should
            match the array returned by `get_dep`.
         bkg_id : int or str, optional
            Set to identify which background component to set. The
-           default value (`None`) means that this is for the source
+           default value (``None``) means that this is for the source
            component of the data set.
         ignore : bool, optional
-           If `False` (the default) then include bins with a non-zero
+           If ``False`` (the default) then include bins with a non-zero
            filter value, otherwise exclude these bins.
 
         See Also
@@ -2054,8 +2058,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `val` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `val` parameters,
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
         respectively.
 
         Examples
@@ -2104,7 +2108,7 @@ class Session(sherpa.ui.utils.Session):
         Read in a column or image from a file and use the values
         as the statistical errors for a data set. This over rides
         the errors calculated by any statistic, such as
-        `chi2gehrels` or `chi2datavar`.
+        ``chi2gehrels`` or ``chi2datavar``.
 
         Parameters
         ----------
@@ -2118,15 +2122,15 @@ class Session(sherpa.ui.utils.Session):
            type of data set (e.g. 1D or 2D).
         bkg_id : int or str, optional
            Set to identify which background component to set. The
-           default value (`None`) means that this is for the source
+           default value (``None``) means that this is for the source
            component of the data set.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
 
         See Also
         --------
@@ -2140,8 +2144,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2200,18 +2204,18 @@ class Session(sherpa.ui.utils.Session):
            type of data set (e.g. 1D or 2D).
         bkg_id : int or str, optional
            Set to identify which background component to set. The
-           default value (`None`) means that this is for the source
+           default value (``None``) means that this is for the source
            component of the data set.
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file).
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
 
         See Also
         --------
@@ -2224,8 +2228,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2277,7 +2281,7 @@ class Session(sherpa.ui.utils.Session):
            The array of values for the dependent axis.
         bkg_id : int or str, optional
            Set to identify which background component to set. The
-           default value (`None`) means that this is for the source
+           default value (``None``) means that this is for the source
            component of the data set.
 
         See Also
@@ -2292,8 +2296,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `val` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `val` parameters,
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
         respectively.
 
         Examples
@@ -2343,7 +2347,7 @@ class Session(sherpa.ui.utils.Session):
         """Set the statistical errors on the dependent axis of a data set.
 
         These values over-ride the errors calculated by any statistic,
-        such as `chi2gehrels` or `chi2datavar`.
+        such as ``chi2gehrels`` or ``chi2datavar``.
 
         Parameters
         ----------
@@ -2354,14 +2358,14 @@ class Session(sherpa.ui.utils.Session):
         val : array or scalar
            The systematic error.
         fractional : bool, optional
-           If `False` (the default value), then the `val` parameter is
-           the absolute value, otherwise the `val` parameter
+           If ``False`` (the default value), then the ``val`` parameter is
+           the absolute value, otherwise the ``val`` parameter
            represents the fractional error, so the absolute value is
-           calculated as `get_dep() * val` (and `val` must be
+           calculated as ``get_dep() * val`` (and ``val`` must be
            a scalar).
         bkg_id : int or str, optional
            Set to identify which background component to set. The
-           default value (`None`) means that this is for the source
+           default value (``None``) means that this is for the source
            component of the data set.
 
         See Also
@@ -2376,19 +2380,19 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `val` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `val` parameters,
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
         respectively.
 
         Examples
         --------
 
         Set the statistical error for the default data set to the value
-        in `dys` (a scalar or an array):
+        in ``dys`` (a scalar or an array):
 
         >>> set_staterror(dys)
 
-        Set the statistical error on the `core` data set to be 5% of
+        Set the statistical error on the 'core' data set to be 5% of
         the data values:
 
         >>> set_staterror('core', 0.05, fractional=True)
@@ -2427,14 +2431,14 @@ class Session(sherpa.ui.utils.Session):
         val : array or scalar
            The systematic error.
         fractional : bool, optional
-           If `False` (the default value), then the `val` parameter is
-           the absolute value, otherwise the `val` parameter
+           If ``False`` (the default value), then the ``val`` parameter is
+           the absolute value, otherwise the ``val`` parameter
            represents the fractional error, so the absolute value is
-           calculated as `get_dep() * val` (and `val` must be
+           calculated as ``get_dep() * val`` (and ``val`` must be
            a scalar).
         bkg_id : int or str, optional
            Set to identify which background component to set. The
-           default value (`None`) means that this is for the source
+           default value (``None``) means that this is for the source
            component of the data set.
 
         See Also
@@ -2449,19 +2453,19 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `val` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `val` parameters,
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
         respectively.
 
         Examples
         --------
 
         Set the systematic error for the default data set to the value
-        in `dys` (a scalar or an array):
+        in ``dys`` (a scalar or an array):
 
         >>> set_syserror(dys)
 
-        Set the systematic error on the `core` data set to be 5% of
+        Set the systematic error on the 'core' data set to be 5% of
         the data values:
 
         >>> set_syserror('core', 0.05, fractional=True)
@@ -2572,7 +2576,7 @@ class Session(sherpa.ui.utils.Session):
            The scaling factor.
         bkg_id : int or str, optional
            Set to identify which background component to set.  The
-           default value (`None`) means that this is for the source
+           default value (``None``) means that this is for the source
            component of the data set.
 
         See Also
@@ -2586,8 +2590,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `backscale` parameter. If given two un-named arguments,
-        then they are interpreted as the `id` and `backscale`
+        the ``backscale`` parameter. If given two un-named arguments,
+        then they are interpreted as the ``id`` and ``backscale``
         parameters, respectively. The remaining parameters are
         expected to be given as named arguments.
 
@@ -2624,7 +2628,7 @@ class Session(sherpa.ui.utils.Session):
            The scaling factor.
         bkg_id : int or str, optional
            Set to identify which background component to set.  The
-           default value (`None`) means that this is for the source
+           default value (``None``) means that this is for the source
            component of the data set.
 
         See Also
@@ -2638,8 +2642,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `area` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `area` parameters,
+        the ``area`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``area`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2667,7 +2671,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not. The default is ``False``.
         bkg_id : int or str, optional
            Set if the values returned should be from the given
            background component, instead of the source data set.
@@ -2676,7 +2680,7 @@ class Session(sherpa.ui.utils.Session):
         -------
         axis : array
            The statistical error for each data point. This may be
-           estimated from the data (e.g. with the `chi2gehrels`
+           estimated from the data (e.g. with the ``chi2gehrels``
            statistic) or have been set explicitly (`set_staterror`).
            For PHA data sets, the return array will match the grouping
            scheme applied to the data set.
@@ -2710,7 +2714,7 @@ class Session(sherpa.ui.utils.Session):
         array([ 3.17944947,  3.39791576,  4.122499  ])
 
         If the statistical errors are set - either when the data set
-        is created or with a call to `set_errors` - then these values
+        is created or with a call to `set_staterror` - then these values
         will be used, no matter the statistic:
 
         >>> load_arrays(1, [10,15,19], [4,5,9], [2,3,5])
@@ -2740,7 +2744,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not. The default is ``False``.
         bkg_id : int or str, optional
            Set if the values returned should be from the given
            background component, instead of the source data set.
@@ -2788,7 +2792,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not. The default is ``False``.
         bkg_id : int or str, optional
            Set if the values returned should be from the given
            background component, instead of the source data set.
@@ -2830,7 +2834,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not. The default is ``False``.
         bkg_id : int or str, optional
            Set if the values returned should be from the given
            background component, instead of the source data set.
@@ -2881,7 +2885,7 @@ class Session(sherpa.ui.utils.Session):
         >>> chans[0:6]
         array([ 1.,  2.,  3.,  4.,  5.,  6.])
 
-        If the `filter` flag is set then the return will be limited to
+        If the ``filter`` flag is set then the return will be limited to
         the data that is used in the fit:
 
         >>> notice_id('spec', 0.5, 7)
@@ -3023,7 +3027,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not. The default is ``False``.
         bkg_id : int or str, optional
            Set if the values returned should be from the given
            background component, instead of the source data set.
@@ -3059,7 +3063,7 @@ class Session(sherpa.ui.utils.Session):
         >>> get_dep(2)
         array([4, 5, 9, -2])
 
-        If the `filter` flag is set then the return will be limited to
+        If the ``filter`` flag is set then the return will be limited to
         the data that is used in the fit:
 
         >>> notice_id('spec', 0.5, 7)
@@ -3103,7 +3107,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not. The default is ``False``.
         bkg_id : int or str, optional
            Set if the rate should be taken from the background
            associated with the data set.
@@ -3165,7 +3169,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the ARF or not. The default is `False`.
+           the ARF or not. The default is ``False``.
         bkg_id : int or str, optional
            Set if the ARF should be taken from a background set
            associated with the data set.
@@ -3198,7 +3202,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         bkg_id : int or str, optional
            Set to identify which background component to use.  The
-           default value (`None`) means that the time is for the
+           default value (``None``) means that the time is for the
            source component of the data set.
 
         Returns
@@ -3232,7 +3236,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         bkg_id : int or str, optional
            Set to identify which background component to use.  The
-           default value (`None`) means that the value is for the
+           default value (``None``) means that the value is for the
            source component of the data set.
 
         Returns
@@ -3292,7 +3296,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         bkg_id : int or str, optional
            Set to identify which background component to use.  The
-           default value (`None`) means that the value is for the
+           default value (``None``) means that the value is for the
            source component of the data set.
 
         Returns
@@ -3314,8 +3318,9 @@ class Session(sherpa.ui.utils.Session):
 
           exp_src * bscale_src / (exp_bgnd * bscale_bgnd)
 
-        where exp_x and bscale_x are the exposure and BACKSCAL values
-        for the source (x=src) and background (x=bgnd).
+        where ``exp_x`` and ``bscale_x`` are the exposure and BACKSCAL
+        values for the source (``x=src``) and background (``x=bgnd``)
+        regions, respectively.
 
         Examples
         --------
@@ -3346,7 +3351,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         bkg_id : int or str, optional
            Set to identify which background component to use.  The
-           default value (`None`) means that the value is for the
+           default value (``None``) means that the value is for the
            source component of the data set.
 
         Returns
@@ -3480,27 +3485,27 @@ class Session(sherpa.ui.utils.Session):
         args : array of arrays
            The arrays to write out.
         fields : array of str
-           The column names (should match the size of `args`).
+           The column names (should match the size of ``args``).
         ascii : bool, optional
-           If `False` then the data is written as a FITS format binary
-           table. The default is `True`. The exact format of the
+           If ``False`` then the data is written as a FITS format binary
+           table. The default is ``True``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
            This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
+           overwritten (``True``) or if it raises an exception (``False``,
            the default setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
         save_data : Save the data to a file.
         save_image : Save the pixel values of a 2D data set to a file.
-        save_table :
+        save_table : Save a data set to a file as a table.
 
         Examples
         --------
@@ -3539,19 +3544,19 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the background model should be written out
            rather than the source.
         ascii : bool, optional
-           If `False` then the data is written as a FITS format binary
-           table. The default is `False`. The exact format of the
+           If ``False`` then the data is written as a FITS format binary
+           table. The default is ``False``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
@@ -3559,7 +3564,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -3573,12 +3578,12 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `SOURCE` for 1D
+        The output file contains the columns ``X`` and ``SOURCE`` for 1D
         data sets. The residuals array respects any filter or (for PHA
         files), grouping settings.
 
@@ -3622,19 +3627,19 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the background model should be written out
            rather than the source.
         ascii : bool, optional
-           If `False` then the data is written as a FITS format binary
-           table. The default is `False`. The exact format of the
+           If ``False`` then the data is written as a FITS format binary
+           table. The default is ``False``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
@@ -3642,7 +3647,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -3656,12 +3661,12 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `MODEL` for 1D
+        The output file contains the columns ``X`` and ``MODEL`` for 1D
         data sets. The residuals array respects any filter or (for PHA
         files), grouping settings.
 
@@ -3702,19 +3707,19 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the background residuals should be written out
            rather than the source.
         ascii : bool, optional
-           If `False` then the data is written as a FITS format binary
-           table. The default is `False`. The exact format of the
+           If ``False`` then the data is written as a FITS format binary
+           table. The default is ``False``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
@@ -3722,7 +3727,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -3734,12 +3739,12 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `RESID`. The
+        The output file contains the columns ``X`` and ``RESID``. The
         residuals array respects any filter or (for PHA files),
         grouping settings.
 
@@ -3774,19 +3779,19 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the background residuals should be written out
            rather than the source.
         ascii : bool, optional
-           If `False` then the data is written as a FITS format binary
-           table. The default is `True`. The exact format of the
+           If ``False`` then the data is written as a FITS format binary
+           table. The default is ``True``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
@@ -3794,7 +3799,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -3806,12 +3811,12 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `DELCHI`. The
+        The output file contains the columns ``X`` and ``DELCHI``. The
         residuals array respects any filter or (for PHA files),
         grouping settings.
 
@@ -3847,19 +3852,19 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
-           If `False` then the data is written as a FITS format binary
-           table. The default is `True`. The exact format of the
+           If ``False`` then the data is written as a FITS format binary
+           table. The default is ``True``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
@@ -3867,7 +3872,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.DataErr
            If the data set has not been filtered.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -3879,12 +3884,12 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `FILTER`.
+        The output file contains the columns ``X`` and ``FILTER``.
 
         Examples
         --------
@@ -3927,8 +3932,8 @@ class Session(sherpa.ui.utils.Session):
         """Save the statistical errors to a file.
 
         If the statistical errors have not been set explicitly, then
-        the values calculated by the statistic - such as `chi2gehrels`
-        or `chi2datavar` - will be used.
+        the values calculated by the statistic - such as ``chi2gehrels``
+        or ``chi2datavar`` - will be used.
 
         Parameters
         ----------
@@ -3938,25 +3943,25 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
-           If `False` then the data is written as a FITS
-           format binary table. The default is `True`. The
+           If ``False`` then the data is written as a FITS
+           format binary table. The default is ``True``. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -3969,12 +3974,12 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `STAT_ERR`.
+        The output file contains the columns ``X`` and ``STAT_ERR``.
 
         Examples
         --------
@@ -4025,19 +4030,19 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
-           If `False` then the data is written as a FITS
-           format binary table. The default is `True`. The
+           If ``False`` then the data is written as a FITS
+           format binary table. The default is ``True``. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
@@ -4045,7 +4050,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IOErr
            If the data set does not contain any systematic errors.
         sherpa.utils.err.DataErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4058,12 +4063,12 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `SYS_ERR`.
+        The output file contains the columns ``X`` and ``SYS_ERR``.
 
         Examples
         --------
@@ -4110,7 +4115,7 @@ class Session(sherpa.ui.utils.Session):
         of the statistical and systematic errors. The systematic
         errors can be 0. If the statistical errors have not been set
         explicitly, then the values calculated by the statistic - such
-        as `chi2gehrels` or `chi2datavar` - will be used.
+        as ``chi2gehrels`` or ``chi2datavar`` - will be used.
 
         Parameters
         ----------
@@ -4120,25 +4125,25 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
-           If `False` then the data is written as a FITS
-           format binary table. The default is `True`. The
+           If ``False`` then the data is written as a FITS
+           format binary table. The default is ``True``. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4154,12 +4159,12 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The output file contains the columns `X` and `ERR`.
+        The output file contains the columns ``X`` and ``ERR``.
 
         Examples
         --------
@@ -4208,19 +4213,19 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
-           If `False` then the data is written as a FITS
-           format binary table. The default is `True`. The
+           If ``False`` then the data is written as a FITS
+           format binary table. The default is ``True``. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
@@ -4228,7 +4233,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4239,8 +4244,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4290,25 +4295,25 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the grouping array should be taken from the
            background associated with the data set.
         ascii : bool, optional
-           If `False` then the data is written as a FITS
-           format binary table. The default is `True`. The
+           If ``False`` then the data is written as a FITS
+           format binary table. The default is ``True``. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4321,8 +4326,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4376,25 +4381,25 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         bkg_id : int or str, optional
            Set if the quality array should be taken from the
            background associated with the data set.
         ascii : bool, optional
-           If `False` then the data is written as a FITS
-           format binary table. The default is `True`. The
+           If ``False`` then the data is written as a FITS
+           format binary table. The default is ``True``. The
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4407,13 +4412,13 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The quality column is labelled as 'GROUPS' rather than
-        'QUALITY'.
+        The quality column is labelled as ``GROUPS`` rather than
+        ``QUALITY``.
 
         Examples
         --------
@@ -4461,22 +4466,22 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the data to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         ascii : bool, optional
-           If `False` then the data is written as a FITS format binary
-           table. The default is `False`. The exact format of the
+           If ``False`` then the data is written as a FITS format binary
+           table. The default is ``False``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
            If the data set does not contain 2D data.
 
         See Also
@@ -4491,8 +4496,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4529,22 +4534,22 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the data to. The format
-           is determined by the `ascii` argument.
+           is determined by the ``ascii`` argument.
         ascii : bool, optional
-           If `False` then the data is written as a FITS format binary
-           table. The default is `False`. The exact format of the
+           If ``False`` then the data is written as a FITS format binary
+           table. The default is ``False``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -4559,8 +4564,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4604,13 +4609,13 @@ class Session(sherpa.ui.utils.Session):
            Set if the background should be written out rather
            than the source (for a PHA data set).
         ascii : bool, optional
-           If `False` then the data is written as a FITS format binary
-           table. The default is `True`. The exact format of the
+           If ``False`` then the data is written as a FITS format binary
+           table. The default is ``True``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
            This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
+           overwritten (``True``) or if it raises an exception (``False``,
            the default setting).
 
         Raises
@@ -4618,11 +4623,11 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IdentifierErr
            If there is no matching data set.
         sherpa.utils.err.IOErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
-        save_arrays : 
+        save_arrays : Write a list of arrays to a file.
         save_delchi : Save the ratio of residuals (data-model) to error to a file.
         save_error : Save the errors to a file.
         save_filter : Save the filter array to a file.
@@ -4630,18 +4635,18 @@ class Session(sherpa.ui.utils.Session):
         save_image : Save the pixel values of a 2D data set to a file.
         save_pha : Save a PHA data set to a file.
         save_quality : Save the quality array to a file.
-        save_resid :
+        save_resid : Save the residuals (data-model) to a file.
         save_staterror : Save the statistical errors to a file.
         save_syserror : Save the statistical errors to a file.
-        save_table :
+        save_table : Save a data set to a file as a table.
 
         Notes
         -----
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
+        the ``filename`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4786,7 +4791,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        arf : sherpa.astro.instrument.ARF1D instance
+        arf : a `sherpa.astro.instrument.ARF1D` instance
            This is a reference to the ARF, rather than a copy, so that
            changing the fields of the object will change the values in
            the data set.
@@ -4809,7 +4814,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> get_arf().exposure
 
-        Copy the ARF from the default data set to data set `2`:
+        Copy the ARF from the default data set to data set 2:
 
         >>> arf1 = get_arf()
         >>> set_arf(2, arf1)
@@ -4849,7 +4854,7 @@ class Session(sherpa.ui.utils.Session):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        arf :
+        arf
            An ARF, such as returned by `get_arf` or `unpack_arf`.
         resp_id : int or str, optional
            The identifier for the ARF within this data set, if there
@@ -4872,8 +4877,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `arf` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `arf` parameters,
+        the ``arf`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``arf`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4890,7 +4895,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Copy the ARF from the default data set to data set `2`:
+        Copy the ARF from the default data set to data set 2:
 
         >>> arf1 = get_arf()
         >>> set_arf(2, arf1)
@@ -4926,15 +4931,15 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        arg :
+        arg
            Identify the ARF: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
 
         Returns
         -------
-        arf : sherpa.astro.instrument.ARF1D instance
+        arf : a `sherpa.astro.instrument.ARF1D` instance
 
         See Also
         --------
@@ -4982,10 +4987,10 @@ class Session(sherpa.ui.utils.Session):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        arg :
+        arg
            Identify the ARF: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
         resp_id : int or str, optional
            The identifier for the ARF within this data set, if there
@@ -5010,8 +5015,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `arg` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `arg` parameters,
+        the ``arg`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``arg`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5048,7 +5053,7 @@ class Session(sherpa.ui.utils.Session):
 
         This is for the case when there is only one background
         component and one background response. If this does not hold,
-        use `get_arf` and use the `bkg_id` and `resp_id` arguments.
+        use `get_arf` and use the ``bkg_id`` and ``resp_id`` arguments.
 
         Parameters
         ----------
@@ -5058,7 +5063,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        arf : sherpa.astro.instrument.ARF1D instance
+        arf : a `sherpa.astro.instrument.ARF1D` instance
            This is a reference to the ARF, rather than a copy, so that
            changing the fields of the object will change the values in
            the data set.
@@ -5081,7 +5086,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> get_bkg_arf().exposure
 
-        Copy the ARF from the default data set to data set `2`,
+        Copy the ARF from the default data set to data set 2,
         as the first component:
 
         >>> arf1 = get_bkg_arf()
@@ -5110,10 +5115,10 @@ class Session(sherpa.ui.utils.Session):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        arg :
+        arg
            Identify the ARF: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: a `TABLECrate` for crates, as used by CIAO,
+           use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
 
         See Also
@@ -5126,8 +5131,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `arg` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `arg` parameters,
+        the ``arg`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``arg`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5181,20 +5186,20 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with two arguments, they are assumed to be
-        `filenames` and `resp_ids`, and three positional arguments
-        means `id`, `filenames`, and `resp_ids`.
+        ``filenames`` and ``resp_ids``, and three positional arguments
+        means ``id``, ``filenames``, and ``resp_ids``.
 
         Examples
         --------
 
         Load two ARFs into the default data set, using response ids of
-        `1` and `2` for `m1.arf` and `p1.arf` respectively:
+        1 and 2 for 'm1.arf' and 'p1.arf' respectively:
 
         >>> arfs = ['m1.arf', 'p1.arf']
         >>> load_multi_arfs(arfs, [1,2])
 
         Load in the ARFs to the data set with the identifier
-        `lowstate`:
+        'lowstate':
 
         >>> load_multi_arfs('lowstate', arfs, [1,2])
 
@@ -5235,7 +5240,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        rmf : sherpa.astro.instrument.RMF1D instance
+        rmf : a `sherpa.astro.instrument.RMF1D` instance
            This is a reference to the RMF, rather than a copy, so that
            changing the fields of the object will change the values in
            the data set.
@@ -5253,7 +5258,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Copy the RMF from the default data set to data set `2`:
+        Copy the RMF from the default data set to data set 2:
 
         >>> rmf1 = get_rmf()
         >>> set_rmf(2, rmf1)
@@ -5293,7 +5298,7 @@ class Session(sherpa.ui.utils.Session):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        arf :
+        arf
            An ARF, such as returned by `get_arf` or `unpack_arf`.
         resp_id : int or str, optional
            The identifier for the ARF within this data set, if there
@@ -5316,8 +5321,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `rmf` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `rmf` parameters,
+        the ``rmf`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``rmf`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5334,7 +5339,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Copy the RMF from the default data set to data set `2`:
+        Copy the RMF from the default data set to data set 2:
 
         >>> rmf1 = get_rmf()
         >>> set_rmf(2, rmf1)
@@ -5370,15 +5375,15 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        arg :
+        arg
            Identify the RMF: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: a `RMFCrateDataset` for crates, as used by
+           use by Sherpa: a ``RMFCrateDataset`` for crates, as used by
            CIAO, or a list of AstroPy HDU objects.
 
         Returns
         -------
-        rmf : sherpa.astro.instrument.RMF1D instance
+        rmf : a `sherpa.astro.instrument.RMF1D` instance
 
         See Also
         --------
@@ -5426,11 +5431,11 @@ class Session(sherpa.ui.utils.Session):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        arg :
+        arg
            Identify the RMF: a file name, or a data structure
            representing the data to use, as used by the I/O
-           backend in use by Sherpa: a `RMFCrateDataset` for
-           crates, as used by CIAO, or an AstroPy `HDUList` object.
+           backend in use by Sherpa: a ``RMFCrateDataset`` for
+           crates, as used by CIAO, or an AstroPy ``HDUList`` object.
         resp_id : int or str, optional
            The identifier for the RMF within this data set, if there
            are multiple responses.
@@ -5454,8 +5459,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `arg` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `arg` parameters,
+        the ``arg`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``arg`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5492,7 +5497,7 @@ class Session(sherpa.ui.utils.Session):
 
         This is for the case when there is only one background
         component and one background response. If this does not hold,
-        use `get_rmf` and use the `bkg_id` and `resp_id` arguments.
+        use `get_rmf` and use the ``bkg_id`` and ``resp_id`` arguments.
 
         Parameters
         ----------
@@ -5502,7 +5507,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        rmf : sherpa.astro.instrument.RMF1D instance
+        rmf : a `sherpa.astro.instrument.RMF1D` instance
            This is a reference to the RMF, rather than a copy, so that
            changing the fields of the object will change the values in
            the data set.
@@ -5520,7 +5525,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Copy the RMF from the default data set to data set `2`,
+        Copy the RMF from the default data set to data set 2,
         as the first component:
 
         >>> rmf1 = get_bkg_arf()
@@ -5549,11 +5554,11 @@ class Session(sherpa.ui.utils.Session):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        arg :
+        arg
            Identify the RMF: a file name, or a data structure
            representing the data to use, as used by the I/O
-           backend in use by Sherpa: a `RMFCrateDataset` for
-           crates, as used by CIAO, or an AstroPy `HDUList` object.
+           backend in use by Sherpa: a ``RMFCrateDataset`` for
+           crates, as used by CIAO, or an AstroPy ``HDUList`` object.
 
         See Also
         --------
@@ -5565,8 +5570,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `arg` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `arg` parameters,
+        the ``arg`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``arg`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5620,20 +5625,20 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with two arguments, they are assumed to be
-        `filenames` and `resp_ids`, and three positional arguments
-        means `id`, `filenames`, and `resp_ids`.
+        ``filenames`` and ``resp_ids``, and three positional arguments
+        means ``id``, ``filenames``, and ``resp_ids``.
 
         Examples
         --------
 
         Load two RMFs into the default data set, using response ids of
-        `1` and `2` for `m1.rmf` and `p1.rmf` respectively:
+        1 and 2 for 'm1.rmf' and 'p1.rmf' respectively:
 
         >>> rmfs = ['m1.rmf', 'p1.rmf']
         >>> load_multi_rmfs(rmfs, [1,2])
 
         Load in the RMFs to the data set with the identifier
-        `lowstate`:
+        'lowstate':
 
         >>> load_multi_rmfs('lowstate', rmfs, [1,2])
 
@@ -5718,7 +5723,7 @@ class Session(sherpa.ui.utils.Session):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        bkg :
+        bkg
            A PHA data set, such as returned by `get_data` or
            `unpack_pha`.
         bkg_id : int or str, optional
@@ -5739,15 +5744,15 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `bkg` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `bkg` parameters,
+        the ``bkg`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``bkg`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
         Examples
         --------
 
-        Copy the background from the default data set to data set `2`:
+        Copy the background from the default data set to data set 2:
 
         >>> bkg1 = get_bkg()
         >>> set_bkg(2, bkg1)
@@ -5797,7 +5802,7 @@ class Session(sherpa.ui.utils.Session):
         -------
         ids : array of int or str
            The identifiers for the backround data sets for the data
-           set. In many cases this will just be `[1]`.
+           set. In many cases this will just be ``[1]``.
 
         See Also
         --------
@@ -5828,7 +5833,7 @@ class Session(sherpa.ui.utils.Session):
         -------
         ids : array of int or str
            The identifiers for the response information for the data
-           set. In many cases this will just be `[1]`.
+           set. In many cases this will just be ``[1]``.
 
         See Also
         --------
@@ -5854,7 +5859,7 @@ class Session(sherpa.ui.utils.Session):
         analysis. Note that in order to change the units of a data set
         from 'channel' to 'energy' or 'wavelength', the appropriate
         ARF and RMF instrument response files must be loaded for that
-        data set. The `type` and `factor` arguments control how
+        data set. The ``type`` and ``factor`` arguments control how
         the data is plotted.
 
         Parameters
@@ -5864,22 +5869,19 @@ class Session(sherpa.ui.utils.Session):
            quantity argument (in which case, the change is made to
            all data sets). If multiple arguments are given then this
            is the identifier for the data set to change.
-
         quantity : { 'channel', 'chan', 'bin', 'energy', 'ener', 'wavelength', 'wave' }
            The units to use for the analysis.
-        
         type : { 'rate', 'counts' }, optional
            The units to use on the Y axis of plots. The default
            is 'rate'.
-
         factor : int, optional
            The Y axis of plots is multiplied by Energy^factor or
-           Wavelength^factor befire display. The default is `0`.
+           Wavelength^factor before display. The default is 0.
 
         Raises
         ------
         sherpa.utils.err.IdentifierErr
-           If the `id` argument is not recognized.
+           If the ``id`` argument is not recognized.
 
         See Also
         --------
@@ -5890,8 +5892,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `quantity` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `quantity` parameters,
+        the ``quantity`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``quantity`` parameters,
         respectively.
 
         Examples
@@ -5902,7 +5904,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> set_analysis('wave')
 
-        Set the data set with an identifier of `2` to use energy
+        Set the data set with an identifier of 2 to use energy
         units.
 
         >>> set_analysis(2, 'energy')
@@ -5952,7 +5954,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `id` argument is not recognized.
+           If the ``id`` argument is not recognized.
 
         See Also
         --------
@@ -5996,8 +5998,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `coord` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `coord` parameters,
+        the ``coord`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``coord`` parameters,
         respectively.
 
         Any limits or values already set for model parameters, such as
@@ -6005,11 +6007,11 @@ class Session(sherpa.ui.utils.Session):
         the coordinate system.
 
         The 'logical' system is one in which the center of the
-        lower-left pixel has coordinates `(1,1)` and the center of the
-        top-right pixel has coordinates `(nx,ny)`, for a `nx`
-        (columns) by `ny` (rows) pixel image. The pixels have a side
-        of length `1`, so the first pixel covers the range `x=0.5` to
-        `x=1.5` and `y=0.5` to `y=1.5`.
+        lower-left pixel has coordinates ``(1,1)`` and the center of the
+        top-right pixel has coordinates ``(nx,ny)``, for a ``nx``
+        (columns) by ``ny`` (rows) pixel image. The pixels have a side
+        of length 1, so the first pixel covers the range ``x=0.5`` to
+        ``x=1.5`` and ``y=0.5`` to ``y=1.5``.
 
         The 'physical' and 'world' coordinate systems rely on FITS
         World Coordinate System (WCS) standard [1]_. The 'physical'
@@ -6071,7 +6073,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain image data.
         sherpa.utils.err.IdentifierErr
-           If the `id` argument is not recognized.
+           If the ``id`` argument is not recognized.
 
         See Also
         --------
@@ -6094,7 +6096,7 @@ class Session(sherpa.ui.utils.Session):
            The data set to change. If not given then the default
            identifier is used, as returned by `get_default_id`.
         bkg_id : int or str, optional
-           The identifier for the background (the default of `None`
+           The identifier for the background (the default of ``None``
            uses the first component).
 
         Raises
@@ -6377,7 +6379,7 @@ class Session(sherpa.ui.utils.Session):
            A region specification as a string or the name of a file
            containing a region filter. The coordinates system of the
            filter is taken from the coordinate setting of the data
-           sets (`set_coord`). If `None`, then all points are
+           sets (`set_coord`). If ``None``, then all points are
            included.
 
         See Also
@@ -6445,7 +6447,7 @@ class Session(sherpa.ui.utils.Session):
            A region specification as a string or the name of a file
            containing a region filter. The coordinates system of the
            filter is taken from the coordinate setting of the data
-           sets (`set_coord`). If `None`, then all points are
+           sets (`set_coord`). If ``None``, then all points are
            included.
 
         See Also
@@ -6492,32 +6494,45 @@ class Session(sherpa.ui.utils.Session):
             self.get_data(id).notice2d(val, True)
 
     def notice2d_image(self, ids=None):
-        """Select the region to include from the image viewer.
+        """Include pixels using the region defined in the image viewer.
 
-        notice2d_image
+        Include points that lie within the region defined in the image
+        viewer.
 
-        SYNOPSIS
-           Get the current DS9 region and notice data points
-           within the region.
+        Parameters
+        ----------
+        ids : int or str, or sequence of int or str, optional
+           The data set, or sets, to use. If ``None`` (the default)
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        See Also
+        --------
+        ignore2d : Exclude a spatial region from an image.
+        ignore2d_image : Exclude pixels using the region defined in the image viewer.
+        notice2d : Include a spatial region of an image.
 
-        Arguments:
-           ids       - list of data ids to apply filter
+        Notes
+        -----
+        The region definition is converted into the coordinate system
+        relevant to the data set before it is applied.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           After the user has drawn regions in a DS9 pane, this
-           function can be used to retrieve the region description,
-           and notice all pixels within the region.  The region
-           description is automatically converted to the data's
-           current coordinate system.
+        Use the region in the image viewer to include points from the
+        default data set.
 
-        SEE ALSO
-           notice2d, ignore2d, notice2d_id, ignore2d_id, ignore2d_image,
-           notice, ignore, notice_id, ignore_id
+        >>> notice2d_image()
+
+        Include points in the data set labelled "2".
+
+        >>> notice2d_image(2)
+
+        Include points in data sets "src" and "bg".
+
+        >>> notice2d_image(["src", "bg"])
+
         """
         if (ids == None):
             ids = self._default_id
@@ -6543,32 +6558,45 @@ class Session(sherpa.ui.utils.Session):
             self.notice2d_id(id, regions)
 
     def ignore2d_image(self, ids=None):
-        """Select the region to exclude from the image viewer.
+        """Exclude pixels using the region defined in the image viewer.
 
-        ignore2d_image
+        Exclude points that lie within the region defined in the image
+        viewer.
 
-        SYNOPSIS
-           Get the current DS9 region and ignore data points
-           within the region.
+        Parameters
+        ----------
+        ids : int or str, or sequence of int or str, optional
+           The data set, or sets, to ignore. If ``None`` (the default)
+           then the default identifier is used, as returned by
+           `get_default_id`.
 
-        SYNTAX
+        See Also
+        --------
+        ignore2d : Exclude a spatial region from an image.
+        notice2d : Include a spatial region of an image.
+        notice2d_image : Include pixels using the region defined in the image viewer.
 
-        Arguments:
-           ids       - list of data ids to apply filter
+        Notes
+        -----
+        The region definition is converted into the coordinate system
+        relevant to the data set before it is applied.
 
-        Returns:
-           None
+        Examples
+        --------
 
-        DESCRIPTION
-           After the user has drawn regions in a DS9 pane, this
-           function can be used to retrieve the region description,
-           and ignore all pixels within the region.  The region
-           description is automatically converted to the data's
-           current coordinate system.
+        Use the region in the image viewer to ignore points from the
+        default data set.
 
-        SEE ALSO
-           notice2d, ignore2d, notice2d_id, notice2d_image, ignore2d_id,
-           notice, ignore, notice_id, ignore_id
+        >>> ignore2d_image()
+
+        Ignore points in the data set labelled "2".
+
+        >>> ignore2d_image(2)
+
+        Ignore points in data sets "src" and "bg".
+
+        >>> ignore2d_image(["src", "bg"])
+
         """
         if (ids == None):
             ids = self._default_id
@@ -6609,17 +6637,17 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        arg :
+        arg
            Identify the data to read: a file name, or a data structure
            representing the data to use, as used by the I/O backend in
-           use by Sherpa: a `PHACrateDataset` for crates, as used by
+           use by Sherpa: a ``PHACrateDataset`` for crates, as used by
            CIAO, or a list of AstroPy HDU objects.
         use_errors : bool, optional
-           If `True` then the statistical errors are taken from the
+           If ``True`` then the statistical errors are taken from the
            input data, rather than calculated by Sherpa from the
-           count values. The default is `False`.
+           count values. The default is ``False``.
         bkg_id : int or str, optional
-           The identifier for the background (the default of `None`
+           The identifier for the background (the default of ``None``
            uses the first component).
 
         See Also
@@ -6633,8 +6661,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `arg` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `arg` parameters,
+        the ``arg`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``arg`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -6681,7 +6709,7 @@ class Session(sherpa.ui.utils.Session):
         re-group the data. The `ungroup` function removes this
         grouping (however it was created). The `group` function
         re-applies this grouping. The grouping scheme can be
-        changed dynamically, using the `group_xxx` series of
+        changed dynamically, using the ``group_xxx`` series of
         routines.
 
         Parameters
@@ -6725,15 +6753,15 @@ class Session(sherpa.ui.utils.Session):
         statistic can now be used.
 
         The grouping is implemented by separate arrays to the main
-        data - the information is stored in the `grouping` and
-        `quality` arrays of the PHA data set - so that a data set can
+        data - the information is stored in the ``grouping`` and
+        ``quality`` arrays of the PHA data set - so that a data set can
         be grouped and ungrouped many times, without losing
         information. The `group` command does not create this
         information; this is either created by modifying the PHA file
-        before it is read in, or by using the `group_xxx` routines
+        before it is read in, or by using the ``group_xxx`` routines
         once the data has been loaded.
 
-        The `grouped` field of a PHA data set is set to `True` when
+        The ``grouped`` field of a PHA data set is set to ``True`` when
         the data is grouped.
 
         References
@@ -6800,7 +6828,7 @@ class Session(sherpa.ui.utils.Session):
         """Apply a set of grouping flags to a PHA data set.
 
         A group is indicated by a sequence of flag values starting
-        with `1` and then `-1` for all the channels in the group,
+        with ``1`` and then ``-1`` for all the channels in the group,
         following [1]_.  Setting the grouping column automatically
         turns on the grouping flag for that data set.
 
@@ -6841,8 +6869,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `val` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `val` parameters,
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
         respectively.
 
         References
@@ -6901,8 +6929,8 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        grouping : array or `None`
-           A value of 1 indicates the start of a new group, and -1
+        grouping : array or ``None``
+           A value of ``1`` indicates the start of a new group, and ``-1``
            indicates that the bin is part of the group.
 
         Raises
@@ -6978,8 +7006,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `val` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `val` parameters,
+        the ``val`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``val`` parameters,
         respectively.
 
         References
@@ -7085,7 +7113,7 @@ class Session(sherpa.ui.utils.Session):
         A PHA data set can be grouped either because it contains
         grouping information [1]_, which is automatically applied when
         the data is read in with `load_pha` or `load_data`, or because
-        the `group_xxx` set of routines has been used to dynamically
+        the ``group_xxx`` set of routines has been used to dynamically
         re-group the data. The `ungroup` function removes this
         grouping (however it was created).
 
@@ -7122,12 +7150,12 @@ class Session(sherpa.ui.utils.Session):
         channel in the spectrum.
 
         The grouping is implemented by separate arrays to the main
-        data - the information is stored in the `grouping` and
-        `quality` arrays of the PHA data set - so that a data set
+        data - the information is stored in the ``grouping`` and
+        ``quality`` arrays of the PHA data set - so that a data set
         can be grouped and ungrouped many times, without losing
         information.
 
-        The `grouped` field of a PHA data set is set to `False` when
+        The ``grouped`` field of a PHA data set is set to ``False`` when
         the data is not grouped.
 
         If subtracting the background estimate from a data set, the
@@ -7192,7 +7220,7 @@ class Session(sherpa.ui.utils.Session):
     def group_bins(self, id, num=None, bkg_id=None, tabStops=None):
         """Group into a fixed number of bins.
 
-        Combine the data so that there `num` equal-width bins (or
+        Combine the data so that there ``num`` equal-width bins (or
         groups). The binning scheme is applied to all the channels,
         but any existing filter - created by the `ignore` or `notice`
         set of functions - is re-applied after the data has been
@@ -7209,15 +7237,15 @@ class Session(sherpa.ui.utils.Session):
            will contain the same number of channels.
         bkg_id : int or str, optional
            Set to group the background associated with the data set.
-           When `bkg_id` is None (which is the default), the
+           When ``bkg_id`` is None (which is the default), the
            grouping is applied to all the associated background
            data sets as well as the source data set.
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
            match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           ``True`` means that the channel should be ignored from the
+           grouping (use 0 or ``False`` otherwise).
 
         Raises
         ------
@@ -7239,8 +7267,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `num` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `num` parameters,
+        the ``num`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``num`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7249,7 +7277,7 @@ class Session(sherpa.ui.utils.Session):
 
         Since the bin width is an integer number of channels, it is
         likely that some channels will be "left over". This is even
-        more likely when the `tabStops` parameter is set. If this
+        more likely when the ``tabStops`` parameter is set. If this
         happens, a warning message will be displayed to the screen and
         the quality value for these channels will be set to 2. This
         information can be found with the `get_quality` command.
@@ -7306,7 +7334,7 @@ class Session(sherpa.ui.utils.Session):
     def group_width(self, id, num=None, bkg_id=None, tabStops=None):
         """Group into a fixed bin width.
 
-        Combine the data so that each bin contains `num` channels.
+        Combine the data so that each bin contains ``num`` channels.
         The binning scheme is applied to all the channels, but any
         existing filter - created by the `ignore` or `notice` set of
         functions - is re-applied after the data has been grouped.
@@ -7321,15 +7349,15 @@ class Session(sherpa.ui.utils.Session):
            The number of channels to combine into a group.
         bkg_id : int or str, optional
            Set to group the background associated with the data set.
-           When `bkg_id` is None (which is the default), the
+           When ``bkg_id`` is None (which is the default), the
            grouping is applied to all the associated background
            data sets as well as the source data set.
         tabStops : array of int or bool, optional
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
            match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           ``True`` means that the channel should be ignored from the
+           grouping (use 0 or ``False`` otherwise).
 
         Raises
         ------
@@ -7351,8 +7379,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `num` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `num` parameters,
+        the ``num`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``num`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7360,7 +7388,7 @@ class Session(sherpa.ui.utils.Session):
         times on the same data set without needing to call `ungroup`.
 
         Unless the requested bin width is a factor of the number of
-        channels (and no `tabStops` parameter is given), then some
+        channels (and no ``tabStops`` parameter is given), then some
         channels will be "left over". If this happens, a warning
         message will be displayed to the screen and the quality value
         for these channels will be set to 2. This information can be
@@ -7415,7 +7443,7 @@ class Session(sherpa.ui.utils.Session):
                      maxLength=None, tabStops=None):
         """Group into a minimum number of counts per bin.
 
-        Combine the data so that each bin contains `num` or more
+        Combine the data so that each bin contains ``num`` or more
         counts. The binning scheme is applied to all the channels, but
         any existing filter - created by the `ignore` or `notice` set
         of functions - is re-applied after the data has been grouped.
@@ -7433,7 +7461,7 @@ class Session(sherpa.ui.utils.Session):
            The number of channels to combine into a group.
         bkg_id : int or str, optional
            Set to group the background associated with the data set.
-           When `bkg_id` is None (which is the default), the
+           When ``bkg_id`` is None (which is the default), the
            grouping is applied to all the associated background
            data sets as well as the source data set.
         maxLength : int, optional
@@ -7443,8 +7471,8 @@ class Session(sherpa.ui.utils.Session):
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
            match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           ``True`` means that the channel should be ignored from the
+           grouping (use 0 or ``False`` otherwise).
 
         Raises
         ------
@@ -7466,8 +7494,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `num` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `num` parameters,
+        the ``num`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``num`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7533,7 +7561,7 @@ class Session(sherpa.ui.utils.Session):
         """Group into a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        of at least `snr`. The binning scheme is applied to all the
+        of at least ``snr``. The binning scheme is applied to all the
         channels, but any existing filter - created by the `ignore` or
         `notice` set of functions - is re-applied after the data has
         been grouped.  The background is *not* included in this
@@ -7551,7 +7579,7 @@ class Session(sherpa.ui.utils.Session):
            to form a group of channels.
         bkg_id : int or str, optional
            Set to group the background associated with the data set.
-           When `bkg_id` is None (which is the default), the
+           When ``bkg_id`` is None (which is the default), the
            grouping is applied to all the associated background
            data sets as well as the source data set.
         maxLength : int, optional
@@ -7561,8 +7589,8 @@ class Session(sherpa.ui.utils.Session):
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
            match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           ``True`` means that the channel should be ignored from the
+           grouping (use 0 or ``False`` otherwise).
         errorCol : array of num, optional
            If set, the error to use for each channel when calculating
            the signal-to-noise ratio. If not given then Poisson
@@ -7589,8 +7617,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `snr` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `snr` parameters,
+        the ``snr`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``snr`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7631,7 +7659,7 @@ class Session(sherpa.ui.utils.Session):
                      maxLength=None, tabStops=None):
         """Adaptively group to a minimum number of counts.
 
-        Combine the data so that each bin contains `min` or more
+        Combine the data so that each bin contains ``min`` or more
         counts. The difference to `group_counts` is that this
         algorithm starts with the bins with the largest signal, in
         order to avoid over-grouping bright features, rather than at
@@ -7652,7 +7680,7 @@ class Session(sherpa.ui.utils.Session):
            The number of channels to combine into a group.
         bkg_id : int or str, optional
            Set to group the background associated with the data set.
-           When `bkg_id` is None (which is the default), the
+           When ``bkg_id`` is ``None`` (which is the default), the
            grouping is applied to all the associated background
            data sets as well as the source data set.
         maxLength : int, optional
@@ -7662,8 +7690,8 @@ class Session(sherpa.ui.utils.Session):
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
            match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           ``True`` means that the channel should be ignored from the
+           grouping (use 0 or ``False`` otherwise).
 
         Raises
         ------
@@ -7685,8 +7713,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `min` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `min` parameters,
+        the ``min`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``min`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7730,7 +7758,7 @@ class Session(sherpa.ui.utils.Session):
         """Adaptively group to a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        of at least `num`. The difference to `group_snr` is that this
+        of at least ``num``. The difference to `group_snr` is that this
         algorithm starts with the bins with the largest signal, in
         order to avoid over-grouping bright features, rather than at
         the first channel of the data. The adaptive nature means that
@@ -7751,7 +7779,7 @@ class Session(sherpa.ui.utils.Session):
            to form a group of channels.
         bkg_id : int or str, optional
            Set to group the background associated with the data set.
-           When `bkg_id` is None (which is the default), the
+           When ``bkg_id`` is ``None`` (which is the default), the
            grouping is applied to all the associated background
            data sets as well as the source data set.
         maxLength : int, optional
@@ -7761,8 +7789,8 @@ class Session(sherpa.ui.utils.Session):
            If set, indicate one or more ranges of channels that should
            not be included in the grouped output. The array should
            match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           ``True`` means that the channel should be ignored from the
+           grouping (use 0 or ``False`` otherwise).
         errorCol : array of num, optional
            If set, the error to use for each channel when calculating
            the signal-to-noise ratio. If not given then Poisson
@@ -7789,8 +7817,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `num` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `num` parameters,
+        the ``num`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``num`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7905,6 +7933,13 @@ class Session(sherpa.ui.utils.Session):
         >>> get_data('src').subtracted
         True
 
+        Overplot the background-subtracted data on the original
+        data for the default data set:
+
+        >>> plot_data()
+        >>> subtract()
+        >>> plot_data(overplot=True)
+
         """
         if (self._get_pha_data(id).subtracted is True):
             raise DataErr('subtractset', 'data set', str(self._fix_id(id)), 'True')
@@ -7941,7 +7976,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The `subtracted` field of a PHA data set is set to `False`
+        The ``subtracted`` field of a PHA data set is set to ``False``
         when the background is not subtracted.
 
         Examples
@@ -7998,7 +8033,7 @@ class Session(sherpa.ui.utils.Session):
            The grouping array for the data (see `set_grouping`).
         grouped : bool, optional
            Should the simulated data be grouped (see `group`)?
-           The default is `False`. This value is only used if
+           The default is ``False``. This value is only used if
            the `grouping` parameter is set.
         quality : array, optional
            The quality array for the data (see `set_quality`).
@@ -8229,8 +8264,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Some functions - such as `plot_source` and `calc_energy_flux`
@@ -8410,7 +8445,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        model : a sherpa.astro.models.JDPileup instance
+        model : a `sherpa.astro.models.JDPileup` instance
 
         Raises
         ------
@@ -8454,7 +8489,7 @@ class Session(sherpa.ui.utils.Session):
            The data set containing the source expression. If not given
            then the default identifier is used, as returned by
            `get_default_id`.
-        model : an instance of the sherpa.astro.models.JDPileup class
+        model : an instance of the `sherpa.astro.models.JDPileup` class
 
         See Also
         --------
@@ -8469,8 +8504,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         This is a generic function, and can be used to model other
@@ -8587,7 +8622,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        model :
+        model
            This can contain multiple model components and any
            instrument response. Changing attributes of this model
            changes the model used by the data set.
@@ -8665,8 +8700,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         Some functions - such as `plot_bkg_source` - may not work for
@@ -8676,8 +8711,8 @@ class Session(sherpa.ui.utils.Session):
         --------
 
         The background is fit by two power laws - one that is passed
-        through the instrument response (gbgnd) and one that is not
-        (pbgnd). The source is modelled by `xsphabs * galabs`,
+        through the instrument response (``gbgnd``) and one that is not
+        (``pbgnd``). The source is modelled by ``xsphabs * galabs``,
         together with the background model, scaled by the ratio of
         area and time. Note that the background component in the
         source expression uses the source response rather than
@@ -8772,18 +8807,21 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
+        the ``model`` parameter. If given two un-named arguments, then
+        they are interpreted as the ``id`` and ``model`` parameters,
         respectively.
 
         The emission defined by the background model expression is
         included in the fit to the source dataset, scaling by exposure
         time and area size (given by the ratio of the background to
-        source `BACKSCAL` values). That is, if `src_model` and
-        `bkg_model` represent the source and background model
+        source BACKSCAL values). That is, if ``src_model`` and
+        ``bkg_model`` represent the source and background model
         expressions set by calls to `set_model` and `set_bkg_model`
-        respectively, the source data is fit by `src_model + scale *
-        bkg_model`, where `scale` is the scaling factor.
+        respectively, the source data is fit by::
+
+           src_model + scale * bkg_model
+
+        where ``scale`` is the scaling factor.
 
         PHA data sets will automatically apply the instrumental
         response (ARF and RMF) to the background expression. For some
@@ -8794,9 +8832,9 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        The background is model by a gaussian line (`gauss1d` model
-        component called `bline`) together with an absorbed polynomial
-        (the `bgnd` component). The absorbing component (`gal`) is
+        The background is model by a gaussian line (``gauss1d`` model
+        component called ``bline``) together with an absorbed polynomial
+        (the ``bgnd`` component). The absorbing component (``gal``) is
         also used in the source expression.
 
         >>> set_model(xsphabs.gal*powlaw1d.pl)
@@ -8806,7 +8844,7 @@ class Session(sherpa.ui.utils.Session):
         estimates, so models are set for both components. The same
         model is applied to both, except that the relative
         normalisations are allowed to vary (by inclusion of the
-        `scale` component).
+        ``scale`` component).
 
         >>> bmodel = xsphabs.gabs * powlaw1d.pl
         >>> set_bkg_model(2, bmodel)
@@ -8948,7 +8986,7 @@ class Session(sherpa.ui.utils.Session):
            the coordinate grid of the data set. Linear,
            nearest-neighbor, and polynomial schemes are provided in
            the sherpa.utils module.
-        *args, **kwargs :
+        *args, **kwargs
            Arguments for reading in the data.
 
         See Also
@@ -9075,9 +9113,9 @@ class Session(sherpa.ui.utils.Session):
         filename : str, optional
            Set this to include data from this file in the model. The
            file should contain two columns, and the second column is
-           stored in the `_y` attribute of the model.
-        *args, **kwargs :
-           Options for reading in the data from `filename`, if set.
+           stored in the ``_y`` attribute of the model.
+        *args, **kwargs
+           Options for reading in the data from ``filename``, if set.
            See `load_table` and `load_image` for more information.
 
         See Also
@@ -9266,13 +9304,13 @@ class Session(sherpa.ui.utils.Session):
            this name. The file contains the per-iteration fit results.
         clobber : bool, optional
            This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
+           overwritten (``True``) or if it raises an exception (``False``,
            the default setting).
 
         Raises
         ------
         sherpa.utils.err.FitErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -9350,13 +9388,13 @@ class Session(sherpa.ui.utils.Session):
            this name. The file contains the per-iteration fit results.
         clobber : bool, optional
            This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
+           overwritten (``True``) or if it raises an exception (``False``,
            the default setting).
 
         Raises
         ------
         sherpa.utils.err.FitErr
-           If `filename` already exists and `clobber` is `False`.
+           If ``filename`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -9522,7 +9560,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        data :
+        data
            An object representing the data used to create the plot by
            `plot_source`. The return value depends on the data
            set (e.g. PHA, 1D binned, 1D un-binned).
@@ -9608,7 +9646,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        data : a sherpa.astro.plot.OrderPlot instance
+        data : a `sherpa.astro.plot.OrderPlot` instance
            An object representing the data used to create the plot by
            `plot_order`.
 
@@ -9632,12 +9670,12 @@ class Session(sherpa.ui.utils.Session):
            identifier is used, as returned by `get_default_id`.
         resp_id : int or str, optional
            Which ARF to use in the case that multiple ARFs are
-           associated with a data set. The default is `None`,
+           associated with a data set. The default is ``None``,
            which means the first one.
 
         Returns
         -------
-        arf_plot : a sherpa.astro.plot.ARFPlot instance
+        arf_plot : a `sherpa.astro.plot.ARFPlot` instance
 
         Raises
         ------
@@ -9681,7 +9719,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        model : a sherpa.astro.plot.BkgFitPlot instance
+        model : a `sherpa.astro.plot.BkgFitPlot` instance
            An object representing the data used to create the plot by
            `plot_bkg_fit`.
 
@@ -9690,7 +9728,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -9720,7 +9758,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        model : a sherpa.astro.plot.BkgModelHistogram instance
+        model : a `sherpa.astro.plot.BkgModelHistogram` instance
            An object representing the data used to create the plot by
            `plot_bkg_model`.
 
@@ -9729,7 +9767,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -9759,7 +9797,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        data : a sherpa.astro.plot.BkgDataPlot instance
+        data : a `sherpa.astro.plot.BkgDataPlot` instance
            An object representing the data used to create the plot by
            `plot_data`. The relationship between the returned values
            and the values in the data set depend on the analysis,
@@ -9770,7 +9808,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
 
         See Also
         --------
@@ -9800,7 +9838,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        source : a sherpa.astro.plot.BkgSourcePlot instance
+        source : a `sherpa.astro.plot.BkgSourcePlot` instance
            An object representing the data used to create the plot by
            `plot_bkg_source`.
 
@@ -9809,7 +9847,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -9840,7 +9878,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        source : a sherpa.astro.plot.BkgResidPlot instance
+        source : a `sherpa.astro.plot.BkgResidPlot` instance
            An object representing the data used to create the plot by
            `plot_bkg_resid`.
 
@@ -9849,7 +9887,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -9880,7 +9918,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        source : a sherpa.astro.plot.BkgRatioPlot instance
+        source : a `sherpa.astro.plot.BkgRatioPlot` instance
            An object representing the data used to create the plot by
            `plot_bkg_ratio`.
 
@@ -9889,7 +9927,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -9920,7 +9958,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        source : a sherpa.astro.plot.BkgDelchiPlot instance
+        source : a `sherpa.astro.plot.BkgDelchiPlot` instance
            An object representing the data used to create the plot by
            `plot_bkg_delchi`.
 
@@ -9929,7 +9967,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -9960,7 +9998,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        source : a sherpa.astro.plot.BkgChisqrPlot instance
+        source : a `sherpa.astro.plot.BkgChisqrPlot` instance
            An object representing the data used to create the plot by
            `plot_bkg_chisqr`.
 
@@ -9969,7 +10007,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -10013,14 +10051,14 @@ class Session(sherpa.ui.utils.Session):
            guven then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
-           (`None`) means that the default identifier, as returned by
+           (``None``) means that the default identifier, as returned by
            `get_default_id`, is used.
         num : int, optional
-           The number of samples to create. The default is `7500`.
+           The number of samples to create. The default is 7500.
         bins : int, optional
            The number of bins to use for the histogram.
         correlated : bool, optional
-           If `True` (the default is `False`) then `scales` is the
+           If ``True`` (the default is ``False``) then ``scales`` is the
            full covariance matrix, otherwise it is just a 1D array
            containing the variances of the parameters (the diagonal
            elements of the covariance matrix).
@@ -10033,18 +10071,18 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the `correlated`
-           parameter: when `True`, the array should be a symmetric
+           parameters. The form depends on the ``correlated``
+           parameter: when ``True``, the array should be a symmetric
            positive semi-definite (N,N) array, otherwise a 1D array
            of length N, where N is the number of free parameters.
         recalc : bool, optional
-           If `True`, the default, then re-calculate the values rather
+           If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
            run.
 
         Returns
         -------
-        hist : a sherpa.astro.plot.EnergyFluxHistogram instance
+        hist : a `sherpa.astro.plot.EnergyFluxHistogram` instance
            An object representing the data used to create the plot by
            `plot_energy_flux`.
 
@@ -10087,14 +10125,14 @@ class Session(sherpa.ui.utils.Session):
            guven then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
-           (`None`) means that the default identifier, as returned by
+           (``None``) means that the default identifier, as returned by
            `get_default_id`, is used.
         num : int, optional
-           The number of samples to create. The default is `7500`.
+           The number of samples to create. The default is 7500.
         bins : int, optional
            The number of bins to use for the histogram.
         correlated : bool, optional
-           If `True` (the default is `False`) then `scales` is the
+           If ``True`` (the default is ``False``) then ``scales`` is the
            full covariance matrix, otherwise it is just a 1D array
            containing the variances of the parameters (the diagonal
            elements of the covariance matrix).
@@ -10107,18 +10145,18 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the `correlated`
-           parameter: when `True`, the array should be a symmetric
+           parameters. The form depends on the ``correlated``
+           parameter: when ``True``, the array should be a symmetric
            positive semi-definite (N,N) array, otherwise a 1D array
            of length N, where N is the number of free parameters.
         recalc : bool, optional
-           If `True`, the default, then re-calculate the values rather
+           If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
            run.
 
         Returns
         -------
-        hist : a sherpa.astro.plot.PhotonFluxHistogram instance
+        hist : a `sherpa.astro.plot.PhotonFluxHistogram` instance
            An object representing the data used to create the plot by
            `plot_photon_flux`.
 
@@ -10265,14 +10303,14 @@ class Session(sherpa.ui.utils.Session):
            identifier is used, as returned by `get_default_id`.
         resp_id : int or str, optional
            Which ARF to use in the case that multiple ARFs are
-           associated with a data set. The default is `None`,
+           associated with a data set. The default is ``None``,
            which means the first one.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_data`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_data`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
@@ -10368,11 +10406,11 @@ class Session(sherpa.ui.utils.Session):
         hi : number, optional
            The high value to plot (only use for PHA data sets).
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_source`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_source`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -10436,11 +10474,11 @@ class Session(sherpa.ui.utils.Session):
            array, in which case multiple curves will be displayed.
            The default is to use all orders.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_model`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_model`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -10483,18 +10521,18 @@ class Session(sherpa.ui.utils.Session):
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_bkg`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
 
         See Also
         --------
@@ -10547,18 +10585,18 @@ class Session(sherpa.ui.utils.Session):
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_bkg_model`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_model`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -10598,18 +10636,18 @@ class Session(sherpa.ui.utils.Session):
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_bkg_resid`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_resid`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -10652,18 +10690,18 @@ class Session(sherpa.ui.utils.Session):
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_bkg_ratio`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_ratio`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -10705,18 +10743,18 @@ class Session(sherpa.ui.utils.Session):
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_bkg_ratio`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_ratio`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -10758,18 +10796,18 @@ class Session(sherpa.ui.utils.Session):
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_bkg_ratio`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_chisqr`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -10807,18 +10845,18 @@ class Session(sherpa.ui.utils.Session):
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_bkg_fit`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_fit`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -10829,7 +10867,7 @@ class Session(sherpa.ui.utils.Session):
         plot : Create one or more plot types.
         plot_bkg : Plot the background values for a PHA data set.
         plot_bkg_model : Plot the model for the background of a PHA data set.
-        plot_bkg_fit_delchi :
+        plot_bkg_fit_delchi : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_bkg_fit_resid : Plot the fit results, and the residuals, for the background of a PHA data set.
         plot_fit : Plot the fit results (data, model) for a data set.
         set_analysis : Set the units used when fitting and displaying spectral data.
@@ -10866,18 +10904,18 @@ class Session(sherpa.ui.utils.Session):
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_bkg_model`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_model`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -10924,14 +10962,14 @@ class Session(sherpa.ui.utils.Session):
            guven then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
-           (`None`) means that the default identifier, as returned by
+           (``None``) means that the default identifier, as returned by
            `get_default_id`, is used.
         num : int, optional
-           The number of samples to create. The default is `7500`.
+           The number of samples to create. The default is 7500.
         bins : int, optional
            The number of bins to use for the histogram.
         correlated : bool, optional
-           If `True` (the default is `False`) then `scales` is the
+           If ``True`` (the default is ``False``) then ``scales`` is the
            full covariance matrix, otherwise it is just a 1D array
            containing the variances of the parameters (the diagonal
            elements of the covariance matrix).
@@ -10944,17 +10982,17 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the `correlated`
-           parameter: when `True`, the array should be a symmetric
+           parameters. The form depends on the ``correlated``
+           parameter: when ``True``, the array should be a symmetric
            positive semi-definite (N,N) array, otherwise a 1D array
            of length N, where N is the number of free parameters.
         recalc : bool, optional
-           If `True`, the default, then re-calculate the values rather
+           If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
            run.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -11024,14 +11062,14 @@ class Session(sherpa.ui.utils.Session):
            guven then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
-           (`None`) means that the default identifier, as returned by
+           (``None``) means that the default identifier, as returned by
            `get_default_id`, is used.
         num : int, optional
-           The number of samples to create. The default is `7500`.
+           The number of samples to create. The default is 7500.
         bins : int, optional
            The number of bins to use for the histogram.
         correlated : bool, optional
-           If `True` (the default is `False`) then `scales` is the
+           If ``True`` (the default is ``False``) then ``scales`` is the
            full covariance matrix, otherwise it is just a 1D array
            containing the variances of the parameters (the diagonal
            elements of the covariance matrix).
@@ -11044,17 +11082,17 @@ class Session(sherpa.ui.utils.Session):
            background model.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the `correlated`
-           parameter: when `True`, the array should be a symmetric
+           parameters. The form depends on the ``correlated``
+           parameter: when ``True``, the array should be a symmetric
            positive semi-definite (N,N) array, otherwise a 1D array
            of length N, where N is the number of free parameters.
         recalc : bool, optional
-           If `True`, the default, then re-calculate the values rather
+           If ``True``, the default, then re-calculate the values rather
            than use the values from the last time the function was
            run.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -11117,11 +11155,11 @@ class Session(sherpa.ui.utils.Session):
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_bkg_fit_resid`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_fit_resid`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
         clearwindow : bool, optional
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
@@ -11131,7 +11169,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -11201,11 +11239,11 @@ class Session(sherpa.ui.utils.Session):
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_bkg_fit_delchi`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_bkg_fit_delchi`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
         clearwindow : bool, optional
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
@@ -11215,7 +11253,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the `bkg_id` parameter is invalid.
+           If the ``bkg_id`` parameter is invalid.
         sherpa.utils.err.ModelErr
            If no model expression has been created for the background
            data.
@@ -11294,18 +11332,18 @@ class Session(sherpa.ui.utils.Session):
            guven then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
-           (`None`) means that the default identifier, as returned by
+           (``None``) means that the default identifier, as returned by
            `get_default_id`, is used.
         num : int, optional
-           The number of samples to create. The default is `1`.
+           The number of samples to create. The default is 1.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the `correlated`
-           parameter: when `True`, the array should be a symmetric
+           parameters. The form depends on the ``correlated``
+           parameter: when ``True``, the array should be a symmetric
            positive semi-definite (N,N) array, otherwise a 1D array
            of length N, where N is the number of free parameters.
         correlated : bool, optional
-           If `True` (the default is `False`) then `scales` is the
+           If ``True`` (the default is ``False``) then ``scales`` is the
            full covariance matrix, otherwise it is just a 1D array
            containing the variances of the parameters (the diagonal
            elements of the covariance matrix).
@@ -11319,9 +11357,9 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        vals :
-           The return array has the shape (num, N+1), where N is the
-           number of free parameters and num is the `num` parameter.
+        vals
+           The return array has the shape ``(num, N+1)``, where ``N`` is the
+           number of free parameters and num is the ``num`` parameter.
            The rows of this array contain the flux value, as
            calculated by `calc_photon_flux`, followed by the values of
            the thawed parameters used for that iteration. The order of
@@ -11397,18 +11435,18 @@ class Session(sherpa.ui.utils.Session):
            guven then the upper value of the data grid is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
-           (`None`) means that the default identifier, as returned by
+           (``None``) means that the default identifier, as returned by
            `get_default_id`, is used.
         num : int, optional
-           The number of samples to create. The default is `1`.
+           The number of samples to create. The default is 1.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the `correlated`
-           parameter: when `True`, the array should be a symmetric
+           parameters. The form depends on the ``correlated``
+           parameter: when ``True``, the array should be a symmetric
            positive semi-definite (N,N) array, otherwise a 1D array
            of length N, where N is the number of free parameters.
         correlated : bool, optional
-           If `True` (the default is `False`) then `scales` is the
+           If ``True`` (the default is ``False``) then ``scales`` is the
            full covariance matrix, otherwise it is just a 1D array
            containing the variances of the parameters (the diagonal
            elements of the covariance matrix).
@@ -11422,9 +11460,9 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        vals :
-           The return array has the shape (num, N+1), where N is the
-           number of free parameters and num is the `num` parameter.
+        vals
+           The return array has the shape ``(num, N+1)``, where ``N`` is the
+           number of free parameters and num is the ``num`` parameter.
            The rows of this array contain the flux value, as
            calculated by `calc_energy_flux`, followed by the values of
            the thawed parameters used for that iteration. The order of
@@ -11504,18 +11542,18 @@ class Session(sherpa.ui.utils.Session):
             guven then the upper value of the data grid is used.
          id : int or string, optional
             The identifier of the data set to use. The default value
-            (`None`) means that the default identifier, as returned by
+            (``None``) means that the default identifier, as returned by
             `get_default_id`, is used.
          num : int, optional
-            The number of samples to create. The default is `1`.
+            The number of samples to create. The default is 1.
          scales : array, optional
             The scales used to define the normal distributions for the
-            parameters. The form depends on the `correlated`
-            parameter: when `True`, the array should be a symmetric
+            parameters. The form depends on the ``correlated``
+            parameter: when ``True``, the array should be a symmetric
             positive semi-definite (N,N) array, otherwise a 1D array
             of length N, where N is the number of free parameters.
          correlated : bool, optional
-            If `True` (the default is `False`) then `scales` is the
+            If ``True`` (the default is ``False``) then ``scales`` is the
             full covariance matrix, otherwise it is just a 1D array
             containing the variances of the parameters (the diagonal
             elements of the covariance matrix).
@@ -11527,7 +11565,7 @@ class Session(sherpa.ui.utils.Session):
             should only be set when the line to be measured is in the
             background model.
          Xrays : bool, optional
-            When `True` (the default), assume that the model has
+            When ``True`` (the default), assume that the model has
             units of photon/cm^2/s, and use `calc_energy_flux`
             to convert to erg/cm^2/s.
          confidence : number, optional
@@ -11537,14 +11575,14 @@ class Session(sherpa.ui.utils.Session):
 
          Returns
          -------
-         (fullflux,cptflux,vals) :
+         (fullflux,cptflux,vals)
             The fullflux and cptflux arrays contain the results for
-            the full source model and the flux of the `modelcomponent`
+            the full source model and the flux of the ``modelcomponent``
             argument (they can be the same). They have three elements
             and give the median value, upper quartile, and lower
             quartile values of the flux distribution. The vals array
-            has a shape of (num+1,N+2), where N is the number of free
-            parameters and num is the `num` parameter. The rows of
+            has a shape of ``(num+1,N+2)``, where ``N`` is the number of free
+            parameters and num is the ``num`` parameter. The rows of
             this array contain the flux value for the iteration (for
             the full source model), the parameter values, and then the
             statistic value for this set of parameters.
@@ -11625,21 +11663,21 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        src :
+        src
            The continuum model (this may contain multiple components).
-        combo :
+        combo
            The continuum plus line (absorption or emission) model.
         lo : optional
            The lower limit for the calculation (the units are set by
-           `set_analysis` for the data set). The default value (`None`)
+           `set_analysis` for the data set). The default value (``None``)
            means that the lower range of the data set is used.
         hi : optional
            The upper limit for the calculation (the units are set by
-           `set_analysis` for the data set). The default value (`None`)
+           `set_analysis` for the data set). The default value (``None``)
            means that the upper range of the data set is used.
         id : int or string, optional
            The identifier of the data set to use. The default value
-           (`None`) means that the default identifier, as returned by
+           (``None``) means that the default identifier, as returned by
            `get_default_id`, is used.
         bkg_id : int or string, optional
            The identifier of the background component to use. This
@@ -11711,11 +11749,11 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         lo : number, optional
-           The minimum limit of the band. Use `None`, the default,
+           The minimum limit of the band. Use ``None``, the default,
            to use the low value of the data set.
         hi : number, optional
            The maximum limit of the band, which must be larger than
-           `lo`. Use `None`, the default, to use the upper value of
+           ``lo``. Use ``None``, the default, to use the upper value of
            the data set.
         id : int or str, optional
            Use the source expression associated with this data set. If
@@ -11727,12 +11765,12 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        flux :
+        flux
            The flux from the source model integrated over the given
            band. This represents the flux from the model without any
            instrument response (i.e. the intrinsic flux of the
            source). For X-Spec style models the units will be
-           photon/cm^2/s. If `hi` is `None` but `lo` is set then the
+           photon/cm^2/s. If ``hi`` is ``None`` but ``lo`` is set then the
            flux density is returned at that point: photon/cm^2/s/keV
            or photon/cm^2/s/Angstrom depending on the analysis
            setting.
@@ -11747,7 +11785,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The units of `lo` and `hi` are determined by the analysis
+        The units of ``lo`` and ``hi`` are determined by the analysis
         setting for the data set (e.g. `get_analysis`).
 
         Any existing filter on the data set - e.g. as created by
@@ -11808,11 +11846,11 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         lo : number, optional
-           The minimum limit of the band. Use `None`, the default,
+           The minimum limit of the band. Use ``None``, the default,
            to use the low value of the data set.
         hi : number, optional
            The maximum limit of the band, which must be larger than
-           `lo`. Use `None`, the default, to use the upper value of
+           ``lo``. Use ``None``, the default, to use the upper value of
            the data set.
         id : int or str, optional
            Use the source expression associated with this data set. If
@@ -11824,12 +11862,12 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        flux :
+        flux
            The flux from the source model integrated over the given
            band. This represents the flux from the model without any
            instrument response (i.e. the intrinsic flux of the
            source). For X-Spec style models the units will be
-           erg/cm^2/s. If `hi` is `None` but `lo` is set then the flux
+           erg/cm^2/s. If ``hi`` is ``None`` but ``lo`` is set then the flux
            density is returned at that point: erg/cm^2/s/keV or
            erg/cm^2/s/Angstrom depending on the analysis setting.
 
@@ -11843,7 +11881,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The units of `lo` and `hi` are determined by the analysis
+        The units of ``lo`` and ``hi`` are determined by the analysis
         setting for the data set (e.g. `get_analysis`).
 
         Any existing filter on the data set - e.g. as created by
@@ -11896,11 +11934,11 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         lo : number, optional
-           The minimum limit of the band. Use `None`, the default,
+           The minimum limit of the band. Use ``None``, the default,
            to use the low value of the data set.
         hi : number, optional
            The maximum limit of the band, which must be larger than
-           `lo`. Use `None`, the default, to use the upper value of
+           ``lo``. Use ``None``, the default, to use the upper value of
            the data set.
         id : int or str, optional
            Use the source expression associated with this data set. If
@@ -11914,8 +11952,8 @@ class Session(sherpa.ui.utils.Session):
         -------
         dsum : number
            The sum of the data values that lie within the given
-           limits.  If `hi` is `None` but `lo` is set then the data
-           value of the bin containing the `lo` value are returned.
+           limits.  If ``hi`` is ``None`` but ``lo`` is set then the data
+           value of the bin containing the ``lo`` value are returned.
            If a background estimate has been subtracted from the data
            set then the calculation will use the background-subtracted
            values.
@@ -11931,7 +11969,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The units of `lo` and `hi` are determined by the analysis
+        The units of ``lo`` and ``hi`` are determined by the analysis
         setting for the data set (e.g. `get_analysis`).
 
         Any existing filter on the data set - e.g. as created by
@@ -11986,11 +12024,11 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         lo : number, optional
-           The minimum limit of the band. Use `None`, the default,
+           The minimum limit of the band. Use ``None``, the default,
            to use the low value of the data set.
         hi : number, optional
            The maximum limit of the band, which must be larger than
-           `lo`. Use `None`, the default, to use the upper value of
+           ``lo``. Use ``None``, the default, to use the upper value of
            the data set.
         id : int or str, optional
            Use the source expression associated with this data set. If
@@ -12015,7 +12053,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The units of `lo` and `hi` are determined by the analysis
+        The units of ``lo`` and ``hi`` are determined by the analysis
         setting for the data set (e.g. `get_analysis`).
 
         Any existing filter on the data set - e.g. as created by
@@ -12052,7 +12090,7 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         reg : str, optional
-           The spatial filter to use. The default, `None`, is to
+           The spatial filter to use. The default, ``None``, is to
            use the whole data set.
         id : int or str, optional
            Use the source expression associated with this data set. If
@@ -12119,7 +12157,7 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         reg : str, optional
-           The spatial filter to use. The default, `None`, is to
+           The spatial filter to use. The default, ``None``, is to
            use the whole data set.
         id : int or str, optional
            Use the source expression associated with this data set. If
@@ -12189,7 +12227,7 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         reg : str, optional
-           The spatial filter to use. The default, `None`, is to
+           The spatial filter to use. The default, ``None``, is to
            use the whole data set.
         id : int or str, optional
            Use the source expression associated with this data set. If
@@ -12265,11 +12303,11 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         lo : number, optional
-           The minimum limit of the band. Use `None`, the default,
+           The minimum limit of the band. Use ``None``, the default,
            to use the low value of the data set.
         hi : number, optional
            The maximum limit of the band, which must be larger than
-           `lo`. Use `None`, the default, to use the upper value of
+           ``lo``. Use ``None``, the default, to use the upper value of
            the data set.
         id : int or str, optional
            Use the source expression associated with this data set. If
@@ -12297,7 +12335,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The units of `lo` and `hi` are determined by the analysis
+        The units of ``lo`` and ``hi`` are determined by the analysis
         setting for the data set (e.g. `get_analysis`).
 
         Any existing filter on the data set - e.g. as created by
@@ -12319,8 +12357,8 @@ class Session(sherpa.ui.utils.Session):
         Compare the output of the `calc_source_sum` and
         `calc_photon_flux` routines. A 1099-bin data space is created,
         with a model which has a value of 1 for each bin. As the bin
-        width is constant, at `0.01`, the integrated value, calculated
-        by `calc_photon_flux`, is ` one hundredth the value from
+        width is constant, at 0.01, the integrated value, calculated
+        by `calc_photon_flux`, is one hundredth the value from
         `calc_data_sum`:
 
         >>> dataspace1d(0.01, 11, 0.01, id="test")
@@ -12362,13 +12400,13 @@ class Session(sherpa.ui.utils.Session):
            The minimum energy of the observed band.
         obshi : number
            The maximum energy of the observed band, which must
-           be larger than `obslo`.
-        restlo : number or `None`
-           The minimum energy of the rest-frame band. If `None` then
-           use `obslo`.
-        restlo : number or `None`
+           be larger than ``obslo``.
+        restlo : number or ``None``
+           The minimum energy of the rest-frame band. If ``None`` then
+           use ``obslo``.
+        restlo : number or ``None``
            The maximum energy of the rest-frame band. It must be
-           larger than `restlo`. If `None` then use `obshi`.
+           larger than ``restlo``. If ``None`` then use ``obshi``.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
@@ -12391,7 +12429,7 @@ class Session(sherpa.ui.utils.Session):
         This is only defined when the analysis is in 'energy' units.
 
         If the model contains a redshift parameter then it should
-        be set to `0`, rather than the source redshift.
+        be set to 0, rather than the source redshift.
 
         If the source model is at zero redshift, the observed energy
         band is olo to ohi, and the rest frame band is rlo to rhi
@@ -12486,15 +12524,15 @@ class Session(sherpa.ui.utils.Session):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
