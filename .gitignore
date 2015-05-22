@@ -81,3 +81,17 @@ MANIFEST
 
 # Ipython notebooks
 .ipynb_checkpoints
+
+# Region library
+# These files should have not made it into the region
+# source distribution since they are generated at each build.
+# Alternatively, one might change the region library makefiles
+# to keep the files generated during the source distribution
+# creation. However, that is more complicated, so we are just
+# going to gitignore these files.
+extern/region-4.7/src/reglexer.c
+extern/region-4.7/src/regparser.c
+extern/region-4.7/src/regparser.h
+extern/region-4.7/src/regparser.tab.h
+extern/region-4.7/src/regparser.tab.c
+extern/region-4.7/src/reglexer.c.tmp
