@@ -27,6 +27,6 @@ class develop(_develop):
     def run(self):
         _develop.run(self)
         sherpa_config = self.get_finalized_command('sherpa_config', True)
-        print("install stk and group extensions locally")
+        self.announce("install stk and group extensions locally")
         shutil.copyfile(sherpa_config.stk_location, os.path.join(os.getcwd(), 'stk.so'))
         shutil.copyfile(sherpa_config.group_location, os.path.join(os.getcwd(), 'group.so'))
