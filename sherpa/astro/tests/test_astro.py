@@ -21,7 +21,7 @@ import unittest
 import logging
 import os
 import os.path
-from sherpa.utils import SherpaTestCase, test_data_missing
+from sherpa.utils import SherpaTestCase, test_data_missing, has_package_from_list
 import sherpa.astro.ui as ui
 from sherpa.astro.data import DataPHA
 
@@ -58,7 +58,8 @@ class test_threads(SherpaTestCase):
         os.chdir(os.path.join(self.datadir, 'ciao4.3', name))
         execfile(scriptname, {}, self.locals)
 
-
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_pha_intro(self):
         self.run_thread('pha_intro')
@@ -109,7 +110,9 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().nfev,9)
         self.assertEqual(ui.get_fit_results().numpoints,11)
         self.assertEqual(ui.get_fit_results().dof,9)
-                
+
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_simultaneous(self):
         self.run_thread('simultaneous')
@@ -123,6 +126,8 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints,18)
         self.assertEqual(ui.get_fit_results().dof,14)
 
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_sourceandbg(self):
         self.run_thread('sourceandbg')
@@ -152,7 +157,9 @@ class test_threads(SherpaTestCase):
         #self.assertEqual(ui.get_fit_results().nfev,371)
         self.assertEqual(ui.get_fit_results().numpoints,4881)
         self.assertEqual(ui.get_fit_results().dof,4877)
-        
+
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_pileup(self):
         self.run_thread('pileup')
@@ -264,6 +271,8 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints,75)
         self.assertEqual(ui.get_fit_results().dof,72)
 
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_spectrum(self):
         self.run_thread('spectrum')
@@ -287,6 +296,8 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints,50)
         self.assertEqual(ui.get_fit_results().dof,47)
 
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_xmm(self):
         self.run_thread('xmm')
@@ -309,6 +320,8 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['aa'].gamma.val, 1.83906, 1e-4)
         self.assertEqualWithinTol(self.locals['aa'].ampl.val, 0.000301258, 1e-4)
 
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_proj(self):
         self.run_thread('proj')
@@ -380,6 +393,8 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['proj_res2'].parmaxes[2],
                                   0.0981627, 1e-2)
 
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_proj_bubble(self):
         self.run_thread('proj_bubble')
@@ -407,8 +422,11 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(ui.get_proj_results().parmaxes[1],
                                   2.403640e-06, 1e-2)
 
-    ### New tests based on SDS threads -- we should catch these errors
-    ### (if any occur) so SDS doesn't waste time tripping over them.
+    # New tests based on SDS threads -- we should catch these errors
+    # (if any occur) so SDS doesn't waste time tripping over them.
+    # TODO (OL): What does the above mean? Does this comment still apply?
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_counts(self):
         self.run_thread('counts')
@@ -420,6 +438,8 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['eflux2'], 1.39662954483e-08, 1e-3)
         self.assertEqualWithinTol(self.locals['pflux1'], 1.6178938637, 1e-2)
 
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_stats_all(self):
         self.run_thread('stats_all')
@@ -445,6 +465,8 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 3307)
         self.assertEqual(ui.get_fit_results().dof, 3302)
 
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_setfullmodel(self):
         self.run_thread('setfullmodel')
@@ -453,6 +475,8 @@ class test_threads(SherpaTestCase):
     def test_bug13537(self):
         self.run_thread('bug13537')
 
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_xmm2(self):
         self.run_thread('xmm2')
