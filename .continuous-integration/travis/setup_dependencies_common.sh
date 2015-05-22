@@ -20,6 +20,11 @@ fi
 # CORE DEPENDENCIES
 conda install --yes pytest Cython jinja2 psutil
 
+# Install Sherpa
+# TODO: really we only want to install all the dependencies. Is there a conda command for this?
+conda config --add channels https://conda.binstar.org/cxc
+conda install sherpa
+
 # NUMPY
 if [[ $NUMPY_VERSION == dev ]]
 then
@@ -54,5 +59,3 @@ if [[ $SETUP_CMD == 'test --coverage' ]]
 then
   pip install coverage coveralls
 fi
-
-
