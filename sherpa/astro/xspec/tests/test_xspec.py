@@ -34,7 +34,7 @@ def is_proper_subclass(obj, cls):
 
 
 @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
-                         "required package sherpa.astro.xspec not available")
+                         "required sherpa.astro.xspec module missing")
 class test_xspec(SherpaTestCase):
 
     def test_create_model_instances(self):
