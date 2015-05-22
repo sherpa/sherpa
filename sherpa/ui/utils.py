@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2010  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -303,7 +303,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         save : Save the current Sherpa session to a file.
         restore : Load in a Sherpa session from a file.
-        sherpa.astro.ui.utils.save_all : Save the Sherpa session as an ASCII file.
+        sherpa.astro.ui.save_all : Save the Sherpa session as an ASCII file.
 
         Examples
         --------
@@ -451,10 +451,10 @@ class Session(NoNewAttributesAfterInit):
         ----------
         filename : str, optional
            The name of the file to write the results to. The default
-           is `sherpa.save`.
+           is 'sherpa.save'.
         clobber : bool, optional
            This flag controls whether an existing file can be
-           overwritten (`True`) or if it raises an exception (`False`,
+           overwritten (``True``) or if it raises an exception (``False``,
            the default setting).
 
         Raises
@@ -466,7 +466,7 @@ class Session(NoNewAttributesAfterInit):
         --------
         clean : Clear all stored session data.
         restore : Load in a Sherpa session from a file.
-        sherpa.astro.ui.utils.save_all : Save the Sherpa session as an ASCII file.
+        sherpa.astro.ui.save_all : Save the Sherpa session as an ASCII file.
 
         Notes
         -----
@@ -479,11 +479,11 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Save the current session to the file `sherpa.save`.
+        Save the current session to the file 'sherpa.save'.
 
         >>> save()
 
-        Save the current session to the file `bestfit.sherpa`,
+        Save the current session to the file 'bestfit.sherpa',
         overwriting any existing version of the file.
 
         >>> save('bestfit.sherpa', clobber=True)
@@ -523,7 +523,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-
         The input to `restore` must have been created with the `save`
         command. This is a binary file, which may not be portable
         between versions of Sherpa, but is platform independent. A
@@ -699,15 +698,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -718,10 +717,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         Examples
         --------
@@ -747,15 +746,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -765,10 +764,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         Examples
         --------
@@ -806,15 +805,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -826,10 +825,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -854,15 +853,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -871,10 +870,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -898,31 +897,31 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
         ignore : Exclude data from the fit.
-        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        sherpa.astro.ui.ignore2d : Exclude a spatial region from an image.
         list_data_ids : List the identifiers for the loaded data sets.
         notice : Include data in the fit.
-        sherpa.astro.utils.notice2d : Include a spatial region of an image.
+        sherpa.astro.ui.notice2d : Include a spatial region of an image.
         show_all : Report the current state of the Sherpa session.
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -950,15 +949,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -969,10 +968,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -1001,15 +1000,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -1020,10 +1019,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -1049,15 +1048,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -1071,10 +1070,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         The point spread function (PSF) is defined by the full
         (unfiltered) PSF image or model expression evaluated over the
@@ -1110,15 +1109,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -1132,10 +1131,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         The point spread function (PSF) is defined by the full
         (unfiltered) PSF image or model expression evaluated over the
@@ -1167,15 +1166,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -1184,10 +1183,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -1208,15 +1207,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -1225,10 +1224,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -1249,15 +1248,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -1266,10 +1265,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -1282,7 +1281,7 @@ class Session(NoNewAttributesAfterInit):
 
         Display information about one or all of the data sets that
         have been loaded into the Sherpa session. The information
-        shown includes that provided by the other `show_xxx` routines,
+        shown includes that provided by the other ``show_xxx`` routines,
         and depends on the type of data that is loaded.
 
         Parameters
@@ -1295,44 +1294,44 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
         clean : Clear all stored session data.
         list_data_ids : List the identifiers for the loaded data sets.
         save : Save the current Sherpa session to a file.
-        sherpa.astro.ui.utils.save_all : Save the Sherpa session as an ASCII file.
-        sherpa.astro.ui.show_bkg
-        sherpa.astro.ui.show_bkg_model
-        sherpa.astro.ui.show_bkg_source
-        show_conf
-        show_covar
-        show_data
-        show_filter
-        show_fit
-        show_kernel
-        show_method
-        show_model
-        show_proj
-        show_psf
-        show_source
-        show_stat
+        sherpa.astro.ui.save_all : Save the Sherpa session as an ASCII file.
+        sherpa.astro.ui.show_bkg : Show the details of the PHA background data sets.
+        sherpa.astro.ui.show_bkg_model : Display the background model expression for a data set.
+        sherpa.astro.ui.show_bkg_source : Display the background model expression for a data set.
+        show_conf : Display the results of the last conf evaluation.
+        show_covar : Display the results of the last covar evaluation.
+        show_data : Summarize the available data sets.
+        show_filter : Show any filters applied to a data set.
+        show_fit : Summarize the fit results.
+        show_kernel : Display any kernel applied to a data set.
+        show_method : Display the current optimization method and options.
+        show_model : Display the model expression used to fit a data set.
+        show_proj : Display the results of the last proj evaluation.
+        show_psf : Display any PSF model applied to a data set.
+        show_source : Display the source model expression for a data set.
+        show_stat : Display the current fit statistic.
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         all = ''
@@ -1365,8 +1364,8 @@ class Session(NoNewAttributesAfterInit):
     def list_functions(self, outfile=None, clobber=False):
         """Display the functions provided by Sherpa.
 
-        Unlike the other `list_` commands, this does not
-        return an array. Instead it acts like the `show_`
+        Unlike the other ``list_xxx`` commands, this does not
+        return an array. Instead it acts like the ``show_xxx``
         family of commands. 
 
         Parameters
@@ -1376,15 +1375,15 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If `outfile` is not `None`, then this flag controls
-           whether an existing file can be overwritten (`True`)
-           or if it raises an exception (`False`, the default
+           If ``outfile`` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
            setting).
 
         Raises
         ------
         sherpa.utils.err.IOErr
-           If `outfile` already exists and `clobber` is `False`.
+           If ``outfile`` already exists and ``clobber`` is ``False``.
 
         See Also
         --------
@@ -1393,10 +1392,10 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is `None`, the text is displayed via an external
+        When ``outfile`` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
-        used is determined by the `PAGER` environment variable. If
-        `PAGER` is not found then '/usr/bin/more' is used.
+        used is determined by the ``PAGER`` environment variable. If
+        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         funcs_list = self.get_functions()
@@ -1450,7 +1449,7 @@ class Session(NoNewAttributesAfterInit):
         id : int or str
            The default data set identifier used by certain Sherpa
            functions when an identifier is not given, or set to
-           `None`.
+           ``None``.
 
         See Also
         --------
@@ -1459,8 +1458,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The default Sherpa data set identifier is the integer
-        `1`.
+        The default Sherpa data set identifier is the integer 1.
 
         """
         return self._default_id
@@ -1479,7 +1477,7 @@ class Session(NoNewAttributesAfterInit):
         id : int or str
            The default data set identifier to be used by certain
            Sherpa functions when an identifier is not given, or set to
-           `None`.
+           ``None``.
 
         See Also
         --------
@@ -1488,14 +1486,13 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The default Sherpa data set identifier is the integer
-        `1`.
+        The default Sherpa data set identifier is the integer 1.
 
         Examples
         --------
 
         After the following, many commands, such as `set_source`, will
-        use `src` as the default data set identifier:
+        use 'src' as the default data set identifier:
 
         >>> set_default_id('src')
 
@@ -1561,7 +1558,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `name` argument is not recognized.
+           If the ``name`` argument is not recognized.
 
         See Also
         --------
@@ -1649,7 +1646,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `meth` argument is not recognized.
+           If the ``meth`` argument is not recognized.
 
         See Also
         --------
@@ -1661,21 +1658,21 @@ class Session(NoNewAttributesAfterInit):
         -----
         The available methods include:
 
-        `levmar`
+        ``levmar``
            The Levenberg-Marquardt method is an interface to the
            MINPACK subroutine lmdif to find the local minimum of
            nonlinear least squares functions of several variables by a
            modification of the Levenberg-Marquardt algorithm [1]_.
 
-        `moncar`
+        ``moncar``
            The implementation of the moncar method is based on [2]_.
 
-        `neldermead`
+        ``neldermead``
            The implementation of the Nelder Mead Simplex direct search
            is based on [3]_.
 
-        `simplex`
-           This is another name for `neldermead`.
+        ``simplex``
+           This is another name for ``neldermead``.
 
         References
         ----------
@@ -1733,7 +1730,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `optname` argument is not recognized.
+           If the ``optname`` argument is not recognized.
 
         See Also
         --------
@@ -1769,13 +1766,13 @@ class Session(NoNewAttributesAfterInit):
            The name of the option to set. The `get_method`
            and `get_method_opt` routines can be used to find
            out valid values for this argument.
-        val :
+        val
            The new value for the option.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `optname` argument is not recognized.
+           If the ``optname`` argument is not recognized.
 
         See Also
         --------
@@ -1786,7 +1783,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Change the maxfev parameter for the current optimizer
+        Change the ``maxfev`` parameter for the current optimizer
         to 2000.
 
         >>> set_method_opt('maxfev', 2000)
@@ -1832,7 +1829,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `optname` argument is not recognized.
+           If the ``optname`` argument is not recognized.
 
         See Also
         --------
@@ -1895,7 +1892,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         TypeError
-           When the `meth` argument is not recognized.
+           When the ``meth`` argument is not recognized.
 
         See Also
         --------
@@ -1911,7 +1908,7 @@ class Session(NoNewAttributesAfterInit):
         The parameters of each scheme are described in
         `set_iter_method_opt`.
 
-        The `primini` scheme is used for re-calculating statistical
+        The ``primini`` scheme is used for re-calculating statistical
         errors, using the best-fit model parameters from the
         *previous* fit, until the fit can no longer be improved.
 
@@ -1921,9 +1918,9 @@ class Session(NoNewAttributesAfterInit):
         biased estimates of model parameters which is inherent in
         chi-square2 statistics ([2]_).
 
-        The variance in bin i is estimated to be:
+        The variance in bin i is estimated to be::
 
-        sigma^2_i^j = S(i, t_s^(j-1)) + (A_s/A_b)^2 B_off(i, t_b^(j-1))
+          sigma^2_i^j = S(i, t_s^(j-1)) + (A_s/A_b)^2 B_off(i, t_b^(j-1))
 
         where j is the number of iterations that have been carried out
         in the fitting process, B_off is the background model
@@ -1938,9 +1935,9 @@ class Session(NoNewAttributesAfterInit):
         bin is small (< 5), although the user should proceed with
         caution.
 
-        The `sigmarej` scheme is based on the IRAF `sfit` function
+        The ``sigmarej`` scheme is based on the IRAF ``sfit`` function
         [3]_, where after a fit data points are excluded if the value
-        of `(data-model)/error)` exceeds a threshold, and the data
+        of ``(data-model)/error)`` exceeds a threshold, and the data
         re-fit. This removal of data points continues until the fit
         has converged. The error removal can be asymmetric, since
         there are separate parameters for the lower and upper limits.
@@ -1976,15 +1973,15 @@ class Session(NoNewAttributesAfterInit):
         ----------
         optname : str
            The name of the option to set. The
-           `get_iter_method_opt_method` routine can be used to find
+           `get_iter_method_opt` routine can be used to find
            out valid values for this argument.
-        val :
+        val
            The new value for the option.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `optname` argument is not recognized.
+           If the ``optname`` argument is not recognized.
 
         See Also
         --------
@@ -1995,35 +1992,35 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The supported fields for the `primini` scheme are:
+        The supported fields for the ``primini`` scheme are:
 
-        `maxiters`
+        ``maxiters``
            The maximum number of iterations to perform.
 
-        `tol`
+        ``tol``
            The iteration stops when the change in the best-fit
            statistic varies by less than this value.
 
-        The supported fields for the `sigmarej` scheme are:
+        The supported fields for the ``sigmarej`` scheme are:
 
-        `grow`
+        ``grow``
            The number of points adjacent to a rejected point that
-           should also be removed. A value of `0` means that only the
-           discrepant point is removed whereas a value of `1` means
+           should also be removed. A value of ``0`` means that only the
+           discrepant point is removed whereas a value of ``1`` means
            that the two adjacent points (one lower and one higher)
            will also be removed.
 
-        `hrej`
+        ``hrej``
            The rejection criterion in units of sigma, for data
-           points above the model (`hrej` is >= 0).
+           points above the model (it must be >= 0).
 
-        `lrej`
+        ``lrej``
            The rejection criterion in units of sigma, for data
-           points below the model (`lrej` is >= 0).
+           points below the model (it must be >= 0).
 
-        `maxiters`
+        ``maxiters``
            The maximum number of iterations to perform. If this
-           value is `0` then the fit will run until it has
+           value is ``0`` then the fit will run until it has
            converged.
 
         Examples
@@ -2106,7 +2103,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `name` argument is not recognized.
+           If the ``name`` argument is not recognized.
 
         See Also
         --------
@@ -2174,7 +2171,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `stat` argument is not recognized.
+           If the ``stat`` argument is not recognized.
 
         See Also
         --------
@@ -2187,34 +2184,34 @@ class Session(NoNewAttributesAfterInit):
         -----
         The available statistics include:
 
-        `cash`
+        ``cash``
            A maximum likelihood function [1]_.
 
-        `chi2`
+        ``chi2``
            \chi^2 statistic using the supplied error values.
 
-        `chi2constvar`
+        ``chi2constvar``
            \chi^2 with constant variance computed from the counts
            data.
 
-        `chi2datavar`
+        ``chi2datavar``
            \chi^2 with data variance.
 
-        `chi2gehrels`
+        ``chi2gehrels``
            \chi^2 with gehrels method [2]_. This is the default method.
 
-        `chi2modvar`
+        ``chi2modvar``
            \chi^2 with model amplitude variance.
 
-        `chi2xspecvar`
+        ``chi2xspecvar``
            \chi^2 with data variance (XSPEC-style,
            variance = 1.0 if data less than or equal to 0.0).
 
-        `cstat`
+        ``cstat``
            A maximum likelihood function
            (the XSPEC implementation of the Cash function) [3]_.
 
-        `leastsq`
+        ``leastsq``
            The least-squares statisic (the error is not used in
            this statistic).
 
@@ -2300,7 +2297,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data :
+        data
            An instance of a sherpa.Data.Data-derived class.
 
         Raises
@@ -2396,7 +2393,7 @@ class Session(NoNewAttributesAfterInit):
         Read in a column or image from a file and use the values
         as the statistical errors for a data set. This over rides
         the errors calculated by any statistic, such as
-        `chi2gehrels` or `chi2datavar`.
+        ``chi2gehrels`` or ``chi2datavar``.
 
         Parameters
         ----------
@@ -2409,15 +2406,15 @@ class Session(NoNewAttributesAfterInit):
            on the I/O library in use (Crates or AstroPy) and the
            type of data set (e.g. 1D or 2D).
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file).
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
 
         See Also
         --------
@@ -2484,15 +2481,15 @@ class Session(NoNewAttributesAfterInit):
            on the I/O library in use (Crates or AstroPy) and the
            type of data set (e.g. 1D or 2D).
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file).
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
 
         See Also
         --------
@@ -2559,15 +2556,15 @@ class Session(NoNewAttributesAfterInit):
            file. Selection of the relevant column depends on the I/O
            library in use (Crates or AstroPy).
         ignore : bool, optional
-           If `False` (the default) then include bins with a non-zero
+           If ``False`` (the default) then include bins with a non-zero
            filter value, otherwise exclude these bins.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
 
         See Also
         --------
@@ -2595,7 +2592,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> load_filter('filt.dat')
 
-        Select the `FILTER` column of the file:
+        Select the FILTER column of the file:
 
         >>> load_filter(2, 'filt.dat', colkeys=['FILTER'])
 
@@ -2622,10 +2619,10 @@ class Session(NoNewAttributesAfterInit):
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
         val : array
-           The array of filter values (`0` or `1`). The size should
+           The array of filter values (``0`` or ``1``). The size should
            match the array returned by `get_dep`.
         ignore : bool, optional
-           If `False` (the default) then include bins with a non-zero
+           If ``False`` (the default) then include bins with a non-zero
            filter value, otherwise exclude these bins.
 
         See Also
@@ -2739,7 +2736,7 @@ class Session(NoNewAttributesAfterInit):
         """Set the statistical errors on the dependent axis of a data set.
 
         These values over-ride the errors calculated by any statistic,
-        such as `chi2gehrels` or `chi2datavar`.
+        such as ``chi2gehrels`` or ``chi2datavar``.
 
         Parameters
         ----------
@@ -2750,10 +2747,10 @@ class Session(NoNewAttributesAfterInit):
         val : array or scalar
            The systematic error.
         fractional : bool, optional
-           If `False` (the default value), then the ``val`` parameter is
+           If ``False`` (the default value), then the ``val`` parameter is
            the absolute value, otherwise the ``val`` parameter
            represents the fractional error, so the absolute value is
-           calculated as `get_dep() * val` (and ``val`` must be
+           calculated as ``get_dep() * val`` (and ``val`` must be
            a scalar).
 
         See Also
@@ -2776,11 +2773,11 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         Set the statistical error for the default data set to the value
-        in `dys` (a scalar or an array):
+        in ``dys`` (a scalar or an array):
 
         >>> set_staterror(dys)
 
-        Set the statistical error on the `core` data set to be 5% of
+        Set the statistical error on the 'core' data set to be 5% of
         the data values:
 
         >>> set_staterror('core', 0.05, fractional=True)
@@ -2815,10 +2812,10 @@ class Session(NoNewAttributesAfterInit):
         val : array or scalar
            The systematic error.
         fractional : bool, optional
-           If `False` (the default value), then the ``val`` parameter is
+           If ``False`` (the default value), then the ``val`` parameter is
            the absolute value, otherwise the ``val`` parameter
            represents the fractional error, so the absolute value is
-           calculated as `get_dep() * val` (and ``val`` must be
+           calculated as ``get_dep() * val`` (and ``val`` must be
            a scalar).
 
         See Also
@@ -2841,11 +2838,11 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         Set the systematic error for the default data set to the value
-        in `dys` (a scalar or an array):
+        in ``dys`` (a scalar or an array):
 
         >>> set_syserror(dys)
 
-        Set the systematic error on the `core` data set to be 5% of
+        Set the systematic error on the 'core' data set to be 5% of
         the data values:
 
         >>> set_syserror('core', 0.05, fractional=True)
@@ -2878,13 +2875,13 @@ class Session(NoNewAttributesAfterInit):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not. The default is ``False``.
 
         Returns
         -------
         axis : array
            The statistical error for each data point. This may be
-           estimated from the data (e.g. with the `chi2gehrels`
+           estimated from the data (e.g. with the ``chi2gehrels``
            statistic) or have been set explicitly (`set_staterror`).
 
         Raises
@@ -2916,7 +2913,7 @@ class Session(NoNewAttributesAfterInit):
         array([ 3.17944947,  3.39791576,  4.122499  ])
 
         If the statistical errors are set - either when the data set
-        is created or with a call to `set_errors` - then these values
+        is created or with a call to `set_staterror` - then these values
         will be used, no matter the statistic:
 
         >>> load_arrays(1, [10,15,19], [4,5,9], [2,3,5])
@@ -2944,7 +2941,7 @@ class Session(NoNewAttributesAfterInit):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not. The default is ``False``.
 
         Returns
         -------
@@ -2987,7 +2984,7 @@ class Session(NoNewAttributesAfterInit):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not. The default is ``False``.
 
         Returns
         -------
@@ -3071,7 +3068,7 @@ class Session(NoNewAttributesAfterInit):
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not. The default is ``False``.
 
         Returns
         -------
@@ -3117,8 +3114,8 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
         filter : bool, optional
-           If `True` then apply any filter to the data set before
-           returning the dimensions. The default is `False`.
+           If ``True`` then apply any filter to the data set before
+           returning the dimensions. The default is ``False``.
 
         Returns
         -------
@@ -3127,9 +3124,9 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         ignore : Exclude data from the fit.
-        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        sherpa.astro.ui.ignore2d : Exclude a spatial region from an image.
         notice : Include data in the fit.
-        sherpa.astro.utils.notice2d : Include a spatial region of an image.
+        sherpa.astro.ui.notice2d : Include a spatial region of an image.
 
         """
         return self.get_data(id).get_dims(filter)
@@ -3174,7 +3171,7 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         The default filter is the full dataset, given in the
-        format `lowval:hival` (both are includive limits):
+        format ``lowval:hival`` (both are inclusive limits):
 
         >>> load_arrays(1, [10,15,20,25], [5,7,4,2])
         >>> get_filter()
@@ -3188,8 +3185,8 @@ class Session(NoNewAttributesAfterInit):
         >>> get_filter()
         '15.0000:25.0000'
 
-        Ignoring the point at `x=20` means that only the points at
-        `x=15` and `x=25` remain, so a comma-separated list is used:
+        Ignoring the point at ``x=20`` means that only the points at
+        ``x=15`` and ``x=25`` remain, so a comma-separated list is used:
 
         >>> ignore(19,22)
         >>> get_filter()
@@ -3222,7 +3219,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IdentifierErr
-           If there is no data set with a `fromid` identifier.
+           If there is no data set with a ``fromid`` identifier.
 
         Examples
         --------
@@ -3295,9 +3292,9 @@ class Session(NoNewAttributesAfterInit):
            The maximum value of the axis.
         step : number, optional
            The separation between each grid point. This is not used if
-           `numbins` is set.
+           ``numbins`` is set.
         numbins : int, optional
-           The number of grid points. This over-rides the `step`
+           The number of grid points. This over-rides the ``step``
            setting.
         id : int or str, optional
            The identifier for the data set to use. If not given then
@@ -3316,8 +3313,8 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The meaning of the `stop` parameter depends on whether it is a
-        binned or unbinned data set (as set by the `dstype`
+        The meaning of the ``stop`` parameter depends on whether it is a
+        binned or unbinned data set (as set by the ``dstype``
         parameter).
 
         Examples
@@ -3376,7 +3373,7 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         dims : sequence of 2 number
-           The dimensions of the grid in `(width,height)` order.
+           The dimensions of the grid in ``(width,height)`` order.
         id : int or str, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
@@ -3446,7 +3443,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The function for the `method` argument accepts a single
+        The function for the ``method`` argument accepts a single
         argument, the data values, and should return an array of the
         same shape as the input, with the data values to use.
 
@@ -3507,16 +3504,16 @@ class Session(NoNewAttributesAfterInit):
         ----------
         a1, .., aN : array_like
            Arrays of data. The order, and number, is determined by
-           the `dstype` parameter, and listed in the `load_arrays`
+           the ``dstype`` parameter, and listed in the `load_arrays`
            routine.
-        dstype :
+        dstype
            The data set type. The default is `Data1D` and values
            include: `Data1D`, `Data1DInt`, `Data2D`, and `Data2DInt`.
 
         Returns
         -------
         data
-           The data set object matching the requested `dstype`.
+           The data set object matching the requested ``dstype``.
 
         See Also
         --------
@@ -3567,21 +3564,21 @@ class Session(NoNewAttributesAfterInit):
            on the I/O library in use (Crates or AstroPy) and the
            type of data set (e.g. 1D or 2D).
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file).
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         dstype : data class to use, optional
            What type of data is to be used. Supported values include
            `Data1D` (the default), `Data1DInt`, `Data2D`, and
            `Data2DInt`.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         require_floats : bool, optional
-           If `True` (the default), non-numeric data values will
+           If ``True`` (the default), non-numeric data values will
            raise a `ValueError`.
 
         Returns
@@ -3593,7 +3590,7 @@ class Session(NoNewAttributesAfterInit):
         ------
         ValueError
            If a column value can not be converted into a numeric value
-           and the `require_floats` parameter is True.
+           and the ``require_floats`` parameter is True.
 
         See Also
         --------
@@ -3636,28 +3633,28 @@ class Session(NoNewAttributesAfterInit):
            on the I/O library in use (Crates or AstroPy) and the
            type of data set (e.g. 1D or 2D).
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file).
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         dstype : data class to use, optional
            What type of data is to be used. Supported values include
            `Data1D` (the default), `Data1DInt`, `Data2D`, and
            `Data2DInt`.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         require_floats : bool, optional
-           If `True` (the default), non-numeric data values will
+           If ``True`` (the default), non-numeric data values will
            raise a `ValueError`.
 
         Raises
         ------
         ValueError
            If a column value can not be converted into a numeric value
-           and the `require_floats` parameter is True.
+           and the ``require_floats`` parameter is True.
 
         See Also
         --------
@@ -3703,7 +3700,7 @@ class Session(NoNewAttributesAfterInit):
         ----------
         id : int or str
            The identifier for the data set to use.
-        *args :
+        *args
            Two or more arrays, followed by the type of data set to
            create.
 
@@ -3721,25 +3718,26 @@ class Session(NoNewAttributesAfterInit):
         The data type identifier, which defaults to `Data1D`,
         determines the number, and order, of the required inputs.
 
-        `Data1D`
-           required fields: x, y
-           optional fields: statistical error, systematic error
+        +------------+-----------------+--------------------+
+        | Identifier | Required Fields |   Optional Fields  |
+        +============+=================+====================+
+        | Data1D     | x, y            | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data1DInt  | xlo, xhi, y     | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data2D     | x0, x1, y       | shape,             |
+        |            |                 | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
+        | Data2DInt  | x0lo, x1lo,     | shape,             |
+        |            | x0hi, x1hi, y   | statistical error, |
+        |            |                 | systematic error   |
+        +------------+-----------------+--------------------+
 
-        `Data1DInt`
-           required fields: xlo, xhi, y
-           optional fields: statistical error, systematic error
-
-        `Data2D`
-           required fields: x0, x1, y
-           optional fields: shape, statistical error, systematic error
-           The `shape` argument should be a tuple giving the
-           size of the data (ny,nx).
-
-        `Data2DInt`
-           required fields: x0lo, x1lo, x0hi, x1hi, y
-           optional fields: shape, statistical error, systematic error
-           The `shape` argument should be a tuple giving the
-           size of the data (ny,nx).
+        The ``shape`` argument should be a tuple giving the size of
+        the data ``(ny,nx)``.
 
         Examples
         --------
@@ -3749,8 +3747,8 @@ class Session(NoNewAttributesAfterInit):
         >>> load_arrays(1, [10, 12, 15], [4.2, 12.1, 8.4])
 
         Create a 1D data set, with the identifier 'prof', from the
-        arrays `x` (independent axis), `y` (dependent axis), and `dy`
-        (statistical error on the dependent axis):
+        arrays ``x`` (independent axis), ``y`` (dependent axis), and
+        ``dy`` (statistical error on the dependent axis):
 
         >>> load_arrays('prof', x, y, dy)
 
@@ -4167,7 +4165,7 @@ class Session(NoNewAttributesAfterInit):
            The name of the file to write the array to. The data is
            written out as an ASCII file.
         fields : array of str, optional
-           The attributes of the data set to write out. If `None`,
+           The attributes of the data set to write out. If ``None``,
            write out all the columns.
         sep : str, optional
            The separator character. The default is ``' '``.
@@ -4571,18 +4569,18 @@ class Session(NoNewAttributesAfterInit):
         ----------
         lo : number or str, optional
            The lower bound of the filter (when a number) or a string
-           expression listing ranges in the form `a:b`, with multiple
+           expression listing ranges in the form ``a:b``, with multiple
            ranges allowed, where the ranges are separated by a
-           `,`. The term `:b` means include everything up to, and
-           including `b`, and `a:` means include everything that is
-           higher than, or equal to, `a`.
+           ``,``. The term ``:b`` means include everything up to, and
+           including ``b``, and ``a:`` means include everything that is
+           higher than, or equal to, ``a``.
         hi : number, optional
-           The upper bound of the filter when `lo` is not a string.
+           The upper bound of the filter when ``lo`` is not a string.
 
         See Also
         --------
         notice_id : Include data for a data set.
-        sherpa.astro.utils.notice2d : Include a spatial region in an image.
+        sherpa.astro.ui.notice2d : Include a spatial region in an image.
         ignore : Exclude data from the fit.
         show_filter : Show any filters applied to a data set.
 
@@ -4601,7 +4599,7 @@ class Session(NoNewAttributesAfterInit):
         For binned data sets, the bin is included if the noticed
         range falls anywhere within the bin.
 
-        The units used depend on the `analysis` setting of the data
+        The units used depend on the ``analysis`` setting of the data
         set, if appropriate.
 
         To filter a 2D data set by a shape use `notice2d`.
@@ -4659,18 +4657,18 @@ class Session(NoNewAttributesAfterInit):
         ----------
         lo : number or str, optional
            The lower bound of the filter (when a number) or a string
-           expression listing ranges in the form `a:b`, with multiple
+           expression listing ranges in the form ``a:b``, with multiple
            ranges allowed, where the ranges are separated by a
-           `,`. The term `:b` means exclude everything up to, and
-           including `b`, and `a:` means exclude everything that is
-           higher than, or equal to, `a`.
+           ``,``. The term ``:b`` means exclude everything up to, and
+           including ``b``, and ``a:`` means exclude everything that is
+           higher than, or equal to, ``a``.
         hi : number, optional
-           The upper bound of the filter when `lo` is not a string.
+           The upper bound of the filter when ``lo`` is not a string.
 
         See Also
         --------
         ignore_id : Exclude data from the fit for a data set.
-        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        sherpa.astro.ui.ignore2d : Exclude a spatial region from an image.
         notice : Include data in the fit.
         show_filter : Show any filters applied to a data set.
 
@@ -4683,7 +4681,7 @@ class Session(NoNewAttributesAfterInit):
         For binned data sets, the bin is excluded if the ignored
         range falls anywhere within the bin.
 
-        The units used depend on the `analysis` setting of the data
+        The units used depend on the ``analysis`` setting of the data
         set, if appropriate.
 
         To filter a 2D data set by a shape use `ignore2d`.
@@ -4735,16 +4733,16 @@ class Session(NoNewAttributesAfterInit):
            The data set, or sets, to use.
         lo : number or str, optional
            The lower bound of the filter (when a number) or a string
-           expression listing ranges in the form `a:b`, with multiple
+           expression listing ranges in the form ``a:b``, with multiple
            ranges allowed, where the ranges are separated by a
-           `,`. The term `:b` means include everything up to, and
-           including `b`, and `a:` means inlude everything that is
-           higher than, or equal to, `a`.
+           ``,``. The term ``:b`` means include everything up to, and
+           including ``b``, and ``a:`` means inlude everything that is
+           higher than, or equal to, ``a``.
         hi : number, optional
-           The upper bound of the filter when `lo` is not a string.
+           The upper bound of the filter when ``lo`` is not a string.
         bkg_id : int or str, optional
            The filter will be applied to the associated background
-           component of the data set if `bkg_id` is set. Only PHA
+           component of the data set if ``bkg_id`` is set. Only PHA
            data sets support this option; if not given, then the
            filter is applied to all background components as well
            as the source data.
@@ -4752,7 +4750,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         ignore_id : Exclude data from the fit for a data set.
-        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        sherpa.astro.ui.ignore2d : Exclude a spatial region from an image.
         notice : Include data in the fit.
         show_filter : Show any filters applied to a data set.
 
@@ -4760,7 +4758,7 @@ class Session(NoNewAttributesAfterInit):
         -----
         The order of `ignore` and `notice` calls is important.
 
-        The units used depend on the `analysis` setting of the data
+        The units used depend on the ``analysis`` setting of the data
         set, if appropriate.
 
         To filter a 2D data set by a shape use `ignore2d`.
@@ -4812,16 +4810,16 @@ class Session(NoNewAttributesAfterInit):
            The data set, or sets, to use.
         lo : number or str, optional
            The lower bound of the filter (when a number) or a string
-           expression listing ranges in the form `a:b`, with multiple
+           expression listing ranges in the form ``a:b``, with multiple
            ranges allowed, where the ranges are separated by a
-           `,`. The term `:b` means exclude everything up to, and
-           including `b`, and `a:` means exclude everything that is
-           higher than, or equal to, `a`.
+           ``,``. The term ``:b`` means exclude everything up to, and
+           including ``b``, and ``a:`` means exclude everything that is
+           higher than, or equal to, ``a``.
         hi : number, optional
-           The upper bound of the filter when `lo` is not a string.
+           The upper bound of the filter when ``lo`` is not a string.
         bkg_id : int or str, optional
            The filter will be applied to the associated background
-           component of the data set if `bkg_id` is set. Only PHA
+           component of the data set if ``bkg_id`` is set. Only PHA
            data sets support this option; if not given, then the
            filter is applied to all background components as well
            as the source data.
@@ -4829,7 +4827,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         ignore : Exclude data from the fit.
-        sherpa.astro.utils.ignore2d : Exclude a spatial region from an image.
+        sherpa.astro.ui.ignore2d : Exclude a spatial region from an image.
         notice_id : Include data from the fit for a data set.
         show_filter : Show any filters applied to a data set.
 
@@ -4837,7 +4835,7 @@ class Session(NoNewAttributesAfterInit):
         -----
         The order of `ignore` and `notice` calls is important.
 
-        The units used depend on the `analysis` setting of the data
+        The units used depend on the ``analysis`` setting of the data
         set, if appropriate.
 
         To filter a 2D data set by a shape use `ignore2d`.
@@ -4968,8 +4966,8 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        modelclass :
-           A class derived from `sherpa.models.ArithmeticModel`. This
+        modelclass
+           A class derived from `sherpa.models.model.ArithmeticModel`. This
            class defines the functional form and the parameters of the
            model.
         args, kwargs : optional
@@ -5032,7 +5030,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        func :
+        func
            The model function set by `set_model_autoassign_func`.
 
         See Also
@@ -5134,11 +5132,11 @@ class Session(NoNewAttributesAfterInit):
         """List the names of all the model components.
 
         Models are created either directly - by using the form
-        `mname.mid`, where `mname` is the name of the model, such as
-        `gauss1d`, and `mid` is the name of the component - or with
-        the `create_model_component` function, which accepts `mname`
-        and `mid` as separate arguments. This function returns all the
-        `mid` values that have been created.
+        ``mname.mid``, where ``mname`` is the name of the model, such as
+        ``gauss1d``, and ``mid`` is the name of the component - or with
+        the `create_model_component` function, which accepts ``mname``
+        and ``mid`` as separate arguments. This function returns all the
+        ``mid`` values that have been created.
 
         Returns
         -------
@@ -5159,9 +5157,9 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        The `gal` and `pl` models are created - as versions
-        of the `xsphabs` and `powlaw1d` model types - which means
-        that the list of model components returned as `mids` will
+        The ``gal`` and ``pl`` model components are created - as versions
+        of the ``xsphabs`` and ``powlaw1d`` model types - which means
+        that the list of model components returned as ``mids`` will
         contain both strings.
 
         >>> set_model(xsphabs.gal * powlaw1d.pl)
@@ -5238,7 +5236,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IdentifierErr
-           If there is no model component with the given `name`.
+           If there is no model component with the given ``name``.
 
         See Also
         --------
@@ -5251,7 +5249,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         The model instances are named as modeltype.username, and it is
-        the `username` component that is used here to access the
+        the ``username`` component that is used here to access the
         instance.
 
         Examples
@@ -5285,7 +5283,7 @@ class Session(NoNewAttributesAfterInit):
 
         Model components created by this function are set to their
         default values. Components can also be created directly using
-        the syntax `typename.name`, such as in calls to `set_model`,
+        the syntax ``typename.name``, such as in calls to `set_model`,
         when using the default model auto assignment setting (see
         `set_model_autoassign_func`).
 
@@ -5318,14 +5316,14 @@ class Session(NoNewAttributesAfterInit):
         old model definition (and be able to change the fit
         parameters), but direct access to its parameters is not
         possible since the name now refers to the new component (this
-        is true using direct access, such as `mname.parname`, or with
+        is true using direct access, such as ``mname.parname``, or with
         `set_par`).
 
         Examples
         --------
 
-        Create an instance of the `powlaw1d` model called `pl`,
-        and then freeze its `gamma` parameter to 2.6.
+        Create an instance of the ``powlaw1d`` model called ``pl``,
+        and then freeze its ``gamma`` parameter to 2.6.
 
         >>> create_model_component("powlaw1d", "pl")
         >>> pl.gamma = 2.6
@@ -5389,12 +5387,12 @@ class Session(NoNewAttributesAfterInit):
         >>> set_source(powlaw1d.pl * xsphabs.gal)
 
         Fit the model and then reset the values of both components
-        (`pl` and `gal`):
+        (``pl`` and ``gal``):
 
         >>> fit()
         >>> reset()
 
-        Reset just the parameters of the `pl` model component:
+        Reset just the parameters of the ``pl`` model component:
 
         >>> reset(pl)
 
@@ -5446,8 +5444,8 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        If a model instance called `pl` has been created - e.g. by
-        `create_model_component('powlaw1d', 'pl')` - then the
+        If a model instance called ``pl`` has been created - e.g. by
+        ``create_model_component('powlaw1d', 'pl')`` - then the
         following will remove it:
 
         >>> delete_model_component('pl')
@@ -5579,7 +5577,7 @@ class Session(NoNewAttributesAfterInit):
         get_model_pars : Return the names of the parameters of a model.
         get_model_type : Describe a model expression.
         list_model_ids : List of all the data sets with a source expression.
-        sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
+        sherpa.astro.ui.set_bkg_model : Set the background model expression for a data set.
         set_model : Set the source model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
         show_model : Display the source model expression for a data set.
@@ -5617,7 +5615,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        model :
+        model
            This can contain multiple model components and any
            instrument response. Changing attributes of this model
            changes the model used by the data set.
@@ -5629,7 +5627,7 @@ class Session(NoNewAttributesAfterInit):
         get_model_type : Describe a model expression.
         get_source : Return the source model expression for a data set.
         list_model_ids : List of all the data sets with a source expression.
-        sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
+        sherpa.astro.ui.set_bkg_model : Set the background model expression for a data set.
         set_model : Set the source model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
         show_model : Display the source model expression for a data set.
@@ -5797,7 +5795,7 @@ class Session(NoNewAttributesAfterInit):
         freeze : Fix model parameters so they are not changed by a fit.
         get_source : Return the source model expression for a data set.
         integrate1d : Integrate 1D source expressions.
-        sherpa.astro.utils.set_bkg_model : Set the background model expression for a data set.
+        sherpa.astro.ui.set_bkg_model : Set the background model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
         show_model : Display the source model expression for a data set.
         set_par : Set the value, limits, or behavior of a model parameter.
@@ -5818,13 +5816,13 @@ class Session(NoNewAttributesAfterInit):
         responses should be applied to different model components - in
         which case `set_full_model` should be used instead.
 
-        Model caching is available via the model `cache` attribute. A
+        Model caching is available via the model ``cache`` attribute. A
         non-zero value for this attribute means that the results of
         evaluating the model will be cached if all the parameters are
         frozen, which may lead to a reduction in the time taken to
         evaluate a fit. A zero value turns off the cacheing.  The
         default setting for X-Spec and 1D analytic models is that
-        `cache` is `5`, but `0` for the 2D analytic models.
+        ``cache`` is ``5``, but ``0`` for the 2D analytic models.
 
         The `integrate1d` model can be used to apply a numerical
         integration to an arbitrary model expression.
@@ -5832,7 +5830,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Create an instance of the `powlaw1d` model type, called `pl`,
+        Create an instance of the `powlaw1d` model type, called ``pl``,
         and use it as the model for the default data set.
 
         >>> set_model(polynom1d.pl)
@@ -5840,7 +5838,7 @@ class Session(NoNewAttributesAfterInit):
         Create a model for the default dataset which is the `xsphabs`
         model multiplied by the sum of an `xsapec` and `powlaw1d`
         models (the model components are identified by the labels
-        `gal`, `clus`, and `pl`).
+        ``gal``, ``clus``, and ``pl``).
 
         >>> set_model(xsphabs.gal * (xsapec.clus + powlaw1d.pl))
 
@@ -5849,7 +5847,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> set_model('xsphabs.gal * (xsapec.clus + powlaw1d.pl)')
 
-        Use the same model component (`src`, a `gauss2d` model)
+        Use the same model component (``src``, a `gauss2d` model)
         for the two data sets ('src1' and 'src2').
 
         >>> set_model('src1',  gauss2d.src + const2d.bgnd1)
@@ -5857,10 +5855,10 @@ class Session(NoNewAttributesAfterInit):
 
         Share an expression - in this case three gaussian lines -
         between three data sets. The normalization of this line
-        complex is allowed to vary in data sets 2 and 3 (the `norm2`
-        and `norm3` components of the `const1d` model), and each data
-        set has a separate `polynom1d` component (`bgnd1`, `bgnd2`,
-        and `bgnd3`). The `c1` parameters of the `polynom1d` model
+        complex is allowed to vary in data sets 2 and 3 (the ``norm2``
+        and ``norm3`` components of the `const1d` model), and each data
+        set has a separate `polynom1d` component (``bgnd1``, ``bgnd2``,
+        and ``bgnd3``). The ``c1`` parameters of the `polynom1d` model
         components are thawed and then linked together (to reduce the
         number of free parameters):
 
@@ -5872,8 +5870,8 @@ class Session(NoNewAttributesAfterInit):
         >>> link(bgnd2.c2, bgnd1.c1)
         >>> link(bgnd3.c3, bgnd1.c1)
 
-        For this expression, the `gal` component is frozen, so it is
-        not varied in the fit. The `cache` attribute is set to a
+        For this expression, the ``gal`` component is frozen, so it is
+        not varied in the fit. The ``cache`` attribute is set to a
         non-zero value to ensure that it is cached during a fit (this
         is actually the default value for this model so it not
         normally needed).
@@ -6162,11 +6160,11 @@ class Session(NoNewAttributesAfterInit):
            template data files.
         dstype : data class to use, optional
            What type of data is to be used. Supported values include
-           `Data1D` (the default) and `Data1Dint`.
+           `Data1D` (the default) and `Data1DInt`.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         method : func
            The interpolation method to use to map the input data onto
            the coordinate grid of the data set. Linear,
@@ -6174,7 +6172,7 @@ class Session(NoNewAttributesAfterInit):
            the sherpa.utils module.
         template_interpolator_name : str
            The method used to interpolate within the set of templates.
-           The default is `default`. A value of `None` turns off the
+           The default is ``default``. A value of ``None`` turns off the
            interpolation; in this case the grid-search optimiser
            must be used to fit the data.
 
@@ -6199,7 +6197,7 @@ class Session(NoNewAttributesAfterInit):
         the MODELFLAG column and then the file name for the data file
         (its name must begin with FILE). The MODELFLAG column is used
         to indicate whether a file should be used or not; a value of
-        `1` means that the file should be used, and a value of `0`
+        1 means that the file should be used, and a value of 0
         that the line should be ignored. The parameter names are set
         by the column names.
 
@@ -6207,14 +6205,14 @@ class Session(NoNewAttributesAfterInit):
         is read in and the first two columns used to set up the x and
         y values (`Data1D`) or xlo, xhi, and y values (`Data1DInt`).
 
-        The `method` parameter determines how the template data values
+        The ``method`` parameter determines how the template data values
         are interpolated onto the source data grid.
 
-        The `template_interpolator_name` parameter determines how the
+        The ``template_interpolator_name`` parameter determines how the
         dependent axis (Y) values are interpolated when the parameter
         values are varied. This interpolation can be turned off by
-        using a value of `None`, in which case the grid-search
-        optimiser *must* be used. See `load_template_intepolator` for
+        using a value of ``None``, in which case the grid-search
+        optimiser *must* be used. See `load_template_interpolator` for
         how to create a valid interpolator. The "default" interpolator
         uses `sherpa.models.KNNInterpolator` with k=2 and order=2.
 
@@ -6315,9 +6313,9 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         name : str
-        interpolator_class :
+        interpolator_class
            An interpolator class.
-        **kwargs :
+        **kwargs
            The arguments for the interpolator.
 
         See Also
@@ -6328,7 +6326,7 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         Create an interpolator name that can be used as the
-        `template_interpolator_name` argument to
+        ``template_interpolator_name`` argument to
         `load_template_model`.
 
         >>> from sherpa.models import KNNInterpolator
@@ -6347,7 +6345,7 @@ class Session(NoNewAttributesAfterInit):
 
         A table model is defined on a grid of points which is
         interpolated onto the independent axis of the data set. The
-        model has a single parameter, `ampl`, which is used to
+        model has a single parameter, ``ampl``, which is used to
         scale the data, and it can be fixed or allowed to vary
         during a fit.
 
@@ -6359,18 +6357,18 @@ class Session(NoNewAttributesAfterInit):
            The name of the file to read in. Supported formats depends
            on the I/O library in use (Crates or AstroPy).
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file).
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         dstype : data class to use, optional
            What type of data is to be used. Supported values include
-           `Data1D` (the default) and `Data1Dint`.
+           `Data1D` (the default) and `Data1DInt`.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
         method : func
            The interpolation method to use to map the input data onto
            the coordinate grid of the data set. Linear,
@@ -6438,21 +6436,21 @@ class Session(NoNewAttributesAfterInit):
         filename : str, optional
            Set this to include data from this file in the model. The
            file should contain two columns, and the second column is
-           stored in the `_y` attribute of the model.
+           stored in the ``_y`` attribute of the model.
         ncols : int, optional
-           The number of columns to read in (the first `ncols` columns
+           The number of columns to read in (the first ``ncols`` columns
            in the file).
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           `None`.
+           ``None``.
         dstype : data class to use, optional
            What type of data is to be used. Supported values include
            `Data1D` (the default), `Data1DInt`, `Data2D`, and
            `Data2DInt`.
         sep : str, optional
-           The separator character. The default is ' '.
+           The separator character. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is '#'.
+           The comment character. The default is ``'#'``.
 
         See Also
         --------
@@ -6657,7 +6655,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The `calc_stat_func` should have the following signature::
+        The ``calc_stat_func`` should have the following signature::
 
            def func(data, model, staterror=None, syserrr=None, weight=None)
 
@@ -6668,7 +6666,7 @@ class Session(NoNewAttributesAfterInit):
         (stat_value, stat_per_bin), where stat_value is a scalar and
         stat_per_bin is an array the same length as data.
 
-        The `calc_err_func` should have the following signature::
+        The ``calc_err_func`` should have the following signature::
 
            def func(data)
 
@@ -6717,7 +6715,7 @@ class Session(NoNewAttributesAfterInit):
         The convolution model can be defined either by a data set,
         read from a file, or an analytic model, using a Sherpa model
         instance. A source model can be convolved with this model
-        by including `modelname` in the `set_model` call, using the
+        by including ``modelname`` in the `set_model` call, using the
         form::
 
            modelname(modelexpr)
@@ -6730,7 +6728,7 @@ class Session(NoNewAttributesAfterInit):
            The form of the model. This can be a file name, which will
            be read in using the chosen Sherpa I/O library, or a
            model component.
-        *args, **kwargs :
+        *args, **kwargs
            Arguments for `unpack_data` if ``filename_or_model``
            is a file.
 
@@ -6806,7 +6804,7 @@ class Session(NoNewAttributesAfterInit):
            The form of the PSF. This can be a file name, which will
            be read in using the chosen Sherpa I/O library, or a
            model component.
-        *args, **kwargs :
+        *args, **kwargs
            Arguments for `unpack_data` if ``filename_or_model``
            is a file.
 
@@ -6832,8 +6830,8 @@ class Session(NoNewAttributesAfterInit):
         >>> image_psf()
 
         Create a PSF model from the data in the file
-        `line_profile.fits` and apply it to the data set called
-        `bgnd`:
+        'line_profile.fits' and apply it to the data set called
+        'bgnd':
 
         >>> load_psf('pmodel', 'line_profile.fits')
         >>> set_psf('bgnd', 'pmodel')
@@ -6871,7 +6869,7 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        psf : str or sherpa.instrument.PSFModel instance
+        psf : str or `sherpa.instrument.PSFModel` instance
            The PSF model created by `load_psf`.
 
         See Also
@@ -7018,7 +7016,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        psf : sherpa.instrument.PSFModel instance
+        psf : a `sherpa.instrument.PSFModel` instance
 
         Raises
         ------
@@ -7036,7 +7034,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Change the size and center of the PSF for th default data set:
+        Change the size and center of the PSF for the default data set:
 
         >>> psf = get_psf()
         >>> psf.size = (21,21)
@@ -7109,7 +7107,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        par : a sherpa.models.parameter.Parameter instance
+        par : a `sherpa.models.parameter.Parameter` instance
            The parameter values - e.g. current value, limits, and
            whether it is frozen - can be changed using this
            object.
@@ -7309,9 +7307,9 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        par :
+        par
            The parameter to link.
-        val :
+        val
            The value - wihch can be a numeric value or a function
            of other model parameters, to set ``par`` to.
 
@@ -7380,7 +7378,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        par :
+        par
            The parameter to unlink. If the parameter is not linked
            then nothing happens.
 
@@ -7578,7 +7576,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        stats : array of sherpa.fit.StatInfoResults
+        stats : array of `sherpa.fit.StatInfoResults`
            The values for each data set. If there are multiple model
            expressions then the last element will be the value for the
            combined data sets.
@@ -7655,7 +7653,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        stats : sherpa.fit.FitResults instance
+        stats : a `sherpa.fit.FitResults` instance
            The results of the last fit. It does not reflect any
            changes made to the model parameter, or settings, since the
            last fit.
@@ -7762,7 +7760,7 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        model :
+        model
            Change the parameters of this model component. If ``None``,
            then the source expression is assumed to consist of a single
            component, and that component is used.
@@ -7914,10 +7912,10 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        chisq : array or `None`
+        chisq : array or ``None``
            The chi-square value for each bin of the data, using the
            current statistic (as set by `set_stat`).  A value of
-           `None` is returned if the statistic is not a chi-square
+           ``None`` is returned if the statistic is not a chi-square
            distribution.
 
         See Also
@@ -8039,7 +8037,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        plot : a sherpa.sim.simulate.LikelihoodRatioResults instance
+        plot : a `sherpa.sim.simulate.LikelihoodRatioResults` instance
            None is returned if neither `plot_pvalue` or
            `get_pvalue_pvalue` have been run.
 
@@ -8074,31 +8072,31 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        null_model :
+        null_model
            The model expression for the null hypothesis.
-        alt_model :
+        alt_model
            The model expression for the alternative hypothesis.
         conv_model : optional
            An expression used to modify the model so that it can be
            compared to the data (e.g. a PSF or PHA response).
         id : int or str, optional
-           The data set that provides the data. The default is `1`.
+           The data set that provides the data. The default is 1.
         otherids : sequence of int or str, optional
            Other data sets to use in the calculation.
         num : int, optional
-           The number of simulations to run. The default is `500`.
+           The number of simulations to run. The default is 500.
         bins : int, optional
            The number of bins to use to create the histogram. The
-           default is `25`.
+           default is 25.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_pvalue`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_pvalue`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
         clearwindow : bool, optional
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
@@ -8178,33 +8176,33 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        null_model :
+        null_model
            The model expression for the null hypothesis.
-        alt_model :
+        alt_model
            The model expression for the alternative hypothesis.
         conv_model : optional
            An expression used to modify the model so that it can be
            compared to the data (e.g. a PSF or PHA response).
         id : int or str, optional
-           The data set that provides the data. The default is `1`.
+           The data set that provides the data. The default is 1.
         otherids : sequence of int or str, optional
            Other data sets to use in the calculation.
         num : int, optional
-           The number of simulations to run. The default is `500`.
+           The number of simulations to run. The default is 500.
         bins : int, optional
            The number of bins to use to create the histogram. The
-           default is `25`.
+           default is 25.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
         recalc : bool, optional
-           The default value (`False`) means that the results from the
+           The default value (``False``) means that the results from the
            last call to `plot_pvalue` or `get_pvalue_plot` are
-           returned. If `True`, the values are re-calculated.
+           returned. If ``True``, the values are re-calculated.
 
         Returns
         -------
-        plot : a sherpa.plot.LRHistogram instance
+        plot : a `sherpa.plot.LRHistogram` instance
 
         See Also
         --------
@@ -8264,14 +8262,14 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         num : int, optional
-           The number of samples to use (default is `1`).
+           The number of samples to use (default is 1).
         sigma : number, optional
            The width of the normal distribution (the default
-           is `1`).
+           is 1).
         correlate : bool, optional
            Should a multi-variate normal be used, with parameters
-           set by the covariance matrix (`True`) or should a
-           uni-variate normal be used (`False`)?
+           set by the covariance matrix (``True``) or should a
+           uni-variate normal be used (``False``)?
         id : int or str, optional
            The data set containing the model expression. If not given
            then the default identifier is used, as returned by
@@ -8284,7 +8282,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        samples :
+        samples
            A NumPy array table with the first column representing the
            statistic and later columns the parameters used.
 
@@ -8336,9 +8334,9 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         num : int, optional
-           The number of samples to use (default is `1`).
+           The number of samples to use (default is 1).
         factor : number, optional
-           Multiplier to expand the scale parameter (default is `4`).
+           Multiplier to expand the scale parameter (default is 4).
         id : int or str, optional
            The data set containing the model expression. If not given
            then the default identifier is used, as returned by
@@ -8351,7 +8349,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        samples :
+        samples
            A NumPy array table with the first column representing the
            statistic and later columns the parameters used.
 
@@ -8392,7 +8390,7 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         num : int, optional
-           The number of samples to use (default is `1`).
+           The number of samples to use (default is 1).
         dof : optional
            The number of degrees of freedom to use (the default
            is to use the number from the current fit).
@@ -8408,7 +8406,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        samples :
+        samples
            A NumPy array table with the first column representing the
            statistic and later columns the parameters used.
 
@@ -8465,23 +8463,23 @@ class Session(NoNewAttributesAfterInit):
         -----
         The attributes of the covariance object include:
 
-        `eps`
+        ``eps``
            The precision of the calculated limits. The default is
-           `0.01`.
+           0.01.
 
-        `maxiters`
+        ``maxiters``
            The maximum number of iterations allowed before stopping
-           for that parameter. The default is `200`.
+           for that parameter. The default is 200.
 
-        `sigma`
+        ``sigma``
            What is the error limit being calculated. The default is
-           `1`.
+           1.
 
-        `soft_limits`
+        ``soft_limits``
            Should the search be restricted to the soft limits of the
-           parameters (`True`), or can parameter values go out all the
-           way to the hard limits if necessary (`False`).  The default
-           is `False`
+           parameters (``True``), or can parameter values go out all the
+           way to the hard limits if necessary (``False``).  The default
+           is ``False``
 
         Examples
         --------
@@ -8493,7 +8491,7 @@ class Session(NoNewAttributesAfterInit):
         soft_limits = False
         eps         = 0.01
 
-        Change the `sigma` field of the `covar` method to 1.9.
+        Change the ``sigma`` field to 1.9.
 
         >>> cv = get_covar()
         >>> cv.sigma = 1.6
@@ -8522,66 +8520,66 @@ class Session(NoNewAttributesAfterInit):
         -----
         The attributes of the confidence-interval object include:
 
-        `eps`
+        ``eps``
            The precision of the calculated limits. The default is
-           `0.01`.
+           0.01.
         
-        `fast`
-           If `True` then the fit optimization used may be changed from
+        ``fast``
+           If ``True`` then the fit optimization used may be changed from
            the current setting (only for the error analysis) to use
-           a faster optimization method. The default is `False`.
+           a faster optimization method. The default is ``False``.
 
-        `max_rstat`
+        ``max_rstat``
            If the reduced chi square is larger than this value, do not
            use (only used with chi-square statistics). The default is
-           `3`.
+           3.
 
-        `maxfits`
+        ``maxfits``
            The maximum number of re-fits allowed (that is, when the
-           `remin` filter is met). The default is `5`.
+           ``remin`` filter is met). The default is 5.
 
-        `maxiters`
+        ``maxiters``
            The maximum number of iterations allowed when bracketing
            limits, before stopping for that parameter. The default is
-           `200`.
+           200.
 
-        `numcores`
+        ``numcores``
            The number of computer cores to use when evaluating results
-           in parallel. This is only used if `parallel` is `True`.
+           in parallel. This is only used if ``parallel`` is ``True``.
            The default is to use all cores.
 
-        `openinterval`
+        ``openinterval``
            How the `conf` method should cope with intervals that do
-           not converge (that is, when the `maxiters` limit has been
-           reached). The default is `False`.
+           not converge (that is, when the ``maxiters`` limit has been
+           reached). The default is ``False``.
 
-        `parallel`
+        ``parallel``
            If there is more than one free parameter then the results
            can be evaluated in parallel, to reduce the time required.
-           The default is `True`.
+           The default is ``True``.
 
-        `remin`
+        ``remin``
            The minimum difference in statistic value for a new fit
            location to be considered better than the current best fit
            (which starts out as the starting location of the fit at
-           the time `conf` is called). The default is `0.01`.
+           the time `conf` is called). The default is 0.01.
 
-        `sigma`
+        ``sigma``
            What is the error limit being calculated. The default is
-           `1`.
+           1.
 
-        `soft_limits`
+        ``soft_limits``
            Should the search be restricted to the soft limits of the
-           parameters (`True`), or can parameter values go out all the
-           way to the hard limits if necessary (`False`).  The default
-           is `False`
+           parameters (``True``), or can parameter values go out all the
+           way to the hard limits if necessary (``False``).  The default
+           is ``False``
 
-        `tol`
-           The tolerance for the fit. The default is `0.2`.
+        ``tol``
+           The tolerance for the fit. The default is 0.2.
 
-        `verbose`
+        ``verbose``
            Should extra information be displayed during fitting?
-           The default is `False`.
+           The default is ``False``.
 
         Examples
         --------
@@ -8602,7 +8600,7 @@ class Session(NoNewAttributesAfterInit):
         sigma        = 1
         parallel     = True
 
-        Change the `remin` field of the `conf` method to 0.05.
+        Change the ``remin`` field to 0.05.
 
         >>> cf = get_conf()
         >>> cf.remin = 0.05
@@ -8630,57 +8628,57 @@ class Session(NoNewAttributesAfterInit):
         -----
         The attributes of the object include:
 
-        `eps`
+        ``eps``
            The precision of the calculated limits. The default is
-           `0.01`.
+           0.01.
 
-        `fast`
-           If `True` then the fit optimization used may be changed from
+        ``fast``
+           If ``True`` then the fit optimization used may be changed from
            the current setting (only for the error analysis) to use
-           a faster optimization method. The default is `False`.
+           a faster optimization method. The default is ``False``.
 
-        `max_rstat`
+        ``max_rstat``
            If the reduced chi square is larger than this value, do not
            use (only used with chi-square statistics). The default is
-           `3`.
+           3.
 
-        `maxfits`
+        ``maxfits``
            The maximum number of re-fits allowed (that is, when the
-           `remin` filter is met). The default is `5`.
+           ``remin`` filter is met). The default is 5.
 
-        `maxiters`
+        ``maxiters``
            The maximum number of iterations allowed when bracketing
            limits, before stopping for that parameter. The default is
-           `200`.
+           200.
 
-        `numcores`
+        ``numcores``
            The number of computer cores to use when evaluating results
-           in parallel. This is only used if `parallel` is `True`.
+           in parallel. This is only used if ``parallel`` is ``True``.
            The default is to use all cores.
 
-        `parallel`
+        ``parallel``
            If there is more than one free parameter then the results
            can be evaluated in parallel, to reduce the time required.
-           The default is `True`.
+           The default is ``True``.
 
-        `remin`
+        ``remin``
            The minimum difference in statistic value for a new fit
            location to be considered better than the current best fit
            (which starts out as the starting location of the fit at
-           the time `proj` is called). The default is `0.01`.
+           the time `proj` is called). The default is 0.01.
 
-        `sigma`
+        ``sigma``
            What is the error limit being calculated. The default is
-           `1`.
+           1.
 
-        `soft_limits`
+        ``soft_limits``
            Should the search be restricted to the soft limits of the
-           parameters (`True`), or can parameter values go out all the
-           way to the hard limits if necessary (`False`).  The default
-           is `False`
+           parameters (``True``), or can parameter values go out all the
+           way to the hard limits if necessary (``False``).  The default
+           is ``False``
 
-        `tol`
-           The tolerance for the fit. The default is `0.2`.
+        ``tol``
+           The tolerance for the fit. The default is 0.2.
 
         Examples
         --------
@@ -8746,7 +8744,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `name` argument is not recognized.
+           If the ``name`` argument is not recognized.
 
         See Also
         --------
@@ -8787,7 +8785,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `name` argument is not recognized.
+           If the ``name`` argument is not recognized.
 
         See Also
         --------
@@ -8830,7 +8828,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `name` argument is not recognized.
+           If the ``name`` argument is not recognized.
 
         See Also
         --------
@@ -8864,13 +8862,13 @@ class Session(NoNewAttributesAfterInit):
            The name of the option to set. The `get_covar`
            routine can be used to find out valid values for
            this argument.
-        val :
+        val
            The new value for the option.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `name` argument is not recognized.
+           If the ``name`` argument is not recognized.
 
         See Also
         --------
@@ -8898,13 +8896,13 @@ class Session(NoNewAttributesAfterInit):
            The name of the option to set. The `get_conf`
            routine can be used to find out valid values for
            this argument.
-        val :
+        val
            The new value for the option.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `name` argument is not recognized.
+           If the ``name`` argument is not recognized.
 
         See Also
         --------
@@ -8934,13 +8932,13 @@ class Session(NoNewAttributesAfterInit):
            The name of the option to set. The `get_proj`
            routine can be used to find out valid values for
            this argument.
-        val :
+        val
            The new value for the option.
 
         Raises
         ------
         sherpa.utils.err.ArgumentErr
-           If the `name` argument is not recognized.
+           If the ``name`` argument is not recognized.
 
         See Also
         --------
@@ -8978,48 +8976,48 @@ class Session(NoNewAttributesAfterInit):
         -----
         The fields of the object include:
 
-        `datasets`
+        ``datasets``
            A tuple of the data sets used in the analysis.
 
-        `methodname`
-           This will be `covariance`.
+        ``methodname``
+           This will be 'covariance'.
 
-        `iterfitname`
+        ``iterfitname``
            The name of the iterated-fit method used, if any.
 
-        `fitname`
+        ``fitname``
            The name of the optimization method used.
 
-        `statname`
+        ``statname``
            The name of the fit statistic used.
 
-        `sigma`
-           The `sigma` value used to calculate the confidence
+        ``sigma``
+           The sigma value used to calculate the confidence
            intervals.
 
-        `percent`
+        ``percent``
            The percentage of the signal contained within the
-           confidence intervals (calculated from the `sigma`
+           confidence intervals (calculated from the ``sigma``
            value assuming a normal distribution).
 
-        `parnames`
+        ``parnames``
            A tuple of the parameter names included in the analysis.
 
-        `parvals`
+        ``parvals``
            A tuple of the best-fit parameter values, in the same
-           order as `parnames`.
+           order as ``parnames``.
 
-        `parmins`
+        ``parmins``
            A tuple of the lower error bounds, in the same
-           order as `parnames`.
+           order as ``parnames``.
 
-        `parmaxes`
+        ``parmaxes``
            A tuple of the upper error bounds, in the same
-           order as `parnames`.
+           order as ``parnames``.
 
-        `nfits`
+        ``nfits``
 
-        There is also an `extra_output` field which is used to return
+        There is also an ``extra_output`` field which is used to return
         the covariance matrix.
 
         Examples
@@ -9043,7 +9041,7 @@ class Session(NoNewAttributesAfterInit):
         In this case, of a single parameter, the covariance
         matrix is just the variance of the parameter:
 
-        >>> copt.extra_output
+        >>> res.extra_output
         array([[ 6.19847635]])
 
         """
@@ -9074,46 +9072,46 @@ class Session(NoNewAttributesAfterInit):
         -----
         The fields of the object include:
 
-        `datasets`
+        ``datasets``
            A tuple of the data sets used in the analysis.
 
-        `methodname`
-           This will be `confidence`.
+        ``methodname``
+           This will be 'confidence'.
 
-        `iterfitname`
+        ``iterfitname``
            The name of the iterated-fit method used, if any.
 
-        `fitname`
+        ``fitname``
            The name of the optimization method used.
 
-        `statname`
+        ``statname``
            The name of the fit statistic used.
 
-        `sigma`
-           The `sigma` value used to calculate the confidence
+        ``sigma``
+           The sigma value used to calculate the confidence
            intervals.
 
-        `percent`
+        ``percent``
            The percentage of the signal contained within the
-           confidence intervals (calculated from the `sigma`
+           confidence intervals (calculated from the ``sigma``
            value assuming a normal distribution).
 
-        `parnames`
+        ``parnames``
            A tuple of the parameter names included in the analysis.
 
-        `parvals`
+        ``parvals``
            A tuple of the best-fit parameter values, in the same
-           order as `parnames`.
+           order as ``parnames``.
 
-        `parmins`
+        ``parmins``
            A tuple of the lower error bounds, in the same
-           order as `parnames`.
+           order as ``parnames``.
 
-        `parmaxes`
+        ``parmaxes``
            A tuple of the upper error bounds, in the same
-           order as `parnames`.
+           order as ``parnames``.
 
-        `nfits`
+        ``nfits``
 
 
         Examples
@@ -9175,46 +9173,46 @@ class Session(NoNewAttributesAfterInit):
         -----
         The fields of the object include:
 
-        `datasets`
+        ``datasets``
            A tuple of the data sets used in the analysis.
 
-        `methodname`
-           This will be `projection`.
+        ``methodname``
+           This will be 'projection'.
 
-        `iterfitname`
+        ``iterfitname``
            The name of the iterated-fit method used, if any.
 
-        `fitname`
+        ``fitname``
            The name of the optimization method used.
 
-        `statname`
+        ``statname``
            The name of the fit statistic used.
 
-        `sigma`
-           The `sigma` value used to calculate the confidence
+        ``sigma``
+           The sigma value used to calculate the confidence
            intervals.
 
-        `percent`
+        ``percent``
            The percentage of the signal contained within the
-           confidence intervals (calculated from the `sigma`
+           confidence intervals (calculated from the ``sigma``
            value assuming a normal distribution).
 
-        `parnames`
+        ``parnames``
            A tuple of the parameter names included in the analysis.
 
-        `parvals`
+        ``parvals``
            A tuple of the best-fit parameter values, in the same
-           order as `parnames`.
+           order as ``parnames``.
 
-        `parmins`
+        ``parmins``
            A tuple of the lower error bounds, in the same
-           order as `parnames`.
+           order as ``parnames``.
 
-        `parmaxes`
+        ``parmaxes``
            A tuple of the upper error bounds, in the same
-           order as `parnames`.
+           order as ``parnames``.
 
-        `nfits`
+        ``nfits``
 
         Examples
         --------
@@ -9276,8 +9274,8 @@ class Session(NoNewAttributesAfterInit):
         the specified model parameters in the dataset, using the
         covariance matrix of the statistic. The `get_covar` and
         `set_covar_opt` commands can be used to configure the error
-        analysis; an example being changing the 'sigma' field to `1.6`
-        (i.e. 90%) from its default value of `1`.  The output from the
+        analysis; an example being changing the ``sigma`` field to 1.6
+        (i.e. 90%) from its default value of 1.  The output from the
         routine is displayed on screen, and the `get_covar_results`
         routine can be used to retrieve the results.
 
@@ -9294,7 +9292,7 @@ class Session(NoNewAttributesAfterInit):
            data sets. The evaluation can be restricted by listing
            the parameters to use. Note that each parameter should be
            given as a separate argument, rather than as a list.
-           For example `covar(g1.ampl, g1.sigma)`.
+           For example ``covar(g1.ampl, g1.sigma)``.
 
         See Also
         --------
@@ -9311,7 +9309,7 @@ class Session(NoNewAttributesAfterInit):
         -----
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
-        When called with multiple `ids` or `parameters` values, the
+        When called with multiple ``ids`` or ``parameters`` values, the
         order is unimportant, since any argument that is not defined
         as a model parameter is assumed to be a data id.
 
@@ -9356,14 +9354,14 @@ class Session(NoNewAttributesAfterInit):
         approximately equal to the square root of (2 * delta_S) for
         fits based on the general log-likelihood. The default setting
         is to calculate the one-sigma interval, which can be changed
-        with the `sigma` option to `set_covar_opt` or `get_covar`.
+        with the ``sigma`` option to `set_covar_opt` or `get_covar`.
 
         Examples
         --------
 
         Evaluate confidence intervals for all thawed parameters in all
         data sets with an associated source model. The results are
-        then stored in the variable `res`.
+        then stored in the variable ``res``.
 
         >>> covar()
         >>> res = get_covar_results()
@@ -9372,7 +9370,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> covar(2)
 
-        Only evaluate the intervals for the `pos.xpos` and `pos.ypos`
+        Only evaluate the intervals for the ``pos.xpos`` and ``pos.ypos``
         parameters:
 
         >>> covar(pos.xpos, pos.ypos)
@@ -9383,7 +9381,7 @@ class Session(NoNewAttributesAfterInit):
         >>> get_covar().sigma = 1.6
         >>> covar()
 
-        Only evaluate the `clus.kt` parameter for the data sets with
+        Only evaluate the ``clus.kt`` parameter for the data sets with
         identifiers "obs1", "obs5", and "obs6". This will still use
         the 1.6 sigma setting from the previous run.
 
@@ -9403,8 +9401,8 @@ class Session(NoNewAttributesAfterInit):
         values of all the other thawed parameters are allowed to float
         to new best-fit values. The `get_conf` and `set_conf_opt`
         commands can be used to configure the error analysis; an
-        example being changing the 'sigma' field to `1.6` (i.e. 90%)
-        from its default value of `1`.  The output from the routine is
+        example being changing the 'sigma' field to ``1.6`` (i.e. 90%)
+        from its default value of ``1``.  The output from the routine is
         displayed on screen, and the `get_conf_results` routine can be
         used to retrieve the results.
 
@@ -9421,7 +9419,7 @@ class Session(NoNewAttributesAfterInit):
            data sets. The evaluation can be restricted by listing
            the parameters to use. Note that each parameter should be
            given as a separate argument, rather than as a list.
-           For example `conf(g1.ampl, g1.sigma)`.
+           For example ``conf(g1.ampl, g1.sigma)``.
 
         See Also
         --------
@@ -9438,7 +9436,7 @@ class Session(NoNewAttributesAfterInit):
         -----
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
-        When called with multiple `ids` or `parameters` values, the
+        When called with multiple ``ids`` or ``parameters`` values, the
         order is unimportant, since any argument that is not defined
         as a model parameter is assumed to be a data id.
 
@@ -9478,8 +9476,8 @@ class Session(NoNewAttributesAfterInit):
 
         As the calculation can be computer intensive, the default
         behavior is to use all available CPU cores to speed up the
-        analysis. This can be changed be varying the `numcores` option
-        - or setting `parallel` to `False` - either with
+        analysis. This can be changed be varying the ``numcores`` option
+        - or setting ``parallel`` to ``False`` - either with
         `set_conf_opt` or `get_conf`.
 
         As `conf` estimates intervals for each parameter
@@ -9490,15 +9488,15 @@ class Session(NoNewAttributesAfterInit):
         approximately equal to the square root of (2 * delta_S) for
         fits based on the general log-likelihood. The default setting
         is to calculate the one-sigma interval, which can be changed
-        with the `sigma` option to `set_conf_opt` or `get_conf`.
+        with the ``sigma`` option to `set_conf_opt` or `get_conf`.
 
         The limit calculated by `conf` is basically a 1-dimensional
         root in the translated coordinate system (translated by the
         value of the statistic at the minimum plus sigma^2).  The
         Taylor series expansion of the multi-dimensional function at
-        the minimum is:
+        the minimum is::
 
-        f(x + dx) ~ f(x) + grad( f(x) )^T dx + dx^T Hessian( f(x) ) dx + ...
+           f(x + dx) ~ f(x) + grad( f(x) )^T dx + dx^T Hessian( f(x) ) dx + ...
 
         where x is understood to be the n-dimensional vector
         representing the free parameters to be fitted and the
@@ -9527,11 +9525,11 @@ class Session(NoNewAttributesAfterInit):
         However, there are cases where `conf` cannot locate the root
         even though the root is bracketed within an interval (perhaps
         due to the bad resolution of the data). In such cases, when
-        the option `openinterval` is set to `False` (which is the
+        the option ``openinterval`` is set to ``False`` (which is the
         default), the routine will print a warning message about not
         able to find the root within the set tolerance and the
         function will return the average of the open interval which
-        brackets the root. If `openinterval` is set to `True` then
+        brackets the root. If ``openinterval`` is set to ``True`` then
         `conf` will print the minimal open interval which brackets the
         root (not to be confused with the lower and upper bound of the
         confidence interval). The most accurate thing to do is to
@@ -9555,7 +9553,7 @@ class Session(NoNewAttributesAfterInit):
 
         Evaluate confidence intervals for all thawed parameters in all
         data sets with an associated source model. The results are
-        then stored in the variable `res`.
+        then stored in the variable ``res``.
 
         >>> conf()
         >>> res = get_conf_results()
@@ -9564,7 +9562,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> conf(2)
 
-        Only evaluate the intervals for the `pos.xpos` and `pos.ypos`
+        Only evaluate the intervals for the ``pos.xpos`` and ``pos.ypos``
         parameters:
 
         >>> conf(pos.xpos, pos.ypos)
@@ -9575,7 +9573,7 @@ class Session(NoNewAttributesAfterInit):
         >>> get_conf().sigma = 1.6
         >>> conf()
 
-        Only evaluate the `clus.kt` parameter for the data sets with
+        Only evaluate the ``clus.kt`` parameter for the data sets with
         identifiers "obs1", "obs5", and "obs6". This will still use
         the 1.6 sigma setting from the previous run.
 
@@ -9597,8 +9595,8 @@ class Session(NoNewAttributesAfterInit):
         the other thawed parameters are allowed to float to new
         best-fit values. The `get_proj` and `set_proj_opt`
         commands can be used to configure the error analysis; an
-        example being changing the 'sigma' field to `1.6` (i.e. 90%)
-        from its default value of `1`.  The output from the routine is
+        example being changing the 'sigma' field to ``1.6`` (i.e. 90%)
+        from its default value of ``1``.  The output from the routine is
         displayed on screen, and the `get_proj_results` routine can be
         used to retrieve the results.
 
@@ -9615,7 +9613,7 @@ class Session(NoNewAttributesAfterInit):
            data sets. The evaluation can be restricted by listing
            the parameters to use. Note that each parameter should be
            given as a separate argument, rather than as a list.
-           For example `proj(g1.ampl, g1.sigma)`.
+           For example ``proj(g1.ampl, g1.sigma)``.
 
         See Also
         --------
@@ -9631,7 +9629,7 @@ class Session(NoNewAttributesAfterInit):
         -----
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
-        When called with multiple `ids` or `parameters` values, the
+        When called with multiple ``ids`` or ``parameters`` values, the
         order is unimportant, since any argument that is not defined
         as a model parameter is assumed to be a data id.
 
@@ -9670,8 +9668,8 @@ class Session(NoNewAttributesAfterInit):
 
         As the calculation can be computer intensive, the default
         behavior is to use all available CPU cores to speed up the
-        analysis. This can be changed be varying the `numcores` option
-        - or setting `parallel` to `False` - either with
+        analysis. This can be changed be varying the ``numcores`` option
+        - or setting ``parallel`` to ``False`` - either with
         `set_proj_opt` or `get_proj`.
 
         As `proj` estimates intervals for each parameter
@@ -9682,7 +9680,7 @@ class Session(NoNewAttributesAfterInit):
         approximately equal to the square root of (2 * delta_S) for
         fits based on the general log-likelihood. The default setting
         is to calculate the one-sigma interval, which can be changed
-        with the `sigma` option to `set_proj_opt` or `get_proj`.
+        with the ``sigma`` option to `set_proj_opt` or `get_proj`.
 
         """
         self._projection_results = self._est_errors(args, 'projection')
@@ -9714,7 +9712,7 @@ class Session(NoNewAttributesAfterInit):
         opt : str
            The option to change. Use `get_sampler` to view the
            available options for the current sampler.
-        value :
+        value
            The value for the option.
 
         See Also
@@ -9727,33 +9725,33 @@ class Session(NoNewAttributesAfterInit):
         -----
         The options depend on the sampler [1]_. The options include:
 
-        `defaultprior`
-           Set to `False` when the default prior (flat, between the
+        ``defaultprior``
+           Set to ``False`` when the default prior (flat, between the
            parameter's soft limits) should not be used. Use
            `set_prior` to set the form of the prior for each
            parameter.
 
-        `inv`
+        ``inv``
            A bool, or array of bools, to indicate which parameter is
            on the inverse scale.
 
-        `log`
+        ``log``
            A bool, or array of bools, to indicate which parameter is
            on the logarithm (natural log) scale.
 
-        `original`
+        ``original``
            A bool, or array of bools, to indicate which parameter is
            on the original scale.
 
-        `p_M`
+        ``p_M``
            The proportion of jumps generatd by the Metropolis
            jumping rule.
 
-        `priorshape`
+        ``priorshape``
            An array of bools indicating which parameters have a
            user-defined prior functions set with `set_prior`.
 
-        `scale`
+        ``scale``
            Multiply the output of `covar` by this factor and
            use the result as the scale of the t-distribution.
 
@@ -9822,7 +9820,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        sampler : str or sherpa.sim.Sampler instance
+        sampler : str or `sherpa.sim.Sampler` instance
            When a string, the name of the sampler to use (case
            insensitive). The supported options are given by the
            `list_samplers` function.
@@ -9846,17 +9844,17 @@ class Session(NoNewAttributesAfterInit):
            This is the Metropolis with Metropolis-Hastings algorithm,
            that jumps from the best-fit with probability 'p_M',
            otherwise it jumps from the last accepted jump. The
-           value of `p_M` can be changed using `set_sampler_opt`.
+           value of ``p_M`` can be changed using `set_sampler_opt`.
 
         PragBayes
            This is used when the effective area calibration
            uncertainty is to be included in the calculation. At each
            nominal MCMC iteration, a new calibration product is
-           generated, and a series of N (the `nsubiters` option) MCMC
+           generated, and a series of N (the ``nsubiters`` option) MCMC
            sub-iteration steps are carried out, choosing between
            Metropolis and Metropolis-Hastings types of samplers with
-           probability `p_M`.  Only the last of these sub-iterations
-           are kept in the chain.  The `nsubiters` and `p_M` values
+           probability ``p_M``.  Only the last of these sub-iterations
+           are kept in the chain.  The ``nsubiters`` and ``p_M`` values
            can be changed using `set_sampler_opt`.
 
         FullBayes
@@ -9909,7 +9907,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        par : sherpa.models.parameter.Parameter instance
+        par : a `sherpa.models.parameter.Parameter` instance
            A parameter of a model instance.
         prior : function or sherpa.models.model.Model instance
            The function to use for a prior. It must accept a
@@ -9930,7 +9928,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Set the prior for the `kT` parameter of the `therm` instance
+        Set the prior for the ``kT`` parameter of the ``therm`` component
         to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
         keV:
 
@@ -9940,8 +9938,8 @@ class Session(NoNewAttributesAfterInit):
         >>> p.temo_fwhm = 0.35
         >>> set_prior(therm.kT, p_temp)
 
-        Create a function (`lognorm`) and use it as the prior the the
-        `nH` parameter of the `abs1` instance:
+        Create a function (``lognorm``) and use it as the prior the the
+        ``nH`` parameter of the ``abs1`` model component:
 
         >>> create_model_component('xsphabs', 'abs1')
         >>> def lognorm(x):
@@ -9963,12 +9961,12 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        par : sherpa.models.parameter.Parameter
+        par : a `sherpa.models.parameter.Parameter` instance
            A parameter of a model instance.
 
         Returns
         -------
-        prior :
+        prior
            The function or parameter instance set by
            a previous call to `set_prior`.
 
@@ -10053,11 +10051,11 @@ class Session(NoNewAttributesAfterInit):
         otherids : sequence of int or str, optional
            Other data sets to use in the calculation.
         niter : int, optional
-           The number of draws to use. The default is `1000`.
+           The number of draws to use. The default is ``1000``.
 
         Returns
         -------
-        stats, accept, params :
+        stats, accept, params
            The results of the MCMC chain. The stats and accept arrays
            contain niter+1 elements, with the first row being the
            starting values. The params array has (nparams,niter+1)
@@ -10065,7 +10063,7 @@ class Session(NoNewAttributesAfterInit):
            the model expression, and the first column contains the
            values that the chain starts at. The accept array contains
            boolean values, indicating whether the jump, or step, was
-           accepted (`True`), so the parameter values and statistic
+           accepted (``True``), so the parameter values and statistic
            change, or it wasn't, in which case there is no change to
            the previous row.
 
@@ -10157,7 +10155,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        splot : a sherpa.plot.SplitPlot instance
+        splot : a `sherpa.plot.SplitPlot` instance
 
         """
         return self._splitplot
@@ -10173,13 +10171,14 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data : a sherpa.plot.DataPlot instance
+        data : a `sherpa.plot.DataPlot` instance
            An object representing the data used to create the plot by
            `plot_data`. The relationship between the returned values
            and the values in the data set depend on the data type. For
            example PHA data are plotted in units controlled by
-           `set_analysis`, but are stored as channels and counts, and
-           may have been grouped and the background estimate removed.
+           `sherpa.astro.ui.set_analysis`, but are stored as channels
+           and counts, and may have been grouped and the background
+           estimate removed.
 
         See Also
         --------
@@ -10214,71 +10213,71 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         The meaning of the fields depend on the chosen plot backend.
-        A value of `None` means to use the default value for that
+        A value of ``None`` means to use the default value for that
         attribute, unless indicated otherwise. These preferences
         are used by the following commands: `plot_data`, `plot_bkg`,
         `plot_ratio`, and the "fit" variants, such as `plot_fit`,
         `plot_fit_resid`, and `plot_bkg_fit`.
 
-        `errcolor`
-           The color to draw error bars. The default is `None`.
+        ``errcolor``
+           The color to draw error bars. The default is ``None``.
 
-        `errstyle`
-           How to draw errors. The default is `line`.
+        ``errstyle``
+           How to draw errors. The default is ``line``.
 
-        `errthickness`
+        ``errthickness``
            What thickness of line to draw error bars. The default is
-           `None`.
+           ``None``.
 
-        `linecolor`
+        ``linecolor``
            What color to use for the line connecting the data points.
-           The default is `None`.
+           The default is ``None``.
 
-        `linestyle`
+        ``linestyle``
            How should the line connecting the data points be drawn.
-           The default is `0`, which means no line is drawn.
+           The default is ``0``, which means no line is drawn.
 
-        `linethickness`
+        ``linethickness``
            What thickness should be used to draw the line connecting
-           the data points. The default is `None`.
+           the data points. The default is ``None``.
 
-        `ratioline`
+        ``ratioline``
            Should a horizontal line be drawn at y=1?  The default is
-           `False`.
+           ``False``.
 
-        `symbolcolor`
+        ``symbolcolor``
            What color to draw the symbol representing the data points.
-           The default is `None`.
+           The default is ``None``.
 
-        `symbolfill`
-           Should the symbol be drawn filled? The default is `False`.
+        ``symbolfill``
+           Should the symbol be drawn filled? The default is ``False``.
 
-        `symbolsize`
-           What size is the symbol drawn. The default is `3`.
+        ``symbolsize``
+           What size is the symbol drawn. The default is ``3``.
 
-        `symbolstyle`
-           What style is used for the symbols. The default is `4`
-           which means `circle` for the ChIPS back end.
+        ``symbolstyle``
+           What style is used for the symbols. The default is ``4``
+           which means circle for the ChIPS back end.
 
-        `xaxis`
-           The default is `False`
+        ``xaxis``
+           The default is ``False``
 
-        `xerrorbars`
+        ``xerrorbars``
            Should error bars be drawn for the X axis. The default is
-           `False`.
+           ``False``.
 
-        `xlog`
+        ``xlog``
            Should the X axis be drawn with a logarithmic scale? The
-           default is `False`. This field can also be changed with the
+           default is ``False``. This field can also be changed with the
            `set_xlog` and `set_xlinear` functions.
 
-        `yerrorbars`
+        ``yerrorbars``
            Should error bars be drawn for the Y axis. The default is
-           `True`.
+           ``True``.
 
-        `ylog`
+        ``ylog``
            Should the Y axis be drawn with a logarithmic scale? The
-           default is `False`. This field can also be changed with the
+           default is ``False``. This field can also be changed with the
            `set_ylog` and `set_ylinear` functions.
 
         Examples
@@ -10306,7 +10305,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data :
+        data
            An object representing the data used to create the plot by
            `plot_model`. The return value depends on the data
            set (e.g. 1D binned or un-binned).
@@ -10337,7 +10336,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data :
+        data
            An object representing the data used to create the plot by
            `plot_source`. The return value depends on the data
            set (e.g. 1D binned or un-binned).
@@ -10375,7 +10374,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data :
+        data
            An object representing the data used to create the plot by
            `plot_model_component`. The return value depends on the
            data set (e.g. 1D binned or un-binned).
@@ -10398,13 +10397,13 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Return the plot data for the `pl` component used in the
+        Return the plot data for the ``pl`` component used in the
         default data set:
 
         >>> cplot = get_model_component(pl)
 
-        Return the full source model (`fplot`) and then for the
-        components `gal * pl` and `gal * gline`, for the data set
+        Return the full source model (``fplot``) and then for the
+        components ``gal * pl`` and ``gal * gline``, for the data set
         'jet':
 
         >>> fmodel = xsphabs.gal * (powlaw1d.pl + gauss1d.gline)
@@ -10439,7 +10438,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data :
+        data
            An object representing the data used to create the plot by
            `plot_source_component`. The return value depends on the
            data set (e.g. 1D binned or un-binned).
@@ -10462,13 +10461,13 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Return the plot data for the `pl` component used in the
+        Return the plot data for the ``pl`` component used in the
         default data set:
 
         >>> cplot = get_source_component(pl)
 
-        Return the full source model (`fplot`) and then for the
-        components `gal * pl` and `gal * gline`, for the data set
+        Return the full source model (``fplot``) and then for the
+        components ``gal * pl`` and ``gal * gline``, for the data set
         'jet':
 
         >>> fmodel = xsphabs.gal * (powlaw1d.pl + gauss1d.gline)
@@ -10514,71 +10513,71 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         The meaning of the fields depend on the chosen plot backend.
-        A value of `None` means to use the default value for that
+        A value of ``None`` means to use the default value for that
         attribute, unless indicated otherwise. These preferences are
         used by the following commands: `plot_model`, `plot_ratio`,
         `plot_bkg_model`, and the "fit" variants, such as `plot_fit`,
         `plot_fit_resid`, and `plot_bkg_fit`.
 
-        `errcolor`
-           The color to draw error bars. The default is `None`.
+        ``errcolor``
+           The color to draw error bars. The default is ``None``.
 
-        `errstyle`
-           How to draw errors. The default is `None`.
+        ``errstyle``
+           How to draw errors. The default is ``None``.
 
-        `errthickness`
+        ``errthickness``
            What thickness of line to draw error bars. The default is
-           `None`.
+           ``None``.
 
-        `linecolor`
+        ``linecolor``
            What color to use for the line connecting the data points.
-           The default is `red`.
+           The default is ``red``.
 
-        `linestyle`
+        ``linestyle``
            How should the line connecting the data points be drawn.
-           The default is `1`, which means a solid line is drawn.
+           The default is ``1``, which means a solid line is drawn.
 
-        `linethickness`
+        ``linethickness``
            What thickness should be used to draw the line connecting
-           the data points. The default is `3`.
+           the data points. The default is ``3``.
 
-        `ratioline`
+        ``ratioline``
            Should a horizontal line be drawn at y=1?  The default is
-           `False`.
+           ``False``.
 
-        `symbolcolor`
+        ``symbolcolor``
            What color to draw the symbol representing the data points.
-           The default is `None`.
+           The default is ``None``.
 
-        `symbolfill`
-           Should the symbol be drawn filled? The default is `True`.
+        ``symbolfill``
+           Should the symbol be drawn filled? The default is ``True``.
 
-        `symbolsize`
-           What size is the symbol drawn. The default is `None`.
+        ``symbolsize``
+           What size is the symbol drawn. The default is ``None``.
 
-        `symbolstyle`
-           What style is used for the symbols. The default is `0`,
+        ``symbolstyle``
+           What style is used for the symbols. The default is ``0``,
            which means no symbol is used.
 
-        `xaxis`
-           The default is `False`
+        ``xaxis``
+           The default is ``False``
 
-        `xerrorbars`
+        ``xerrorbars``
            Should error bars be drawn for the X axis. The default is
-           `False`.
+           ``False``.
 
-        `xlog`
+        ``xlog``
            Should the X axis be drawn with a logarithmic scale? The
-           default is `False`. This field can also be changed with the
+           default is ``False``. This field can also be changed with the
            `set_xlog` and `set_xlinear` functions.
 
-        `yerrorbars`
+        ``yerrorbars``
            Should error bars be drawn for the Y axis. The default is
-           `False`.
+           ``False``.
 
-        `ylog`
+        ``ylog``
            Should the Y axis be drawn with a logarithmic scale? The
-           default is `False`. This field can also be changed with the
+           default is ``False``. This field can also be changed with the
            `set_ylog` and `set_ylinear` functions.
 
         Examples
@@ -10604,10 +10603,10 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data : a sherpa.plot.FitPlot instance
+        data : a `sherpa.plot.FitPlot` instance
            An object representing the data used to create the plot by
            `plot_fit`. It contains the data from `get_data_plot`
-           and `get_model_plot` in the `dataplot` and `modelplot`
+           and `get_model_plot` in the ``dataplot`` and ``modelplot``
            attributes.
 
         See Also
@@ -10638,7 +10637,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_data : a sherpa.plot.ResidPlot instance
+        resid_data : a `sherpa.plot.ResidPlot` instance
 
         Raises
         ------
@@ -10679,7 +10678,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_data : a sherpa.plot.DelchiPlot instance
+        resid_data : a `sherpa.plot.DelchiPlot` instance
 
         Raises
         ------
@@ -10721,7 +10720,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_data : a sherpa.plot.ChisqrPlot instance
+        resid_data : a `sherpa.plot.ChisqrPlot` instance
 
         Raises
         ------
@@ -10763,7 +10762,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_data : a sherpa.plot.RatioPlot instance
+        resid_data : a `sherpa.plot.RatioPlot` instance
 
         Raises
         ------
@@ -10805,9 +10804,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_data : a sherpa.plot.DataContour instance
-           The `y` attribute contains the residual values and the `x0`
-           and `x1` arrays the corresponsing coordinate values, as
+        resid_data : a `sherpa.plot.DataContour` instance
+           The ``y`` attribute contains the residual values and the ``x0``
+           and ``x1`` arrays the corresponsing coordinate values, as
            one-dimensional arrays.
 
         Raises
@@ -10851,26 +10850,26 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         The meaning of the fields depend on the chosen plot backend.
-        A value of `None` (or not set) means to use the default value
+        A value of ``None`` (or not set) means to use the default value
         for that attribute, unless indicated otherwise.
 
-        `color`
-           The color to draw the contours. The default is `None`.
+        ``color``
+           The color to draw the contours. The default is ``None``.
 
-        `style`
-           How to draw the contours. The default is `None`.
+        ``style``
+           How to draw the contours. The default is ``None``.
 
-        `thickness`
+        ``thickness``
            What thickness of line to draw the contours. The default is
-           `None`.
+           ``None``.
 
-        `xlog`
+        ``xlog``
            Should the X axis be drawn with a logarithmic scale? The
-           default is `False`.
+           default is ``False``.
 
-        `ylog`
+        ``ylog``
            Should the Y axis be drawn with a logarithmic scale? The
-           default is `False`.
+           default is ``False``.
 
         Examples
         --------
@@ -10896,9 +10895,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_data : a sherpa.plot.ModelContour instance
-           The `y` attribute contains the model values and the `x0`
-           and `x1` arrays the corresponsing coordinate values, as
+        resid_data : a `sherpa.plot.ModelContour` instance
+           The ``y`` attribute contains the model values and the ``x0``
+           and ``x1`` arrays the corresponsing coordinate values, as
            one-dimensional arrays.
 
         Raises
@@ -10937,9 +10936,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_data : a sherpa.plot.SourceContour instance
-           The `y` attribute contains the model values and the `x0`
-           and `x1` arrays the corresponsing coordinate values, as
+        resid_data : a `sherpa.plot.SourceContour` instance
+           The ``y`` attribute contains the model values and the ``x0``
+           and ``x1`` arrays the corresponsing coordinate values, as
            one-dimensional arrays.
 
         Raises
@@ -10983,26 +10982,26 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         The meaning of the fields depend on the chosen plot backend.
-        A value of `None` (or not set) means to use the default value
+        A value of ``None`` (or not set) means to use the default value
         for that attribute, unless indicated otherwise.
 
-        `color`
-           The color to draw the contours. The default is `red`.
+        ``color``
+           The color to draw the contours. The default is ``red``.
 
-        `style`
-           How to draw the contours. The default is `None`.
+        ``style``
+           How to draw the contours. The default is ``None``.
 
-        `thickness`
+        ``thickness``
            What thickness of line to draw the contours. The default is
-           `3`.
+           ``3``.
 
-        `xlog`
+        ``xlog``
            Should the X axis be drawn with a logarithmic scale? The
-           default is `False`.
+           default is ``False``.
 
-        `ylog`
+        ``ylog``
            Should the Y axis be drawn with a logarithmic scale? The
-           default is `False`.
+           default is ``False``.
 
         Examples
         --------
@@ -11028,11 +11027,11 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        fit_data : a sherpa.plot.FitContour instance
+        fit_data : a `sherpa.plot.FitContour` instance
            An object representing the data used to create the plot by
            `contour_fit`. It contains the data from `get_data_contour`
-           and `get_model_contour` in the `datacontour` and
-           `modelcontour` attributes.
+           and `get_model_contour` in the ``datacontour`` and
+           ``modelcontour`` attributes.
 
         Raises
         ------
@@ -11073,9 +11072,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_data : a sherpa.plot.ResidContour instance
-           The `y` attribute contains the residual values and the `x0`
-           and `x1` arrays the corresponsing coordinate values, as
+        resid_data : a `sherpa.plot.ResidContour` instance
+           The ``y`` attribute contains the residual values and the ``x0``
+           and ``x1`` arrays the corresponsing coordinate values, as
            one-dimensional arrays.
 
         Raises
@@ -11115,9 +11114,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        ratio_data : a sherpa.plot.RatioContour instance
-           The `y` attribute contains the ratio values and the `x0`
-           and `x1` arrays the corresponsing coordinate values, as
+        ratio_data : a `sherpa.plot.RatioContour` instance
+           The ``y`` attribute contains the ratio values and the ``x0``
+           and ``x1`` arrays the corresponsing coordinate values, as
            one-dimensional arrays.
 
         Raises
@@ -11157,7 +11156,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        psf_data : a sherpa.plot.PSFContour instance
+        psf_data : a `sherpa.plot.PSFContour` instance
 
         Raises
         ------
@@ -11195,7 +11194,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        psf_data : a sherpa.plot.PSFKernelContour instance
+        psf_data : a `sherpa.plot.PSFKernelContour` instance
 
         Raises
         ------
@@ -11234,7 +11233,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        psf_plot : a sherpa.plot.PSFPLot instance
+        psf_plot : a `sherpa.plot.PSFPlot` instance
 
         Raises
         ------
@@ -11271,7 +11270,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        kernel_plot : a sherpa.plot.PSFKernelPLot instance
+        kernel_plot : a `sherpa.plot.PSFKernelPlot` instance
 
         Raises
         ------
@@ -11455,7 +11454,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Use a logarithmic scale for the X axis of `data` plots:
+        Use a logarithmic scale for the X axis of 'data' plots:
 
         >>> set_xlog('data')
         >>> plot('data', 'arf')
@@ -11491,7 +11490,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Use a logarithmic scale for the Y axis of `data` plots:
+        Use a logarithmic scale for the Y axis of 'data' plots:
 
         >>> set_ylog('data')
         >>> plot('data', 'arf')
@@ -11609,72 +11608,72 @@ class Session(NoNewAttributesAfterInit):
         -----
         The supported plot types depend on the data set type, and
         include the following list. There are also individual
-        functions, with `plot_` prepended to the plot type, such as
-        `plot_data` (the `bkg` variants use a prefix of
-        `plot_bkg_`). There are also several multiple-plot commands
+        functions, with ``plot_`` prepended to the plot type, such as
+        `plot_data` (the ``bkg`` variants use a prefix of
+        ``plot_bkg_``). There are also several multiple-plot commands
         (e.g. `plot_fit_resid`).
 
-        `arf`
-           The ARF for the data set (only for `DataPHA` dataset).
+        ``arf``
+           The ARF for the data set (only for `DataPHA` data sets).
 
-        `bkg`
+        ``bkg``
            The background.
 
-        `bkgchisqr`
+        ``bkgchisqr``
            The chi-squared statistic calculated for each bin when
            fitting the background.
 
-        `bkgdelchi`
+        ``bkgdelchi``
            The residuals for each bin, calculated as (data-model)
            divided by the error, for the background.
 
-        `bkgfit`
+        ``bkgfit``
            The data (as points) and the convolved model (as a line),
            for the background data set.
 
-        `bkgmodel`
+        ``bkgmodel``
            The convolved background model.
 
-        `bkgratio`
+        ``bkgratio``
            The residuals for each bin, calculated as data/model,
            for the background data set.
 
-        `bkgresid`
+        ``bkgresid``
            The residuals for each bin, calculated as (data-model),
            for the background data set.
 
-        `bkgsource`
+        ``bkgsource``
            The un-convolved background model.
 
-        `chisqr`
+        ``chisqr``
            The chi-squared statistic calculated for each bin.
 
-        `data`
+        ``data``
            The data (which may be background subtracted).
 
-        `delchi`
+        ``delchi``
            The residuals for each bin, calculated as (data-model)
            divided by the error.
 
-        `fit`
+        ``fit``
            The data (as points) and the convolved model (as a line).
  
-        `kernel`
+        ``kernel``
            The PSF kernel associated with the data set.
 
-        `model`
+        ``model``
            The convolved model.
 
-        `psf`
+        ``psf``
            The unfiltered PSF kernel associated with the data set.
 
-        `ratio`
+        ``ratio``
            The residuals for each bin, calculated as data/model.
 
-        `resid`
+        ``resid``
            The residuals for each bin, calculated as (data-model).
 
-        `source`
+        ``source``
            The un-convolved model.
 
         The plots can be specialized for a particular data type,
@@ -11689,7 +11688,7 @@ class Session(NoNewAttributesAfterInit):
         will be displayed when `sherpa.ui` or `sherpa.astro.ui` is
         imported, and the `plot` set of commands will not create any
         plots. The choice of back end is made by changing the
-        `options.plot_pkg` setting in the Sherpa configuration file.
+        ``options.plot_pkg`` setting in the Sherpa configuration file.
 
         Examples
         --------
@@ -11730,11 +11729,11 @@ class Session(NoNewAttributesAfterInit):
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_data`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_data`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -11784,11 +11783,11 @@ class Session(NoNewAttributesAfterInit):
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_model`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_model`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -11815,7 +11814,7 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_model(1)
         >>> plot_model(2, overplot=True)
 
-        Create the equivalent of `plot_fit('jet')`:
+        Create the equivalent of ``plot_fit('jet')``:
 
         >>> plot_data('jet')
         >>> plot_model('jet', overplot=True)
@@ -11840,11 +11839,11 @@ class Session(NoNewAttributesAfterInit):
         model : str or sherpa.models.model.Model instance
            The component to display (the name, if a string).
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_source_component`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_source_component`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -11870,7 +11869,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Overplot the `pl` component of the source expression for
+        Overplot the ``pl`` component of the source expression for
         the default data set:
 
         >>> plot_source()
@@ -11908,11 +11907,11 @@ class Session(NoNewAttributesAfterInit):
         model : str or sherpa.models.model.Model instance
            The component to display (the name, if a string).
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_model_component`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_model_component`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -11938,14 +11937,14 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Overplot the `pl` component of the model expression for
+        Overplot the ``pl`` component of the model expression for
         the default data set:
 
         >>> plot_model()
         >>> plot_model_component(pl, overplot=True)
 
         Display the results for the 'jet' data set (data and model),
-        and then overplot the `pl` component evaluated for the 'jet'
+        and then overplot the ``pl`` component evaluated for the 'jet'
         and 'core' data sets:
 
         >>> plot_fit('jet')
@@ -11980,11 +11979,11 @@ class Session(NoNewAttributesAfterInit):
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_source`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_source`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -12030,11 +12029,11 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_fit`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_fit`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
@@ -12085,11 +12084,11 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_resid`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_resid`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
@@ -12144,11 +12143,11 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_chisqr`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_chisqr`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
@@ -12198,11 +12197,11 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_delchi`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_delchi`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
@@ -12251,11 +12250,11 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_ratio`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_ratio`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
@@ -12304,11 +12303,11 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_psf`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_psf`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
@@ -12357,11 +12356,11 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_kernel`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_kernel`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         Raises
         ------
@@ -12413,11 +12412,11 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_fit_resid`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_fit_resid`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
         clearwindow : bool, optional
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
@@ -12497,11 +12496,11 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_fit_delchi`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_fit_delchi`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
         clearwindow : bool, optional
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
@@ -12591,13 +12590,13 @@ class Session(NoNewAttributesAfterInit):
         bins : int, optional
            The number of bins to use to create the PDF.
         normed : bool, optional
-           Should the PDF be normalized (the default is `True`).
+           Should the PDF be normalized (the default is ``True``).
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_pdf`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_pdf`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
         clearwindow : bool, optional
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
@@ -12637,9 +12636,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        plot : sherpa.plot.PDFPlot instance
+        plot : a `sherpa.plot.PDFPlot` instance
            An object containing the data used by the last call to
-           `plot_pdf`. The fields will be `None` if the function
+           `plot_pdf`. The fields will be ``None`` if the function
            has not been called.
 
         See Also
@@ -12667,11 +12666,11 @@ class Session(NoNewAttributesAfterInit):
         xlabel : str, optional
            The label for the X and part of the Y axes.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_pdf`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_cdf`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
         clearwindow : bool, optional
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
@@ -12712,9 +12711,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        plot : sherpa.plot.CDFPlot instance
+        plot : a `sherpa.plot.CDFPlot` instance
            An object containing the data used by the last call to
-           `plot_cdf`. The fields will be `None` if the function
+           `plot_cdf`. The fields will be ``None`` if the function
            has not been called.
 
         See Also
@@ -12731,7 +12730,7 @@ class Session(NoNewAttributesAfterInit):
                    replot=False, overplot=False, clearwindow=True ):
         """Create a trace plot of row number versus value.
 
-        Dispay a plot of the `points` array values (Y axis) versus row
+        Dispay a plot of the ``points`` array values (Y axis) versus row
         number (X axis). This can be useful to view how a value
         changes, such as the value of a parameter returned by
         `get_draws`.
@@ -12745,11 +12744,11 @@ class Session(NoNewAttributesAfterInit):
            title.
         xlabel : str, optional
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_trace`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_trace`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
         clearwindow : bool, optional
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
@@ -12765,7 +12764,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Plot the trace of the 500 elements in the `x` array:
+        Plot the trace of the 500 elements in the ``x`` array:
 
         >>> mu, sigma = 100, 15
         >>> x = mu + sigma * np.random.randn(500)
@@ -12795,9 +12794,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        plot : sherpa.plot.TracePlot instance
+        plot : a `sherpa.plot.TracePlot` instance
            An object containing the data used by the last call to
-           `plot_trace`. The fields will be `None` if the function
+           `plot_trace`. The fields will be ``None`` if the function
            has not been called.
 
         See Also
@@ -12818,7 +12817,7 @@ class Session(NoNewAttributesAfterInit):
            The values to plot on the X axis.
         y : array
            The values to plot on the Y axis. This must match the size
-           of the `x` array.
+           of the ``x`` array.
         name : str, optional
            The plot title.
         xlabel : str, optional
@@ -12826,11 +12825,11 @@ class Session(NoNewAttributesAfterInit):
         ylabel : str, optional
            The label for the Y axis.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `plot_scatter`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_scatter`. The default is ``False``.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
         clearwindow : bool, optional
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
@@ -12873,9 +12872,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        plot : sherpa.plot.ScatterPlot instance
+        plot : a `sherpa.plot.ScatterPlot` instance
            An object containing the data used by the last call to
-           `plot_scatter`. The fields will be `None` if the function
+           `plot_scatter`. The fields will be ``None`` if the function
            has not been called.
 
         See Also
@@ -13016,11 +13015,11 @@ class Session(NoNewAttributesAfterInit):
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `contour_data`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `contour_data`. The default is ``False``.
         overcontour : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new contour plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is ``False``.
 
         See Also
         --------
@@ -13055,11 +13054,11 @@ class Session(NoNewAttributesAfterInit):
            The data set that provides the model. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `contour_model`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `contour_model`. The default is ``False``.
         overcontour : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new contour plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is ``False``.
 
         See Also
         --------
@@ -13097,11 +13096,11 @@ class Session(NoNewAttributesAfterInit):
            The data set that provides the model. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `contour_source`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `contour_source`. The default is ``False``.
         overcontour : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new contour plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is ``False``.
 
         See Also
         --------
@@ -13141,11 +13140,11 @@ class Session(NoNewAttributesAfterInit):
            then the default identifier is used, as returned by
            `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `contour_fit`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `contour_fit`. The default is ``False``.
         overcontour : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new contour plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is ``False``.
 
         See Also
         --------
@@ -13184,11 +13183,11 @@ class Session(NoNewAttributesAfterInit):
            then the default identifier is used, as returned by
            `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `contour_resid`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `contour_resid`. The default is ``False``.
         overcontour : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new contour plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is ``False``.
 
         See Also
         --------
@@ -13226,11 +13225,11 @@ class Session(NoNewAttributesAfterInit):
            then the default identifier is used, as returned by
            `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `contour_ratio`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `contour_ratio`. The default is ``False``.
         overcontour : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new contour plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is ``False``.
 
         See Also
         --------
@@ -13266,11 +13265,11 @@ class Session(NoNewAttributesAfterInit):
            The data set that provides the model. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `contour_psf`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `contour_psf`. The default is ``False``.
         overcontour : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new contour plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is ``False``.
 
         See Also
         --------
@@ -13297,11 +13296,11 @@ class Session(NoNewAttributesAfterInit):
            The data set that provides the model. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `contour_kernel`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `contour_kernel`. The default is ``False``.
         overcontour : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new contour plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is ``False``.
 
         See Also
         --------
@@ -13329,11 +13328,11 @@ class Session(NoNewAttributesAfterInit):
            then the default identifier is used, as returned by
            `get_default_id`.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `contour_fit_resid`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `contour_fit_resid`. The default is ``False``.
         overcontour : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new contour plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new contour plot. The default is ``False``.
 
         See Also
         --------
@@ -13393,39 +13392,39 @@ class Session(NoNewAttributesAfterInit):
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
-           The default value (`False`) means that the results from the
+           The default value (``False``) means that the results from the
            last call to `int_proj` (or `get_int_proj`) are returned,
            ignoring the other parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         min : number, optional
            The minimum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         max : number, optional
            The maximum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         nloop : int, optional
-           The number of steps to use. This is used when `delv` is set
-           to `None`.
+           The number of steps to use. This is used when ``delv`` is set
+           to ``None``.
         delv : number, optional
            The step size for the parameter. Setting this over-rides
-           the `nloop` parameter. The default is `None`.
+           the ``nloop`` parameter. The default is ``None``.
         fac : number, optional
-           When `min` or `max` is not given, multiply the covariance
+           When ``min`` or ``max`` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
         log : bool, optional
            Should the step size be logarithmically spaced? The
-           default (`False`) is to use a linear grid.
+           default (``False``) is to use a linear grid.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
 
         Returns
         -------
-        iproj : sherpa.plot.IntervalProjection instance
+        iproj : a `sherpa.plot.IntervalProjection` instance
            The fields of this object can be used to re-create the plot
            created by `int_proj`.
 
@@ -13486,39 +13485,39 @@ class Session(NoNewAttributesAfterInit):
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
-           The default value (`False`) means that the results from the
+           The default value (``False``) means that the results from the
            last call to `int_proj` (or `get_int_proj`) are returned,
            ignoring the other parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         min : number, optional
            The minimum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         max : number, optional
            The maximum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         nloop : int, optional
-           The number of steps to use. This is used when `delv` is set
-           to `None`.
+           The number of steps to use. This is used when ``delv`` is set
+           to ``None``.
         delv : number, optional
            The step size for the parameter. Setting this over-rides
-           the `nloop` parameter. The default is `None`.
+           the ``nloop`` parameter. The default is ``None``.
         fac : number, optional
-           When `min` or `max` is not given, multiply the covariance
+           When ``min`` or ``max`` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
         log : bool, optional
            Should the step size be logarithmically spaced? The
-           default (`False`) is to use a linear grid.
+           default (``False``) is to use a linear grid.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
 
         Returns
         -------
-        iunc : sherpa.plot.IntervalUncertainty instance
+        iunc : a `sherpa.plot.IntervalUncertainty` instance
            The fields of this object can be used to re-create the plot
            created by `int_unc`.
 
@@ -13579,51 +13578,51 @@ class Session(NoNewAttributesAfterInit):
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
-           The default value (`False`) means that the results from the
+           The default value (``False``) means that the results from the
            last call to `reg_proj` (or `get_reg_proj`) are returned,
            ignoring the other parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         fast : bool, optional
-           If `True` then the fit optimization used may be changed from
+           If ``True`` then the fit optimization used may be changed from
            the current setting (only for the error analysis) to use
-           a faster optimization method. The default is `False`.
+           a faster optimization method. The default is ``False``.
         min : pair of numbers, optional
            The minimum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         max : pair of number, optional
            The maximum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         nloop : pair of int, optional
-           The number of steps to use. This is used when `delv` is set
-           to `None`.
+           The number of steps to use. This is used when ``delv`` is set
+           to ``None``.
         delv : pair of number, optional
            The step size for the parameter. Setting this over-rides
-           the `nloop` parameter. The default is `None`.
+           the ``nloop`` parameter. The default is ``None``.
         fac : number, optional
-           When `min` or `max` is not given, multiply the covariance
+           When ``min`` or ``max`` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
         log : pair of bool, optional
            Should the step size be logarithmically spaced? The
-           default (`False`) is to use a linear grid.
+           default (``False``) is to use a linear grid.
         sigma : sequence of number, optional
            The levels at which to draw the contours. The units are the
            change in significance relative to the starting value,
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
-           `None`).
+           over-rides the ``sigma`` parameter, if set (the default is
+           ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
 
         Returns
         -------
-        rproj : sherpa.plot.RegionProjection instance
+        rproj : a `sherpa.plot.RegionProjection` instance
            The fields of this object can be used to re-create the plot
            created by `reg_proj`.
 
@@ -13687,51 +13686,51 @@ class Session(NoNewAttributesAfterInit):
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
-           The default value (`False`) means that the results from the
+           The default value (``False``) means that the results from the
            last call to `reg_unc` (or `get_reg_unc`) are returned,
            ignoring the other parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         fast : bool, optional
-           If `True` then the fit optimization used may be changed from
+           If ``True`` then the fit optimization used may be changed from
            the current setting (only for the error analysis) to use
-           a faster optimization method. The default is `False`.
+           a faster optimization method. The default is ``False``.
         min : pair of numbers, optional
            The minimum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         max : pair of number, optional
            The maximum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         nloop : pair of int, optional
-           The number of steps to use. This is used when `delv` is set
-           to `None`.
+           The number of steps to use. This is used when ``delv`` is set
+           to ``None``.
         delv : pair of number, optional
            The step size for the parameter. Setting this over-rides
-           the `nloop` parameter. The default is `None`.
+           the ``nloop`` parameter. The default is ``None``.
         fac : number, optional
-           When `min` or `max` is not given, multiply the covariance
+           When ``min`` or ``max`` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
         log : pair of bool, optional
            Should the step size be logarithmically spaced? The
-           default (`False`) is to use a linear grid.
+           default (``False``) is to use a linear grid.
         sigma : sequence of number, optional
            The levels at which to draw the contours. The units are the
            change in significance relative to the starting value,
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
-           `None`).
+           over-rides the ``sigma`` parameter, if set (the default is
+           ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
 
         Returns
         -------
-        rproj : sherpa.plot.RegionUncertainty instance
+        rproj : a `sherpa.plot.RegionUncertainty` instance
            The fields of this object can be used to re-create the plot
            created by `reg_unc`.
 
@@ -13826,40 +13825,40 @@ class Session(NoNewAttributesAfterInit):
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `int_proj`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `int_proj`. The default is ``False``.
         fast : bool, optional
-           If `True` then the fit optimization used may be changed from
+           If ``True`` then the fit optimization used may be changed from
            the current setting (only for the error analysis) to use
-           a faster optimization method. The default is `False`.
+           a faster optimization method. The default is ``False``.
         min : number, optional
            The minimum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         max : number, optional
            The maximum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         nloop : int, optional
-           The number of steps to use. This is used when `delv` is set
-           to `None`.
+           The number of steps to use. This is used when ``delv`` is set
+           to ``None``.
         delv : number, optional
            The step size for the parameter. Setting this over-rides
-           the `nloop` parameter. The default is `None`.
+           the ``nloop`` parameter. The default is ``None``.
         fac : number, optional
-           When `min` or `max` is not given, multiply the covariance
+           When ``min`` or ``max`` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
         log : bool, optional
            Should the step size be logarithmically spaced? The
-           default (`False`) is to use a linear grid.
+           default (``False``) is to use a linear grid.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -13883,7 +13882,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Vary the `gamma` parameter of the `p1` model component for
+        Vary the ``gamma`` parameter of the ``p1`` model component for
         all data sets with a source expression.
 
         >>> int_proj(p1.gamma)
@@ -13896,7 +13895,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> int_proj(clus.kt, id='obs1', otherids=['obs2'])
 
-        Vary the `bgnd.c0` parameter between 1e-4 and 2e-4,
+        Vary the ``bgnd.c0`` parameter between 1e-4 and 2e-4,
         using 41 points:
 
         >>> int_proj(bgnd.c0, min=1e-4, max=2e-4, step=41)
@@ -13943,36 +13942,36 @@ class Session(NoNewAttributesAfterInit):
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `int_proj`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `int_proj`. The default is ``False``.
         min : number, optional
            The minimum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         max : number, optional
            The maximum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         nloop : int, optional
-           The number of steps to use. This is used when `delv` is set
-           to `None`.
+           The number of steps to use. This is used when ``delv`` is set
+           to ``None``.
         delv : number, optional
            The step size for the parameter. Setting this over-rides
-           the `nloop` parameter. The default is `None`.
+           the ``nloop`` parameter. The default is ``None``.
         fac : number, optional
-           When `min` or `max` is not given, multiply the covariance
+           When ``min`` or ``max`` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
         log : bool, optional
            Should the step size be logarithmically spaced? The
-           default (`False`) is to use a linear grid.
+           default (``False``) is to use a linear grid.
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -13998,7 +13997,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Vary the `gamma` parameter of the `p1` model component for
+        Vary the ``gamma`` parameter of the ``p1`` model component for
         all data sets with a source expression.
 
         >>> int_unc(p1.gamma)
@@ -14011,7 +14010,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> int_unc(clus.kt, id='obs1', otherids=['obs2'])
 
-        Vary the `bgnd.c0` parameter between 1e-4 and 2e-4,
+        Vary the ``bgnd.c0`` parameter between 1e-4 and 2e-4,
         using 41 points:
 
         >>> int_unc(bgnd.c0, min=1e-4, max=2e-4, step=41)
@@ -14084,48 +14083,48 @@ class Session(NoNewAttributesAfterInit):
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `int_proj`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `int_proj`. The default is ``False``.
         fast : bool, optional
-           If `True` then the fit optimization used may be changed from
+           If ``True`` then the fit optimization used may be changed from
            the current setting (only for the error analysis) to use
-           a faster optimization method. The default is `False`.
+           a faster optimization method. The default is ``False``.
         min : pair of numbers, optional
            The minimum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         max : pair of number, optional
            The maximum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         nloop : pair of int, optional
-           The number of steps to use. This is used when `delv` is set
-           to `None`.
+           The number of steps to use. This is used when ``delv`` is set
+           to ``None``.
         delv : pair of number, optional
            The step size for the parameter. Setting this over-rides
-           the `nloop` parameter. The default is `None`.
+           the ``nloop`` parameter. The default is ``None``.
         fac : number, optional
-           When `min` or `max` is not given, multiply the covariance
+           When ``min`` or ``max`` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
         log : pair of bool, optional
            Should the step size be logarithmically spaced? The
-           default (`False`) is to use a linear grid.
+           default (``False``) is to use a linear grid.
         sigma : sequence of number, optional
            The levels at which to draw the contours. The units are the
            change in significance relative to the starting value,
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
-           `None`).
+           over-rides the ``sigma`` parameter, if set (the default is
+           ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -14149,7 +14148,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Vary the `xpos` and `ypos` parameters of the `gsrc` model
+        Vary the ``xpos`` and ``ypos`` parameters of the ``gsrc`` model
         component for all data sets with a source expression.
 
         >>> reg_proj(gsrc.xpos, gsrc.ypos)
@@ -14174,7 +14173,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> reg_proj(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41,41))
 
-        Compare the `ampl` parameters of the `g` and `b` model
+        Compare the ``ampl`` parameters of the ``g`` and ``b`` model
         components, for data sets 'core' and 'jet', over the given
         ranges:
 
@@ -14212,44 +14211,44 @@ class Session(NoNewAttributesAfterInit):
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
-           Set to `True` to use the values calculated by the last
-           call to `int_proj`. The default is `False`.
+           Set to ``True`` to use the values calculated by the last
+           call to `int_proj`. The default is ``False``.
         min : pair of numbers, optional
            The minimum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         max : pair of number, optional
            The maximum parameter value for the calcutation. The
-           default value of `None` means that the limit is calculated
-           from the covariance, using the `fac` value.
+           default value of ``None`` means that the limit is calculated
+           from the covariance, using the ``fac`` value.
         nloop : pair of int, optional
-           The number of steps to use. This is used when `delv` is set
-           to `None`.
+           The number of steps to use. This is used when ``delv`` is set
+           to ``None``.
         delv : pair of number, optional
            The step size for the parameter. Setting this over-rides
-           the `nloop` parameter. The default is `None`.
+           the ``nloop`` parameter. The default is ``None``.
         fac : number, optional
-           When `min` or `max` is not given, multiply the covariance
+           When ``min`` or ``max`` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
         log : pair of bool, optional
            Should the step size be logarithmically spaced? The
-           default (`False`) is to use a linear grid.
+           default (``False``) is to use a linear grid.
         sigma : sequence of number, optional
            The levels at which to draw the contours. The units are the
            change in significance relative to the starting value,
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
-           `None`).
+           over-rides the ``sigma`` parameter, if set (the default is
+           ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
         overplot : bool, optional
-           If `True` then add the data to an exsiting plot, otherwise
-           create a new plot. The default is `False`.
+           If ``True`` then add the data to an exsiting plot, otherwise
+           create a new plot. The default is ``False``.
 
         See Also
         --------
@@ -14275,7 +14274,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Vary the `xpos` and `ypos` parameters of the `gsrc` model
+        Vary the ``xpos`` and ``ypos`` parameters of the ``gsrc`` model
         component for all data sets with a source expression.
 
         >>> reg_unc(gsrc.xpos, gsrc.ypos)
@@ -14300,7 +14299,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> reg_unc(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41,41))
 
-        Compare the `ampl` parameters of the `g` and `b` model
+        Compare the ``ampl`` parameters of the ``g`` and ``b`` model
         components, for data sets 'core' and 'jet', over the given
         ranges:
 
@@ -14360,8 +14359,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data_img : a sherpa.image.DataImage instance
-           The `y` attribute contains the ratio values as a 2D NumPy
+        data_img : a `sherpa.image.DataImage` instance
+           The ``y`` attribute contains the ratio values as a 2D NumPy
            array.
 
         Raises
@@ -14405,8 +14404,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        src_img : a sherpa.image.ModelImage instance
-           The `y` attribute contains the source model values as a 2D
+        src_img : a `sherpa.image.ModelImage` instance
+           The ``y`` attribute contains the source model values as a 2D
            NumPy array.
 
         Raises
@@ -14452,8 +14451,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        src_img : a sherpa.image.SourceImage instance
-           The `y` attribute contains the source model values as a 2D
+        src_img : a `sherpa.image.SourceImage` instance
+           The ``y`` attribute contains the source model values as a 2D
            NumPy array.
 
         Raises
@@ -14495,8 +14494,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        cpt_img : a sherpa.image.ComponentModelImage instance
-           The `y` attribute contains the component model values as a
+        cpt_img : a `sherpa.image.ComponentModelImage` instance
+           The ``y`` attribute contains the component model values as a
            2D NumPy array.
 
         Raises
@@ -14555,8 +14554,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        cpt_img : a sherpa.image.ComponentSourceImage instance
-           The `y` attribute contains the component model values as a
+        cpt_img : a `sherpa.image.ComponentSourceImage` instance
+           The ``y`` attribute contains the component model values as a
            2D NumPy array.
 
         Raises
@@ -14588,7 +14587,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> sinfo = get_source_component_image(gsrc)
 
-        Get the `bgnd` model pixel values for data set 2:
+        Get the 'bgnd' model pixel values for data set 2:
 
         >>> sinfo = get_source_component_image(2, bgnd)
 
@@ -14613,8 +14612,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        ratio_img : a sherpa.image.RatioImage instance
-           The `y` attribute contains the ratio values as a 2D NumPy
+        ratio_img : a `sherpa.image.RatioImage` instance
+           The ``y`` attribute contains the ratio values as a 2D NumPy
            array.
 
         Raises
@@ -14653,8 +14652,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        resid_img : a sherpa.image.ResidImage instance
-           The `y` attribute contains the residual values as a 2D
+        resid_img : a `sherpa.image.ResidImage` instance
+           The ``y`` attribute contains the residual values as a 2D
            NumPy array.
 
         Raises
@@ -14693,7 +14692,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        psf_data : a sherpa.image.PSFImage instance
+        psf_data : a `sherpa.image.PSFImage` instance
 
         Raises
         ------
@@ -14731,7 +14730,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        psf_data : a sherpa.image.PSFKernelImage instance
+        psf_data : a `sherpa.image.PSFKernelImage` instance
 
         Raises
         ------
@@ -14776,10 +14775,10 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
         newframe : bool, optional
-           Create a new frame for the data? If `False`, the default,
+           Create a new frame for the data? If ``False``, the default,
            then the data will be displayed in the current frame.
         tile : bool, optional
-           Should the frames be tiles? If `False`, the default, then
+           Should the frames be tiles? If ``False``, the default, then
            only a single frame is displayed.
 
         Raises
@@ -14789,7 +14788,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_data_image :
+        get_data_image : Return the data used by image_data.
         image_close : Close the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
         image_open : Open the image viewer.
@@ -14844,10 +14843,10 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
         newframe : bool, optional
-           Create a new frame for the data? If `False`, the default,
+           Create a new frame for the data? If ``False``, the default,
            then the data will be displayed in the current frame.
         tile : bool, optional
-           Should the frames be tiles? If `False`, the default, then
+           Should the frames be tiles? If ``False``, the default, then
            only a single frame is displayed.
 
         Raises
@@ -14858,7 +14857,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_image :
+        get_model_image : Return the data used by image_model.
         image_close : Close the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
         image_model_component : Display a component of the model in the image viewer.
@@ -14919,10 +14918,10 @@ class Session(NoNewAttributesAfterInit):
         model : str or sherpa.models.model.Model instance
            The component to display (the name, if a string).
         newframe : bool, optional
-           Create a new frame for the data? If `False`, the default,
+           Create a new frame for the data? If ``False``, the default,
            then the data will be displayed in the current frame.
         tile : bool, optional
-           Should the frames be tiles? If `False`, the default, then
+           Should the frames be tiles? If ``False``, the default, then
            only a single frame is displayed.
 
         Raises
@@ -14961,7 +14960,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Display the full source model and then just the `gsrc`
+        Display the full source model and then just the 'gsrc'
         component for the default data set:
 
         >>> image_source()
@@ -15002,10 +15001,10 @@ class Session(NoNewAttributesAfterInit):
         model : str or sherpa.models.model.Model instance
            The component to display (the name, if a string).
         newframe : bool, optional
-           Create a new frame for the data? If `False`, the default,
+           Create a new frame for the data? If ``False``, the default,
            then the data will be displayed in the current frame.
         tile : bool, optional
-           Should the frames be tiles? If `False`, the default, then
+           Should the frames be tiles? If ``False``, the default, then
            only a single frame is displayed.
 
         Raises
@@ -15016,7 +15015,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_component_image :
+        get_model_component_image : Return the data used by image_model_component.
         image_close : Close the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
         image_model : Display the model for a data set in the image viewer.
@@ -15044,7 +15043,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Display the full source model and then just the `gsrc`
+        Display the full source model and then just the 'gsrc'
         component for the default data set:
 
         >>> image_model()
@@ -15087,10 +15086,10 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
         newframe : bool, optional
-           Create a new frame for the data? If `False`, the default,
+           Create a new frame for the data? If ``False``, the default,
            then the data will be displayed in the current frame.
         tile : bool, optional
-           Should the frames be tiles? If `False`, the default, then
+           Should the frames be tiles? If ``False``, the default, then
            only a single frame is displayed.
 
         Raises
@@ -15159,13 +15158,13 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
         newframe : bool, optional
-           Create a new frame for the data? If `False`, the default,
+           Create a new frame for the data? If ``False``, the default,
            then the data will be displayed in the current frame.
         tile : bool, optional
-           Should the frames be tiles? If `False`, the default, then
+           Should the frames be tiles? If ``False``, the default, then
            only a single frame is displayed.
         deleteframes : bool, optional
-           Should existing frames be deleted? The default is `True`.
+           Should existing frames be deleted? The default is ``True``.
 
         Raises
         ------
@@ -15233,10 +15232,10 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
         newframe : bool, optional
-           Create a new frame for the data? If `False`, the default,
+           Create a new frame for the data? If ``False``, the default,
            then the data will be displayed in the current frame.
         tile : bool, optional
-           Should the frames be tiles? If `False`, the default, then
+           Should the frames be tiles? If ``False``, the default, then
            only a single frame is displayed.
 
         Raises
@@ -15305,10 +15304,10 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
         newframe : bool, optional
-           Create a new frame for the data? If `False`, the default,
+           Create a new frame for the data? If ``False``, the default,
            then the data will be displayed in the current frame.
         tile : bool, optional
-           Should the frames be tiles? If `False`, the default, then
+           Should the frames be tiles? If ``False``, the default, then
            only a single frame is displayed.
 
         Raises
@@ -15362,10 +15361,10 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
         newframe : bool, optional
-           Create a new frame for the data? If `False`, the default,
+           Create a new frame for the data? If ``False``, the default,
            then the data will be displayed in the current frame.
         tile : bool, optional
-           Should the frames be tiles? If `False`, the default, then
+           Should the frames be tiles? If ``False``, the default, then
            only a single frame is displayed.
 
         Raises
@@ -15375,7 +15374,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_psf_image :
+        get_psf_image : Return the data used by image_psf.
         image_close : Close the image viewer.
         image_data : Display a data set in the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
@@ -15420,10 +15419,10 @@ class Session(NoNewAttributesAfterInit):
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
         newframe : bool, optional
-           Create a new frame for the data? If `False`, the default,
+           Create a new frame for the data? If ``False``, the default,
            then the data will be displayed in the current frame.
         tile : bool, optional
-           Should the frames be tiles? If `False`, the default, then
+           Should the frames be tiles? If ``False``, the default, then
            only a single frame is displayed.
 
         Raises
@@ -15433,7 +15432,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_kernel_image :
+        get_kernel_image : Return the data used by image_kernel.
         image_close : Close the image viewer.
         image_data : Display a data set in the image viewer.
         image_fit : Display the data, model, and residuals for a data set in the image viewer.
@@ -15530,7 +15529,7 @@ class Session(NoNewAttributesAfterInit):
         """Close the image viewer.
 
         Close the image viewer created by a previous call to one
-        of the `image_xxx` functions.
+        of the ``image_xxx`` functions.
 
         See Also
         --------
@@ -15663,7 +15662,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        This XPA access point [1]_ of the ds9 image viewer lets
+        The XPA access point [1]_ of the ds9 image viewer lets
         commands and queries to be sent to the viewer.
 
         References
@@ -15677,7 +15676,7 @@ class Session(NoNewAttributesAfterInit):
         Return the current zoom setting of the active frame:
 
         >>> image_xpaget('zoom')
-        '1\n'
+        '1\\n'
 
         """
         return sherpa.image.Image.xpaget(arg)
@@ -15713,7 +15712,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        This XPA access point [1]_ of the ds9 image viewer lets
+        The XPA access point [1]_ of the ds9 image viewer lets
         commands and queries to be sent to the viewer.
 
         References
@@ -15732,7 +15731,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> image_xpaset('grid yes')
 
-        Add the region file `src.reg` to the display:
+        Add the region file 'src.reg' to the display:
 
         >>> image_xpaset('regions src.reg')
 
