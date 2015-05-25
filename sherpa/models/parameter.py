@@ -107,7 +107,7 @@ class Parameter(NoNewAttributesAfterInit):
     #
     # 'val' property
     #
-    
+
     def _get_val(self):
         if hasattr(self, 'eval'):
             return self.eval()
@@ -128,7 +128,7 @@ class Parameter(NoNewAttributesAfterInit):
                 raise ParameterErr('edge', self.fullname, 'minimum', self.min)
             if val > self.max:
                 raise ParameterErr('edge', self.fullname, 'maximum', self.max)
-            
+
             self._val = val
             self._default_val = val
 
@@ -137,7 +137,7 @@ class Parameter(NoNewAttributesAfterInit):
     #
     # '_default_val' property
     #
-    
+
     def _get_default_val(self):
         if hasattr(self, 'eval'):
             return self.eval()
@@ -158,7 +158,7 @@ class Parameter(NoNewAttributesAfterInit):
                 raise ParameterErr('edge', self.fullname, 'minimum', self.min)
             if default_val > self.max:
                 raise ParameterErr('edge', self.fullname, 'maximum', self.max)
-            
+
             self._default_val = default_val
 
     default_val = property(_get_default_val, _set_default_val)
@@ -191,15 +191,15 @@ class Parameter(NoNewAttributesAfterInit):
     #
     # 'frozen' property
     #
-    
+
     def _get_frozen(self):
         if self.link is not None:
             return True
         return self._frozen
     def _set_frozen(self, val):
         val = bool(val)
-	if self._alwaysfrozen and (not val):
-	    raise ParameterErr('alwaysfrozen', self.fullname)
+        if self._alwaysfrozen and (not val):
+            raise ParameterErr('alwaysfrozen', self.fullname)
         self._frozen = val
     frozen = property(_get_frozen, _set_frozen)
 
@@ -219,7 +219,7 @@ class Parameter(NoNewAttributesAfterInit):
             # Short cycles produce error
             # e.g. par = 2*par+3
             if self in link:
-               raise ParameterErr('linkcycle')
+                raise ParameterErr('linkcycle')
 
             # Correctly test for link cycles in long trees.
             cycle = False
@@ -241,29 +241,29 @@ class Parameter(NoNewAttributesAfterInit):
     #
 
     def __init__(self, modelname, name, val, min=-hugeval, max=hugeval,
-		 hard_min=-hugeval, hard_max=hugeval, units='',
+                 hard_min=-hugeval, hard_max=hugeval, units='',
                  frozen=False, alwaysfrozen=False, hidden=False):
-	self.modelname = modelname
-	self.name = name
-	self.fullname = '%s.%s' % (modelname, name)
+        self.modelname = modelname
+        self.name = name
+        self.fullname = '%s.%s' % (modelname, name)
 
-	self._hard_min = SherpaFloat(hard_min)
-	self._hard_max = SherpaFloat(hard_max)
-	self.units = units
+        self._hard_min = SherpaFloat(hard_min)
+        self._hard_max = SherpaFloat(hard_max)
+        self.units = units
 
-	self._alwaysfrozen = bool(alwaysfrozen)
-	if alwaysfrozen:
-	    self._frozen = True
-	else:
-	    self._frozen = frozen
+        self._alwaysfrozen = bool(alwaysfrozen)
+        if alwaysfrozen:
+            self._frozen = True
+        else:
+            self._frozen = frozen
 
         self.hidden = hidden
 
-	# Set validated attributes.  Access them via their properties so that
-	# validation takes place.
-	self.min = min
-	self.max = max
-	self.val = val
+        # Set validated attributes.  Access them via their properties so that
+        # validation takes place.
+        self.min = min
+        self.max = max
+        self.val = val
         self.default_min = min
         self.default_max = max
         self.default_val = val
@@ -288,16 +288,16 @@ class Parameter(NoNewAttributesAfterInit):
         else:
             linkstr = str(None)
 
-	return (('val         = %s\n' +
-		 'min         = %s\n' +
-		 'max         = %s\n' +
-		 'units       = %s\n' +
-		 'frozen      = %s\n' +
+        return (('val         = %s\n' +
+                 'min         = %s\n' +
+                 'max         = %s\n' +
+                 'units       = %s\n' +
+                 'frozen      = %s\n' +
                  'link        = %s\n'
                  'default_val = %s\n' +
                  'default_min = %s\n' +
                  'default_max = %s') %
-		(str(self.val), str(self.min), str(self.max), self.units,
+                (str(self.val), str(self.min), str(self.max), self.units,
                  self.frozen, linkstr, str(self.default_val), str(self.default_min),
                  str(self.default_max)))
 
@@ -412,8 +412,8 @@ class UnaryOpParameter(CompositeParameter):
 
     def __init__(self, arg, op, opstr):
         self.arg = arg
-	self.op = op
-	CompositeParameter.__init__(self,
+        self.op = op
+        CompositeParameter.__init__(self,
                                     '%s(%s)' % (opstr, self.arg.fullname),
                                     (self.arg,))
 
@@ -425,15 +425,15 @@ class BinaryOpParameter(CompositeParameter):
 
     @staticmethod
     def wrapobj(obj):
-	if isinstance(obj, Parameter):
-	    return obj
-	return ConstantParameter(obj) 
+        if isinstance(obj, Parameter):
+            return obj
+        return ConstantParameter(obj) 
 
     def __init__(self, lhs, rhs, op, opstr):
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
-	self.op = op
-	CompositeParameter.__init__(self, '(%s %s %s)' %
+        self.op = op
+        CompositeParameter.__init__(self, '(%s %s %s)' %
                                     (self.lhs.fullname, opstr,
                                      self.rhs.fullname), (self.lhs, self.rhs))
 
