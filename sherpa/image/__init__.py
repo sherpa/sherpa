@@ -48,17 +48,17 @@ class Image(NoNewAttributesAfterInit):
 
     def __init__(self):
         NoNewAttributesAfterInit.__init__(self)
-        
+
     def close():
         """Stop the image viewer."""
         backend.close()
     close = staticmethod(close)
-    
+
     def delete_frames():
         """Delete all the frames open in the image viewer."""
         backend.delete_frames()
     delete_frames = staticmethod(delete_frames)
-    
+
     def get_region(coord):
         """Return the region defined in the image viewer.
 
@@ -76,7 +76,7 @@ class Image(NoNewAttributesAfterInit):
         """
         return backend.get_region(coord)
     get_region = staticmethod(get_region)
-    
+
     def image(self, array, shape=None, newframe=False, tile=False):
         newframe = bool_cast(newframe)
         tile = bool_cast(tile)
@@ -84,7 +84,7 @@ class Image(NoNewAttributesAfterInit):
             backend.image(array, newframe, tile)
         else:
             backend.image(array.reshape(shape), newframe, tile)
-    
+
     def open():
         """Start the image viewer."""
         backend.open()
@@ -92,7 +92,7 @@ class Image(NoNewAttributesAfterInit):
 
     def set_wcs(self, keys):
         backend.wcs( keys )
-    
+
     def set_region(reg, coord):
         """Set the region to display in the image viewer.
 
@@ -107,7 +107,7 @@ class Image(NoNewAttributesAfterInit):
         """
         backend.set_region(reg, coord)
     set_region = staticmethod(set_region)
-    
+
     def xpaget(arg):
         """Return the result of an XPA call to the image viewer.
 
@@ -125,7 +125,7 @@ class Image(NoNewAttributesAfterInit):
         """
         return backend.xpaget(arg)
     xpaget = staticmethod(xpaget)
-    
+
     def xpaset(arg, data=None):
         """Return the result of an XPA call to the image viewer.
 
@@ -172,7 +172,7 @@ class DataImage(Image):
                 ('y      = %s\n' % y)+
                 ('eqpos  = %s\n' % self.eqpos)+
                 ('sky    = %s\n' % self.sky))
-    
+
     def prepare_image(self, data):
         self.y = data.get_img()
         self.eqpos = getattr(data, 'eqpos', None)
@@ -206,7 +206,7 @@ class ModelImage(Image):
                 ('y      = %s\n' % y)+
                 ('eqpos  = %s\n' % self.eqpos)+
                 ('sky    = %s\n' % self.sky))
-    
+
     def prepare_image(self, data, model):
         self.y = data.get_img(model)
         self.y = self.y[1]
@@ -288,10 +288,10 @@ class ResidImage(Image):
                 ('y      = %s\n' % y)+
                 ('eqpos  = %s\n' % self.eqpos)+
                 ('sky    = %s\n' % self.sky))
-    
+
     def _calc_resid(self, ylist):
         return ylist[0] - ylist[1]
-            
+
     def prepare_image(self, data, model):
         self.y = data.get_img(model)
         self.y = self._calc_resid(self.y)
