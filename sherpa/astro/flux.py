@@ -94,7 +94,7 @@ def calc_sample_flux( id, lo, hi, session, fit, data, samples, modelcomponent,
         return mysamples
 
     def print_sample_result( title, arg ):
-        
+
         print '%s = %g, + %g, - %g' % ( title, arg[ 0 ], arg[ 1 ] - arg[ 0 ],
                                         arg[ 0 ] - arg[ 2 ] )
     #
@@ -116,7 +116,7 @@ def calc_sample_flux( id, lo, hi, session, fit, data, samples, modelcomponent,
         oflx = numpy.zeros( size )  # observed/absorbed flux
         iflx = numpy.zeros( size )  # intrinsic/unabsorbed flux
         thawedpars = [par for par in fit.model.pars if not par.frozen]
-        
+
 
         logger = logging.getLogger( "sherpa" )
         orig_log_level = logger.level
@@ -170,4 +170,3 @@ def calc_sample_flux( id, lo, hi, session, fit, data, samples, modelcomponent,
         logger.setLevel( logging.ERROR )
         session.set_source( id, orig_source )
         logger.setLevel( orig_log_level )
-
