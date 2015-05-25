@@ -332,7 +332,7 @@ class Polynom1D(ArithmeticModel):
 
     def __init__(self, name='polynom1d'):
         pars = []
-        
+
         for i in xrange(9):
             pars.append(Parameter(name, 'c%d' % i, 0, frozen=True))
         pars[0].val = 1
@@ -416,7 +416,7 @@ class PowLaw1D(ArithmeticModel):
         norm = guess_amplitude_at_ref(self.ref.val, dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-        
+
     @modelCacher1d
     def calc(self, pars, *args, **kwargs):
         kwargs['integrate']=bool_cast(self.integrate)
@@ -706,7 +706,7 @@ class NormGauss2D(ArithmeticModel):
         kwargs['integrate']=bool_cast(self.integrate)
         return _modelfcts.ngauss2d(*args, **kwargs)
 
-    
+
 class Polynom2D(ArithmeticModel):
 
     def __init__(self, name='polynom2d'):
@@ -749,7 +749,7 @@ class Polynom2D(ArithmeticModel):
         dyd2x0 = (ymax-ymin)/((x0max-x0min)*(x0max-x0min))
         dyd2x1 = (ymax-ymin)/((x1max-x1min)*(x1max-x1min))
         dydx0dx1 = (ymax-ymin)/((x0max-x0min)*(x1max-x1min))
-        
+
         c     = {'val':(ymax+ymin)/2., 'min': ylo, 'max': yhi }
         cx1   = {'val': 0., 'min': -100*dydx0, 'max': 100*dydx0 }
         cy1   = {'val': 0., 'min': -100*dydx1, 'max': 100*dydx1 }
@@ -757,7 +757,7 @@ class Polynom2D(ArithmeticModel):
         cy2   = {'val': 0., 'min': -100*dyd2x1, 'max': 100*dyd2x1 }
         cx1y1 = {'val': 0., 'min': -100*dydx0dx1, 'max': 100*dydx0dx1 }
         c22   = {'val': 0., 'min': ylo, 'max': yhi }
-        
+
         param_apply_limits(c, self.c, **kwargs)
         param_apply_limits(cx1, self.cx1, **kwargs)
         param_apply_limits(cy1, self.cy1, **kwargs)
@@ -797,7 +797,7 @@ class TableModel(ArithmeticModel):
     def load(self, x, y):
         self.__y = y
         self.__x = x
- 
+
         # Input grid is sorted!
         if x is not None:
             idx = numpy.asarray(x).argsort()
@@ -859,16 +859,16 @@ class Integrator1D(CompositeModel, ArithmeticModel):
 
     @staticmethod
     def wrapobj(obj):
-	if isinstance(obj, ArithmeticModel):
-	    return obj
-	return ArithmeticFunctionModel(obj)
+        if isinstance(obj, ArithmeticModel):
+            return obj
+        return ArithmeticFunctionModel(obj)
 
     def __init__(self, model, *otherargs, **otherkwargs):
         self.model = self.wrapobj(model)
         self.otherargs = otherargs
         self.otherkwargs = otherkwargs
         self._errflag = 0
-	CompositeModel.__init__(self,
+        CompositeModel.__init__(self,
                                 ('integrate1d(%s)' % self.model.name),
                                 (self.model,))
 
@@ -888,7 +888,7 @@ class Integrator1D(CompositeModel, ArithmeticModel):
         if xhi is None:
             raise ModelErr('needsint')
 
-	return _modelfcts.integrate1d(self.model.calc,
+        return _modelfcts.integrate1d(self.model.calc,
                                       p, xlo, xhi, **self.otherkwargs)
 
 class Integrate1D(ArithmeticModel):

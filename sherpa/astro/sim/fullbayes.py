@@ -99,7 +99,7 @@ class FullBayes(PragBayes):
             # Update the ARFs with new deviates
 
             arf.specresp = self.simarf.add_deviations(specresp)
-            
+
             stat_temp = self.calc_fit_stat(self._mu)
             accept_pr=0
             accept_pr += stat_temp - current_stat

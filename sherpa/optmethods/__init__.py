@@ -34,7 +34,7 @@ class OptMethod(NoNewAttributesAfterInit):
 
     def __init__(self, name, optfunc):        
         self.name = name
-	self._optfunc = optfunc
+        self._optfunc = optfunc
         self.config = self.default_config
         NoNewAttributesAfterInit.__init__(self)
 
@@ -85,7 +85,7 @@ class OptMethod(NoNewAttributesAfterInit):
 
     def _get_default_config(self):
         args = get_keyword_defaults(self._optfunc)
-	return args
+        return args
     default_config = property(_get_default_config)
 
     def fit(self, statfunc, pars, parmins, parmaxes, statargs=(),
@@ -94,7 +94,7 @@ class OptMethod(NoNewAttributesAfterInit):
         def cb(pars):
             return statfunc(pars, *statargs, **statkwargs)
 
-	output = self._optfunc(cb, pars, parmins, parmaxes, **self.config)
+        output = self._optfunc(cb, pars, parmins, parmaxes, **self.config)
 
         success = output[0]
         msg = output[3]
@@ -107,7 +107,7 @@ class OptMethod(NoNewAttributesAfterInit):
         output[1] = numpy.asarray(output[1]).ravel()
         output = tuple(output)
 
-	return output
+        return output
 
 ### DOC-TODO: better description of the sequence argument; what happens
 ###           with multiple free parameters.
@@ -146,9 +146,9 @@ class GridSearch(OptMethod):
        is `0`, which means no output.
 
     """
-    
+
     def __init__(self, name='gridsearch'):
-	OptMethod.__init__(self, name, grid_search)
+        OptMethod.__init__(self, name, grid_search)
 
 """
   LMDIF.
@@ -399,7 +399,7 @@ class LevMar(OptMethod):
     """
 
     def __init__(self, name='levmar'):
-	OptMethod.__init__(self, name, lmdif)
+        OptMethod.__init__(self, name, lmdif)
 
 
 class MonCar(OptMethod):
@@ -462,7 +462,7 @@ class MonCar(OptMethod):
     """
 
     def __init__(self, name='moncar'):
-	OptMethod.__init__(self, name, montecarlo)
+        OptMethod.__init__(self, name, montecarlo)
 
 
 ### DOC-TODO: finalximplex=4 and 5 list the same conditions, it is likely
@@ -661,7 +661,7 @@ class NelderMead(OptMethod):
 
     """
     def __init__(self, name='simplex'):
-	OptMethod.__init__(self, name, neldermead)
+        OptMethod.__init__(self, name, neldermead)
 
 
 ###############################################################################
@@ -708,11 +708,11 @@ class NelderMead(OptMethod):
 
 ##    def __init__(self, name='clevmar'):
 ## 	OptMethod.__init__(self, name, optfcts.lmdif_cpp)
-    
+
 ## class Dif_Evo(OptMethod):
 ##     def __init__(self, name='dif_evo'):
 ##         OptMethod.__init__(self, name, myoptfcts.dif_evo)
-                 
+
 ## class MarLev(OptMethod):
 ##     def __init__(self, name='marlev'):
 ##         OptMethod.__init__(self, name, myoptfcts.marquadt_levenberg)
@@ -749,7 +749,7 @@ class NelderMead(OptMethod):
 ## class PortFct(OptMethod):
 ##     def __init__(self, name='dmnfb'):
 ##         OptMethod.__init__(self, name, myoptfcts.dmnfb)
-    
+
 ## class ScipyPowell(OptMethod):
 ##     def __init__(self, name='scipypowell'):
 ##         OptMethod.__init__(self, name, my_fmin_powell)
@@ -757,5 +757,5 @@ class NelderMead(OptMethod):
 ## class StoGo(OptMethod):
 ##     def __init__(self, name='stogo'):
 ## 	OptMethod.__init__(self, name, stogo)
-        
+
 ###############################################################################

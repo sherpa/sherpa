@@ -32,7 +32,7 @@ def _get_win():
 
 def doOpen():
     _get_win()
-    
+
 def isOpen():
 
     targets = ds9.ds9_targets()
@@ -62,7 +62,7 @@ def delete_frames():
         return imager.set("frame new")
     except:
         raise DS9Err('delframe')
-        
+
 def get_region(coord):
     if not isOpen():
         raise DS9Err('open')
@@ -76,14 +76,14 @@ def get_region(coord):
                 regionstr = "regions -format ciao -strip yes -system " + str(coord)
             else:
                 regionstr = "regions -format saoimage -strip yes -system image"
-                                                    
+
         reg = imager.get(regionstr)
         reg = reg.replace(';','')
         return reg
 
     except:
         raise DS9Err('retreg')
-    
+
 def image(arr, newframe=False, tile=False):
     if not isOpen():
         doOpen()

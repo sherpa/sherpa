@@ -40,13 +40,13 @@ __all__=['PragBayes', 'PCA1DAdd', 'SIM1DAdd', 'ARFSIMFactory',
 
 
 class ARFSIMFactory(object):
-    
+
     def __call__(self, filename):
         return self.read(filename)
 
     def read(self, filename):
         filename, cols, hdr = read_table_blocks(filename)
-        
+
         emethod = None
         for key in hdr.keys():
             if hdr[key].has_key('EMETHOD'):
@@ -229,7 +229,7 @@ class WalkWithSubIters(Walk):
                 for jj in xrange(nsubiter):
 
                     #progress_bar(ii*nsubiter+jj, niter*nsubiter, tstart, self._sampler.__class__.__name__)
-                    
+
                     # Draw a proposal
                     try:
                         proposed_params = self._sampler.draw(current_params)
@@ -297,7 +297,7 @@ class PragBayes(MetropolisMH):
         self.backup_arfs = [arf.specresp.copy() for arf in self.arfs]
 
         self.simarf = None
-        
+
 
     def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
              priors=(), originalscale=True, scale=1, sigma_m=False, p_M=.5,
@@ -345,11 +345,11 @@ class PragBayes(MetropolisMH):
 
     def mh(self, current):
         """ MH jumping rule """
-        
+
         # The current proposal is ignored here.
         # MH jumps from the current best-fit parameter values using the 
         # covariance scale from the sub-iteration fit
-        
+
         # If the ARF is updated then sigma will be None, then
         # refit and run covariance.  fit() will set the _sigma.
         if self._sigma is None:

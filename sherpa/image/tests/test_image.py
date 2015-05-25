@@ -37,7 +37,7 @@ class Data(object):
             return (self.y, self.y)
         else:
             return self.y
-        
+
 data = Data()
 
 def get_arr_from_imager(im):

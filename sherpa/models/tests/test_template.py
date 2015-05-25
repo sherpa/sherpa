@@ -48,19 +48,19 @@ class test_new_templates_ui(SherpaTestCase):
     # For model that do not have the is_discrete field, fallback to False.
     @needs_data
     def test_restore_is_discrete(self):
-	self.run_thread('template_restore', 'test.py')
-	
+        self.run_thread('template_restore', 'test.py')
+
 
     # TestCase 1 load_template_model enables interpolation by default
     @needs_data
     def test_load_template_with_interpolation(self):
         self.run_thread('load_template_with_interpolation')
         try:   
-                self.assertEqualWithinTol(2023.46, ui.get_fit_results().parvals[0], 0.001)
-                self.assertEqualWithinTol(2743.47, ui.get_fit_results().parvals[1], 0.001)
+            self.assertEqualWithinTol(2023.46, ui.get_fit_results().parvals[0], 0.001)
+            self.assertEqualWithinTol(2743.47, ui.get_fit_results().parvals[1], 0.001)
         except:
-                self.assertEqualWithinTol(2743.47, ui.get_fit_results().parvals[0], 0.001)
-                self.assertEqualWithinTol(2023.46, ui.get_fit_results().parvals[1], 0.001)
+            self.assertEqualWithinTol(2743.47, ui.get_fit_results().parvals[0], 0.001)
+            self.assertEqualWithinTol(2023.46, ui.get_fit_results().parvals[1], 0.001)
 
     @needs_data
     def test_load_template_interpolator(self):
@@ -72,30 +72,30 @@ class test_new_templates_ui(SherpaTestCase):
     @needs_data
     def test_load_template_model_without_interpolation(self):
         try:   
-                self.run_thread('load_template_without_interpolation', scriptname='test_case_2_and_3.1.py')
+            self.run_thread('load_template_without_interpolation', scriptname='test_case_2_and_3.1.py')
         except ModelErr:
-                return
+            return
         self.fail('Fit should have failed: using gridsearch with wrong parvals')
 
     # TestCase 3.2 discrete templates fail when probed for values they do not represent (continuous method with discrete template)
     @needs_data
     def test_load_template_model_without_interpolation(self):
         try:   
-                self.run_thread('load_template_without_interpolation', scriptname='test_case_3.2.py')
+            self.run_thread('load_template_without_interpolation', scriptname='test_case_3.2.py')
         except ModelErr:
-                return
+            return
         self.fail('Fit should have failed: using gridsearch with wrong parvals')
 
 
     # TestCase 4 gridsearch with right values succeeds
     @needs_data
     def test_grid_search_with_discrete_template(self):
-	self.run_thread('load_template_without_interpolation', scriptname='test_case_4.py')
+        self.run_thread('load_template_without_interpolation', scriptname='test_case_4.py')
 
     # TestCase 5 user can access interpolators' parvals
     @needs_data
     def test_grid_search_with_discrete_template(self):
-	self.run_thread('load_template_with_interpolation', scriptname='test_case_5.py')
+        self.run_thread('load_template_with_interpolation', scriptname='test_case_5.py')
 
 
 

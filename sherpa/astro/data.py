@@ -111,7 +111,7 @@ class DataARF(Data1DInt):
         if not state.has_key('header'):
             self.header=None
         self.__dict__.update(state)
-        
+
         if not state.has_key('_specresp'):
             self.__dict__['_specresp'] = state.get('specresp',None)
             self.__dict__['_rsp'] = state.get('specresp',None)
@@ -222,7 +222,7 @@ class DataRMF(Data1DInt):
 
     def get_indep(self, filter=False):
         filter=bool_cast(filter)
-	return (self._lo, self._hi)
+        return (self._lo, self._hi)
 
     def get_dep(self, filter=False):
         filter=bool_cast(filter)
@@ -409,7 +409,7 @@ class DataPHA(Data1DInt):
             self.header=None
         self.__dict__.update(state)
 
- 
+
     primary_response_id = 1
 
 
@@ -735,7 +735,7 @@ class DataPHA(Data1DInt):
 
         Filter the array data, first passing it through apply_grouping()
         (using groupfunc) and then applying the general filters
-        
+
         """
         if (data is None):
             return data
@@ -770,11 +770,11 @@ class DataPHA(Data1DInt):
         if (len(data) != len(filter) or
             len(groups) != len(filter)):
             raise DataErr('mismatch', "quality filter", "data array")
-        
+
         filtered_data = numpy.asarray(data)[filter]
         groups = numpy.asarray(groups)[filter]
         grouped_data = do_group( filtered_data, groups, groupfunc.__name__ )
-        
+
         if data is self.channel and groupfunc is self._make_groups:
             return numpy.arange(1, len(grouped_data)+1, dtype=int)
 
@@ -1261,14 +1261,14 @@ class DataPHA(Data1DInt):
             staterr = self.apply_filter(staterr, self._sum_sq)
         else:
             staterr = self.apply_grouping(staterr, self._sum_sq)
-            
+
         if (staterr is None) and (staterrfunc is not None):
             cnts = self.counts
             if filter:
                 cnts = self.apply_filter(cnts)
             else:
                 cnts = self.apply_grouping(cnts)
-            
+
             staterr = staterrfunc(cnts)
 
         if (staterr is not None) and self.subtracted:
@@ -1282,14 +1282,14 @@ class DataPHA(Data1DInt):
                     berr = self.apply_filter(berr, self._sum_sq)
                 else:
                     berr = self.apply_grouping(berr, self._sum_sq)
-                    
+
                 if (berr is None) and (staterrfunc is not None):
                     bkg_cnts = bkg.counts
                     if filter:
                         bkg_cnts = self.apply_filter(bkg_cnts)
                     else:
                         bkg_cnts = self.apply_grouping(bkg_cnts)
-                        
+
                     if (hasattr(staterrfunc,'__name__') and
                         staterrfunc.__name__ == 'calc_chi2datavar_errors' and
                         0.0 in bkg_cnts):
@@ -1314,7 +1314,7 @@ class DataPHA(Data1DInt):
                 if bksl is not None:
                     bksl = self._check_scale(bksl, filter=filter)
                     berr = berr / bksl
-                
+
                 area = bkg.areascal
                 if area is not None:
                     area = self._check_scale(area, filter=filter)
@@ -1362,7 +1362,7 @@ class DataPHA(Data1DInt):
         else:
             syserr = self.apply_grouping(syserr, self._sum_sq)
         return syserr
-    
+
     def get_x(self, filter=False, response_id=None):
         # If we are already in channel space, self._from_channel
         # is always ungrouped.  In any other space, we must
@@ -1456,7 +1456,7 @@ class DataPHA(Data1DInt):
     def get_y(self, filter=False, yfunc=None, response_id=None):
         vallist = Data1DInt.get_y(self, yfunc=yfunc)
         filter=bool_cast(filter)
-        
+
         if not isinstance(vallist, tuple):
             vallist = (vallist,)
 
@@ -1677,7 +1677,7 @@ class DataPHA(Data1DInt):
                 # the channels less than lo, and convert lo from a 
                 # channel number to the first group number that has channels 
                 # greater than or equal to lo.
-                
+
                 lo_index = numpy.where(self.channel >= lo)[0][0]
                 lo = len(numpy.where(self.grouping[:lo_index] > -1)[0]) + 1
 
@@ -1771,7 +1771,7 @@ class DataIMG(Data2D):
 
     def _get_coord(self):
         return self._coord
-    
+
     def _set_coord(self, val):
         coord = str(val).strip().lower()
 
@@ -1781,7 +1781,7 @@ class DataIMG(Data2D):
         elif coord in ('physical',):
             self._check_physical_transform()
             coord = 'physical'
-            
+
         elif coord in ('world','wcs'):
             self._check_world_transform()
             coord = 'world'
@@ -2059,7 +2059,7 @@ class DataIMG(Data2D):
                      y_img[1].reshape(*self.shape))
         else:
             y_img = y_img.reshape(*self.shape)
-	return y_img
+        return y_img
 
     def get_axes(self):
         # FIXME: how to filter an axis when self.mask is size of self.y?
@@ -2091,7 +2091,7 @@ class DataIMG(Data2D):
             return 'RA (deg)'
         else:
             return 'x0'
-    
+
     def get_x1label(self):
         """
         Return label for second dimension in 2-D view of independent axis/axes
@@ -2220,7 +2220,7 @@ class DataIMGInt(DataIMG):
 
     # def get_indep(self, filter=False):
     #     x0, x1 = DataIMG.get_indep(self, filter=filter)
-        
+
     #     halfwidth = numpy.array([.5,.5])
     #     if self.coord == 'physical' and self.sky is not None:
     #         halfwidth = numpy.array(self.sky.cdelt)/2.
@@ -2235,7 +2235,7 @@ class DataIMGInt(DataIMG):
         filter=bool_cast(filter)
         if filter:
             return (self._x0lo, self._x1lo, self._x0hi, self._x1hi)
-	return (self.x0lo, self.x1lo, self.x0hi, self.x1hi)
+        return (self.x0lo, self.x1lo, self.x0hi, self.x1hi)
 
     def get_x0(self, filter=False):
         indep = self.get_indep(filter)

@@ -88,7 +88,7 @@ class test_threads(SherpaTestCase):
     def test_pha_read(self):
         self.run_thread('pha_read')
         self.assertEqual(type(ui.get_data()), DataPHA)
-        
+
     @needs_data
     def test_basic(self):
         # In data1.dat for this test, there is a comment with one
@@ -108,7 +108,7 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().nfev,9)
         self.assertEqual(ui.get_fit_results().numpoints,11)
         self.assertEqual(ui.get_fit_results().dof,9)
-                
+
     @needs_data
     def test_simultaneous(self):
         self.run_thread('simultaneous')
@@ -151,7 +151,7 @@ class test_threads(SherpaTestCase):
         #self.assertEqual(ui.get_fit_results().nfev,371)
         self.assertEqual(ui.get_fit_results().numpoints,4881)
         self.assertEqual(ui.get_fit_results().dof,4877)
-        
+
     @needs_data
     def test_pileup(self):
         self.run_thread('pileup')
@@ -165,7 +165,7 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['power'].ampl.val, 0.00199457, 1e-2)
         self.assertEqual(ui.get_fit_results().numpoints,42)
         self.assertEqual(ui.get_fit_results().dof,37)
-    
+
     @needs_data
     def test_radpro(self):
         self.run_thread('radpro')
@@ -240,7 +240,7 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().nfev,48)
         self.assertEqual(ui.get_fit_results().numpoints,38)
         self.assertEqual(ui.get_fit_results().dof,35)
-        
+
     @needs_data
     def test_linepro(self):
         self.run_thread('linepro')

@@ -76,7 +76,7 @@ class Session(sherpa.ui.utils.Session):
         # restored _xspec_state variable, and set abundance,
         # cross-section, etc. in the XSPEC module.
         self._xspec_state = None
-        
+
         sherpa.ui.utils.Session.__init__(self)
 
         self._pyblocxs = sherpa.astro.sim.MCMC()
@@ -154,7 +154,7 @@ class Session(sherpa.ui.utils.Session):
         self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
 
         self._xspec_state = None
-        
+
         sherpa.ui.utils.Session.clean(self)
 
         self._pyblocxs = sherpa.astro.sim.MCMC()
@@ -280,7 +280,7 @@ class Session(sherpa.ui.utils.Session):
             if (self._xspec_state != None):
                 sherpa.astro.xspec.set_xsstate(self._xspec_state)
                 self._xspec_state = None
-    
+
     def _get_show_data(self, id=None):
         data_str = ''
         ids = self.list_data_ids()
@@ -334,23 +334,23 @@ class Session(sherpa.ui.utils.Session):
                 bkg_ids = [data._fix_background_id(bkg_id)]
 
             for bkg_id in bkg_ids:
-                    bkg = self.get_bkg(id, bkg_id)
-                    data_str += 'Background Data Set: %s:%s\n' % (id,bkg_id)
-                    data_str += 'Filter: %s\n' % bkg.get_filter_expr()
-                    data_str += 'Noticed Channels: %s\n' % bkg.get_noticed_expr()
-                    data_str += bkg.__str__() + '\n\n'
+                bkg = self.get_bkg(id, bkg_id)
+                data_str += 'Background Data Set: %s:%s\n' % (id,bkg_id)
+                data_str += 'Filter: %s\n' % bkg.get_filter_expr()
+                data_str += 'Noticed Channels: %s\n' % bkg.get_noticed_expr()
+                data_str += bkg.__str__() + '\n\n'
 
-                    for bk_rp_id in bkg.response_ids:
+                for bk_rp_id in bkg.response_ids:
                         # ARF or RMF could be None
-                        arf, rmf = bkg.get_response(bk_rp_id)
-                        if rmf is not None:
-                            data_str += ('Background RMF Data Set: %s:%s\n' %
-                                         (id,bkg_id))
-                            data_str += rmf.__str__() + '\n\n'
-                        if arf is not None:
-                            data_str += ('Background ARF Data Set: %s:%s\n' %
-                                         (id,bkg_id))
-                            data_str += arf.__str__() + '\n\n'
+                    arf, rmf = bkg.get_response(bk_rp_id)
+                    if rmf is not None:
+                        data_str += ('Background RMF Data Set: %s:%s\n' %
+                                     (id,bkg_id))
+                        data_str += rmf.__str__() + '\n\n'
+                    if arf is not None:
+                        data_str += ('Background ARF Data Set: %s:%s\n' %
+                                     (id,bkg_id))
+                        data_str += arf.__str__() + '\n\n'
 
         return data_str
 
@@ -646,7 +646,7 @@ class Session(sherpa.ui.utils.Session):
                                              numbins=numbins)
         args = [xlo,xhi,y]
         kwargs={}
-        
+
         if dstype is sherpa.astro.data.DataPHA:
             channel = numpy.arange(1,len(xlo)+1, dtype=float)
             args = [channel, y]
@@ -1063,9 +1063,9 @@ class Session(sherpa.ui.utils.Session):
         """
         if filename is None:
             id, filename = filename, id
-        
+
         self.set_data(id, self.unpack_table(filename, ncols, colkeys, dstype))
-        
+
     ### DOC-TODO: should unpack_ascii be merged into unpack_table?
     ### DOC-TODO: I am going to ignore the crates support here as
     ###           it is somewhat meaningless, since the crate could
@@ -1073,7 +1073,7 @@ class Session(sherpa.ui.utils.Session):
     def unpack_ascii(self, filename, ncols=2, colkeys=None,
                      dstype=Data1D, sep=' ', comment='#'):
         """Unpack an ASCII file into a data structure.
-        
+
         Parameters
         ----------
         filename : str
@@ -1140,7 +1140,7 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.read_ascii(filename, ncols, colkeys, dstype,
                                           sep=sep, comment=comment)
-    
+
     ### DOC-TODO: I am going to ignore the crates support here as
     ###           it is somewhat meaningless, since the crate could
     ###           have been read from a FITS binary table.
@@ -1252,11 +1252,11 @@ class Session(sherpa.ui.utils.Session):
         """
         if filename is None:
             id, filename = filename, id
-            
+
         self.set_data(id, self.unpack_ascii(filename, ncols=ncols,
                                             colkeys=colkeys, dstype=dstype,
                                             sep=sep, comment=comment ))
-        
+
     # DOC-NOTE: also in sherpa.utils
     def unpack_data(self, filename, *args, **kwargs):
         """Create a sherpa data object from a file.
@@ -2475,7 +2475,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             d = self.get_bkg(id,bkg_id)
         fractional=sherpa.utils.bool_cast(fractional)
-        
+
         if numpy.iterable(val):
             err = numpy.asarray(val, SherpaFloat)
         elif val is not None:
@@ -4513,7 +4513,7 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         _check_type(filename, basestring, 'filename', 'a string')
-        
+
         sherpa.astro.io.write_image(filename, self.get_data(id),
                                     ascii, clobber)
 
@@ -4582,7 +4582,7 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         _check_type(filename, basestring, 'filename', 'a string')
-        
+
         sherpa.astro.io.write_table(filename, self.get_data(id),
                                     ascii, clobber)
 
@@ -4711,7 +4711,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
         return sherpa.astro.io.pack_pha(self._get_pha_data(id))
-    
+
     ### DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     ###           from PyFITS lands soon.
     def pack_image(self, id=None):
@@ -5209,7 +5209,7 @@ class Session(sherpa.ui.utils.Session):
 
         filenames = list(filenames)[:]
         resp_ids = list(resp_ids)[:]
-        
+
         if (len(filenames) != len(resp_ids)):
             raise ArgumentErr('multirsp')
 
@@ -5351,7 +5351,7 @@ class Session(sherpa.ui.utils.Session):
 
         # store only the RMF dataset in the PHA response dict
         if type(rmf) in (sherpa.astro.instrument.RMF1D,):
-                rmf = rmf._rmf
+            rmf = rmf._rmf
         _check_type(rmf, sherpa.astro.data.DataRMF, 'rmf', 'an RMF data set')
 
         data = self._get_pha_data(id)
@@ -5648,7 +5648,7 @@ class Session(sherpa.ui.utils.Session):
 
         filenames = list(filenames)[:]
         resp_ids = list(resp_ids)[:]
-        
+
         if (len(filenames) != len(resp_ids)):
             raise ArgumentErr('multirsp')
 
@@ -5656,7 +5656,7 @@ class Session(sherpa.ui.utils.Session):
             filename = filenames.pop(0)
             resp_id = resp_ids.pop(0)
             self.load_rmf(id, filename, resp_id)
-        
+
     def get_bkg(self, id=None, bkg_id=None):
         """Return the background for a PHA data set.
 
@@ -5867,7 +5867,7 @@ class Session(sherpa.ui.utils.Session):
 
         quantity : { 'channel', 'chan', 'bin', 'energy', 'ener', 'wavelength', 'wave' }
            The units to use for the analysis.
-        
+
         type : { 'rate', 'counts' }, optional
            The units to use on the Y axis of plots. The default
            is 'rate'.
@@ -6040,16 +6040,16 @@ class Session(sherpa.ui.utils.Session):
             id, coord = coord, id
 
         _check_type(coord, basestring, 'coord', 'a string')
-        
+
         ids = self.list_data_ids()
         if id is not None:
             ids = [id]
 
-	if(len(ids)==0):
-	    raise IdentifierErr('nodatasets')
+        if(len(ids)==0):
+            raise IdentifierErr('nodatasets')
 
         for id in ids:
-           self._get_img_data(id).set_coord(coord)
+            self._get_img_data(id).set_coord(coord)
 
 
     ### DOC-TODO: docs need to be added to sherpa.astro.data.get_coord
@@ -6362,7 +6362,7 @@ class Session(sherpa.ui.utils.Session):
             _check_type(d, sherpa.astro.data.DataIMG, 'img',
                         'a image data set')
             d.notice2d(val, True)
-    
+
     def notice2d_id(self, ids, val=None):
         """Include a spatial region of a data set.
 
@@ -6430,7 +6430,7 @@ class Session(sherpa.ui.utils.Session):
             _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
             self.get_data(id).notice2d(val, False)
-        
+
     def ignore2d_id(self, ids, val=None):
         """Exclude a spatial region from a data set.
 
@@ -6484,7 +6484,7 @@ class Session(sherpa.ui.utils.Session):
             except TypeError:
                 _argument_type_error('ids',
                                      'an identifier or list of identifiers')
-                
+
 
         for id in ids:
             _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
@@ -6529,7 +6529,7 @@ class Session(sherpa.ui.utils.Session):
             except TypeError:
                 _argument_type_error('ids',
                                      'an identifier or list of identifiers')
-                
+
 
         for id in ids:
             _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
@@ -6580,7 +6580,7 @@ class Session(sherpa.ui.utils.Session):
             except TypeError:
                 _argument_type_error('ids',
                                      'an identifier or list of identifiers')
-                
+
 
         for id in ids:
             _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
@@ -8150,7 +8150,7 @@ class Session(sherpa.ui.utils.Session):
             b=0
             for bkg_id in d.background_ids:
                 b=b + d.get_background_scale() * d.get_background(bkg_id).counts
-                
+
             if (nbkg > 0):
                 b = b / nbkg
                 b_poisson = sherpa.utils.poisson_noise(b)
@@ -8176,8 +8176,8 @@ class Session(sherpa.ui.utils.Session):
                     raise
 
         psf = sherpa.astro.instrument.PSFModel(modelname, kernel)
-	if isinstance(kernel, sherpa.models.Model): 
-	    self.freeze(kernel)
+        if isinstance(kernel, sherpa.models.Model): 
+            self.freeze(kernel)
         self._add_model_component(psf)
         self._psf_models.append(psf)
 
@@ -9165,7 +9165,7 @@ class Session(sherpa.ui.utils.Session):
                 else:
                     bkg_ids[id] = []
                     for bkg_id in d.background_ids:
-                        
+
                         if not (bkg_id in bkg_models or bkg_id in bkg_srcs):
                             raise ModelErr('nobkg', bkg_id, id)
 
@@ -9200,7 +9200,7 @@ class Session(sherpa.ui.utils.Session):
         models = []
         fit_to_ids = []
         for i in ids:
-            
+
             # get PHA data and associated background models by id
             data = self._get_pha_data(i)
             bkg_models = self._background_models.get(i, {})
@@ -9426,9 +9426,9 @@ class Session(sherpa.ui.utils.Session):
         else:
             ids, f = self._get_fit(id, otherids)
 
-	if kwargs.has_key('filter_nan') and kwargs.pop('filter_nan'):
-		for i in ids:
-			self.get_data(i).mask = self.get_data(i).mask & numpy.isfinite(self.get_data(i).get_x())
+        if kwargs.has_key('filter_nan') and kwargs.pop('filter_nan'):
+            for i in ids:
+                self.get_data(i).mask = self.get_data(i).mask & numpy.isfinite(self.get_data(i).get_x())
 
         res = f.fit(**kwargs)
         res.datasets = ids
@@ -11367,7 +11367,7 @@ class Session(sherpa.ui.utils.Session):
             src  = self.get_bkg_source(id, bkg_id)
         else:
             src = self.get_source(id)
-            
+
         correlated=sherpa.utils.bool_cast(correlated)
 
         return sherpa.astro.flux.sample_flux(fit, data, src,
@@ -11470,7 +11470,7 @@ class Session(sherpa.ui.utils.Session):
             src  = self.get_bkg_source(id, bkg_id)
         else:
             src = self.get_source(id)
-            
+
         correlated=sherpa.utils.bool_cast(correlated)
 
         return sherpa.astro.flux.sample_flux(fit, data, src, 
@@ -11482,143 +11482,143 @@ class Session(sherpa.ui.utils.Session):
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                      num=1, scales=None, correlated=False,
                      numcores=None, bkg_id=None, Xrays=True, confidence=68):
-         """Return the flux distribution of a model.
+        """Return the flux distribution of a model.
 
-         For each iteration, draw the parameter values of the model
-         from a normal distribution, evaluate the model, and sum the
-         model over the given range (the flux). Return the parameter
-         values used, together with the median, upper, and lower
-         quantiles of the flux distribution.
+        For each iteration, draw the parameter values of the model
+        from a normal distribution, evaluate the model, and sum the
+        model over the given range (the flux). Return the parameter
+        values used, together with the median, upper, and lower
+        quantiles of the flux distribution.
 
-         Parameters
-         ----------
-         modelcomponent : optional
-            The model to use. It can be a single component or
-            a combination. If not given, then the full source
-            expression for the data set is used.
-         lo : number, optional
-            The lower limit to use when summing up the signal. If not
-            given then the lower value of the data grid is used.
-         hi : optional
-            The upper limit to use when summing up the signal. If not
-            guven then the upper value of the data grid is used.
-         id : int or string, optional
-            The identifier of the data set to use. The default value
-            (`None`) means that the default identifier, as returned by
-            `get_default_id`, is used.
-         num : int, optional
-            The number of samples to create. The default is `1`.
-         scales : array, optional
-            The scales used to define the normal distributions for the
-            parameters. The form depends on the `correlated`
-            parameter: when `True`, the array should be a symmetric
-            positive semi-definite (N,N) array, otherwise a 1D array
-            of length N, where N is the number of free parameters.
-         correlated : bool, optional
-            If `True` (the default is `False`) then `scales` is the
-            full covariance matrix, otherwise it is just a 1D array
-            containing the variances of the parameters (the diagonal
-            elements of the covariance matrix).
-         numcores : optional
-            The number of CPU cores to use. The default is to use all
-            the cores on the machine.
-         bkg_id : int or string, optional
-            The identifier of the background component to use. This
-            should only be set when the line to be measured is in the
-            background model.
-         Xrays : bool, optional
-            When `True` (the default), assume that the model has
-            units of photon/cm^2/s, and use `calc_energy_flux`
-            to convert to erg/cm^2/s.
-         confidence : number, optional
-            The confidence level for the upper and lower quartiles,
-            as a percentage. The default is 68, so as to return
-            the one-sigma range.
+        Parameters
+        ----------
+        modelcomponent : optional
+           The model to use. It can be a single component or
+           a combination. If not given, then the full source
+           expression for the data set is used.
+        lo : number, optional
+           The lower limit to use when summing up the signal. If not
+           given then the lower value of the data grid is used.
+        hi : optional
+           The upper limit to use when summing up the signal. If not
+           guven then the upper value of the data grid is used.
+        id : int or string, optional
+           The identifier of the data set to use. The default value
+           (`None`) means that the default identifier, as returned by
+           `get_default_id`, is used.
+        num : int, optional
+           The number of samples to create. The default is `1`.
+        scales : array, optional
+           The scales used to define the normal distributions for the
+           parameters. The form depends on the `correlated`
+           parameter: when `True`, the array should be a symmetric
+           positive semi-definite (N,N) array, otherwise a 1D array
+           of length N, where N is the number of free parameters.
+        correlated : bool, optional
+           If `True` (the default is `False`) then `scales` is the
+           full covariance matrix, otherwise it is just a 1D array
+           containing the variances of the parameters (the diagonal
+           elements of the covariance matrix).
+        numcores : optional
+           The number of CPU cores to use. The default is to use all
+           the cores on the machine.
+        bkg_id : int or string, optional
+           The identifier of the background component to use. This
+           should only be set when the line to be measured is in the
+           background model.
+        Xrays : bool, optional
+           When `True` (the default), assume that the model has
+           units of photon/cm^2/s, and use `calc_energy_flux`
+           to convert to erg/cm^2/s.
+        confidence : number, optional
+           The confidence level for the upper and lower quartiles,
+           as a percentage. The default is 68, so as to return
+           the one-sigma range.
 
-         Returns
-         -------
-         (fullflux,cptflux,vals) :
-            The fullflux and cptflux arrays contain the results for
-            the full source model and the flux of the `modelcomponent`
-            argument (they can be the same). They have three elements
-            and give the median value, upper quartile, and lower
-            quartile values of the flux distribution. The vals array
-            has a shape of (num+1,N+2), where N is the number of free
-            parameters and num is the `num` parameter. The rows of
-            this array contain the flux value for the iteration (for
-            the full source model), the parameter values, and then the
-            statistic value for this set of parameters.
+        Returns
+        -------
+        (fullflux,cptflux,vals) :
+           The fullflux and cptflux arrays contain the results for
+           the full source model and the flux of the `modelcomponent`
+           argument (they can be the same). They have three elements
+           and give the median value, upper quartile, and lower
+           quartile values of the flux distribution. The vals array
+           has a shape of (num+1,N+2), where N is the number of free
+           parameters and num is the `num` parameter. The rows of
+           this array contain the flux value for the iteration (for
+           the full source model), the parameter values, and then the
+           statistic value for this set of parameters.
 
-         See Also
-         --------
-         calc_photon_flux : Integrate the source model over a pass band.
-         calc_energy_flux : Integrate the source model over a pass band.
-         covar : Estimate the confidence intervals using the confidence method.
-         plot_energy_flux : Display the energy flux distribution.
-         plot_photon_flux : Display the photon flux distribution.
-         sample_energy_flux : Return the energy flux distribution of a model.
-         sample_photon_flux : Return the photon flux distribution of a model.
+        See Also
+        --------
+        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the source model over a pass band.
+        covar : Estimate the confidence intervals using the confidence method.
+        plot_energy_flux : Display the energy flux distribution.
+        plot_photon_flux : Display the photon flux distribution.
+        sample_energy_flux : Return the energy flux distribution of a model.
+        sample_photon_flux : Return the photon flux distribution of a model.
 
-         Examples
-         --------
+        Examples
+        --------
 
-         Estimate the flux distribution for the "src" component using
-         the default data set. The parameters are assumed to be
-         uncorrelated.
+        Estimate the flux distribution for the "src" component using
+        the default data set. The parameters are assumed to be
+        uncorrelated.
 
-         >>> set_source(xsphabs.gal * xsapec.src)
-         >>> fit()
-         >>> covar()
-         >>> (fflux,cflux,vals) = sample_flux(src, 0.5, 2, num=1000)
-         original model flux = 2.88993e-14, + 1.92575e-15, - 1.81963e-15
-         model component flux = 7.96865e-14, + 4.65144e-15, - 4.41222e-15
-         >>> (f0, fhi, flo) = cflux
-         >>> print("Flux: {:.2e} {:.2e} {:.2e}".format(f0, fhi-f0, flo-f0))
-         Flux: 7.97e-14 4.65e-15 -4.41e-15
+        >>> set_source(xsphabs.gal * xsapec.src)
+        >>> fit()
+        >>> covar()
+        >>> (fflux,cflux,vals) = sample_flux(src, 0.5, 2, num=1000)
+        original model flux = 2.88993e-14, + 1.92575e-15, - 1.81963e-15
+        model component flux = 7.96865e-14, + 4.65144e-15, - 4.41222e-15
+        >>> (f0, fhi, flo) = cflux
+        >>> print("Flux: {:.2e} {:.2e} {:.2e}".format(f0, fhi-f0, flo-f0))
+        Flux: 7.97e-14 4.65e-15 -4.41e-15
 
-         This time the parameters are assumed to be correlated, using
-         the covariance matrix created by the `covar` call:
+        This time the parameters are assumed to be correlated, using
+        the covariance matrix created by the `covar` call:
 
-         >>> ans = sample_flux(src, 0.5, 2, num=1000, correlated=True)
+        >>> ans = sample_flux(src, 0.5, 2, num=1000, correlated=True)
 
-         Explicitly send in a covariance matrix:
+        Explicitly send in a covariance matrix:
 
-         >>> cmatrix = get_covar_results().extra_output
-         >>> ans = sample_flux(correlated=True, scales=cmatrix, num=500)
+        >>> cmatrix = get_covar_results().extra_output
+        >>> ans = sample_flux(correlated=True, scales=cmatrix, num=500)
 
-         """
+        """
 
-         ids, fit = self._get_fit(id)
-         data = self.get_data(id)
-         src  = None
-         if bkg_id is not None:
-             data = self.get_bkg(id, bkg_id)
-             src  = self.get_bkg_source(id, bkg_id)
-         else:
-             src = self.get_source(id)
-            
-         if None == modelcomponent:
-             modelcomponent = src
- 
-         correlated=sherpa.utils.bool_cast(correlated)
+        ids, fit = self._get_fit(id)
+        data = self.get_data(id)
+        src  = None
+        if bkg_id is not None:
+            data = self.get_bkg(id, bkg_id)
+            src  = self.get_bkg_source(id, bkg_id)
+        else:
+            src = self.get_source(id)
 
-         if not isinstance( modelcomponent, sherpa.models.model.Model ):
-             raise ArgumentTypeErr( 'badarg', 'modelcomponent', 'a model' )
+        if None == modelcomponent:
+            modelcomponent = src
 
-         if False == Xrays:
-             samples = self.calc_energy_flux( lo=lo, hi=hi, id=id,
+        correlated=sherpa.utils.bool_cast(correlated)
+
+        if not isinstance( modelcomponent, sherpa.models.model.Model ):
+            raise ArgumentTypeErr( 'badarg', 'modelcomponent', 'a model' )
+
+        if False == Xrays:
+            samples = self.calc_energy_flux( lo=lo, hi=hi, id=id,
+                                             bkg_id=bkg_id )
+        else:
+            # num+1 cause sample energy flux is under-reporting its result?
+            samples = self.sample_energy_flux( lo=lo, hi=hi, id=id, num=num+1,
+                                              scales=scales,
+                                              correlated=correlated,
+                                              numcores=numcores,
                                               bkg_id=bkg_id )
-         else:
-             # num+1 cause sample energy flux is under-reporting its result?
-             samples = self.sample_energy_flux( lo=lo, hi=hi, id=id, num=num+1,
-                                               scales=scales,
-                                               correlated=correlated,
-                                               numcores=numcores,
-                                               bkg_id=bkg_id )
 
-         return sherpa.astro.flux.calc_sample_flux( id, lo, hi, self, fit, data,
-                                                    samples, modelcomponent,
-                                                    confidence )
+        return sherpa.astro.flux.calc_sample_flux( id, lo, hi, self, fit, data,
+                                                   samples, modelcomponent,
+                                                   confidence )
 
     def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None):
         """Calculate the equivalent width of an emission or absorption line.
@@ -11688,7 +11688,7 @@ class Session(sherpa.ui.utils.Session):
         The calculation is done for the background model of
         data set 2, over the range 0.5 to 2 (the units of this
         are whatever the analysis setting for this data set id).
-        
+
         >>> set_bkg_source(2, const1d.flat + gauss1d.bline)
         >>> eqwidth(flat, flat+bline, id=2, bkg_id=1, lo=0.5, hi=2)
         0.45494599793003426
@@ -11785,7 +11785,7 @@ class Session(sherpa.ui.utils.Session):
         0.64978176
 
         """
-        
+
         data = self.get_data(id)
         model= None
 
@@ -11794,9 +11794,9 @@ class Session(sherpa.ui.utils.Session):
             model= self.get_bkg_source(id, bkg_id)
         else:
             model = self.get_source(id)
-            
+
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
-    
+
     def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None):
         """Integrate the source model over a pass band.
 
@@ -11970,7 +11970,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
         return sherpa.astro.utils.calc_data_sum(data, lo, hi)
-            
+
     ### DOC-TODO: does lo!=None,hi=None make sense here,
     ###           since this is not an integration but a sum.
     ###           For now I have just not documented this capability.
@@ -12459,7 +12459,7 @@ class Session(sherpa.ui.utils.Session):
             model= self.get_bkg_source(id, bkg_id)
         else:
             model= self.get_source(id)
-            
+
         return sherpa.astro.utils.calc_kcorr(data, model, z, obslo, obshi,
                                              restlo, resthi)
 
@@ -12564,7 +12564,7 @@ class Session(sherpa.ui.utils.Session):
             unitstr = ""
             if (type(par.units) == str):
                 unitstr = "\"%s\"" % par.units
-            
+
             return ((('%s.default_val = %s\n' +
                       '%s.default_min = %s\n' +
                       '%s.default_max = %s\n' +
@@ -12581,7 +12581,7 @@ class Session(sherpa.ui.utils.Session):
                       par.fullname, repr(par.max),
                       par.fullname, unitstr,
                       par.fullname, par.frozen)), linkstr)
-        
+
         # Check output file can be written to
 
         clobber=sherpa.utils.bool_cast(clobber)
@@ -12601,7 +12601,7 @@ class Session(sherpa.ui.utils.Session):
         cmd_id = ""
         cmd_resp_id = ""
         cmd_bkg_id = ""
-    
+
         for id in dids:
             # But if id is a string, then quote as a string
             # But what about the rest of any possible load_data() options;
@@ -12622,7 +12622,7 @@ class Session(sherpa.ui.utils.Session):
                 _send_to_outfile(cmd, outfile)
             except:
                 pass
-        
+
             # PHA attributes; group data if applicable
             try:
                 # Only store group flags and quality flags if they were changed
@@ -12713,7 +12713,7 @@ class Session(sherpa.ui.utils.Session):
                             _send_to_outfile(cmd, outfile)
                     except:
                         pass
-                
+
                     # Load background response, ARFs if any
                     _send_to_outfile("\n######### Background Spectral Responses\n", outfile)
                     rids = self.list_response_ids(id, bid)
@@ -12737,7 +12737,7 @@ class Session(sherpa.ui.utils.Session):
                             _send_to_outfile(cmd, outfile)
                         except:
                             pass
-                                                      
+
             except:
                 pass
 
@@ -12784,7 +12784,7 @@ class Session(sherpa.ui.utils.Session):
                         _send_to_outfile(cmd, outfile)
             except:
                 pass
-        
+
         _send_to_outfile("", outfile)
 
         # Save statistic
@@ -12858,7 +12858,7 @@ class Session(sherpa.ui.utils.Session):
 
             # skip user models entirely, as they require importation of
             # user modules, beyond scope of this script.
-        
+
             if (typename != "psfmodel" and typename != "tabelmodel" and
                 typename != "usermodel"):
                 # Normal case:  create an instance of the model.
@@ -12913,21 +12913,21 @@ class Session(sherpa.ui.utils.Session):
                     _send_to_outfile(cmd, outfile)
                     _send_to_outfile("", outfile)
 
-            
+
 
         # If there were any links made between parameters, send those
         # link commands to outfile now; else, linkstr is just an empty string
         _send_to_outfile(linkstr, outfile)
-        
+
         # Save all source, pileup and background models
-        
+
         _send_to_outfile("\n######### Set Source, Pileup and Background Models\n", outfile)
         for id in dids:
             if (type(id) == str):
                 cmd_id = "\"%s\"" % id
             else:
                 cmd_id = "%s" % id
-            
+
             # If a data set has a source model associated with it,
             # set that here -- try to distinguish cases where
             # source model is different from whole model.
@@ -12978,8 +12978,8 @@ class Session(sherpa.ui.utils.Session):
                 _send_to_outfile(cmd, outfile)
             except:
                 pass
-        
-        
+
+
             # Set background models (if any) associated with backgrounds
             # tied to this data set -- if none, then pass.  Again, try
             # to distinguish cases where background "source" model is
@@ -13083,7 +13083,7 @@ class Session(sherpa.ui.utils.Session):
             unitstr = ""
             if (type(par.units) == str):
                 unitstr = "\"%s\"" % par.units
-            
+
             return ((('%s.default_val = %s\n' +
                       '%s.default_min = %s\n' +
                       '%s.default_max = %s\n' +
@@ -13100,7 +13100,7 @@ class Session(sherpa.ui.utils.Session):
                       par.fullname, repr(par.max),
                       par.fullname, unitstr,
                       par.fullname, par.frozen)), linkstr)
-        
+
         # Check output file can be written to
 
         clobber=sherpa.utils.bool_cast(clobber)
@@ -13117,17 +13117,17 @@ class Session(sherpa.ui.utils.Session):
         _send_to_outfile("\n######### Load Data Sets\n", outfile)
         dids = self.list_data_ids()
 
-	def get_logged_call(call_name, id=None):
-		if id is not None:
-			if self._calls_tracker.has_key(id) and self._calls_tracker[id].has_key(call_name):
-				return self._calls_tracker[id][call_name]
-		else:
-			if self._calls_tracker.has_key(call_name):
-				return self._calls_tracker[call_name]
+        def get_logged_call(call_name, id=None):
+            if id is not None:
+                if self._calls_tracker.has_key(id) and self._calls_tracker[id].has_key(call_name):
+                    return self._calls_tracker[id][call_name]
+            else:
+                if self._calls_tracker.has_key(call_name):
+                    return self._calls_tracker[call_name]
         cmd_id = ""
         cmd_resp_id = ""
         cmd_bkg_id = ""
-    
+
         for id in dids:
             # But if id is a string, then quote as a string
             # But what about the rest of any possible load_data() options;
@@ -13149,7 +13149,7 @@ class Session(sherpa.ui.utils.Session):
                 _send_to_outfile(cmd, outfile)
             except:
                 pass
-        
+
             # PHA attributes; group data if applicable
             try:
                 # Only store group flags and quality flags if they were changed
@@ -13157,7 +13157,7 @@ class Session(sherpa.ui.utils.Session):
                 if (self.get_data(id)._original_groups == False):
                     if (self.get_data(id).grouping != None):
                         _send_to_outfile("\n######### Data Group Flags\n", outfile)
-			cmd = get_logged_call('set_grouping')
+                        cmd = get_logged_call('set_grouping')
                         cmd = "set_grouping(%s, " % cmd_id
                         cmd = cmd + "val=numpy.array(" + repr(self.get_grouping(id).tolist()) + ", numpy." + str(self.get_grouping(id).dtype) + "))"
                         _send_to_outfile(cmd, outfile)
@@ -13241,7 +13241,7 @@ class Session(sherpa.ui.utils.Session):
                             _send_to_outfile(cmd, outfile)
                     except:
                         pass
-                
+
                     # Load background response, ARFs if any
                     _send_to_outfile("\n######### Background Spectral Responses\n", outfile)
                     rids = self.list_response_ids(id, bid)
@@ -13265,7 +13265,7 @@ class Session(sherpa.ui.utils.Session):
                             _send_to_outfile(cmd, outfile)
                         except:
                             pass
-                                                      
+
             except:
                 pass
 
@@ -13312,7 +13312,7 @@ class Session(sherpa.ui.utils.Session):
                         _send_to_outfile(cmd, outfile)
             except:
                 pass
-        
+
         _send_to_outfile("", outfile)
 
         # Save statistic
@@ -13386,7 +13386,7 @@ class Session(sherpa.ui.utils.Session):
 
             # skip user models entirely, as they require importation of
             # user modules, beyond scope of this script.
-        
+
             if (typename != "psfmodel" and typename != "tabelmodel" and
                 typename != "usermodel"):
                 # Normal case:  create an instance of the model.
@@ -13441,21 +13441,21 @@ class Session(sherpa.ui.utils.Session):
                     _send_to_outfile(cmd, outfile)
                     _send_to_outfile("", outfile)
 
-            
+
 
         # If there were any links made between parameters, send those
         # link commands to outfile now; else, linkstr is just an empty string
         _send_to_outfile(linkstr, outfile)
-        
+
         # Save all source, pileup and background models
-        
+
         _send_to_outfile("\n######### Set Source, Pileup and Background Models\n", outfile)
         for id in dids:
             if (type(id) == str):
                 cmd_id = "\"%s\"" % id
             else:
                 cmd_id = "%s" % id
-            
+
             # If a data set has a source model associated with it,
             # set that here -- try to distinguish cases where
             # source model is different from whole model.
@@ -13506,8 +13506,8 @@ class Session(sherpa.ui.utils.Session):
                 _send_to_outfile(cmd, outfile)
             except:
                 pass
-        
-        
+
+
             # Set background models (if any) associated with backgrounds
             # tied to this data set -- if none, then pass.  Again, try
             # to distinguish cases where background "source" model is

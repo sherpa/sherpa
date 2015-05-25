@@ -87,7 +87,7 @@ def bounds_check(lo, hi):
 
     if lo is not None and hi is None:
         hi = lo
-        
+
     if hi is not None and lo is None:
         lo = hi
 

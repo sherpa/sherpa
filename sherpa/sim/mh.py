@@ -67,7 +67,7 @@ from itertools import izip
 try:
     # try lgamma in >= Python 2.7
     math.lgamma(1)
-    
+
     lgam = math.lgamma
 except:
     # default to log(gamma()) in < Python2.7
@@ -231,12 +231,12 @@ class Walk(object):
         #   rejecting a huge number of proposals, which would indicate
         #   that the limits need increasing or very low s/n data?
         #
-        
+
         #tstart = time.time()
 
         try:
             for ii in xrange(niter):
-                
+
                 #progress_bar(ii, niter, tstart, self._sampler.__class__.__name__)
 
                 jump = ii+1
@@ -299,10 +299,10 @@ class Sampler(object):
 
     def draw(self, current, **kwargs):
         raise NotImplementedError
-        
+
     def accept(self, current, current_stat, proposal, proposal_stat, **kwargs):
         raise NotImplementedError
-    
+
     def reject(self):
         raise NotImplementedError
 
@@ -350,16 +350,16 @@ class MH(Sampler):
 
         self.prior = np.ones(self._mu.size)
         self.defaultprior = defaultprior
-	self.priorshape = np.array(priorshape)
-	self.originalscale = np.array(originalscale)
+        self.priorshape = np.array(priorshape)
+        self.originalscale = np.array(originalscale)
 
         self.scale = scale
         self.prior_funcs = priors
 
         debug(str(self.prior_funcs))
 
-	# if not default prior, prior calculated at each iteration
-	if not defaultprior:
+        # if not default prior, prior calculated at each iteration
+        if not defaultprior:
             if self.priorshape.size != self._mu.size:
                 raise ValueError(
                     "If not using default prior, must specify a " +
@@ -370,9 +370,9 @@ class MH(Sampler):
                     "scale on which the prior is defined for each parameter")
 
         self.jacobian = np.zeros(self._mu.size, dtype=bool)
-	# jacobian needed if transforming parameter but prior for parameter
+        # jacobian needed if transforming parameter but prior for parameter
         # on original scale
-	if not defaultprior:
+        if not defaultprior:
             # if log transformed but prior on original scale, jacobian
             # for those parameters is needed
             if np.sum( log*self.originalscale ) > 0:
@@ -380,19 +380,19 @@ class MH(Sampler):
             if np.sum( inv*self.originalscale ) > 0:
                 self.jacobian[ inv*self.originalscale ] = True
 
-	self.log = np.array(log)
-	if self.log.size == 1:
+        self.log = np.array(log)
+        if self.log.size == 1:
             self.log = np.tile(self.log, self._mu.size)
 
         self.inv = np.array(inv)
-	if self.inv.size == 1:
+        if self.inv.size == 1:
             self.inv = np.tile(self.inv, self._mu.size)
 
         if np.sum(log*inv) > 0:
             raise TypeError(
                 "Cannot specify both log and inv transformation for the same " +
                 "parameter")
-        
+
         debug("Running Metropolis-Hastings")
 
         current = self._mu.copy()
@@ -403,32 +403,32 @@ class MH(Sampler):
 
         self.initial_stat = stat
 
-	# using delta method to create proposal distribution on log scale for
+        # using delta method to create proposal distribution on log scale for
         # selected parameters
-	if np.sum(self.log) > 0:
-		logcovar = self._sigma.copy()
-		logcovar[:,self.log]= logcovar[:,self.log]/self._mu[self.log]
-		logcovar[self.log]= (logcovar[self.log].T/self._mu[self.log]).T
-		self._sigma = np.copy(logcovar)
-		self._mu[self.log]=np.log(self._mu[self.log])
-		current[self.log]=np.log( current[self.log])
+        if np.sum(self.log) > 0:
+            logcovar = self._sigma.copy()
+            logcovar[:,self.log]= logcovar[:,self.log]/self._mu[self.log]
+            logcovar[self.log]= (logcovar[self.log].T/self._mu[self.log]).T
+            self._sigma = np.copy(logcovar)
+            self._mu[self.log]=np.log(self._mu[self.log])
+            current[self.log]=np.log( current[self.log])
 
-	# using delta method to create proposal distribution on inverse scale
+        # using delta method to create proposal distribution on inverse scale
         # for selected parameters
-	if np.sum(self.inv) > 0:
-		invcovar = self._sigma.copy()
-		invcovar[:,self.inv] = invcovar[:,self.inv]/(
-                                       -1.0*np.power(self._mu[self.inv],2))
-		invcovar[self.inv] = (invcovar[self.inv].T/(
-                                      -1.0*np.power(self._mu[self.inv],2))).T
-		self._sigma = np.copy(invcovar)
-		self._mu[self.inv]=1.0/(self._mu[self.inv])
-		current[self.inv]=1.0/( current[self.inv])
+        if np.sum(self.inv) > 0:
+            invcovar = self._sigma.copy()
+            invcovar[:,self.inv] = invcovar[:,self.inv]/(
+                                   -1.0*np.power(self._mu[self.inv],2))
+            invcovar[self.inv] = (invcovar[self.inv].T/(
+                                  -1.0*np.power(self._mu[self.inv],2))).T
+            self._sigma = np.copy(invcovar)
+            self._mu[self.inv]=1.0/(self._mu[self.inv])
+            current[self.inv]=1.0/( current[self.inv])
 
-	self.rejections=0
+        self.rejections=0
 
         self.sigma_m = sigma_m
-	if np.mean(sigma_m) == False:
+        if np.mean(sigma_m) == False:
             self.sigma_m = self._sigma.copy()
 
         return (current, stat)
@@ -436,7 +436,7 @@ class MH(Sampler):
 
     def update(self, stat, mu, init=True):
         """ include prior """
-	if not self.defaultprior:
+        if not self.defaultprior:
             x = mu.copy()
             if np.sum(self.originalscale) < mu.size:
                 for j in xrange(mu.size):
@@ -453,12 +453,12 @@ class MH(Sampler):
         # 0.0 == np.sum(np.log(np.ones(mu.size)))
         stat += np.sum(np.log(self.prior))
 
-	if np.sum(self.log*self.jacobian) > 0:
+        if np.sum(self.log*self.jacobian) > 0:
             stat += np.sum( np.log( mu[self.log*self.jacobian] ) )
-	if np.sum(self.inv*self.jacobian) > 0:
+        if np.sum(self.inv*self.jacobian) > 0:
             stat_temp = np.sum(2.0*np.log(np.abs(mu[self.inv*self.jacobian])))
             if init:
-		stat += stat_temp
+                stat += stat_temp
             else:
                 stat -= stat_temp
         return stat
@@ -477,7 +477,7 @@ class MH(Sampler):
 
 
     def mh(self, current):
-	""" MH jumping rule """
+        """ MH jumping rule """
 
         # The current proposal is ignored here.
         # MH jumps from the best-fit parameter values at each iteration
@@ -541,7 +541,7 @@ class MetropolisMH(MH):
 
     def __init__(self, fcn, sigma, mu, dof, *args):
         MH.__init__(self, fcn, sigma, mu, dof, *args)
-        
+
         # count the p_M
         self.num_mh = 0
         self.num_metropolis = 0

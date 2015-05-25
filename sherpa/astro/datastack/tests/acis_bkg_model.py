@@ -383,7 +383,7 @@ def acis_bkg_model(detnam, root='bkg_', as_str=False):
             model_comp.ampl.min = 0.0
         ui.freeze(model_comp)
         model_comp.integrate = True
-    
+
     if detnam in pars:
         for parname, parval in pars[detnam].items():
             name, attr = parname.split('.')

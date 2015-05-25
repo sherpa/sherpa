@@ -127,24 +127,24 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
         s += 'likelihood ratio =  %s\n' % str(self.lr)
         s += 'p-value          =  %s' % str(self.ppp)
         return s
-        
+
 
 
 class LikelihoodRatioTest(NoNewAttributesAfterInit):
     """Likelihood Ratio Test.
 
     The likelihood ratio [1]_, D, is defined as::
-    
+
                   (   likelihood for null model	)
         D = -2 ln -----------------------------------
                   ( likelihood for alternative model)
 
           = -2 ln(likelihood for null model) +
              2 ln(likelihood for alternative model)
-	
+
     Since the Cash and C fit statistics are defined as -2
     ln(likelihood), the equation reduces to::
-	
+
         D = statistic for null model -
             statistic for alternative model
 
@@ -157,116 +157,116 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
 
     @staticmethod
     def calculate(nullfit, altfit, proposal, null_vals, alt_vals):
-	    
+
         # FIXME: only null perturbed?
         nullfit.model.thawedpars = proposal
-	    
-	# Fake using poisson_noise with null
-	fake = poisson_noise(nullfit.data.eval_model(nullfit.model))
-	
-		# Set faked data for both nullfit and altfit 
-	nullfit.data.set_dep(fake)
-	
-	# Start the faked fit at initial null best-fit values
-	#nullfit.model.thawedpars = null_vals
-	
-	# Fit with null model
-	nullfr = nullfit.fit()
-	debug(nullfr.format())
-	
-	null_stat = nullfr.statval
-	debug("statistic null = " + repr(null_stat))
-	
-	# nullfit and altfit BOTH point to same faked dataset
-	assert ( id(nullfit.data) == id(altfit.data) )
-	assert (nullfit.data.get_dep() == altfit.data.get_dep()).all()
-	
-	# Start the faked fit at the initial alt best-fit values
-	#altfit.model.thawedpars = alt_vals
-	
-	debug("proposal: " + repr(proposal))
-	debug("alt model")
-	debug(str(altfit.model))
-	
-	# Set alt model and fit   
-	altfr = altfit.fit()
-	debug(altfr.format())
-	
-	debug(str(altfit.model))
-	
-	alt_stat = altfr.statval
-	debug("statistic alt = " + repr(alt_stat))
-	
-	LR = -(alt_stat - null_stat)
-	debug("LR = " + repr(LR))
-	
-	return [null_stat, alt_stat, LR]
-    
-    
+
+        # Fake using poisson_noise with null
+        fake = poisson_noise(nullfit.data.eval_model(nullfit.model))
+
+                # Set faked data for both nullfit and altfit 
+        nullfit.data.set_dep(fake)
+
+        # Start the faked fit at initial null best-fit values
+        #nullfit.model.thawedpars = null_vals
+
+        # Fit with null model
+        nullfr = nullfit.fit()
+        debug(nullfr.format())
+
+        null_stat = nullfr.statval
+        debug("statistic null = " + repr(null_stat))
+
+        # nullfit and altfit BOTH point to same faked dataset
+        assert ( id(nullfit.data) == id(altfit.data) )
+        assert (nullfit.data.get_dep() == altfit.data.get_dep()).all()
+
+        # Start the faked fit at the initial alt best-fit values
+        #altfit.model.thawedpars = alt_vals
+
+        debug("proposal: " + repr(proposal))
+        debug("alt model")
+        debug(str(altfit.model))
+
+        # Set alt model and fit   
+        altfr = altfit.fit()
+        debug(altfr.format())
+
+        debug(str(altfit.model))
+
+        alt_stat = altfr.statval
+        debug("statistic alt = " + repr(alt_stat))
+
+        LR = -(alt_stat - null_stat)
+        debug("LR = " + repr(LR))
+
+        return [null_stat, alt_stat, LR]
+
+
     @staticmethod
     def run(fit, null_comp, alt_comp, conv_mdl=None,
-	    stat=None, method=None,
-	    niter=500, numcores=None):
-	    
-        if stat is None:   stat = CStat()
-	if method is None: method = NelderMead()
+            stat=None, method=None,
+            niter=500, numcores=None):
 
-	if not isinstance(stat, (Cash, CStat)):
-		raise TypeError("Sherpa fit statistic must be Cash or CStat" +
-                                " for likelihood ratio test")
+        if stat is None:   stat = CStat()
+        if method is None: method = NelderMead()
+
+        if not isinstance(stat, (Cash, CStat)):
+            raise TypeError("Sherpa fit statistic must be Cash or CStat" +
+                            " for likelihood ratio test")
 
         niter = int(niter)
 
-	alt  = alt_comp
-	null = null_comp
-	
-	oldaltvals = numpy.array(alt.thawedpars)
-	oldnullvals = numpy.array(null.thawedpars)
+        alt  = alt_comp
+        null = null_comp
+
+        oldaltvals = numpy.array(alt.thawedpars)
+        oldnullvals = numpy.array(null.thawedpars)
 
         data = fit.data
-	
-	if conv_mdl is not None:
+
+        if conv_mdl is not None:
             # Copy the PSF
             null_conv_mdl = deepcopy(conv_mdl)
 
-	    alt = conv_mdl(alt_comp)
-	    if hasattr(conv_mdl, 'fold'):
+            alt = conv_mdl(alt_comp)
+            if hasattr(conv_mdl, 'fold'):
                 conv_mdl.fold(data)
-		
+
             # Convolve the null model
-	    null = null_conv_mdl(null_comp)
-	    if hasattr(null_conv_mdl, 'fold'):
+            null = null_conv_mdl(null_comp)
+            if hasattr(null_conv_mdl, 'fold'):
                 null_conv_mdl.fold(data)
 
-	nullfit = Fit(data, null, stat, method, Covariance())
+        nullfit = Fit(data, null, stat, method, Covariance())
 
-	# Fit with null model
-	nullfit_results = nullfit.fit()
-	debug(nullfit_results.format())
-	    
-	null_stat = nullfit_results.statval
-	null_vals = nullfit_results.parvals
-	    
-	# Calculate niter samples using null best-fit and covariance
-	sampler = NormalParameterSampleFromScaleMatrix()
-	samples = sampler.get_sample(nullfit, None, niter)
-	   
-	# Fit with alt model, null component starts at null's best fit params.
-	altfit = Fit(data, alt, stat, method, Covariance())
-	altfit_results = altfit.fit()
-	debug(altfit_results.format())
-	
-	alt_stat = altfit_results.statval
-	alt_vals = altfit_results.parvals
-	
-	LR = -(alt_stat - null_stat)
-	
-	def worker(proposal, *args, **kwargs):
+        # Fit with null model
+        nullfit_results = nullfit.fit()
+        debug(nullfit_results.format())
+
+        null_stat = nullfit_results.statval
+        null_vals = nullfit_results.parvals
+
+        # Calculate niter samples using null best-fit and covariance
+        sampler = NormalParameterSampleFromScaleMatrix()
+        samples = sampler.get_sample(nullfit, None, niter)
+
+        # Fit with alt model, null component starts at null's best fit params.
+        altfit = Fit(data, alt, stat, method, Covariance())
+        altfit_results = altfit.fit()
+        debug(altfit_results.format())
+
+        alt_stat = altfit_results.statval
+        alt_vals = altfit_results.parvals
+
+        LR = -(alt_stat - null_stat)
+
+        def worker(proposal, *args, **kwargs):
             return LikelihoodRatioTest.calculate(nullfit, altfit, proposal,
                                                  null_vals, alt_vals)
 
-	olddep = data.get_dep(filter=False)
-	try:
+        olddep = data.get_dep(filter=False)
+        try:
             #statistics = map(worker, samples)
             statistics = parallel_map(worker, samples, numcores)
         finally:

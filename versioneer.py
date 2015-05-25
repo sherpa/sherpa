@@ -1039,4 +1039,3 @@ def get_cmdclass():
         commands['build_exe'] = cmd_build_exe
         del commands['build']
     return commands
-
