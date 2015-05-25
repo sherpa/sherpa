@@ -53,7 +53,7 @@ class test_plot(SherpaTestCase):
         self.data = Data1D('testdata',_datax,_datay)
         self.g1 = Gauss1D('g1')
         self.f = Fit(self.data, self.g1)
-    
+
     def test_dataplot(self):
         dp = DataPlot()
         dp.prepare(self.data, self.f.stat)
@@ -78,7 +78,7 @@ class test_plot(SherpaTestCase):
         cs = ChisqrPlot()
         cs.prepare(self.data, self.g1, self.f.stat)
         #cs.plot()
-        
+
     def test_ratioplot(self):
         tp = RatioPlot()
         tp.prepare(self.data, self.g1, self.f.stat)
@@ -87,7 +87,7 @@ class test_plot(SherpaTestCase):
     def test_fitplot(self):
         dp = DataPlot()
         dp.prepare(self.data, self.f.stat)
-        
+
         mp = ModelPlot()
         mp.prepare(self.data, self.g1, self.f.stat)
 
@@ -98,13 +98,13 @@ class test_plot(SherpaTestCase):
     def test_splitplot(self):
         dp = DataPlot()
         dp.prepare(self.data, self.f.stat)
-        
+
         mp = ModelPlot()
         mp.prepare(self.data, self.g1, self.f.stat)
 
         rp = ResidPlot()
         rp.prepare(self.data, self.g1, self.f.stat)
-        
+
         fp = FitPlot()
         fp.prepare(dp,mp)
 
@@ -158,10 +158,10 @@ class test_contour(SherpaTestCase):
     def test_fitcontour(self):
         dc = DataContour()
         dc.prepare(self.data)
-        
+
         mc = ModelContour()
         mc.prepare(self.data, self.g1, self.f.stat)
-        
+
         fc = FitContour()        
         fc.prepare(dc, mc)
         #fc.contour()
@@ -171,24 +171,24 @@ class test_contour(SherpaTestCase):
         dc = DataContour()
         dc.levels=self.levels
         dc.prepare(self.data)
-        
+
         mc = ModelContour()
         mc.levels=self.levels
         mc.prepare(self.data, self.g1, self.f.stat)
-        
+
         fc = FitContour()        
         fc.prepare(dc, mc)
-        
+
         rc = ResidContour()
         rc.prepare(self.data, self.g1, self.f.stat)
         rc.levels=self.levels
-        
+
         sp = SplitPlot(2,2)
         #sp.addcontour(dc)
         #sp.addcontour(mc)
         #sp.addcontour(fc)
         #sp.addcontour(rc)
-    
+
 class test_confidence(SherpaTestCase):
 
     def setUp(self):
@@ -215,13 +215,13 @@ class test_confidence(SherpaTestCase):
               35.78049297,  35.69031588,  35.69029438,  35.77739294,
               35.94855493,  36.20071145,  36.53078937,  36.9357187 ,
               37.41243938,  37.95790737,  38.56910025,  39.24302218])
-        
+
         self.ip.fac = 2
         self.ip.calc(self.f, self.g1.fwhm)
         self.assertEqualWithinTol(_ipx, self.ip.x, 1e-4)
         self.assertEqualWithinTol(_ipy, self.ip.y, 1e-4)
         #self.ip.plot()
-        
+
 
     #@needs_data
     def test_interval_uncertainty(self):
@@ -231,20 +231,20 @@ class test_confidence(SherpaTestCase):
               18.17231712,  18.49295611,  18.81359509,  19.13423407,
               19.45487306,  19.77551204,  20.09615102,  20.41679001,
               20.73742899,  21.05806798,  21.37870696,  21.69934594])
-        
+
         _iuy = numpy.array(
             [ 42.2582845 ,  40.96299483,  39.80577195,  38.78821363,
               37.91185112,  37.17815809,  36.58855785,  36.14442877,
               35.84710827,  35.69789528,  35.69805141,  35.84880111,
               36.15133085,  36.60678759,  37.21627669,  37.98085933,
               38.90154977,  39.97931233,  41.21505839,  42.60964342])
-        
+
         self.iu.fac = 2
         self.iu.calc(self.f, self.g1.fwhm)
         self.assertEqualWithinTol(_iux, self.iu.x, 1e-4)
         self.assertEqualWithinTol(_iuy, self.iu.y, 1e-4)
         #self.iu.plot()
-        
+
     #@needs_data
     def test_region_projection(self):
         _rpx0 = numpy.array(
@@ -268,7 +268,7 @@ class test_confidence(SherpaTestCase):
               19.49940625,  21.19166755,  22.88392885,  24.57619016, 26.26845146,
               11.03809974,  12.73036104,  14.42262235,  16.11488365, 17.80714495,
               19.49940625,  21.19166755,  22.88392885,  24.57619016, 26.26845146])
-        
+
         _rpx1 = numpy.array(
             [  8.75749218 ,   8.75749218,   8.75749218,   8.75749218, 8.75749218 ,
                8.75749218 ,   8.75749218,   8.75749218,   8.75749218, 8.75749218 ,
@@ -290,7 +290,7 @@ class test_confidence(SherpaTestCase):
                23.06209142,  23.06209142,  23.06209142,  23.06209142, 23.06209142,
                24.85016632,  24.85016632,  24.85016632,  24.85016632, 24.85016632,
                24.85016632,  24.85016632,  24.85016632,  24.85016632, 24.85016632])
-        
+
         _rpy = numpy.array(
             [ 121.18227727,  109.21389788,   98.48751045,   89.15211989,
               81.31437819,   75.0489422 ,   70.40478381,   67.40903363,
@@ -317,7 +317,7 @@ class test_confidence(SherpaTestCase):
               150.55962734,  193.06314386,   69.17158712,   60.17362372,
               56.77236574,   59.86020953,   70.05892198,   87.8547272 ,
               113.64761294,  147.76168412,  190.44481909,  241.86064553])
-    
+
         self.rp.fac = 5
         self.rp.calc(self.f, self.g1.fwhm, self.g1.ampl)
         self.assertEqualWithinTol(_rpx0, self.rp.x0, 1e-4)
@@ -325,7 +325,7 @@ class test_confidence(SherpaTestCase):
         self.assertEqualWithinTol(_rpy, self.rp.y, 1e-4)
         #self.rp.contour()
 
-        
+
     #@needs_data
     def test_region_uncertainty(self):
         _rux0 = numpy.array(
@@ -349,7 +349,7 @@ class test_confidence(SherpaTestCase):
               19.33018012,  20.68398916,  22.0377982 ,  23.39160724, 24.74541629,
               12.56113491,  13.91494395,  15.268753  ,  16.62256204, 17.97637108,
               19.33018012,  20.68398916,  22.0377982 ,  23.39160724, 24.74541629])
-        
+
         _rux1 = numpy.array(
             [ 10.36675959,  10.36675959,  10.36675959,  10.36675959, 10.36675959,
               10.36675959,  10.36675959,  10.36675959,  10.36675959, 10.36675959,
@@ -371,7 +371,7 @@ class test_confidence(SherpaTestCase):
               21.81043898,  21.81043898,  21.81043898,  21.81043898, 21.81043898,
               23.24089891,  23.24089891,  23.24089891,  23.24089891, 23.24089891,
               23.24089891,  23.24089891,  23.24089891,  23.24089891, 23.24089891])
-        
+
         _ruy = numpy.array(
             [  96.58117835,   87.02838072,   78.58324208,   71.31800953,
                65.28984102,   60.54431967,   57.11719555,   55.03459229,
@@ -398,7 +398,7 @@ class test_confidence(SherpaTestCase):
                104.98631314,  129.95058002,   57.19403852,   51.57268419,
                49.6577264 ,   51.72422701,   57.98846268,   68.63914099,
                83.85076718,  103.78239821,  128.56961467,  158.31587876])
-        
+
         self.ru.fac = 4
         self.ru.calc(self.f, self.g1.fwhm, self.g1.ampl)
         self.assertEqualWithinTol(_rux0, self.ru.x0, 1e-4)
