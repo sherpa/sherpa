@@ -224,7 +224,7 @@ class ParameterSampleFromScaleVector(NoNewAttributesAfterInit):
     def __init__(self):
         self.scale = ParameterScaleVector()
         NoNewAttributesAfterInit.__init__(self)
-    
+
 
     def get_sample(self):
         raise NotImplementedError
@@ -236,7 +236,7 @@ class ParameterSampleFromScaleMatrix(NoNewAttributesAfterInit):
     def __init__(self):
         self.scale = ParameterScaleMatrix()
         NoNewAttributesAfterInit.__init__(self)
-    
+
 
     def get_sample(self):
         raise NotImplementedError
@@ -281,7 +281,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 def _sample_stat(fit, samples, numcores=None):
 
     oldvals = fit.model.thawedpars
- 
+
     def evaluate(sample):
         fit.model.thawedpars = sample
         return fit.calc_stat()
