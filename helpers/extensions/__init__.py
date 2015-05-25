@@ -56,40 +56,40 @@ def get_deps(deps):
 ####
 
 def build_psf_ext(library_dirs, include_dirs, libraries):
-     return Extension('sherpa.utils._psf',
-              ['sherpa/utils/src/tcd/tcdCastArray.c',
-               'sherpa/utils/src/tcd/tcdError.c',
-               'sherpa/utils/src/tcd/tcdFFTConvolve.c',
-               'sherpa/utils/src/tcd/tcdInitConvolveOut.c',
-               'sherpa/utils/src/tcd/tcdInitTransform.c',
-               'sherpa/utils/src/tcd/tcdPadData.c',
-               'sherpa/utils/src/tcd/tcdPixelArith.c',
-               'sherpa/utils/src/tcd/tcdTransform.c',
-               'sherpa/utils/src/_psf.cc'],
-              sherpa_inc + ['sherpa/utils/src/tcd'] + include_dirs,
-              library_dirs=library_dirs,
-              libraries=libraries,
+    return Extension('sherpa.utils._psf',
+             ['sherpa/utils/src/tcd/tcdCastArray.c',
+              'sherpa/utils/src/tcd/tcdError.c',
+              'sherpa/utils/src/tcd/tcdFFTConvolve.c',
+              'sherpa/utils/src/tcd/tcdInitConvolveOut.c',
+              'sherpa/utils/src/tcd/tcdInitTransform.c',
+              'sherpa/utils/src/tcd/tcdPadData.c',
+              'sherpa/utils/src/tcd/tcdPixelArith.c',
+              'sherpa/utils/src/tcd/tcdTransform.c',
+              'sherpa/utils/src/_psf.cc'],
+             sherpa_inc + ['sherpa/utils/src/tcd'] + include_dirs,
+             library_dirs=library_dirs,
+             libraries=libraries,
 #              extra_link_args = ['-static'],
-              depends=(get_deps(['extension', 'utils'])+
-                       ['sherpa/utils/src/tcd/tcd.h',]))
+             depends=(get_deps(['extension', 'utils'])+
+                      ['sherpa/utils/src/tcd/tcd.h',]))
 
 def build_wcs_ext(library_dirs, include_dirs, libraries):
-     return Extension('sherpa.astro.utils._wcs',
-                  ['sherpa/astro/utils/src/_wcs.cc'],
-                  sherpa_inc + include_dirs,
-                  library_dirs=library_dirs,
-                  libraries=libraries,
+    return Extension('sherpa.astro.utils._wcs',
+                 ['sherpa/astro/utils/src/_wcs.cc'],
+                 sherpa_inc + include_dirs,
+                 library_dirs=library_dirs,
+                 libraries=libraries,
 #                  extra_link_args = ['-static'],
-                  depends=get_deps(['extension']))
+                 depends=get_deps(['extension']))
 
 def build_region_ext(library_dirs, include_dirs, libraries):
-     return Extension('sherpa.astro.utils._region',
-                  ['sherpa/astro/utils/src/_region.cc'],
-                  sherpa_inc + include_dirs,
-                  library_dirs=library_dirs,
-                  libraries=(libraries),
+    return Extension('sherpa.astro.utils._region',
+                 ['sherpa/astro/utils/src/_region.cc'],
+                 sherpa_inc + include_dirs,
+                 library_dirs=library_dirs,
+                 libraries=(libraries),
 #                  extra_link_args = ['-static'],
-                  depends=get_deps(['extension']))
+                 depends=get_deps(['extension']))
 
 def build_xspec_ext(library_dirs, include_dirs, libraries):
     return Extension('sherpa.astro.xspec._xspec',
@@ -107,10 +107,10 @@ def build_ext(name, library_dirs, include_dirs, libraries):
 
 
 def build_lib_arrays(command, libname):
-            library_dirs = getattr(command, libname+'_lib_dirs').split(' ')
-            include_dirs = getattr(command, libname+'_include_dirs').split(' ')
-            libraries = getattr(command, libname+'_libraries').split(' ')
-            return [library_dirs, include_dirs, libraries]
+    library_dirs = getattr(command, libname+'_lib_dirs').split(' ')
+    include_dirs = getattr(command, libname+'_include_dirs').split(' ')
+    libraries = getattr(command, libname+'_libraries').split(' ')
+    return [library_dirs, include_dirs, libraries]
 
 ###
 # Static Extensions
@@ -257,14 +257,14 @@ minpack = Extension('sherpa.optmethods._minpack',
                'sherpa/optmethods/src/minpack/lmdif.f',
                'sherpa/optmethods/src/minpack/mylmdif.f',
                ],
-		# extra_link_args=['-static-libgfortran'],
+                # extra_link_args=['-static-libgfortran'],
                     )
 
 minim =  Extension('sherpa.optmethods._minim',
               ['sherpa/optmethods/src/_minim.pyf',
                'sherpa/optmethods/src/minim.f',
                'sherpa/optmethods/src/syminv.f'],
-		# extra_link_args=['-static-libgfortran'],
+                # extra_link_args=['-static-libgfortran'],
                     )
 
 fortran_exts = [minpack, minim]
