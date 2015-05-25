@@ -527,7 +527,7 @@ class JDPileup(ArithmeticModel):
              specresp, model):
         (alpha, g0, psf_frac, num_regions, frame_time, fracexpo,
          max_num_terms) = p
-        
+
         out = apply_pileup(arf_source, exposure_time, int(max_num_terms),
                            min_energy, max_energy, specresp, fracexpo,
                            frame_time, alpha, g0, num_regions, psf_frac, model)
@@ -586,11 +586,11 @@ class Disk2D(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1) # p[2]
         self.r0 = Parameter(name, 'r0', 1, 0) # p[3]
         ArithmeticModel.__init__(self, name, (self.xpos, self.ypos, self.ampl, self.r0))
- 
+
     def calc(self, p, x, y, *args, **kwargs):
         # Compute radii
         r2 = (x - p[0]) ** 2 + (y - p[1]) ** 2
- 
+
         # Return ampl when r2 <= r0 else return 0
         return numpy.select([r2 <= p[3] ** 2], [p[2]])
 
@@ -602,13 +602,13 @@ class Shell2D(ArithmeticModel):
         self.r0 = Parameter(name, 'r0', 1, 0) # p[3]
         self.width = Parameter(name, 'width', 0.1, 0)
         ArithmeticModel.__init__(self, name, (self.xpos, self.ypos, self.ampl, self.r0, self.width))
- 
+
     def calc(self, p, x, y, *args, **kwargs):
         """Homogeneously emitting spherical shell,
         projected along the z-direction
         (this is not 100% correct for very large shells on the sky)."""
         (xpos, ypos, ampl, r_0, width) = p
-        
+
         r2 = (x - xpos) * (x - xpos) + (y - ypos) * (y - ypos)
         r_out = r_0 + width
         r_in2, r_out2 = r_0 * r_0, r_out * r_out
