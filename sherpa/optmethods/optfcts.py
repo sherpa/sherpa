@@ -54,7 +54,7 @@ def _check_args(x0, xmin, xmax):
         raise TypeError('input array sizes do not match')
 
     _move_within_limits(x, xmin, xmax)
-    
+
     return x, xmin, xmax
 
 def _get_saofit_msg( maxfev, ierr ):
@@ -143,7 +143,7 @@ def _narrow_limits( myrange, xxx, debug ):
         print 'narrow_limits: myxmax=%s\n' % myxmax
 
     double_check_limits( x, myxmin, myxmax )
-            
+
     return myxmin, myxmax
 
 
@@ -199,11 +199,11 @@ def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
     if verbose:
         print 'difevo: f%s=%e in %d nfev' % ( x, fval, nfev )
-    
+
     status, msg = _get_saofit_msg( maxfev, ierr )
     rv = (status, x, fval)
     rv += (msg, {'info': ierr, 'nfev': nfev})
-        
+
     return rv
 
 def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
@@ -236,7 +236,7 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     status, msg = _get_saofit_msg( maxfev, ierr )
     rv = (status, x, fval)
     rv += (msg, {'info': ierr, 'nfev': nfev})
-        
+
     return rv
 
 def difevo_nm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
@@ -271,11 +271,11 @@ def difevo_nm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
     if verbose:
         print 'difevo_nm: f%s=%e in %d nfev' % ( x, fval, nfev )
-    
+
     status, msg = _get_saofit_msg( maxfev, ierr )
     rv = (status, x, fval)
     rv += (msg, {'info': ierr, 'nfev': nfev})
-        
+
     return rv
 
 def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
@@ -323,7 +323,7 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
                 if npar != len( seq ):
                     msg = "%s must be of length %d" % ( seq, npar )
                     raise TypeError( msg )
-                    
+
 
     answer = eval_stat_func( x )
     sequence_results = parallel_map( eval_stat_func, sequence, numcores )
@@ -338,7 +338,7 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
     status, msg = _get_saofit_msg( ierr, ierr )
     rv = ( status, x, fval )
     rv += (msg, {'info': ierr, 'nfev': nfev })
-    
+
     if ( 'NelderMead' == method or 'neldermead' == method or \
          'Neldermead' == method or 'nelderMead' == method ):
         #re.search( '^[Nn]elder[Mm]ead', method ):
@@ -358,7 +358,7 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
         tmp_levmar_result_4 = tmp_levmar_result[4]
         tmp_levmar_result_4['nfev'] += nfev
         rv = tuple( tmp_levmar_result )
-    
+
 
     return rv
 
@@ -377,9 +377,9 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         return False
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
-    
+
     if maxfev is None:
-       maxfev = 256 * len(x)
+        maxfev = 256 * len(x)
 
     def stat_cb0( pars ):
         return fcn( pars )[ 0 ]
@@ -387,7 +387,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         return fcn( pars )[ 1 ]
 
     m = numpy.asanyarray(stat_cb1(x)).size
-    
+
     orig_fcn = stat_cb1
     error = []
 
@@ -418,7 +418,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 ##            fval = nm_result[ 2 ]
 ##            info, mynfev, fval, covarerr = _minpack.mylmdif(stat_cb1, m, x, ftol, xtol, gtol, maxfev-nfev, epsfcn, factor, verbose, xmin, xmax)
  ##           nfev += mynfev
-        
+
     if error:
         raise error.pop()
 
@@ -456,7 +456,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     else:
         info = 3
     status, msg = _get_saofit_msg( maxfev, info )
-      
+
     rv = (status, x, fval)
     print_covar_err = False
     if print_covar_err:
@@ -477,7 +477,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
         return fcn( pars )[ 0 ]
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
-    
+
     if step is None:
         step = 0.4*numpy.ones(x.shape, numpy.float_, numpy.isfortran(x))
     if simp is None:
@@ -490,7 +490,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
         if _outside_limits(x_new, xmin, xmax) or _my_is_nan(x_new):        
             return FUNC_MAX
         return orig_fcn(x_new)
-    
+
     fval, var, ifault, neval = _minim.minim(x, step, maxfev, verbose, ftol,
                                             nloop, iquad, simp, stat_cb0,
                                             xmin, xmax)
@@ -586,7 +586,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             print 'f_de_nm%s=%.14e in %d nfev' % ( x, result[2],
                                                    result[4].get('nfev'))
         ############################## nmDifEvo ##############################
-            
+
         ofval = FUNC_MAX        
         while nfev < maxfev:
 
@@ -616,7 +616,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                 return x, nfval, nfev
             ofval = nfval
             factor *= 2
-            
+
         return x, nfval, nfev
 
     x, fval, nfev = myopt( fcn, [x, xmin, xmax], numpy.sqrt(ftol), maxfev,
@@ -679,7 +679,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         return orig_fcn(x_new)
 
     debug = False             # for internal use only
-    
+
     if numpy.isscalar(finalsimplex) and 0 == numpy.iterable(finalsimplex):
         finalsimplex = int( finalsimplex )
         if 0 == finalsimplex:
@@ -717,7 +717,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         pass
     else:
         finalsimplex = [ 2, 2, 2 ]
-        
+
     finalsimplex = numpy.asarray(finalsimplex, numpy.int_)
 
     if maxfev is None:
@@ -753,7 +753,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                                   ftol, step, xmin, xmax, x, stat_cb0, debug )
     if debug:
         print 'f%s=%f in %d nfev' % ( x, fval, nfev )
-    
+
     info=1
     covarerr=None
     if len( finalsimplex ) >= 3 and 0 != iquad:
@@ -769,7 +769,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             fval = minim_fval
         if debug:
             print 'minim: f%s=%e %d nfev, info=%d' % (x,fval,nelmea_nfev,info)
-            
+
     if nfev >= maxfev:
         ier = 3
     key = {
@@ -813,7 +813,7 @@ def lmdif_cpp(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         return orig_fcn(x_new)
 
     x, fval, nfev, info, covarerr = _saoopt.cpp_lmdif( stat_cb1, m, x, ftol, xtol, gtol, maxfev, epsfcn, factor, verbose, xmin, xmax)
-    
+
     if error:
         raise error.pop()
 
