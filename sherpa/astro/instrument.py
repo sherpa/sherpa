@@ -548,12 +548,12 @@ class ARF1D(NoNewAttributesAfterInit):
         arf = self._arf
         pha = self._pha
 
-	if isinstance(model, basestring):
-		if session is None:
-			model = sherpa.astro.ui._session._eval_model_expression(model)
-		else:
-			model = session._eval_model_expression(model)
-		
+        if isinstance(model, basestring):
+            if session is None:
+                model = sherpa.astro.ui._session._eval_model_expression(model)
+            else:
+                model = session._eval_model_expression(model)
+
 
         # Automatically add exposure time to source model
         if pha is not None and pha.exposure is not None:
@@ -618,11 +618,11 @@ class RMF1D(NoNewAttributesAfterInit):
         rmf = self._rmf
         pha = self._pha
 
-	if isinstance(model, basestring):
-		if session is None:
-			model = sherpa.astro.ui._session._eval_model_expression(model)
-		else:
-			model = session._eval_model_expression(model)
+        if isinstance(model, basestring):
+            if session is None:
+                model = sherpa.astro.ui._session._eval_model_expression(model)
+            else:
+                model = session._eval_model_expression(model)
 
         # Automatically add exposure time to source model for RMF-only analysis
         if type(model) not in (ARFModel,ARFModelPHA,ARFModelNoPHA):
@@ -656,11 +656,11 @@ class Response1D(NoNewAttributesAfterInit):
         pha = self.pha
         arf, rmf = pha.get_response()
 
-	if isinstance(model, basestring):
-		if session is None:
-			model = sherpa.astro.ui._session._eval_model_expression(model)
-		else:
-			model = session._eval_model_expression(model)
+        if isinstance(model, basestring):
+            if session is None:
+                model = sherpa.astro.ui._session._eval_model_expression(model)
+            else:
+                model = session._eval_model_expression(model)
 
         # Automatically add exposure time to source model
         if pha.exposure is not None:
@@ -861,11 +861,11 @@ class MultipleResponse1D(Response1D):
     def __call__(self, model, session=None):
         pha = self.pha
 
-	if isinstance(model, basestring):
-		if session is None:
-			model = sherpa.astro.ui._session._eval_model_expression(model)
-		else:
-			model = session._eval_model_expression(model)
+        if isinstance(model, basestring):
+            if session is None:
+                model = sherpa.astro.ui._session._eval_model_expression(model)
+            else:
+                model = session._eval_model_expression(model)
 
         pha.notice_response(False)
 
@@ -970,11 +970,11 @@ class PileupResponse1D(NoNewAttributesAfterInit):
         # clear out any previous response filter
         pha.notice_response(False)
 
-	if isinstance(model, basestring):
-		if session is None:
-			model = sherpa.astro.ui._session._eval_model_expression(model)
-		else:
-			model = session._eval_model_expression(model)
+        if isinstance(model, basestring):
+            if session is None:
+                model = sherpa.astro.ui._session._eval_model_expression(model)
+            else:
+                model = session._eval_model_expression(model)
 
         arf, rmf = pha.get_response()
         err_msg = None
