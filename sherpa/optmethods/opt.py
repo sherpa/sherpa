@@ -51,7 +51,7 @@ class MaxfevErr( OptErr ):
     def __str__( self ):
         msg = 'number of function evaluations has exceeded maxfev=%d' % self.maxfev
         return msg
-    
+
 class OutOfBoundErr( OptErr ):
     """Exception raised for errors in the input (low <= x <= high)"""
     def __init__( self, x, low, high ):
@@ -70,10 +70,10 @@ def func_bounds( func, low, high ):
     return func_bounds_wrapper
 
 class Opt( object ):
-    
+
     def __init__( self, fcn ):
         self.nfev, self.fcn = func_counter( fcn )
-        
+
     def check_args( self, x, xmin, xmax ):
         x = numpy.array( x, numpy.float_ )          # Make a copy
         xmin = numpy.asarray( xmin, numpy.float_ )  # Make a copy
@@ -83,24 +83,24 @@ class Opt( object ):
         if _outside_limits( x, xmin, xmax ):
             raise OutOfBoundErr( x, xmin, xmax )
         return x, xmin, xmax
-    
+
 class Polytope( Opt ):
-    
+
     def __init__( self, fcn, x, xmin, xmax, step, initsimplex ):
         Opt.__init__( self, fcn )
         x, self.xmin, self.xmax = self.check_args( x, xmin, xmax )
         self.fcn = func_bounds( self.fcn, xmin, xmax )
         self.polytope = self.init_simplex( x, step, initsimplex )
-        
+
     def __getitem__( self, key ):
         return self.polytope[ key ]
-    
+
     def __setitem__( self, key, item ):
         self.polytope[ key ] = item
 
     def __str__( self ):
         return self.polytope.__str__( )
-    
+
     def calc_centroid( self, badindex ):
         return numpy.mean( self.polytope[ :badindex, : ], 0 )
 
@@ -116,10 +116,10 @@ class Polytope( Opt ):
 
         def is_max_length_small_enough( tol ):
             """
-                       
+
                max  || x  - x  || <= tol max( 1.0, || x || )
                         i    0                         0
-                        
+
             where 1 <= i <= n"""
 
             max_xi_x0 = -1.0
@@ -157,13 +157,13 @@ class Polytope( Opt ):
         if numpy.std( func_vals ) > tolerance:
             return False
         return True
-    
+
     def contract_in_out( self, centroid, reflection_pt, rho_gamma,
                          contraction_coef, badindex, verbose ):
 
         if self.polytope[ badindex - 1, -1 ] <= reflection_pt[ -1 ] and \
                reflection_pt[ -1 ] < self.polytope[ badindex, -1 ]:
-            
+
             # Perform outside contraction
             outside_contraction_pt = self.move_vertex( centroid, rho_gamma,
                                                        badindex )
@@ -176,14 +176,14 @@ class Polytope( Opt ):
                 return False
             else:
                 return True
-            
+
         elif reflection_pt[ -1 ] >= self.polytope[ badindex, -1 ]:
 
             # Perform an inside contraction
             inside_contraction_pt = self.move_vertex( centroid,
                                                       - contraction_coef,
                                                       badindex )
-                    
+
             if inside_contraction_pt[ -1 ] < self.polytope[ badindex, -1 ]:
                 #self.polytope[ badindex ] = inside_contraction_pt[ : ]
                 self.replace_vertex( badindex, inside_contraction_pt )
@@ -196,7 +196,7 @@ class Polytope( Opt ):
         else:
             print 'something is wrong with contract_in_out'
             return True
-        
+
     def get_func_vals( self ):
         return self.polytope[ :, -1 ]
 
@@ -244,7 +244,7 @@ class Polytope( Opt ):
             newvertex[ -1 ] = result[ 2 ]
             print 'f(%s)=%f' % (newvertex[:-1],newvertex[-1])
         self.polytope[ badindex ] = newvertex[ : ]
-        
+
     def shrink( self, shrink_coef, npar ):
         npars_plus_1 = npar + 1
         for ii in xrange( 1, npars_plus_1 ):
@@ -273,7 +273,7 @@ class classicNelderMead( DirectSearch ):
 
     def __init__( self, fcn ):
         DirectSearch.__init__( self, fcn )
-        
+
     def __call__( self, x, xmin, xmax, maxfev, tol, step, initsimplex,
                   finalsimplex, multicore, verbose ):
 
@@ -338,7 +338,7 @@ class classicNelderMead( DirectSearch ):
                     result.append( numpy.append( simplex.polytope.ravel( ),
                                                  [self.nfev[0]-begin_nfev,
                                                   shrinkme, badindex] ) )
-                        
+
                 return numpy.asarray( result )
 
             x, xmin, xmax = self.check_args( x, xmin, xmax )
@@ -431,7 +431,7 @@ def optneldermead( afcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     nfev, fcn = func_counter( afcn )
-    
+
     if step is None or ( numpy.iterable(step) and len(step) != len(x) ):
         step = 1.2*numpy.ones(x.shape, numpy.float_, numpy.isfortran(x))
     elif numpy.isscalar(step):
@@ -445,7 +445,7 @@ def optneldermead( afcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     if False == is_iterable( finalsimplex ):
         finalsimplex = [ finalsimplex ]
-    
+
     # For internal use only:
     debug = True
 
@@ -498,10 +498,10 @@ class DifEvo( Polytope ):
 
         def is_max_length_small_enough( polytope, tol ):
             """
-                       
+
                max  || x  - x  || <= tol max( 1.0, || x || )
                         i    0                         0
-                        
+
             where 1 <= i <= n"""
 
             max_xi_x0 = -1.0
@@ -530,7 +530,7 @@ class DifEvo( Polytope ):
                 population[ ii, jj ] = random.uniform( xmin[ jj ],
                                                          xmax[ jj ] )
         population[ population_size - 1, :-1 ] = x[ : ]
-            
+
         for ii in xrange( population_size ):
             population[ ii, -1 ] = self.fcn( population[ ii, :-1 ] )
             #print 'f%s=%f' % (population[ ii, :-1 ], population[ ii, -1 ])
@@ -551,7 +551,7 @@ class DifEvo( Polytope ):
         npar = population.shape[ 1 ] - 1
         r = self.select_samples( candidate, population_size, 2 )
         n = random.randint( 0, npar - 1 )
-            
+
         for ii in xrange( npar ):
             if random.random() >= xprob:
                 return
@@ -559,19 +559,19 @@ class DifEvo( Polytope ):
                                        scale_factor * ( population[ r[0], n ] - \
                                                         population[ r[1], n ] )
             n = ( n + 1 ) % npar
-                                       
+
     def __call__( self, x, xmin, xmax, maxnfev, tolerance, population_size,
                   xprob, scale_factor, seed=81547, multicore=False,
                   verbose=None ):
 
         debug = False
         use_local_opt = True
-        
+
         x, self.xmin, self.xmax = self.check_args( x, xmin, xmax )
         self.fcn = func_bounds( self.fcn, xmin, xmax )
         polytope, fstat = self.init_population( x, xmin, xmax, population_size, seed )
         strategy_function = self.best1exp
-        
+
         npar = len( x )
         npar_plus_1 = npar + 1
 
@@ -616,23 +616,23 @@ class DifEvo( Polytope ):
                         else:
                             model_par[ : ] = self.trial_solution[ :-1 ]
                             fstat = self.trial_solution[ -1 ]
-                            
+
                         if self.check_convergence( polytope, tolerance ) :
                             return 0, model_par, fstat, self.nfev[ 0 ]
 
                 if self.nfev[ 0 ] >= maxnfev:
                     3, model_par, fstat, self.nfev[ 0 ]
-                    
+
         return 3, model_par, fstat, self.nfev[ 0 ]
 
 
-            
+
 def difevo( fcn, x0, xmin, xmax, maxfev=None, ftol=EPSILON,xprob=0.9, 
             weighting_factor=0.8, population_size=None, multicore=True,
             verbose=0 ):
 
     x0, xmin, xmax = _check_args(x0, xmin, xmax)
-    
+
     npar = len( x0 )
     if maxfev is None:
         maxfev = 4096 * npar * 16
@@ -648,7 +648,7 @@ def difevo( fcn, x0, xmin, xmax, maxfev=None, ftol=EPSILON,xprob=0.9,
     print '%f secs' % ( time.time( ) - starttime )
 
     if nm_result[0]:
-        
+
         dif_evo = DifEvo( fcn )
 
         maxfev_per_iter = min( maxfev - nm_result[4].get( 'nfev' ),
@@ -662,13 +662,13 @@ def difevo( fcn, x0, xmin, xmax, maxfev=None, ftol=EPSILON,xprob=0.9,
                              population_size, xprob, weighting_factor )
         print de_result
         print '%f secs' % ( time.time( ) - starttime )
-        
+
         de_result = list( de_result )
         de_result[ -1 ] += nm_result[4].get( 'nfev' )
         return get_result( de_result, maxfev )
-    
+
     else:
-        
+
         return nm_result
 
 def FreudensteinRoth( x ):
@@ -708,7 +708,7 @@ def tst_prob0( multicore ):
     print '%f secs' % ( time.time( ) - starttime )
     solution = ( 0.0, 3.0e-6, 1.0e-6 )
     print prob0( solution )
-    
+
 def tst_prob1( multicore ):
     def prob1( x ):
         return 5.0 * x[ 0 ] * x[ 0 ] + 2.0 * x[ 1 ] * x[ 1 ] + \
@@ -752,7 +752,7 @@ def tst_prob2( multicore ):
     print '%f secs' % ( time.time() - starttime )
     solution = ( 0.0, 0.0 )
     print prob2( solution )
-    
+
 def tst_rosen( npar, multicore ):
     x0 = npar * [ -1.2, 1.0 ]
     xmin = npar * [ -10, -10. ]
@@ -779,7 +779,7 @@ def tst_de_rosen( npar ):
     starttime = time.time( )
     print difevo( rosen, x0, xmin, xmax, maxfev, ftol )
     print '%f secs' % ( time.time( ) - starttime )
-    
+
 def tst_de_freudensteinroth( npar ):
     x0 = npar * [ 0.5, -2.0 ]
     xmin = npar * [ -20, -20. ]
