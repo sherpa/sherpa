@@ -77,7 +77,7 @@ class Prior(Likelihood):
         hfmt = '\n   %-15s %-6s %12s'
         s += hfmt % ('Param', 'Type', 'Value')
         s += hfmt % ('-'*5, '-'*4, '-'*5)
-	for p in self.hyperpars:
+        for p in self.hyperpars:
             s += ('\n   %-15s %-6s %12g' %
                   (p.fullname,'frozen', p.val))
         return s
