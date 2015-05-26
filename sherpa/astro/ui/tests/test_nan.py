@@ -21,6 +21,7 @@
 
 import unittest
 from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
+from sherpa.utils import has_fits_support
 import sherpa.astro.ui as ui
 import logging
 import os
@@ -46,7 +47,9 @@ class test_more_ui(SherpaTestCase):
         self.nan = self.datadir + '/ciao4.3/filternan/with_nan.fits'
         logger.setLevel(logging.ERROR)
 
-    #bug 12784
+    # bug 12784
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits, or astropy.io.fits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_filter_nan(self):
         self.run_thread('filternan')

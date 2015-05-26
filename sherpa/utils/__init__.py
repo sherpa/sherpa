@@ -244,6 +244,16 @@ def has_package_from_list(*packages):
     return False
 
 
+def has_fits_support():
+    """
+    Returns True if there is an importable backend for FITS I/O.
+    Used to skip tests requiring fits_io
+    """
+    return has_package_from_list('pyfits',
+                                 'pycrates',
+                                 )
+
+
 class SherpaTest(numpytest.NumpyTest):
     "Sherpa test suite manager"
 

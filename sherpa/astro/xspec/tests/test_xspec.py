@@ -20,7 +20,8 @@
 import unittest
 import numpy
 from sherpa.astro import ui
-from sherpa.utils import SherpaTestCase, test_data_missing, has_package_from_list
+from sherpa.utils import SherpaTestCase, test_data_missing
+from sherpa.utils import has_package_from_list, has_fits_support
 
 import logging
 error = logging.getLogger(__name__).error
@@ -34,7 +35,7 @@ def is_proper_subclass(obj, cls):
 
 
 @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
-                         "required sherpa.astro.xspec module missing")
+                 "required sherpa.astro.xspec module missing")
 class test_xspec(SherpaTestCase):
 
     def test_create_model_instances(self):
@@ -88,6 +89,8 @@ class test_xspec(SherpaTestCase):
                 error('XS%s model evaluation failed' % model)
                 raise
 
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits, or astropy.io.fits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_set_analysis_wave_fabrizio(self):
         rmf = self.datadir + '/ciao4.3/fabrizio/Data/3c273.rmf'

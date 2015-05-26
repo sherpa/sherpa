@@ -22,7 +22,8 @@ import unittest
 import logging
 import os
 import os.path
-from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing, has_package_from_list
+from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
+from sherpa.utils import has_package_from_list, has_fits_support
 import sherpa.astro.sim as sim
 
 from sherpa.astro.instrument import Response1D
@@ -39,6 +40,10 @@ logger = logging.getLogger('sherpa')
 
 class test_sim(SherpaTestCase):
 
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     def setUp(self):
         try:
             from sherpa.astro.xspec import XSwabs, XSpowerlaw

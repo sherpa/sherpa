@@ -17,9 +17,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
 import unittest
-from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing, has_package_from_list
+from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing, has_fits_support
 import sherpa.astro.ui as ui
 import numpy
 import logginglogger = logging.getLogger("sherpa")
@@ -42,14 +41,16 @@ class test_ui(SherpaTestCase):
         self.func = lambda x: x
         ui.dataspace1d(1,1000,dstype=ui.Data1D)
 
-
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_ascii(self):
         ui.load_ascii(1, self.ascii)
         ui.load_ascii(1, self.ascii, 2)
         ui.load_ascii(1, self.ascii, 2, ("col2", "col1"))
 
-
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_table(self):
         ui.load_table(1, self.fits)
@@ -58,38 +59,45 @@ class test_ui(SherpaTestCase):
         ui.load_table(1, self.fits, 4, ('R',"SUR_BRI",'SUR_BRI_ERR'),
                       ui.Data1DInt)
 
-
     # Test table model
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_table_model_ascii_table(self):
         ui.load_table_model('tbl', self.singledat)
         ui.load_table_model('tbl', self.doubledat)
 
-
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_table_model_fits_table(self):
         ui.load_table_model('tbl', self.singletbl)
         ui.load_table_model('tbl', self.doubletbl)
 
-
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_table_model_fits_image(self):
         ui.load_table_model('tbl', self.img)
 
 
     # Test user model
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_user_model_ascii_table(self):
         ui.load_user_model(self.func, 'mdl', self.singledat)
         ui.load_user_model(self.func, 'mdl', self.doubledat)
 
-
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_user_model_fits_table(self):
         ui.load_user_model(self.func, 'mdl', self.singletbl)
         ui.load_user_model(self.func, 'mdl', self.doubletbl)
 
-
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_filter_ascii(self):
         ui.load_filter(self.filter_single_int_ascii)
@@ -97,6 +105,8 @@ class test_ui(SherpaTestCase):
 
 
     # Test load_filter
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_filter_table(self):
         ui.load_filter(self.filter_single_int_table)
@@ -114,6 +124,8 @@ class test_more_ui(SherpaTestCase):
 	logger.setLevel(logging.ERROR)
 
     #bug #12732
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_string_model_with_rmf(self):
 	ui.load_pha("foo", self.pha)
@@ -139,6 +151,8 @@ class test_image_12578(SherpaTestCase):
 	ui.clean()
     
     #bug #12578
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_set_coord_bad_coord(self):
 	from sherpa.utils.err import IdentifierErr, DataErr
@@ -178,7 +192,9 @@ class test_psf_ui(SherpaTestCase):
     def tearDown(self):
         pass
 
-    def test_psf_model2d(self):
+    @unittest.skip("TODO: failing test used to have a different name and " +
+                   "was never executed")
+    def test_psf_model1d(self):
         ui.dataspace1d(1, 10)
         for model in self.models1d:
             try:
@@ -190,7 +206,6 @@ class test_psf_ui(SherpaTestCase):
             except:
                 print model
                 raise
-
 
     def test_psf_model2d(self):
         ui.dataspace2d([216,261])
@@ -217,7 +232,9 @@ class test_stats_ui(SherpaTestCase):
         self.data = self.datadir + '/threads/chi2/SWIFTJ0840.1+2946.pha.gz'
 	ui.clean()
 
-    #bugs #11400, #13297, #12365    
+    # bugs #11400, #13297, #12365
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_chi2(self):
 
