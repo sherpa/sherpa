@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2014  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -136,7 +136,6 @@ class sherpa_config(Command):
             return configure
 
         def run(self):
-            configure = self.build_configure()
-            build_deps(configure)
-
-
+            if not os.path.exists('extern/built'):
+                configure = self.build_configure()
+                build_deps(configure)

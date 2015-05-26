@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2014  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,8 +25,7 @@ from deps import build_deps
 
 class install(_install):
     def run(self):
-        if not os.path.exists('extern/built'):
-            configure = self.get_finalized_command('sherpa_config', True).build_configure()
-            self.get_finalized_command('xspec_config', True).run()
-            build_deps(configure)
+        self.get_finalized_command('sherpa_config', True).build_configure()
+        self.get_finalized_command('xspec_config', True).run()
+        self.get_finalized_command('sherpa_config', True).run()
         _install.run(self)
