@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,11 @@
 
 
 import numpy
-import pyfits
+
+try:
+    import astropy.io.fits as pyfits
+except ImportError:
+    import pyfits
 import os
 from itertools import izip
 from sherpa.utils.err import IOErr
