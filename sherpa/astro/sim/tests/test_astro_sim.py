@@ -40,7 +40,7 @@ logger = logging.getLogger('sherpa')
 class test_sim(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits')
+                     'need pycrates, pyfits or astropy.io.fits')
     @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
                      "required sherpa.astro.xspec module missing")
     def setUp(self):

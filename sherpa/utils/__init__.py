@@ -265,6 +265,7 @@ def has_fits_support():
     Used to skip tests requiring fits_io
     """
     return has_package_from_list('pyfits',
+                                 'astropy.io.fits',
                                  'pycrates',
                                  )
 

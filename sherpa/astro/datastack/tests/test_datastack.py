@@ -47,7 +47,7 @@ class test_design(SherpaTestCase):
         set_template_id("__ID")
 
     @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits')
+                     'need pycrates, pyfits or astropy.io.fits')
     def test_case_1(self):
         datadir = '/'.join((self._this_dir, 'data'))
         ls = '@'+'/'.join((datadir, '3c273.lis'))
@@ -268,7 +268,7 @@ class test_load(SherpaTestCase):
         set_stack_verbose(False)
 
     @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits')
+                     'need pycrates, pyfits or astropy.io.fits')
     def test_case_3(self):
         load_ascii("@{}".format(self.lisname))
         assert len(ui._session._data) == 2
@@ -576,7 +576,7 @@ class test_pha(SherpaTestCase):
         set_template_id("__ID")
 
     @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits')
+                     'need pycrates, pyfits or astropy.io.fits')
     def test_case_6(self):
         datadir = '/'.join((self._this_dir, 'data'))
         ls = '@'+'/'.join((datadir, 'pha.lis'))
@@ -639,7 +639,7 @@ class test_query(SherpaTestCase):
         set_stack_verbose(False)
 
     @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits')
+                     'need pycrates, pyfits or astropy.io.fits')
     def test_case_7(self):
         load_pha('@'+'/'.join((self._this_dir, 'data', 'pha.lis')))
 
