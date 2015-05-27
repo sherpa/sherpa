@@ -26,12 +26,19 @@ extern/fftw-3.3.4/tests/bench
 extern/fftw-3.3.4/tools/fftw-wisdom
 extern/fftw-3.3.4/tools/fftw-wisdom-to-conf
 extern/fftw-3.3.4/tools/fftw_wisdom.1
+sherpa/optmethods/src/_minimmodule.c
+sherpa/optmethods/src/minpack/_minpack-f2pywrappers.f
+sherpa/optmethods/src/minpack/_minpackmodule.c
+
+# VI
+*.swp
 
 # Packages
 *.egg
 *.egg-info
 dist
 build
+.eggs
 eggs
 parts
 bin
@@ -74,3 +81,17 @@ MANIFEST
 
 # Ipython notebooks
 .ipynb_checkpoints
+
+# Region library
+# These files should have not made it into the region
+# source distribution since they are generated at each build.
+# Alternatively, one might change the region library makefiles
+# to keep the files generated during the source distribution
+# creation. However, that is more complicated, so we are just
+# going to gitignore these files.
+extern/region-4.7/src/reglexer.c
+extern/region-4.7/src/regparser.c
+extern/region-4.7/src/regparser.h
+extern/region-4.7/src/regparser.tab.h
+extern/region-4.7/src/regparser.tab.c
+extern/region-4.7/src/reglexer.c.tmp
