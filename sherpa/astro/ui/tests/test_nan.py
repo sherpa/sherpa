@@ -49,7 +49,7 @@ class test_more_ui(SherpaTestCase):
 
     # bug 12784
     @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits, or astropy.io.fits')
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_filter_nan(self):
         self.run_thread('filternan')

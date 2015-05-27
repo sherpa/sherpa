@@ -90,7 +90,7 @@ class test_xspec(SherpaTestCase):
                 raise
 
     @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits, or astropy.io.fits')
+                     'need pycrates, pyfits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_set_analysis_wave_fabrizio(self):
         rmf = self.datadir + '/ciao4.3/fabrizio/Data/3c273.rmf'
