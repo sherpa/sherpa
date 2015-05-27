@@ -130,6 +130,8 @@ class test_global(SherpaTestCase):
     def setUp(self):
         clear_stack()
         ui.clean()
+        logger.setLevel(logging.ERROR)
+        set_stack_verbosity(logging.ERROR)
         set_template_id("__ID")
 
     def tearDown(self):

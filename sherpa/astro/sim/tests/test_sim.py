@@ -27,7 +27,6 @@ from sherpa.utils import has_package_from_list, has_fits_support
 import sherpa.astro.sim as sim
 
 from sherpa.astro.instrument import Response1D
-from sherpa.astro.io import read_pha
 from sherpa.astro.data import DataPHA
 from sherpa.fit import Fit
 from sherpa.stats import Cash, CStat
@@ -46,6 +45,7 @@ class test_sim(SherpaTestCase):
                      "required sherpa.astro.xspec module missing")
     def setUp(self):
         try:
+            from sherpa.astro.io import read_pha
             from sherpa.astro.xspec import XSwabs, XSpowerlaw
         except:
             return
