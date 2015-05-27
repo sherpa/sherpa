@@ -19,7 +19,11 @@
 
 
 import numpy
-import pyfits
+
+try:
+    import astropy.io.fits as pyfits
+except ImportError:
+    import pyfits
 import os
 from itertools import izip
 from sherpa.utils.err import IOErr

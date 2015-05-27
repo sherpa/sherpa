@@ -17,11 +17,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import os
+import unittest
 
-from sherpa.utils import SherpaTest, SherpaTestCase, needs_data
+from sherpa.utils import SherpaTest, SherpaTestCase, needs_data, has_package_from_list
 import sherpa.astro.ui as ui
 import numpy
-import logginglogger = logging.getLogger("sherpa")
+import logging
+logger = logging.getLogger("sherpa")
 
 class test_ui(SherpaTestCase):
 
@@ -57,6 +60,14 @@ class test_ui(SherpaTestCase):
         ui.load_table(1, self.fits, 4, ('R',"SUR_BRI",'SUR_BRI_ERR'),
                       ui.Data1DInt)
 
+    @unittest.skipIf(not has_package_from_list('pyfits', 'astropy.io.fits'),
+                     'need pyfits or astropy.io.fits')
+    def test_load_table_fits(self):
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        ui.load_table(1, os.path.join(this_dir, 'data', 'two_column_x_y.fits.gz'))
+        data = ui.get_data(1)
+        self.assertEqualWithinTol(data.x, [1, 2, 3])
+        self.assertEqualWithinTol(data.y, [4, 5, 6])
 
     # Test table model
     @needs_data
