@@ -1,0 +1,29 @@
+language: python
+
+python:
+  - "2.7"
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq build-essential gfortran flex bison
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes conda
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib
+  - conda config --add channels https://conda.binstar.org/cxc
+  - pip install -r test_requirements.txt
+
+install:
+  - python setup.py develop
+
+script:
+  - python setup.py test
+  - conda install --yes pyfits
+  - python setup.py test
+
+notifications:
+  email:
+    - olaurino@cfa.harvard.edu
+
