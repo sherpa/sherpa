@@ -4,11 +4,11 @@ python:
   - "2.7"
 
 env:
-  - PYFITS=false INSTALL_TYPE=develop TEST=submodule
+#  - PYFITS=false INSTALL_TYPE=develop TEST=submodule
   - PYFITS=true INSTALL_TYPE=develop TEST=submodule
-  - PYFITS=false INSTALL_TYPE=install TEST=package
-  - PYFITS=true INSTALL_TYPE=install TEST=package
-  - PYFITS=true INSTALL_TYPE=install TEST=smoke
+#  - PYFITS=false INSTALL_TYPE=install TEST=package
+#  - PYFITS=true INSTALL_TYPE=install TEST=package
+#  - PYFITS=true INSTALL_TYPE=install TEST=smoke
 
 before_install:
   - sudo apt-get update -qq
