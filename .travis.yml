@@ -22,7 +22,7 @@ before_install:
   - conda config --add channels https://conda.binstar.org/cxc
   - pip install -r test_requirements.txt
   - if [ ${TEST} == package ];
-     then pip install sherpa-test-data;
+     then pip install ./sherpa-test-data;
      git submodule deinit -f .;
     fi
   - if [ ${TEST} == smoke ];
