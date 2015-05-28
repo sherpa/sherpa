@@ -3,6 +3,13 @@ language: python
 python:
   - "2.7"
 
+env:
+  - PYFITS=false INSTALL_TYPE=develop TEST=submodule
+  - PYFITS=true INSTALL_TYPE=develop TEST=submodule
+  - PYFITS=false INSTALL_TYPE=install TEST=package
+  - PYFITS=true INSTALL_TYPE=install TEST=package
+  - PYFITS=true INSTALL_TYPE=install TEST=smoke
+
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq build-essential gfortran flex bison
@@ -14,14 +21,25 @@ before_install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib
   - conda config --add channels https://conda.binstar.org/cxc
   - pip install -r test_requirements.txt
+  - if [ ${TEST} == package ];
+     then pip install sherpa-test-data;
+     git submodule deinit -f .;
+    fi
+  - if [ ${TEST} == smoke ];
+     then git submodule deinit -f .;
+    fi
 
 install:
-  - python setup.py develop
+  - python setup.py $INSTALL_TYPE
 
 script:
-  - python setup.py test
-  - conda install --yes pyfits
-  - python setup.py test
+  - if [ ${PYFITS} == true ]; then conda install --yes pyfits; fi
+  - if [ ${TEST} == submodule ];
+     then python setup.py test;
+    else
+     cd /home;
+     sherpa_test;
+    fi
 
 notifications:
   email:
