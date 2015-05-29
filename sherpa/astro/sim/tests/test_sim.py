@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,14 +18,15 @@
 #
 
 
+import unittest
 import logging
 import os
 import os.path
-from sherpa.utils import SherpaTest, SherpaTestCase, needs_data, needs_xspec
+from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
+from sherpa.utils import has_package_from_list, has_fits_support
 import sherpa.astro.sim as sim
 
 from sherpa.astro.instrument import Response1D
-from sherpa.astro.io import read_pha
 from sherpa.astro.data import DataPHA
 from sherpa.fit import Fit
 from sherpa.stats import Cash, CStat
@@ -38,8 +39,13 @@ logger = logging.getLogger('sherpa')
 
 class test_sim(SherpaTestCase):
 
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits')
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
     def setUp(self):
         try:
+            from sherpa.astro.io import read_pha
             from sherpa.astro.xspec import XSwabs, XSpowerlaw
         except:
             return
@@ -75,8 +81,9 @@ class test_sim(SherpaTestCase):
         if hasattr(self,'old_level'):
             logger.setLevel(self.old_level)
 
-    @needs_xspec
-    @needs_data
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_pragbayes_simarf(self):
         datadir = SherpaTestCase.datadir
         if datadir is None:
@@ -105,8 +112,9 @@ class test_sim(SherpaTestCase):
         #     print 'param: ', str(params.std(1))
         #     raise
 
-    @needs_xspec
-    @needs_data
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+                     "required sherpa.astro.xspec module missing")
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_pragbayes_pcaarf(self):
         datadir = SherpaTestCase.datadir
         if datadir is None:

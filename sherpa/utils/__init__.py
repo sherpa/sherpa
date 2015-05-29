@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,6 +29,7 @@ from types import FunctionType as function
 from types import MethodType as instancemethod
 import string
 import sys
+import importlib
 import numpy
 import numpy.random
 import numpytest
@@ -87,7 +88,7 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaTest', 'SherpaTestCase',
            'guess_reference', 'histogram1d', 'histogram2d', 'igam', 'igamc',
            'incbet', 'interpolate', 'is_binary_file', 'Knuth_close',
            'lgam', 'linear_interp', 'nearest_interp',
-           'needs_data', 'neville', 'neville2d',
+           'test_data_missing', 'neville', 'neville2d',
            'new_muller', 'normalize', 'numpy_convolve',
            'pad_bounding_box', 'parallel_map', 'param_apply_limits',
            'parse_expr', 'poisson_noise', 'print_fields', 'rebin',
@@ -222,39 +223,35 @@ class SherpaTestCase(numpytest.NumpyTestCase):
         self.assert_(numpy.all(sao_fcmp(first, second, tol)), msg)
 
 
-def needs_xspec(meth):
+def test_data_missing():
     """
-    Decorator for tests requiring the xspec extension, similar to needs_data.
+    Returns True if external data (i.e. data not distributed with Sherpa
+    itself) is missing.  This is used to skip tests that require such data.
+    """
+    return SherpaTestCase.datadir is None
 
-    :param meth:
-    :return:
+
+def has_package_from_list(*packages):
     """
-    def new_meth(self):
+    Returns True if at least one of the ``packages`` args is importable.
+    """
+    for package in packages:
         try:
-            from sherpa.astro import xspec
+            importlib.import_module(package)
+            return True
         except:
-            return
-        return meth(self)
-    new_meth.__name__ = meth.__name__
-    return new_meth
+            pass
+    return False
 
 
-def needs_data(meth):
+def has_fits_support():
     """
-
-    Decorator for test_* methods of SherpaTestCase subclasses that
-    indicates that the corresponding test requires external data
-    (i.e. data not distributed with Sherpa itself).  Its effect is to
-    make the test a no-op if SherpaTestCase.datadir is None.
-
+    Returns True if there is an importable backend for FITS I/O.
+    Used to skip tests requiring fits_io
     """
-
-    def new_meth(self):
-        if SherpaTestCase.datadir is None:
-            return
-        meth(self)
-    new_meth.__name__ = meth.__name__
-    return new_meth
+    return has_package_from_list('pyfits',
+                                 'pycrates',
+                                 )
 
 
 class SherpaTest(numpytest.NumpyTest):
