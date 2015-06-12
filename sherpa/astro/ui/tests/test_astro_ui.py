@@ -229,7 +229,7 @@ class test_stats_ui(SherpaTestCase):
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
-        self.data = self.datadir + '/threads/chi2/SWIFTJ0840.1+2946.pha.gz'
+        self.data = self.datadir + '/threads/chi2/3c273.pi'
 	ui.clean()
 
     # bugs #11400, #13297, #12365

@@ -1,0 +1,3 @@
+[submodule "sherpa-test-data"]
+	path = sherpa-test-data
+	url = https://github.com/sherpa/sherpa-test-data

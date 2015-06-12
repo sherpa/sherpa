@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2014  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,15 +17,26 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from setuptools.command.test import test
+import sys
 
-from numpy.distutils.command.build import build as _build
-from deps import build_deps
 
-import os
+class PyTest(test):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
 
-class build(_build):
-    def run(self):
-        configure = self.get_finalized_command('sherpa_config', True).build_configure()
-        self.get_finalized_command('xspec_config', True).run()
-        build_deps(configure)
-        _build.run(self)
+    def initialize_options(self):
+        test.initialize_options(self)
+        self.pytest_args = []
+
+    def finalize_options(self):
+        test.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        if not self.pytest_args:
+            self.pytest_args = 'sherpa'
+        errno = pytest.main(self.pytest_args)
+        sys.exit(errno)
