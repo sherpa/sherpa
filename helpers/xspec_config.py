@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2014  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -70,7 +70,7 @@ class xspec_config(Command):
                 ld3, inc3, l3 = build_lib_arrays(self, 'ccfits')
                 ld4, inc4, l4 = build_lib_arrays(self, 'gfortran')
 
-                ld, inc, l = (ld1 + ld2 + l3 + ld4, inc1 + inc2 + inc3 + inc4, l1 + l2 + l3 + l4)
+                ld, inc, l = (ld1 + ld2 + ld3 + ld4, inc1 + inc2 + inc3 + inc4, l1 + l2 + l3 + l4)
 
                 self.distribution.ext_modules.append(build_ext('xspec', ld, inc, l))
 
