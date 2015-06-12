@@ -21,6 +21,10 @@
 from numpy.distutils.core import Command
 from extensions import build_ext, build_lib_arrays
 
+def clean(xs):
+    "Remove all '' entries from xs, returning the new list."
+    return [x for x in xs if x != '']
+
 class xspec_config(Command):
     description = "Configure XSPEC Models external module (optional) "
     user_options = [
@@ -70,10 +74,9 @@ class xspec_config(Command):
             ld3, inc3, l3 = build_lib_arrays(self, 'ccfits')
             ld4, inc4, l4 = build_lib_arrays(self, 'gfortran')
 
-            ld = ld1 + ld2 + ld3 + ld4
-            inc = inc1 + inc2 + inc3 + inc4
-            l = l1 + l2 + l3 + l4
-            ld = [p for p in ld if p != '']
+            ld = clean(ld1 + ld2 + ld3 + ld4)
+            inc = clean(inc1 + inc2 + inc3 + inc4)
+            l = clean(l1 + l2 + l3 + l4)
 
             self.distribution.ext_modules.append(build_ext('xspec', ld, inc, l))
 
