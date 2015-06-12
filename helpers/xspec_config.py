@@ -71,7 +71,8 @@ class xspec_config(Command):
                 ld4, inc4, l4 = build_lib_arrays(self, 'gfortran')
 
                 ld, inc, l = (ld1 + ld2 + ld3 + ld4, inc1 + inc2 + inc3 + inc4, l1 + l2 + l3 + l4)
-
+                ld = [p for p in ld if p != '']
+                
                 self.distribution.ext_modules.append(build_ext('xspec', ld, inc, l))
 
             else:
