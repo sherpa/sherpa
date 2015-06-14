@@ -327,34 +327,40 @@ Sherpa does not support
 default. However, it is possible to instruct Sherpa to build its
 `XSPEC` extension module by changing the build configuration options.
 
-You may need to build `XSPEC` yourself, and in any case to  point Sherpa to existing
-binary libraries for `XSPEC`, `cfitsio`, and `CCfits`.
-Additionaly, you will need to point Sherpa to the `libgfortran` shared library.
-These dependencies are required to build `XSPEC` itself, so they are assumed to
-be present on the system where you want to build Sherpa with `XSPEC` support.
+There are three ways to build the extension:
 
-First, download the Sherpa source tarball or get the source code from GitHub:
+ 1. build the full XSpec system;
 
-    $ git clone https://github.com/sherpa/sherpa.git
-    $ cd sherpa
+ 2. use the model-only build of XSpec, which will also require
+    building the cfitsio, CCfits, and WCS libraries;
+ 
+ 3. or point to the X-Spec libraries provided by
+    [CIAO](http://cxc.harvard.edu/ciao/).
 
-Now, edit the `setup.cfg` file. Find the XSPEC configuration section in the
-file, uncomment the relative options and make sure they point to the location
-of the `XSPEC`, `cfitsio`, `CCfits`, and `gfortran` libraries. For instance:
+In all cases, the same version of `gfortran` should be used to
+build Sherpa and X-Spec, to avoid possible incompatabilities.
+
+The `xspec_config` section of the `setup.cfg` file will need
+changing to point to the libraries, and to turn on the extension.
+An example, for the case when a full XSpec build was made, is:
 
     with-xspec=True
-    xspec_lib_dirs=/opt/xspec/lib
-    cfitsio_lib_dirs=/usr/local/lib
-    ccfits_lib_dirs=/usr/local/lib
-    gfortran_lib_dirs=/usr/local/lib
+    xspec_lib_dirs=$HEADAS/lib
+    xspec_libraries=XSFunctions XSModel XSUtil XS wcs-4.20
+    cfitsio_libraries=cfitsio_3.37
+    ccfits_libraries=CCfits_2.4
 
-You may need to change the values in the above example to reflect the actual
-directories where the libraries are to be found on your system.
+The environment variable `$HEADAS` should be expanded out, and the
+version numbers of the `wcs`, `cfitsio`, and `CCfits` libraries
+may need to be changed.
 
-Then, build Sherpa in the standard way:
+If there are problems building, or using, the module, then the other
+options may need to be set - in particular the `gfortran_lib_dirs` and
+`gfortran_libraries` settings.
 
-    $ python setup.py install
-
+The XSpec module is designed for use with XSpec version 12.8.2e. It
+can be used with other versions - either patches to 12.8.2 or
+different versions - but there may be build or user issues.
 
 Other customization options
 ---------------------------
