@@ -2,15 +2,15 @@
 Manipulate a stack of data in Sherpa.
 
 The methods in the DataStack class provide a way to automatically apply
-familiar Sherpa commands such as `set_par`_ or `freeze`_ or `plot_fit`_
+familiar Sherpa commands such as `set_par`, `freeze`, or `plot_fit`
 to a stack of datasets.  This simplifies simultaneous fitting of
 multiple datasets.
 
-:Copyright: Smithsonian Astrophysical Observatory (2014)
+:Copyright: Smithsonian Astrophysical Observatory (2014,2015)
 :Author: Tom Aldcroft (aldcroft@head.cfa.harvard.edu)
 :Author: Omar Laurino (olaurino@head.cfa.harvard.edu)
 """
-## Copyright (c) 2010, Smithsonian Astrophysical Observatory
+## Copyright (c) 2010,2014,2015 Smithsonian Astrophysical Observatory
 ## All rights reserved.
 ## 
 ## Redistribution and use in source and binary forms, with or without
@@ -216,7 +216,14 @@ class DataStack(object):
 
     @property
     def ids(self):
-        """List of ids corresponding to stack datasets"""
+        """List of ids corresponding to stack datasets.
+
+        Returns
+        -------
+        ids : array of int or str
+           The data set identifiers.
+
+        """
         return [x['id'] for x in self.datasets]
 
     def _get_dataid(self):

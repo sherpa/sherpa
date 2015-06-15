@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -844,9 +844,9 @@ static PyMethodDef UtilsFcts[] = {
             "Calculate the complement of the regularized incomplete Gamma\n"
             "function (upper).\n\n"
             "The function is defined using the regularized incomplete Gamma\n"
-            "function - igam(a,x) - and the Gamma function - gamma(a) - as\n\n"
-            "igamc(a,x) = 1 - igam(a,x)\n"
-            "           = 1/gamma(a) Int_x^Inf e^(-t) t^(a-1) dt\n"
+            "function - igam(a,x) - and the Gamma function - gamma(a) - as::\n\n"
+            "   igamc(a,x) = 1 - igam(a,x)\n"
+            "              = 1/gamma(a) Int_x^Inf e^(-t) t^(a-1) dt\n"
             PARAMETERSDOC
             "a : scalar or array\n"
             "   a > 0\n"
@@ -882,8 +882,8 @@ static PyMethodDef UtilsFcts[] = {
     (char*) "igam(a,x)\n\n"
             "Calculate the regularized incomplete Gamma function (lower).\n\n"
             "The function is defined using the complete Gamma function -\n"
-            "gamma(a) - as\n\n"
-            "igam(a,x) = 1/gamma(a) Int_0^x e^(-t) t^(a^-1) dt\n"
+            "gamma(a) - as::\n\n"
+            "   igam(a,x) = 1/gamma(a) Int_0^x e^(-t) t^(a^-1) dt\n"
             PARAMETERSDOC
             "a : scalar or array\n"
             "   a > 0\n"
@@ -918,10 +918,10 @@ static PyMethodDef UtilsFcts[] = {
   { (char*) "incbet", (PyCFunction) incbet, METH_VARARGS,
     (char*) "incbet(a,b,x)\n\n"
             "Calculate the incomplete Beta function\n\n"
-            "The function is defined as\n"
-            "sqrt(a+b)/(sqrt(a) sqrt(b)) Int_0^x t^(a-1) (1-t)^(b-1) dt\n"
-            "and the integral from x to 1 can be obtained using the relation\n"
-            "1 - incbet(a, b, x) = incbet(b, a, 1-x)\n"
+            "The function is defined as::\n\n"
+            "   sqrt(a+b)/(sqrt(a) sqrt(b)) Int_0^x t^(a-1) (1-t)^(b-1) dt\n\n"
+            "and the integral from x to 1 can be obtained using the relation::\n\n"
+            "   1 - incbet(a, b, x) = incbet(b, a, 1-x)\n"
             PARAMETERSDOC
             "a : scalar or array\n"
             "   a > 0\n"
@@ -974,7 +974,7 @@ static PyMethodDef UtilsFcts[] = {
             "igam : The incomplete Gamma function.\n"
             NOTESDOC
             "This implementation is provided by the Cephes Math Library [1]_.\n"
-            "Arguments |x| >= 34 are reduced by recurrence and the function\n"
+            "Arguments ``|x| >= 34`` are reduced by recurrence and the function\n"
             "approximated by a rational function of degree 6/7 in the interval\n"
             "(2,3). Large arguments are handled by Stirling's formula. Large\n"
             "negative arguments are made positive using a reflection formula.\n"

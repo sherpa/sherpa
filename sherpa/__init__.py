@@ -27,9 +27,9 @@ specialized components for particular disciplines (e.g. astronomy).
 
 Note that the top level sherpa package does not import any
 subpackages.  This allows the user to import a particular component
-(e.g. sherpa.optmethods) without pulling in any others.  To import all
-the standard subpackages, use 'import sherpa.all' or
-'from sherpa.all import *'.
+(e.g. `sherpa.optmethods`) without pulling in any others.  To import all
+the standard subpackages, use ``import sherpa.all`` or
+``from sherpa.all import *``.
 
 """
 

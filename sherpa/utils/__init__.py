@@ -623,15 +623,15 @@ def calc_total_error(staterror=None, syserror=None):
     Parameters
     ----------
     staterror : array, optional
-       The statistical error, or `None`.
+       The statistical error, or ``None``.
     syserror : array, optional
-       The systematic error, or `None`.
+       The systematic error, or ``None``.
 
     Returns
     -------
-    error : array or `None`
-       The errors, added in quadrature. If both `staterror` and
-       `syserror` are `None` then the return value is `None`.
+    error : array or ``None``
+       The errors, added in quadrature. If both ``staterror`` and
+       ``syserror`` are ``None`` then the return value is ``None``.
 
     """
 
@@ -677,7 +677,7 @@ def get_error_estimates(x, sorted=False):
     x : array of numbers
        The input values.
     sorted : bool, optional
-       If `False`, the default, then `x` is assumed to not be sorted.
+       If ``False``, the default, then ``x`` is assumed to not be sorted.
 
     Returns
     -------
@@ -747,14 +747,29 @@ def poisson_noise(x):
     return x_out
 
 def multinormal_pdf(x, mu, sigma):
-    """
-    The probability density function of a multivariate-normal
+    """The PDF of a multivariate-normal.
 
-    `X` = (X1, ..., Xk)
+    Returns the probability density function (PDF) of a
+    multivariate normal [1]_.
 
-    k-vector `mu` and a symmetric positive-definite kxk matrix `sigma`
+    Parameters
+    ----------
+    x : array
+      An array of length k.
+    mu : array
+      An array of length k.
+    sigma : array
+      A matrix of size (k,k). It must be symmetric and positive-definite.
 
-    http://en.wikipedia.org/wiki/Multivariate_normal_distribution
+    See Also
+    --------
+    multit_pdf
+
+    References
+    ----------
+
+    .. [1] http://en.wikipedia.org/wiki/Multivariate_normal_distribution
+
     """
     x = numpy.asarray(x)
     mu = numpy.asarray(mu)
@@ -783,16 +798,30 @@ def multinormal_pdf(x, mu, sigma):
 
 
 def multit_pdf(x, mu, sigma, dof):
-    """
-    The probability density function of a multivariate student-t
+    """The PDF of a multivariate student-t.
 
-    `X` = (X1, ..., Xp)
-    
-    `dof` = degrees of freedom
+    Returns the probability density function (PDF) of a
+    multivariate student-t distribution [1]_.
 
-    p-vector location `mu` and a symmetric positive-definite pxp matrix `sigma`
+    Parameters
+    ----------
+    x : array
+      An array of length k.
+    mu : array
+      An array of length k.
+    sigma : array
+      A matrix of size (k,k). It must be symmetric and positive-definite.
+    dof : int
 
-    http://en.wikipedia.org/wiki/Multivariate_Student_distribution
+    See Also
+    --------
+    multinormal_pdf
+
+    References
+    ----------
+
+    .. [1] http://en.wikipedia.org/wiki/Multivariate_Student_distribution
+
     """
     n = float(dof)
     x = numpy.asarray(x)
@@ -911,10 +940,10 @@ def dataspace2d(dim):
     return x0, x1, y, shape
 
 def histogram1d( x, x_lo, x_hi ):
-    """Create a 1D histogram from a binned grid (`x_lo`, `xhi`)
-    and array of samples (`x`).
+    """Create a 1D histogram from a binned grid (``x_lo``, ``xhi``)
+    and array of samples (``x``).
 
-    See the NumPy `histogram` routine for a version with more options.
+    See the `numpy.histogram` routine for a version with more options.
 
     Parameters
     ----------
@@ -924,13 +953,13 @@ def histogram1d( x, x_lo, x_hi ):
        The lower-edges of each bin.
     x_hi : sequence of numbers
        The upper-edges of each bin, which must be the same size
-       as `x_lo`.
+       as ``x_lo``.
 
     Returns
     -------
     y : NumPy array
        The number of samples in each histogram bin defined by
-       the `x_lo` and `x_hi` arrays.
+       the ``x_lo`` and ``x_hi`` arrays.
 
     Examples
     --------
@@ -944,7 +973,7 @@ def histogram1d( x, x_lo, x_hi ):
     >>> xhi = edges[1:]
     >>> y = histogram1d(x, xlo, xhi)
 
-    Given a list of samples (`vals`), bin them up so that
+    Given a list of samples (``vals``), bin them up so that
     they can be used as the dependent axis (the value to
     be fitted) in a Sherpa data set:
 
@@ -964,10 +993,10 @@ def histogram1d( x, x_lo, x_hi ):
     return hist1d( numpy.asarray(x), x_lo, x_hi )
 
 def histogram2d( x, y, x_grid, y_grid ):
-    """Create 21D histogram from a binned grid (`x_grid`, `y_grid`)
-    and array of samples (`x`, and `y`).
+    """Create 21D histogram from a binned grid (``x_grid``, ``y_grid``)
+    and array of samples (``x``, and ``y``).
 
-    See the NumPy `histogram2d` routine for a version with more options.
+    See the `numpy.histogram2d` routine for a version with more options.
 
     Parameters
     ----------
@@ -975,7 +1004,7 @@ def histogram2d( x, y, x_grid, y_grid ):
        The array of samples (X coordinate)
     y : sequence of numbers
        The array of samples (Y coordinate), which must have the same
-       size as the `x` sequence.
+       size as the ``x`` sequence.
     x_grid : sequence of numbers
        The X bin edges.
     y_grid : sequence of numbers
@@ -985,12 +1014,12 @@ def histogram2d( x, y, x_grid, y_grid ):
     -------
     y : NumPy array
        The number of samples in each histogram bin defined by
-       the `x_grid` and `y_grid` arrays.
+       the ``x_grid`` and ``y_grid`` arrays.
 
     Examples
     --------
 
-    Given a list of coordinates (`xvals`, `yvals`), bin
+    Given a list of coordinates (``xvals``, ``yvals``), bin
     them up so that they match the 5 by 10 pixel image
     data space. In this case the X grid is [1,2,...,5]
     and the Y grid is [1,2,..,10].
@@ -1809,26 +1838,38 @@ def is_sequence( start, mid, end ):
     return (start < mid) and (mid < end)
 
 def Knuth_close( x, y, tol, myop=operator.__or__ ):
-    """ The following text was taken verbatim from:
-        
-    http://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction
+    """Check whether two floating-point numbers are close together.
+
+    Notes
+    -----
+    The following text was taken verbatim from [1]_:
 
     In most cases it is unreasonable to use an operator==(...)
     for a floating-point values equality check. The simple solution
-    like abs(f1-f2) <= e does not work for very small or very big values.
+    like ``abs(f1-f2) <= e`` does not work for very small or very big values.
     This floating-point comparison algorithm is based on the more
     confident solution presented by D. E. Knuth in 'The art of computer
     programming (vol II)'. For a given floating point values u and v and
-    a tolerance e:
+    a tolerance e::
     
-    | u - v | <= e * |u| and | u - v | <= e * |v|                    (1)
-    defines a "very close with tolerance e" relationship between u and v
+       | u - v | <= e * |u| and | u - v | <= e * |v|                    (1)
+
+    defines a "very close with tolerance e" relationship between u and v::
     
-    | u - v | <= e * |u| or   | u - v | <= e * |v|                   (2)
+       | u - v | <= e * |u| or   | u - v | <= e * |v|                   (2)
+
     defines a "close enough with tolerance e" relationship between
     u and v. Both relationships are commutative but are not transitive.
     The relationship defined by inequations (1) is stronger that the
-    relationship defined by inequations (2) (i.e. (1) => (2) )."""
+    relationship defined by inequations (2) (i.e. (1) => (2) ).
+
+    References
+    ----------
+
+    .. [1] http://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction
+
+
+    """
     
     diff = abs( x - y )
     if 0.0 == x or 0.0 == y:
@@ -2100,10 +2141,13 @@ def transformed_quad_coef( x, f ):
 
 def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(), 
               maxfev=32, tol=1.0e-6 ):
-    """
+    """A root-finding algorithm using Muller's method [1]_.
+
     p( x ) = f( xc ) + A ( x - xc ) + B ( x - xc ) ( x - xb )
     
-    The general case:
+    Notes
+    -----
+    The general case::
      
                                      2 f( x )
                                            n
@@ -2129,15 +2173,19 @@ def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
     
     
     The convergence rate for Muller's method can be shown to be
-    the real root of the cubic x - x^3, that is,
-    p = (a + 4 / a + 1) / 3 where a = (19 + 3√33)^1/3.
-    In other words: O(h^p) where p ≈ 1.839286755.
+    the real root of the cubic x - x^3, that is::
+
+       p = (a + 4 / a + 1) / 3
+       a = (19 + 3 sqrt(33))^1/3
+
+    In other words: O(h^p) where p is approximately 1.839286755.
+
+    References
+    ----------
+
+    .. [1] http://en.wikipedia.org/wiki/Muller%27s_method
     
-    >>> import math
-    >>> a = pow( 19.0 + 3 * math.sqrt( 33 ), 1/3.0 )
-    >>> p = ( a + 4 / a + 1 ) / 3.0
-    >>> print p
-    1.83928675521"""
+    """
 
     def is_nan( arg ):
         if arg != arg:
@@ -2433,37 +2481,45 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
 
 
 def zeroin( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2 ):
+    """Obtain a zero of a function of one variable using Brent's root finder.
+
+    Return an approximate location for the root with accuracy::
+
+       4*DBL_EPSILON*abs(x) + tol
+
+    using the algorithm from [1]_.
+
+    References
+    ----------
+
+    .. [1] G.Forsythe, M.Malcolm, C.Moler, Computer methods for mathematical
+           computations. M., Mir, 1980, p.180 of the Russian edition
+
+    Notes
+    -----
+    The function makes use of a bisection procedure combined with
+    a linear or quadratic inverse interpolation.
+
+    At each step the code operates three abscissae - a, b, and c:
+
+      - b - the last and the best approximation to the root
+      - a - the last but one approximation
+      - c - the last but one or even an earlier approximation such that:
+
+        1) ``|f(b)| <= |f(c)|``
+        2) f(b) and f(c) have opposite signs, i.e. b and c encompass
+           the root
+
+    Given these abscissae, the code computes two new approximations,
+    one by the  bisection procedure and the other one from interpolation
+    (if a,b, and c are all different the quadratic interpolation is used,
+    linear otherwise). If the approximation obtained by the interpolation
+    looks reasonable (i.e. falls within the current interval [b,c], not
+    too close to the end points of the interval), the point is accepted
+    as a new approximation to the root. Otherwise, the result of the
+    bissection is used.
+
     """
-    *
-    *			    Brent's root finder
-    *	       obtains a zero of a function of one variable
-    *
-    * Synopsis
-    *	Zeroin returns an approximate location for the root with accuracy
-    *	4*DBL_EPSILON*abs(x) + tol
-    *
-    * Algorithm
-    *	G.Forsythe, M.Malcolm, C.Moler, Computer methods for mathematical
-    *	computations. M., Mir, 1980, p.180 of the Russian edition
-    *
-    * The function makes use of a bisection procedure combined with
-    * a linear or quadratic inverse interpolation.
-    * At each step the code operates three abscissae - a, b, and c:
-    *	b - the last and the best approximation to the root
-    *	a - the last but one approximation
-    *	c - the last but one or even an earlier approximation such that
-    *		1) |f(b)| <= |f(c)|
-    *		2) f(b) and f(c) have opposite signs, i.e. b and c encompass
-    *		   the root
-    * Given these abscissae, the code computes two new approximations,
-    * one by the  bisection procedure and the other one from interpolation
-    * (if a,b, and c are all different the quadratic interpolation is used,
-    * linear otherwise). If the approximation obtained by the interpolation
-    * looks reasonable (i.e. falls within the current interval [b,c], not
-    * too close to the end points of the interval), the point is accepted
-    * as a new approximation to the root. Otherwise, the result of the
-    * bissection is used.
-    ************************************************************************"""
 
     history = [ [], [] ]
     nfev, myfcn = func_counter_history( fcn, history )

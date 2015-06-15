@@ -555,7 +555,8 @@ class NumpyTest:
              testcase_pattern='.*'):
         """Run Numpy module test suite with level and verbosity.
 
-        level:
+        level::
+
           None           --- do nothing, return None
           < 0            --- scan for tests of level=abs(level),
                              don't run them, return TestSuite-list
@@ -564,25 +565,31 @@ class NumpyTest:
           > 10           --- run all tests (same as specifying all=True).
                              (backward compatibility).
 
-        verbosity:
+        verbosity::
+
           >= 0           --- show information messages
           > 1            --- show warnings on missing tests
 
-        all:
+        all::
+
           True            --- run all test files (like self.testall())
           False (default) --- only run test files associated with a module
 
-        sys_argv          --- replacement of sys.argv[1:] during running
-                              tests.
+        sys_argv::
 
-        testcase_pattern  --- run only tests that match given pattern.
+          replacement of sys.argv[1:] during running tests.
 
-        It is assumed (when all=False) that package tests suite follows
+        testcase_pattern::
+
+          run only tests that match given pattern.
+
+        It is assumed (when ``all=False``) that package tests suite follows
         the following convention: for each package module, there exists
-        file <packagepath>/tests/test_<modulename>.py that defines
-        TestCase classes (with names having prefix 'test_') with methods
-        (with names having prefixes 'check_' or 'bench_'); each of these
+        file ``<packagepath>/tests/test_<modulename>.py`` that defines
+        TestCase classes (with names having prefix ``test_``) with methods
+        (with names having prefixes ``check_`` or ``bench_``); each of these
         methods are called when running unit tests.
+
         """
         if level is None: # Do nothing.
             return
