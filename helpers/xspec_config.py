@@ -35,6 +35,8 @@ class xspec_config(Command):
                     ('cfitsio-libraries', None, "Name of the libraries that should be linked for cfitsio"),
                     ('ccfits-lib-dirs', None, "Where the CCfits libraries are located, if with-xspec is True"),
                     ('ccfits-libraries', None, "Name of the libraries that should be linked for CCfits"),
+                    ('wcslib-lib-dirs', None, "Where the WCSLIB libraries are located, if with-xspec is True"),
+                    ('wcslib-libraries', None, "Name of the libraries that should be linked for WCSLIB"),
                     ('gfortran-lib-dirs', None, "Where the gfortran libraries are located, if with-xspec is True"),
                     ('gfortran-libraries', None, "Name of the libraries that should be linked for gfortran"),
                     ]
@@ -50,6 +52,9 @@ class xspec_config(Command):
         self.ccfits_include_dirs = ''
         self.ccfits_lib_dirs = ''
         self.ccfits_libraries = 'CCfits'
+        self.wcslib_include_dirs = ''
+        self.wcslib_lib_dirs = ''
+        self.wcslib_libraries = 'wcs'
         self.gfortran_include_dirs = ''
         self.gfortran_lib_dirs = ''
         self.gfortran_libraries = 'gfortran'
@@ -72,11 +77,12 @@ class xspec_config(Command):
             ld1, inc1, l1 = build_lib_arrays(self, 'xspec')
             ld2, inc2, l2 = build_lib_arrays(self, 'cfitsio')
             ld3, inc3, l3 = build_lib_arrays(self, 'ccfits')
-            ld4, inc4, l4 = build_lib_arrays(self, 'gfortran')
+            ld4, inc4, l4 = build_lib_arrays(self, 'wcslib')
+            ld5, inc5, l5 = build_lib_arrays(self, 'gfortran')
 
-            ld = clean(ld1 + ld2 + ld3 + ld4)
-            inc = clean(inc1 + inc2 + inc3 + inc4)
-            l = clean(l1 + l2 + l3 + l4)
+            ld = clean(ld1 + ld2 + ld3 + ld4 + ld5)
+            inc = clean(inc1 + inc2 + inc3 + inc4 + inc5)
+            l = clean(l1 + l2 + l3 + l4 + l5)
 
             self.distribution.ext_modules.append(build_ext('xspec', ld, inc, l))
 
