@@ -327,32 +327,58 @@ Sherpa does not support
 default. However, it is possible to instruct Sherpa to build its
 `XSPEC` extension module by changing the build configuration options.
 
-There are three ways to build the extension:
-
- 1. build the full XSpec system;
-
- 2. use the model-only build of XSpec, which will also require
-    building the cfitsio, CCfits, and WCS libraries;
- 
- 3. or point to the X-Spec libraries provided by
-    [CIAO](http://cxc.harvard.edu/ciao/).
-
-In all cases, the same version of `gfortran` should be used to
-build Sherpa and X-Spec, to avoid possible incompatabilities.
-
 The `xspec_config` section of the `setup.cfg` file will need
 changing to point to the libraries, and to turn on the extension.
-An example, for the case when a full XSpec build was made, is:
+In all cases, set
 
     with-xspec=True
-    xspec_lib_dirs=$HEADAS/lib
-    xspec_libraries=XSFunctions XSModel XSUtil XS wcs-4.20
-    cfitsio_libraries=cfitsio_3.37
-    ccfits_libraries=CCfits_2.4
 
-The environment variable `$HEADAS` should be expanded out, and the
-version numbers of the `wcs`, `cfitsio`, and `CCfits` libraries
-may need to be changed.
+The remaining settings depend on how the XSPEC libraries have
+been built (in the examples below, environment variables are
+used, but the full path should be in your own copy of the file):
+
+ 1. If the full XSPEC system has been built, then use
+
+        xspec_lib_dirs=$HEADAS/lib
+        xspec_libraries=XSFunctions XSModel XSUtil XS wcs-4.20
+        cfitsio_libraries=cfitsio_3.37
+        ccfits_libraries=CCfits_2.4
+
+    The environment variable `$HEADAS` should be expanded out, and the
+    version numbers of the `wcs`, `cfitsio`, and `CCfits` libraries
+    may need to be changed.
+
+ 2. Use the model-only build of XSPEC, which will also require
+    building the
+    [cfitsio](http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html),
+    [CCfits](http://heasarc.gsfc.nasa.gov/docs/software/fitsio/ccfits/),
+    and
+    [WCSLIB](http://www.atnf.csiro.au/people/mcalabre/WCS/wcslib/)
+    libraries (it is not clear if version 5 is supported, since
+    XSPEC 12.8.2 uses version 4.20). If all the libraries are installed
+    into the same location ($HEADAS/lib), then a similar set up to the
+    full XSPEC build is used
+
+        xspec_lib_dirs=$HEADAS/lib
+        xspec_libraries=XSFunctions XSModel XSUtil XS wcs
+
+    except that the library names (`cfitiso`, `CCfits`, and
+    `wcs`) do not need version numbers. If placed in different
+    directories then the `cfitsio_lib_dirs`, `ccfits_lib_dirs`,
+    and (possibly) `gfortran_lib_dirs` values should be set
+    appropriately.
+
+ 3. or point to the XSPEC libraries provided by
+    [CIAO](http://cxc.harvard.edu/ciao/). In this case the
+    `wcs` library does not need to be specified because of
+    the way the XSPEC models-only version was built with
+    CIAO 4.7.
+
+        xspec_lib_dirs=$ASCDS_INSTALL/ots/lib
+        xspec_libraries=XSFunctions XSModel XSUtil XS
+
+In all cases, the same version of `gfortran` should be used to
+build Sherpa and XSPEC, to avoid possible incompatabilities.
 
 If there are problems building, or using, the module, then the other
 options may need to be set - in particular the `gfortran_lib_dirs` and
@@ -361,6 +387,21 @@ options may need to be set - in particular the `gfortran_lib_dirs` and
 The XSpec module is designed for use with XSpec version 12.8.2e. It
 can be used with other versions - either patches to 12.8.2 or
 different versions - but there may be build or user issues.
+
+In order for the module to work, the `HEADAS` environment variable has
+to be set in the shell from which the Python session is started.  For
+the CIAO-XSPEC build, `HEADAS` should be set to
+`$ASCDS_INSTALL/ots/spectral`, otherwise it is the parent directory of
+the `xspec_lib_dirs` directory.
+
+In order to check that the module is working, importing the
+`sherpa.astro.ui` module will no-longer warn you that the
+`sherpa.astro.xspec` module is not available and you can use routines
+such as:
+
+    >>> from sherpa.astro import xspec
+    >>> xspec.get_xsversion()
+    '12.8.2e'
 
 Other customization options
 ---------------------------
