@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -78,6 +78,28 @@ begin = backend.begin
 end = backend.end
 exceptions = backend.exceptions
 
+def _make_title(title, name=''):
+    """Return the plot title to use.
+
+    Parameters
+    ----------
+    title : str
+        The main title to use
+    name : str or None
+        The identifier for the dataset.
+
+    Returns
+    -------
+    title : str
+        If the name is empty or None then use title,
+        otherwise use title + ' for ' + name.
+
+    """
+
+    if name in [None, '']:
+        return title
+    else:
+        return "{} for {}".format(title, name)
 
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
@@ -1090,7 +1112,7 @@ class DelchiPlot(ModelPlot):
         self.y = self._calc_delchi(y, staterr)
         self.yerr = staterr/staterr
         self.ylabel = 'Sigma'
-        self.title = 'Sigma Residuals of %s' % data.name
+        self.title = _make_title('Sigma Residuals', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, self.yerr, self.xerr, self.title,
@@ -1132,8 +1154,9 @@ class ChisqrPlot(ModelPlot):
         staterr = data.get_yerr(True,stat.calc_staterror)
 
         self.y = self._calc_chisqr(y, staterr)
+        # NOTE: these are not displayed as LaTeX by the matplotlib backend
         self.ylabel = '\chi^2'
-        self.title = '\chi^2 of %s' % data.name
+        self.title = _make_title('\chi^2', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,
@@ -1179,7 +1202,7 @@ class ResidPlot(ModelPlot):
         else:
             self.yerr = data.get_yerr(True,stat.calc_staterror)
 
-        self.title = 'Residuals of %s - Model' % data.name
+        self.title = _make_title('Residuals', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, self.yerr, self.xerr, self.title,
@@ -1198,7 +1221,7 @@ class ResidContour(ModelContour):
          self.ylabel) = data.to_contour(yfunc=model)
         
         self.y = self._calc_resid(self.y)
-        self.title = 'Residuals of %s - Model' % data.name
+        self.title = _make_title('Residuals', data.name)
 
     def contour(self, overcontour=False, clearwindow=True):
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
@@ -1253,7 +1276,7 @@ class RatioPlot(ModelPlot):
             self.yerr = staterr/y[1]
 
         self.ylabel = 'Data / Model'
-        self.title = 'Ratio of %s : Model' % data.name
+        self.title = _make_title('Ratio of Data to Model', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, self.yerr, self.xerr, self.title,
@@ -1277,7 +1300,7 @@ class RatioContour(ModelContour):
          self.ylabel) = data.to_contour(yfunc=model)
 
         self.y = self._calc_ratio(self.y)
-        self.title = 'Ratio of %s : Model' % data.name
+        self.title = _make_title('Ratio of Data to Model', data.name)
 
     def contour(self, overcontour=False, clearwindow=True):
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
