@@ -1202,6 +1202,14 @@ class ResidPlot(ModelPlot):
         else:
             self.yerr = data.get_yerr(True,stat.calc_staterror)
 
+        # Some data sets (e.g. DataPHA, which shows the units) have a y
+        # label that could (should?) be displayed (or added to the label).
+        # To avoid a change in behavior, the label is only changed if
+        # the "generic" Y axis label is used. To be reviewed.
+        #
+        if self.ylabel == 'y':
+            self.ylabel = 'Data - Model'
+
         self.title = _make_title('Residuals', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
