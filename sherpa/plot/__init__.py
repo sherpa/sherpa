@@ -58,6 +58,7 @@ except:
     warning('failed to import sherpa.plot.%s;' % plot_opt +
             ' plotting routines will not be available')
     import dummy_backend as backend
+    plot_opt = 'dummy_backend'
 
 backend.init()
 
