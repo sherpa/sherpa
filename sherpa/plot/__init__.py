@@ -102,6 +102,34 @@ def _make_title(title, name=''):
     else:
         return "{} for {}".format(title, name)
 
+def _l(txt):
+    """Convert to LaTeX form for the current back end.
+
+    Parameters
+    ----------
+    txt : str
+        The text component in LaTeX form (e.g. r'\alpha^2'). It
+        should not contain any non-LaTeX content.
+
+    Returns
+    -------
+    latex : str
+        The input text with any text adornment needed by
+        the chosen plot back end to display it as LaTeX.
+
+    Notes
+    -----
+    No change is made when the dummy backend is in use.
+
+    """
+
+    if plot_opt == 'chips_backend':
+        return txt
+    elif plot_opt == 'pylab_backend':
+        return "${}$".format(txt)
+    else:
+        return txt
+
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
     plot_prefs = backend.get_plot_defaults()
@@ -1155,9 +1183,8 @@ class ChisqrPlot(ModelPlot):
         staterr = data.get_yerr(True,stat.calc_staterror)
 
         self.y = self._calc_chisqr(y, staterr)
-        # NOTE: these are not displayed as LaTeX by the matplotlib backend
-        self.ylabel = '\chi^2'
-        self.title = _make_title('\chi^2', data.name)
+        self.ylabel = _l('\chi^2')
+        self.title = _make_title(_l('\chi^2'), data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,
