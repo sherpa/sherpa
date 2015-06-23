@@ -605,7 +605,7 @@ def get_rmf_data(arg, make_copy=False):
     ### n_grp[i] == 0, we need to remove that row from the
     ### n_chan, f_chan, and matrix arrays we are constructing
     ### to be passed up to the DataRMF data structure.
- 
+
     ### This is trivial for n_chan and f_chan.  For the matrix
     ### array this can be more work -- can't just remove all
     ### zeroes, because some rows where n_grp[row] > 0 might
@@ -644,7 +644,7 @@ def get_rmf_data(arg, make_copy=False):
             good = (data['n_grp'] > 0)
             data['f_chan'] = data['f_chan'][good]
             data['n_chan'] = data['n_chan'][good]
-    
+
     return data, filename
 
 
@@ -680,7 +680,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
         if use_background:
             for block in pha:
                 if (_try_key(block, 'HDUCLAS2') == 'BKG'):
-                         hdu = block
+                    hdu = block
 
         keys = ['BACKFILE','ANCRFILE','RESPFILE',
                 'BACKSCAL','AREASCAL','EXPOSURE']
@@ -760,7 +760,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             #Make sure channel numbers not indices
             chan = list(hdu.columns.names).index('CHANNEL') + 1
             tlmin = _try_key(hdu, 'TLMIN'+str(chan), True, SherpaUInt)
-            
+
             for ii in range(num):
                 if int(channel[ii][0]) == 0:
                     channel[ii] += 1

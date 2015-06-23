@@ -516,7 +516,7 @@ class test_threads(SherpaTestCase):
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_setfullmodel(self):
         self.run_thread('setfullmodel')
-   
+
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
