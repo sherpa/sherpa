@@ -265,6 +265,7 @@ def has_fits_support():
     Used to skip tests requiring fits_io
     """
     return has_package_from_list('pyfits',
+                                 'astropy.io.fits',
                                  'pycrates',
                                  )
 
@@ -374,9 +375,9 @@ def export_method(meth, name=None, modname=None):
 
     if name is None:
         if meth.func_name == 'log_decorator':
-		name = meth._original.func_name
-	else:
-        	name = meth.func_name
+            name = meth._original.func_name
+        else:
+            name = meth.func_name
 
     if name == meth.func_name:
         old_name = '_old_' + name
@@ -385,16 +386,16 @@ def export_method(meth, name=None, modname=None):
 
     # Make an argument list string, removing 'self'
     if meth.func_name == 'log_decorator': # needed for making loggable decorator work (Omar)
-	argspec = inspect.getargspec(meth._original)
-	defaults = meth._original.func_defaults
-	doc = meth._original.func_doc
+        argspec = inspect.getargspec(meth._original)
+        defaults = meth._original.func_defaults
+        doc = meth._original.func_doc
     else:
-	argspec = inspect.getargspec(meth)
-	defaults = meth.func_defaults
-	doc = meth.func_doc
+        argspec = inspect.getargspec(meth)
+        defaults = meth.func_defaults
+        doc = meth.func_doc
     argspec[0].pop(0)
     argspec = inspect.formatargspec(argspec[0], argspec[1], argspec[2])
-    
+
     # Create a wrapper function with no default arguments
     g = {old_name: meth}
     if modname is not None:
@@ -405,7 +406,7 @@ def export_method(meth, name=None, modname=None):
     # Create another new function from the one we just made, this time
     # adding the default arguments and doc string from the original method
     new_meth = g[name]
-	
+
     new_meth = function(new_meth.func_code, new_meth.func_globals,
                         new_meth.func_name, defaults,
                         new_meth.func_closure)
@@ -446,10 +447,10 @@ def get_keyword_defaults(func, skip=0):
 
 def get_func_usage(func):
     """
-    
+
     Returns a string describing the function signature, similar to pydoc
     but flexible enough to pipe to slsh
-    
+
     """
     argspec = inspect.getargspec(func)
 
@@ -462,7 +463,7 @@ def get_func_usage(func):
         if num_args > 0:
             msg = '%s %s,' % (msg, arg)
             num_args = num_args - 1
-        
+
         else:
             msg = '%s [ %s,' % (msg, arg)
 
@@ -478,7 +479,7 @@ def get_func_usage(func):
 
     for i in xrange(num_kargs):
         msg = '%s]' % msg
-    
+
     return '%s )' % msg
 
 
@@ -487,16 +488,16 @@ def get_num_args(func):
 
     Return a tuple of the number of arguments.
     ( total number of args, number of non-keyword args, number of keyword args)
-    
+
     """
 
     argspec = inspect.getargspec(func)
     num_args = 0
     num_kargs = 0
-    
+
     if len(argspec[0]) != 0:
         num_args = len(argspec[0])
-    
+
     if argspec[3] is not None:
         num_kargs = len(argspec[3])
 
@@ -636,13 +637,13 @@ def calc_total_error(staterror=None, syserror=None):
     """
 
     if (staterror is None) and (syserror is None):
-	error = None
+        error = None
     elif (staterror is not None) and (syserror is None):
-	error = staterror
+        error = staterror
     elif (staterror is None) and (syserror is not None):
-	error = syserror
+        error = syserror
     else:
-	error = numpy.sqrt(staterror*staterror + syserror*syserror)
+        error = numpy.sqrt(staterror*staterror + syserror*syserror)
     return error
 
 
@@ -872,7 +873,7 @@ def numpy_convolve( a, b ):
 
     if len(a) > len(b):
         return _convolve(c,d)[:len(a)]
-    
+
     return _convolve(c,d)[:len(b)]
 
 
@@ -902,7 +903,7 @@ def dataspace1d(start, stop, step=1, numbins=None):
     if numbins is not None:
         if numbins <= 1:
             raise TypeError("input should be numbins > 1, found numbins=%s" % numbins)
-            
+
         xx = numpy.linspace(start, stop, numbins+1)
     else:
         xx = sao_arange(start, stop, step)
@@ -1071,7 +1072,7 @@ def nearest_interp( xout, xin, yin ):
     """Nearest-neighbor interpolation of (xin,yin) onto xout."""
     x0, x1, y0, y1 = interp_util( xout, xin, yin )
     return numpy.where((numpy.abs(xout - x0) < numpy.abs(xout - x1)), y0, y1)
-    
+
 def interpolate(xout, xin, yin, function=linear_interp):
     """Interpolate the curve defined by (xin, yin) at points xout.
 
@@ -1563,17 +1564,17 @@ class NumDerivCentralOrdinary( NumDeriv ):
     gives:
                                               '            3
                f( x + h ) - f( x - h ) = 2 h f ( x ) + O( h  )
-               
+
                  ' 
     solving for f ( x ):
-    
+
                      '        f( x + h ) - f( x - h )       2
                     f ( x ) = ----------------------- + O( h  )
                                         2 h
 
     In addition to the truncation error of order h^2, there is a round off
     error due to the finite numerical precision ~ r f( x ).
-                                       
+
              '        f( x + h ) - f( x - h )    r f( x )         2
             f ( x ) = ----------------------- + ---------  +  O( h  )
                                 2 h                h
@@ -1586,7 +1587,7 @@ class NumDerivCentralOrdinary( NumDeriv ):
 
     def __init__( self, func, fval0=None ):
         NumDeriv.__init__( self, func, fval0 )
-        
+
     def __call__( self, x, h ):
         if 0.0 == h:
             return numpy.Inf
@@ -1608,7 +1609,7 @@ class NumDerivFowardPartial( NumDeriv ):
 
         ei = numpy.zeros( len( x ), float )
         ej = numpy.zeros( len( x ), float )        
-            
+
         deltai = h * abs( x[ ith ] )
         if 0.0 == deltai:
             deltai = h
@@ -1630,14 +1631,14 @@ class NumDerivCentralPartial( NumDeriv ):
     """
 
     Add the following Taylor series expansion:
-    
+
                                              2
                                   '         h  ''            3
     f( x +/- h ) = f( x ) +/-  h f  ( x ) + - f  ( x ) + O( h  )
                                             2
                    ''
     and solve for f  ( x ), gives:
-    
+
               ''         f( x + h ) + f( x - h ) - 2 f( x )        2 
              f  ( x ) = ------------------------------------ + O( h  )
                                          2
@@ -1655,7 +1656,7 @@ class NumDerivCentralPartial( NumDeriv ):
                  Error  ~=  -  + h
                              2
                             h
-                            
+
     minimizing the error by differentiating wrt h, the solve for h:
     h ~ r^1/4"""
 
@@ -1671,7 +1672,7 @@ class NumDerivCentralPartial( NumDeriv ):
         jth = args[1]
 
         ei = numpy.zeros( len( x ), float )
-        
+
         if ith == jth:
 
             delta = h * abs( x[ ith ] )
@@ -1685,9 +1686,9 @@ class NumDerivCentralPartial( NumDeriv ):
             return fval
 
         else:
-            
+
             ej = numpy.zeros( len( x ), float )
-            
+
             deltai = h * abs( x[ ith ] )
             if 0.0 == deltai:
                 deltai = h
@@ -1697,7 +1698,7 @@ class NumDerivCentralPartial( NumDeriv ):
             if 0.0 == deltaj:
                 deltaj = h
             ej[ jth ] = deltaj
-            
+
             fval  = self.func( x + ei + ej )
             fval -= self.func( x + ei - ej )
             fval -= self.func( x - ei + ej )
@@ -1706,14 +1707,14 @@ class NumDerivCentralPartial( NumDeriv ):
             return fval
 
 class NoRichardsonExtrapolation:
-    
+
     def __init__( self, sequence, verbose=False ):
         self.sequence = sequence
         self.verbose = verbose
-        
+
     def __call__( self, x, t, tol, maxiter, h, *args ):
         self.sequence( x, h, *args )
-        
+
 class RichardsonExtrapolation( NoRichardsonExtrapolation ):
     """From Wikipedia, the free encyclopedia
     In numerical analysis, Richardson extrapolation is a sequence acceleration
@@ -1727,11 +1728,11 @@ class RichardsonExtrapolation( NoRichardsonExtrapolation ):
     Transactions of the Royal Society of London, Series A 210. 
     2. Richardson, L. F. (1927). \" The deferred approach to the limit \".
     Philosophical Transactions of the Royal Society of London, Series A 226:"""
-    
+
     def __init__( self, sequence, verbose=False ):
         self.sequence = sequence
         self.verbose = verbose
-        
+
     def __call__( self, x, t, tol, maxiter, h, *args ):
 
         richardson = numpy.zeros( (maxiter,maxiter), dtype=numpy.float_ )
@@ -1763,7 +1764,7 @@ class RichardsonExtrapolation( NoRichardsonExtrapolation ):
         if self.verbose:
             print_low_triangle( richardson, maxiter - 1 )
         return richardson[ maxiter - 1, maxiter - 1 ]
-    
+
 def hessian( func, par, extrapolation, algorithm, maxiter, h, tol, t ):
 
     num_dif = algorithm( func, func( par ) )
@@ -1812,7 +1813,7 @@ def func_counter( func ):
         nfev[0] += 1
         return func( x, *args )
     return nfev, func_counter_wrapper
-    
+
 def func_counter_history( func, history ):
     '''A function wrapper to count the number of times beingg called'''
     nfev = [0]
@@ -1833,7 +1834,7 @@ def is_in( arg, seq ):
 def is_iterable( arg ):
     return isinstance( arg, list ) or isinstance( arg, tuple ) \
            or isinstance( arg, numpy.ndarray ) or numpy.iterable( arg )
-    
+
 def is_sequence( start, mid, end ):
     return (start < mid) and (mid < end)
 
@@ -1851,11 +1852,11 @@ def Knuth_close( x, y, tol, myop=operator.__or__ ):
     confident solution presented by D. E. Knuth in 'The art of computer
     programming (vol II)'. For a given floating point values u and v and
     a tolerance e::
-    
+
        | u - v | <= e * |u| and | u - v | <= e * |v|                    (1)
 
     defines a "very close with tolerance e" relationship between u and v::
-    
+
        | u - v | <= e * |u| or   | u - v | <= e * |v|                   (2)
 
     defines a "close enough with tolerance e" relationship between
@@ -1870,7 +1871,7 @@ def Knuth_close( x, y, tol, myop=operator.__or__ ):
 
 
     """
-    
+
     diff = abs( x - y )
     if 0.0 == x or 0.0 == y:
         return diff <= tol
@@ -1888,12 +1889,12 @@ def safe_div( num, denom ):
     # avoid underflow
     if 0.0 == num or denom > 1 and num < denom * dbl_min:
         return 0
-    
+
     return num / denom
 
 def Knuth_boost_close( x, y, tol, myop=operator.__or__ ):
     """ The following text was taken verbatim from:
-        
+
     http://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction
 
     In most cases it is unreasonable to use an operator==(...)
@@ -1903,10 +1904,10 @@ def Knuth_boost_close( x, y, tol, myop=operator.__or__ ):
     confident solution presented by D. E. Knuth in 'The art of computer
     programming (vol II)'. For a given floating point values u and v and
     a tolerance e:
-    
+
     | u - v | <= e * |u| and | u - v | <= e * |v|                    (1)
     defines a "very close with tolerance e" relationship between u and v
-    
+
     | u - v | <= e * |u| or   | u - v | <= e * |v|                   (2)
     defines a "close enough with tolerance e" relationship between
     u and v. Both relationships are commutative but are not transitive.
@@ -1916,10 +1917,10 @@ def Knuth_boost_close( x, y, tol, myop=operator.__or__ ):
     that could cause an unwanted underflow condition, the implementation
     is using modified version of the inequations (1) and (2) where all
     underflow, overflow conditions could be guarded safely:
-    
+
     | u - v | / |u| <= e and | u - v | / |v| <= e          	     (1`)
     | u - v | / |u| <= e or  | u - v | / |v| <= e                    (2`)"""
-    
+
     diff = abs( x - y )
     if 0.0 == x or 0.0 == y:
         return diff <= tol
@@ -1947,9 +1948,9 @@ class OutOfBoundErr:
 class QuadEquaRealRoot:
     """ solve for the real roots of the quadratic equation:
     a * x^2 + b * x + c = 0"""
-    
+
     def __call__( self, a, b, c ):
-        
+
         if 0.0 == a:
             #
             # 0 * x^2 + b * x + c = 0
@@ -1962,9 +1963,9 @@ class QuadEquaRealRoot:
                 #
                 answer = - c / b
                 return [ answer, answer ]
-            
+
             else:
-                
+
                 #
                 # 0 * x^2 + 0 * x + c = 0
                 #
@@ -1975,16 +1976,16 @@ class QuadEquaRealRoot:
                 return [ None, None ]
 
         elif 0.0 == b:
-            
+
             #
             # a * x^2 + 0 * x + c = 0
             #
             if 0.0 == c:
-                
+
                 # a * x^2 + 0 * x + 0 = 0
                 return [ 0.0, 0.0 ]
             else:
-                
+
                 # a * x^2 + 0 * x + c = 0
                 if mysgn( a ) == mysgn( c ):
                     return [ None, None ]
@@ -1992,7 +1993,7 @@ class QuadEquaRealRoot:
                 return [ -answer, answer ]
 
         elif 0.0 == c:
-            
+
             #
             # a * x^2 + b * x + 0 = 0
             #
@@ -2006,7 +2007,7 @@ class QuadEquaRealRoot:
             t = - ( b + mysgn( b ) * sqrt_disc ) / 2.0
             return [ c / t, t / a ]
 
-            
+
 def bisection( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6 ):
 
     history = [ [], [] ]
@@ -2018,7 +2019,7 @@ def bisection( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6 ):
             fa = myfcn( xa, *args )
         if abs( fa ) <= tol:
             return [ [xa, fa], [ [xa, fa], [xa, fa] ], nfev[0] ]
-        
+
         if fb is None:
             fb = myfcn( xb, *args )
         if abs( fb ) <= tol:
@@ -2043,14 +2044,14 @@ def bisection( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6 ):
                     xb = xc; fb = fc                
                 else:
                     xa = xc; fa = fc
-                    
+
             else:
                 if abs( fa ) <= tol:
                     return [ [xa, fa], [ [xa, fa], [xb, fb] ], nfev[0] ]
                 else:
                     return [ [xb, fb], [ [xa, fa], [xb, fb] ], nfev[0] ]
 
-                
+
         xc = ( xa + xb ) / 2.0
         fc = myfcn( xc, *args )
         return [ [xc, fc], [ [xa, fa], [xb, fb] ], nfev[0] ]
@@ -2064,64 +2065,64 @@ def quad_coef( x, f ):
            = f( xc ) + A ( x - xc ) + B ( ( x - xc ) ( x - xc ) +
                                             ( x - xc ) ( xc - xb ) )
            = f( xc ) + ( A + B ( xc - xb ) ) ( x - xc ) + B ( x - xc )^2
-    
+
            = f( xc ) + C ( x - xc ) + B ( x - xc )^2 ; C = A + B ( xc - xb )
-                    
+
            = f( xc ) + C x - C xc + B ( x^2  - 2 x xc + xc^2 )
-                    
+
            = B x^2 + ( C - 2 * B xc ) x + f( xc ) - C xc  + B xc^2
-    
+
            = B x^2 + ( C - 2 * B x[2] ) x + f[ 2 ] + x[2] * ( B x[ 2 ] - C )"""
-    
+
 
     [B,C] = transformed_quad_coef( x, f )
     B_x2 = B * x[ 2 ]
     return [ B, C - 2 * B_x2, f[ 2 ] + x[ 2 ] * ( B_x2 - C ) ]
-     
+
 def transformed_quad_coef( x, f ):
     """
     p( x ) = f( xc ) + A ( x - xc ) + B ( x - xc ) ( x - xb )
-    
+
        where A and B are the divided differences:
-        
+
                                    f( xc ) - f( xb )
                                A = -----------------
                                         xc - xb
-    
-    
+
+
                                1     ( f( xc ) - f( xb )   f( xb ) - f( xa ) )
                         B = -------  ( ----------------- - ----------------- )
                             xc - xa  (    xc - xb               xb - xa      )
-    
+
         p( x ) = f( xc ) + A ( x - xc ) + B ( x - xc ) ( x - xb )
                = f( xc ) + A ( x - xc ) + B ( ( x - xc ) ( x - xc ) +
                                             ( x - xc ) ( xc - xb ) )
                = f( xc ) + ( A + B ( xc - xb ) ) ( x - xc ) + B ( x - xc )^2
-    
+
                = f( xc ) + C ( x - xc ) + B ( x - xc )^2
-               
+
         where  C = A + B ( xc - xb )
-    
+
         The root of p( x ), using the quadratic formula:
-    
+
                             1  (                                   )
                   x - xc = --- ( - C +/- sqrt( C^2 - 4 f( xc ) B ) )
                            2 B (                                   )
-                           
+
         Rationalize the numerator to avoid subtractive cancellation:
-    
+
                                      2 f( xc )
                   x - xc = -------------------------------
                            C +/- sqrt( C^2 - 4 f( xc ) B )
-    
+
         The sign should be chosen to maximize the denominator.  Therefore,
         the next point in the iteration is:
-        
-    
+
+
                                        2 f( xc )
                   x = xc - --------------------------------------
                            C + sgn( C ) sqrt( C^2 - 4 f( xc ) B )
-                           
+
                        {    -1,  x < 0
         where sgn(x) = {
                        {     1,  x >= 0"""
@@ -2144,34 +2145,34 @@ def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
     """A root-finding algorithm using Muller's method [1]_.
 
     p( x ) = f( xc ) + A ( x - xc ) + B ( x - xc ) ( x - xb )
-    
+
     Notes
     -----
     The general case::
-     
+
                                      2 f( x )
                                            n
                x   = x  -  ----------------------------------------
                 n+1   n    C  + sgn( C  ) sqrt( C^2 - 4 f( x  ) B )
                             n         n          n          n    n
-    
+
                            1     ( f( x  ) - f( x   )   f( x   ) - f( x   )  )
                                  (     n         n-1        n-1        n-2   )
                    B  = -------  ( ------------------ - -------------------  )
                     n   x - x    (    x - x                 x   - x          )
                          n   n-2 (     n   n-1               n-1   n-2       )
-                         
-                        
+
+
                         f( x  ) - f( x   )
                             n         n-1
                    A  = -----------------
                     n       x  - x
                              n    n-1
-    
+
                    C  = A  + B ( x - x   )
                     n    n    n   n   n-1
-    
-    
+
+
     The convergence rate for Muller's method can be shown to be
     the real root of the cubic x - x^3, that is::
 
@@ -2184,7 +2185,7 @@ def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
     ----------
 
     .. [1] http://en.wikipedia.org/wiki/Muller%27s_method
-    
+
     """
 
     def is_nan( arg ):
@@ -2198,7 +2199,7 @@ def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
     nfev, myfcn = func_counter_history( fcn, history )
 
     try:
-     
+
         if fa is None:
             fa = myfcn( xa, *args )
         if abs( fa ) <= tol:
@@ -2215,7 +2216,7 @@ def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
             return [ [xc, fc], [ [xc, fc], [xc, fc] ], nfev[0] ]
 
         while nfev[0] < maxfev:
-            
+
             [B, C] = transformed_quad_coef( [xa, xb, xc], [fa, fb, fc] )
 
             discriminant = max( C * C - 4.0 * fc * B, 0.0 )
@@ -2242,7 +2243,7 @@ def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
         return [ [xd, fd], [ [None, None], [None, None] ], nfev[0] ]
 
     except ZeroDivisionError:
-        
+
         #print 'demuller(): fixme ZeroDivisionError'
         #for x, y in izip( history[0], history[1] ):
         #    print 'f(%e)=%e' % ( x, y )
@@ -2263,7 +2264,7 @@ def new_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6 ):
             return x
         else:
             return ( x0 + x1 ) / 2.0
-        
+
     history = [ [], [] ]
     nfev, myfcn = func_counter_history( fcn, history )
 
@@ -2294,7 +2295,7 @@ def new_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6 ):
             tran = transformed_quad_coef( [xa, xb, xc], [fa, fb, fc] )
             B = tran[ 0 ]
             C = tran[ 1 ]
-            
+
             discriminant = max( C * C - 4.0 * fc * B, 0.0 )
 
             xd = xc - 2.0 * fc / ( C + mysgn( C ) * numpy.sqrt( discriminant ) )
@@ -2329,12 +2330,12 @@ def new_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6 ):
             if mysgn( fc ) != mysgn( fd ):
                 xa = xc; fa = fc
                 continue
-            
+
         #print 'new_muller(): maxfev exceeded'
         return [ [xd, fd], [ [xa, fa], [xb, fb] ], nfev[0] ]
 
     except ZeroDivisionError, OutOfBoundErr:
-        
+
         #print 'new_muller(): fixme ZeroDivisionError'
         #for x, y in izip( history[0], history[1] ):
         #    print 'f(%e)=%e' % ( x, y )
@@ -2392,7 +2393,7 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             xbest = xb; fbest = fb
         if abs( fc ) < abs( fbest ):
             xbest = xc; fbest = fc
-            
+
         oldx = 1.0e128
         while nfev[0] < maxfev:
 
@@ -2476,7 +2477,7 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
     # Something drastic has happened
     #
     except ZeroDivisionError, OutOfBoundErr:
-        
+
         return [ [xbest, fbest], [ [xa, fa], [xb, fb] ], nfev[0] ]
 
 
@@ -2525,7 +2526,7 @@ def zeroin( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2 ):
     nfev, myfcn = func_counter_history( fcn, history )
 
     try:
-        
+
         if fa is None:
             fa = myfcn( xa, *args )
             if abs( fa ) <= tol:
@@ -2540,12 +2541,12 @@ def zeroin( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2 ):
             sys.stderr.write( __name__ + ': ' + fcn.__name__ +
                               ' fa * fb < 0 is not met\n' )
             return [ [None, None], [ [None, None], [None, None] ], nfev[0] ]
-    
+
         xc = xa
         fc = fa
         DBL_EPSILON = numpy.float_(numpy.finfo(numpy.float32).eps)
         while nfev[0] < maxfev:
-        
+
             prev_step = xb - xa
 
             if abs( fc ) < abs( fb ):
@@ -2572,7 +2573,7 @@ def zeroin( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2 ):
                     return tmp                
                 else:
                     return [ [xb, fb], [ [xa, fa], [xb, fb] ], nfev[0] ]
-            
+
             if abs( prev_step ) >= tol_act and abs( fa ) > abs( fb ):
 
                 cb = xc - xb
@@ -2591,7 +2592,7 @@ def zeroin( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2 ):
                     q = -q
                 else:
                     p = -p
-                
+
                 if 2*p < (1.5*cb*q-abs(tol_act*q)) and 2*p < abs(prev_step*q):
                     new_step = p / q
 

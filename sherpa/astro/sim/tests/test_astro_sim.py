@@ -40,7 +40,7 @@ logger = logging.getLogger('sherpa')
 class test_sim(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits')
+                     'need pycrates, pyfits or astropy.io.fits')
     @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
                      "required sherpa.astro.xspec module missing")
     def setUp(self):
@@ -60,7 +60,7 @@ class test_sim(SherpaTestCase):
         pha = os.path.join(datadir, "refake_0934_1_21_1e4.fak")
         rmf = os.path.join(datadir, "ccdid7_default.rmf")
         arf = os.path.join(datadir, "quiet_0934.arf")
-        
+
         self.simarf = os.path.join(datadir, "aref_sample.fits")
         self.pcaarf = os.path.join(datadir, "aref_Cedge.fits")
 
@@ -72,7 +72,7 @@ class test_sim(SherpaTestCase):
         self.abs1 = XSwabs('abs1')
         self.p1 = XSpowerlaw('p1')
         model = rsp(self.abs1*self.p1)
-        
+
         self.fit = Fit(data, model, CStat(), NelderMead(), Covariance())
 
 
