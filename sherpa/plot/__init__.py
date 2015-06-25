@@ -78,6 +78,7 @@ _stats_noerr = ('cash', 'cstat', 'leastsq')
 begin = backend.begin
 end = backend.end
 exceptions = backend.exceptions
+get_latex_for_string = backend.get_latex_for_string
 
 def _make_title(title, name=''):
     """Return the plot title to use.
@@ -101,34 +102,6 @@ def _make_title(title, name=''):
         return title
     else:
         return "{} for {}".format(title, name)
-
-def _l(txt):
-    """Convert to LaTeX form for the current back end.
-
-    Parameters
-    ----------
-    txt : str
-        The text component in LaTeX form (e.g. r'\alpha^2'). It
-        should not contain any non-LaTeX content.
-
-    Returns
-    -------
-    latex : str
-        The input text with any text adornment needed by
-        the chosen plot back end to display it as LaTeX.
-
-    Notes
-    -----
-    No change is made when the dummy backend is in use.
-
-    """
-
-    if plot_opt == 'chips_backend':
-        return txt
-    elif plot_opt == 'pylab_backend':
-        return "${}$".format(txt)
-    else:
-        return txt
 
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
@@ -1183,8 +1156,8 @@ class ChisqrPlot(ModelPlot):
         staterr = data.get_yerr(True,stat.calc_staterror)
 
         self.y = self._calc_chisqr(y, staterr)
-        self.ylabel = _l('\chi^2')
-        self.title = _make_title(_l('\chi^2'), data.name)
+        self.ylabel = get_latex_for_string('\chi^2')
+        self.title = _make_title(get_latex_for_string('\chi^2'), data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,

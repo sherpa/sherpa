@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -39,7 +39,8 @@ __all__ = ('clear_window', 'plot', 'histo', 'contour', 'point', 'set_subplot',
            'get_confid_contour_defaults', 'set_window_redraw', 'set_jointplot',
            'get_histo_defaults', 'get_model_histo_defaults',
            'get_component_plot_defaults', 'get_component_histo_defaults',
-           'vline', 'hline', 'get_cdf_plot_defaults', 'get_scatter_plot_defaults')
+           'vline', 'hline', 'get_cdf_plot_defaults', 'get_scatter_plot_defaults',
+           'get_latex_for_string')
 
 _initialized = False # Set this True first time begin() is called
 
@@ -565,3 +566,21 @@ def get_scatter_plot_defaults():
     d['symbolfill'] = True
     d['yerrorbars'] = False
     return d
+
+def get_latex_for_string(txt):
+    """Convert to LaTeX form for the ChIPS back end.
+
+    Parameters
+    ----------
+    txt : str
+        The text component in LaTeX form (e.g. r'\alpha^2'). It
+        should not contain any non-LaTeX content.
+
+    Returns
+    -------
+    latex : str
+        The input text (i.e. no change).
+
+    """
+
+    return txt
