@@ -35,7 +35,7 @@ warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
 
-__all__ = ('Session')
+__all__ = ('Session',)
 
 
 class Session(sherpa.ui.utils.Session):

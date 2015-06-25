@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@ from exceptions import ValueError
 import os
 
 
-_all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
+__all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
           'write_arrays')
 
 
