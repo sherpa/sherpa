@@ -236,7 +236,7 @@ def _try_col(crate, colname, make_copy=False, fix_type=False, dtype=SherpaFloat)
     if col is None:
         return None
 
-    if col.is_varlen():
+    if hasattr(col, 'is_varlen') and col.is_varlen():
         values = col.get_fixed_length_array()
     else:
         values = col.values
@@ -309,7 +309,7 @@ def _try_col_list(crate, colname, num, make_copy=False, fix_type=False,
 
     col = crate.get_column(colname)
 
-    if col.is_varlen():
+    if hasattr(col, 'is_varlen') and col.is_varlen():
         values = col.get_fixed_length_array()
     else:
         values = col.values
