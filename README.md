@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/sherpa/sherpa.svg?branch=master)](https://travis-ci.org/sherpa/sherpa)
+
 <!-- TOC *generated with [DocToc](https://github.com/thlorenz/doctoc)* -->
 **Table of Contents**
 
