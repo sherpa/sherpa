@@ -1474,12 +1474,11 @@ static PyObject *init_optfcn( PyObject *self, PyObject *args ) {
 
   if ( xpar.get_size() != lo.get_size() ||
        xpar.get_size() != hi.get_size() ) {
-    char errmsg[128];
-    sprintf( errmsg, "init_optfcn: Incompatible array sizes "
-	     "xpar=%d, lo=%d, hi=%d\n",
-	     (int) xpar.get_size(), (int) lo.get_size(), (int) hi.get_size());
     PyErr_Format( PyExc_ValueError,
-		  static_cast<const char*>( errmsg ) );
+                  "init_optfcn: Incompatible array sizes "
+	          "xpar=%d, lo=%d, hi=%d\n",
+	          (int) xpar.get_size(), (int) lo.get_size(),
+                  (int) hi.get_size() );
     return NULL;
   }
 
