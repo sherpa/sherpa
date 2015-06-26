@@ -236,13 +236,18 @@ def _try_col(crate, colname, make_copy=False, fix_type=False, dtype=SherpaFloat)
     if col is None:
         return None
 
+    if hasattr(col, 'is_varlen') and col.is_varlen():
+        values = col.get_fixed_length_array()
+    else:
+        values = col.values
+
     if make_copy:
         # Make a copy if a filename passed in
-        data = numpy.array(col.values).ravel()
+        data = numpy.array(values).ravel()
 
     else:
         # Use a reference if a crate passed in
-        data = numpy.asarray(col.values).ravel()
+        data = numpy.asarray(values).ravel()
 
     if fix_type:
         data = data.astype(dtype)
@@ -304,12 +309,17 @@ def _try_col_list(crate, colname, num, make_copy=False, fix_type=False,
 
     col = crate.get_column(colname)
 
+    if hasattr(col, 'is_varlen') and col.is_varlen():
+        values = col.get_fixed_length_array()
+    else:
+        values = col.values
+
     if make_copy:
         # Make a copy if a filename passed in
-        col = numpy.array(col.values)
+        col = numpy.array(values)
     else:
         # Use a reference if a crate passed in
-        col = numpy.asarray(col.values)
+        col = numpy.asarray(values)
 
     if fix_type:
         col = col.astype(dtype)
