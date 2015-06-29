@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -58,6 +58,7 @@ except:
     warning('failed to import sherpa.plot.%s;' % plot_opt +
             ' plotting routines will not be available')
     import dummy_backend as backend
+    plot_opt = 'dummy_backend'
 
 backend.init()
 
@@ -77,7 +78,30 @@ _stats_noerr = ('cash', 'cstat', 'leastsq')
 begin = backend.begin
 end = backend.end
 exceptions = backend.exceptions
+get_latex_for_string = backend.get_latex_for_string
 
+def _make_title(title, name=''):
+    """Return the plot title to use.
+
+    Parameters
+    ----------
+    title : str
+        The main title to use
+    name : str or None
+        The identifier for the dataset.
+
+    Returns
+    -------
+    title : str
+        If the name is empty or None then use title,
+        otherwise use title + ' for ' + name.
+
+    """
+
+    if name in [None, '']:
+        return title
+    else:
+        return "{} for {}".format(title, name)
 
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
@@ -1090,7 +1114,7 @@ class DelchiPlot(ModelPlot):
         self.y = self._calc_delchi(y, staterr)
         self.yerr = staterr/staterr
         self.ylabel = 'Sigma'
-        self.title = 'Sigma Residuals of %s' % data.name
+        self.title = _make_title('Sigma Residuals', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, self.yerr, self.xerr, self.title,
@@ -1132,8 +1156,8 @@ class ChisqrPlot(ModelPlot):
         staterr = data.get_yerr(True,stat.calc_staterror)
 
         self.y = self._calc_chisqr(y, staterr)
-        self.ylabel = '\chi^2'
-        self.title = '\chi^2 of %s' % data.name
+        self.ylabel = get_latex_for_string('\chi^2')
+        self.title = _make_title(get_latex_for_string('\chi^2'), data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,
@@ -1179,7 +1203,15 @@ class ResidPlot(ModelPlot):
         else:
             self.yerr = data.get_yerr(True,stat.calc_staterror)
 
-        self.title = 'Residuals of %s - Model' % data.name
+        # Some data sets (e.g. DataPHA, which shows the units) have a y
+        # label that could (should?) be displayed (or added to the label).
+        # To avoid a change in behavior, the label is only changed if
+        # the "generic" Y axis label is used. To be reviewed.
+        #
+        if self.ylabel == 'y':
+            self.ylabel = 'Data - Model'
+
+        self.title = _make_title('Residuals', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, self.yerr, self.xerr, self.title,
@@ -1198,7 +1230,7 @@ class ResidContour(ModelContour):
          self.ylabel) = data.to_contour(yfunc=model)
         
         self.y = self._calc_resid(self.y)
-        self.title = 'Residuals of %s - Model' % data.name
+        self.title = _make_title('Residuals', data.name)
 
     def contour(self, overcontour=False, clearwindow=True):
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
@@ -1253,7 +1285,7 @@ class RatioPlot(ModelPlot):
             self.yerr = staterr/y[1]
 
         self.ylabel = 'Data / Model'
-        self.title = 'Ratio of %s : Model' % data.name
+        self.title = _make_title('Ratio of Data to Model', data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, self.yerr, self.xerr, self.title,
@@ -1277,7 +1309,7 @@ class RatioContour(ModelContour):
          self.ylabel) = data.to_contour(yfunc=model)
 
         self.y = self._calc_ratio(self.y)
-        self.title = 'Ratio of %s : Model' % data.name
+        self.title = _make_title('Ratio of Data to Model', data.name)
 
     def contour(self, overcontour=False, clearwindow=True):
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
