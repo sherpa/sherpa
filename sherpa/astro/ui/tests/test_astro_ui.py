@@ -130,10 +130,15 @@ class test_ui(SherpaTestCase):
 class test_more_ui(SherpaTestCase):
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
         self.img = self.datadir + '/img.fits'
         self.pha = self.datadir + '/threads/simultaneous/pi2286.fits'
         self.rmf = self.datadir + '/threads/simultaneous/rmf2286.fits'
         logger.setLevel(logging.ERROR)
+
+    def tearDown(self):
+        logger.setLevel(self._old_logger_level)
 
     #bug #12732
     @unittest.skipIf(not has_fits_support(),
