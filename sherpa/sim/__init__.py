@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -113,16 +113,15 @@ class MCMC(NoNewAttributesAfterInit):
         self.__dict__.update(state)
 
 
-    ### DOC-TODO: include examples once this returns something useful
-    ### TODO: this should really return a dict, not a string
+    ### DOC-TODO: include examples
     def list_priors(self):
         """Return the priors set for model parameters, if any.
 
         Returns
         -------
-        priors : string
-           A string representation of the dictionary mapping between
-           parameters (keys) and priot functions (values).
+        priors : dict
+           The dictionary of mappings between parameters (keys)
+           and prior functions (values) created by `set_prior`.
 
         See Also
         --------
@@ -130,7 +129,7 @@ class MCMC(NoNewAttributesAfterInit):
         set_prior : Set the prior function to use with a parameter.
 
         """
-        return str(self.priors)
+        return self.priors
 
 
     def get_prior(self, par):
