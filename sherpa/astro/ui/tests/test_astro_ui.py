@@ -127,12 +127,14 @@ class test_ui(SherpaTestCase):
         ui.load_filter(self.filter_single_log_table)
         ui.load_filter(self.filter_single_log_table, ignore=True)
 
+
 class test_more_ui(SherpaTestCase):
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
         self.img = self.datadir + '/img.fits'
         self.pha = self.datadir + '/threads/simultaneous/pi2286.fits'
         self.rmf = self.datadir + '/threads/simultaneous/rmf2286.fits'
+        self.pha3c273 = self.datadir + '/ciao4.3/pha_intro/3c273.pi'
         logger.setLevel(logging.ERROR)
 
     #bug #12732
@@ -153,6 +155,15 @@ class test_more_ui(SherpaTestCase):
         from sherpa.astro.instrument import RMFModelPHA
         self.assertTrue(isinstance(m, RMFModelPHA))
 
+    #bug #38
+    @unittest.skipIf(not has_fits_support(),
+                     'need pycrates, pyfits or astropy.io.fits')
+    @unittest.skipIf(test_data_missing(), "required test data missing")
+    def test_bug38(self):
+        ui.load_pha('3c273', self.pha3c273)
+        ui.notice_id('3c273', 0.3, 2)
+        ui.group_counts('3c273', 30)
+        ui.group_counts('3c273', 15)
 
 
 class test_image_12578(SherpaTestCase):

@@ -571,7 +571,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
                 expr.append(',')
             expr.append(format % vals[ii])
             expr.append(',')
-    if expr[-1] in (',',delim):
+    if len(expr) and expr[-1] in (',',delim):
         expr.append(format % vals[-1])
 
     return ''.join(expr)
