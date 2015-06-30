@@ -70,7 +70,7 @@ def _extinct_interp(xtable, etable, x):
             out[i] = ((e2 - e1) / (x2 - x1)) * (xval - x1) + e1
 
     return out
-    
+
 # This model sets in edge (in Angstroms) beyond which absorption
 # is a significant feature to the spectrum or SED.
 class AbsorptionEdge(ArithmeticModel):
@@ -230,7 +230,7 @@ class EmissionLorentz(ArithmeticModel):
         arg = numpy.power(numpy.abs(x - p[1]), p[3]) + sigma/2.0 * sigma/2.0
 
         arg[arg<1.0e-15] = 1.0e-15
-        
+
         return p[2] * sigma / arg / (numpy.pi*2)
 
 # This model computes an absorption Gaussian feature expressed in
@@ -337,7 +337,7 @@ class AbsorptionVoigt(ArithmeticModel):
         # Create core and wings from Gaussian and Lorentz
         self._core = AbsorptionGaussian()
         self._wings = AbsorptionLorentz()
-        
+
         ArithmeticModel.__init__(self, name, (self.center, self.ew, self.fwhm, self.lg))
 
     #@modelCacher1d
@@ -412,7 +412,7 @@ class Bremsstrahlung(ArithmeticModel):
         if 0.0 == p[0]:
             raise ValueError('model evaluation failed, ' +
                              '%s refer cannot be zero' % self.name)
-        
+
         return p[1] * numpy.power((p[0] / x), 2) * numpy.exp(-1.438779e8 / x / p[2])
 
 # This model computes continuum emission with a broken power-law;
@@ -420,7 +420,7 @@ class Bremsstrahlung(ArithmeticModel):
 # wavelength.
 class BrokenPowerlaw(ArithmeticModel):
     """Broken power-law model."""
-    
+
     def __init__(self, name='brokenpowerlaw'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
         self.ampl = Parameter(name, 'ampl', 1., tinyval, hard_min=tinyval, units="angstroms")
@@ -434,7 +434,7 @@ class BrokenPowerlaw(ArithmeticModel):
         if 0.0 == p[0]:
             raise ValueError('model evaluation failed, ' +
                              '%s refer cannot be zero' % self.name)
-        
+
         x = numpy.asarray(x, dtype=SherpaFloat)
         arg = x / p[0]
         arg = p[1] * (numpy.where(arg > 1.0, numpy.power(arg, p[3]), numpy.power(arg, p[2])))
@@ -445,7 +445,7 @@ class BrokenPowerlaw(ArithmeticModel):
 # (ApJ, 1989, vol 345, pp 245)
 class CCM(ArithmeticModel):
     """Cardelli, Clayton, and Mathis extinction curve."""
-    
+
     def __init__(self, name='ccm'):
         self.ebv = Parameter(name, 'ebv', 0.5)
         self.r = Parameter(name, 'r', 3.2)
@@ -548,7 +548,7 @@ class LogAbsorption(ArithmeticModel):
             alpha = 1.0001
 
         y = numpy.where(x >= p[1], p[2] * numpy.power((x / p[1]), -alpha), p[2] * numpy.power((x / p[1]), alpha))
-        
+
         return numpy.exp(-y)
 
 # This model computes emission using a Gaussian function expressed
@@ -604,10 +604,10 @@ class LogEmission(ArithmeticModel):
 # y = c0 + c1 * (x - offset) + c2 * (x - offset)^2 + c3 * (x - offset)^3 + c4 * (x - offset)^4 + c5 * (x - offset)^5
 class Polynomial(ArithmeticModel):
     """Polynomial model."""
-    
+
     def __init__(self, name='polynomial'):
         pars = []
-        
+
         for i in xrange(6):
             pars.append(Parameter(name, 'c%d' % i, 0, frozen=True))
         pars[0].val = 1
@@ -633,7 +633,7 @@ class Polynomial(ArithmeticModel):
 # This model computes continuum emission using a power-law.
 class Powerlaw(ArithmeticModel):
     """Power-law model."""
-    
+
     def __init__(self, name='powerlaw'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
         self.ampl = Parameter(name, 'ampl', 1., tinyval, hard_min=tinyval, units="angstroms")
@@ -646,7 +646,7 @@ class Powerlaw(ArithmeticModel):
         if 0.0 == p[0]:
             raise ValueError('model evaluation failed, ' +
                              '%s refer cannot be zero' % self.name)
-        
+
         x = numpy.asarray(x, dtype=SherpaFloat)
         arg = x / p[0]
         arg = p[1] * numpy.power(arg, p[2])
@@ -657,7 +657,7 @@ class Powerlaw(ArithmeticModel):
 # recombination function.
 class Recombination(ArithmeticModel):
     """Optically thin recombination model."""
-    
+
     def __init__(self, name='recombination'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
         self.ampl = Parameter(name, 'ampl', 1., tinyval, hard_min=tinyval, units="angstroms")
@@ -671,7 +671,7 @@ class Recombination(ArithmeticModel):
         if 0.0 == p[0]:
             raise ValueError('model evaluation failed, ' +
                              '%s refer cannot be zero' % self.name)
-        
+
         x = numpy.asarray(x, dtype=SherpaFloat)
         sigma = p[0] * p[3] / 705951.5; # = 2.9979e5 / 2.354820044
         delta = 1.440e8 * (1.0 / x - 1.0 / p[0]) / p[2]
@@ -692,7 +692,7 @@ class EmissionVoigt(ArithmeticModel):
         # Create core and wings from Gaussian and Lorentz
         self._core = EmissionGaussian()
         self._wings = EmissionLorentz()
-        
+
         ArithmeticModel.__init__(self, name, (self.center, self.flux, self.fwhm, self.lg))
 
     #@modelCacher1d
@@ -709,7 +709,7 @@ class EmissionVoigt(ArithmeticModel):
 # Calzetti, Kinney and Storchi-Bergmann, 1994, ApJ, 429, 582
 class XGal(ArithmeticModel):
     """Extragalactic extinction function of Calzetti, Kinney and Storchi-Bergmann"""
-    
+
     def __init__(self, name='xgal'):
         self.ebv = Parameter(name, 'ebv', 0.5)
 
@@ -740,7 +740,7 @@ class XGal(ArithmeticModel):
 
 class FM(ArithmeticModel):
     """Extinction curve for UV spectra below 3200 A (Fitzpatrick and Massa 1988)"""
-    
+
     def __init__(self, name='fm'):
         self.ebv = Parameter(name, 'ebv', 0.5)  # E(B-V)
         self.x0 = Parameter(name, 'x0', 4.6)    # Position of Drude bump
@@ -772,11 +772,11 @@ class FM(ArithmeticModel):
 #  LMC extinction curve from Howarth 1983 MNRAS, 203, 301
 class LMC(ArithmeticModel):
     """Howarth's LMC extinction curve (Howarth 1983 MNRAS, 203, 301)"""
-    
+
     def __init__(self, name='lmc'):
         self.ebv = Parameter(name, 'ebv', 0.5)
         self._R = 3.1
-        
+
         ArithmeticModel.__init__(self, name, (self.ebv,))
 
     #@modelCacher1d
@@ -784,7 +784,7 @@ class LMC(ArithmeticModel):
         x = numpy.asarray(x, dtype=SherpaFloat)
         # convert from wavelength in Angstroms to 1/microns
         x = 10000.0 / x
-        
+
         extmag = numpy.zeros_like(x)
 
         # Infrared - extend optical results linearly to 0 at 1/lambda = 0
@@ -822,7 +822,7 @@ class SM(ArithmeticModel):
                                    8.00,  8.87,  9.67,  9.33,  8.62,  8.00,
                                    7.75,  7.87,  8.12,  8.15,  8.49,  9.65,
                                    10.55, 11.55, 12.90, 14.40])
-                                  
+
         ArithmeticModel.__init__(self, name, (self.ebv,))
 
     #@modelCacher1d
@@ -854,7 +854,7 @@ class SMC(ArithmeticModel):
                                    5.85,  6.38,  6.76,  6.90,  7.17,  7.71,
                                    8.01,  8.49,  9.06,  9.28,  9.84, 10.80,
                                    11.51, 12.52, 13.54])
-                                  
+
         ArithmeticModel.__init__(self, name, (self.ebv,))
 
     #@modelCacher1d
@@ -891,7 +891,7 @@ class SMC(ArithmeticModel):
 # 1000 < lambda < 3704	Seaton (1979) MNRAS 187,73p.
 # 3704 < lambda < 10,000	Nandy (1975) A+A 44, 195. (corrected to R=3.2)
 # 10000 < lambda		    extrapolate linearly in 1/lambda
-    
+
 class Seaton(ArithmeticModel):
     """Seaton's interstellar extinction function (1979 MNRAS)"""
     def __init__(self, name='seaton'):
@@ -903,7 +903,7 @@ class Seaton(ArithmeticModel):
         self._extab = numpy.array([0.0,   1.36, 1.64, 1.84, 2.04, 2.24, 2.44,
                                    2.66, 2.88, 3.14, 3.36, 3.56, 3.77,
                                    3.96, 4.15, 4.26, 4.40, 4.52, 4.64])
-                                  
+
         ArithmeticModel.__init__(self, name, (self.ebv,))
 
     #@modelCacher1d

@@ -27,7 +27,7 @@ def sqr( x, *args ):
 
 def prob1( x, *args ):
     return numpy.cos( x ) - pow( x, 3.0 )
-        
+
 def prob2( x, *args ):
     return pow( x, 4.0 ) - x - 1.0
 
@@ -48,7 +48,7 @@ def prob7( x, *args ):
 
 def prob8( x, *args ):
     return x * x - numpy.exp( x )
-  
+
 def prob9( x, *args ):
     return numpy.sin( x ) + numpy.cos( x )
 
@@ -199,17 +199,17 @@ class test_root( SherpaTestCase ):
     def setUp(self):
         self.verbose = False
         self.tol = 1.0e-6
-        
+
     def demuller2( self, fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                    tol=1.0e-6 ):
         return demuller( fcn, xa, xb, (xa+xb)/2.0, args=args, maxfev=maxfev,
                          tol=tol)
-    
+
     def tst_solve( self, fct, a, b, tol, iprint=False ):
         methods = [ bisection, self.demuller2, new_muller, apache_muller, zeroin ]
         if self.verbose or iprint:
             sys.stdout.write( '\n' )
-            
+
         for solve_func in methods:
             # demuller2 cannot solve prob30 & pinhead so may as well skip them
             if fct.__name__ == 'prob30' or fct.__name__ == 'pinhead':
@@ -439,7 +439,7 @@ class test_root( SherpaTestCase ):
         a = 1.7
         b = 10.0
         self.tst_solve( muller_convergence_rate, a, b, self.tol )
-        
+
 def tstme():
     from sherpa.utils import SherpaTest
     import sherpa.utils

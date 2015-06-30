@@ -37,4 +37,3 @@ commands = {
     'sherpa_config': sherpa_config,
     'xspec_config': xspec_config,
 }
-

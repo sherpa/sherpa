@@ -37,14 +37,14 @@ class ConvolutionModel(CompositeModel, ArithmeticModel):
 
     @staticmethod
     def wrapobj(obj):
-	if isinstance(obj, ArithmeticModel):
-	    return obj
-	return ArithmeticFunctionModel(obj)
+        if isinstance(obj, ArithmeticModel):
+            return obj
+        return ArithmeticFunctionModel(obj)
 
     @staticmethod
     def wrapkern(obj):
-	if isinstance(obj, ArithmeticModel):
-	    return obj
+        if isinstance(obj, ArithmeticModel):
+            return obj
         elif callable( obj ):
             return ArithmeticFunctionModel(obj)
         return ArithmeticConstantModel(obj, 'kernel')
@@ -54,7 +54,7 @@ class ConvolutionModel(CompositeModel, ArithmeticModel):
         self.lhs = self.wrapkern(lhs)
         self.rhs = self.wrapobj(rhs)
         self.psf = psf
-	CompositeModel.__init__(self,
+        CompositeModel.__init__(self,
                                 ('%s(%s)' %
                                  (self.psf.name, self.rhs.name)),
                                 (self.psf, self.lhs, self.rhs))
@@ -62,7 +62,7 @@ class ConvolutionModel(CompositeModel, ArithmeticModel):
 
     def calc(self, p, *args, **kwargs):
         nlhs = len(self.lhs.pars)
-	return self.psf.calc(p[:nlhs], p[nlhs:],
+        return self.psf.calc(p[:nlhs], p[nlhs:],
                              self.lhs.calc, self.rhs.calc, *args, **kwargs)
 
 
@@ -221,11 +221,11 @@ class ConvolutionKernel(Model):
         if isinstance(kernel, Data):
             kernel = numpy.asarray(kernel.get_dep())
 
-	if isinstance(model, basestring):
-		if session is None:
-			model = sherpa.astro.ui._session._eval_model_expression(model)
-		else:
-			model = session._eval_model_expression(model)
+        if isinstance(model, basestring):
+            if session is None:
+                model = sherpa.astro.ui._session._eval_model_expression(model)
+            else:
+                model = session._eval_model_expression(model)
 
         return ConvolutionModel(kernel, model, self)
 
@@ -538,7 +538,7 @@ class PSFModel(Model):
                   ('%s.origin' % self._name, 'frozen',
                    self.origin, self.origin, self.origin))
         for p in [self.radial, self.norm]:
-	    s += ('\n   %-12s %-6s %12g %12g %12g %10s' %
+            s += ('\n   %-12s %-6s %12g %12g %12g %10s' %
                   (p.fullname, 'frozen', p.val, p.min, p.max, p.units))
         return s
 
@@ -558,12 +558,12 @@ class PSFModel(Model):
         kernel = self.kernel
         if isinstance(kernel, Data):
             kernel = numpy.asarray(kernel.get_dep())
-	
-	if isinstance(model, basestring):
-		if session is None:
-			model = sherpa.astro.ui._session._eval_model_expression(model)
-		else:
-			model = session._eval_model_expression(model)
+
+        if isinstance(model, basestring):
+            if session is None:
+                model = sherpa.astro.ui._session._eval_model_expression(model)
+            else:
+                model = session._eval_model_expression(model)
 
         return ConvolutionModel(kernel, model, self)
 

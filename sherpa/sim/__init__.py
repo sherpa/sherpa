@@ -316,7 +316,7 @@ class MCMC(NoNewAttributesAfterInit):
 
         """
         if isinstance(sampler, basestring):
-            
+
             # case insensitive
             sampler = str(sampler).lower()
 
@@ -528,7 +528,7 @@ class MCMC(NoNewAttributesAfterInit):
             if -1 in mins or -1 in maxes:
                 #print'hard limit exception'
                 raise LimitError('Sherpa parameter hard limit exception')
-            
+
             level = _log.getEffectiveLevel()
 
             try:

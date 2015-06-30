@@ -424,7 +424,7 @@ class FluxHistogram(ModelHistogram):
         vals = self.modelvals
         if self.modelvals is not None:
             vals = array2string(asarray(self.modelvals), separator=',', precision=4, suppress_small=False)
-            
+
         flux = self.flux
         if self.flux is not None:
             flux = array2string(asarray(self.flux), separator=',', precision=4, suppress_small=False)
@@ -439,7 +439,7 @@ class FluxHistogram(ModelHistogram):
         self.modelvals = asarray(fluxes[:,1:])
         self.xlo, self.xhi = dataspace1d(y.min(), y.max(), numbins=bins+1)[:2]
         y = histogram1d(y, self.xlo, self.xhi)
-	self.y = y/float(y.max())
+        self.y = y/float(y.max())
 
 
 class EnergyFluxHistogram(FluxHistogram):

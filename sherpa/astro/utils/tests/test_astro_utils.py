@@ -22,10 +22,10 @@ from sherpa.utils import SherpaTestCase
 from sherpa.astro.utils import is_in
 
 class test_utils(SherpaTestCase):
-    
+
     def setUp(self):
-           self.long  = [100,249,400,450,500,601,1024]
-           self.short = [100,249,601,1024]
+        self.long  = [100,249,400,450,500,601,1024]
+        self.short = [100,249,601,1024]
 
     def test_response_filter_logic(self):
 

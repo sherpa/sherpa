@@ -72,7 +72,7 @@ def read_arrays(*args):
     dstype=Data1D
     if _is_subclass(args[-1], BaseData):
         dstype = args.pop()
-        
+
     args = backend.get_column_data(*args)
 
     # Determine max number of args for dataset constructor
@@ -83,7 +83,7 @@ def read_arrays(*args):
 def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
     """
     read_table( filename [, ncols=2 [, colkeys=None [, dstype=Data1D ]]] )
-    
+
     read_table( TABLECrate [, ncols=2 [, colkeys=None [, dstype=Data1D ]]] )
     """
     colnames, cols, name, hdr = backend.get_table_data(arg, ncols, colkeys)
@@ -142,7 +142,7 @@ def read_image(arg, coord='logical', dstype=DataIMG):
 def read_arf(arg):
     """
     read_arf( filename )
-    
+
     read_arf( ARFCrate )
     """
     data, filename = backend.get_arf_data(arg)
@@ -152,7 +152,7 @@ def read_arf(arg):
 def read_rmf(arg):
     """
     read_rmf( filename )
-    
+
     read_rmf( RMFCrate )
     """
     data, filename = backend.get_rmf_data(arg)
@@ -162,7 +162,7 @@ def read_rmf(arg):
 def read_pha(arg, use_errors=False, use_background=False):
     """
     read_pha( filename [, use_errors=False [, use_background=False]] )
-    
+
     read_pha( PHACrate [, use_errors=False [, use_background=False]] )
     """
     datasets, filename = backend.get_pha_data(arg,use_background=use_background)
@@ -201,7 +201,7 @@ def read_pha(arg, use_errors=False, use_background=False):
             except:
                 if output_once:
                     warning("%s" % sys.exc_info()[1])
-                
+
         rmf = None
         if data['rmffile'] and (data['rmffile'].lower() != 'none'):
             is_bkg = ' '
@@ -219,7 +219,7 @@ def read_pha(arg, use_errors=False, use_background=False):
                     warning("%s" % sys.exc_info()[1])
 
         backgrounds = []
-        
+
         if data['backfile'] and (data['backfile'].lower() != 'none'):
             try:
                 if os.path.dirname(data['backfile']) == '':
@@ -243,7 +243,7 @@ def read_pha(arg, use_errors=False, use_background=False):
                 else:
                     if ((bkg_datasets.get_response() == (None,None)) and
                         (rmf is not None)):
-                            bkg_datasets.set_response(arf, rmf)
+                        bkg_datasets.set_response(arf, rmf)
                     backgrounds.append(bkg_datasets)
 
             except:

@@ -187,7 +187,7 @@ class test_utils(SherpaTestCase):
                 answer = funcx( xx ) * funcy( yy )
                 val = neville2d( xx, yy, x, y, fval )
                 self.assert_( Knuth_close( answer, val, tol ) )
-    
+
     def test_parallel_map(self):
 
         ncpus = 1

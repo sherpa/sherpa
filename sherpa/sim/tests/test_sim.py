@@ -125,7 +125,7 @@ class test_sim(SherpaTestCase):
 
     def test_student_t(self):
         multivariate_t(self.mu, self.cov, self.dof, self.num)
-        
+
     def test_cauchy(self):
         multivariate_cauchy(self.mu, self.cov, self.num)       
 
@@ -140,7 +140,7 @@ class test_sim(SherpaTestCase):
     def test_uniform_parameter_sample(self):
         up = UniformParameterSampleFromScaleVector()
         up.get_sample(self.fit, num=self.num)
-        
+
     def test_normal_parameter_sample_vector(self):
         np = NormalParameterSampleFromScaleVector()
         np.get_sample(self.fit, num=self.num)
@@ -156,7 +156,7 @@ class test_sim(SherpaTestCase):
     def test_uniform_sample(self):
         up = UniformSampleFromScaleVector()
         up.get_sample(self.fit, num=self.num)
-        
+
     def test_normal_sample_vector(self):
         np = NormalSampleFromScaleVector()
         np.get_sample(self.fit, num=self.num)
@@ -195,7 +195,7 @@ class test_sim(SherpaTestCase):
         cov = results.extra_output
 
         mcmc = MCMC()
-        
+
         samplers = mcmc.list_samplers()
         priors = mcmc.list_priors()
         for par in self.fit.model.pars:
@@ -229,13 +229,13 @@ class test_sim(SherpaTestCase):
         mcmc = MCMC()
         mcmc.set_sampler('MetropolisMH')
         #mcmc.set_sampler_opt('verbose', True)
-        
+
         log = logging.getLogger("sherpa")
         level = log.level
         log.setLevel(logging.ERROR)
         stats, accept, params = mcmc.get_draws(self.fit, cov, niter=1e2)
         log.setLevel(level)
- 
+
 
     def tearDown(self):
         pass

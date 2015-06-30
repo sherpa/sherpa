@@ -47,7 +47,7 @@ def select_result( results, npar, debug ):
         print 'select_result: f%s=%e in %d nfevs' % \
               ( myx, myfval, mynfev )
     return myx, myfval, mynfev
-        
+
 def func_bounds( func, low, high, myinf=numpy.inf ):
     """In order to keep the corrent number of function evaluations:
     func_counter should be called before func_bounds. For example,
@@ -80,7 +80,7 @@ def odrpack( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0 ):
         return fcn( pars )[ 1 ]
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
-    
+
     n = numpy.asanyarray(stat_cb1(x)).size
 
     if maxfev is None:
@@ -90,7 +90,7 @@ def odrpack( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0 ):
     def stat_cb1( x_new ):
         fvec = orig_fcn( x_new )
         return fvec
-    
+
     info, nfev, fval, covarerr = _odrpack.odrpack( stat_cb1, n, x, xmin, xmax,
                                                    verbose, ftol )
 
@@ -126,7 +126,7 @@ def get_port_err_msg( ierr ):
     return status, msg
 
 def dmnfb( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0 ):
-    
+
     x, xmin, xmax = _check_args( x0, xmin, xmax )
 
     if maxfev is None:
@@ -141,12 +141,12 @@ def dmnfb( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0 ):
     status, msg = get_port_err_msg( ierr )
     rv = ( status, x, fval )
     rv += (msg, {'info':status, 'nfev': nfev, 'covarerr': covarerr})
-    
+
     return rv
 
 
 def dn2fb( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0 ):
-    
+
     def stat_cb1( pars ):
         return fcn( pars )[ 1 ]
 
@@ -165,7 +165,7 @@ def dn2fb( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0 ):
     status, msg = get_port_err_msg( ierr )    
     rv = ( status, x, fval )
     rv += (msg, {'info':status, 'nfev': nfev,})
-    
+
     return rv
 
 #
@@ -180,7 +180,7 @@ def marquadt_levenberg( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                          verbose=0 ):
 
     debug = False
-    
+
     x, xmin, xmax = _check_args( x0, xmin, xmax )
 
     npar = len( x0 )
@@ -223,7 +223,7 @@ def marquadt_levenberg( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     return rv
 
-    
+
 #
 #################################### MarLev ###################################
 #
@@ -391,7 +391,7 @@ C
 
     if npt < n + 2 or npt > n * ( n + 3 ) / 2 + 1:
         npt = 2*n + 1
-        
+
 ##     orig_fcn = fcn
 ##     def fcn(x_new):
 ##         if _outside_limits(x_new, xmin, xmax):
@@ -400,7 +400,7 @@ C
 
     mynfev, fcn_counter = func_counter( fcn )
     myfcn = func_bounds( fcn_counter, xmin, xmax, myinf=1.0e128 )
-    
+
     ierr = 0
     if len(x) >= 2:
         nfev, fval = _powell.newuoa( npt, x, rhobeg, rhoend, verbose, maxfev,
@@ -420,7 +420,7 @@ C
 
 def powell( fcn, x0, xmin, xmax, npt=None, rhobeg=None, rhoend=None,
             algorithm='bobyqa', ftol=EPSILON, maxfev=None, verbose=-1,):
-    
+
     if 'newuoa' == algorithm:
         return newuoa( fcn, x0, xmax, ftol=ftol, maxfev=maxfev, npt=None,
                        rhobeg=rhobeg, rhoend=rhoend, verbose=verbose )
@@ -467,7 +467,7 @@ def mc_montecarlo( fcn, x0, xmin, xmax, seed=74815, population_size=None,
 ##                 print 'mc_difevo_nm: x = ', myx
 ##                 print 'mc_difevo_nm: xmin = ', myxmin
 ##                 print 'mc_difevo_nm: xmax = ', myxmax
-                 
+
                 verbose = 0
                 seed = 2005
                 xprob=0.9
@@ -529,7 +529,7 @@ def mc_montecarlo( fcn, x0, xmin, xmax, seed=74815, population_size=None,
                 print 'neldermead: ',
             print 'f%s=%.14e in %d nfevs\n' % ( x, ofval, nfev )
         ############################## nmDifEvo ##############################
-            
+
         while nfev < maxfev:
 
             strategy = ( strategy + 1 ) % 10
@@ -554,7 +554,7 @@ def mc_montecarlo( fcn, x0, xmin, xmax, seed=74815, population_size=None,
             if sao_fcmp( ofval, nfval, ftol ) <= 0:
                 return x, nfval, nfev
             ofval = nfval
-            
+
         return x, nfval, nfev
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
@@ -628,7 +628,7 @@ class MaxfevErr( OptErr ):
     def __str__( self ):
         msg = 'number of function evaluations has exceeded maxfev=%d' % self.maxfev
         return msg
-    
+
 class OutOfBoundErr( OptErr ):
     """Exception raised for errors in the input (low <= x <= high)"""
     def __init__( self, x, low, high ):
@@ -640,7 +640,7 @@ class OutOfBoundErr( OptErr ):
         return msg
 
 class MyOpt( object ):
-    
+
     def __init__( self, fcn ):
         self.nfev, self.fcn_counter = func_counter( fcn )
 
@@ -657,22 +657,22 @@ class MyOpt( object ):
 class Polytope( MyOpt ):
 
     debug = True
-    
+
     def __init__( self, fcn, x, xmin, xmax, step, initsimplex ):
         MyOpt.__init__( self, fcn )
         x, self.xmin, self.xmax = self.check_args( x, xmin, xmax )
         self.fcn = func_bounds( self.fcn_counter, xmin, xmax )
         self.polytope = self.init_simplex( x, step, initsimplex )
-        
+
     def __getitem__( self, key ):
         return self.polytope[ key ]
-    
+
     def __setitem__( self, key, item ):
         self.polytope[ key ] = item
 
     def __str__( self ):
         return self.polytope.__str__( )
-    
+
     def calc_centroid( self, badindex ):
         return numpy.mean( self.polytope[ :badindex, : ], 0 )
 
@@ -688,10 +688,10 @@ class Polytope( MyOpt ):
 
         def is_max_length_small_enough( tol ):
             """
-                       
+
                max  || x  - x  || <= tol max( 1.0, || x || )
                         i    0                         0
-                        
+
             where 1 <= i <= n"""
 
             max_xi_x0 = -1.0
@@ -739,20 +739,20 @@ class Polytope( MyOpt ):
                reflection_pt[ -1 ] < self.polytope[ badindex, -1 ]:
 
             # Perform an outside contraction
-	    #
-	    # 4a. Outside.  If f  <= f  < f    (i.e., x  is stricly better then
-	    #                   n     r    n+1         r
-	    # x    ), perform an outside contraction: calculate
-	    #  n+1
-	    #      _                 _                       _
-	    # x  = x + gamma * ( x - x ) = ( 1 + rho gamma ) x  - 
-	    #  c                  r
+            #
+            # 4a. Outside.  If f  <= f  < f    (i.e., x  is stricly better then
+            #                   n     r    n+1         r
+            # x    ), perform an outside contraction: calculate
+            #  n+1
+            #      _                 _                       _
+            # x  = x + gamma * ( x - x ) = ( 1 + rho gamma ) x  - 
+            #  c                  r
             #                                                   rho gamma x
-	    #                                                               n+1
-	    #                                                             (2.6)
-	    #
-	    # and evaluate f  = f( x  ).
-	    #               c       c
+            #                                                               n+1
+            #                                                             (2.6)
+            #
+            # and evaluate f  = f( x  ).
+            #               c       c
             outside_contraction_pt = self.move_vertex( centroid, rho_gamma,
                                                        badindex )
 
@@ -768,24 +768,24 @@ class Polytope( MyOpt ):
             else:
                 # otherwise, go to step 5 (perform a shrink).
                 return True
-            
+
         elif reflection_pt[ -1 ] >= self.polytope[ badindex, -1 ]:
 
             # Perform an inside contraction
-	    #
-	    # 4b. Inside. If f  >= f   , perform an inside contraction: calculate
-	    #                 r     n+1
-	    #       _           _                         _
-	    # x   = x - gamma ( x - x   ) = ( 1 - gamma ) x + gamma x     (2.7)
-	    #  cc                    n+1                             n+1
-	    #
-	    # and evaluate f   = f( x   ).
-	    #               cc       cc
-	    #
+            #
+            # 4b. Inside. If f  >= f   , perform an inside contraction: calculate
+            #                 r     n+1
+            #       _           _                         _
+            # x   = x - gamma ( x - x   ) = ( 1 - gamma ) x + gamma x     (2.7)
+            #  cc                    n+1                             n+1
+            #
+            # and evaluate f   = f( x   ).
+            #               cc       cc
+            #
             inside_contraction_pt = self.move_vertex( centroid,
                                                       - contraction_coef,
                                                       badindex )
-                    
+
             if inside_contraction_pt[ -1 ] < self.polytope[ badindex, -1 ]:
                 #
                 # If f   < f   , accept x  
@@ -844,7 +844,7 @@ class Polytope( MyOpt ):
 
     def replace_vertex( self, badindex, newvertex, maxfev ):
         self.polytope[ badindex ] = newvertex[ : ]
-        
+
     def shrink( self, shrink_coef, npar ):
         npars_plus_1 = npar + 1
         for ii in xrange( 1, npars_plus_1 ):
@@ -865,7 +865,7 @@ class MyNelderMead( DirectSearch ):
 
     def __init__( self, fcn ):
         DirectSearch.__init__( self, fcn )
-        
+
     def __call__( self, x, xmin, xmax, maxfev, tol, step, initsimplex,
                   finalsimplex, verbose, algorithm ):
 
@@ -881,10 +881,10 @@ class MyNelderMead( DirectSearch ):
 
                 centroid = polytope.calc_centroid( badindex )
 
-                
+
 ##                 print polytope
 ##                 print polytope.check_convergence( tol, finalsimplex ), 
-                
+
                 if polytope.check_convergence( tol, finalsimplex ):
                     break;
 
@@ -978,7 +978,7 @@ class PowellPolytope( Polytope ):
                                                       result[ 2 ],
                                                       result[ 4 ].get( 'nfev' ) )
                 print sao_fcmp( newvertex[ -1 ], self.polytope[ 0, -1 ], 1.0e-1 ), Knuth_close( newvertex[ -1 ], self.polytope[ 0, -1 ], 1.0e-1 )
-                                
+
             newvertex[ :-1 ] = numpy.asarray( result[ 1 ], numpy.float_ )
             newvertex[ -1 ] = result[ 2 ]
         self.polytope[ badindex ] = newvertex[ : ]
@@ -991,7 +991,7 @@ def nelder_mead( fcn, x0, xmin, xmax, step=None, initsimplex=0, finalsimplex=2,
         return fcn( pars )[ 0 ]
 
     print 'nelder_mead: fcn(x0) = ', fcn( x0 )
-    
+
     x0, xmin, xmax = _check_args(x0, xmin, xmax)
 
     nm = MyNelderMead( stat_cb0 )
@@ -1006,7 +1006,7 @@ def nelder_mead( fcn, x0, xmin, xmax, step=None, initsimplex=0, finalsimplex=2,
         while nm.nfev[ 0 ] < mymaxfev:
             x, fval, nfev = nm( myx, xmin, xmax, mymaxfev, ftol, mystep,
                                 initsimplex, finalsimplex, verbose, algorithm )
-        
+
             if debug:
                 print 'nelder_mead: f%s=%e at %d' % ( x, fval, nm.nfev[ 0 ] )
             if sao_fcmp( ofval, fval, ftol ) <= 0:
@@ -1014,14 +1014,14 @@ def nelder_mead( fcn, x0, xmin, xmax, step=None, initsimplex=0, finalsimplex=2,
             ofval = fval
 
         return x, fval, nfev
-            
+
     myfinalsimplex = 2
 
     if step is None:
         step = map( lambda fubar: 1.2 * fubar + 1.2, x0 )
 
     x, fval, nfev = my_nelder_mead( x0, maxfev, step, myfinalsimplex )
-    
+
     ierr = 0
     if nfev >= maxfev:
         ierr = 3
@@ -1030,9 +1030,9 @@ def nelder_mead( fcn, x0, xmin, xmax, step=None, initsimplex=0, finalsimplex=2,
     rv = (status, x, fval)
     rv += (msg, {'info': status, 'nfev': nfev})
     return rv
-    
-    
-    
+
+
+
 #
 ############################ Differential Evolution ###########################
 #
@@ -1062,7 +1062,7 @@ class DifferentialEvolution( MyOpt ):
         trial_solution = numpy.zeros( ( npar + 1, ), dtype=numpy.float_ )
         population = self.init_population( x0, xmin, xmax, population_size )
         x0, xmin, xmax = self.check_args( x0, xmin, xmax )
-            
+
         fcn = func_bounds( self.fcn_counter, xmin, xmax )
 
         model_par[ :-1 ] = x0[ : ]
@@ -1098,11 +1098,11 @@ class DifferentialEvolution( MyOpt ):
                 if numpy.std( population[ :, -1 ] ) < tol or \
                        self.nfev[ 0 ] >= maxfev:
                     return model_par[ :-1 ], model_par[ -1 ], self.nfev[ 0 ]
-                
+
                 trial_solution = strategy_fcn( pop, population, model_par,
                                                population[ pop ].copy(),
                                                scale, xprob )
-                
+
                 trial_solution[ -1 ] = fcn( trial_solution[ :-1 ] )
 
                 if trial_solution[ -1 ] < population[ pop, -1 ]:
@@ -1127,7 +1127,7 @@ class DifferentialEvolution( MyOpt ):
     def select_candidate( self, population_size, pop, num ):
         return random.sample( range( pop ) +
                               range( pop + 1, population_size ), num )
-        
+
     def Best1Exp( self, pop, population, model_par, trial_solution,
                   scale, xprob ):
 
@@ -1163,7 +1163,7 @@ class DifferentialEvolution( MyOpt ):
                                       scale * ( population[ r2, n ] - \
                                                 population[ r3, n ] )
                 n = (n + 1) % npar
-            
+
         return trial_solution            
 
 
@@ -1228,7 +1228,7 @@ class DifferentialEvolution( MyOpt ):
                                                 population[ r4, n ] - \
                                                 population[ r5, n ] )
                 n = (n + 1) % npar
-            
+
         return trial_solution            
 
 
@@ -1247,7 +1247,7 @@ class DifferentialEvolution( MyOpt ):
                                       scale * ( population[ r1, n ] - \
                                                 population[ r2, n ] )
                 n = (n + 1) % npar
-            
+
         return trial_solution
 
 
@@ -1267,7 +1267,7 @@ class DifferentialEvolution( MyOpt ):
                                       scale * ( population[ r2, n ] -\
                                                 population[ r3, n ] )
                 n = (n + 1) % npar
-            
+
         return trial_solution            
 
 
@@ -1288,7 +1288,7 @@ class DifferentialEvolution( MyOpt ):
                                          scale * ( population[ r1, n ] - \
                                                    population[ r2, n ] )
                 n = (n + 1) % npar
-            
+
         return trial_solution            
 
 
@@ -1310,7 +1310,7 @@ class DifferentialEvolution( MyOpt ):
                                                 population[ r3, n ] - \
                                                 population[ r4, n ] )
                 n = (n + 1) % npar
-            
+
         return trial_solution            
 
 
@@ -1332,7 +1332,7 @@ class DifferentialEvolution( MyOpt ):
                                                 population[ r4, n ] - \
                                                 population[ r5, n ] )
                 n = (n + 1) % npar
-            
+
         return trial_solution
 
 
@@ -1356,7 +1356,7 @@ def dif_evo( fcn, x0, xmin, xmax, population_size=None, scale=0.5, strategy=0,
 
     if maxfev is None:
         maxfev = 8192 * x.size
-        
+
     if population_size is None:
         population_size = 12 * x.size
 
@@ -1371,7 +1371,7 @@ def dif_evo( fcn, x0, xmin, xmax, population_size=None, scale=0.5, strategy=0,
             ofval = FUNC_MAX
             de_nfev = 0
             while de_nfev < mymaxfev:
-                
+
                 myxmin, myxmax = _narrow_limits( limit_factor,
                                                  [ myx, myxmin, myxmax ],
                                                  debug = False )
@@ -1409,7 +1409,7 @@ def dif_evo( fcn, x0, xmin, xmax, population_size=None, scale=0.5, strategy=0,
         xpar = numpy.asarray( result[ 1 ], numpy.float_ )
         nm_nfev += result[4].get( 'nfev' )
 
-        
+
     except InputErr:
         ierr = 1
     except OutOfBoundErr:
@@ -1421,8 +1421,8 @@ def dif_evo( fcn, x0, xmin, xmax, population_size=None, scale=0.5, strategy=0,
 
     print rv
     return rv
-    
-    
+
+
 #
 ############################ Differential Evolution ###########################
 #
@@ -1464,7 +1464,7 @@ def dif_evo( fcn, x0, xmin, xmax, population_size=None, scale=0.5, strategy=0,
 ## class PortFct(OptMethod):
 ##     def __init__(self, name='dmnfb'):
 ##         OptMethod.__init__(self, name, dmnfb)
-    
+
 ## ui._session._methods['bobyqa'] = Bobyqa( )
 ## ui._session._methods['dif_evo'] = Dif_Evo( )
 ## ui._session._methods['portchi'] = PortChi( )
@@ -1549,7 +1549,7 @@ if '__main__' == __name__:
         xmin = npar * [ -10, -10. ]
         xmax = npar * [ 10, 10 ]
         print mc_montecarlo( Rosenbrock, x0, xmin, xmax, verbose=0 )
-        
+
     def tst( algorithm, npar=4 ):
         x0 = npar * [ -1.2, 1.0 ]
         xmin = npar * [ -10, -10. ]
@@ -1580,8 +1580,8 @@ if '__main__' == __name__:
             start_time = time.time()
             print dif_evo( Rosenbrock, x0, xmin, xmax, strategy=strategy );
             print 'strategy = %d\t%f secs' % ( strategy, time.time() - start_time )
-        
-    
+
+
     import sys
     npar = 8
     if ( 2 == len(sys.argv) ):

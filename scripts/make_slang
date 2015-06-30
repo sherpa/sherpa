@@ -138,7 +138,7 @@ for name in dir(ui):
        return;
     }
     ''' % ( '%s\\n', sherpa.utils.get_func_usage( obj ) )
-        
+
         print >> outfile, """\
     %% Interface from S-lang keyword args to PySL keyword args
     if( kwargs == NULL ) {
@@ -151,7 +151,7 @@ for name in dir(ui):
     }
 }
         """ % (name, name)
-    
+
 
 print >> outfile, """\
 %% The autoassign function must be declared public (i.e. global) so that it

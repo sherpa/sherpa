@@ -40,7 +40,7 @@ def delete_frames():
         return imager.xpaset("frame new")
     except:
         raise DS9Err('delframe')
-        
+
 def get_region(coord):
     if not imager.isOpen():
         raise DS9Err('open')
@@ -51,12 +51,12 @@ def get_region(coord):
                 regionstr = "regions -format ciao -strip yes -system " + str(coord)
             else:
                 regionstr = "regions -format saoimage -strip yes -system image"
-            
+
         regionstr = imager.xpaget(regionstr)
         return regionstr
     except:
         raise DS9Err('retreg')
-    
+
 def image(arr, newframe=False, tile=False):
     if not imager.isOpen():
         imager.doOpen()

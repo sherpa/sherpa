@@ -32,7 +32,7 @@ class test_optmethods(SherpaTestCase):
         self.nm = '_neldermead'
         self.lm = '_lmdif'
         self.verbose = False
-        
+
     def print_result( self, name, f, x, nfev ):
         print '%s(%s) = %g in %d nfev' % (name, x, f, nfev)
 
@@ -48,7 +48,7 @@ class test_optmethods(SherpaTestCase):
                   x0, xmin, xmax, iprint=iprint, maxfev=8192*len(x0) )
         self.tst( optfcts.lmdif, name + self.lm, fct, fmin,
                   x0, xmin, xmax, iprint=iprint )
-            
+
     def tst( self, optmethod, name, fct, fmin, x0, xmin, xmax,
              maxfev=4096, iprint=False ):
         status, x, fval, msg, stuff = optmethod( fct, x0, xmin, xmax, maxfev=maxfev*len(x0))
@@ -56,7 +56,7 @@ class test_optmethods(SherpaTestCase):
         if iprint:
             print 'fmin = %g vs fval = %g' % ( fmin, fval )
         if self.verbose or iprint:
-            
+
             self.print_result( name, fval, x, nfev )
         self.assertEqualWithinTol( fval, fmin, self.tolerance )
 
@@ -82,7 +82,7 @@ class test_optmethods(SherpaTestCase):
                   _tstoptfct.powell_badly_scaled, fmin, x0, xmin, xmax )
         self.tst( optfcts.montecarlo, name + self.mc,
                   _tstoptfct.powell_badly_scaled, fmin, x0, xmin, xmax )
-        
+
     def test_brown_badly_scaled(self):
         name = 'brown_badly_scaled'
         npar = 2
@@ -107,13 +107,13 @@ class test_optmethods(SherpaTestCase):
         npar = 3
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.helical_valley, fmin, x0, xmin, xmax )
-        
+
     def test_bard(self):
         name = 'bard'
         npar = 3
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.bard, fmin, x0, xmin, xmax )
-        
+
     def test_gaussian(self):
         name = 'gaussian'
         npar = 3
@@ -228,7 +228,7 @@ class test_optmethods(SherpaTestCase):
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.variably_dimensioned, fmin, x0, xmin,
                       xmax )
-        
+
     def test_trigonometric(self):
         name = 'trigonometric'
         npar = 9
@@ -252,46 +252,46 @@ class test_optmethods(SherpaTestCase):
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.discrete_boundary, fmin, x0, xmin,
                       xmax )
-            
+
     def test_discrete_integral(self):
         name = 'discrete_integral'
         npar = 5
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.discrete_integral, fmin, x0, xmin,
                       xmax )
-            
+
     def test_broyden_tridiagonal(self):
         name = 'broyden_tridiagonal'
         npar = 16
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.broyden_tridiagonal, fmin, x0,
                       xmin, xmax )
-            
+
     def test_broyden_banded(self):
         name = 'broyden_banded'
         npar = 18
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.broyden_banded, fmin, x0, xmin, xmax )
-            
+
     def test_linear_fullrank(self):
         name = 'linear_fullrank'
         npar = 18
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.linear_fullrank, fmin, x0, xmin, xmax )
-            
+
     def test_linear_fullrank1(self):
         name = 'linear_fullrank1'
         npar = 15
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.linear_fullrank1, fmin, x0, xmin, xmax )
-            
+
     def test_linear_fullrank0cols0rows(self):
         name = 'linear_fullrank0cols0rows'
         npar = 13
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.linear_fullrank0cols0rows, fmin, x0,
                       xmin, xmax )
-            
+
     def test_chebyquad(self):
         name = 'chebyquad'
         npar = 11

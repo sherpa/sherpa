@@ -75,7 +75,7 @@ class test_model(SherpaTestCase):
         self.assertRaises(ModelErr, setattr, self.m, 'thawedpars', pars[:2])
         self.assertRaises(ValueError, setattr, self.m, 'thawedpars',
                           [1, 2, 'ham'])
-        
+
         pars[0] = self.m.pars[0].hard_min / 10
         pars[1] = self.m.pars[1].hard_max * 10
 

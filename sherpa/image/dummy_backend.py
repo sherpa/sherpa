@@ -26,10 +26,10 @@ def close(*args, **kwargs):
 
 def delete_frames(*args, **kwargs):
     pass
-        
+
 def get_region(*args, **kwargs):
     pass
-    
+
 def image(*args, **kwargs):
     pass
 
