@@ -4417,8 +4417,7 @@ class Session(sherpa.ui.utils.Session):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
-        The quality column is labelled as ``GROUPS`` rather than
-        ``QUALITY``.
+        The column names are 'CHANNEL' and 'QUALITY'.
 
         Examples
         --------
@@ -4448,9 +4447,8 @@ class Session(sherpa.ui.utils.Session):
         if d.quality is None or not numpy.iterable(d.quality):
             raise sherpa.utils.err.DataErr('noquality', id)
 
-        # BUG: TODO: change 'GROUPS' to 'QUALITY'
         sherpa.astro.io.write_arrays(filename, [d.channel, d.quality],
-                                     ['CHANNEL', 'GROUPS'], ascii, clobber)
+                                     ['CHANNEL', 'QUALITY'], ascii, clobber)
 
 
     ### DOC-TODO: setting ascii=True is not supported for crates
