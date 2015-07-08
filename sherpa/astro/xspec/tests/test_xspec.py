@@ -19,6 +19,7 @@
 
 import unittest
 import numpy
+#import numpy.testing
 from sherpa.astro import ui
 from sherpa.utils import SherpaTestCase, test_data_missing
 from sherpa.utils import has_package_from_list, has_fits_support
@@ -29,7 +30,6 @@ def is_proper_subclass(obj, cls):
     if obj in cls:
         return False
     return issubclass(obj, cls)
-
 
 @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
                  "required sherpa.astro.xspec module missing")
@@ -72,17 +72,42 @@ class test_xspec(SherpaTestCase):
         models.remove('XSAdditiveModel')
         models.remove('XSTableModel')
 
-        xx = numpy.arange(0.1, 11.01, 0.01, dtype=float)
-        xlo = numpy.array(xx[:-1])
-        xhi = numpy.array(xx[1:])
+        # The nteea model is known to be broken in XSpec 12.8.2q
+        # (it appears to work in XSpec, but does not in Sherpa due to
+        # differences in how the models are evaluated). The broken
+        # behavior is that a second call to evaluate the model without
+        # changing the parameter values - as done in the test below -
+        # will fail, returning 0's for all bin values.
+        #
+        # The model removal should be made contingent on the XSpec
+        # library version - see xs.get_xsversion() - once a fix has
+        # been made.
+        #
+        # Doug Burke, July 8, 2015
+        models.remove('XSnteea')
+
+        # There are two ways to call an XSpec model; single
+        # argument taken as a continuous grid or with two arguments
+        # giving the low and high values of each bin. Check that they
+        # give the same results.
+        #
+        egrid = numpy.arange(0.1, 11.01, 0.01, dtype=float)
+        xlo = egrid[:-1]
+        xhi = egrid[1:]
         for model in models:
             cls = getattr(xs, model)
-            foo = cls('foo')
-            vals = foo(xlo,xhi)
+            mdl = cls('foo')
+            vals1 = mdl(egrid)
+            vals2 = mdl(xlo,xhi)
             emsg = "{0} model evaluation failed".format(model)
-            self.assertTrue(not numpy.isnan(vals).any() and
-                            not numpy.isinf(vals).any(),
-                            msg=emsg)
+            self.assertTrue(numpy.isfinite(vals1).all(), msg=emsg + " [1]")
+            self.assertTrue(numpy.isfinite(vals2).all(), msg=emsg + " [2]")
+
+            # Ideally the two should be exactly the same.
+            #numpy.testing.assert_allclose(vals1[:-1], vals2,
+            #                              err_msg=emsg + " [comparison]")
+            self.assertTrue((vals1[:-1] == vals2).all(),
+                            msg=emsg + " [comparison]")
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits')
