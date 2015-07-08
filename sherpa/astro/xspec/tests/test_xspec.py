@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,9 +22,6 @@ import numpy
 from sherpa.astro import ui
 from sherpa.utils import SherpaTestCase, test_data_missing
 from sherpa.utils import has_package_from_list, has_fits_support
-
-import logging
-error = logging.getLogger(__name__).error
 
 def is_proper_subclass(obj, cls):
     if type(cls) is not tuple:
@@ -69,7 +66,7 @@ class test_xspec(SherpaTestCase):
 
     def test_xspec_models(self):
         import sherpa.astro.xspec as xs
-        models = [model for model in dir(xs) if model[:2] == 'XS']
+        models = [model for model in dir(xs) if model.startswith('XS')]
         models.remove('XSModel')
         models.remove('XSMultiplicativeModel')
         models.remove('XSAdditiveModel')
@@ -82,12 +79,10 @@ class test_xspec(SherpaTestCase):
             cls = getattr(xs, model)
             foo = cls('foo')
             vals = foo(xlo,xhi)
-            try:
-                self.assert_(not numpy.isnan(vals).any() and
-                             not numpy.isinf(vals).any() )
-            except AssertionError:
-                error('XS%s model evaluation failed' % model)
-                raise
+            emsg = "{0} model evaluation failed".format(model)
+            self.assertTrue(not numpy.isnan(vals).any() and
+                            not numpy.isinf(vals).any(),
+                            msg=emsg)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits')
