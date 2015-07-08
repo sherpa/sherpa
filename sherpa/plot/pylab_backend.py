@@ -80,14 +80,14 @@ def point(x, y, overplot=True, clearwindow=False,
         if clearwindow:
             clear_window()
         axes = pylab.gca()
-        
+
     if color is None:
         str = '%s'%(symbol)
     else:
         str = '%s%s'%(color,symbol)
 
     point = axes.plot(numpy.array([x]),numpy.array([y]),str)[0]
-    
+
     #pylab.draw()
 
 
@@ -245,19 +245,19 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
 
     if xaxis:
         axes.axhspan(ymin=0, ymax=0, xmin=0, xmax=1)
-        
+
     if ratioline:
         axes.axhspan(ymin=1, ymax=1, xmin=0, xmax=1)
 
     #pylab.draw()
-   
+
 def contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
             overcontour=False, clearwindow=True,
             xlog=False,
             ylog=False,
             linewidths=None,
             colors=None):
-    
+
     if overcontour:
         axes = pylab.gca()
     else:
@@ -314,7 +314,7 @@ def set_subplot(row, col, nrows, ncols, clearaxes=True,
     nrows = int(nrows)
     ncols = int(ncols)
     num   = int(num)
-    
+
     pylab.subplot(nrows, ncols, num)
 
     if clearaxes:
@@ -334,7 +334,7 @@ def set_jointplot(row, col, nrows, ncols, clearaxes=True,
         pylab.sca(axarr[0])
 
     else:
-        
+
         # need to set axes[1] as current axes.
         axes = pylab.gca()
         ax2 = axes.figure.axes[-1]
@@ -345,7 +345,7 @@ def set_jointplot(row, col, nrows, ncols, clearaxes=True,
 def get_split_plot_defaults():
     return get_keyword_defaults(set_subplot, 1)
 
-    
+
 def get_plot_defaults():
     return get_keyword_defaults(plot, 7)
 

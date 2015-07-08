@@ -25,23 +25,23 @@ for func in funcs:
         fp.write( lines.pop(0).strip() + '\n' )
     else:
         fp.write( name + '\n' )
-    
+
     for line in lines:
 
         if line.strip() in keys:
-            
+
             if line.strip() == 'SYNTAX':
                 fp.write(' ' + 'USAGE\n' )
                 fp.write('           ' +
                          get_func_usage( eval('ui.'+func) )[7:] + '\n\n' )
-            
+
             fp.write( ' ' + line.strip() + '\n' )
-        
+
         else:
             fp.write( line.strip('\n') + '\n' )
-    
+
     fp.write('\n')
     fp.write('--------------------------------------------------------------')
     fp.write('\n\n')
-   
+
 fp.close()

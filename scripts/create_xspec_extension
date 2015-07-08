@@ -41,7 +41,7 @@ while True:
         raise RuntimeError("bad model type: '%s'" % modeltype)
 
     baseclass = 'XS%sModel' % baseclass
-    
+
     classes += (("\n\n" +
                  "class XS%s(%s):\n\n" +
                  "    calc = _xspec.%s\n\n" +
@@ -174,7 +174,7 @@ while True:
         classes += ")"
 
     classes += ")\n"
-    
+
     if funcname.startswith('C_'):
         modellang = '_C'
         func_protos += (('void %s(const double* energy, int nFlux, ' +

@@ -35,11 +35,11 @@ class SherpaErr( Exception ):
             errmsg = "Generic Error"
         else:
             key = args[0] 
-	    if dict.has_key( key ):
-                 errmsg = dict[ key ] % args[1:]
+            if dict.has_key( key ):
+                errmsg = dict[ key ] % args[1:]
             else: 
-                 errmsg = key 
-	Exception.__init__(self, errmsg)
+                errmsg = key 
+        Exception.__init__(self, errmsg)
 
 
 
@@ -150,8 +150,8 @@ class EstErr( SherpaErr ):
 
     def __init__( self, key, *args ):
         SherpaErr.__init__( self, EstErr.dict, key, *args )
-        
-             
+
+
 class FitErr( SherpaErr ):
 
     #
@@ -212,7 +212,7 @@ class DataErr(SherpaErr):
              'nobkg' : "data set '%s' does not have any associated backgrounds",
              'noarf' : "data set '%s' does not have an associated ARF",
              'bad' : "unknown %s: '%s'",
-	     'badchoices' : "unknown %s: '%s'\nValid options: %s",
+             'badchoices' : "unknown %s: '%s'\nValid options: %s",
              'idsnotarray' : "%s ids '%s' does not appear to be an array",
              'badids' : "%s is not a valid %s id in %s",
              'noenergybins' : "%s does not specify energy bins",
@@ -327,7 +327,7 @@ class ModelErr(SherpaErr):
 
 class PlotErr(SherpaErr):
     "Error in creating or using a plotting class"
-    
+
     dict = { 'nodataormodel' : 'data or model plot is missing',
              'ordercolors' : "orders list length '%s' does not match colors list length '%s'",
              'notorder' : "'%i' is not a valid order",
@@ -341,10 +341,10 @@ class PlotErr(SherpaErr):
 
 
 class StatErr(SherpaErr):
-    
+
     dict = { 'nostat' : "User statistic '%s' has no %s function",
              'badstat' : '%s not applicable using current statistic: %s',
-	     'chi2noerr': 'If you select chi2 as the statistic, all datasets must provide a staterror column',
+             'chi2noerr': 'If you select chi2 as the statistic, all datasets must provide a staterror column',
              }
 
     def __init__(self, key, *args):
@@ -352,7 +352,7 @@ class StatErr(SherpaErr):
 
 
 class DS9Err(SherpaErr):
-    
+
     dict = { 'open' : "Imager not open",
              'delframe' : "Could not delete frames",
              'retreg' : "Could not return region in CIAO format",
@@ -386,6 +386,6 @@ class SessionErr(SherpaErr):
     dict = { 'nofit' : 'no %s has been performed',
              'noaction' : "%s has not been performed",
              }
-    
+
     def __init__(self, key, *args):
         SherpaErr.__init__(self, SessionErr.dict, key, *args)

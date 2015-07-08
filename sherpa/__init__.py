@@ -81,7 +81,7 @@ def banner(file=sys.stdout):
 
 def get_include():
     "Get the root path for installed Sherpa header files"
-    
+
     return os.path.join(os.path.dirname(__file__), 'include')
 
 def get_config():
@@ -96,14 +96,14 @@ def get_config():
     # ignore any user config file
     if (os.environ.has_key('NOSHERPARC') == True):
         return os.path.join(os.path.dirname(__file__), filename)
-    
+
     # If SHERPARC is set, read in config file from there,
     # and ignore default location
     if (os.environ.has_key('SHERPARC') == True):
         config = os.environ.get('SHERPARC')
         if os.path.isfile(config):
             return config
-        
+
     # SHERPARC was not set, so look for .sherpa.rc in default
     # location, which is user's home directory.
     home_dir = os.environ.get('HOME')
@@ -115,13 +115,13 @@ def get_config():
     # If no user config file is set, fall back to system config file
     return os.path.join(os.path.dirname(__file__), filename)
 
-    
+
 def test(level=1, verbosity=1, datadir=None):
     """
-    
+
     Run the Sherpa test suite, testing all available subpackages
     (including the discipline-specific ones)
-    
+
     """
     # import sherpa.all
     # import sherpa.astro.all

@@ -122,7 +122,7 @@ class EstMethod(NoNewAttributesAfterInit):
             self.config[name] = val
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
-                                                    
+
     def __repr__(self):
         return ("<%s error-estimation method instance '%s'>" %
                 (type(self).__name__, self.name))
@@ -133,7 +133,7 @@ class EstMethod(NoNewAttributesAfterInit):
         keylist = ['name'] + keylist
         full_config = {'name' : self.name}
         full_config.update(self.config)
-        
+
         return print_fields(keylist, full_config)
 
     def __setstate__(self, state):
@@ -154,7 +154,7 @@ class EstMethod(NoNewAttributesAfterInit):
 
         def stat_cb(pars):
             return statfunc(pars)[0]
-        
+
         def fit_cb(scb, pars, parmins, parmaxes, i):
             # parameter i is a no-op usually
             return fitfunc(scb, pars, parmins, parmaxes)[2]
@@ -180,7 +180,7 @@ class Covariance(EstMethod):
     def __init__(self, name='covariance'):
         EstMethod.__init__(self, name, covariance)
 
-    
+
 class Confidence(EstMethod):
 
     # defined pre-instantiation for pickling
@@ -208,13 +208,13 @@ class Confidence(EstMethod):
 
         def stat_cb(pars):
             return statfunc(pars)[0]
-        
+
         def fit_cb(pars, parmins, parmaxes, i):
             # freeze model parameter i
             (current_pars,
              current_parmins,
              current_parmaxes) = freeze_par(pars, parmins, parmaxes, i)
-            
+
             fit_pars = fitfunc(statfunc, current_pars,
                                current_parmins,
                                current_parmaxes)[1]
@@ -273,7 +273,7 @@ class Projection(EstMethod):
 
         def stat_cb(pars):
             return statfunc(pars)[0]
-        
+
         def fit_cb(pars, parmins, parmaxes, i):
             # freeze model parameter i
             (current_pars,
@@ -304,7 +304,7 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     # Do nothing with tol
     # Do nothing with report_progress (generally fast enough we don't
     # need to report back per-parameter progress)
-    
+
     # Even though we only want limits on certain parameters, we have to
     # compute the matrix for *all* thawed parameters.  So we will do that,
     # and then pick the parameters of interest out of the result.
@@ -343,7 +343,7 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 
     invfunc = numpy.linalg.inv
     inv_info = None
-    
+
     try:
         inv_info = invfunc(info)
 
@@ -365,7 +365,7 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
             # catch the SVD exception and exit gracefully
             inv_info = numpy.zeros_like(info)
             inv_info[:] = numpy.nan
-    
+
     diag = (sigma * numpy.sqrt(inv_info)).diagonal()
 
     # limit_parnums lists the indices of the array pars, that
@@ -395,7 +395,7 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         upper_bounds.append(ubound)
         lower_bounds.append(lbound)
         error_flags.append(eflag)
-        
+
     return (numpy.array(lower_bounds), numpy.array(upper_bounds),
             numpy.array(error_flags), 0, inv_info)
 
@@ -549,7 +549,7 @@ class ConfBlog( object ):
 class ConfBracket( object ):
     """The class ConfBracket is reponsible for bracketing the root within
     the interval (a,b) where f(a)*f(b) < 0.0"""
-    
+
     neg_pos = ( -1, 1 )
 
     class Limit( object ):
@@ -579,12 +579,12 @@ class ConfBracket( object ):
                 return True
             else:
                 return False
-        
+
     def __init__( self, myargs, trial_points ):
         self.myargs = myargs
         self.trial_points = trial_points
         self.fcn = None
-        
+
     def __repr__( self ):
         return ("<%s Bracket error-estimation method instance '%s'>" %
                 (type(self).__name__, self.name))
@@ -606,7 +606,7 @@ class ConfBracket( object ):
               bloginfo, base=2.0 ):
 
         assert self.fcn != None, 'callback func has not been set'
-            
+
         hlimit = [ ConfBracket.LowerLimit( self.myargs.get_hlimit( dir ) ),
                    ConfBracket.UpperLimit( self.myargs.get_hlimit( dir ) ) ]
         slimit = [ ConfBracket.LowerLimit( self.myargs.get_slimit( dir ) ),
@@ -614,7 +614,7 @@ class ConfBracket( object ):
 
         xxx = self.trial_points[ 0 ]
         fff = self.trial_points[ 1 ]
-        
+
         conf_step = ConfStep( xxx, fff )
 
         mymaxiters = maxiters
@@ -625,7 +625,7 @@ class ConfBracket( object ):
         max_plateau_iter = 5
 
         try:
-            
+
             for iter in range( mymaxiters ):
 
                 if 0 == iter:
@@ -641,7 +641,7 @@ class ConfBracket( object ):
 
                 # Make sure x is not beyond the **hard** limit
                 if hlimit[ dir ].is_beyond_limit( x ):
-                    
+
                     x = hlimit[ dir ].limit
                     f = self.fcn( x, self.myargs( ) )
                     #print 'find(): beyond hard limit: f(%.14e)=%.14e' % (x,f)
@@ -654,7 +654,7 @@ class ConfBracket( object ):
                         return ConfRootNone( )
 
                 elif slimit[ dir ].is_beyond_limit( x ):
-                    
+
                     f = self.fcn( x, self.myargs( ) )
                     #print 'find(): beyond soft limit: f(%.14e)=%.14e' % (x,f)
                     if abs( f ) <= tol:
@@ -686,7 +686,7 @@ class ConfBracket( object ):
                 #else:
                 #    if plateau > 0:
                 #        plateau -= 1
-                    
+
             return ConfRootNone( None )
 
         except OutOfBoundErr:
@@ -696,7 +696,7 @@ class ConfBracket( object ):
 
 class ConfRootNone( object ):
     """The base class for the root of the confidence interval"""
-    
+
     def __init__( self, root=None ):
         """If self.root == None, then 
         1) points up to the hard limits were tried and it was not possible
@@ -714,7 +714,7 @@ class ConfRootNone( object ):
 class ConfRootBracket( ConfRootNone ):
     """The class contains the bracket where the confidence root has
     been bracketed, ie where f(a)*f(b) < 0"""
-    
+
     def __init__( self, fcn, trial_points, open_interval ):
         ConfRootNone.__init__( self, None )
         self.fcn = fcn
@@ -724,7 +724,7 @@ class ConfRootBracket( ConfRootNone ):
     def __call__( self, tol, bloginfo ):
 
         def warn_user_about_open_interval( list ):
-            
+
             if bloginfo.lock is not None:
                 bloginfo.lock.acquire()
 
@@ -742,7 +742,7 @@ class ConfRootBracket( ConfRootNone ):
                 bloginfo.lock.release()
 
             return
-        
+
         xxx = self.trial_points[ 0 ]
         fff = self.trial_points[ 1 ]
 
@@ -773,16 +773,16 @@ class ConfRootBracket( ConfRootNone ):
                 return None
         self.root = answer[ 0 ][ 0 ]
         return self.root
-    
+
     def __str__( self ):
         str = 'root is within the interval ( f(%e)=%e, f(%e)=%e )' \
               % ( self.trial_points[ 0 ][ -2 ], self.trial_points[ 1 ][ -2 ],
                   self.trial_points[ 0 ][ -1 ], self.trial_points[ 1 ][ -1 ], )
         return str
-    
+
 class ConfRootZero( ConfRootNone ):
     """The class with the root/zero of the confidence interval"""
-    
+
     def __init__( self, root ):
         ConfRootNone.__init__( self, root )
 
@@ -814,18 +814,18 @@ class ConfStep( object ):
 
             fdif = 2.0 * ax + coeffs[ 1 ]
             fdif2 = 2.0
-        
+
             numer = 2.0 * fval * fdif
             denom = 2.0 * fdif * fdif - fval * fdif2
             x -= numer / denom
             nfev += 1
-            
+
         return [x, fval]
 
     def is_same_dir( self, dir, current_pos, proposed_pos ):
         delta = proposed_pos - current_pos
         return mysgn( delta ) == ConfBracket.neg_pos[ dir ]
-    
+
     def quad( self, dir, iter, step_size, base, bloginfo ):
 
         coeffs = quad_coef( self.xtrial[ -3: ], self.ftrial[ -3: ] )
@@ -836,11 +836,11 @@ class ConfStep( object ):
         mroot = demuller( numpy.poly1d( coeffs ), lastx + delta,
                           lastx + 2 * delta, lastx + 3 * delta,
                           tol=1.0e-2 )
-        
+
         xroot = mroot[ 0 ][ 0 ]
         if xroot is None or numpy.isnan( xroot ):
             return self.covar( dir, iter, step_size, base )
-        
+
         try:
             Halley = trace_fcn( self.Halley, bloginfo )
             [xroot, froot] = Halley( coeffs, xroot, tol=1.0e-3 )
@@ -889,7 +889,7 @@ def trace_fcn( fcn, bloginfo ):
         str = '%s%s(%s)' % (bloginfo.prefix,fcn.__name__, ", ".join(map(repr, chain(args, kwargs.values()))))
         bloginfo.blogger.info( str )
         return fcn( *args, **kwargs )
-    
+
     def debugger( *args, **kwargs ):
         str = '%s%s( ' % ( bloginfo.prefix, fcn.__name__ )
         if len( args ) > 1:
@@ -903,7 +903,7 @@ def trace_fcn( fcn, bloginfo ):
         str += ' )  %s ' % val
         bloginfo.blogger.info( str )
         return val
-    
+
     return debugger
 
 def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
@@ -931,9 +931,9 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
             return my_neg_pos * abs( arg )
         else:
             return arg
-        
+
     def get_step_size( error_scales, upper_scales, index, par ):
-        
+
         if 0 != error_scales[ index ]:
             # if covar error is NaN then set it to fraction of the par value.
             ith_covar_err = 0.0625 * abs( par )
@@ -942,7 +942,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         if 0.0 == ith_covar_err:
             # just in case covar and/or par is 0
             ith_covar_err = 1.0e-6
-            
+
         return ith_covar_err
 
     def monitor_func( fcn, history ):
@@ -957,7 +957,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 
         if lock is not None:
             lock.acquire()
-        
+
         if 0 == verbose:
             msg = '%s\t' % prefix.lstrip()
         else:
@@ -1049,7 +1049,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         msg += '# tol = %e\n' % eps
         msg += '%s' % myargs
         sherpablog.info( msg )
-        
+
     dict = { }
 
     def func( counter, singleparnum, lock=None ):
@@ -1071,7 +1071,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         myargs.ith_par = singleparnum
 
         fitcb = translated_fit_cb( counter_cb, myargs )
-        
+
         par_name = get_par_name( myargs.ith_par )
 
         ith_covar_err = get_step_size( error_scales, upper_scales, counter,
@@ -1084,13 +1084,13 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 
         # the parameter name is set, may as well get the prefix
         prefix = get_prefix( counter, par_name, ['-', '+' ] )
-        
-        
+
+
         myfitcb = [ verbose_fitcb( fitcb,
                                    ConfBlog(sherpablog,prefix[0],verbose,lock) ),
                     verbose_fitcb( fitcb,
                                    ConfBlog(sherpablog,prefix[1],verbose,lock) ) ]
-        
+
         for dir in range( 2 ):
 
             #
@@ -1113,7 +1113,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
             myzero = root( eps, myblog )
 
             delta_zero = get_delta_root( myzero, dir, pars[ myargs.ith_par ] )
-                
+
             conf_int[ dir ].append( delta_zero )
 
             status_prefix = get_prefix( counter, par_name, ['lower bound',

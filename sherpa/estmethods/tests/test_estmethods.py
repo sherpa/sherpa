@@ -101,12 +101,12 @@ class test_estmethods(SherpaTestCase):
                           minpars, maxpars,
                           hardminpars, hardmaxpars,
                           limit_parnums, freeze_par, thaw_par, report_progress)
-        
+
         self.assertRaises(RuntimeError, Covariance().compute,
                           stat, fitter, None, minpars, maxpars,
                           hardminpars, hardmaxpars, limit_parnums, freeze_par,
                           thaw_par, report_progress, get_par_name)
-        
+
         self.assertRaises(RuntimeError, Covariance().compute,
                           stat, fitter, numpy.array([1,2]),
                           minpars, maxpars, hardminpars, hardmaxpars,
@@ -117,7 +117,7 @@ class test_estmethods(SherpaTestCase):
                           stat, fitter, fittedpars, numpy.array([1,2]),
                           maxpars, hardminpars, hardmaxpars, limit_parnums,
                           freeze_par, thaw_par, report_progress, get_par_name)
-        
+
     def test_projection_failures(self):
         self.assertRaises(TypeError, Projection().compute,
                           stat, None, fittedpars, minpars, maxpars,
@@ -139,7 +139,7 @@ class test_estmethods(SherpaTestCase):
                           stat, fitter, fittedpars, numpy.array([1,2]),
                           maxpars, hardminpars, hardmaxpars, limit_parnums,
                           freeze_par, thaw_par, report_progress, get_par_name)
-        
+
     def test_covar(self):
         standard = numpy.array([[ 0.4935702,  0.06857833, numpy.nan],
                                 [ 0.06857833, 0.26405554, numpy.nan],

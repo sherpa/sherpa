@@ -60,14 +60,14 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
             if len(line) > 0 and line[0] == comment:
                 line = line.replace(comment, ' ') #slice off comment
                 raw_names = line.strip().split(sep)
-                
+
             elif line == '':
                 continue
             else:
                 # split line at sep
                 elems = line.strip().split(sep)
                 row = [elem for elem in elems if elem != '']
-                
+
                 # make list of row elements
                 rows.append(row)
 
@@ -83,39 +83,39 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
         try:
             args.append(col.astype(SherpaFloat))
         except ValueError, e:
-	    if require_floats:
-		raise ValueError("The file %s could not be loaded, probably because it contained spurious data and/or strings" % (filename,))
+            if require_floats:
+                raise ValueError("The file %s could not be loaded, probably because it contained spurious data and/or strings" % (filename,))
             args.append(col)
 
     names = [name.strip(bad_chars) for name in raw_names if name != '']
-  
+
     if len(names) == 0:
         names = ['col%i' % (i+1) for i in xrange(len(args))]
 
     return names, args
 
 def get_column_data( *args ):
-   """
-   get_column_data( *NumPy_args )
-   """
-   if len(args) == 0:
-       raise IOErr('noarrays')
-   
-   cols = []
-   for arg in args:
-       if arg is None or type(arg) in (numpy.ndarray, list, tuple):
-           vals = arg
-       else:
-           raise IOErr('badarray', arg)
+    """
+    get_column_data( *NumPy_args )
+    """
+    if len(args) == 0:
+        raise IOErr('noarrays')
 
-       if arg is not None:
-           vals = numpy.asarray( vals )
-           for col in numpy.column_stack(vals):
-               cols.append( col )
-       else:
-           cols.append( vals )
+    cols = []
+    for arg in args:
+        if arg is None or type(arg) in (numpy.ndarray, list, tuple):
+            vals = arg
+        else:
+            raise IOErr('badarray', arg)
 
-   return cols
+        if arg is not None:
+            vals = numpy.asarray( vals )
+            for col in numpy.column_stack(vals):
+                cols.append( col )
+        else:
+            cols.append( vals )
+
+    return cols
 
 
 def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,

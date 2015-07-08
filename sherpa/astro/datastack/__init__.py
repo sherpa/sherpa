@@ -68,14 +68,14 @@ def set_stack_verbosity(level):
     logger.setLevel(level)
 
 def set_stack_verbose(verbose=True):
-     """Configure whether stack functions print informational messages.
-     :param verbose: print messages if True (default=True)
-     :returns: None
-     """
-     if verbose:
-         logger.setLevel(logging.INFO)
-     else:
-         logger.setLevel(logging.WARNING)
+    """Configure whether stack functions print informational messages.
+    :param verbose: print messages if True (default=True)
+    :returns: None
+    """
+    if verbose:
+        logger.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.WARNING)
 
 # Get plot package 
 _cp = ConfigParser.ConfigParser()
@@ -383,7 +383,7 @@ class DataStack(object):
     set_bkg_model = _set_model_factory(ui.set_bkg_model)
     set_full_model = _set_model_factory(ui.set_full_model)
     set_bkg_full_model = _set_model_factory(ui.set_bkg_full_model)
-    
+
     def filter_datasets(self):
         """Return filtered list of datasets as specified in the __getitem__
         argument (via self.getitem_ids which gets set in __getitem__).

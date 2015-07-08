@@ -159,7 +159,7 @@ __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'get_xsstate')
 
 class XSModel(ArithmeticModel):
-    
+
     @modelCacher1d
     def calc(self, *args, **kwargs):
         return self._calc(*args, **kwargs)
@@ -665,20 +665,20 @@ class XSdisk(XSAdditiveModel):
 
 
 class XSdiskir(XSAdditiveModel):
-    
-   _calc =  _xspec.diskir
-   
-   def __init__(self, name='diskir'):
-       self.kT_disk = Parameter(name, 'kT_disk', 1.0, 0.01, 5., 0.0, hugeval, 'keV')
-       self.Gamma = Parameter(name, 'Gamma', 1.7, 1.001, 5., 0.0, hugeval)
-       self.kT_e = Parameter(name, 'kT_e', 100., 5., 1.e3, 0.0, hugeval, 'keV')
-       self.LcLd = Parameter(name, 'LcLd', 0.1, 0., 10., 0.0, hugeval)
-       self.fin = Parameter(name, 'fin', 1.e-1, 0.0, 1., 0.0, hugeval, frozen=True)
-       self.rirr = Parameter(name, 'rirr', 1.2, 1.0001, 10., 1.0001, hugeval)
-       self.fout = Parameter(name, 'fout', 1.e-4, 0.0, 1.e-1, 0.0, hugeval)
-       self.logrout = Parameter(name, 'logrout', 5.0, 3.0, 7.0, 0.0, hugeval)
-       self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-       XSAdditiveModel.__init__(self, name, (self.kT_disk, self.Gamma, self.kT_e, self.LcLd, self.fin, self.rirr, self.fout, self.logrout, self.norm))
+
+    _calc =  _xspec.diskir
+
+    def __init__(self, name='diskir'):
+        self.kT_disk = Parameter(name, 'kT_disk', 1.0, 0.01, 5., 0.0, hugeval, 'keV')
+        self.Gamma = Parameter(name, 'Gamma', 1.7, 1.001, 5., 0.0, hugeval)
+        self.kT_e = Parameter(name, 'kT_e', 100., 5., 1.e3, 0.0, hugeval, 'keV')
+        self.LcLd = Parameter(name, 'LcLd', 0.1, 0., 10., 0.0, hugeval)
+        self.fin = Parameter(name, 'fin', 1.e-1, 0.0, 1., 0.0, hugeval, frozen=True)
+        self.rirr = Parameter(name, 'rirr', 1.2, 1.0001, 10., 1.0001, hugeval)
+        self.fout = Parameter(name, 'fout', 1.e-4, 0.0, 1.e-1, 0.0, hugeval)
+        self.logrout = Parameter(name, 'logrout', 5.0, 3.0, 7.0, 0.0, hugeval)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name, (self.kT_disk, self.Gamma, self.kT_e, self.LcLd, self.fin, self.rirr, self.fout, self.logrout, self.norm))
 
 
 class XSdiskbb(XSAdditiveModel):
@@ -2257,14 +2257,14 @@ class XSSSS_ice(XSMultiplicativeModel):
 
 class XSswind1(XSMultiplicativeModel):
 
-   _calc =  _xspec.swind1
+    _calc =  _xspec.swind1
 
-   def __init__(self, name='swind1'):
-       self.column = Parameter(name, 'column', 6., 3., 50., 0.0, hugeval)
-       self.logxi = Parameter(name, 'logxi', 2.5, 2.1, 4.1, 0.0, hugeval)
-       self.sigma = Parameter(name, 'sigma', 0.1, 0., .5, 0.0, hugeval)
-       self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
-       XSMultiplicativeModel.__init__(self, name, (self.column, self.logxi, self.sigma, self.redshift))
+    def __init__(self, name='swind1'):
+        self.column = Parameter(name, 'column', 6., 3., 50., 0.0, hugeval)
+        self.logxi = Parameter(name, 'logxi', 2.5, 2.1, 4.1, 0.0, hugeval)
+        self.sigma = Parameter(name, 'sigma', 0.1, 0., .5, 0.0, hugeval)
+        self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
+        XSMultiplicativeModel.__init__(self, name, (self.column, self.logxi, self.sigma, self.redshift))
 
 
 class XSTBabs(XSMultiplicativeModel):
@@ -2502,14 +2502,14 @@ class XSzphabs(XSMultiplicativeModel):
 
 class XSzxipcf(XSMultiplicativeModel):
 
-   _calc =  _xspec.zxipcf
+    _calc =  _xspec.zxipcf
 
-   def __init__(self, name='zxipcf'):
-       self.Nh = Parameter(name, 'Nh', 10, 0.05, 500, 0.0, hugeval, '10^22 atoms / cm^2')
-       self.logxi = Parameter(name, 'logxi', 3, -3, 6, -hugeval, hugeval)
-       self.CvrFract = Parameter(name, 'CvrFract', 0.5, 0., 1., 0.0, hugeval)
-       self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
-       XSMultiplicativeModel.__init__(self, name, (self.Nh, self.logxi, self.CvrFract, self.redshift))
+    def __init__(self, name='zxipcf'):
+        self.Nh = Parameter(name, 'Nh', 10, 0.05, 500, 0.0, hugeval, '10^22 atoms / cm^2')
+        self.logxi = Parameter(name, 'logxi', 3, -3, 6, -hugeval, hugeval)
+        self.CvrFract = Parameter(name, 'CvrFract', 0.5, 0., 1., 0.0, hugeval)
+        self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
+        XSMultiplicativeModel.__init__(self, name, (self.Nh, self.logxi, self.CvrFract, self.redshift))
 
 
 class XSzredden(XSMultiplicativeModel):

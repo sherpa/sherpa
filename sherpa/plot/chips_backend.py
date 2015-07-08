@@ -59,7 +59,7 @@ def _clear_window():
             chips.erase()
         else:
             chips.add_frame()
-    
+
     if chips.info() is None:
         chips.add_window()
 
@@ -73,7 +73,7 @@ def _point(x, y, overplot=True, clearwindow=False,
 
     if (not overplot) and clearwindow:
         _clear_window()
-    
+
     chips.add_point(x, y)
 
     for var in ('style','color', 'size', 'angle', 'fill'):
@@ -336,7 +336,7 @@ def _contour(x0, x1, y, levels=None, title=None, xlabel=None, ylabel=None,
 def _set_subplot(row, col, nrows, ncols, clearaxes=True,
                 xgap=0.18,
                 ygap=0.18):
-    
+
     chips.add_plot()
     chips.grid_objects(ncols, nrows, xgap, ygap)
 
@@ -344,7 +344,7 @@ def _set_subplot(row, col, nrows, ncols, clearaxes=True,
 def _set_jointplot(row, col, nrows, ncols, clearaxes=True,
                   top=1,
                   ratio=2):
-    
+
     # FIXME: misuse of kwarg clearaxes
     if not clearaxes:
         chips.strip_chart(nrows*ncols)

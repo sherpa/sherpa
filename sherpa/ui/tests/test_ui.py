@@ -48,7 +48,7 @@ class test_ui(SherpaTestCase):
         self.double = self.datadir + '/double.dat'
         self.filter = self.datadir + '/filter_single_integer.dat'
         self.func = lambda x: x
-        
+
         ui.dataspace1d(1,1000,dstype=ui.Data1D)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
@@ -93,10 +93,10 @@ class test_ui(SherpaTestCase):
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_source_methods_with_full_model(self):
         from sherpa.utils.err import IdentifierErr
-        
+
         ui.load_data('full', self.ascii)
         ui.set_full_model('full', 'powlaw1d.p1')
-        
+
         # Test Case 1
         try:
             ui.get_source('full')
@@ -106,11 +106,11 @@ class test_ui(SherpaTestCase):
             ui.plot_source('full')
         except IdentifierErr as e:
             self.assertEquals("Convolved model\n'p1'\n is set for dataset full. You should use plot_model instead.", str(e))
-        
+
         # Test Case 2
         ui.set_source('full', 'powlaw1d.p2')
         ui.get_source('full')
-        
+
         # Test Case 3
         ui.load_data('not_full', self.ascii)
         try:

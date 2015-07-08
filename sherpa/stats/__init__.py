@@ -275,7 +275,7 @@ class Chi2(Stat):
 
     @staticmethod
     def calc_staterror(data):
-         raise StatErr('chi2noerr')
+        raise StatErr('chi2noerr')
 
     @staticmethod
     def calc_stat(data, model, staterror, syserror=None, weight=None):
@@ -300,7 +300,7 @@ class LeastSq(Chi2):
     def calc_stat(data, model, staterror, syserror=None, weight=None):
         return _statfcts.calc_lsq_stat(data, model, staterror,
                                        syserror, weight, truncation_value)
-    
+
 
 class Chi2Gehrels(Chi2):
     """Chi Squared with Gehrels variance.
@@ -445,10 +445,10 @@ class UserStat(Stat):
     def __init__(self, statfunc=None, errfunc=None, name='userstat'):
         self._statfuncset = False
         self.statfunc = (lambda x: None)
-        
+
         self._staterrfuncset = False
         self.errfunc = (lambda x: None)
-        
+
         if statfunc is not None:
             self.statfunc = statfunc
             self._statfuncset = True
@@ -456,7 +456,7 @@ class UserStat(Stat):
         if errfunc is not None:
             self.errfunc = errfunc
             self._staterrfuncset = True
-            
+
 
         Stat.__init__(self, name)
 

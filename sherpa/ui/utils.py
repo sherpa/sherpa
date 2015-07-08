@@ -216,27 +216,37 @@ def _assign_model_to_main(name, model):
 #
 ###############################################################################
 class loggable(object):
-	def __init__(self, with_id=False, with_keyword=False, with_name=None):
-		self.with_id = with_id
-		self.with_keyword = with_keyword
-		self.with_name = with_name
+    def __init__(self, with_id=False, with_keyword=False, with_name=None):
+        self.with_id = with_id
+        self.with_keyword = with_keyword
+        self.with_name = with_name
 
-	def __call__(self, func):
-		if self.with_name:
-			name = self.with_name
-		else:
-			name = func.__name__
-		def log_decorator(*args, **kwargs):
-			ret = func(*args, **kwargs)
-			session = args[0]
-			line = readline.get_history_item(readline.get_current_history_length())
-			if self.with_id:
-				the_args = inspect.getcallargs(func, *args, **kwargs)
-				id = the_args['id']
-				if self.with_keyword:    					model = the_args[self.with_keyword]    					if model is None:    						id = None  
-				id = session._fix_id(id)  			    				if id is not None: # otherwise don't do anything and let normal error handling take action					if not session._calls_tracker.has_key(id):						session._calls_tracker[id] = dict()    					session._calls_tracker[id][name] = line
-			else:    				session._calls_tracker[name] = line
-            		return ret		log_decorator._original = func # this is needed because __init__.py will recreate the methods, see that file for info (look up 'decorator')        	return log_decorator
+    def __call__(self, func):
+        if self.with_name:
+            name = self.with_name
+        else:
+            name = func.__name__
+        def log_decorator(*args, **kwargs):
+            ret = func(*args, **kwargs)
+            session = args[0]
+            line = readline.get_history_item(readline.get_current_history_length())
+            if self.with_id:
+                the_args = inspect.getcallargs(func, *args, **kwargs)
+                id = the_args['id']
+                if self.with_keyword:
+                    model = the_args[self.with_keyword]
+                    if model is None:
+                        id = None  
+                id = session._fix_id(id)  			
+                if id is not None: # otherwise don't do anything and let normal error handling take action
+                    if not session._calls_tracker.has_key(id):
+                        session._calls_tracker[id] = dict()
+                    session._calls_tracker[id][name] = line
+            else:
+                session._calls_tracker[name] = line
+            return ret
+        log_decorator._original = func # this is needed because __init__.py will recreate the methods, see that file for info (look up 'decorator')
+        return log_decorator
 
 
 class Session(NoNewAttributesAfterInit):
@@ -251,10 +261,10 @@ class Session(NoNewAttributesAfterInit):
         self.clean()
         self._model_types = {}
         self._model_globals = numpy.__dict__.copy()
-	self._calls_tracker = dict()
+        self._calls_tracker = dict()
         NoNewAttributesAfterInit.__init__(self)
-	global _session
-	_session = self
+        global _session
+        _session = self
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -315,7 +325,7 @@ class Session(NoNewAttributesAfterInit):
         # between Python and S-Lang interfaces.
         self._sherpa_version = sherpa.__version__
         self._sherpa_version_string = sherpa.__versionstr__
-        
+
         self._default_id = 1
         self._paramprompt=False
 
@@ -403,9 +413,9 @@ class Session(NoNewAttributesAfterInit):
         self._kernelcontour = sherpa.plot.PSFKernelContour()
 
         self._intproj = sherpa.plot.IntervalProjection()
-	self._intunc  = sherpa.plot.IntervalUncertainty()
-	self._regproj = sherpa.plot.RegionProjection()
-	self._regunc  = sherpa.plot.RegionUncertainty()
+        self._intunc  = sherpa.plot.IntervalUncertainty()
+        self._regproj = sherpa.plot.RegionProjection()
+        self._regunc  = sherpa.plot.RegionUncertainty()
 
         self._plot_types = {
             'data': self._dataplot,
@@ -432,7 +442,7 @@ class Session(NoNewAttributesAfterInit):
             'psf' : self._psfcontour,
             'kernel': self._kernelcontour
             }
-        
+
         self._dataimage = sherpa.image.DataImage()
         self._modelimage = sherpa.image.ModelImage()
         self._sourceimage = sherpa.image.SourceImage()
@@ -489,10 +499,10 @@ class Session(NoNewAttributesAfterInit):
         >>> save('bestfit.sherpa', clobber=True)
 
         """
-        
+
         _check_type(filename, basestring, 'filename', 'a string')
         clobber=sherpa.utils.bool_cast(clobber)
-        
+
         if os.path.isfile(filename) and not clobber:
             raise sherpa.utils.err.IOErr("filefound", filename)
 
@@ -1360,7 +1370,7 @@ class Session(NoNewAttributesAfterInit):
             if not func.startswith('_') and callable(getattr(self,func)):
                 funcs.append(func)
         return funcs
-        
+
     def list_functions(self, outfile=None, clobber=False):
         """Display the functions provided by Sherpa.
 
@@ -1722,11 +1732,11 @@ class Session(NoNewAttributesAfterInit):
         optname : str, optional
            If not given, a dictionary of all the options are returned.
            When given, the individual value is returned.
-            
+
         Returns
         -------
         value : dictionary or value
-           
+
         Raises
         ------
         sherpa.utils.err.ArgumentErr
@@ -1840,7 +1850,7 @@ class Session(NoNewAttributesAfterInit):
         """
         itermethod_opts = dict(self._current_itermethod)
         del itermethod_opts['name']
-        
+
         if optname is None:
             return itermethod_opts
 
@@ -5204,7 +5214,7 @@ class Session(NoNewAttributesAfterInit):
         cmpt = self._model_components.get(name)
         require=sherpa.utils.bool_cast(require)
         if require and (cmpt is None):
-           raise IdentifierErr('nomodelcmpt', name)
+            raise IdentifierErr('nomodelcmpt', name)
         return cmpt
 
 
@@ -5336,7 +5346,7 @@ class Session(NoNewAttributesAfterInit):
         # is redundant, so just return)
         if isinstance(typename, sherpa.models.Model) and name is None:
             return
-        
+
         _check_type(typename, basestring, 'typename', 'a string')
         _check_type(name, basestring, 'name', 'a string')
 
@@ -5466,7 +5476,7 @@ class Session(NoNewAttributesAfterInit):
             del sys.modules["__builtin__"].__dict__[name]
         else:
             raise IdentifierErr('nomodelcmpt', name)
-        
+
     # Back-compatibility
     #create_model = create_model_component
 
@@ -5678,7 +5688,7 @@ class Session(NoNewAttributesAfterInit):
                         elif count == 2:
                             try:
                                 str_val,str_min,str_max = input.split(',')
-                                
+
                                 if str_val != "":
                                     val = float(str_val)
                                 if str_min != "":
@@ -6056,7 +6066,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         return len(self._get_source(id).pars)
-    
+
     def get_num_par_thawed(self, id=None):
         """Return the number of thawed parameters in a model expression.
 
@@ -6333,7 +6343,7 @@ class Session(NoNewAttributesAfterInit):
         >>> load_template_intepoator('myint', KNNInterpolator, k=4, order=3)
 
         """
-	sherpa.models.template.interpolators[name] = (interpolator_class, kwargs)
+        sherpa.models.template.interpolators[name] = (interpolator_class, kwargs)
 
 
     # also in sherpa.astro.utils
@@ -6588,7 +6598,7 @@ class Session(NoNewAttributesAfterInit):
         frozen=None
         if parfrozen is not None:
             frozen = list(parfrozen)[:]
-        
+
         for name in parnames:
             par = sherpa.models.Parameter(modelname, name, 0.0)
             if parvals is not None:
@@ -7440,9 +7450,9 @@ class Session(NoNewAttributesAfterInit):
         else:
             d = sherpa.data.DataSimulFit('simulfit data', datasets)
             m = sherpa.models.SimulFitModel('simulfit model', models)
-	if not self._current_method.name == 'gridsearch':
-		if m.is_discrete:
-		   raise ModelErr("You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior).")
+        if not self._current_method.name == 'gridsearch':
+            if m.is_discrete:
+                raise ModelErr("You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior).")
 
 
         f = sherpa.fit.Fit(d, m, self._current_stat, self._current_method,
@@ -7489,12 +7499,12 @@ class Session(NoNewAttributesAfterInit):
         # If no data sets have models assigned to them, stop now.
         if len(models) < 1:
             raise IdentifierErr("nomodels")
-        
+
         return fit_to_ids, datasets, models
 
 
     def _get_fit(self, id, otherids=(), estmethod=None):
-        
+
         fit_to_ids, datasets, models = self._prepare_fit(id, otherids)
 
         self._add_extra_data_and_models(fit_to_ids, datasets, models)
@@ -7507,7 +7517,7 @@ class Session(NoNewAttributesAfterInit):
 
 
     def _get_stat_info(self):
-	
+
         ids, datasets, models = self._prepare_fit(None)
 
         self._add_extra_data_and_models(ids, datasets, models)
@@ -7520,7 +7530,7 @@ class Session(NoNewAttributesAfterInit):
                 statinfo = f.calc_stat_info()
                 statinfo.name = 'Dataset %s' % (str(id))
                 statinfo.ids = (id,)
-		
+
                 output.append(statinfo)
 
         f = self._get_fit_obj(datasets, models, None)
@@ -8020,7 +8030,7 @@ class Session(NoNewAttributesAfterInit):
     def _run_pvalue(self, null_model, alt_model, conv_model=None,
                  id=1, otherids=(), num=500, bins=25, numcores=None):
         ids, fit = self._get_fit(id, otherids)
-        
+
         pvalue = sherpa.sim.LikelihoodRatioTest.run
         results = pvalue(fit, null_model, alt_model, conv_model,
                       niter=num,
@@ -8509,7 +8519,7 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         conf : object
-           
+
         See Also
         --------
         conf : Estimate confidence intervals using the confidence method.
@@ -8523,7 +8533,7 @@ class Session(NoNewAttributesAfterInit):
         ``eps``
            The precision of the calculated limits. The default is
            0.01.
-        
+
         ``fast``
            If ``True`` then the fit optimization used may be changed from
            the current setting (only for the error analysis) to use
@@ -8723,7 +8733,7 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr('badconf', methodname)
         self._check_estmethod_opt(meth, optname)
         meth.config[optname] = val
-        
+
     def get_covar_opt(self, name=None):
         """Return one or all of the options for the covariance
         method.
@@ -8777,11 +8787,11 @@ class Session(NoNewAttributesAfterInit):
         name : str, optional
            If not given, a dictionary of all the options are returned.
            When given, the individual value is returned.
-            
+
         Returns
         -------
         value : dictionary or value
-           
+
         Raises
         ------
         sherpa.utils.err.ArgumentErr
@@ -8805,7 +8815,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         return self._get_estmethod_opt('confidence', name)
-    
+
     def get_proj_opt(self, name=None):
         """Return one or all of the options for the confidence interval
         method.
@@ -8849,7 +8859,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         return self._get_estmethod_opt('projection', name)
-    
+
     def set_covar_opt(self, name, val):
         """Set an option for the covariance method.
 
@@ -9057,7 +9067,7 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         results : sherpa.fit.ErrorEstResults object
-           
+
         Raises
         ------
         sherpa.utils.err.SessionErr
@@ -9135,7 +9145,7 @@ class Session(NoNewAttributesAfterInit):
         The following converts the above into a dictionary where the
         keys are the parameter names and the values are the tuple
         (best-fit value, lower-limit, upper-limit):
-        
+
         >>> pvals1 = zip(res.parvals, res.parmins, res.parmaxes)
         >>> pvals2 = [(v, v+l, v+h) for (v,l,h) in pvals1]
         >>> dres = dict(zip(res.parnames, pvals2))
@@ -9389,7 +9399,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         self._covariance_results = self._est_errors(args, 'covariance')
-    
+
     ### DOC-TODO: include screen output of conf() ?
     def conf(self, *args):
         """Estimate the confidence intervals for parameters using the
@@ -9811,7 +9821,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         return self._pyblocxs.get_sampler_name()
-        
+
     def set_sampler(self, sampler):
         """Set the pyBLoCXS sampler.
 
@@ -10750,7 +10760,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._prepare_plotobj(id, self._chisqrplot)
         return self._chisqrplot
-    
+
     def get_ratio_plot(self, id=None):
         """Return the data used by plot_ratio.
 
@@ -10792,7 +10802,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._prepare_plotobj(id, self._ratioplot)
         return self._ratioplot
-    
+
     def get_data_contour(self, id=None):
         """Return the data used by contour_data.
 
@@ -11398,7 +11408,7 @@ class Session(NoNewAttributesAfterInit):
             raise
         else:
             sherpa.plot.end()
-    
+
     def _overplot(self, id, plotobj, *args, **kwargs):
         #if len(args) > 0:
         #    raise SherpaError("cannot overplot for multiple data sets")
@@ -11657,7 +11667,7 @@ class Session(NoNewAttributesAfterInit):
 
         ``fit``
            The data (as points) and the convolved model (as a line).
- 
+
         ``kernel``
            The PSF kernel associated with the data set.
 
@@ -11768,7 +11778,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         self._plot(id, self._dataplot, **kwargs)
-    
+
     # DOC-NOTE: also in sherpa.astro.utils
     def plot_model(self, id=None, **kwargs):
         """Plot the model for a data set.
@@ -12238,7 +12248,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         self._plot(id, self._delchiplot, **kwargs)
-        
+
     def plot_ratio(self, id=None, **kwargs):
         """Plot the ratio of data to model for a data set.
 
@@ -13044,7 +13054,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         self._contour(id, self._datacontour, **kwargs)
-        
+
     def contour_model(self, id=None, **kwargs):
         """Contour the values of the model, including any PSF.
 
@@ -13210,7 +13220,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         self._contour(id, self._residcontour, **kwargs)
-    
+
     def contour_ratio(self, id=None, **kwargs):
         """Contour the ratio of data to model.
 
@@ -13666,7 +13676,7 @@ class Session(NoNewAttributesAfterInit):
                                   numcores)
             self._regproj.calc(fit,par0,par1,self._methods)
         return self._regproj
-    
+
     def get_reg_unc(self, par0=None, par1=None, id=None, otherids=None,
                     recalc=False, min=None, max=None, nloop=(10,10), delv=None,
                     fac=4, log=(False,False), sigma=(1,2,3), levels=None,
@@ -13766,7 +13776,7 @@ class Session(NoNewAttributesAfterInit):
         if sherpa.utils.bool_cast(recalc):
             par0 = self._check_par(par0, 'par0')
             par1 = self._check_par(par1, 'par1')
-            
+
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
@@ -13784,11 +13794,11 @@ class Session(NoNewAttributesAfterInit):
                 prepare_dict[key] = kwargs[key]
             if plot_dict.has_key(key):
                 plot_dict[key] = kwargs[key]
-                
+
         if sherpa.utils.bool_cast(kwargs['replot']):
             self._plot(id, plotobj, replot=True, **plot_dict)
             return
-        
+
         par = self._check_par(par)
         if kwargs['otherids'] is None:
             kwargs['otherids'] = ()
@@ -13799,7 +13809,7 @@ class Session(NoNewAttributesAfterInit):
         # replot but have calculated already, differing interfaces to prepare
         self._plot(id, plotobj, replot=True, **plot_dict)
 
-    
+
     ### DOC-NOTE: I am not convinced I have fac described correctly
     ### DOC-NOTE: same synopsis as int_unc
     def int_proj(self, par, id=None, otherids=None, replot=False, fast=True,
@@ -14040,14 +14050,14 @@ class Session(NoNewAttributesAfterInit):
                 prepare_dict[key] = kwargs[key]
             if cont_dict.has_key(key):
                 cont_dict[key] = kwargs[key]
-                
+
         if sherpa.utils.bool_cast(kwargs['replot']):
             self._contour(id, plotobj, replot=True, **cont_dict)
             return
 
         par0 = self._check_par(par0, 'par0')
         par1 = self._check_par(par1, 'par1')
-        
+
         if kwargs['otherids'] is None:
             kwargs['otherids'] = ()
         ids, fit = self._get_fit(kwargs['id'], kwargs['otherids'])
@@ -14388,7 +14398,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._prepare_imageobj(id, self._dataimage)
         return self._dataimage
-    
+
     def get_model_image(self, id=None):
         """Return the data used by image_model.
 
@@ -14640,7 +14650,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._prepare_imageobj(id, self._ratioimage)
         return self._ratioimage
-    
+
     def get_resid_image(self, id=None):
         """Return the data used by image_resid.
 
@@ -15488,7 +15498,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         sherpa.image.Image.delete_frames()
-        
+
     def image_open(self):
         """Start the image viewer.
 
@@ -15751,4 +15761,3 @@ class Session(NoNewAttributesAfterInit):
 #		self._calls_tracker[id_] = dict()
 #	line = readline.get_history_item(readline.get_current_history_length())
 #	self._calls_tracker[id_][func_name] = line
-

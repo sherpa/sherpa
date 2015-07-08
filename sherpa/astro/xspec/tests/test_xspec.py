@@ -115,9 +115,9 @@ class test_xspec(SherpaTestCase):
 
     def test_xsxset_get(self):
         import sherpa.astro.xspec as xs
-	# TEST CASE #1 Case insentitive keys
-	xs.set_xsxset('fooBar', 'somevalue')
-	self.assertEqual('somevalue', xs.get_xsxset('Foobar'))
+        # TEST CASE #1 Case insentitive keys
+        xs.set_xsxset('fooBar', 'somevalue')
+        self.assertEqual('somevalue', xs.get_xsxset('Foobar'))
 
 
 if __name__ == '__main__':
