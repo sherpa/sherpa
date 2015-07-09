@@ -191,25 +191,46 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 		// energy fluxes for those bins *only*.
 		//
 		// For each such location in the energy grid, construct a new
-		// 2-bin energy array, such that the 2-bin array is [xlo[i],
-		// xhi[i]].  This is accomplished by:
+		// 3-bin energy array:
 		//
 		// ear2[0] = ear[location of gap]
-		// ear2[1] = ear[location of gap] + abs(xhi[location of gap] -
-		//                                      xlo[location of gap])
+		// ear2[1] = ear[0] + abs(xhi[location of gap] -
+		//                        xlo[location of gap])
+		// ear2[2] = ear[1] + abs(xhi[location of gap] -
+		//                        xlo[location of gap])
 		// The locations of the gaps, and the actual widths of the energy
 		// bins at those locations, were calculated above.  So use the
 		// gaps and gap_widths vectors here to recalculate energy fluxes
 		// at affected bins *only*. SMD 11/21/12
-
+                //
+                // Changed from using 2 to 3 bins - because XSpec models
+                // that call the SUMDEM routins, such as apec, crash if
+                // called with only 2 bins in 12.8.2q. The choice for
+                // the value of third bin is technically arbitrary, but it
+                // does actually make a difference for some XSpec models
+                // (presumably because they interpolate answers from an
+                // internally-based grid onto the user-requested grid).
+                // July 9 2015
 		while(!gaps.empty()) {
-			std::vector<FloatArrayType> ear2(2);
+			std::vector<FloatArrayType> ear2(3);
+                        std::vector<FloatArrayType> result2(2);
+                        std::vector<FloatArrayType> error2(2);
+                        double bin_width = gap_widths.back();
 			int bin_number = gaps.back();
 			ear2[0] = ear[bin_number];
-			ear2[1] = ear2[0] + gap_widths.back();
-			int ear2_nelem = 1;
-			XSpecFunc( &ear2[0], &ear2_nelem, &pars[0], &ifl, &result[bin_number],
-					&error[bin_number]);
+			ear2[1] = ear2[0] + bin_width;
+			ear2[2] = ear2[1] + bin_width;
+                        result2[0] = 0.0; // in case of error
+                        result2[1] = 0.0;
+			int ear2_nelem = 2;
+			XSpecFunc( &ear2[0], &ear2_nelem, &pars[0], &ifl,
+                                   &result2[0], &error2[0] );
+
+                        // Since error array is thrown away could just use
+                        // error2 in the call above and not bother copying
+                        // it over
+                        result[bin_number] = result2[0];
+                        error[bin_number] = error2[0];
 
 			gaps.pop_back();
 			gap_widths.pop_back();
@@ -299,23 +320,7 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 	if( xhi ) {
 		near++;
 
-		// Suppose the data were filtered, such that there is a gap
-		// in the middle of the energy array.  In that case *only*,
-		// we will find that xlo[i+1] != xhi[i].  However, XSPEC models
-		// expect that xlo[i+1] == xhi[i].
-		//
-		// So, if we pass in filtered data and xlo[i+1] != xhi[i],
-		// then at energy bin i we will end up calculating an energy
-		// flux that is far too great.  We will correct that by gathering
-		// information to allow us to recalculate individual bins, with
-		// boundaries xlo[i], xhi[i], to correct for cases where
-		// boundaries xlo[i], xlo[i+1] results in a bin that is too big.
-		//
-		// We will gather the locations of the gaps here, and calculate
-		// actual widths based on xhi[i] - xlo[i] downstream.
-		//
-		// If we are working in wavelength space we will also correct for that.
-		// SMD 11/21/12.
+                // See comments in xspecmodelfct template.
 
 		for (int i = 0; i < nelem-1; i++) {
 			double cmp;
@@ -397,30 +402,28 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 
 		XSpecFunc( &ear[0], nelem, &pars[0], 0, &result[0], &error[0], NULL );
 
-		// If there were gaps in the energy array, because of locations
-		// where xlo[i+1] != xhi[i], then this is place where we recalculate
-		// energy fluxes for those bins *only*.
-		//
-		// For each such location in the energy grid, construct a new
-		// 2-bin energy array, such that the 2-bin array is [xlo[i],
-		// xhi[i]].  This is accomplished by:
-		//
-		// ear2[0] = ear[location of gap]
-		// ear2[1] = ear[location of gap] + abs(xhi[location of gap] -
-		//                                      xlo[location of gap])
-		// The locations of the gaps, and the actual widths of the energy
-		// bins at those locations, were calculated above.  So use the
-		// gaps and gap_widths vectors here to recalculate energy fluxes
-		// at affected bins *only*. SMD 11/21/12
+                // See comments in xspecmodelfct template.
 
 		while(!gaps.empty()) {
-			std::vector<SherpaFloat> ear2(2);
+			std::vector<SherpaFloat> ear2(3);
+			std::vector<SherpaFloat> result2(2);
+			std::vector<SherpaFloat> error2(2);
+                        double bin_width = gap_widths.back();
 			int bin_number = gaps.back();
 			ear2[0] = ear[bin_number];
-			ear2[1] = ear2[0] + gap_widths.back();
-			int ear2_nelem = 1;
-			XSpecFunc( &ear2[0], ear2_nelem, &pars[0], 0, &result[bin_number],
-					&error[bin_number], NULL );
+			ear2[1] = ear2[0] + bin_width;
+                        ear2[2] = ear2[1] + bin_width;
+                        result2[0] = 0.0; // in case of error
+                        result2[1] = 0.0;
+			int ear2_nelem = 2;
+			XSpecFunc( &ear2[0], ear2_nelem, &pars[0], 0,
+                                   &result2[0], &error2[0], NULL );
+
+                        // Since error array is thrown away could just use
+                        // error2 in the call above and not bother copying
+                        // it over
+                        result[bin_number] = result2[0];
+                        error[bin_number] = error2[0];
 
 			gaps.pop_back();
 			gap_widths.pop_back();
@@ -504,23 +507,7 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 	if( xhi ) {
 		near++;
 
-		// Suppose the data were filtered, such that there is a gap
-		// in the middle of the energy array.  In that case *only*,
-		// we will find that xlo[i+1] != xhi[i].  However, XSPEC models
-		// expect that xlo[i+1] == xhi[i].
-		//
-		// So, if we pass in filtered data and xlo[i+1] != xhi[i],
-		// then at energy bin i we will end up calculating an energy
-		// flux that is far too great.  We will correct that by gathering
-		// information to allow us to recalculate individual bins, with
-		// boundaries xlo[i], xhi[i], to correct for cases where
-		// boundaries xlo[i], xlo[i+1] results in a bin that is too big.
-		//
-		// We will gather the locations of the gaps here, and calculate
-		// actual widths based on xhi[i] - xlo[i] downstream.
-		//
-		// If we are working in wavelength space we will also correct for that.
-		// SMD 11/21/12.
+                // See comments in xspecmodelfct template.
 
 		for (int i = 0; i < nelem-1; i++) {
 			if (0 != sao_fcmp(xhi[i], xlo[i+1], DBL_EPSILON)) {
@@ -596,39 +583,47 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 		XSpecFunc( ear, nelem, &pars[0], filename, ifl, &result[0],
 				&error[0] );
 
-		// If there were gaps in the energy array, because of locations
-		// where xlo[i+1] != xhi[i], then this is place where we recalculate
-		// energy fluxes for those bins *only*.
-		//
-		// For each such location in the energy grid, construct a new
-		// 2-bin energy array, such that the 2-bin array is [xlo[i],
-		// xhi[i]].  This is accomplished by:
-		//
-		// ear2[0] = ear[location of gap]
-		// ear2[1] = ear[location of gap] + abs(xhi[location of gap] -
-		//                                      xlo[location of gap])
-		// The locations of the gaps, and the actual widths of the energy
-		// bins at those locations, were calculated above.  So use the
-		// gaps and gap_widths vectors here to recalculate energy fluxes
-		// at affected bins *only*. SMD 11/21/12
+                // See comments in xspecmodelfct template.
 
+                // Although there's no error check on memory failure,
+                // if can not allocate these arrays then in serious trouble.
+                // Or could just use a static array.
 		while(!gaps.empty()) {
 			float *ear2 = NULL;
-			ear2 = (float*)malloc(2*sizeof(float));
+                        float *result2 = NULL;
+                        float *error2 = NULL;
+			ear2 = (float*)malloc(3*sizeof(float));
+			result2 = (float*)malloc(2*sizeof(float));
+			error2 = (float*)malloc(2*sizeof(float));
+                        double bin_width = gap_widths.back();
 			int bin_number = gaps.back();
 			ear2[0] = ear[bin_number];
-			ear2[1] = ear2[0] + gap_widths.back();
-			int ear2_nelem = 1;
+			ear2[1] = ear2[0] + bin_width;
+			ear2[2] = ear2[1] + bin_width;
+                        result2[0] = 0.0; // in case of error
+                        result2[1] = 0.0;
+			int ear2_nelem = 2;
 			try {
 				XSpecFunc( ear2, ear2_nelem, &pars[0], filename, ifl,
-						&result[bin_number], &error[bin_number]);
+						result2, error2);
 			} catch(...) {
-				if (ear2) free(ear2);
+                                if (ear2) free(ear2);
+                                if (result2) free(result2);
+                                if (error2) free(error2);
 				throw;
 			}
-			gaps.pop_back();
+
+                        // Since error array is thrown away could just use
+                        // error2 in the call above and not bother copying
+                        // it over
+                        result[bin_number] = result2[0];
+                        error[bin_number] = error2[0];
+
+                        gaps.pop_back();
 			gap_widths.pop_back();
 			if (ear2) free(ear2);
+                        if (result2) free(result2);
+                        if (error2) free(error2);
 		}
 
 	} catch(...) {
