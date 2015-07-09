@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -534,6 +534,7 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 		}
 	}
 
+        // TODO: should be documented why this can not use C++ vector
 	//std::vector<FloatArrayType> ear(near);
 	float *ear = NULL;
 	ear = (float*)malloc(near*sizeof(float));
@@ -613,7 +614,7 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
 		while(!gaps.empty()) {
 			float *ear2 = NULL;
-			ear = (float*)malloc(2*sizeof(float));
+			ear2 = (float*)malloc(2*sizeof(float));
 			int bin_number = gaps.back();
 			ear2[0] = ear[bin_number];
 			ear2[1] = ear2[0] + gap_widths.back();
