@@ -17,6 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import os
 import unittest
 import numpy
 import numpy.testing # this was added numpy 1.5.0
@@ -102,6 +103,11 @@ def _make_noncontiguous_grid():
 @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
                  "required sherpa.astro.xspec module missing")
 class test_xspec(SherpaTestCase):
+
+    # TODO: move into the SherpaTestCase class?
+    def make_path(self, path):
+        """Return the path to the data file."""
+        return os.path.join(self.datadir, path)
 
     def test_create_model_instances(self):
         import sherpa.astro.xspec as xs
@@ -288,12 +294,44 @@ class test_xspec(SherpaTestCase):
                                           err_msg=emsg + "comparison, edges]",
                                           **kwargs)
 
+    #@unittest.skipIf(test_data_missing(), "required test data missing")
+    def test_xspec_tablemodel(self):
+        # Just test one table model; use the same scheme as
+        # test_xspec_models_noncontiguous().
+        #
+        # The table model is from
+        # https://heasarc.gsfc.nasa.gov/xanadu/xspec/models/rcs.html
+        # retrieved July 9 2015. The exact model is irrelevant for this
+        # test, so this was chosen as it's relatively small.
+        ui.load_table_model('tmod',
+                            self.make_path('xspec/tablemodel/RCS.mod'))
+
+        # when used in the test suite it appears that the tmod
+        # global symbol is not created, so need to access the component
+        tmod = ui.get_model_component('tmod')
+
+        (egrid, elo, ehi, idx, gidx, bidx) = _make_noncontiguous_grid()
+
+        vals1 = tmod(egrid)
+        vals2 = tmod(elo, ehi)
+
+        emsg = "table model evaluation failed [noncontig; "
+        self.assertTrue(numpy.isfinite(vals1).all(), msg=emsg + "1]")
+        self.assertTrue(numpy.isfinite(vals2).all(), msg=emsg + "2]")
+
+        vals1 = vals1[idx]
+        numpy.testing.assert_allclose(vals1[gidx], vals2[gidx],
+                                      err_msg=emsg + "comparison]")
+        numpy.testing.assert_allclose(vals1[bidx], vals2[bidx],
+                                      err_msg=emsg + "comparison, edges]",
+                                      rtol=1e-4)
+
     @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits')
+                     'need pycrates, pyfits or astropy.io.fits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_set_analysis_wave_fabrizio(self):
-        rmf = self.datadir + '/ciao4.3/fabrizio/Data/3c273.rmf'
-        arf = self.datadir + '/ciao4.3/fabrizio/Data/3c273.arf'
+        rmf = self.make_path('ciao4.3/fabrizio/Data/3c273.rmf')
+        arf = self.make_path('ciao4.3/fabrizio/Data/3c273.arf')
 
         ui.set_model("fabrizio", "xspowerlaw.p1")
         ui.fake_pha("fabrizio", arf, rmf, 10000)
@@ -320,6 +358,13 @@ class test_xspec(SherpaTestCase):
 
 
 if __name__ == '__main__':
+    import sys
     import sherpa.astro.xspec as xs
     from sherpa.utils import SherpaTest
-    SherpaTest(xs).test()
+    if len(sys.argv) > 1:
+        datadir = sys.argv[1]
+    else:
+        datadir = '/data/scialg/testdata'
+    if not os.path.exists(datadir):
+        datadir = None
+    SherpaTest(xs).test(datadir=datadir)
