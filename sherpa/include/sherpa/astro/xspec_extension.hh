@@ -585,33 +585,19 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
                 // See comments in xspecmodelfct template.
 
-                // Although there's no error check on memory failure,
-                // if can not allocate these arrays then in serious trouble.
-                // Or could just use a static array.
 		while(!gaps.empty()) {
-			float *ear2 = NULL;
-                        float *result2 = NULL;
-                        float *error2 = NULL;
-			ear2 = (float*)malloc(3*sizeof(float));
-			result2 = (float*)malloc(2*sizeof(float));
-			error2 = (float*)malloc(2*sizeof(float));
+                        // Arrays are small, so why use malloc?
+                        float ear2[3] = { 0.0, 0.0, 0.0 };
+                        float result2[2] = { 0.0, 0.0 };
+                        float error2[2] = { 0.0, 0.0 };
                         double bin_width = gap_widths.back();
 			int bin_number = gaps.back();
 			ear2[0] = ear[bin_number];
 			ear2[1] = ear2[0] + bin_width;
 			ear2[2] = ear2[1] + bin_width;
-                        result2[0] = 0.0; // in case of error
-                        result2[1] = 0.0;
 			int ear2_nelem = 2;
-			try {
-				XSpecFunc( ear2, ear2_nelem, &pars[0], filename, ifl,
-						result2, error2);
-			} catch(...) {
-                                if (ear2) free(ear2);
-                                if (result2) free(result2);
-                                if (error2) free(error2);
-				throw;
-			}
+                        XSpecFunc( ear2, ear2_nelem, &pars[0], filename, ifl,
+                                   result2, error2);
 
                         // Since error array is thrown away could just use
                         // error2 in the call above and not bother copying
@@ -621,9 +607,6 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
                         gaps.pop_back();
 			gap_widths.pop_back();
-			if (ear2) free(ear2);
-                        if (result2) free(result2);
-                        if (error2) free(error2);
 		}
 
 	} catch(...) {
