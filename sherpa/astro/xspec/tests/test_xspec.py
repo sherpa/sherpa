@@ -308,7 +308,7 @@ class test_xspec(SherpaTestCase):
                                           err_msg=emsg + "comparison, edges]",
                                           **kwargs)
 
-    #@unittest.skipIf(test_data_missing(), "required test data missing")
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_xspec_tablemodel(self):
         # Just test one table model; use the same scheme as
         # test_xspec_models_noncontiguous().
