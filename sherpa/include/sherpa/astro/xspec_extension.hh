@@ -73,12 +73,20 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 
 	int nelem = int( xlo.get_size() );
 
-	if ( nelem < 2 ) {
-		std::ostringstream err;
-		err << "input array must have at least 2 elements, found " << nelem;
-		PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-		return NULL;
-	}
+        if ( nelem < 2 ) {
+          std::ostringstream err;
+          err << "input array must have at least 2 elements, found " << nelem;
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
+
+        if( xhi && (nelem != int(xhi.get_size())) ) {
+          std::ostringstream err;
+          err << "input arrays are not the same size: " << nelem
+              << " and " << int( xhi.get_size() );
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
 
 	int ifl = 0;
 
@@ -303,12 +311,33 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 
 	int nelem = int( xlo.get_size() );
 
-	if ( nelem < 2 ) {
-		std::ostringstream err;
-		err << "input array must have at least 2 elements, found " << nelem;
-		PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-		return NULL;
-	}
+        if ( nelem < 2 ) {
+          std::ostringstream err;
+          err << "input array must have at least 2 elements, found " << nelem;
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
+
+        if( xhi && (nelem != int(xhi.get_size())) ) {
+          std::ostringstream err;
+          err << "input arrays are not the same size: " << nelem
+              << " and " << int( xhi.get_size() );
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
+
+        // For now require the fluxes array to have the same
+        // size as the input grid. If xhi is not given then
+        // technically fluxes should be one less, but this is
+        // likely to cause problems (as it doesn't match how
+        // the rest of the interface works).
+        if( fluxes && (nelem != int(fluxes.get_size())) ) {
+          std::ostringstream err;
+          err << "flux array does not match the input grid: " << nelem
+              << " and " << int( fluxes.get_size() );
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
 
 	double hc = (sherpa::constants::c_ang<SherpaFloat>() *
 			sherpa::constants::h_kev<SherpaFloat>());
@@ -487,12 +516,20 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
 	int nelem = int( xlo.get_size() );
 
-	if ( nelem < 2 ) {
-		std::ostringstream err;
-		err << "input array must have at least 2 elements, found " << nelem;
-		PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-		return NULL;
-	}
+        if ( nelem < 2 ) {
+          std::ostringstream err;
+          err << "input array must have at least 2 elements, found " << nelem;
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
+
+        if( xhi && (nelem != int(xhi.get_size())) ) {
+          std::ostringstream err;
+          err << "input arrays are not the same size: " << nelem
+              << " and " << int( xhi.get_size() );
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
 
 	// FIXME how to handle the spectrum number??
 	int ifl = 0;
