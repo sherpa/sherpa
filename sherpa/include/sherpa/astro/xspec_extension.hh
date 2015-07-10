@@ -34,6 +34,14 @@ namespace sherpa { namespace astro { namespace xspec {
 typedef sherpa::Array< float, NPY_FLOAT > FloatArray;
 typedef float FloatArrayType;
 
+// When creating the flux and flux error arrays to be sent to
+// the XSpec routines, the arrays are filled with 0's - that is
+// the zeros array method is used, rather than create. This is
+// to ensure that a "sensible" answer is returned on error (all
+// 0's), as the XSpec model API does not provide a way to return
+// an error status. There is (likely; not checked) a run-time cost
+// to using zeros rather than create, but safety is better than
+// performance here.
 
 template <npy_intp NumPars, bool HasNorm,
 void (*XSpecFunc)( float* ear, int* ne, float* param, int* ifl,
@@ -170,13 +178,13 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 		nelem--;
 
 	FloatArray result;
-	if ( EXIT_SUCCESS != result.create( xlo.get_ndim(), xlo.get_dims() ) )
+	if ( EXIT_SUCCESS != result.zeros( xlo.get_ndim(), xlo.get_dims() ) )
 		return NULL;
 
 	// The XSPEC functions require fluxError to be non-NULL, so we create
 	// it but discard it after the computation is done
 	FloatArray error;
-	if ( EXIT_SUCCESS != error.create( xlo.get_ndim(), xlo.get_dims() ) )
+	if ( EXIT_SUCCESS != error.zeros( xlo.get_ndim(), xlo.get_dims() ) )
 		return NULL;
 
 	// Even though the XSPEC model function is Fortran, it could call
@@ -377,7 +385,7 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 		nelem--;
 
 	DoubleArray result;
-	if ( EXIT_SUCCESS != result.create( xlo.get_ndim(), xlo.get_dims() ) )
+	if ( EXIT_SUCCESS != result.zeros( xlo.get_ndim(), xlo.get_dims() ) )
 		return NULL;
 
 	if (fluxes) {
@@ -388,7 +396,7 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 	// The XSPEC functions require fluxError to be non-NULL, so we create
 	// it but discard it after the computation is done
 	DoubleArray error;
-	if ( EXIT_SUCCESS != error.create( xlo.get_ndim(), xlo.get_dims() ) )
+	if ( EXIT_SUCCESS != error.zeros( xlo.get_ndim(), xlo.get_dims() ) )
 		return NULL;
 
 	// Swallow C++ exceptions
@@ -578,13 +586,13 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 		nelem--;
 
 	FloatArray result;
-	if ( EXIT_SUCCESS != result.create( xlo.get_ndim(), xlo.get_dims() ) )
+	if ( EXIT_SUCCESS != result.zeros( xlo.get_ndim(), xlo.get_dims() ) )
 		return NULL;
 
 	// The XSPEC functions require fluxError to be non-NULL, so we create
 	// it but discard it after the computation is done
 	FloatArray error;
-	if ( EXIT_SUCCESS != error.create( xlo.get_ndim(), xlo.get_dims() ) )
+	if ( EXIT_SUCCESS != error.zeros( xlo.get_ndim(), xlo.get_dims() ) )
 		return NULL;
 
 	// Even though the XSPEC model function is Fortran, it could call
