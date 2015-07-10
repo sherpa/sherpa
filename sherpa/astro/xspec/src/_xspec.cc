@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -22,9 +22,11 @@
 int _sherpa_init_xspec_library();
 #define INIT_XSPEC _sherpa_init_xspec_library
 
+// Have sherpa include first so that Python.h is first, to avoid warning
+// messages about redefining _XOPEN_SOURCE
+#include "sherpa/astro/xspec_extension.hh"
 #include <iostream>
 #include <fstream>
-#include "sherpa/astro/xspec_extension.hh"
 
 #define ABUND_SIZE (30) // number of elements in Solar Abundance table
 
