@@ -202,11 +202,9 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 	if ( EXIT_SUCCESS != result.zeros( xlo.get_ndim(), xlo.get_dims() ) )
 		return NULL;
 
-	// The XSPEC functions require fluxError to be non-NULL, so we create
-	// it but discard it after the computation is done
-	FloatArray error;
-	if ( EXIT_SUCCESS != error.zeros( xlo.get_ndim(), xlo.get_dims() ) )
-		return NULL;
+        // Since the flux error is discarded, it does not need to be a
+        // NumPy array. Should be set to zeros for safety.
+        std::vector<FloatArrayType> error(nelem);
 
 	// Even though the XSPEC model function is Fortran, it could call
 	// C++ functions, so swallow exceptions here
@@ -440,11 +438,9 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 			result[ii] = fluxes[ii];
 	}
 
-	// The XSPEC functions require fluxError to be non-NULL, so we create
-	// it but discard it after the computation is done
-	DoubleArray error;
-	if ( EXIT_SUCCESS != error.zeros( xlo.get_ndim(), xlo.get_dims() ) )
-		return NULL;
+        // Since the flux error is discarded, it does not need to be a
+        // NumPy array. Should be set to zeros for safety.
+        std::vector<SherpaFloat> error(nelem);
 
 	// Swallow C++ exceptions
 
@@ -628,11 +624,9 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 	if ( EXIT_SUCCESS != result.zeros( xlo.get_ndim(), xlo.get_dims() ) )
 		return NULL;
 
-	// The XSPEC functions require fluxError to be non-NULL, so we create
-	// it but discard it after the computation is done
-	FloatArray error;
-	if ( EXIT_SUCCESS != error.zeros( xlo.get_ndim(), xlo.get_dims() ) )
-		return NULL;
+        // Since the flux error is discarded, it does not need to be a
+        // NumPy array. Should be set to zeros for safety.
+        std::vector<FloatArrayType> error(nelem);
 
 	// Even though the XSPEC model function is Fortran, it could call
 	// C++ functions, so swallow exceptions here
