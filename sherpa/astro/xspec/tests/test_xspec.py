@@ -25,6 +25,11 @@ from sherpa.astro import ui
 from sherpa.utils import SherpaTestCase, test_data_missing
 from sherpa.utils import has_package_from_list, has_fits_support
 
+# Conversion between wavelength (Angstrom) and energy (keV)
+# The values used are from sherpa/include/constants.hh
+#
+_hc = 6.6260693e-27 * 2.99792458e+18 / 1.60217653e-9
+
 def is_proper_subclass(obj, cls):
     if type(cls) is not tuple:
         cls = (cls,)
@@ -145,25 +150,45 @@ class test_xspec(SherpaTestCase):
         # There are two ways to call an XSpec model; single
         # argument taken as a continuous grid or with two arguments
         # giving the low and high values of each bin. Check that they
-        # give the same results.
+        # give the same results. The units can be keV (ascending)
+        # or angstrom (descending, so that bin2 < bin1, but when given
+        # both xlo and xhi, then xlo < xhi).
         #
         egrid = numpy.arange(0.1, 11.01, 0.01, dtype=float)
-        xlo = egrid[:-1]
-        xhi = egrid[1:]
+        wgrid = _hc / egrid
+        elo = egrid[:-1]
+        ehi = egrid[1:]
+        whi = wgrid[:-1]
+        wlo = wgrid[1:]
         for model in models:
             cls = getattr(xs, model)
             mdl = cls('foo')
-            vals1 = mdl(egrid)
-            vals2 = mdl(xlo,xhi)
+            evals1 = mdl(egrid)
+            evals2 = mdl(elo,ehi)
             emsg = "{0} model evaluation failed [".format(model)
-            self.assertTrue(numpy.isfinite(vals1).all(), msg=emsg + "1]")
-            self.assertTrue(numpy.isfinite(vals2).all(), msg=emsg + "2]")
+            self.assertTrue(numpy.isfinite(evals1).all(), msg=emsg + "kev1]")
+            self.assertTrue(numpy.isfinite(evals2).all(), msg=emsg + "kev2]")
 
             # Ideally the two should be exactly the same.
             #numpy.testing.assert_allclose(vals1[:-1], vals2,
-            #                              err_msg=emsg + "comparison]")
-            self.assertTrue((vals1[:-1] == vals2).all(),
-                            msg=emsg + "comparison]")
+            #                              err_msg=emsg + "kev comparison]")
+            self.assertTrue((evals1[:-1] == evals2).all(),
+                            msg=emsg + "kev comparison]")
+
+            wvals1 = mdl(wgrid)
+            wvals2 = mdl(wlo,whi)
+            self.assertTrue(numpy.isfinite(wvals1).all(), msg=emsg + "ang1]")
+            self.assertTrue(numpy.isfinite(wvals2).all(), msg=emsg + "ang2]")
+
+            # Ideally the two should be exactly the same.
+            #numpy.testing.assert_allclose(vals1[:-1], vals2,
+            #                              err_msg=emsg + "ang comparison]")
+            self.assertTrue((wvals1[:-1] == wvals2).all(),
+                            msg=emsg + "ang comparison]")
+
+            # compare the wavelength and energy results
+            numpy.testing.assert_allclose(evals1, wvals1,
+                                          err_msg=emsg + "comparison]")
 
     # It would make sense to just use this test, rather than do both
     # the contiguous test (test_xspec_models) as well as this one.
