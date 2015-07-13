@@ -37,6 +37,15 @@ def is_proper_subclass(obj, cls):
         return False
     return issubclass(obj, cls)
 
+# There is an agrument to be made that these tests only need
+# to exercise a small number of models (e.g. one each of the
+# different templates used in xspec_extension.hh - so single
+# precision, double precision, and table models) but there
+# is also benefit in testing them all (in particular, to check
+# that interface changes do not significantly change the
+# results for any model). For now stick with testing most of
+# the models.
+#
 def _get_xspec_models(xs):
     """What are the XSpec model names to test."""
 
@@ -175,6 +184,10 @@ class test_xspec(SherpaTestCase):
             self.assertTrue((evals1[:-1] == evals2).all(),
                             msg=emsg + "kev comparison]")
 
+            # Note: as we compare wvals1 to evals1 then do not really need
+            # the intermediate checks; however, they may make an easier-to
+            # read error if they are flagged (but I may remove then in a
+            # later revision)
             wvals1 = mdl(wgrid)
             wvals2 = mdl(wlo,whi)
             self.assertTrue(numpy.isfinite(wvals1).all(), msg=emsg + "ang1]")
@@ -255,6 +268,10 @@ class test_xspec(SherpaTestCase):
 
         (egrid, elo, ehi, idx, gidx, bidx) = _make_noncontiguous_grid()
 
+        wgrid = _hc / egrid
+        wlo = _hc / ehi
+        whi = _hc / elo
+
         # Ideally the same tolerances could be used for all the models,
         # but for now apply some model-specific values.
         #
@@ -287,14 +304,14 @@ class test_xspec(SherpaTestCase):
             cls = getattr(xs, model)
             mdl = cls('foo')
 
-            vals1 = mdl(egrid)
-            vals2 = mdl(elo,ehi)
+            evals1 = mdl(egrid)
+            evals2 = mdl(elo,ehi)
             emsg = "{0} model evaluation failed [noncontig; ".format(model)
-            self.assertTrue(numpy.isfinite(vals1).all(), msg=emsg + "1]")
-            self.assertTrue(numpy.isfinite(vals2).all(), msg=emsg + "2]")
+            self.assertTrue(numpy.isfinite(evals1).all(), msg=emsg + "kev1]")
+            self.assertTrue(numpy.isfinite(evals2).all(), msg=emsg + "kev2]")
 
             # filter down the "contiguous" version
-            vals1 = vals1[idx]
+            evals1 = evals1[idx]
 
             # Check the "non-edge" bins.
             #
@@ -309,8 +326,8 @@ class test_xspec(SherpaTestCase):
             except KeyError:
                 pass
 
-            numpy.testing.assert_allclose(vals1[gidx], vals2[gidx],
-                                          err_msg=emsg + "comparison]",
+            numpy.testing.assert_allclose(evals1[gidx], evals2[gidx],
+                                          err_msg=emsg + "kev comparison]",
                                           **kwargs)
 
             if model in skip_ends:
@@ -329,9 +346,43 @@ class test_xspec(SherpaTestCase):
             except KeyError:
                 pass
 
-            numpy.testing.assert_allclose(vals1[bidx], vals2[bidx],
-                                          err_msg=emsg + "comparison, edges]",
+            numpy.testing.assert_allclose(evals1[bidx], evals2[bidx],
+                                          err_msg=emsg +
+                                          "kev comparison, edges]",
                                           **kwargs)
+
+            # Just compare the wavelength grid results (using wlo,whi)
+            # to the energy grid since this implicitly does the
+            # intermediate checks.
+            #
+
+            #wvals1 = mdl(wgrid)
+            wvals2 = mdl(wlo,whi)
+            #emsg = "{0} model evaluation failed [noncontig; ".format(model)
+            #self.assertTrue(numpy.isfinite(wvals1).all(), msg=emsg + "kev1]")
+            #self.assertTrue(numpy.isfinite(wvals2).all(), msg=emsg + "kev2]")
+
+            # filter down the "contiguous" version
+            #wvals1 = wvals1[idx]
+
+            kwargs = { 'rtol': 1e-7 }
+            numpy.testing.assert_allclose(evals2[gidx], wvals2[gidx],
+                                          err_msg=emsg +
+                                          "ang comparison]",
+                                          **kwargs)
+
+            # It appears that the edge bins do not match (seen in
+            # CIAO 4.7 as well as the 2-bin version used to handle
+            # gaps). So skip.
+            #
+            # See https://gist.github.com/DougBurke/b70485a9280f1b52a83e
+            # for an example of the error.
+            #
+            #kwargs = { 'rtol': 1e-3 }
+            #numpy.testing.assert_allclose(evals2[bidx], wvals2[bidx],
+            #                              err_msg=emsg +
+            #                              "ang comparison, edges]",
+            #                              **kwargs)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_xspec_tablemodel(self):
