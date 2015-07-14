@@ -154,12 +154,14 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
             x2 = &xlo;
         }
 
-        // Are there any non-coniguous bins
+        // Are there any non-contiguous bins
         std::vector<int> gaps_index;
         std::vector<double> gaps_edges;
         if (xhi) {
           for (int i = 0; i < nelem-1; i++) {
-            double cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
+            // Could fail here if x2[i] > x1[i+1] (i.e. the bins overlap)
+            // which would give a (slightly) nicer error than later on.
+            int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
             if (0 != cmp) {
               gaps_index.push_back(i);
               gaps_edges.push_back((*x2)[i]);
@@ -389,7 +391,7 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
                 // See comments in xspecmodelfct template.
 
 		for (int i = 0; i < nelem-1; i++) {
-			double cmp;
+			int cmp;
 			if ( is_wave ) {
 				cmp = sao_fcmp(xlo[i], xhi[i+1], DBL_EPSILON);
 			} else {
