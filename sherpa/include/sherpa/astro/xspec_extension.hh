@@ -104,17 +104,19 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 		return NULL;
 #endif
 
-	FloatArray pars;
-	DoubleArray xlo;
-	DoubleArray xhi;
+        FloatArray pars;
+        FloatArray xlo;
+        FloatArray xhi;
 
-        // TODO: why not convert to FloatArray for xlo/xhi?
-	if ( !PyArg_ParseTuple( args, (char*)"O&O&|O&",
+        // The code used to read in xlo and xhi as DoubleArray, which
+        // would then be downcast to FloatArray. It seems to make sense
+        // to do the downcasting here.
+        if ( !PyArg_ParseTuple( args, (char*)"O&O&|O&",
 			(converter)convert_to_contig_array< FloatArray >,
 			&pars,
-			(converter)convert_to_contig_array< DoubleArray >,
+			(converter)convert_to_contig_array< FloatArray >,
 			&xlo,
-			(converter)convert_to_contig_array< DoubleArray >,
+			(converter)convert_to_contig_array< FloatArray >,
 			&xhi ) )
 		return NULL;
 
@@ -147,8 +149,8 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 	int ifl = 1;
 
 	bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
-        DoubleArray *x1 = &xlo;
-        DoubleArray *x2 = &xhi;
+        FloatArray *x1 = &xlo;
+        FloatArray *x2 = &xhi;
         if (is_wave && xhi) {
             x1 = &xhi;
             x2 = &xlo;
@@ -156,11 +158,11 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 
         // Are there any non-contiguous bins?
         std::vector<int> gaps_index;
-        std::vector<double> gaps_edges;
+        std::vector<FloatArrayType> gaps_edges;
         if (xhi) {
           const int gap_found = is_wave ? 1 : -1;
           for (int i = 0; i < nelem-1; i++) {
-            int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
+            int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], FLT_EPSILON);
             if (cmp == gap_found) {
               gaps_index.push_back(i);
               gaps_edges.push_back((*x2)[i]);
@@ -203,20 +205,20 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
           for (int j = 0 ; j < ngaps; j++) {
             int end = gaps_index[j] + 1;
             for(int i = start; i < end; i++) {
-              ear[i + j] = (FloatArrayType) (*x1)[i];
+              ear[i + j] = (*x1)[i];
             }
-            ear[end + j] = (FloatArrayType) gaps_edges[j];
+            ear[end + j] = gaps_edges[j];
             start = end;
           }
 
           // need to do the last contiguous grid
           for(int i = start; i < nelem; i++) {
-            ear[i + ngaps] = (FloatArrayType) (*x1)[i];
+            ear[i + ngaps] = (*x1)[i];
           }
 
           // Add on the last bin value if needed
           if (xhi) {
-            ear[ngrid - 1] = (FloatArrayType) (*x2)[nelem - 1];
+            ear[ngrid - 1] = (*x2)[nelem - 1];
           }
         }
 
