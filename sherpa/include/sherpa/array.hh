@@ -101,6 +101,9 @@ namespace sherpa {
       newdims.ptr = dims;
       newdims.len = 1;
 
+      (void) PyArray_Resize( (PyArrayObject*) array, &newdims,
+                             1, NPY_ANYORDER );
+
       // We know what the size value shoule be (newsize), but
       // check with Python.
       data = PyArray_BYTES( (PyArrayObject*) array );
