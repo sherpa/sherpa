@@ -154,17 +154,28 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
             x2 = &xlo;
         }
 
-        // Are there any non-contiguous bins
+        // Are there any non-contiguous bins?
         std::vector<int> gaps_index;
         std::vector<double> gaps_edges;
         if (xhi) {
+          const int gap_found = is_wave ? 1 : -1;
           for (int i = 0; i < nelem-1; i++) {
-            // Could fail here if x2[i] > x1[i+1] (i.e. the bins overlap)
-            // which would give a (slightly) nicer error than later on.
             int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
-            if (0 != cmp) {
+            if (cmp == gap_found) {
               gaps_index.push_back(i);
               gaps_edges.push_back((*x2)[i]);
+            } else if (cmp != 0) {
+              std::ostringstream err;
+              // not convinced this is understandable to users, particularly
+              // if the grid is in Angstrom. It is also possible that the
+              // format used isn't sufficient to show the problem, but I
+              // do not want to tweak the format here just yet.
+              err << "Grid cells overlap: cell " << i
+                  << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
+                  << " and cell " << (i+1)
+                  << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
+              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
+              return NULL;
             }
           }
         }
@@ -233,6 +244,10 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
         // this is much simpler to write here).
         // Should this be done, or just let the user get invalid
         // results?
+        //
+        // Also, it should only be needed if xhi is NULL, since the
+        // sao_fcmp() check above should be sufficent in that case.
+        //
         for (int i = 0; i < ngrid - 1; i++) {
           if (ear[i] >= ear[i+1]) {
             std::ostringstream err;
