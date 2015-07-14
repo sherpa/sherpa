@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -25,9 +25,7 @@
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
-
 namespace sherpa {
-
 
   template <typename CType, int ArrayType>
   class Array {
@@ -91,6 +89,23 @@ namespace sherpa {
     const npy_intp* get_dims() const
     {
       return PyArray_DIMS( (PyArrayObject*) array );
+    }
+
+    // What should the ref field be set to: it seems like 1 will check that
+    // there are no references to the array, which seems to make sense
+    // here.
+    //
+    void resize1d( npy_intp newsize ) {
+      npy_intp dims[1] = { newsize };
+      PyArray_Dims newdims;
+      newdims.ptr = dims;
+      newdims.len = 1;
+
+      // We know what the size value shoule be (newsize), but
+      // check with Python.
+      data = PyArray_BYTES( (PyArrayObject*) array );
+      size = PyArray_SIZE( (PyArrayObject*) array );
+      stride = PyArray_STRIDE( (PyArrayObject*) array, 0 );
     }
 
     const CType& operator[]( npy_intp index ) const
