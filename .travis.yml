@@ -6,9 +6,10 @@ python:
 env:
   - FITS="astropy" INSTALL_TYPE=develop TEST=submodule
   - FITS="pyfits" INSTALL_TYPE=develop TEST=submodule
-#  - INSTALL_TYPE=install TEST=package
-#  - FITS="astropy" INSTALL_TYPE=install TEST=package
-#  - FITS="astropy" INSTALL_TYPE=install TEST=smoke
+  - INSTALL_TYPE=install TEST=package
+  - FITS="astropy" INSTALL_TYPE=install TEST=package
+  - FITS="astropy" INSTALL_TYPE=install TEST=smoke
+  - INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true"
 
 before_install:
   - sudo apt-get update -qq
@@ -19,7 +20,7 @@ before_install:
   - export PATH=/home/travis/miniconda/bin:$PATH
   - conda update --yes conda
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib
-  - conda config --add channels https://conda.binstar.org/cxc
+  - conda config --add channels https://conda.binstar.org/sherpa
   - pip install -r test_requirements.txt
   - if [ ${TEST} == package ];
      then pip install ./sherpa-test-data;
@@ -28,17 +29,21 @@ before_install:
   - if [ ${TEST} == smoke ];
      then git submodule deinit -f .;
     fi
+  - if [ -n "${NOSETUPTOOLS}" ]; then conda remove --yes setuptools; fi
 
 install:
   - python setup.py $INSTALL_TYPE
 
 script:
-  - if [ -n ${FITS} ]; then conda install --yes ${FITS}; fi
-  - if [ ${TEST} == submodule ];
-     then python setup.py test;
-    else
-     cd /home;
-     sherpa_test;
+  - if [ -n "${FITS}" ]; then conda install --yes ${FITS}; fi
+  - if [ ${TEST} == submodule ]; then python setup.py test; fi
+  - if [ ${TEST} == smoke ];
+        then cd /home;
+        python -c "import sherpa; sherpa.test()";
+    fi
+  - if [ ${TEST} == package ];
+        then cd /home;
+        sherpa_test;
     fi
 
 notifications:
