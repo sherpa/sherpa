@@ -304,7 +304,7 @@ class test_xspec(SherpaTestCase):
 
         # For the "edge" bins, use a default rtol of 1e-4
         # (now changed to 1e-7)
-        rtols_edges = { }
+        rtols_edges = { 'XSlaor': 2e-7, 'XSlaor2': 2e-7 }
         atols_edges = {
             #'XSbapec': 1e-2,
             #'XSbvapec': 1e-3,
@@ -313,14 +313,6 @@ class test_xspec(SherpaTestCase):
             #'XSposm': 1e-8,
             #'XSswind1': 1e-3
         }
-
-        # Skip models for which we know (using 12.8.2q)
-        # that the check is not "worth it" (i.e. that the
-        # tolerance has to be so large as to make it
-        # non-informative).
-        #
-        ##skip_ends = [ 'XScompbb', 'XSlaor', 'XSlaor2' ]
-        skip_ends = [ 'XSlaor', 'XSlaor2' ]
 
         for model in models:
             cls = getattr(xs, model)
@@ -373,12 +365,6 @@ class test_xspec(SherpaTestCase):
                                               "ang comparison]",
                                               rtol=_rtol_wave_4byte)
 
-            # As these checks can be skipped, they are moved to the
-            # end of the loop (so have both energy and wavelength
-            # checks).
-            if model in skip_ends:
-                continue
-
             # Check the "edge" bins.
             #
             kwargs = {}
@@ -397,26 +383,14 @@ class test_xspec(SherpaTestCase):
                                           "kev comparison, edges]",
                                           **kwargs)
 
-            # It appears that the edge bins do not match (seen in
-            # CIAO 4.7 as well as the 2-bin version used to handle
-            # gaps). So skip. This has been fixed in the rewrite, but
-            # only for fortran-style 4-byte models.
-            #
-            # See https://gist.github.com/DougBurke/b70485a9280f1b52a83e
-            # for an example of the error.
-            #
-            if mdl._calc.__name__.startswith('C_'):
-                continue
-
-            # These were found to have very-large differences, so
-            # are being skipped.
-            if model in [ 'XScompmag', 'XScomptb' ]:
-                continue
+            kwargs = {}
+            if not mdl._calc.__name__.startswith('C_'):
+                kwargs['rtol'] = _rtol_wave_4byte
 
             numpy.testing.assert_allclose(evals2[bidx], wvals2[bidx],
                                           err_msg=emsg +
                                           "ang comparison, edges]",
-                                          rtol=_rtol_wave_4byte)
+                                          **kwargs)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_xspec_tablemodel(self):

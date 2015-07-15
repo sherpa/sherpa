@@ -247,8 +247,9 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
         // Should this be done, or just let the user get invalid
         // results?
         //
-        // Also, it should only be needed if xhi is NULL, since the
-        // sao_fcmp() check above should be sufficent in that case.
+        // The earlier check with sao_fcmp catches some of these,
+        // but not all of them (if xhi is not given, or if xlo==xhi
+        // for any bin).
         //
         for (int i = 0; i < ngrid - 1; i++) {
           if (ear[i] >= ear[i+1]) {
@@ -340,7 +341,6 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 	DoubleArray pars;
 	DoubleArray xlo;
 	DoubleArray xhi;
-	DoubleArray *x;
 
 	if ( !PyArg_ParseTuple( args, (char*)"O&O&|O&",
 			(converter)convert_to_contig_array< DoubleArray >,
@@ -377,139 +377,170 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
           return NULL;
         }
 
-	double hc = (sherpa::constants::c_ang<SherpaFloat>() *
-			sherpa::constants::h_kev<SherpaFloat>());
-	bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
+        int ifl = 1;
 
-	std::vector<int> gaps;
-	std::vector<double> gap_widths;
+        bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
+        DoubleArray *x1 = &xlo;
+        DoubleArray *x2 = &xhi;
+        if (is_wave && xhi) {
+            x1 = &xhi;
+            x2 = &xlo;
+        }
 
-	// The XSPEC functions expect the input array to be of length nFlux+1
-	int near = nelem;
-	if( xhi ) {
-		near++;
+        // Are there any non-contiguous bins?
+        std::vector<int> gaps_index;
+        std::vector<SherpaFloat> gaps_edges;
+        if (xhi) {
+          const int gap_found = is_wave ? 1 : -1;
+          for (int i = 0; i < nelem-1; i++) {
+            int cmp = sao_fcmp((*x2)[i], (*x1)[i+1], DBL_EPSILON);
+            if (cmp == gap_found) {
+              gaps_index.push_back(i);
+              gaps_edges.push_back((*x2)[i]);
+            } else if (cmp != 0) {
+              std::ostringstream err;
+              // not convinced this is understandable to users, particularly
+              // if the grid is in Angstrom. It is also possible that the
+              // format used isn't sufficient to show the problem, but I
+              // do not want to tweak the format here just yet.
+              err << "Grid cells overlap: cell " << i
+                  << " (" << (*x1)[i] << " to " << (*x2)[i] << ")"
+                  << " and cell " << (i+1)
+                  << " (" << (*x1)[i+1] << " to " << (*x2)[i+1] << ")";
+              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
+              return NULL;
+            }
+          }
+        }
 
-                // See comments in xspecmodelfct template.
+        int ngaps = (int) gaps_edges.size();
 
-		for (int i = 0; i < nelem-1; i++) {
-			int cmp;
-			if ( is_wave ) {
-				cmp = sao_fcmp(xlo[i], xhi[i+1], DBL_EPSILON);
-			} else {
-				cmp = sao_fcmp(xhi[i], xlo[i+1], DBL_EPSILON);
-			}
-			if (0 != cmp) {
-				gaps.push_back(i);
-				double width = fabs(xhi[i] - xlo[i]);
-				if( is_wave ) {
-					width = hc / width;
-				}
-				gap_widths.push_back(width);
-			}
-		}
-	}
+        // The size of the energy array sent to XSpec
+        int ngrid = nelem;
+        if (xhi) {
+          ngrid += 1 + ngaps;
+        }
 
-	std::vector<SherpaFloat> ear(near);
+        // XSpec traditionally refers to the input energy grid as ear.
+        std::vector<SherpaFloat> ear(ngrid);
 
-	for( int ii = 0; ii < nelem; ii++ ) {
-		if( is_wave ) {
+        // The grid is created, converted from Angstrom to Energy
+        // (if required), and then checked for being monotonic.
+        // The multiple loops are not necessarily as efficient
+        // as a single loop, but simpler to write.
+        //
+        {
+          // Process the contiguous sections by looping through
+          // the gaps_index/edges arrays.
+          int start = 0;
+          for (int j = 0 ; j < ngaps; j++) {
+            int end = gaps_index[j] + 1;
+            for(int i = start; i < end; i++) {
+              ear[i + j] = (*x1)[i];
+            }
+            ear[end + j] = gaps_edges[j];
+            start = end;
+          }
 
-			// wave analysis swaps edges, e.g. wave_hi <--> energy_lo
-			// if xhi is available use it
-			x = (xhi) ? &xhi : &xlo;
+          // need to do the last contiguous grid
+          for(int i = start; i < nelem; i++) {
+            ear[i + ngaps] = (*x1)[i];
+          }
 
-			if ( 0.0 == (*x)[ii] ) {
-				PyErr_SetString( PyExc_ValueError,
-						(char*)"XSPEC model evaluation failed, division by zero" );
-				return NULL;
-			}
-			ear[ ii ] = ( SherpaFloat ) (hc / (*x)[ ii ]);
-		}
-		else
-			ear[ ii ] = ( SherpaFloat ) xlo[ ii ];
-	}
+          // Add on the last bin value if needed
+          if (xhi) {
+            ear[ngrid - 1] = (*x2)[nelem - 1];
+          }
+        }
 
-	if( xhi ) {
+        if (is_wave) {
+          double hc = (sherpa::constants::c_ang<SherpaFloat>() *
+                       sherpa::constants::h_kev<SherpaFloat>());
+          for (int i = 0; i < ngrid; i++) {
+            if (ear[i] <= 0.0) {
+              std::ostringstream err;
+              err << "Wavelength must be > 0, sent " << ear[i];
+              PyErr_SetString( PyExc_ValueError, err.str().c_str() );
+              return NULL;
+            }
+            ear[i] = hc / ear[i];
+          }
+        }
 
-		if( is_wave ) {
+        // Check for monotonic (could be included in the above, but
+        // this is much simpler to write here).
+        // Should this be done, or just let the user get invalid
+        // results?
+        //
+        // The earlier check with sao_fcmp catches some of these,
+        // but not all of them (if xhi is not given, or if xlo==xhi
+        // for any bin).
+        //
+        for (int i = 0; i < ngrid - 1; i++) {
+          if (ear[i] >= ear[i+1]) {
+            std::ostringstream err;
+            err << "Grid is not monotonic: " << ear[i] << " to " <<
+              ear[i+1];
+            PyErr_SetString( PyExc_ValueError, err.str().c_str() );
+            return NULL;
+          }
+        }
 
-			// wave analysis swaps edges, e.g. wave_lo <--> energy_hi
-			// use xlo
-
-			if ( 0.0 == xlo[ xlo.get_size() - 1 ] ) {
-				PyErr_SetString( PyExc_ValueError,
-						(char*)"XSPEC model evaluation failed, division by zero" );
-				return NULL;
-			}
-			ear[ near - 1 ] = ( SherpaFloat ) (hc / xlo[ xlo.get_size() - 1 ]);
-		}
-		else
-			ear[ near - 1 ] = ( SherpaFloat ) xhi[ xhi.get_size() - 1 ];
-
-	}
-	else
-		nelem--;
+        // Although the XSpec model expects the flux/fluxerror arrays
+        // to have size ngrid-1, the return array has to match the
+        // input size.
+        npy_intp dims[1] = { ngrid };
+        if (xhi)
+          dims[0]--;
 
 	DoubleArray result;
-	if ( EXIT_SUCCESS != result.zeros( xlo.get_ndim(), xlo.get_dims() ) )
+	if ( EXIT_SUCCESS != result.zeros( 1, dims ) )
 		return NULL;
 
         // Since the flux error is discarded, it does not need to be a
         // NumPy array. Should be set to zeros for safety.
-        std::vector<SherpaFloat> error(nelem);
-
-	// Swallow C++ exceptions
+        std::vector<SherpaFloat> error(dims[0]);
 
 	try {
 
-                int ifl = 1;
-		XSpecFunc( &ear[0], nelem, &pars[0], ifl, &result[0], &error[0], NULL );
-
-                // See comments in xspecmodelfct template.
-
-		while(!gaps.empty()) {
-			std::vector<SherpaFloat> ear2(3);
-			std::vector<SherpaFloat> result2(2);
-			std::vector<SherpaFloat> error2(2);
-                        double bin_width = gap_widths.back();
-			int bin_number = gaps.back();
-			ear2[0] = ear[bin_number];
-			ear2[1] = ear2[0] + bin_width;
-                        ear2[2] = ear2[1] + bin_width;
-                        result2[0] = 0.0; // in case of error
-                        result2[1] = 0.0;
-			int ear2_nelem = 2;
-			XSpecFunc( &ear2[0], ear2_nelem, &pars[0], ifl,
-                                   &result2[0], &error2[0], NULL );
-
-                        // Since error array is thrown away could just use
-                        // error2 in the call above and not bother copying
-                        // it over
-                        result[bin_number] = result2[0];
-                        error[bin_number] = error2[0];
-
-			gaps.pop_back();
-			gap_widths.pop_back();
-		}
+          int npts = ngrid - 1;
+          XSpecFunc( &ear[0], npts, &pars[0], ifl, &result[0], &error[0], NULL );
 
 	} catch(...) {
 
-		PyErr_SetString( PyExc_ValueError,
-				(char*)"XSPEC model evaluation failed" );
-		return NULL;
+          PyErr_SetString( PyExc_ValueError,
+                           (char*)"XSPEC model evaluation failed" );
+          return NULL;
 
 	}
 
+        // Remove gaps
+        if (ngaps > 0) {
+          // We can skip copying the first contiguous block
+          // as it is the identity transform.
+          //
+          int start = gaps_index[0] + 1;
+          for (int j = 1 ; j < ngaps; j++) {
+            int end = gaps_index[j] + 1;
+            for(int i = start; i < end; i++) {
+              result[i] = result[i + j];
+            }
+            start = end;
+          }
+
+          // need to do the last contiguous grid
+          for(int i = start; i < nelem; i++) {
+            result[i] = result[i + ngaps];
+          }
+
+          // Resize the data.
+          result.resize1d(nelem);
+        }
+
 	// Apply normalization if required
 	if ( HasNorm )
-		for ( int ii = 0; ii < nelem; ii++ )
-			result[ii] *= pars[NumPars - 1];
-
-	// The XSPEC functions expect the output array to be of length nFlux
-	// (one less than the input array), so set the last element to
-	// zero to avoid having random garbage in it
-	if( !xhi )
-		result[ result.get_size() - 1 ] = 0.0;
+          for (int i = 0; i < nelem; i++)
+            result[i] *= pars[NumPars - 1];
 
 	return result.return_new_ref();
 
