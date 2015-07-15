@@ -846,10 +846,9 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 		}
 	}
 
-        // TODO: should be documented why this can not use C++ vector
-	//std::vector<FloatArrayType> ear(near);
-	float *ear = NULL;
-	ear = (float*)malloc(near*sizeof(float));
+        // Use a vector rather than allocating memory manually
+        // (which the code used to do)
+        std::vector<FloatArrayType> ear(near);
 
 	for( int ii = 0; ii < nelem; ii++ ) {
 		if( is_wave ) {
@@ -903,8 +902,8 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
 	try {
 
-		XSpecFunc( ear, nelem, &pars[0], filename, ifl, &result[0],
-				&error[0] );
+		XSpecFunc( &ear[0], nelem, &pars[0], filename, ifl,
+                           &result[0], &error[0] );
 
                 // See comments in xspecmodelfct template.
 
@@ -950,8 +949,6 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 	// zero to avoid having random garbage in it
 	if( !xhi )
 		result[ result.get_size() - 1 ] = 0.0;
-
-	if( ear ) free(ear);
 
 	return result.return_new_ref();
 
