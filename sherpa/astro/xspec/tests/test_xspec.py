@@ -410,18 +410,37 @@ class test_xspec(SherpaTestCase):
 
         (egrid, elo, ehi, idx, gidx, bidx) = _make_noncontiguous_grid()
 
-        vals1 = tmod(egrid)
-        vals2 = tmod(elo, ehi)
+        wgrid = _hc / egrid
+        wlo = _hc / ehi
+        whi = _hc / elo
+
+        evals1 = tmod(egrid)
+        evals2 = tmod(elo, ehi)
+
+        wvals1 = tmod(wgrid)
+        wvals2 = tmod(wlo, whi)
 
         emsg = "table model evaluation failed [noncontig; "
-        self.assertTrue(numpy.isfinite(vals1).all(), msg=emsg + "1]")
-        self.assertTrue(numpy.isfinite(vals2).all(), msg=emsg + "2]")
+        self.assertTrue(numpy.isfinite(evals1).all(), msg=emsg + "keV1]")
+        self.assertTrue(numpy.isfinite(evals2).all(), msg=emsg + "keV2]")
 
-        vals1 = vals1[idx]
-        numpy.testing.assert_allclose(vals1[gidx], vals2[gidx],
-                                      err_msg=emsg + "comparison]")
-        numpy.testing.assert_allclose(vals1[bidx], vals2[bidx],
-                                      err_msg=emsg + "comparison, edges]",
+        # direct comparison of wavelength and energy grid; for these do
+        # not bother with separating out the "gap" bins from the rest
+        # since the handling is the same, for both comparisons.
+        #
+        numpy.testing.assert_allclose(evals1, wvals1,
+                                      err_msg=emsg + "comparison1]",
+                                      rtol=1e-3)
+        # This test fails as the wavelength numbers are *very* wrong
+        #numpy.testing.assert_allclose(evals2, wvals2,
+        #                              err_msg=emsg + "comparison2]",
+        #                              rtol=1e-3)
+
+        evals1 = evals1[idx]
+        numpy.testing.assert_allclose(evals1[gidx], evals2[gidx],
+                                      err_msg=emsg + "keV comparison]")
+        numpy.testing.assert_allclose(evals1[bidx], evals2[bidx],
+                                      err_msg=emsg + "keV comparison, edges]",
                                       rtol=1e-4)
 
     @unittest.skipIf(not has_fits_support(),
