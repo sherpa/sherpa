@@ -431,10 +431,9 @@ class test_xspec(SherpaTestCase):
         numpy.testing.assert_allclose(evals1, wvals1,
                                       err_msg=emsg + "comparison1]",
                                       rtol=1e-3)
-        # This test fails as the wavelength numbers are *very* wrong
-        #numpy.testing.assert_allclose(evals2, wvals2,
-        #                              err_msg=emsg + "comparison2]",
-        #                              rtol=1e-3)
+        numpy.testing.assert_allclose(evals2, wvals2,
+                                      err_msg=emsg + "comparison2]",
+                                      rtol=1e-3)
 
         evals1 = evals1[idx]
         numpy.testing.assert_allclose(evals1[gidx], evals2[gidx],
