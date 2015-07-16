@@ -271,6 +271,8 @@ void xsmtbl(float* ear, int ne, float* param, const char* filenm, int ifl,
 	    float* photar, float* photer);
 
 // XSPEC convolution models
+// There is currently no high-level (Python) access to these
+// models; they are provided for experimentation.
 void C_cflux(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_xsgsmt(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_ireflct(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
@@ -297,10 +299,9 @@ int _sherpa_init_xspec_library()
 
 
   if ( !getenv("HEADAS") ) {
-    // Raise appropriate error message that XSPEC initialization failed.
     PyErr_SetString( PyExc_ImportError,
-		     (char*)"XSPEC initialization failed; "
-		     "check HEADAS environment variable" );
+		     (char*)"XSpec initialization failed; "
+                     "HEADAS environment variable is not set" );
     return EXIT_FAILURE;
   }
   
@@ -349,9 +350,15 @@ int _sherpa_init_xspec_library()
     fout.close();
 
     // Try to minimize model chatter for normal operation.
+    // TODO: is this a sensible value? It has advantages, but
+    //     means that users miss messages that XSpec users
+    //     would see (e.g. can't load in file) as it uses
+    //     a default of 10
     FPCHAT( 0 );
 
     // Set cosmology initial values to XSPEC initial values
+    // Is this needed? Also; it's a bit dangerous since the
+    // default values may differ with XSpec library version.
     csmph0( 70.0 );
     csmpq0( 0.0 );
     csmpl0( 0.73 );
@@ -368,6 +375,9 @@ int _sherpa_init_xspec_library()
     fout.close();
 
     // Raise appropriate error message that XSPEC initialization failed.
+    // Ideally would include the text of the thrown error, since the
+    // setting of the HEADAS environment variable may not be the culprit
+    //
     PyErr_SetString( PyExc_ImportError,
 		     (char*)"XSPEC initialization failed; "
 		     "check HEADAS environment variable" );
