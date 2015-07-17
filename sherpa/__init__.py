@@ -131,11 +131,12 @@ def test(level=1, verbosity=1, datadir=None):
 
 def clitest():
     try:
-        import pytest
+        import pytest, pytest_cov
         errno = pytest.main(['--pyargs', 'sherpa', '-rs'])
         sys.exit(errno)
     except ImportError:
-        print "Please install py.test to run the tests"
+        print """Cannot import pytest and pytest-cov.
+            Please run 'pip install -r test_requirements.txt' first"""
         sys.exit(1)
 
 from ._version import get_versions
