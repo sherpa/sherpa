@@ -3,6 +3,16 @@ language: python
 python:
   - "2.7"
 
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - build-essential
+      - gfortran
+      - flex
+      - bison
+
 env:
   - FITS="astropy" INSTALL_TYPE=develop TEST=submodule
   - FITS="pyfits" INSTALL_TYPE=develop TEST=submodule
@@ -12,8 +22,6 @@ env:
   - INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true"
 
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq build-essential gfortran flex bison
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
