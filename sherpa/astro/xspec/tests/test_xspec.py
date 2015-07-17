@@ -151,6 +151,31 @@ class test_xspec(SherpaTestCase):
 
         self.assertEqual(count, 164)
 
+    def test_norm_works(self):
+        # Check that the norm parameter for additive models
+        # works, as it is handled separately from the other
+        # parameters.
+        import sherpa.astro.xspec as xs
+
+        # need an additive model
+        mdl = xs.XSpowerlaw()
+        mdl.PhoIndex = 2
+        egrid = [0.1,0.2,0.3,0.4]
+
+        mdl.norm = 1.2
+        y1 = mdl(egrid)
+
+        mfactor = 2.1
+        mdl.norm = mdl.norm.val * mfactor
+        y2 = mdl(egrid)
+
+        # check that the sum is not 0 and that it
+        # scales as expected.
+        s1 = y1.sum()
+        s2 = y2.sum()
+        self.assertGreater(s1, 0.0, msg='powerlaw is positive')
+        self.assertAlmostEqual(s2, mfactor * s1, msg='powerlaw norm scaling')
+
     def test_evaluate_model(self):
         import sherpa.astro.xspec as xs
         m = xs.XSbbody()
@@ -159,7 +184,7 @@ class test_xspec(SherpaTestCase):
             otype = numpy.float64
         else:
             otype = numpy.float32
-        self.assert_(out.dtype.type is otype)
+        self.assertTrue(out.dtype.type is otype)
         self.assertEqual(int(numpy.flatnonzero(out == 0.0)), 3)
 
 
