@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -17,26 +17,43 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from setuptools.command.test import test
-import sys
+try:
+    from setuptools.command.test import test
+
+    import sys
 
 
-class PyTest(test):
-    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+    class PyTest(test):
+        user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
 
-    def initialize_options(self):
-        test.initialize_options(self)
-        self.pytest_args = []
+        def initialize_options(self):
+            test.initialize_options(self)
+            self.pytest_args = []
 
-    def finalize_options(self):
-        test.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
+        def finalize_options(self):
+            test.finalize_options(self)
+            self.test_args = []
+            self.test_suite = True
 
-    def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
-        import pytest
-        if not self.pytest_args:
-            self.pytest_args = 'sherpa'
-        errno = pytest.main(self.pytest_args)
-        sys.exit(errno)
+        def run_tests(self):
+            # import here, cause outside the eggs aren't loaded
+            import pytest
+            if not self.pytest_args:
+                self.pytest_args = 'sherpa'
+            errno = pytest.main(self.pytest_args)
+            sys.exit(errno)
+
+except ImportError:
+    from distutils.core import Command
+
+    class PyTest(Command):
+        user_options = []
+
+        def initialize_options(self):
+            pass
+
+        def finalize_options(self):
+            pass
+
+        def run(self):
+            print("test command is not available without setuptools")
