@@ -472,6 +472,50 @@ class test_xspec(SherpaTestCase):
         xs.set_xsxset('fooBar', 'somevalue')
         self.assertEqual('somevalue', xs.get_xsxset('Foobar'))
 
+    def test_convolution_models(self):
+        # Use the cflux convolution model since this gives
+        # an "easily checked" result. Note that the only interface
+        # to these models is direct access to the XSpec function
+        # call.
+        import sherpa.astro.xspec as xs
+
+        # Want the energy grid to extend beyond the energy grid
+        # used to evaluate the model, to avoid any edge effects.
+        # It also makes things easier if the elo/ehi values align
+        # with the egrid bins.
+        elo = 0.55
+        ehi = 1.45
+        egrid = numpy.linspace(0.5, 1.5, 101)
+
+        mdl1 = xs.XSpowerlaw()
+        mdl1.PhoIndex = 2
+
+        # flux of mdl1 over the energy range of interest; converting
+        # from a flux in photon/cm^2/s to erg/cm^2/s, when the
+        # energy grid is in keV.
+        y1 = mdl1(egrid)
+        idx, = numpy.where((egrid >= elo) & (egrid < ehi))
+
+        # To match XSpec, need to multiply by (Ehi^2-Elo^2)/(Ehi-Elo)
+        # which means that we need the next bin to get Ehi. Due to
+        # the form of the where statement, we should be missing the
+        # Ehi value of the last bin
+        e1 = egrid[idx]
+        e2 = egrid[idx+1]
+
+        f1 = 8.01096e-10 * ((e2*e2-e1*e1) * y1[idx] / (e2-e1)).sum()
+
+        # The cflux parameters are elo, ehi, and the log of the
+        # flux within this range (this is log base 10 of the
+        # flux in erg/cm^2/s). The parameters chosen for the
+        # powerlaw, and energy range, should have f1 ~ 1.5e-9
+        # (log 10 of this is -8.8).
+        lflux = -5.0
+        pars = [elo, ehi, lflux]
+        y2 = xs._xspec.C_cflux(pars, y1, egrid)
+
+        expected = y1 * 10**lflux / f1
+        numpy.testing.assert_allclose(expected, y2)
 
 if __name__ == '__main__':
     import sys

@@ -574,18 +574,21 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args )
 	DoubleArray *x;
 
         // The arguments are parsed as
-        //   pars, xlo, fluxes
-        //   pars, xlo, xhi, fluxes
+        //   pars, fluxes, xlo
+        //   pars, fluxes, xlo, xhi
+        // (it's not clear what the best order here is, but
+        //  having fluxes here feels better than having
+        //  something like pars, xlo [,xhi], fluxes)
         //
 	if ( !PyArg_ParseTuple( args, (char*)"O&O&O&|O&",
 			(converter)convert_to_contig_array< DoubleArray >,
 			&pars,
 			(converter)convert_to_contig_array< DoubleArray >,
+			&fluxes,
+			(converter)convert_to_contig_array< DoubleArray >,
 			&xlo,
 			(converter)convert_to_contig_array< DoubleArray >,
-			&xhi,
-			(converter)convert_to_contig_array< DoubleArray >,
-			&fluxes ) )
+			&xhi ) )
 		return NULL;
 
 	npy_intp npars = pars.get_size();
@@ -604,13 +607,6 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args )
           err << "input array must have at least 2 elements, found " << nelem;
           PyErr_SetString( PyExc_TypeError, err.str().c_str() );
           return NULL;
-        }
-
-        // swap arguments if needed
-        if (xhi && !fluxes) {
-          DoubleArray *tmp = &fluxes;
-          fluxes = xhi;
-          xhi = *tmp;
         }
 
         if( xhi && (nelem != int(xhi.get_size())) ) {
