@@ -517,6 +517,27 @@ class test_xspec(SherpaTestCase):
         expected = y1 * 10**lflux / f1
         numpy.testing.assert_allclose(expected, y2)
 
+        # TODO: should test elo/ehi and wavelength
+
+    def test_convolution_models_noncontiguos(self):
+        import sherpa.astro.xspec as xs
+
+        (egrid, elo, ehi, idx, gidx, bidx) = _make_noncontiguous_grid()
+
+        wgrid = _hc / egrid
+        wlo = _hc / ehi
+        whi = _hc / elo
+
+        # re-use the cflux model as I have parameters for
+        # it
+        lflux = -5.0
+        pars = [elo, ehi, lflux]
+        y1 = numpy.zeros(elo.size)
+
+        # These should fail
+        self.assertRaises(ValueError, xs._xspec.C_cflux, pars, y1, elo, ehi)
+        self.assertRaises(ValueError, xs._xspec.C_cflux, pars, y1, wlo, whi)
+
 if __name__ == '__main__':
     import sys
     import sherpa.astro.xspec as xs
