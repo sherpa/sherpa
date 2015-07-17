@@ -4,11 +4,11 @@ python:
   - "2.7"
 
 env:
-#  - PYFITS=false INSTALL_TYPE=develop TEST=submodule
-  - PYFITS=true INSTALL_TYPE=develop TEST=submodule
-#  - PYFITS=false INSTALL_TYPE=install TEST=package
-#  - PYFITS=true INSTALL_TYPE=install TEST=package
-#  - PYFITS=true INSTALL_TYPE=install TEST=smoke
+  - FITS="astropy" INSTALL_TYPE=develop TEST=submodule
+  - FITS="pyfits" INSTALL_TYPE=develop TEST=submodule
+#  - INSTALL_TYPE=install TEST=package
+#  - FITS="astropy" INSTALL_TYPE=install TEST=package
+#  - FITS="astropy" INSTALL_TYPE=install TEST=smoke
 
 before_install:
   - sudo apt-get update -qq
@@ -33,7 +33,7 @@ install:
   - python setup.py $INSTALL_TYPE
 
 script:
-  - if [ ${PYFITS} == true ]; then conda install --yes pyfits; fi
+  - if [ -n ${FITS} ]; then conda install --yes ${FITS}; fi
   - if [ ${TEST} == submodule ];
      then python setup.py test;
     else
