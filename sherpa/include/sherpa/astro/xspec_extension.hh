@@ -53,7 +53,7 @@ typedef float FloatArrayType;
 // just create a grid as if there were no gaps; that is, the model would
 // be evaluated on the grid [0.1,0.2,0.6,0.7,0.8] but record the position
 // and correct widths for the "gaps" and then re-run the model to
-// "fill in" the output array. This is being changed so that the grid
+// "fill in" the output array. This has been changed so that the grid
 // is created with extra edges, so that a single call is made, and then
 // the un-wanted bins are removed. This is in part because XSpec models
 // may require a large set-up time (so it's possibly an optimisation),
