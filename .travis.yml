@@ -5,21 +5,39 @@ python:
 
 sudo: false
 
+cache:
+  directories:
+    - $HOME/xspec
+
 addons:
   apt:
-    packages:
+    packages: &default_apt
       - build-essential
       - gfortran
       - flex
       - bison
 
+matrix:
+  include:
+    - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule
+      python: "2.7"
+      sudo: required
+#      addons:
+#        apt:
+#          packages:
+#            - *default_apt
+#            - [libwcs4 wcslib-dev libx11-dev tcl]
+    - env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule
+      python: "2.7"
+    - env: INSTALL_TYPE=install TEST=package
+      python: "2.7"
+    - env: INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true"
+      python: "2.7"
+
 env:
   - FITS="astropy" INSTALL_TYPE=develop TEST=submodule
-  - FITS="pyfits" INSTALL_TYPE=develop TEST=submodule
-  - INSTALL_TYPE=install TEST=package
   - FITS="astropy" INSTALL_TYPE=install TEST=package
   - FITS="astropy" INSTALL_TYPE=install TEST=smoke
-  - INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true"
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -34,10 +52,19 @@ before_install:
      then pip install ./sherpa-test-data;
      git submodule deinit -f .;
     fi
+  - if [ -n "${XSPEC}" ];
+     then sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
+     conda install --yes -c https://conda.anaconda.org/cxc/channel/dev xspec-modelsonly;
+     export HEADAS=/home/travis/miniconda/Xspec/spectral;
+     export LD_LIBRARY_PATH=/home/travis/miniconda/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
+     sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
+     sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=$LD_LIBRARY_PATH|g" setup.cfg;
+    fi
   - if [ ${TEST} == smoke ];
      then git submodule deinit -f .;
     fi
   - if [ -n "${NOSETUPTOOLS}" ]; then conda remove --yes setuptools; fi
+
 
 install:
   - python setup.py $INSTALL_TYPE
