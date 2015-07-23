@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -21,7 +21,6 @@
 Objects and utilities used by multiple Sherpa subpackages
 """
 
-import math
 import operator
 import inspect
 from itertools import izip
@@ -58,11 +57,11 @@ _ncpus = None
 if not _ncpu_val.startswith('NONE'):
     _ncpus = int(_ncpu_val)
 
-_multi=False
+_multi = False
 
 try:
     import multiprocessing
-    _multi=True
+    _multi = True
 
     if _ncpus is None:
         _ncpus = multiprocessing.cpu_count()
@@ -454,8 +453,7 @@ def get_func_usage(func):
     """
     argspec = inspect.getargspec(func)
 
-    #Note: tot not used
-    tot, num_args, num_kargs = get_num_args(func)
+    _, num_args, num_kargs = get_num_args(func)
 
     msg = 'Usage: %s(' % func.__name__
 
@@ -1063,7 +1061,7 @@ def linear_interp( xout, xin, yin ):
     """Linear interpolation of (xin,yin) onto xout."""
     x0, x1, y0, y1 = interp_util( xout, xin, yin )
     val = (xout - x0) / (x1 - x0) * (y1 - y0) + y0
-    if True == numpy.any( numpy.isnan( val ) ):
+    if numpy.isnan(val).any():
         # to handle the case where two adjacent elements of xout are equal
         return nearest_interp( xout, xin, yin )
     return val
@@ -1191,7 +1189,7 @@ def get_amplitude_position(arr, mean=False):
 
     """
 
-    pos = xpos = xmin = xmax = xval = 0
+    xpos = xmin = xmax = xval = 0
     max = arr.max()
     min = arr.min()
     if((max > 0.0 and min >= 0.0) or
@@ -1312,22 +1310,22 @@ def guess_reference(pmin, pmax, x, xhi=None):
 
     """
 
-    min = x.min()
-    max = x.max()
+    xmin = x.min()
+    xmax = x.max()
 
-    if min >= 1: pmin = 1
-    if max <= 1: pmax = 1
+    if xmin >= 1: pmin = 1
+    if xmax <= 1: pmax = 1
 
     val = 0.0
-    if min < 1.0 and max > 1.0:
+    if xmin < 1.0 and xmax > 1.0:
         val = 1.0
     else:
-        refval = numpy.floor((min+max)/2.)
-        if refval < pmin or refval > pmax: 
-            refval=(min+max)/2.
+        refval = numpy.floor((xmin + xmax) / 2.0)
+        if refval < pmin or refval > pmax:
+            refval = (xmin + xmax) / 2.0
         val = refval
 
-    return { 'val':val, 'min':None, 'max':None }
+    return {'val': val, 'min': None, 'max': None}
 
 
 def get_position(y, x, xhi=None):
@@ -1335,15 +1333,16 @@ def get_position(y, x, xhi=None):
     Get 1D model parameter positions pos (val, min, max)
 
     """
-    xval, xmin, xmax, xpos = get_amplitude_position(y, mean=True)
+    pos = get_amplitude_position(y, mean=True)
+    xpos = pos[3]
 
     val = numpy.mean(x[xpos])
-    min = x.min()
-    max = x.max()
+    xmin = x.min()
+    xmax = x.max()
     if xhi is not None:
-        max = xhi.max()
+        xmax = xhi.max()
 
-    return { 'val':val, 'min':min, 'max':max }
+    return {'val': val, 'min': xmin, 'max': xmax}
 
 
 def guess_position(y, x0lo, x1lo, x0hi=None, x1hi=None):
@@ -1371,16 +1370,16 @@ def guess_bounds(x, xhi=True):
     Guess model parameters xlo, xhi (val, min, max)
 
     """
-    min = x.min()
-    max = x.max()
-    lo = (min+(max-min)/2.)
+    xmin = x.min()
+    xmax = x.max()
+    lo = xmin + (xmax - xmin) / 2.0
     if xhi:
-        lo = (min+(max-min)/3.)
-        hi = (min+2.*(max-min)/3.)
-        return tuple(( { 'val':lo, 'min':min, 'max':max },
-                       { 'val':hi, 'min':min, 'max':max } ))
+        lo = xmin + (xmax - xmin) / 3.0
+        hi = xmin + 2.0 * (xmax - xmin) / 3.0
+        return ({'val': lo, 'min': xmin, 'max': xmax},
+                {'val': hi, 'min': xmin, 'max': xmax})
 
-    return { 'val':lo, 'min':min, 'max':max }
+    return {'val': lo, 'min': xmin, 'max': xmax}
 
 
 def guess_radius(x0lo, x1lo, x0hi=None, x1hi=None):
@@ -1388,10 +1387,16 @@ def guess_radius(x0lo, x1lo, x0hi=None, x1hi=None):
     Guess 2D model parameter radius (val, min, max)
 
     """
-    if x0hi is None and x1hi is None:
-        x0, x1 = x0lo, x1lo
-    else:
-        x0, x1 = x0lo, x1lo
+    # TODO: the following was the original code, but
+    #   a) x1 isn't used
+    #   b) there's no difference between the two branches
+    # So, x0hi/x1hi are curently unused.
+    #
+    # if x0hi is None and x1hi is None:
+    #     x0, x1 = x0lo, x1lo
+    # else:
+    #     x0, x1 = x0lo, x1lo
+    x0 = x0lo
 
     delta = numpy.apply_along_axis(numpy.diff, 0, x0)[0]
     rad = numpy.abs(10*delta)
@@ -1744,7 +1749,7 @@ class RichardsonExtrapolation( NoRichardsonExtrapolation ):
             richardson[ ii, 0 ] = self.sequence( x, h, *args )
             ii_1 = ii - 1
             for jj in xrange( 1, ii + 1 ):
-                jjp1 = jj + 1
+                # jjp1 = jj + 1  -- this variable is not used
                 jj_1 = jj - 1
                 factor = pow( t_sqr, jj )
                 factor_1 = factor - 1
@@ -1929,7 +1934,7 @@ def Knuth_boost_close( x, y, tol, myop=operator.__or__ ):
     return myop( diff_x <= tol, diff_y <= tol )
 
 def list_to_open_interval( arg ):
-    if False == numpy.iterable( arg ):
+    if not numpy.iterable(arg):
         return arg
     str = '(%e, %e)' % (arg[0],arg[1])
     return str
@@ -1942,8 +1947,12 @@ def mysgn( arg ):
     else:
         return 1
 
+
+# Is this ever used? It is checked for as an exception, so really should be
+# derived from an exception, but is never thrown, as far as I can see.
 class OutOfBoundErr:
     pass
+
 
 class QuadEquaRealRoot:
     """ solve for the real roots of the quadratic equation:
@@ -2002,6 +2011,8 @@ class QuadEquaRealRoot:
         else:
 
             discriminant = b * b - 4.0 * a * c
+            # TODO: this print should either be commented out or use
+            #       the logging class
             print 'disc=', discriminant
             sqrt_disc = numpy.sqrt( discriminant )
             t = - ( b + mysgn( b ) * sqrt_disc ) / 2.0
@@ -2026,6 +2037,7 @@ def bisection( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6 ):
             return [ [xb, fb], [ [xb, fb], [xb, fb] ], nfev[0] ]
 
         if mysgn( fa ) == mysgn( fb ):
+            # TODO: should this use the logging class?
             sys.stderr.write( __name__ + ': ' + fcn.__name__ +
                               ' fa * fb < 0 is not met\n' )
             return [ [None, None], [ [None, None], [None, None] ], nfev[0] ]
@@ -2252,6 +2264,7 @@ def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
 
 def new_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6 ):
 
+    # This function does not appear to be used
     def regula_falsi( x0, x1, f0, f1 ):
         if f0 < f1:
             xl = x0; fl = f0
@@ -2281,6 +2294,7 @@ def new_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6 ):
             return [ [xb, fb], [ [xb, fb], [xb, fb] ], nfev[0] ]
 
         if mysgn( fa ) == mysgn( fb ):
+            # TODO: should this use the logging class?
             sys.stderr.write( __name__ + ': ' + fcn.__name__ +
                               ' fa * fb < 0 is not met\n' )
             return [ [None, None], [ [None, None], [None, None] ], nfev[0] ]
@@ -2334,7 +2348,7 @@ def new_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6 ):
         #print 'new_muller(): maxfev exceeded'
         return [ [xd, fd], [ [xa, fa], [xb, fb] ], nfev[0] ]
 
-    except ZeroDivisionError, OutOfBoundErr:
+    except (ZeroDivisionError, OutOfBoundErr):
 
         #print 'new_muller(): fixme ZeroDivisionError'
         #for x, y in izip( history[0], history[1] ):
@@ -2378,6 +2392,7 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             return [ [xb, fb], [ [xb,fb], [xb,fb] ], nfev[0] ]
 
         if mysgn( fa ) == mysgn( fb ):
+            # TODO: should this use the logging class?
             sys.stderr.write( __name__ + ': ' + fcn.__name__ +
                               ' fa * fb < 0 is not met\n' )
             return [ [None, None], [ [None, None], [None, None] ], nfev[0] ]
@@ -2411,7 +2426,7 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             if is_sequence(xa, xplus, xb):
                 x = xplus
             else:
-                x = xminus;
+                x = xminus
 
             #print 'xa=', xa, '\tx=', x, '\txb=', xb, '\txc=', xc
 
@@ -2421,7 +2436,7 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             #print
 
             #sanity check
-            if False == is_sequence( xa, x, xb ):
+            if not is_sequence(xa, x, xb):
                 x = ( xa + xb ) / 2.0
 
             y = myfcn( x, *args );
@@ -2436,7 +2451,7 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                        (x > xc and (xb - xc) > 0.95 * (xb - xa)) or \
                        (x == xc)
 
-            if False == mybisect:
+            if not mybisect:
                 if x > xc:
                     xa = xc
                     fa = fc
@@ -2476,7 +2491,7 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
     #
     # Something drastic has happened
     #
-    except ZeroDivisionError, OutOfBoundErr:
+    except (ZeroDivisionError, OutOfBoundErr):
 
         return [ [xbest, fbest], [ [xa, fa], [xb, fb] ], nfev[0] ]
 
@@ -2538,6 +2553,7 @@ def zeroin( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2 ):
             return [ [xb, fb], [ [xa, fa], [xb, fb] ], nfev[0] ]    
 
         if mysgn( fa ) == mysgn( fb ):
+            # TODO: should this use the logging class?
             sys.stderr.write( __name__ + ': ' + fcn.__name__ +
                               ' fa * fb < 0 is not met\n' )
             return [ [None, None], [ [None, None], [None, None] ], nfev[0] ]
@@ -2610,10 +2626,7 @@ def zeroin( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2 ):
                 xc = xa
                 fc = fa
 
-        return [ [xb, fb], [ [xa, fa], [xc, fc] ], nfev[0] ]
+        return [[xb, fb], [[xa, fa], [xc, fc]], nfev[0]]
 
-    except ZeroDivisionError, OutOfBoundErr:
-        return [ [xb, fb], [ [xa, fa], [xc, fc] ], nfev[0] ]
-
-
-############################### Root of all evil ##############################
+    except (ZeroDivisionError, OutOfBoundErr):
+        return [[xb, fb], [[xa, fa], [xc, fc]], nfev[0]]
