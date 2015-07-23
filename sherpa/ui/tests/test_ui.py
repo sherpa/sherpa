@@ -21,11 +21,9 @@
 import unittest
 from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
 from sherpa.models import ArithmeticModel, Parameter
-from sherpa.utils.err import ModelErr
-import sherpa.ui as ui
-import numpy, logging, os
+from sherpa import ui
+import numpy
 
-logger = logging.getLogger("sherpa")
 
 class UserModel(ArithmeticModel):
 
@@ -39,14 +37,15 @@ class UserModel(ArithmeticModel):
     def calc(self, p, x, *args, **kwargs):
         return p[0]*x+p[1]
 
+
 class test_ui(SherpaTestCase):
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
-        self.ascii = self.datadir + '/threads/ascii_table/sim.poisson.1.dat'
-        self.single = self.datadir + '/single.dat'
-        self.double = self.datadir + '/double.dat'
-        self.filter = self.datadir + '/filter_single_integer.dat'
+        self.ascii = self.make_path('threads/ascii_table/sim.poisson.1.dat')
+        self.single = self.make_path('single.dat')
+        self.double = self.make_path('double.dat')
+        self.filter = self.make_path('filter_single_integer.dat')
         self.func = lambda x: x
 
         ui.dataspace1d(1,1000,dstype=ui.Data1D)
@@ -137,8 +136,8 @@ class test_psf_ui(SherpaTestCase):
                 ui.load_psf('psf1d', model+'.mdl')
                 ui.set_psf('psf1d')
                 mdl = ui.get_model_component('mdl')
-                self.assert_( (numpy.array(mdl.get_center()) ==
-                               numpy.array([4])).all() )
+                self.assertTrue((numpy.array(mdl.get_center()) ==
+                                 numpy.array([4])).all())
             except:
                 print model
                 raise
@@ -151,8 +150,8 @@ class test_psf_ui(SherpaTestCase):
                 ui.load_psf('psf2d', model+'.mdl')
                 ui.set_psf('psf2d')
                 mdl = ui.get_model_component('mdl')
-                self.assert_( (numpy.array(mdl.get_center()) ==
-                               numpy.array([108,130])).all() )
+                self.assertTrue((numpy.array(mdl.get_center()) ==
+                                 numpy.array([108,130])).all())
             except:
                 print model
                 raise

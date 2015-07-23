@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -17,22 +17,17 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
 import unittest
 import logging
-import os
-import os.path
 from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
 from sherpa.utils import has_package_from_list, has_fits_support
-import sherpa.astro.sim as sim
+from sherpa.astro import sim
 
 from sherpa.astro.instrument import Response1D
-from sherpa.astro.data import DataPHA
 from sherpa.fit import Fit
-from sherpa.stats import Cash, CStat
+from sherpa.stats import CStat
 from sherpa.optmethods import NelderMead
 from sherpa.estmethods import Covariance
-
 
 logger = logging.getLogger('sherpa')
 
@@ -49,20 +44,16 @@ class test_sim(SherpaTestCase):
             from sherpa.astro.xspec import XSwabs, XSpowerlaw
         except:
             return
-        #self.startdir = os.getcwd()
+        # self.startdir = os.getcwd()
         self.old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.CRITICAL)
 
-        datadir = SherpaTestCase.datadir
-        if datadir is None:
-            return
+        pha = self.make_path("refake_0934_1_21_1e4.fak")
+        # rmf = self.make_path("ccdid7_default.rmf")
+        # arf = self.make_path("quiet_0934.arf")
 
-        pha = os.path.join(datadir, "refake_0934_1_21_1e4.fak")
-        rmf = os.path.join(datadir, "ccdid7_default.rmf")
-        arf = os.path.join(datadir, "quiet_0934.arf")
-
-        self.simarf = os.path.join(datadir, "aref_sample.fits")
-        self.pcaarf = os.path.join(datadir, "aref_Cedge.fits")
+        self.simarf = self.make_path("aref_sample.fits")
+        self.pcaarf = self.make_path("aref_Cedge.fits")
 
         data = read_pha(pha)
         data.ignore(None,0.3)
@@ -75,20 +66,15 @@ class test_sim(SherpaTestCase):
 
         self.fit = Fit(data, model, CStat(), NelderMead(), Covariance())
 
-
     def tearDown(self):
-        #os.chdir(self.startdir)
-        if hasattr(self,'old_level'):
+        # os.chdir(self.startdir)
+        if hasattr(self, 'old_level'):
             logger.setLevel(self.old_level)
 
     @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_pragbayes_simarf(self):
-        datadir = SherpaTestCase.datadir
-        if datadir is None:
-            return
-
         mcmc = sim.MCMC()
 
         self.abs1.nh = 0.092886
@@ -116,10 +102,6 @@ class test_sim(SherpaTestCase):
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_pragbayes_pcaarf(self):
-        datadir = SherpaTestCase.datadir
-        if datadir is None:
-            return
-
         mcmc = sim.MCMC()
 
         self.abs1.nh = 0.092886
@@ -146,5 +128,10 @@ class test_sim(SherpaTestCase):
 
 if __name__ == '__main__':
 
-    import sherpa.astro.sim as sim
-    SherpaTest(sim).test(datadir="/data/scialg/testdata")
+    import sys
+    if len(sys.argv) > 1:
+        datadir = sys.argv[1]
+    else:
+        datadir = None
+
+    SherpaTest(sim).test(datadir=datadir)
