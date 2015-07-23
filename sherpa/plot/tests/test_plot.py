@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,9 +20,8 @@
 import unittest
 import numpy
 from sherpa.all import *
-#FIXME change from full import 
+# FIXME change from full import
 from sherpa.utils import SherpaTestCase, test_data_missing
-
 
 _datax = numpy.array(
     [  0.,   1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.,
@@ -48,6 +47,7 @@ _datay = numpy.array(
        0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,
        0.])
 
+
 class test_plot(SherpaTestCase):
 
     def setUp(self):
@@ -58,32 +58,32 @@ class test_plot(SherpaTestCase):
     def test_dataplot(self):
         dp = DataPlot()
         dp.prepare(self.data, self.f.stat)
-        #dp.plot()
+        # dp.plot()
 
     def test_modelplot(self):
         mp = ModelPlot()
         mp.prepare(self.data, self.g1, self.f.stat)
-        #mp.plot()
+        # mp.plot()
 
     def test_residplot(self):
         rp = ResidPlot()
         rp.prepare(self.data, self.g1, self.f.stat)
-        #rp.plot()
+        # rp.plot()
 
     def test_delchiplot(self):
         dp = DelchiPlot()
         dp.prepare(self.data, self.g1, self.f.stat)
-        #dp.plot()
+        # dp.plot()
 
     def test_chisqrplot(self):
         cs = ChisqrPlot()
         cs.prepare(self.data, self.g1, self.f.stat)
-        #cs.plot()
+        # cs.plot()
 
     def test_ratioplot(self):
         tp = RatioPlot()
         tp.prepare(self.data, self.g1, self.f.stat)
-        #tp.plot()
+        # tp.plot()
 
     def test_fitplot(self):
         dp = DataPlot()
@@ -94,7 +94,7 @@ class test_plot(SherpaTestCase):
 
         fp = FitPlot()
         fp.prepare(dp,mp)
-        #fp.plot()
+        # fp.plot()
 
     def test_splitplot(self):
         dp = DataPlot()
@@ -110,16 +110,17 @@ class test_plot(SherpaTestCase):
         fp.prepare(dp,mp)
 
         sp = SplitPlot(2,2)
-        #sp.addplot(dp)
-        #sp.addplot(mp)
-        #sp.addplot(fp)
-        #sp.addplot(rp)
+        # sp.addplot(dp)
+        # sp.addplot(mp)
+        # sp.addplot(fp)
+        # sp.addplot(rp)
+
 
 class test_contour(SherpaTestCase):
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
-        self.data = read_data(self.datadir+'/gauss2d.dat',
+        self.data = read_data(self.make_path('gauss2d.dat'),
                               ncols=3, sep='\t', dstype=Data2D)
         self.g1 = Gauss2D('g1')
         self.g1.ellip.freeze()
@@ -127,33 +128,33 @@ class test_contour(SherpaTestCase):
         self.f = Fit(self.data, self.g1)
         self.levels = numpy.array([0.5, 2, 5, 10, 20])
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")    
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_datacontour(self):
         dc = DataContour()
         dc.prepare(self.data)
-        dc.levels=self.levels
-        #dc.contour()
+        dc.levels = self.levels
+        # dc.contour()
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")    
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_modelcontour(self):
         mc = ModelContour()
         mc.prepare(self.data, self.g1, self.f.stat)
-        mc.levels=self.levels
-        #mc.contour()
+        mc.levels = self.levels
+        # mc.contour()
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")   
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_residcontour(self):
         rc = ResidContour()
         rc.prepare(self.data, self.g1, self.f.stat)
-        rc.levels=self.levels
-        #rc.contour()
+        rc.levels = self.levels
+        # rc.contour()
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_ratiocontour(self):
         tc = RatioContour()
         tc.prepare(self.data, self.g1, self.f.stat)
-        tc.levels=self.levels
-        #tc.contour()
+        tc.levels = self.levels
+        # tc.contour()
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_fitcontour(self):
@@ -163,37 +164,37 @@ class test_contour(SherpaTestCase):
         mc = ModelContour()
         mc.prepare(self.data, self.g1, self.f.stat)
 
-        fc = FitContour()        
+        fc = FitContour()
         fc.prepare(dc, mc)
-        #fc.contour()
+        # fc.contour()
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_splitcontour(self):
         dc = DataContour()
-        dc.levels=self.levels
+        dc.levels = self.levels
         dc.prepare(self.data)
 
         mc = ModelContour()
-        mc.levels=self.levels
+        mc.levels = self.levels
         mc.prepare(self.data, self.g1, self.f.stat)
 
-        fc = FitContour()        
+        fc = FitContour()
         fc.prepare(dc, mc)
 
         rc = ResidContour()
         rc.prepare(self.data, self.g1, self.f.stat)
-        rc.levels=self.levels
+        rc.levels = self.levels
 
         sp = SplitPlot(2,2)
-        #sp.addcontour(dc)
-        #sp.addcontour(mc)
-        #sp.addcontour(fc)
-        #sp.addcontour(rc)
+        # sp.addcontour(dc)
+        # sp.addcontour(mc)
+        # sp.addcontour(fc)
+        # sp.addcontour(rc)
 
 class test_confidence(SherpaTestCase):
 
     def setUp(self):
-        self.data = Data1D('testdata',_datax,_datay)
+        self.data = Data1D('testdata', _datax, _datay)
         self.g1 = Gauss1D('g1')
         self.f = Fit(self.data, self.g1)
         self.f.fit()
@@ -202,7 +203,7 @@ class test_confidence(SherpaTestCase):
         self.rp = RegionProjection()
         self.ru = RegionUncertainty()
 
-    #@unittest.skipIf(test_data_missing(), "required test data missing")
+    # @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_interval_projection(self):
         _ipx = numpy.array(
             [ 15.60720526,  15.92784424,  16.24848322,  16.56912221,
@@ -221,10 +222,10 @@ class test_confidence(SherpaTestCase):
         self.ip.calc(self.f, self.g1.fwhm)
         self.assertEqualWithinTol(_ipx, self.ip.x, 1e-4)
         self.assertEqualWithinTol(_ipy, self.ip.y, 1e-4)
-        #self.ip.plot()
+        # self.ip.plot()
 
 
-    #@unittest.skipIf(test_data_missing(), "required test data missing")
+    # @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_interval_uncertainty(self):
         _iux = numpy.array(
             [ 15.60720526,  15.92784424,  16.24848322,  16.56912221,
@@ -244,9 +245,9 @@ class test_confidence(SherpaTestCase):
         self.iu.calc(self.f, self.g1.fwhm)
         self.assertEqualWithinTol(_iux, self.iu.x, 1e-4)
         self.assertEqualWithinTol(_iuy, self.iu.y, 1e-4)
-        #self.iu.plot()
+        # self.iu.plot()
 
-    #@unittest.skipIf(test_data_missing(), "required test data missing")
+    # @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_region_projection(self):
         _rpx0 = numpy.array(
             [ 11.03809974,  12.73036104,  14.42262235,  16.11488365, 17.80714495,
@@ -324,10 +325,10 @@ class test_confidence(SherpaTestCase):
         self.assertEqualWithinTol(_rpx0, self.rp.x0, 1e-4)
         self.assertEqualWithinTol(_rpx1, self.rp.x1, 1e-4)
         self.assertEqualWithinTol(_rpy, self.rp.y, 1e-4)
-        #self.rp.contour()
+        # self.rp.contour()
 
 
-    #@unittest.skipIf(test_data_missing(), "required test data missing")
+    # @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_region_uncertainty(self):
         _rux0 = numpy.array(
             [ 12.56113491,  13.91494395,  15.268753  ,  16.62256204, 17.97637108,
@@ -405,9 +406,16 @@ class test_confidence(SherpaTestCase):
         self.assertEqualWithinTol(_rux0, self.ru.x0, 1e-4)
         self.assertEqualWithinTol(_rux1, self.ru.x1, 1e-4)
         self.assertEqualWithinTol(_ruy, self.ru.y, 1e-4)
-        #self.ru.contour()
+        # self.ru.contour()
 
 if __name__ == '__main__':
     from sherpa.utils import SherpaTest
     import sherpa.plot
-    SherpaTest(sherpa.plot).test()
+
+    import sys
+    if len(sys.argv) > 1:
+        datadir = sys.argv[1]
+    else:
+        datadir = None
+
+    SherpaTest(sherpa.plot).test(datadir=datadir)

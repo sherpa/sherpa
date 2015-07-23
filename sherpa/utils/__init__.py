@@ -28,6 +28,7 @@ from types import FunctionType as function
 from types import MethodType as instancemethod
 import string
 import sys
+import os
 import importlib
 import numpy
 import numpy.random
@@ -197,7 +198,6 @@ class NoNewAttributesAfterInit(object):
 ###############################################################################
 
 def _get_datadir():
-    import os
     try:
         import sherpatest
         datadir = os.path.dirname(sherpatest.__file__)
@@ -220,6 +220,26 @@ class SherpaTestCase(numpytest.NumpyTestCase):
 
     # The location of the Sherpa test data (it is optional)
     datadir = _get_datadir()
+
+    def make_path(self, *segments):
+        """Add the segments onto the test data location.
+
+        Parameters
+        ----------
+        *segments
+           Path segments to combine together with the location of the
+           test data.
+
+        Returns
+        -------
+        fullpath : None or string
+           The full path to the repository, or None if the
+           data directory is not set.
+
+        """
+        if self.datadir is None:
+            return None
+        return os.path.join(self.datadir, *segments)
 
     # What is the benefit of this over numpy.testing.assert_allclose(),
     # which was added in version 1.5 of NumPy?

@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2014  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -37,6 +37,7 @@ class test_design(SherpaTestCase):
         clear_stack()
         ui.clean()
         set_template_id("ID")
+        self.loggingLevel = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
         set_stack_verbosity(logging.ERROR)
         self._this_dir = os.path.dirname(sys.modules[self.__module__].__file__)
@@ -45,6 +46,7 @@ class test_design(SherpaTestCase):
         clear_stack()
         ui.clean()
         set_template_id("__ID")
+        logger.setLevel(self.loggingLevel)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -126,10 +128,12 @@ class test_design(SherpaTestCase):
         assert 0 == len(ui._session._data)
         assert 3 == len(ds.datasets)
 
+
 class test_global(SherpaTestCase):
     def setUp(self):
         clear_stack()
         ui.clean()
+        self.loggingLevel = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
         set_stack_verbosity(logging.ERROR)
         set_template_id("__ID")
@@ -138,8 +142,7 @@ class test_global(SherpaTestCase):
         clear_stack()
         ui.clean()
         set_template_id("__ID")
-
-
+        logger.setLevel(self.loggingLevel)
 
     def test_case_2(self):
         x1 = np.arange(50)+100
@@ -201,6 +204,8 @@ class test_global(SherpaTestCase):
         vals = get_par([], 'poly.c1.val')
         assert ([0.1, 0.45, 0.45] == vals).all()
 
+        # QUS: pars is not checked, so is this just
+        # checking that get_par doesn't fail?
         pars = get_par([], 'const.c0')
 
         fit([])
@@ -257,6 +262,8 @@ class test_load(SherpaTestCase):
         set_template_id("__ID")
         self._this_dir = os.path.dirname(sys.modules[self.__module__].__file__)
         self.create_files()
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
         clear_stack()
@@ -266,6 +273,7 @@ class test_load(SherpaTestCase):
         os.remove(self.name1)
         os.remove(self.name2)
         set_stack_verbose(False)
+        logger.setLevel(self.loggingLevel)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -281,7 +289,6 @@ class test_load(SherpaTestCase):
         load_data("@"+"/".join((self._this_dir, 'data', 'pha.lis')))
         assert len(ui._session._data) == 6
         assert len(DATASTACK.datasets) == 6
-
 
     def create_files(self):
         fd1, self.name1 = tempfile.mkstemp()
@@ -321,12 +328,15 @@ class test_partial_oo(SherpaTestCase):
         set_template_id("__ID")
         clear_stack()
         ui.clean()
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
         self.ds.clear_stack()
         clear_stack()
         set_template_id("__ID")
         ui.clean()
+        logger.setLevel(self.loggingLevel)
 
     def test_case_4(self):
         x1 = np.arange(50)+100
@@ -390,6 +400,8 @@ class test_partial_oo(SherpaTestCase):
         vals = get_par(ds, 'poly.c1.val')
         assert ([0.1, 0.45, 0.45] == vals).all()
 
+        # QUS: pars is not checked, so is this just
+        # checking that get_par doesn't fail?
         pars = get_par(ds, 'const.c0')
 
         fit(ds)
@@ -446,12 +458,15 @@ class test_oo(SherpaTestCase):
         datastack.set_template_id("__ID")
         ui.clean()
         self.ds = datastack.DataStack()
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
         self.ds.clear_stack()
         datastack.clear_stack()
         datastack.set_template_id("__ID")
         ui.clean()
+        logger.setLevel(self.loggingLevel)
 
     def test_case_5(self):
         x1 = np.arange(50)+100
@@ -515,6 +530,8 @@ class test_oo(SherpaTestCase):
         vals = ds.get_par('poly.c1.val')
         assert ([0.1, 0.45, 0.45] == vals).all()
 
+        # QUS: pars is not checked, so is this just
+        # checking that get_par doesn't fail?
         pars = ds.get_par('const.c0')
 
         ds.fit()
@@ -563,17 +580,21 @@ class test_oo(SherpaTestCase):
 
         assert const3.c0._link is not const2.c0
 
+
 class test_pha(SherpaTestCase):
     def setUp(self):
         clear_stack()
         ui.clean()
         set_template_id("ID")
         self._this_dir = os.path.dirname(sys.modules[self.__module__].__file__)
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
         clear_stack()
         ui.clean()
         set_template_id("__ID")
+        logger.setLevel(self.loggingLevel)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -587,7 +608,6 @@ class test_pha(SherpaTestCase):
 
         load_bkg_arf([], '/'.join((datadir, "acisf04938_000N002_r0043_arf3.fits")))
         load_bkg_arf([], '/'.join((datadir, "acisf07867_000N001_r0002_arf3.fits")))
-
 
         # Define background models
         bkg_arfs = get_bkg_arf([])
@@ -620,10 +640,11 @@ class test_pha(SherpaTestCase):
                       src_model * const1d.ratio_12]
         for i in range(2):
             id_ = i + 1
-            set_full_model(id_, (rsps[i](src_models[i])
-                                 + bkg_scales[i] * bkg_rsps[i](bkg_models[i])))
+            set_full_model(id_, (rsps[i](src_models[i]) +
+                                 bkg_scales[i] * bkg_rsps[i](bkg_models[i])))
 
         fit()
+
 
 class test_query(SherpaTestCase):
     def setUp(self):
@@ -631,12 +652,15 @@ class test_query(SherpaTestCase):
         ui.clean()
         set_template_id("__ID")
         self._this_dir = os.path.dirname(sys.modules[self.__module__].__file__)
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
         clear_stack()
         ui.clean()
         set_template_id("__ID")
         set_stack_verbose(False)
+        logger.setLevel(self.loggingLevel)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -662,3 +686,15 @@ class test_query(SherpaTestCase):
         f = query_by_obsid(ds, '7867')
 
         assert f == [4]
+
+if __name__ == '__main__':
+
+    from sherpa.utils import SherpaTest
+
+    import sys
+    if len(sys.argv) > 1:
+        datadir = sys.argv[1]
+    else:
+        datadir = None
+
+    SherpaTest(datastack).test(datadir=datadir)
