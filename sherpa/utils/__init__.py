@@ -105,13 +105,14 @@ _guess_ampl_scale = 1.e+3
 ###############################################################################
 
 
-
 # Default numeric types (these match the typedefs in extension.hh)
 SherpaInt = numpy.intp
 SherpaUInt = numpy.uintp
 SherpaFloat = numpy.float_
 
-################################################################################
+###############################################################################
+
+
 class TraceCalls(object):
     """ Use as a decorator on functions that should be traced. Several
         functions can be decorated - they will all be indented according
@@ -144,7 +145,9 @@ class TraceCalls(object):
                 self.stream.write('%s--> %s\n' % (indent, ret))
             return ret
         return wrapper
-################################################################################
+
+###############################################################################
+
 
 class NoNewAttributesAfterInit(object):
     """
@@ -283,7 +286,6 @@ class SherpaTest(numpytest.NumpyTest):
             SherpaTestCase.datadir = old_datadir
 
 
-
 ###############################################################################
 #
 # Utilities
@@ -306,15 +308,15 @@ def filter_bins(mins, maxes, axislist):
             continue
 
         if lo is None:
-            #axismask = axis <= hi
+            # axismask = axis <= hi
             axismask = (sao_fcmp(hi,axis,eps) >= 0)
 
         elif hi is None:
-            #axismask = axis >= lo
+            # axismask = axis >= lo
             axismask = (sao_fcmp(lo,axis,eps) <= 0)
 
         else:
-            #axismask = (lo <= axis) & (axis <= hi)
+            # axismask = (lo <= axis) & (axis <= hi)
             axismask = (sao_fcmp(lo,axis,eps) <= 0) & (sao_fcmp(hi,axis,eps) >= 0)
 
         if mask is None:
@@ -385,7 +387,8 @@ def export_method(meth, name=None, modname=None):
         old_name = meth.func_name
 
     # Make an argument list string, removing 'self'
-    if meth.func_name == 'log_decorator': # needed for making loggable decorator work (Omar)
+    if meth.func_name == 'log_decorator':
+        # This is needed for making loggable decorator work (Omar)
         argspec = inspect.getargspec(meth._original)
         defaults = meth._original.func_defaults
         doc = meth._original.func_doc
@@ -746,6 +749,7 @@ def poisson_noise(x):
 
     return x_out
 
+
 def multinormal_pdf(x, mu, sigma):
     """The PDF of a multivariate-normal.
 
@@ -896,8 +900,8 @@ def dataspace1d(start, stop, step=1, numbins=None):
         if step >= (stop-start):
             raise TypeError("input has produced less than 2 bins, found start=%s stop=%s step=%s" % (start, stop, step))
 
-    #xx = numpy.arange(start, stop, step, dtype=float)
-    #xx = sao_arange(start, stop, step)
+    # xx = numpy.arange(start, stop, step, dtype=float)
+    # xx = sao_arange(start, stop, step)
     xx = None
     if numbins is not None:
         if numbins <= 1:
@@ -938,6 +942,7 @@ def dataspace2d(dim):
     y = numpy.zeros(numpy.prod(dim))
 
     return x0, x1, y, shape
+
 
 def histogram1d( x, x_lo, x_hi ):
     """Create a 1D histogram from a binned grid (``x_lo``, ``xhi``)
@@ -991,6 +996,7 @@ def histogram1d( x, x_lo, x_hi ):
     x_hi.sort()
 
     return hist1d( numpy.asarray(x), x_lo, x_hi )
+
 
 def histogram2d( x, y, x_grid, y_grid ):
     """Create 21D histogram from a binned grid (``x_grid``, ``y_grid``)
@@ -1047,16 +1053,17 @@ def interp_util( xout, xin, yin ):
     i1[ i1==0 ] = 1
     i1[ i1==lenxin ] = lenxin-1
 
-##     if 0 == i1:
-##         i1 = 1
-##     if lenxin == i1:
-##         i1 = lenxin - 1
+#     if 0 == i1:
+#         i1 = 1
+#     if lenxin == i1:
+#         i1 = lenxin - 1
 
     x0 = xin[i1-1]
     x1 = xin[i1]
     y0 = yin[i1-1]
     y1 = yin[i1]
     return x0, x1, y0, y1
+
 
 def linear_interp( xout, xin, yin ):
     """Linear interpolation of (xin,yin) onto xout."""
@@ -1067,10 +1074,12 @@ def linear_interp( xout, xin, yin ):
         return nearest_interp( xout, xin, yin )
     return val
 
+
 def nearest_interp( xout, xin, yin ):
     """Nearest-neighbor interpolation of (xin,yin) onto xout."""
     x0, x1, y0, y1 = interp_util( xout, xin, yin )
     return numpy.where((numpy.abs(xout - x0) < numpy.abs(xout - x1)), y0, y1)
+
 
 def interpolate(xout, xin, yin, function=linear_interp):
     """Interpolate the curve defined by (xin, yin) at points xout.
@@ -1125,7 +1134,7 @@ def is_binary_file( filename ):
 
 
 def get_midpoint(a):
-    #return numpy.abs(a.max() - a.min())/2. + a.min()
+    # return numpy.abs(a.max() - a.min())/2. + a.min()
     return numpy.abs(a.max() + a.min())/2.
 
 
@@ -1136,6 +1145,7 @@ def get_peak(y, x, xhi=None):
 def get_valley(y, x, xhi=None):
     return x[y.argmin()]
 
+
 def get_fwhm(y, x, xhi=None):
     half_max_val = y.max() / 2.0
     x_max = x[y.argmax()]
@@ -1143,6 +1153,7 @@ def get_fwhm(y, x, xhi=None):
         if val >= half_max_val:
             return 2.0*numpy.abs(x[ii] - x_max)
     return x_max
+
 
 def guess_fwhm(y, x, xhi=None, scale=1000):
     fwhm = get_fwhm(y, x, xhi)
@@ -1355,7 +1366,7 @@ def guess_position(y, x0lo, x1lo, x0hi=None, x1hi=None):
 
     """
 
-    #pos = int(y.argmax())
+    # pos = int(y.argmax())
     # return the average of location of brightest pixels
     pos = numpy.where(y==y.max())
 
@@ -1479,7 +1490,7 @@ def run_tasks(procs, err_q, out_q, num):
         idx, result = out_q.get()
         results[idx] = result
 
-    #return list(numpy.concatenate(results))
+    # return list(numpy.concatenate(results))
     # Remove extra dimension added by split
     vals = []
     [ vals.extend(result) for result in results ]
@@ -1514,7 +1525,7 @@ def parallel_map(function, sequence, numcores=None):
     if numcores is None:
         numcores = _ncpus
 
-    # Returns a started SyncManager object which can be used for sharing 
+    # Returns a started SyncManager object which can be used for sharing
     # objects between processes. The returned manager object corresponds
     # to a spawned child process and has methods which will create shared
     # objects and return corresponding proxies.
@@ -1527,7 +1538,7 @@ def parallel_map(function, sequence, numcores=None):
     err_q = manager.Queue()
     lock  = manager.Lock()
 
-    # if sequence is less than numcores, only use len sequence number of 
+    # if sequence is less than numcores, only use len sequence number of
     # processes
     if size < numcores:
         numcores = size  
@@ -1555,11 +1566,13 @@ def neville2d( xinterp, yinterp, x, y, fval ):
 
 ################################## Hessian ####################################
 
+
 class NumDeriv:
 
     def __init__( self, func, fval0 ):
         self.nfev, self.func = func_counter( func )
         self.fval_0 = fval0
+
 
 class NumDerivCentralOrdinary( NumDeriv ):
     """
@@ -1719,6 +1732,7 @@ class NumDerivCentralPartial(NumDeriv):
             fval /= ( 4.0 * deltai * deltaj )
             return fval
 
+
 class NoRichardsonExtrapolation:
 
     def __init__( self, sequence, verbose=False ):
@@ -1727,6 +1741,7 @@ class NoRichardsonExtrapolation:
 
     def __call__( self, x, t, tol, maxiter, h, *args ):
         self.sequence( x, h, *args )
+
 
 class RichardsonExtrapolation( NoRichardsonExtrapolation ):
     """From Wikipedia, the free encyclopedia
@@ -1799,6 +1814,7 @@ def print_low_triangle( matrix, num ):
             print matrix[ ii, jj ],
         print
 
+
 def symmetric_to_low_triangle( matrix, num ):
     low_triangle = []
     for ii in xrange( num ):
@@ -1809,9 +1825,8 @@ def symmetric_to_low_triangle( matrix, num ):
     return low_triangle
 
 
-################################## Hessian ####################################
-
 ############################### Root of all evil ##############################
+
 
 def printf(format, *args):
     """Format args with the first argument as format string, and write.
@@ -1819,24 +1834,31 @@ def printf(format, *args):
     sys.stdout.write(str(format) % args)
     return if_(args, args[-1], format)
 
+
 def func_counter( func ):
     '''A function wrapper to count the number of times being called'''
     nfev = [0]
+
     def func_counter_wrapper( x, *args ):
         nfev[0] += 1
         return func( x, *args )
+
     return nfev, func_counter_wrapper
+
 
 def func_counter_history( func, history ):
     '''A function wrapper to count the number of times being called'''
     nfev = [0]
+
     def func_counter_history_wrapper( x, *args ):
         nfev[0] += 1
         y = func( x, *args )
         history[ 0 ].append( x )
         history[ 1 ].append( y )
         return y
+
     return nfev, func_counter_history_wrapper
+
 
 def is_in( arg, seq ):
     for x in seq:
@@ -1848,8 +1870,10 @@ def is_iterable( arg ):
     return isinstance( arg, list ) or isinstance( arg, tuple ) \
            or isinstance( arg, numpy.ndarray ) or numpy.iterable( arg )
 
+
 def is_sequence( start, mid, end ):
     return (start < mid) and (mid < end)
+
 
 def Knuth_close( x, y, tol, myop=operator.__or__ ):
     """Check whether two floating-point numbers are close together.
@@ -1890,6 +1914,7 @@ def Knuth_close( x, y, tol, myop=operator.__or__ ):
         return diff <= tol
     return myop( diff <= tol * abs( x ), diff <= tol * abs( y ) )
 
+
 def safe_div( num, denom ):
     import sys
     dbl_max = sys.float_info.max
@@ -1904,6 +1929,7 @@ def safe_div( num, denom ):
         return 0
 
     return num / denom
+
 
 def Knuth_boost_close( x, y, tol, myop=operator.__or__ ):
     """ The following text was taken verbatim from:
@@ -1941,11 +1967,13 @@ def Knuth_boost_close( x, y, tol, myop=operator.__or__ ):
     diff_y = safe_div( diff, y )
     return myop( diff_x <= tol, diff_y <= tol )
 
+
 def list_to_open_interval( arg ):
     if not numpy.iterable(arg):
         return arg
     str = '(%e, %e)' % (arg[0],arg[1])
     return str
+
 
 def mysgn( arg ):
     if arg == 0.0:
@@ -2077,6 +2105,7 @@ def bisection( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6 ):
     except OutOfBoundErr:
         return [ [None, None], [ [xa, fa], [xb, fb] ], nfev[0] ]
 
+
 def quad_coef( x, f ):
     """
     p( x ) = f( xc ) + A ( x - xc ) + B ( x - xc ) ( x - xb )
@@ -2158,6 +2187,7 @@ def transformed_quad_coef( x, f ):
     B = ( A - fb_fa / xb_xa ) / xc_xa
     C = A + B * xc_xb
     return [ B, C ]
+
 
 def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(), 
               maxfev=32, tol=1.0e-6 ):
@@ -2247,7 +2277,7 @@ def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
             xd = xc - 2.0 * fc / ( C + mysgn( C ) * numpy.sqrt( discriminant ) )
 
             fd = myfcn( xd, *args )
-            #print 'fd(%e)=%e' % (xd, fd)
+            # print 'fd(%e)=%e' % (xd, fd)
             if abs( fd ) <= tol:
                 return [ [xd, fd], [ [None, None], [None, None] ], nfev[0] ]
 
@@ -2258,14 +2288,14 @@ def demuller( fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
             xc = xd
             fc = fd
 
-        #print 'demuller(): maxfev exceeded'
+        # print 'demuller(): maxfev exceeded'
         return [ [xd, fd], [ [None, None], [None, None] ], nfev[0] ]
 
     except ZeroDivisionError:
 
-        #print 'demuller(): fixme ZeroDivisionError'
-        #for x, y in izip( history[0], history[1] ):
-        #    print 'f(%e)=%e' % ( x, y )
+        # print 'demuller(): fixme ZeroDivisionError'
+        # for x, y in izip( history[0], history[1] ):
+        #     print 'f(%e)=%e' % ( x, y )
         return [ [xd, fd], [ [None, None], [None, None] ], nfev[0] ]
 
 
@@ -2321,7 +2351,7 @@ def new_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6 ):
             xd = xc - 2.0 * fc / ( C + mysgn( C ) * numpy.sqrt( discriminant ) )
 
             fd = myfcn( xd, *args )
-            #print 'fd(%e)=%e' % (xd, fd)
+            # print 'fd(%e)=%e' % (xd, fd)
             if abs( fd ) <= tol:
                 return [ [xd, fd], [ [xa, fa], [xb, fb] ], nfev[0] ]
 
@@ -2351,14 +2381,14 @@ def new_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6 ):
                 xa = xc; fa = fc
                 continue
 
-        #print 'new_muller(): maxfev exceeded'
+        # print 'new_muller(): maxfev exceeded'
         return [ [xd, fd], [ [xa, fa], [xb, fb] ], nfev[0] ]
 
     except (ZeroDivisionError, OutOfBoundErr):
 
-        #print 'new_muller(): fixme ZeroDivisionError'
-        #for x, y in izip( history[0], history[1] ):
-        #    print 'f(%e)=%e' % ( x, y )
+        # print 'new_muller(): fixme ZeroDivisionError'
+        # for x, y in izip( history[0], history[1] ):
+        #     print 'f(%e)=%e' % ( x, y )
         return [ [xd, fd], [ [xa, fa], [xb, fb] ], nfev[0] ]
 
 #
@@ -2378,7 +2408,7 @@ def new_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6 ):
 #  * See the License for the specific language governing permissions and
 #  * limitations under the License.
 #  */
-# 
+#
 def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                    tol=1.0e-6 ):
 
@@ -2404,7 +2434,7 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
 
         xc = ( xa + xb ) / 2.0
         fc = myfcn( xc, *args )
-        #print 'MullerBound() fc(%.14e)=%.14e' % (xc,fc)
+        # print 'MullerBound() fc(%.14e)=%.14e' % (xc,fc)
         if abs( fc ) <= tol:
             return [ [ xc, fc ], [ [xc, fc], [xc, fc] ], nfev[0] ]
 
@@ -2433,19 +2463,19 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             else:
                 x = xminus
 
-            #print 'xa=', xa, '\tx=', x, '\txb=', xb, '\txc=', xc
+            # print 'xa=', xa, '\tx=', x, '\txb=', xb, '\txc=', xc
 
-            #fubar = quad_coef( [xa,xb,xc], [fa,fb,fc] )
-            #quad = QuadEquaRealRoot( )
-            #print quad( fubar[0], fubar[1], fubar[2] )
-            #print
+            # fubar = quad_coef( [xa,xb,xc], [fa,fb,fc] )
+            # quad = QuadEquaRealRoot( )
+            # print quad( fubar[0], fubar[1], fubar[2] )
+            # print
 
-            #sanity check
+            # sanity check
             if not is_sequence(xa, x, xb):
                 x = ( xa + xb ) / 2.0
 
             y = myfcn( x, *args );
-            #print 'MullerBound() y(%.14e)=%.14e' % (x,y)
+            # print 'MullerBound() y(%.14e)=%.14e' % (x,y)
             if abs( y ) < abs( fbest ):
                 xbest = x; fbest = y
             tolerance = min( tol * abs( x ), tol )
@@ -2470,7 +2500,7 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                 fmid = myfcn( xmid, *args )
                 if abs( fmid ) < abs( fbest ):
                     xbest = xmid; fbest = fmid
-                #print 'MullerBound() fmid(%.14e)=%.14e' % (xmid,fmid)
+                # print 'MullerBound() fmid(%.14e)=%.14e' % (xmid,fmid)
                 if abs( fmid ) <= tol:
                     return [ [xmid, fmid], [ [xa, fa], [xb, fb] ], nfev[0] ]
                 if mysgn( fa ) + mysgn( fmid ) == 0:
@@ -2483,7 +2513,7 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                 fc = myfcn( xc, *args )
                 if abs( fc ) < abs( fbest ):
                     xbest = xc; fbest = fc                
-                #print 'MullerBound() fc(%.14e)=%.14e' % (xc,fc)
+                # print 'MullerBound() fc(%.14e)=%.14e' % (xc,fc)
                 if abs( fc ) <= tol:
                     return [ [xc, fc], [ [xa, fa], [xb, fb] ], nfev[0] ]
                 oldx = 1.0e128
@@ -2625,7 +2655,7 @@ def zeroin( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2 ):
             fa = fb
             xb += new_step
             fb = myfcn( xb, *args )
-            #print 'fa(%f)=%f\tfb(%f)=%f\tfc(%f)=%f' % (xa,fa,xb,fb,xc,fc)
+            # print 'fa(%f)=%f\tfb(%f)=%f\tfc(%f)=%f' % (xa,fa,xb,fb,xc,fc)
             if fb > 0 and fc > 0 or fb < 0 and fc < 0:
                 xc = xa
                 fc = fa
