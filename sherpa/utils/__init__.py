@@ -33,7 +33,10 @@ import numpy
 import numpy.random
 import numpytest
 import numpy.fft
-from sherpa.utils._utils import *
+# Note: _utils.gsl_fcmp is not exported from this module; is this intentional?
+from sherpa.utils._utils import calc_ftest, calc_mlr, igamc, igam, \
+    incbet, gamma, lgam, erf, ndtri, sao_fcmp, rebin, \
+    hist1d, hist2d, sum_intervals, neville, sao_arange
 from sherpa.utils._psf import extract_kernel, normalize, set_origin, \
     pad_bounding_box
 from functools import wraps
