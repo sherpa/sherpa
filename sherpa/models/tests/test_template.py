@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -95,9 +95,9 @@ class test_new_templates_ui(SherpaTestCase):
 
     # TestCase 5 user can access interpolators' parvals
     @unittest.skipIf(test_data_missing(), "required test data missing")
-    def test_grid_search_with_discrete_template(self):
-        self.run_thread('load_template_with_interpolation', scriptname='test_case_5.py')
-
+    def test_grid_search_with_discrete_template_parvals(self):
+        self.run_thread('load_template_with_interpolation',
+                        scriptname='test_case_5.py')
 
 
 class test_template(SherpaTestCase):
