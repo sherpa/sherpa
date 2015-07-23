@@ -1052,7 +1052,33 @@ static PyMethodDef UtilsFcts[] = {
   FCTSPEC(gsl_fcmp, _sherpa_fcmp< gsl_fcmp >), 
 
   //Same as gsl_fcmp, but also handles the case where one of the args is 0.
-  FCTSPEC(sao_fcmp, _sherpa_fcmp< sao_fcmp >),
+  // FCTSPEC(sao_fcmp, _sherpa_fcmp< sao_fcmp >),
+  { (char*) "sao_fcmp", (PyCFunction)(_sherpa_fcmp< sao_fcmp >), METH_VARARGS,
+    (char*) "sao_fcmp(x, y, tol)\n\n"
+            "Compare y to x, using an absolute tolerance.\n"
+            PARAMETERSDOC
+            "first : number or array_like\n"
+            "   The expected value, or values.\n"
+            "second : number or array_like\n"
+            "   The value, or values, to check. If first is an array, then\n"
+            "   second must be an array of the same size. If first is\n"
+            "   a scalar then second can be a scalar or an array.\n"
+            "tol : number\n"
+            "   The absolute tolerance used for comparison.\n"
+            RETURNSDOC
+            "flags : int or array_like\n"
+            "   0, 1, or -1 for each value in second. If the values\n"
+            "   match, then 0, otherwise -1 if the expected value (x)\n"
+            "   is less than the comparison value (y) or +1 if x is\n"
+            "   larger than y.\n"
+            EXAMPLESDOC
+            ">>> sao_fcmp(1, 1.01, 0.01)\n"
+            "0\n\n"
+            ">>> sao_fcmp(1, [0.9, 1, 1.1], 0.01)\n"
+            "array([ 1,  0, -1], dtype=int32)\n\n"
+            ">>> utils.sao_fcmp([1.2, 2.3], [1.22, 2.29], 0.01)\n"
+            "array([-1,  0], dtype=int32)\n\n"
+  },
 
   //Rebin to new grid
   { (char*) "rebin", (PyCFunction)(rebin<SherpaFloatArray, SherpaFloat>), METH_VARARGS,

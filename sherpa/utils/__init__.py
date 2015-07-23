@@ -218,31 +218,50 @@ def _get_datadir():
 class SherpaTestCase(numpytest.NumpyTestCase):
     "Base class for Sherpa unit tests"
 
+    # The location of the Sherpa test data (it is optional)
     datadir = _get_datadir()
 
+    # What is the benefit of this over numpy.testing.assert_allclose(),
+    # which was added in version 1.5 of NumPy?
     def assertEqualWithinTol(self, first, second, tol=1e-7, msg=None):
+        """Check that the values are equal within an absolute tolerance.
+
+        Parameters
+        ----------
+        first : number or array_like
+           The expected value, or values.
+        second : number or array_like
+           The value, or values, to check. If first is an array, then
+           second must be an array of the same size. If first is
+           a scalar then second can be a scalar or an array.
+        tol : number
+           The absolute tolerance used for comparison.
+        msg : string
+           The message to display if the check fails.
+
         """
 
-        Test first and second for floating-point equality to within
-        the given tolerance.  If first and second are arrays, then
-        they will be tested for equality on an element-by-element
-        basis.
-
-        """
-
-        self.assert_(not numpy.any(sao_fcmp(first, second, tol)), msg)
+        self.assertFalse(numpy.any(sao_fcmp(first, second, tol)), msg)
 
     def assertNotEqualWithinTol(self, first, second, tol=1e-7, msg=None):
+        """Check that the values are not equal within an absolute tolerance.
+
+        Parameters
+        ----------
+        first : number or array_like
+           The expected value, or values.
+        second : number or array_like
+           The value, or values, to check. If first is an array, then
+           second must be an array of the same size. If first is
+           a scalar then second can be a scalar or an array.
+        tol : number
+           The absolute tolerance used for comparison.
+        msg : string
+           The message to display if the check fails.
+
         """
 
-        Test first and second for floating-point inequality to within
-        the given tolerance.  If first and second are arrays, then
-        they will be tested for inequality on an element-by-element
-        basis.
-
-        """
-
-        self.assert_(numpy.all(sao_fcmp(first, second, tol)), msg)
+        self.assertTrue(numpy.all(sao_fcmp(first, second, tol)), msg)
 
 
 def test_data_missing():
