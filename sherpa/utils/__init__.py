@@ -38,11 +38,12 @@ from sherpa.utils._psf import extract_kernel, normalize, set_origin, \
     pad_bounding_box
 from functools import wraps
 
-import logging
-warning = logging.getLogger("sherpa").warning
-
 from sherpa import get_config
 from ConfigParser import ConfigParser, NoSectionError
+
+import logging
+warning = logging.getLogger("sherpa").warning
+debug = logging.getLogger("sherpa").debug
 
 config = ConfigParser()
 config.read(get_config())
@@ -2011,9 +2012,8 @@ class QuadEquaRealRoot:
         else:
 
             discriminant = b * b - 4.0 * a * c
-            # TODO: this print should either be commented out or use
-            #       the logging class
-            print 'disc=', discriminant
+            # TODO: is this needed?
+            debug("disc={}".format(discriminant))
             sqrt_disc = numpy.sqrt( discriminant )
             t = - ( b + mysgn( b ) * sqrt_disc ) / 2.0
             return [ c / t, t / a ]
@@ -2037,9 +2037,8 @@ def bisection( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6 ):
             return [ [xb, fb], [ [xb, fb], [xb, fb] ], nfev[0] ]
 
         if mysgn( fa ) == mysgn( fb ):
-            # TODO: should this use the logging class?
-            sys.stderr.write( __name__ + ': ' + fcn.__name__ +
-                              ' fa * fb < 0 is not met\n' )
+            # TODO: is this a useful message for the user?
+            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
             return [ [None, None], [ [None, None], [None, None] ], nfev[0] ]
 
         while nfev[0] < maxfev:
@@ -2294,9 +2293,8 @@ def new_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6 ):
             return [ [xb, fb], [ [xb, fb], [xb, fb] ], nfev[0] ]
 
         if mysgn( fa ) == mysgn( fb ):
-            # TODO: should this use the logging class?
-            sys.stderr.write( __name__ + ': ' + fcn.__name__ +
-                              ' fa * fb < 0 is not met\n' )
+            # TODO: is this a useful message for the user?
+            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
             return [ [None, None], [ [None, None], [None, None] ], nfev[0] ]
 
         while nfev[0] < maxfev:
@@ -2392,9 +2390,8 @@ def apache_muller( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             return [ [xb, fb], [ [xb,fb], [xb,fb] ], nfev[0] ]
 
         if mysgn( fa ) == mysgn( fb ):
-            # TODO: should this use the logging class?
-            sys.stderr.write( __name__ + ': ' + fcn.__name__ +
-                              ' fa * fb < 0 is not met\n' )
+            # TODO: is this a useful message for the user?
+            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
             return [ [None, None], [ [None, None], [None, None] ], nfev[0] ]
 
         xc = ( xa + xb ) / 2.0
@@ -2553,9 +2550,8 @@ def zeroin( fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2 ):
             return [ [xb, fb], [ [xa, fa], [xb, fb] ], nfev[0] ]    
 
         if mysgn( fa ) == mysgn( fb ):
-            # TODO: should this use the logging class?
-            sys.stderr.write( __name__ + ': ' + fcn.__name__ +
-                              ' fa * fb < 0 is not met\n' )
+            # TODO: is this a useful message for the user?
+            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
             return [ [None, None], [ [None, None], [None, None] ], nfev[0] ]
 
         xc = xa
