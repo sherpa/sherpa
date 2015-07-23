@@ -1191,33 +1191,33 @@ def get_amplitude_position(arr, mean=False):
     """
 
     xpos = xmin = xmax = xval = 0
-    max = arr.max()
-    min = arr.min()
-    if((max > 0.0 and min >= 0.0) or
-       (max > 0.0 and min < 0.0 and (abs(min) <= max ))):
+    amax = arr.max()
+    amin = arr.min()
+    if((amax > 0.0 and amin >= 0.0) or
+       (amax > 0.0 and amin < 0.0 and (abs(amin) <= amax))):
         xpos = arr.argmax()
         if mean:
-            xpos = numpy.where(arr==max)
+            xpos = numpy.where(arr == amax)
 
-        xmax = max*_guess_ampl_scale
-        xmin = max/_guess_ampl_scale
-        xval = max
+        xmax = amax * _guess_ampl_scale
+        xmin = amax / _guess_ampl_scale
+        xval = amax
 
-    elif((max > 0.0 and min < 0.0 and abs(min) > max ) or
-         (max == 0.0 and min < 0.0 ) or ( max < 0.0 )):
+    elif((amax > 0.0 and amin < 0.0 and abs(amin) > amax ) or
+         (amax == 0.0 and amin < 0.0) or (amax < 0.0)):
         xpos = arr.argmin()
         if mean:
-            xpos = numpy.where(arr==min)
+            xpos = numpy.where(arr == amin)
 
-        xmax = min/_guess_ampl_scale
-        xmin = min*_guess_ampl_scale
-        xval = min
-    elif (max == 0.0 and min == 0.0):
+        xmax = amin / _guess_ampl_scale
+        xmin = amin * _guess_ampl_scale
+        xval = amin
+    elif (amax == 0.0 and amin == 0.0):
         xpos = arr.argmax()
         if mean:
-            xpos = numpy.where(arr==max)
+            xpos = numpy.where(arr == amax)
 
-        xmax = 100.0/_guess_ampl_scale
+        xmax = 100.0 / _guess_ampl_scale
         xmin = 0.0
         xval = 0.0
 
@@ -1232,21 +1232,20 @@ def guess_amplitude(y, x, xhi=None):
 
     val, ymin, ymax, pos = get_amplitude_position(y)
 
-    min = None; max = None
+    amin, amax = None, None
     if ymin != 0.0 or ymax != 0.0:
-        min = ymin
-        max = ymax
+        amin = ymin
+        amax = ymax
 
     if xhi is not None:
         binsize = numpy.abs(xhi[pos] - x[pos])
-        if min is not None:
-            min /= binsize
-        if max is not None:
-            max /= binsize
+        if amin is not None:
+            amin /= binsize
+        if amax is not None:
+            amax /= binsize
         val /= binsize
 
-    return { 'val' : val, 'min' : min, 'max' : max }
-
+    return {'val': val, 'min': amin, 'max': amax}
 
 
 def guess_amplitude_at_ref(r, y, x, xhi=None):
