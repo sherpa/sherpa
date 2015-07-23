@@ -1104,6 +1104,9 @@ def interpolate(xout, xin, yin, function=linear_interp):
 
 def is_binary_file( filename ):
     """Estimate if a file is a binary file.
+
+    Returns True if a non-printable character is found in the first
+    1024 bytes of the file.
     """
     fd = open( filename, 'r')
     lines = fd.readlines(1024)
@@ -1486,13 +1489,13 @@ def run_tasks(procs, err_q, out_q, num):
 def parallel_map(function, sequence, numcores=None):
     """
     A parallelized version of the native Python map function that
-    utilizes the Python multiprocessing module to divide and 
+    utilizes the Python multiprocessing module to divide and
     conquer sequence.
 
     parallel_map does not yet support multiple argument sequences.
 
     :param function: callable function that accepts argument from iterable
-    :param sequence: iterable sequence 
+    :param sequence: iterable sequence
     :param numcores: number of cores to use
     """
     if not callable(function):
@@ -1560,40 +1563,45 @@ class NumDeriv:
 
 class NumDerivCentralOrdinary( NumDeriv ):
     """
-    Subtract the following Taylor series expansion:
+    Subtract the following Taylor series expansion::
 
                                              2
                                   '         h  ''            3
     f( x +/- h ) = f( x ) +/-  h f  ( x ) + - f  ( x ) + O( h  )
                                             2
-    gives:
+
+    gives::
+
                                               '            3
                f( x + h ) - f( x - h ) = 2 h f ( x ) + O( h  )
 
-                 ' 
-    solving for f ( x ):
+                 '
+    solving for f ( x )::
 
                      '        f( x + h ) - f( x - h )       2
                     f ( x ) = ----------------------- + O( h  )
                                         2 h
 
     In addition to the truncation error of order h^2, there is a round off
-    error due to the finite numerical precision ~ r f( x ).
+    error due to the finite numerical precision ~ r f( x )::
 
              '        f( x + h ) - f( x - h )    r f( x )         2
             f ( x ) = ----------------------- + ---------  +  O( h  )
                                 2 h                h
 
                             r      2
-                 Error  ~=  -  + h 
+                 Error  ~=  -  + h
                             h
-    minimizing the error by differentiating wrt h, the solve for h:
-    h ~ r^1/3"""
+    minimizing the error by differentiating wrt h, the solve for h::
 
-    def __init__( self, func, fval0=None ):
-        NumDeriv.__init__( self, func, fval0 )
+        h ~ r^1/3
 
-    def __call__( self, x, h ):
+    """
+
+    def __init__(self, func, fval0=None):
+        NumDeriv.__init__(self, func, fval0)
+
+    def __call__(self, x, h):
         if 0.0 == h:
             return numpy.Inf
         return ( self.func( x + h ) - self.func( x - h ) ) / ( 2.0 * h )
@@ -1632,27 +1640,25 @@ class NumDerivFowardPartial( NumDeriv ):
         fval /= deltai * deltaj
         return fval
 
-class NumDerivCentralPartial( NumDeriv ):
-    """
-
-    Add the following Taylor series expansion:
+class NumDerivCentralPartial(NumDeriv):
+    """Add the following Taylor series expansion::
 
                                              2
                                   '         h  ''            3
     f( x +/- h ) = f( x ) +/-  h f  ( x ) + - f  ( x ) + O( h  )
                                             2
                    ''
-    and solve for f  ( x ), gives:
+    and solve for f  ( x ), gives::
 
-              ''         f( x + h ) + f( x - h ) - 2 f( x )        2 
+              ''         f( x + h ) + f( x - h ) - 2 f( x )        2
              f  ( x ) = ------------------------------------ + O( h  )
                                          2
                                         h
 
     In addition to the truncation error of order h^2, there is a round off
-    error due to the finite numerical precision ~ r f( x ).
+    error due to the finite numerical precision ~ r f( x )::
 
-     ''         f( x + h ) + f( x - h ) - 2 f( x )    r f( x )       2 
+     ''         f( x + h ) + f( x - h ) - 2 f( x )    r f( x )       2
     f  ( x ) = ------------------------------------ + -------- + O( h  )
                                 2                        2
                                h                        h
@@ -1662,11 +1668,13 @@ class NumDerivCentralPartial( NumDeriv ):
                              2
                             h
 
-    minimizing the error by differentiating wrt h, the solve for h:
-    h ~ r^1/4"""
+    minimizing the error by differentiating wrt h, the solve for h::
 
-    def __init__( self, func, fval0 ):
-        NumDeriv.__init__( self, func, fval0 )
+        h ~ r^1/4
+    """
+
+    def __init__(self, func, fval0):
+        NumDeriv.__init__(self, func, fval0)
 
     def __call__( self, x, h, *args ):
 
@@ -1730,7 +1738,7 @@ class RichardsonExtrapolation( NoRichardsonExtrapolation ):
     1. Richardson, L. F. (1911). \"The approximate arithmetical solution by
     finite differences of physical problems including differential equations,
     with an application to the stresses in a masonry dam \". Philosophical
-    Transactions of the Royal Society of London, Series A 210. 
+    Transactions of the Royal Society of London, Series A 210.
     2. Richardson, L. F. (1927). \" The deferred approach to the limit \".
     Philosophical Transactions of the Royal Society of London, Series A 226:"""
 
@@ -1820,7 +1828,7 @@ def func_counter( func ):
     return nfev, func_counter_wrapper
 
 def func_counter_history( func, history ):
-    '''A function wrapper to count the number of times beingg called'''
+    '''A function wrapper to count the number of times being called'''
     nfev = [0]
     def func_counter_history_wrapper( x, *args ):
         nfev[0] += 1
@@ -2082,7 +2090,8 @@ def quad_coef( x, f ):
 
            = B x^2 + ( C - 2 * B xc ) x + f( xc ) - C xc  + B xc^2
 
-           = B x^2 + ( C - 2 * B x[2] ) x + f[ 2 ] + x[2] * ( B x[ 2 ] - C )"""
+           = B x^2 + ( C - 2 * B x[2] ) x + f[ 2 ] + x[2] * ( B x[ 2 ] - C )
+    """
 
 
     [B,C] = transformed_quad_coef( x, f )
@@ -2093,7 +2102,7 @@ def transformed_quad_coef( x, f ):
     """
     p( x ) = f( xc ) + A ( x - xc ) + B ( x - xc ) ( x - xb )
 
-       where A and B are the divided differences:
+       where A and B are the divided differences::
 
                                    f( xc ) - f( xb )
                                A = -----------------
@@ -2113,21 +2122,20 @@ def transformed_quad_coef( x, f ):
 
         where  C = A + B ( xc - xb )
 
-        The root of p( x ), using the quadratic formula:
+        The root of p( x ), using the quadratic formula::
 
                             1  (                                   )
                   x - xc = --- ( - C +/- sqrt( C^2 - 4 f( xc ) B ) )
                            2 B (                                   )
 
-        Rationalize the numerator to avoid subtractive cancellation:
+        Rationalize the numerator to avoid subtractive cancellation::
 
                                      2 f( xc )
                   x - xc = -------------------------------
                            C +/- sqrt( C^2 - 4 f( xc ) B )
 
         The sign should be chosen to maximize the denominator.  Therefore,
-        the next point in the iteration is:
-
+        the next point in the iteration is::
 
                                        2 f( xc )
                   x = xc - --------------------------------------
@@ -2135,7 +2143,8 @@ def transformed_quad_coef( x, f ):
 
                        {    -1,  x < 0
         where sgn(x) = {
-                       {     1,  x >= 0"""
+                       {     1,  x >= 0
+    """
 
     xa = x[ 0 ]; xb = x[ 1 ]; xc = x[ 2 ]
     fa = f[ 0 ]; fb = f[ 1 ]; fc = f[ 2 ]
