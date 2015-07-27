@@ -828,7 +828,6 @@ class DataPHA(Data1DInt):
         # self.quality_filter used for pre-grouping filter
         self.quality_filter = qual_flags
 
-
     def _dynamic_group(self, group_func, *args, **kwargs):
 
         keys = kwargs.keys()[:]
