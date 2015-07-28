@@ -20,7 +20,7 @@
 import os
 import unittest
 import numpy
-import numpy.testing # this was added numpy 1.5.0
+import numpy.testing  # this was added numpy 1.5.0
 from sherpa.astro import ui
 from sherpa.utils import SherpaTestCase, test_data_missing
 from sherpa.utils import has_package_from_list, has_fits_support
@@ -30,12 +30,27 @@ from sherpa.utils import has_package_from_list, has_fits_support
 #
 _hc = 6.6260693e-27 * 2.99792458e+18 / 1.60217653e-9
 
+
 def is_proper_subclass(obj, cls):
     if type(cls) is not tuple:
         cls = (cls,)
     if obj in cls:
         return False
     return issubclass(obj, cls)
+
+
+# Use this rather than remove to make it easier to test out
+# on subsets of the Xspec build (e.g. if only build a small
+# number of models) or in case the version being built against
+# does not include a particular model.
+#
+def remove_item(xs, x):
+    """Remove x from xs or do nothing (if x is not a member of xs)."""
+    try:
+        xs.remove(x)
+    except ValueError:
+        pass
+
 
 # There is an argument to be made that these tests only need
 # to exercise a small number of models (e.g. one each of the
@@ -50,10 +65,10 @@ def _get_xspec_models(xs):
     """What are the XSpec model names to test."""
 
     models = [model for model in dir(xs) if model.startswith('XS')]
-    models.remove('XSModel')
-    models.remove('XSMultiplicativeModel')
-    models.remove('XSAdditiveModel')
-    models.remove('XSTableModel')
+    remove_item(models, 'XSModel')
+    remove_item(models, 'XSMultiplicativeModel')
+    remove_item(models, 'XSAdditiveModel')
+    remove_item(models, 'XSTableModel')
 
     # The nteea model is known to be broken in XSpec 12.8.2q
     # (it appears to work in XSpec, but does not in Sherpa due to
@@ -67,9 +82,10 @@ def _get_xspec_models(xs):
     # been made.
     #
     # Doug Burke, July 8, 2015
-    models.remove('XSnteea')
+    remove_item(models, 'XSnteea')
 
     return models
+
 
 def _make_noncontiguous_grid():
     """Return the grids for test_xspec_models_noncontiguous()."""
@@ -117,13 +133,14 @@ def _make_noncontiguous_grid():
 # Skip these models as they would require a large tolerance, so
 # it's easier/safer just to ignore them.
 #
-_skip_wave_models = [ 'XSkerrdisk', 'XSpexmon', 'XSposm',
-                      'XSredge', 'XSzvfeabs' ]
+_skip_wave_models = ['XSkerrdisk', 'XSpexmon', 'XSposm',
+                     'XSredge', 'XSzvfeabs']
 
 # This is driven by c6mekl; it could be tightened
 # (e.g. by skipping c6mekl) but leave as is for now.
 #
 _rtol_wave_4byte = 5e-3
+
 
 @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
                  "required sherpa.astro.xspec module missing")
@@ -146,7 +163,7 @@ class test_xspec(SherpaTestCase):
 
             if is_proper_subclass(cls, (xs.XSAdditiveModel,
                                         xs.XSMultiplicativeModel)):
-                m = cls()
+                cls()
                 count += 1
 
         self.assertEqual(count, 164)
@@ -160,7 +177,7 @@ class test_xspec(SherpaTestCase):
         # need an additive model
         mdl = xs.XSpowerlaw()
         mdl.PhoIndex = 2
-        egrid = [0.1,0.2,0.3,0.4]
+        egrid = [0.1, 0.2, 0.3, 0.4]
 
         mdl.norm = 1.2
         y1 = mdl(egrid)
@@ -179,14 +196,13 @@ class test_xspec(SherpaTestCase):
     def test_evaluate_model(self):
         import sherpa.astro.xspec as xs
         m = xs.XSbbody()
-        out = m([1,2,3,4])
+        out = m([1, 2, 3, 4])
         if m.calc.__name__.startswith('C_'):
             otype = numpy.float64
         else:
             otype = numpy.float32
         self.assertTrue(out.dtype.type is otype)
         self.assertEqual(int(numpy.flatnonzero(out == 0.0)), 3)
-
 
     def test_xspec_models(self):
         import sherpa.astro.xspec as xs
@@ -209,14 +225,14 @@ class test_xspec(SherpaTestCase):
             cls = getattr(xs, model)
             mdl = cls('foo')
             evals1 = mdl(egrid)
-            evals2 = mdl(elo,ehi)
+            evals2 = mdl(elo, ehi)
             emsg = "{0} model evaluation failed [".format(model)
             self.assertTrue(numpy.isfinite(evals1).all(), msg=emsg + "kev1]")
             self.assertTrue(numpy.isfinite(evals2).all(), msg=emsg + "kev2]")
 
             # Ideally the two should be exactly the same.
-            #numpy.testing.assert_allclose(vals1[:-1], vals2,
-            #                              err_msg=emsg + "kev comparison]")
+            # numpy.testing.assert_allclose(vals1[:-1], vals2,
+            #                               err_msg=emsg + "kev comparison]")
             self.assertTrue((evals1[:-1] == evals2).all(),
                             msg=emsg + "kev comparison]")
 
@@ -225,13 +241,13 @@ class test_xspec(SherpaTestCase):
             # read error if they are flagged (but I may remove then in a
             # later revision)
             wvals1 = mdl(wgrid)
-            wvals2 = mdl(wlo,whi)
+            wvals2 = mdl(wlo, whi)
             self.assertTrue(numpy.isfinite(wvals1).all(), msg=emsg + "ang1]")
             self.assertTrue(numpy.isfinite(wvals2).all(), msg=emsg + "ang2]")
 
             # Ideally the two should be exactly the same.
-            #numpy.testing.assert_allclose(vals1[:-1], vals2,
-            #                              err_msg=emsg + "ang comparison]")
+            # numpy.testing.assert_allclose(vals1[:-1], vals2,
+            #                               err_msg=emsg + "ang comparison]")
             self.assertTrue((wvals1[:-1] == wvals2).all(),
                             msg=emsg + "ang comparison]")
 
@@ -266,34 +282,34 @@ class test_xspec(SherpaTestCase):
         # the code should fix these, so they can now
         # be used.
         #
-        #models.remove("XSapec")
-        #models.remove("XSbapec")
-        #models.remove("XSbvapec")
-        #models.remove("XSbvvapec")
-        #models.remove("XSequil")
-        #models.remove("XSgadem")
-        #models.remove("XSgnei")
-        #models.remove("XSnei")
-        #models.remove("XSrnei")
-        #models.remove("XSnpshock")
-        #models.remove("XSpshock")
-        #models.remove("XSsedov")
-        #models.remove("XSvapec")
-        #models.remove("XSvequil")
-        #models.remove("XSvgadem")
-        #models.remove("XSvgnei")
-        #models.remove("XSvnei")
-        #models.remove("XSvnpshock")
-        #models.remove("XSvpshock")
-        #models.remove("XSvrnei")
-        #models.remove("XSvsedov")
-        #models.remove("XSvvapec")
-        #models.remove("XSvvgnei")
-        #models.remove("XSvvnei")
-        #models.remove("XSvvnpshock")
-        #models.remove("XSvvpshock")
-        #models.remove("XSvvrnei")
-        #models.remove("XSvvsedov")
+        # remove_item(models, "XSapec")
+        # remove_item(models, "XSbapec")
+        # remove_item(models, "XSbvapec")
+        # remove_item(models, "XSbvvapec")
+        # remove_item(models, "XSequil")
+        # remove_item(models, "XSgadem")
+        # remove_item(models, "XSgnei")
+        # remove_item(models, "XSnei")
+        # remove_item(models, "XSrnei")
+        # remove_item(models, "XSnpshock")
+        # remove_item(models, "XSpshock")
+        # remove_item(models, "XSsedov")
+        # remove_item(models, "XSvapec")
+        # remove_item(models, "XSvequil")
+        # remove_item(models, "XSvgadem")
+        # remove_item(models, "XSvgnei")
+        # remove_item(models, "XSvnei")
+        # remove_item(models, "XSvnpshock")
+        # remove_item(models, "XSvpshock")
+        # remove_item(models, "XSvrnei")
+        # remove_item(models, "XSvsedov")
+        # remove_item(models, "XSvvapec")
+        # remove_item(models, "XSvvgnei")
+        # remove_item(models, "XSvvnei")
+        # remove_item(models, "XSvvnpshock")
+        # remove_item(models, "XSvvpshock")
+        # remove_item(models, "XSvvrnei")
+        # remove_item(models, "XSvvsedov")
 
         # The kerrdisk model is known to show large differences
         # here (XSpec 12.8.2q; but it's likely down to how the model
@@ -302,18 +318,18 @@ class test_xspec(SherpaTestCase):
         # https://gist.github.com/DougBurke/d9a0074489b6d1de108e
         # for an example.
         #
-        models.remove("XSkerrdisk")
+        remove_item(models, "XSkerrdisk")
 
         # This model appears to cause problems for the "use 2 bins"
         # approach for the non-contiguous case. So remove it for now.
         # I am not convinced it's this model, as there's something
         # strange going on.
         #
-        ##models.remove('XSnsagrav')
+        # remove_item(models, 'XSnsagrav')
 
         (egrid, elo, ehi, idx, gidx, bidx) = _make_noncontiguous_grid()
 
-        wgrid = _hc / egrid
+        # wgrid = _hc / egrid
         wlo = _hc / ehi
         whi = _hc / elo
 
@@ -331,12 +347,12 @@ class test_xspec(SherpaTestCase):
         # (now changed to 1e-7)
         rtols_edges = { 'XSlaor': 2e-7, 'XSlaor2': 2e-7 }
         atols_edges = {
-            #'XSbapec': 1e-2,
-            #'XSbvapec': 1e-3,
-            #'XSbvvapec': 1e-3,
-            #'XSpexmon': 1e-5,
-            #'XSposm': 1e-8,
-            #'XSswind1': 1e-3
+            # 'XSbapec': 1e-2,
+            # 'XSbvapec': 1e-3,
+            # 'XSbvvapec': 1e-3,
+            # 'XSpexmon': 1e-5,
+            # 'XSposm': 1e-8,
+            # 'XSswind1': 1e-3
         }
 
         for model in models:
@@ -344,7 +360,7 @@ class test_xspec(SherpaTestCase):
             mdl = cls('foo')
 
             evals1 = mdl(egrid)
-            evals2 = mdl(elo,ehi)
+            evals2 = mdl(elo, ehi)
             emsg = "{0} model evaluation failed [noncontig; ".format(model)
             self.assertTrue(numpy.isfinite(evals1).all(), msg=emsg + "kev1]")
             self.assertTrue(numpy.isfinite(evals2).all(), msg=emsg + "kev2]")
@@ -374,14 +390,14 @@ class test_xspec(SherpaTestCase):
             # intermediate checks.
             #
 
-            #wvals1 = mdl(wgrid)
-            wvals2 = mdl(wlo,whi)
-            #emsg = "{0} model evaluation failed [noncontig; ".format(model)
-            #self.assertTrue(numpy.isfinite(wvals1).all(), msg=emsg + "kev1]")
-            #self.assertTrue(numpy.isfinite(wvals2).all(), msg=emsg + "kev2]")
+            # wvals1 = mdl(wgrid)
+            wvals2 = mdl(wlo, whi)
+            # emsg = "{0} model evaluation failed [noncontig; ".format(model)
+            # self.assertTrue(numpy.isfinite(wvals1).all(), msg=emsg + "kev1]")
+            # self.assertTrue(numpy.isfinite(wvals2).all(), msg=emsg + "kev2]")
 
             # filter down the "contiguous" version
-            #wvals1 = wvals1[idx]
+            # wvals1 = wvals1[idx]
 
             # skip models that are known to be problematic
             if model not in _skip_wave_models:
@@ -479,14 +495,14 @@ class test_xspec(SherpaTestCase):
 
         model = ui.get_model("fabrizio")
         bare_model, _ = ui._session._get_model_status("fabrizio")
-        y = bare_model.calc([1,1], model.xlo, model.xhi)
+        y = bare_model.calc([1, 1], model.xlo, model.xhi)
         y_m = numpy.mean(y)
 
-        ui.set_analysis("fabrizio","wave")
+        ui.set_analysis("fabrizio", "wave")
 
         model2 = ui.get_model("fabrizio")
         bare_model2, _ = ui._session._get_model_status("fabrizio")
-        y2 = bare_model2.calc([1,1], model2.xlo, model2.xhi)
+        y2 = bare_model2.calc([1, 1], model2.xlo, model2.xhi)
         y2_m = numpy.mean(y2)
 
         self.assertAlmostEqual(y_m, y2_m)
@@ -526,7 +542,7 @@ class test_xspec(SherpaTestCase):
         # the form of the where statement, we should be missing the
         # Ehi value of the last bin
         e1 = egrid[idx]
-        e2 = egrid[idx+1]
+        e2 = egrid[idx + 1]
 
         f1 = 8.01096e-10 * ((e2*e2-e1*e1) * y1[idx] / (e2-e1)).sum()
 
@@ -549,7 +565,7 @@ class test_xspec(SherpaTestCase):
 
         (egrid, elo, ehi, idx, gidx, bidx) = _make_noncontiguous_grid()
 
-        wgrid = _hc / egrid
+        # wgrid = _hc / egrid
         wlo = _hc / ehi
         whi = _hc / elo
 
