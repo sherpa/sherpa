@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -23,6 +23,7 @@ import sherpa
 from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
 from sherpa import ui
 
+
 class test_sherpa(SherpaTestCase):
 
     def test_include_dir(self):
@@ -31,9 +32,9 @@ class test_sherpa(SherpaTestCase):
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
-        self.agn2 = self.datadir + '/ciao4.3/faulty_load_data/agn2'
-        self.agn2_fixed = self.datadir + '/ciao4.3/faulty_load_data/agn2_fixed'
-        self.template_idx = self.datadir + '/ciao4.3/faulty_load_data/table.txt'
+        self.agn2 = self.make_path('ciao4.3/faulty_load_data/agn2')
+        self.agn2_fixed = self.make_path('ciao4.3/faulty_load_data/agn2_fixed')
+        self.template_idx = self.make_path('ciao4.3/faulty_load_data/table.txt')
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_not_reading_header_without_comment(self):
@@ -50,3 +51,15 @@ class test_sherpa(SherpaTestCase):
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_require_float(self):
         self.assertRaises(ValueError, ui.load_data, self.agn2)
+
+if __name__ == '__main__':
+
+    import sys
+    if len(sys.argv) > 1:
+        datadir = sys.argv[1]
+    else:
+        datadir = None
+
+    # This is probably not what you want, since it also runs
+    # all the tests in sub-modules
+    SherpaTest(sherpa).test(datadir=datadir)
