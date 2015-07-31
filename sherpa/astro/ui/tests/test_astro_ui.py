@@ -136,7 +136,7 @@ class test_more_ui(SherpaTestCase):
         self.img = self.make_path('img.fits')
         self.pha = self.make_path('threads/simultaneous/pi2286.fits')
         self.rmf = self.make_path('threads/simultaneous/rmf2286.fits')
-        self.pha3c273 = self.make_path('ciao4.3/pha_intro/3c273.pi'
+        self.pha3c273 = self.make_path('ciao4.3/pha_intro/3c273.pi')
 
     def tearDown(self):
         logger.setLevel(self._old_logger_level)
