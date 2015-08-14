@@ -181,7 +181,7 @@ class ParameterScaleMatrix(ParameterScale):
             msg = 'scales must be a numpy array of size (%d,%d)' % (npar, npar)
             return npar, msg
 
-        if myscales == None:
+        if myscales is None:
             oldestmethod = fit.estmethod
             fit.estmethod = Covariance()
 
