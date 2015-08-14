@@ -276,7 +276,7 @@ class Session(sherpa.ui.utils.Session):
         """
         sherpa.ui.utils.Session.restore(self, filename)
         if (hasattr(sherpa.astro, "xspec")):
-            if (self._xspec_state != None):
+            if (self._xspec_state is not None):
                 sherpa.astro.xspec.set_xsstate(self._xspec_state)
                 self._xspec_state = None
 
@@ -6532,7 +6532,7 @@ class Session(sherpa.ui.utils.Session):
         >>> notice2d_image(["src", "bg"])
 
         """
-        if (ids == None):
+        if (ids is None):
             ids = self._default_id
         if self._valid_id(ids):
             ids = (ids,)
@@ -6596,7 +6596,7 @@ class Session(sherpa.ui.utils.Session):
         >>> ignore2d_image(["src", "bg"])
 
         """
-        if (ids == None):
+        if (ids is None):
             ids = self._default_id
         if self._valid_id(ids):
             ids = (ids,)
@@ -9163,7 +9163,7 @@ class Session(sherpa.ui.utils.Session):
         use it in a source expression:
 
         >>> def func1d(pars, x, xhi=None):
-                if xhi != None:
+                if xhi is not None:
                     x = (x + xhi)/2
                 return x * pars[1] + pars[0]
 
@@ -12621,7 +12621,7 @@ class Session(sherpa.ui.utils.Session):
         # Check output file can be written to
 
         clobber=sherpa.utils.bool_cast(clobber)
-        if (type(outfile) != str and outfile != None):
+        if (type(outfile) != str and outfile is not None):
             raise ArgumentTypeErr('badarg', 'string or None')
         if (type(outfile) == str and os.path.isfile(outfile) and not clobber):
             raise IOErr('filefound', outfile)
@@ -12664,19 +12664,19 @@ class Session(sherpa.ui.utils.Session):
                 # Only store group flags and quality flags if they were changed
                 # from flags in the file
                 if (self.get_data(id)._original_groups == False):
-                    if (self.get_data(id).grouping != None):
+                    if (self.get_data(id).grouping is not None):
                         _send_to_outfile("\n######### Data Group Flags\n", outfile)
                         cmd = "set_grouping(%s, " % cmd_id
                         cmd = cmd + "val=numpy.array(" + repr(self.get_grouping(id).tolist()) + ", numpy." + str(self.get_grouping(id).dtype) + "))"
                         _send_to_outfile(cmd, outfile)
-                    if (self.get_data(id).quality != None):
+                    if (self.get_data(id).quality is not None):
                         _send_to_outfile("\n######### Data Quality Flags\n", outfile)
                         cmd = "set_quality(%s, " % cmd_id
                         cmd = cmd + "val=numpy.array(" + repr(self.get_quality(id).tolist()) + ", numpy." + str(self.get_quality(id).dtype) + "))"
                         _send_to_outfile(cmd, outfile)
                 # End check for original groups and quality flags
                 if (self.get_data(id).grouped == True):
-                    cmd = "if (get_data(%s).grouping != None and get_data(%s).grouped == False):" % (cmd_id, cmd_id)
+                    cmd = "if (get_data(%s).grouping is not None and get_data(%s).grouped == False):" % (cmd_id, cmd_id)
                     _send_to_outfile(cmd, outfile)
                     _send_to_outfile("\t######### Group Data", outfile)
                     cmd = "\tgroup(%s)" % cmd_id
@@ -12730,19 +12730,19 @@ class Session(sherpa.ui.utils.Session):
                         # Only store group flags and quality flags if they were changed
                         # from flags in the file
                         if (self.get_bkg(id, bid)._original_groups == False):
-                            if (self.get_bkg(id, bid).grouping != None):
+                            if (self.get_bkg(id, bid).grouping is not None):
                                 _send_to_outfile("\n######### Background Group Flags\n", outfile)
                                 cmd = "set_grouping(%s, " % cmd_id
                                 cmd = cmd + "val=numpy.array(" + repr(self.get_grouping(id).tolist()) + ", numpy." + str(self.get_grouping(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
                                 _send_to_outfile(cmd, outfile)
-                            if (self.get_bkg(id, bid).quality != None):
+                            if (self.get_bkg(id, bid).quality is not None):
                                 _send_to_outfile("\n######### Background Quality Flags\n", outfile)
                                 cmd = "set_quality(%s, " % cmd_id
                                 cmd = cmd + "val=numpy.array(" + repr(self.get_quality(id).tolist()) + ", numpy." + str(self.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
                                 _send_to_outfile(cmd, outfile)
                         # End check for original groups and quality flags
                         if (self.get_bkg(id, bid).grouped == True):
-                            cmd = "if (get_bkg(%s,%s).grouping != None and get_bkg(%s,%s).grouped == False):" % (cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
+                            cmd = "if (get_bkg(%s,%s).grouping is not None and get_bkg(%s,%s).grouped == False):" % (cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
                             _send_to_outfile(cmd, outfile)
                             _send_to_outfile("\t######### Group Background", outfile)
                             cmd = "\tgroup(%s,%s)" % (cmd_id, cmd_bkg_id)
@@ -13140,7 +13140,7 @@ class Session(sherpa.ui.utils.Session):
         # Check output file can be written to
 
         clobber=sherpa.utils.bool_cast(clobber)
-        if (type(outfile) != str and outfile != None):
+        if (type(outfile) != str and outfile is not None):
             raise ArgumentTypeErr('badarg', 'string or None')
         if (type(outfile) == str and os.path.isfile(outfile) and not clobber):
             raise IOErr('filefound', outfile)
@@ -13191,20 +13191,20 @@ class Session(sherpa.ui.utils.Session):
                 # Only store group flags and quality flags if they were changed
                 # from flags in the file
                 if (self.get_data(id)._original_groups == False):
-                    if (self.get_data(id).grouping != None):
+                    if (self.get_data(id).grouping is not None):
                         _send_to_outfile("\n######### Data Group Flags\n", outfile)
                         cmd = get_logged_call('set_grouping')
                         cmd = "set_grouping(%s, " % cmd_id
                         cmd = cmd + "val=numpy.array(" + repr(self.get_grouping(id).tolist()) + ", numpy." + str(self.get_grouping(id).dtype) + "))"
                         _send_to_outfile(cmd, outfile)
-                    if (self.get_data(id).quality != None):
+                    if (self.get_data(id).quality is not None):
                         _send_to_outfile("\n######### Data Quality Flags\n", outfile)
                         cmd = "set_quality(%s, " % cmd_id
                         cmd = cmd + "val=numpy.array(" + repr(self.get_quality(id).tolist()) + ", numpy." + str(self.get_quality(id).dtype) + "))"
                         _send_to_outfile(cmd, outfile)
                 # End check for original groups and quality flags
                 if (self.get_data(id).grouped == True):
-                    cmd = "if (get_data(%s).grouping != None and get_data(%s).grouped == False):" % (cmd_id, cmd_id)
+                    cmd = "if (get_data(%s).grouping is not None and get_data(%s).grouped == False):" % (cmd_id, cmd_id)
                     _send_to_outfile(cmd, outfile)
                     _send_to_outfile("\t######### Group Data", outfile)
                     cmd = "\tgroup(%s)" % cmd_id
@@ -13258,19 +13258,19 @@ class Session(sherpa.ui.utils.Session):
                         # Only store group flags and quality flags if they were changed
                         # from flags in the file
                         if (self.get_bkg(id, bid)._original_groups == False):
-                            if (self.get_bkg(id, bid).grouping != None):
+                            if (self.get_bkg(id, bid).grouping is not None):
                                 _send_to_outfile("\n######### Background Group Flags\n", outfile)
                                 cmd = "set_grouping(%s, " % cmd_id
                                 cmd = cmd + "val=numpy.array(" + repr(self.get_grouping(id).tolist()) + ", numpy." + str(self.get_grouping(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
                                 _send_to_outfile(cmd, outfile)
-                            if (self.get_bkg(id, bid).quality != None):
+                            if (self.get_bkg(id, bid).quality is not None):
                                 _send_to_outfile("\n######### Background Quality Flags\n", outfile)
                                 cmd = "set_quality(%s, " % cmd_id
                                 cmd = cmd + "val=numpy.array(" + repr(self.get_quality(id).tolist()) + ", numpy." + str(self.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
                                 _send_to_outfile(cmd, outfile)
                         # End check for original groups and quality flags
                         if (self.get_bkg(id, bid).grouped == True):
-                            cmd = "if (get_bkg(%s,%s).grouping != None and get_bkg(%s,%s).grouped == False):" % (cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
+                            cmd = "if (get_bkg(%s,%s).grouping is not None and get_bkg(%s,%s).grouped == False):" % (cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
                             _send_to_outfile(cmd, outfile)
                             _send_to_outfile("\t######### Group Background", outfile)
                             cmd = "\tgroup(%s,%s)" % (cmd_id, cmd_bkg_id)
