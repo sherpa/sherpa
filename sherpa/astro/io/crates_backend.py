@@ -1221,7 +1221,7 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
 
     tbl = pycrates.TABLECrate()
 
-    col_names = [name for name in col_names if data[name] != None]
+    col_names = [name for name in col_names if data[name] is not None]
     col_names.remove('name')
     try:
         for name in col_names:
