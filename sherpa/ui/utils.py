@@ -668,7 +668,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_show_fit(self):
         fit_str = ''
-        if self._fit_results != None:
+        if self._fit_results is not None:
             fit_str += self._get_show_method()
             fit_str += '\n'
             fit_str += self._get_show_stat()
@@ -679,21 +679,21 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_show_conf(self):
         conf_str = ''
-        if self._confidence_results != None:
+        if self._confidence_results is not None:
             conf_str += 'Confidence:'
             conf_str += self.get_conf_results().format() + '\n\n'
         return conf_str
 
     def _get_show_proj(self):
         proj_str = ''
-        if self._projection_results != None:
+        if self._projection_results is not None:
             proj_str += 'Projection:'
             proj_str += self.get_proj_results().format() + '\n\n'
         return proj_str
 
     def _get_show_covar(self):
         covar_str = ''
-        if self._covariance_results != None:
+        if self._covariance_results is not None:
             covar_str += 'Covariance:'
             covar_str += self.get_covar_results().format() + '\n\n'
         return covar_str
@@ -1751,11 +1751,11 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> get_method_opt('maxfev') == None
+        >>> get_method_opt('maxfev') is None
         True
 
         >>> mopts = get_method_opt()
-        >>> mopts['maxfev'] == None
+        >>> mopts['maxfev'] is None
         True
 
         """
@@ -6508,7 +6508,7 @@ class Session(NoNewAttributesAfterInit):
         use it in a source expression:
 
         >>> def func1d(pars, x, xhi=None):
-                if xhi != None:
+                if xhi is not None:
                     x = (x + xhi)/2
                 return x * pars[1] + pars[0]
 
@@ -6688,7 +6688,7 @@ class Session(NoNewAttributesAfterInit):
         Define a chi-square statistic with the label "qstat":
 
         >>> def qstat(d, m, staterr=None, syserr=None, w=None):
-                if staterr == None:
+                if staterr is None:
                     staterr = 1
                 c = ((d-m) / staterr)
                 return ((c*c).sum(), c)
@@ -7751,7 +7751,7 @@ class Session(NoNewAttributesAfterInit):
         (-0.20659543380329071, 0.00030398852609788524, 100.0, 4900.0, 0.001)
 
         """
-        if self._fit_results == None:
+        if self._fit_results is None:
             raise SessionErr('nofit', 'fit')
         else:
             return self._fit_results
@@ -9055,7 +9055,7 @@ class Session(NoNewAttributesAfterInit):
         array([[ 6.19847635]])
 
         """
-        if self._covariance_results == None:
+        if self._covariance_results is None:
             raise SessionErr('noaction', "covariance")
         else:
             return self._covariance_results
@@ -9153,7 +9153,7 @@ class Session(NoNewAttributesAfterInit):
         (2.1585155113403327, 2.07572994399221, 2.241926145484433)
 
         """
-        if self._confidence_results == None:
+        if self._confidence_results is None:
             raise SessionErr('noaction', "confidence")
         else:
             return self._confidence_results
@@ -9243,7 +9243,7 @@ class Session(NoNewAttributesAfterInit):
         nfits       = 0
 
         """
-        if self._projection_results == None:
+        if self._projection_results is None:
             raise SessionErr('noaction', "projection")
         else:
             return self._projection_results
