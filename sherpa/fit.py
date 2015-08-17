@@ -254,12 +254,12 @@ class FitResults(NoNewAttributesAfterInit):
 
     def format(self):
         s = ''
-        if (self.datasets != None):
+        if (self.datasets is not None):
             if len(self.datasets) == 1:
                 s = 'Dataset               = %s\n' % str(self.datasets[0])
             else:
                 s = 'Datasets              = %s\n' % str(self.datasets).strip("()")
-        if (self.itermethodname != None and self.itermethodname != 'none'):
+        if (self.itermethodname is not None and self.itermethodname != 'none'):
             s += 'Iterative Fit Method  = %s\n' % self.itermethodname.capitalize()
         s += 'Method                = %s\n' % self.methodname
         s += 'Statistic             = %s\n' % self.statname 
@@ -352,13 +352,13 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
     def format(self):
         s = ""
-        if (self.datasets != None):
+        if (self.datasets is not None):
             if len(self.datasets) == 1:
                 s = 'Dataset               = %s\n' % str(self.datasets[0])
             else:
                 s = 'Datasets              = %s\n' % str(self.datasets).strip("()")
         s += 'Confidence Method     = %s\n' % self.methodname
-        if (self.iterfitname != None or self.iterfitname != 'none'):
+        if (self.iterfitname is not None or self.iterfitname != 'none'):
             s += 'Iterative Fit Method  = %s\n' % self.iterfitname.capitalize()
         s += 'Fitting Method        = %s\n' % self.fitname
         s += 'Statistic             = %s\n' % self.statname 
