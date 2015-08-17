@@ -605,7 +605,7 @@ class ConfBracket( object ):
     def find( self, dir, iter, step_size, open_interval, maxiters, tol,
               bloginfo, base=2.0 ):
 
-        assert self.fcn != None, 'callback func has not been set'
+        assert self.fcn is not None, 'callback func has not been set'
 
         hlimit = [ ConfBracket.LowerLimit( self.myargs.get_hlimit( dir ) ),
                    ConfBracket.UpperLimit( self.myargs.get_hlimit( dir ) ) ]
