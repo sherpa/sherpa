@@ -68,7 +68,7 @@ def sample_flux(fit, data, src, method=calc_energy_flux, correlated=False,
 
     # If user entered a covariance matrix but wants to run with
     # correlated as false then extract the diagonal elements.
-    if correlated == False and samples != None:
+    if correlated == False and samples is not None:
         if numpy.ndarray == type( samples ):
             samples = samples.diagonal( 0 )
 
