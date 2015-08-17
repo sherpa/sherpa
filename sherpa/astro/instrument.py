@@ -1038,7 +1038,7 @@ class PSFModel(_PSFModel):
             if (subkernel and sky is not None and
                 lo is not None and hi is not None):
 
-                if (WCS != None):
+                if (WCS is not None):
                     sky = WCS(sky.name, sky.type, sky.crval,
                               sky.crpix - lo, sky.cdelt, sky.crota,
                               sky.epoch, sky.equinox)
