@@ -323,8 +323,6 @@ class Session(NoNewAttributesAfterInit):
         >>> clean()
 
         """
-        # Make version, version string names and formats identical
-        # between Python and S-Lang interfaces.
         self._sherpa_version = sherpa.__version__
         self._sherpa_version_string = sherpa.__versionstr__
 
