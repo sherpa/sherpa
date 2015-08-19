@@ -295,10 +295,9 @@ int _sherpa_init_xspec_library()
 
 
   if ( !getenv("HEADAS") ) {
-    // Raise appropriate error message that XSPEC initialization failed.
     PyErr_SetString( PyExc_ImportError,
 		     (char*)"XSPEC initialization failed; "
-		     "check HEADAS environment variable" );
+		     "HEADAS environment variable is not set" );
     return EXIT_FAILURE;
   }
   
@@ -328,7 +327,13 @@ int _sherpa_init_xspec_library()
     // user will still see error message printed to stderr (i.e., to 
     // screen by default).  We still want such error messages to be
     // seen!  So do *not* redirect std::cerr.
-
+    //
+    // Unfortunately it appears that XSPEC does not use stderr for its
+    // error messages, but stdout, so the following code will hide
+    // any error messages from FNINIT (XSPEC versions 12.8.2 and 12.9.0).
+    // Perhaps the screen output could be saved, rather than redirected
+    // to /dev/null, and checked for the string '***Error: ', which
+    // appears to be used in the error messages from XSPEC.
     
     cout_sbuf = std::cout.rdbuf();
     fout.open("/dev/null");
@@ -394,14 +399,14 @@ static PyObject* get_version( PyObject *self )
 
   } catch(...) {
 
-    PyErr_SetString( PyExc_RuntimeError,
+    PyErr_SetString( PyExc_LookupError,
 		     (char*)"could not get XSPEC version string" );
     return NULL;
 
   }
   
   if( retval < 0 ) {
-    PyErr_SetString( PyExc_RuntimeError,
+    PyErr_SetString( PyExc_LookupError,
 		     (char*)"XSPEC version string was truncated" );
     return NULL;
   }
@@ -424,7 +429,7 @@ static PyObject* get_chatter( PyObject *self )
 
   } catch(...) {
 
-    PyErr_SetString( PyExc_RuntimeError,
+    PyErr_SetString( PyExc_LookupError,
 		     (char*)"could not get XSPEC chatter level" );
     return NULL;
 
@@ -454,7 +459,7 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
 
   } catch(...) {
 
-    PyErr_SetString( PyExc_RuntimeError,
+    PyErr_SetString( PyExc_LookupError,
 		     (char*)"could not get XSPEC solar abundance" );
     return NULL;
 
@@ -490,7 +495,7 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
       if (cerr_sbuf != NULL)
 	std::cerr.rdbuf(cerr_sbuf);
       
-      PyErr_Format( PyExc_RuntimeError,
+      PyErr_Format( PyExc_ValueError,
 		    (char*)"could not get XSPEC abundance for '%s'",
 		  element);
       return NULL;
@@ -528,7 +533,7 @@ static PyObject* get_cosmo( PyObject *self )
 
   } catch(...) {
 
-    PyErr_SetString( PyExc_RuntimeError,
+    PyErr_SetString( PyExc_LookupError,
 		     (char*)"could not get XSPEC cosmology settings" );
     return NULL;
 
@@ -553,7 +558,7 @@ static PyObject* get_cross( PyObject *self )
 
   } catch(...) {
 
-    PyErr_SetString( PyExc_RuntimeError,
+    PyErr_SetString( PyExc_LookupError,
 		     (char*)"could not get XSPEC cross-section" );
     return NULL;
 
@@ -581,8 +586,9 @@ static PyObject* set_chatter( PyObject *self, PyObject *args )
 
   } catch(...) {
     
-    PyErr_SetString( PyExc_RuntimeError,
-		     (char*)"could not set XSPEC chatter level" );
+    PyErr_Format( PyExc_ValueError,
+                  (char*)"could not set XSPEC chatter level to %d",
+                  chatter);
     return NULL;
 
   }
@@ -658,8 +664,9 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
   }
 
   if ( 0 != status ) {
-    PyErr_SetString( PyExc_RuntimeError,
-		     (char*)"could not set XSPEC abundance" );
+    PyErr_Format( PyExc_ValueError,
+		  (char*)"could not set XSPEC abundance to %s",
+                  table );
     return NULL;
   }
 
@@ -689,8 +696,10 @@ static PyObject* set_cosmo( PyObject *self, PyObject *args )
 
   } catch(...) {
 
-    PyErr_SetString( PyExc_RuntimeError,
-		     (char*)"could not set XSPEC cosmology settings" );
+    PyErr_Format( PyExc_ValueError,
+                  (char*)"could not set XSPEC cosmology settings to "
+                  "H0=%g q0=%g Lambda0=%g",
+                  h0, l0, q0);
     return NULL;
 
   }
@@ -723,9 +732,10 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
   }
 
   if ( 0 != status ) {
-    PyErr_SetString( PyExc_RuntimeError,
-		     (char*)"could not set XSPEC photoelectric "
-		     "cross-section" );
+    PyErr_Format( PyExc_ValueError,
+                  (char*)"could not set XSPEC photoelectric "
+                  "cross-section to '%s'",
+                  csection);
     return NULL;
   }
 
@@ -758,7 +768,7 @@ static PyObject* set_xset( PyObject *self, PyObject *args )
   }
 
   if ( 0 != status ) {
-    PyErr_Format( PyExc_RuntimeError,
+    PyErr_Format( PyExc_ValueError,
 		  (char*)"could not set XSPEC model strings '%s: %s'",
 		  str_name, str_value);
     return NULL;
@@ -786,7 +796,7 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 
   } catch(...) {
 
-    PyErr_Format( PyExc_RuntimeError,
+    PyErr_Format( PyExc_KeyError,
 		  (char*)"could not get XSPEC model string '%s'",
 		  str_name);
     return NULL;
