@@ -2123,8 +2123,8 @@ class DataPHA(Data1DInt):
                 ylabel += '/keV'
             elif self.units == 'wavelength':
                 ylabel += '/Angstrom'
-            elif self.units == 'channel':
-                ylabel += '/channel'
+            # elif self.units == 'channel':
+                # ylabel += '/channel'
 
         if self.plot_fac:
             from sherpa.plot import backend
