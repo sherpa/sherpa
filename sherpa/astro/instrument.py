@@ -231,8 +231,8 @@ class RMFModelPHA(RMFModel):
             # If PHA grid is in angstroms then convert to keV for
             # consistency
             if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo, bin_hi = DataPHA._hc / \
-                    pha.bin_hi, DataPHA._hc / pha.bin_lo
+                bin_lo = DataPHA._hc / pha.bin_hi
+                bin_hi = DataPHA._hc / pha.bin_lo
 
             # FIXME: What about filtered option?? bin_lo, bin_hi are
             # unfiltered??
@@ -326,8 +326,8 @@ class ARFModelPHA(ARFModel):
             # If PHA grid is in angstroms then convert to keV for
             # consistency
             if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo, bin_hi = DataPHA._hc / \
-                    pha.bin_hi, DataPHA._hc / pha.bin_lo
+                bin_lo = DataPHA._hc / pha.bin_hi
+                bin_hi = DataPHA._hc / pha.bin_lo
 
             # FIXME: What about filtered option?? bin_lo, bin_hi are
             # unfiltered??
@@ -425,8 +425,8 @@ class RSPModelPHA(RSPModel):
             # If PHA grid is in angstroms then convert to keV for
             # consistency
             if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo, bin_hi = DataPHA._hc / \
-                    pha.bin_hi, DataPHA._hc / pha.bin_lo
+                bin_lo = DataPHA._hc / pha.bin_hi
+                bin_hi = DataPHA._hc / pha.bin_lo
 
             # FIXME: What about filtered option?? bin_lo, bin_hi are
             # unfiltered??

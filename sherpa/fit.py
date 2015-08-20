@@ -407,19 +407,19 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         highstr = '%12s'
         highnum = '%12g'
 
-        if True == in_low and True == in_high and mymethod:
+        if in_low and in_high and mymethod:
             hfmt = '\n   %-12s %12s %29s %29s'
             lowstr = '%29s '
             lownum = '%29g '
             highstr = '%30s'
             highnum = '%30g'
-        elif True == in_low and False == in_high and mymethod:
+        elif in_low and not in_high and mymethod:
             hfmt = '\n   %-12s %12s %29s %12s'
             lowstr = '%29s '
             lownum = '%29g '
             highstr = '%13s'
             highnum = '%13g'
-        elif False == in_low and True == in_high and mymethod:
+        elif not in_low and in_high and mymethod:
             hfmt = '\n   %-12s %12s %12s %29s'
             highstr = '%29s'
             highnum = '%29g'
@@ -685,11 +685,12 @@ class IterFit(NoNewAttributesAfterInit):
             raise SherpaErr("'hrej' must be greater than zero")
 
         lrej = self.itermethod_opts['lrej']
-        if (type(lrej) != int and
-                type(lrej) != float):
+        # FIXME: [OL] There are more reliable ways of checking if an object
+        # is (not) a number.
+        if (type(lrej) != int and type(lrej) != float):
             raise SherpaErr(
                 "'lrej' value for sigma rejection method must be a number")
-        if (not (lrej > 0)):
+        if lrej <= 0:
             raise SherpaErr("'lrej' must be greater than zero")
 
         grow = self.itermethod_opts['grow']
@@ -721,8 +722,7 @@ class IterFit(NoNewAttributesAfterInit):
         final_fit_results = None
         rejected = True
         try:
-            while (rejected == True and
-                   iters < maxiters):
+            while (rejected and iters < maxiters):
                 # Update stored y, staterror and syserror values
                 # from data, so callback function will work properly
                 self._dep, self._staterror, self._syserror = self.data.to_fit(
@@ -1151,7 +1151,7 @@ class Fit(NoNewAttributesAfterInit):
 
         oldmethod = self.method
         if (hasattr(self.estmethod, "fast") and
-                bool_cast(self.estmethod.fast) is True and
+                bool_cast(self.estmethod.fast) and
                 methoddict is not None):
             if (isinstance(self.stat, Likelihood)):
                 if (type(self.method) is not NelderMead):
