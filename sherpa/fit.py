@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,14 +21,14 @@ from itertools import izip
 import logging
 import os
 import signal
-from numpy import power, arange, array, abs, iterable, sqrt, where, \
-     ones_like, isnan, isinf, float, float32, finfo, nan, any
+from numpy import arange, array, abs, iterable, sqrt, where, \
+    ones_like, isnan, isinf, float, float32, finfo, nan, any
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
-from sherpa.models import SimulFitModel, Parameter
+from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, LeastSq, \
     Likelihood
@@ -57,6 +57,7 @@ def evaluates_model(func):
 
 
 class StatInfoResults(NoNewAttributesAfterInit):
+
     """A summary of the current statistic value for
     one or more data sets.
 
@@ -124,7 +125,7 @@ class StatInfoResults(NoNewAttributesAfterInit):
         elif (self.ids is not None and self.bkg_ids is not None):
             s = 'Background %s in Dataset = %s\n' % (str(self.bkg_ids[0]),
                                                      str(self.ids[0]))
-        s += 'Statistic             = %s\n' % self.statname 
+        s += 'Statistic             = %s\n' % self.statname
         s += 'Fit statistic value   = %g\n' % self.statval
         s += 'Data points           = %g\n' % self.numpoints
         s += 'Degrees of freedom    = %g' % self.dof
@@ -136,6 +137,7 @@ class StatInfoResults(NoNewAttributesAfterInit):
 
 
 class FitResults(NoNewAttributesAfterInit):
+
     """A summary of the fit results.
 
     Attributes
@@ -188,60 +190,60 @@ class FitResults(NoNewAttributesAfterInit):
                'nfev')
 
     def __init__(self, fit, results, init_stat, param_warnings):
-        _vals   = fit.data.eval_model_to_fit(fit.model)
-        _dof    = len(_vals) - len(tuple(results[1]))
-        _qval   = None
-        _rstat  = None
+        _vals = fit.data.eval_model_to_fit(fit.model)
+        _dof = len(_vals) - len(tuple(results[1]))
+        _qval = None
+        _rstat = None
         _covarerr = results[4].get('covarerr')
-        if (isinstance(fit.stat, (CStat,Chi2)) and
-            not isinstance(fit.stat, LeastSq)):
+        if (isinstance(fit.stat, (CStat, Chi2)) and
+                not isinstance(fit.stat, LeastSq)):
             if _dof > 0 and results[2] >= 0.0:
-                _qval = igamc(_dof/2., results[2]/2.)
-                _rstat = results[2]/_dof
+                _qval = igamc(_dof / 2., results[2] / 2.)
+                _rstat = results[2] / _dof
             else:
                 _rstat = nan
 
-        self.succeeded    = results[0]
-        self.parnames     = tuple(p.fullname for p in fit.model.pars
-                                  if not p.frozen)
-        self.parvals      = tuple(results[1])
-        self.istatval     = init_stat
-        self.statval      = results[2]
-        self.dstatval     = abs(results[2]-init_stat)
-        self.numpoints    = len(_vals)
-        self.dof          = _dof
-        self.qval         = _qval
-        self.rstat        = _rstat
-        self.message      = results[3]
+        self.succeeded = results[0]
+        self.parnames = tuple(p.fullname for p in fit.model.pars
+                              if not p.frozen)
+        self.parvals = tuple(results[1])
+        self.istatval = init_stat
+        self.statval = results[2]
+        self.dstatval = abs(results[2] - init_stat)
+        self.numpoints = len(_vals)
+        self.dof = _dof
+        self.qval = _qval
+        self.rstat = _rstat
+        self.message = results[3]
         if _covarerr is not None:
-            self.covarerr      = tuple(_covarerr)
+            self.covarerr = tuple(_covarerr)
         else:
-            self.covarerr      = None
-        self.nfev         = results[4].get('nfev')
+            self.covarerr = None
+        self.nfev = results[4].get('nfev')
         self.extra_output = results[4]
-        self.modelvals    = _vals
-        self.methodname   = type(fit.method).__name__.lower()
+        self.modelvals = _vals
+        self.methodname = type(fit.method).__name__.lower()
         self.itermethodname = fit._iterfit.itermethod_opts['name']
-        statname     = type(fit.stat).__name__.lower()
+        statname = type(fit.stat).__name__.lower()
         if isinstance(fit.stat, Chi2) and not isinstance(fit.stat, LeastSq):
             isSimulFit = isinstance(fit.data, DataSimulFit)
             if isSimulFit:
-                is_error_set = [d.staterror is not None for d in fit.data.datasets]
+                is_error_set = [
+                    d.staterror is not None for d in fit.data.datasets]
                 if all(is_error_set):
                     statname = 'chi2'
             elif fit.data.staterror is not None:
                 statname = 'chi2'
         self.statname = statname
-        self.datasets     = None # To be filled by calling function
+        self.datasets = None  # To be filled by calling function
         self.param_warnings = param_warnings
         NoNewAttributesAfterInit.__init__(self)
 
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('itermethodname'):
+        if 'itermethodname' not in state:
             self.__dict__['itermethodname'] = 'none'
-
 
     def __nonzero__(self):
         return self.succeeded
@@ -254,15 +256,16 @@ class FitResults(NoNewAttributesAfterInit):
 
     def format(self):
         s = ''
-        if (self.datasets != None):
+        if (self.datasets is not None):
             if len(self.datasets) == 1:
                 s = 'Dataset               = %s\n' % str(self.datasets[0])
             else:
-                s = 'Datasets              = %s\n' % str(self.datasets).strip("()")
-        if (self.itermethodname != None and self.itermethodname != 'none'):
+                s = 'Datasets              = %s\n' % str(
+                    self.datasets).strip("()")
+        if (self.itermethodname is not None and self.itermethodname != 'none'):
             s += 'Iterative Fit Method  = %s\n' % self.itermethodname.capitalize()
         s += 'Method                = %s\n' % self.methodname
-        s += 'Statistic             = %s\n' % self.statname 
+        s += 'Statistic             = %s\n' % self.statname
         s += 'Initial fit statistic = %g\n' % self.istatval
         s += 'Final fit statistic   = %g' % self.statval
         if self.nfev is not None:
@@ -289,49 +292,50 @@ class FitResults(NoNewAttributesAfterInit):
 
         return s
 
+
 class ErrorEstResults(NoNewAttributesAfterInit):
 
     _fields = ('datasets', 'methodname', 'iterfitname', 'fitname', 'statname',
                'sigma', 'percent', 'parnames', 'parvals', 'parmins',
                'parmaxes', 'nfits')
 
-    def __init__(self, fit, results, parlist = []):
+    def __init__(self, fit, results, parlist=[]):
         if (parlist == []):
             parlist = [p for p in fit.model.pars if not p.frozen]
 
         from sherpa.estmethods import est_success, est_hardmin, est_hardmax, est_hardminmax
 
-        warning_hmin      = "hard minimum hit for parameter "
-        warning_hmax      = "hard maximum hit for parameter "
-        self.datasets     = None # To be set by calling function
-        self.methodname   = type(fit.estmethod).__name__.lower()
-        self.iterfitname  = fit._iterfit.itermethod_opts['name']
-        self.fitname      = type(fit.method).__name__.lower()
-        self.statname     = type(fit.stat).__name__.lower()
-        self.sigma        = fit.estmethod.sigma
-        self.percent      = erf(self.sigma / sqrt(2.0)) * 100.0
-        self.parnames     = tuple(p.fullname for p in parlist if not p.frozen)
-        self.parvals      = tuple(p.val for p in parlist if not p.frozen)
-        self.parmins      = ()
-        self.parmaxes     = ()
-        self.nfits        = 0
-        success           = True
+        warning_hmin = "hard minimum hit for parameter "
+        warning_hmax = "hard maximum hit for parameter "
+        self.datasets = None  # To be set by calling function
+        self.methodname = type(fit.estmethod).__name__.lower()
+        self.iterfitname = fit._iterfit.itermethod_opts['name']
+        self.fitname = type(fit.method).__name__.lower()
+        self.statname = type(fit.stat).__name__.lower()
+        self.sigma = fit.estmethod.sigma
+        self.percent = erf(self.sigma / sqrt(2.0)) * 100.0
+        self.parnames = tuple(p.fullname for p in parlist if not p.frozen)
+        self.parvals = tuple(p.val for p in parlist if not p.frozen)
+        self.parmins = ()
+        self.parmaxes = ()
+        self.nfits = 0
+        success = True
         for i in range(len(parlist)):
             if (results[2][i] != est_success):
                 success = False
             if (results[2][i] == est_hardmin or
-                results[2][i] == est_hardminmax):
-                self.parmins  = self.parmins + (None,)
+                    results[2][i] == est_hardminmax):
+                self.parmins = self.parmins + (None,)
                 warning(warning_hmin + self.parnames[i])
             else:
-                self.parmins  = self.parmins + (results[0][i],)
+                self.parmins = self.parmins + (results[0][i],)
 
             if (results[2][i] == est_hardmax or
-                results[2][i] == est_hardminmax):
-                self.parmaxes  = self.parmaxes + (None,)
+                    results[2][i] == est_hardminmax):
+                self.parmaxes = self.parmaxes + (None,)
                 warning(warning_hmax + self.parnames[i])
             else:
-                self.parmaxes  = self.parmaxes + (results[1][i],)
+                self.parmaxes = self.parmaxes + (results[1][i],)
 
         self.nfits = results[3]
         self.extra_output = results[4]
@@ -341,7 +345,7 @@ class ErrorEstResults(NoNewAttributesAfterInit):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('iterfitname'):
+        if 'iterfitname' not in state:
             self.__dict__['iterfitname'] = 'none'
 
     def __repr__(self):
@@ -352,38 +356,39 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
     def format(self):
         s = ""
-        if (self.datasets != None):
+        if (self.datasets is not None):
             if len(self.datasets) == 1:
                 s = 'Dataset               = %s\n' % str(self.datasets[0])
             else:
-                s = 'Datasets              = %s\n' % str(self.datasets).strip("()")
+                s = 'Datasets              = %s\n' % str(
+                    self.datasets).strip("()")
         s += 'Confidence Method     = %s\n' % self.methodname
-        if (self.iterfitname != None or self.iterfitname != 'none'):
+        if (self.iterfitname is not None or self.iterfitname != 'none'):
             s += 'Iterative Fit Method  = %s\n' % self.iterfitname.capitalize()
         s += 'Fitting Method        = %s\n' % self.fitname
-        s += 'Statistic             = %s\n' % self.statname 
+        s += 'Statistic             = %s\n' % self.statname
 
         s += "%s %g-sigma (%2g%%) bounds:" % (self.methodname, self.sigma,
                                               self.percent)
 
-        def myformat( hfmt, str, lowstr, lownum, highstr, highnum ):
+        def myformat(hfmt, str, lowstr, lownum, highstr, highnum):
             str += hfmt % ('Param', 'Best-Fit', 'Lower Bound', 'Upper Bound')
-            str += hfmt % ('-'*5, '-'*8, '-'*11, '-'*11)
+            str += hfmt % ('-' * 5, '-' * 8, '-' * 11, '-' * 11)
 
             for name, val, lower, upper in izip(self.parnames, self.parvals,
                                                 self.parmins, self.parmaxes):
 
                 str += '\n   %-12s %12g ' % (name, val)
-                if is_iterable( lower ):
+                if is_iterable(lower):
                     str += ' '
-                    str += list_to_open_interval( lower )
+                    str += list_to_open_interval(lower)
                 elif (lower is None):
                     str += lowstr % '-----'
                 else:
                     str += lownum % lower
-                if is_iterable( upper ):
+                if is_iterable(upper):
                     str += '  '
-                    str += list_to_open_interval( upper )
+                    str += list_to_open_interval(upper)
                 elif (upper is None):
                     str += highstr % '-----'
                 else:
@@ -391,10 +396,10 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
             return str
 
-        low = map( is_iterable, self.parmins )
-        high = map( is_iterable, self.parmaxes )
-        in_low = is_in( True, low )
-        in_high = is_in( True, high )
+        low = map(is_iterable, self.parmins)
+        high = map(is_iterable, self.parmaxes)
+        in_low = is_in(True, low)
+        in_high = is_in(True, high)
         mymethod = self.methodname == 'confidence'
 
         lowstr = '%12s '
@@ -402,30 +407,31 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         highstr = '%12s'
         highnum = '%12g'
 
-        if True == in_low and True == in_high and mymethod:
+        if in_low and in_high and mymethod:
             hfmt = '\n   %-12s %12s %29s %29s'
             lowstr = '%29s '
             lownum = '%29g '
             highstr = '%30s'
             highnum = '%30g'
-        elif True == in_low and False == in_high and mymethod:
+        elif in_low and not in_high and mymethod:
             hfmt = '\n   %-12s %12s %29s %12s'
             lowstr = '%29s '
             lownum = '%29g '
             highstr = '%13s'
             highnum = '%13g'
-        elif False == in_low and True == in_high and mymethod:
+        elif not in_low and in_high and mymethod:
             hfmt = '\n   %-12s %12s %12s %29s'
             highstr = '%29s'
-            highnum = '%29g'            
+            highnum = '%29g'
         else:
-            hfmt = '\n   %-12s %12s %12s %12s'        
+            hfmt = '\n   %-12s %12s %12s %12s'
 
-        return myformat( hfmt, s, lowstr, lownum, highstr, highnum )
+        return myformat(hfmt, s, lowstr, lownum, highstr, highnum)
 
 
 class IterFit(NoNewAttributesAfterInit):
-    def __init__(self, data, model, stat, method, itermethod_opts={'name':'none'}):
+
+    def __init__(self, data, model, stat, method, itermethod_opts={'name': 'none'}):
         # Even if there is only a single data set, I will
         # want to treat the data and models I am given as
         # collections of data and models -- so, put data and
@@ -449,7 +455,7 @@ class IterFit(NoNewAttributesAfterInit):
         # Options to send to iterative fitting method
         self.itermethod_opts = itermethod_opts
         self.iterate = False
-        self.funcs = {'primini':self.primini, 'sigmarej':self.sigmarej}
+        self.funcs = {'primini': self.primini, 'sigmarej': self.sigmarej}
         self.current_func = None
         if (itermethod_opts['name'] != 'none'):
             self.current_func = self.funcs[itermethod_opts['name']]
@@ -467,7 +473,7 @@ class IterFit(NoNewAttributesAfterInit):
     def _get_callback(self, outfile=None, clobber=False):
         if len(self.model.thawedpars) == 0:
             #raise FitError('model has no thawed parameters')
-            raise FitErr( 'nothawedpar' )
+            raise FitErr('nothawedpar')
 
         # support Sherpa use with SAMP
         try:
@@ -475,13 +481,14 @@ class IterFit(NoNewAttributesAfterInit):
         except ValueError, e:
             warning(e)
 
-        self._dep, self._staterror, self._syserror = self.data.to_fit(self.stat.calc_staterror)
+        self._dep, self._staterror, self._syserror = self.data.to_fit(
+            self.stat.calc_staterror)
 
         self._nfev = 0
         if outfile is not None:
             if os.path.isfile(outfile) and not clobber:
                 #raise FitError("'%s' exists, and clobber==False" % outfile)
-                raise FitErr( 'noclobererr', outfile )
+                raise FitErr('noclobererr', outfile)
             self._file = file(outfile, 'w')
             names = ['# nfev statistic']
             names.extend(['%s' % par.fullname for par in self.model.pars
@@ -494,20 +501,21 @@ class IterFit(NoNewAttributesAfterInit):
 
             self.model.thawedpars = pars
             model = self.data.eval_model_to_fit(self.model)
-            stat = self.stat.calc_stat(self._dep, model, self._staterror, self._syserror)
+            stat = self.stat.calc_stat(
+                self._dep, model, self._staterror, self._syserror)
 
             if self._file is not None:
                 vals = ['%5e %5e' % (self._nfev, stat[0])]
                 vals.extend(['%5e' % val for val in self.model.thawedpars])
                 print >> self._file, ' '.join(vals)
 
-            self._nfev+=1
+            self._nfev += 1
             return stat
 
         return cb
 
-    def primini(self, statfunc, pars, parmins, parmaxes, statargs = (),
-                statkwargs = {}):
+    def primini(self, statfunc, pars, parmins, parmaxes, statargs=(),
+                statkwargs={}):
         """An iterative scheme, where the variance is computed from
         the model amplitudes.
 
@@ -553,7 +561,7 @@ class IterFit(NoNewAttributesAfterInit):
         # raise exception if it is attempted with least-squares,
         # or maximum likelihood
         if (isinstance(self.stat, Chi2) and
-            type(self.stat) is not LeastSq):
+                type(self.stat) is not LeastSq):
             pass
         else:
             raise FitErr('needchi2', 'Primini\'s')
@@ -561,11 +569,13 @@ class IterFit(NoNewAttributesAfterInit):
         # dictionary for Primini's method
         tol = self.itermethod_opts['tol']
         if (type(tol) != int and
-            type(tol) != float):
-            raise SherpaErr("'tol' value for Primini's method must be a number")        
+                type(tol) != float):
+            raise SherpaErr(
+                "'tol' value for Primini's method must be a number")
         maxiters = self.itermethod_opts['maxiters']
         if (type(maxiters) != int):
-            raise SherpaErr("'maxiters' value for Primini's method must be an integer")
+            raise SherpaErr(
+                "'maxiters' value for Primini's method must be an integer")
 
         # Store original statistical errors for all data sets.
         # Then, set all statistical errors equal to one, to
@@ -627,8 +637,8 @@ class IterFit(NoNewAttributesAfterInit):
         # Return results from Primini's iterative fitting method
         return final_fit_results
 
-    def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs = (),
-                 statkwargs = {}):
+    def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs=(),
+                 statkwargs={}):
         """Exclude points that are significately far away from the best fit.
 
         The `sigmarej` scheme is based on the IRAF `sfit` function
@@ -649,7 +659,7 @@ class IterFit(NoNewAttributesAfterInit):
         # raise exception if it is attempted with least-squares,
         # or maximum likelihood
         if (isinstance(self.stat, Chi2) and
-            type(self.stat) is not LeastSq):
+                type(self.stat) is not LeastSq):
             pass
         else:
             raise FitErr('needchi2', 'Sigma-rejection')
@@ -661,27 +671,32 @@ class IterFit(NoNewAttributesAfterInit):
 
         maxiters = self.itermethod_opts['maxiters']
         if (type(maxiters) != int):
-            raise SherpaErr("'maxiters' value for sigma rejection method must be an integer")
+            raise SherpaErr(
+                "'maxiters' value for sigma rejection method must be an integer")
         if (maxiters < 1):
             raise SherpaErr("'maxiters' must be one or greater")
 
         hrej = self.itermethod_opts['hrej']
         if (type(hrej) != int and
-            type(hrej) != float):
-            raise SherpaErr("'hrej' value for sigma rejection method must be a number")
+                type(hrej) != float):
+            raise SherpaErr(
+                "'hrej' value for sigma rejection method must be a number")
         if (not (hrej > 0)):
-            raise SherpaErr("'hrej' must be greater than zero") 
+            raise SherpaErr("'hrej' must be greater than zero")
 
         lrej = self.itermethod_opts['lrej']
-        if (type(lrej) != int and
-            type(lrej) != float):
-            raise SherpaErr("'lrej' value for sigma rejection method must be a number")
-        if (not (lrej > 0)):
-            raise SherpaErr("'lrej' must be greater than zero") 
+        # FIXME: [OL] There are more reliable ways of checking if an object
+        # is (not) a number.
+        if (type(lrej) != int and type(lrej) != float):
+            raise SherpaErr(
+                "'lrej' value for sigma rejection method must be a number")
+        if lrej <= 0:
+            raise SherpaErr("'lrej' must be greater than zero")
 
         grow = self.itermethod_opts['grow']
         if (type(grow) != int):
-            raise SherpaErr("'grow' value for sigma rejection method must be an integer")
+            raise SherpaErr(
+                "'grow' value for sigma rejection method must be an integer")
         if (grow < 0):
             raise SherpaErr("'grow' factor must be zero or greater")
 
@@ -707,11 +722,11 @@ class IterFit(NoNewAttributesAfterInit):
         final_fit_results = None
         rejected = True
         try:
-            while (rejected == True and
-                   iters < maxiters):
+            while (rejected and iters < maxiters):
                 # Update stored y, staterror and syserror values
                 # from data, so callback function will work properly
-                self._dep, self._staterror, self._syserror = self.data.to_fit(self.stat.calc_staterror)
+                self._dep, self._staterror, self._syserror = self.data.to_fit(
+                    self.stat.calc_staterror)
                 self.model.startup()
                 final_fit_results = self.method.fit(statfunc,
                                                     self.model.thawedpars,
@@ -724,7 +739,8 @@ class IterFit(NoNewAttributesAfterInit):
                     # For each data set, compute
                     # (data - model) / staterror
                     # over filtered data space
-                    residuals = (d.get_dep(True) - d.eval_model_to_fit(model_iterator.next())) / d.get_staterror(True, self.stat.calc_staterror)
+                    residuals = (d.get_dep(True) - d.eval_model_to_fit(
+                        model_iterator.next())) / d.get_staterror(True, self.stat.calc_staterror)
 
                     # For each modeled value that exceeds
                     # sigma thresholds, set the corresponding
@@ -742,7 +758,7 @@ class IterFit(NoNewAttributesAfterInit):
                         if (j >= filsize):
                             break
                         if (residuals[i] <= -lrej or
-                            residuals[i] >= hrej):
+                                residuals[i] >= hrej):
                             rejected = True
                             kmin = j - grow
                             if (kmin < 0):
@@ -758,18 +774,18 @@ class IterFit(NoNewAttributesAfterInit):
                         # immediately raise fit error, clean up
                         # on way out.
                         if (any(newmask) == False):
-                            raise FitErr( 'nobins' )
+                            raise FitErr('nobins')
                         d.mask = newmask
 
                 # For data sets with backgrounds, correct that
                 # backgrounds have masks that match their sources
                 for d in self.data.datasets:
                     if (hasattr(d, "background_ids") == True and
-                        hasattr(d, "get_background") == True):
+                            hasattr(d, "get_background") == True):
                         for bid in d.background_ids:
                             b = d.get_background(bid)
                             if (iterable(b.mask) == True and
-                                iterable(d.mask) == True):
+                                    iterable(d.mask) == True):
                                 if (len(b.mask) == len(d.mask)):
                                     b.mask = d.mask
 
@@ -786,28 +802,30 @@ class IterFit(NoNewAttributesAfterInit):
 
             # Update stored y, staterror and syserror values
             # from data, so callback function will work properly
-            self._dep, self._staterror, self._syserror = self.data.to_fit(self.stat.calc_staterror)
+            self._dep, self._staterror, self._syserror = self.data.to_fit(
+                self.stat.calc_staterror)
             self.model.startup()
             raise
 
-        self._dep, self._staterror, self._syserror = self.data.to_fit(self.stat.calc_staterror)
+        self._dep, self._staterror, self._syserror = self.data.to_fit(
+            self.stat.calc_staterror)
         self.model.startup()
 
-        ### N.B. -- If sigma-rejection in Sherpa 3.4 succeeded,
-        ### it did *not* restore the filter to its state before
-        ### sigma-rejection was called.  If points are filtered
-        ### out, they stay out.  So we emulate the same behavior
-        ### if our version of sigma-rejection succeeds.
+        # N.B. -- If sigma-rejection in Sherpa 3.4 succeeded,
+        # it did *not* restore the filter to its state before
+        # sigma-rejection was called.  If points are filtered
+        # out, they stay out.  So we emulate the same behavior
+        # if our version of sigma-rejection succeeds.
 
-        ### Mind you, if sigma-rejection *fails*, then we *do*
-        ### restore the filter, and re-raise the exception in
-        ### the above exception block.
+        # Mind you, if sigma-rejection *fails*, then we *do*
+        # restore the filter, and re-raise the exception in
+        # the above exception block.
 
         # Return results from sigma rejection
         return final_fit_results
 
     def fit(self, statfunc, pars, parmins, parmaxes, statargs=(), statkwargs={}):
-        if (self.iterate == False):
+        if not self.iterate:
             return self.method.fit(statfunc, pars, parmins, parmaxes,
                                    statargs, statkwargs)
         else:
@@ -818,7 +836,7 @@ class IterFit(NoNewAttributesAfterInit):
 class Fit(NoNewAttributesAfterInit):
 
     def __init__(self, data, model, stat=None, method=None, estmethod=None,
-                 itermethod_opts={'name':'none'}):
+                 itermethod_opts={'name': 'none'}):
         self.data = data
         self.model = model
 
@@ -862,9 +880,9 @@ class Fit(NoNewAttributesAfterInit):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('_iterfit'):
+        if '_iterfit' not in state:
             self.__dict__['_iterfit'] = IterFit(self.data, self.model, self.stat, self.method,
-                                                {'name':'none'})
+                                                {'name': 'none'})
 
     def __str__(self):
         return (('data      = %s\n' +
@@ -878,13 +896,11 @@ class Fit(NoNewAttributesAfterInit):
                  type(self.method).__name__,
                  type(self.estmethod).__name__))
 
-
     def guess(self, **kwargs):
         """
         kwargs = { 'limits' : True, 'values' : False }
         """
         self.model.guess(*self.data.to_guess(), **kwargs)
-
 
     def calc_stat(self):
         """Calculate the fit statistic for a data set.
@@ -936,7 +952,7 @@ class Fit(NoNewAttributesAfterInit):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         model = self.data.eval_model_to_fit(self.model)
         stat = self.stat.calc_stat(dep, model, staterror, syserror)[1]
-        return stat*stat
+        return stat * stat
 
     def calc_stat_info(self):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
@@ -947,18 +963,19 @@ class Fit(NoNewAttributesAfterInit):
         rstat = None
         numpoints = len(model)
         dof = numpoints - len(self.model.thawedpars)
-        if (isinstance(self.stat, (CStat,Chi2)) and
-            not isinstance(self.stat, LeastSq)):
+        if (isinstance(self.stat, (CStat, Chi2)) and
+                not isinstance(self.stat, LeastSq)):
             if stat >= 0.0:
-                qval = igamc(dof/2., stat/2.)
-            rstat = stat/dof
+                qval = igamc(dof / 2., stat / 2.)
+            rstat = stat / dof
 
         name = self.stat.name
 
         if isinstance(self.stat, Chi2) and not isinstance(self.stat, LeastSq):
             isSimulFit = isinstance(self.data, DataSimulFit)
             if isSimulFit:
-                is_error_set = [d.staterror is not None for d in self.data.datasets]
+                is_error_set = [
+                    d.staterror is not None for d in self.data.datasets]
                 if all(is_error_set):
                     name = 'chi2'
             elif self.data.staterror is not None:
@@ -967,28 +984,26 @@ class Fit(NoNewAttributesAfterInit):
         return StatInfoResults(name, stat, numpoints, model,
                                dof, qval, rstat)
 
-
     @evaluates_model
     def fit(self, outfile=None, clobber=False):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         if not iterable(dep) or len(dep) == 0:
             #raise FitError('no noticed bins found in data set')
-            raise FitErr( 'nobins' )
+            raise FitErr('nobins')
 
         if ((iterable(staterror) and 0.0 in staterror) and
-            isinstance(self.stat, Chi2) and
-            type(self.stat) != Chi2 and
-            type(self.stat) != Chi2ModVar):
-            #raise FitError('zeros found in uncertainties, consider using' +
+                isinstance(self.stat, Chi2) and
+                type(self.stat) != Chi2 and
+                type(self.stat) != Chi2ModVar):
+            # raise FitError('zeros found in uncertainties, consider using' +
             #               ' calculated uncertainties')
-            raise FitErr( 'binhas0' )
+            raise FitErr('binhas0')
 
         if (getattr(self.data, 'subtracted', False) and
-            isinstance(self.stat, Likelihood) ):
-            #raise FitError('%s statistics cannot be used with background'
+                isinstance(self.stat, Likelihood)):
+            # raise FitError('%s statistics cannot be used with background'
             #               % self.stat.name + ' subtracted data')
-            raise FitErr( 'statnotforbackgsub', self.stat.name )
-
+            raise FitErr('statnotforbackgsub', self.stat.name)
 
         init_stat = self.calc_stat()
         # output = self.method.fit ...
@@ -1012,17 +1027,17 @@ class Fit(NoNewAttributesAfterInit):
             if not par.frozen:
                 if sao_fcmp(par.val, par.min, tol) == 0:
                     param_warnings += ("WARNING: parameter value %s is at its minimum boundary %s\n" %
-                                      (par.fullname, str(par.min)))
+                                       (par.fullname, str(par.min)))
                 if sao_fcmp(par.val, par.max, tol) == 0:
                     param_warnings += ("WARNING: parameter value %s is at its maximum boundary %s\n" %
-                                      (par.fullname, str(par.max)))
+                                       (par.fullname, str(par.max)))
 
         if self._iterfit._file is not None:
             vals = ['%5e %5e' % (self._iterfit._nfev, tmp[2])]
             vals.extend(['%5e' % val for val in self.model.thawedpars])
             print >> self._iterfit._file, ' '.join(vals)
             self._iterfit._file.close()
-            self._iterfit._file=None
+            self._iterfit._file = None
 
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 
@@ -1043,7 +1058,7 @@ class Fit(NoNewAttributesAfterInit):
         # Define functions to freeze and thaw a parameter before
         # we call fit function -- projection can call fit several
         # times, for each parameter -- that parameter must be frozen
-        # while the others freely vary.        
+        # while the others freely vary.
         def freeze_par(pars, parmins, parmaxes, i):
             # Freeze the indicated parameter; return
             # its place in the list of all parameters,
@@ -1067,7 +1082,7 @@ class Fit(NoNewAttributesAfterInit):
                 self.current_frozen = -1
 
         # confidence needs to know which parameter it is working on.
-        def get_par_name( ii ):
+        def get_par_name(ii):
             return self.model.pars[self.thaw_indices[ii]].fullname
 
         # Call from a parameter estimation method, to report
@@ -1086,17 +1101,15 @@ class Fit(NoNewAttributesAfterInit):
                 else:
                     info("%s \tupper bound: %g" % (name, upper))
 
-
         # If starting fit statistic is chi-squared or C-stat,
         # can calculate reduced fit statistic -- if it is
         # more than 3, don't bother calling method to estimate
         # parameter limits.
 
         if (type(self.stat) is LeastSq):
-            #raise FitError('cannot estimate confidence limits with ' +
+            # raise FitError('cannot estimate confidence limits with ' +
             #               type(self.stat).__name__)
-            raise EstErr( 'noerr4least2', type(self.stat).__name__)
-
+            raise EstErr('noerr4least2', type(self.stat).__name__)
 
         if (type(self.stat) is not Cash):
             dep, staterror, syserror = self.data.to_fit(
@@ -1104,7 +1117,7 @@ class Fit(NoNewAttributesAfterInit):
 
             if not iterable(dep) or len(dep) == 0:
                 #raise FitError('no noticed bins found in data set')
-                raise FitErr( 'nobins' )
+                raise FitErr('nobins')
 
             # For chi-squared and C-stat, reduced statistic is
             # statistic value divided by number of degrees of
@@ -1115,13 +1128,13 @@ class Fit(NoNewAttributesAfterInit):
             dof = len(dep) - len(self.model.thawedpars)
             if (dof < 1):
                 #raise FitError('degrees of freedom are zero or lower')
-                raise EstErr( 'nodegfreedom' )
+                raise EstErr('nodegfreedom')
 
             if (hasattr(self.estmethod, "max_rstat") and
-                (self.calc_stat() / dof) > self.estmethod.max_rstat):
-                #raise FitError('reduced statistic larger than ' +
+                    (self.calc_stat() / dof) > self.estmethod.max_rstat):
+                # raise FitError('reduced statistic larger than ' +
                 #               str(self.estmethod.max_rstat))
-                raise EstErr( 'rstat>max', str(self.estmethod.max_rstat) )
+                raise EstErr('rstat>max', str(self.estmethod.max_rstat))
 
         # If statistic is chi-squared, change fitting method to
         # Levenberg-Marquardt; else, switch to NelderMead.  (We
@@ -1131,16 +1144,16 @@ class Fit(NoNewAttributesAfterInit):
         # If current method is not LM or NM, warn it is not a good
         # method for estimating parameter limits.
         if (type(self.estmethod) is not Covariance and
-            type(self.method) is not NelderMead and
-            type(self.method) is not LevMar):
+                type(self.method) is not NelderMead and
+                type(self.method) is not LevMar):
             warning(self.method.name + " is inappropriate for confidence " +
                     "limit estimation")
 
         oldmethod = self.method
         if (hasattr(self.estmethod, "fast") and
-            bool_cast(self.estmethod.fast) is True and
-            methoddict is not None):
-            if (isinstance(self.stat, Likelihood) ):
+                bool_cast(self.estmethod.fast) and
+                methoddict is not None):
+            if (isinstance(self.stat, Likelihood)):
                 if (type(self.method) is not NelderMead):
                     self.method = methoddict['neldermead']
                     warning("Setting optimization to " + self.method.name
@@ -1191,7 +1204,7 @@ class Fit(NoNewAttributesAfterInit):
                         parnums.append(count)
                         match = True
                     count = count + 1
-                if (match == False):
+                if not match:
                     raise EstErr('noparameter', p.fullname)
             parnums = array(parnums)
         else:
@@ -1223,7 +1236,7 @@ class Fit(NoNewAttributesAfterInit):
             # If maximum number of refits has occurred, don't
             # try to reminimize again.
             if (hasattr(self.estmethod, "maxfits") and
-                not(self.refits < self.estmethod.maxfits-1)):
+                    not(self.refits < self.estmethod.maxfits - 1)):
                 self.refits = 0
                 thaw_par(self.current_frozen)
                 self.model.thawedpars = startpars
@@ -1247,7 +1260,8 @@ class Fit(NoNewAttributesAfterInit):
             self.model.thawedparmaxes = startsoftmaxs
             results = self.fit()
             self.refits = self.refits + 1
-            warning("New minimum statistic found while computing confidence limits")
+            warning(
+                "New minimum statistic found while computing confidence limits")
             warning("New best-fit parameters:\n" + results.format())
 
             # Now, recompute errors for new best-fit parameters
