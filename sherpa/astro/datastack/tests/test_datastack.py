@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2014  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,79 +20,82 @@
 
 from sherpa.utils import SherpaTestCase
 import os
+import sys
 import unittest
 from sherpa.utils import has_fits_support
-from sherpa.astro.ui import *
-from sherpa.astro.datastack import *
+from sherpa.astro import ui
 from sherpa.astro import datastack
 from acis_bkg_model import acis_bkg_model
 import numpy as np
 import tempfile
+import logging
 
 logger = logging.getLogger('sherpa')
 
 
 class test_design(SherpaTestCase):
     def setUp(self):
-        clear_stack()
+        datastack.clear_stack()
         ui.clean()
-        set_template_id("ID")
+        datastack.set_template_id("ID")
+        self.loggingLevel = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
-        set_stack_verbosity(logging.ERROR)
+        datastack.set_stack_verbosity(logging.ERROR)
         self._this_dir = os.path.dirname(sys.modules[self.__module__].__file__)
 
     def tearDown(self):
-        clear_stack()
+        datastack.clear_stack()
         ui.clean()
-        set_template_id("__ID")
+        datastack.set_template_id("__ID")
+        logger.setLevel(self.loggingLevel)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
     def test_case_1(self):
         datadir = '/'.join((self._this_dir, 'data'))
         ls = '@'+'/'.join((datadir, '3c273.lis'))
-        load_pha(ls, use_errors=True)
+        datastack.load_pha(ls, use_errors=True)
 
-        assert 2 == len(DATASTACK.datasets)
+        assert 2 == len(datastack.DATASTACK.datasets)
         assert 2 == len(ui._session._data)
 
-        load_pha("myid", '/'.join((datadir, "3c273.pi")))
+        datastack.load_pha("myid", '/'.join((datadir, "3c273.pi")))
 
-        assert 2 == len(DATASTACK.datasets)
+        assert 2 == len(datastack.DATASTACK.datasets)
         assert 3 == len(ui._session._data)
 
-        load_pha('/'.join((datadir, "3c273.pi")))
+        datastack.load_pha('/'.join((datadir, "3c273.pi")))
 
-        assert 3 == len(DATASTACK.datasets)
+        assert 3 == len(datastack.DATASTACK.datasets)
         assert 4 == len(ui._session._data)
 
-        load_pha([], '/'.join((datadir, "3c273.pi")))
+        datastack.load_pha([], '/'.join((datadir, "3c273.pi")))
 
-        assert 4 == len(DATASTACK.datasets)
+        assert 4 == len(datastack.DATASTACK.datasets)
         assert 5 == len(ui._session._data)
 
-        ds = DataStack()
+        ds = datastack.DataStack()
 
-        load_pha(ds, ls)
+        datastack.load_pha(ds, ls)
 
-        assert 4 == len(DATASTACK.datasets)
+        assert 4 == len(datastack.DATASTACK.datasets)
         assert 7 == len(ui._session._data)
         assert 2 == len(ds.datasets)
 
-        load_pha(ds, '/'.join((datadir, "3c273.pi")))
+        datastack.load_pha(ds, '/'.join((datadir, "3c273.pi")))
 
-        assert 4 == len(DATASTACK.datasets)
+        assert 4 == len(datastack.DATASTACK.datasets)
         assert 8 == len(ui._session._data)
         assert 3 == len(ds.datasets)
 
-        dids = DATASTACK.get_stack_ids()
+        dids = datastack.DATASTACK.get_stack_ids()
         assert dids == [1,2,3,4]
 
         sids = ui._session._data.keys()
         assert sids == [1,2,3,4,5,6,7, "myid"]
 
-        set_source([1,2], "powlaw1d.pID")
-        set_source([3,4], "brokenpowerlaw.bpID")
+        datastack.set_source([1,2], "powlaw1d.pID")
+        datastack.set_source([3,4], "brokenpowerlaw.bpID")
 
         dsids = ds.get_stack_ids()
         assert dsids == [5,6,7]
@@ -107,8 +110,8 @@ class test_design(SherpaTestCase):
         assert bp3 is not None
         assert bp4 is not None
 
-        set_source(1, "polynom1d.poly1")
-        set_source([2,3,4], "atten.attID")
+        datastack.set_source(1, "polynom1d.poly1")
+        datastack.set_source([2,3,4], "atten.attID")
 
         poly1 = ui._session._model_components['poly1']
         a2 = ui._session._model_components['att2']
@@ -120,26 +123,27 @@ class test_design(SherpaTestCase):
         assert a3 is not None
         assert a4 is not None
 
-        clean()
+        datastack.clean()
 
-        assert 0 == len(DATASTACK.datasets)
+        assert 0 == len(datastack.DATASTACK.datasets)
         assert 0 == len(ui._session._data)
         assert 3 == len(ds.datasets)
 
+
 class test_global(SherpaTestCase):
     def setUp(self):
-        clear_stack()
+        datastack.clear_stack()
         ui.clean()
+        self.loggingLevel = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
-        set_stack_verbosity(logging.ERROR)
-        set_template_id("__ID")
+        datastack.set_stack_verbosity(logging.ERROR)
+        datastack.set_template_id("__ID")
 
     def tearDown(self):
-        clear_stack()
+        datastack.clear_stack()
         ui.clean()
-        set_template_id("__ID")
-
-
+        datastack.set_template_id("__ID")
+        logger.setLevel(self.loggingLevel)
 
     def test_case_2(self):
         x1 = np.arange(50)+100
@@ -149,20 +153,20 @@ class test_global(SherpaTestCase):
         x3 = np.arange(50)+200
         y3 = 2*(x3**2+3*x3)
 
-        load_arrays([[x1, y1], [x2, y2], [x3, y3]])
+        datastack.load_arrays([[x1, y1], [x2, y2], [x3, y3]])
 
-        set_source([], 'const1d.const * polynom1d.poly__ID')
+        datastack.set_source([], 'const1d.const * polynom1d.poly__ID')
 
         poly1 = ui._session._get_model_component('poly1')
         poly2 = ui._session._get_model_component('poly2')
         poly3 = ui._session._get_model_component('poly3')
         const = ui._session._get_model_component('const')
 
-        freeze([], 'poly')
-        thaw([], 'poly.c0')
-        thaw([], 'poly.c1')
-        thaw([], 'poly.c2')
-        thaw([], 'const')
+        datastack.freeze([], 'poly')
+        datastack.thaw([], 'poly.c0')
+        datastack.thaw([], 'poly.c1')
+        datastack.thaw([], 'poly.c2')
+        datastack.thaw([], 'const')
 
         assert poly1.c0.frozen is False
         assert poly1.c1.frozen is False
@@ -179,31 +183,33 @@ class test_global(SherpaTestCase):
         assert poly3.c2.frozen is False
         assert poly3.c3.frozen is True
 
-        set_par([], 'poly.c1', 0.45)
+        datastack.set_par([], 'poly.c1', 0.45)
 
         assert poly1.c1.val == 0.45
         assert poly2.c1.val == 0.45
         assert poly3.c1.val == 0.45
 
-        set_par([1], 'poly.c1', 0.1)
+        datastack.set_par([1], 'poly.c1', 0.1)
 
         assert poly1.c1.val == 0.1
         assert poly2.c1.val == 0.45
         assert poly3.c1.val == 0.45
 
-        set_par([], 'const.c0', 2)
+        datastack.set_par([], 'const.c0', 2)
 
         assert const.c0.val == 2
 
-        set_par([], 'const.integrate', False)
-        freeze([], 'const.c0')
+        datastack.set_par([], 'const.integrate', False)
+        datastack.freeze([], 'const.c0')
 
-        vals = get_par([], 'poly.c1.val')
+        vals = datastack.get_par([], 'poly.c1.val')
         assert ([0.1, 0.45, 0.45] == vals).all()
 
-        pars = get_par([], 'const.c0')
+        # QUS: pars is not checked, so is this just
+        # checking that get_par doesn't fail?
+        pars = datastack.get_par([], 'const.c0')
 
-        fit([])
+        datastack.fit([])
 
         assert round(poly1.c1.val) == 1
         assert round(poly1.c2.val) == 3
@@ -212,7 +218,7 @@ class test_global(SherpaTestCase):
         assert round(poly3.c1.val) == 3
         assert round(poly3.c2.val) == 1
 
-        clear_stack()
+        datastack.clear_stack()
 
         x1 = np.arange(50)+100
         y1 = 7*(3*x1**2 + x1)
@@ -221,67 +227,69 @@ class test_global(SherpaTestCase):
         x3 = np.arange(50)+200
         y3 = 2*(x3**2+3*x3)
 
-        load_arrays([[x1, y1], [x2, y2], [x3, y3]])
+        datastack.load_arrays([[x1, y1], [x2, y2], [x3, y3]])
 
-        set_template_id("foo")
+        datastack.set_template_id("foo")
 
-        set_source([], 'const1d.constfoo * polynom1d.polyfoo')
+        datastack.set_source([], 'const1d.constfoo * polynom1d.polyfoo')
 
         const1 = ui._session._get_model_component('const1')
         const2 = ui._session._get_model_component('const2')
         const3 = ui._session._get_model_component('const3')
 
-        link([2,3], 'const.c0')
+        datastack.link([2,3], 'const.c0')
 
-        set_par([2], 'const.c0', 3)
-        set_par([1], 'const.c0', 7)
+        datastack.set_par([2], 'const.c0', 3)
+        datastack.set_par([1], 'const.c0', 7)
 
-        freeze([1], 'const.c0')
+        datastack.freeze([1], 'const.c0')
 
         assert const2.c0.frozen is False
 
-        fit([])
+        datastack.fit([])
 
         assert const2.c0.val == const3.c0.val
         assert const3.c0._link is const2.c0
 
-        unlink([], "const.c0")
+        datastack.unlink([], "const.c0")
 
         assert const3.c0._link is not const2.c0
 
 
 class test_load(SherpaTestCase):
     def setUp(self):
-        clear_stack()
+        datastack.clear_stack()
         ui.clean()
-        set_template_id("__ID")
+        datastack.set_template_id("__ID")
         self._this_dir = os.path.dirname(sys.modules[self.__module__].__file__)
         self.create_files()
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
-        clear_stack()
+        datastack.clear_stack()
         ui.clean()
-        set_template_id("__ID")
+        datastack.set_template_id("__ID")
         os.remove(self.lisname)
         os.remove(self.name1)
         os.remove(self.name2)
-        set_stack_verbose(False)
+        datastack.set_stack_verbose(False)
+        logger.setLevel(self.loggingLevel)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
     def test_case_3(self):
-        load_ascii("@{}".format(self.lisname))
+        datastack.load_ascii("@{}".format(self.lisname))
         assert len(ui._session._data) == 2
-        assert len(DATASTACK.datasets) == 2
+        assert len(datastack.DATASTACK.datasets) == 2
 
-        load_data("@{}".format(self.lisname))
+        datastack.load_data("@{}".format(self.lisname))
         assert len(ui._session._data) == 4
-        assert len(DATASTACK.datasets) == 4
+        assert len(datastack.DATASTACK.datasets) == 4
 
-        load_data("@"+"/".join((self._this_dir, 'data', 'pha.lis')))
+        datastack.load_data("@"+"/".join((self._this_dir, 'data', 'pha.lis')))
         assert len(ui._session._data) == 6
-        assert len(DATASTACK.datasets) == 6
-
+        assert len(datastack.DATASTACK.datasets) == 6
 
     def create_files(self):
         fd1, self.name1 = tempfile.mkstemp()
@@ -317,16 +325,19 @@ class test_load(SherpaTestCase):
 class test_partial_oo(SherpaTestCase):
 
     def setUp(self):
-        self.ds = DataStack()
-        set_template_id("__ID")
-        clear_stack()
+        self.ds = datastack.DataStack()
+        datastack.set_template_id("__ID")
+        datastack.clear_stack()
         ui.clean()
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
         self.ds.clear_stack()
-        clear_stack()
-        set_template_id("__ID")
+        datastack.clear_stack()
+        datastack.set_template_id("__ID")
         ui.clean()
+        logger.setLevel(self.loggingLevel)
 
     def test_case_4(self):
         x1 = np.arange(50)+100
@@ -338,20 +349,20 @@ class test_partial_oo(SherpaTestCase):
 
         ds = self.ds
 
-        load_arrays(ds, [[x1, y1], [x2, y2], [x3, y3]])
+        datastack.load_arrays(ds, [[x1, y1], [x2, y2], [x3, y3]])
 
-        set_source(ds, 'const1d.const * polynom1d.poly__ID')
+        datastack.set_source(ds, 'const1d.const * polynom1d.poly__ID')
 
         poly1 = ui._session._get_model_component('poly1')
         poly2 = ui._session._get_model_component('poly2')
         poly3 = ui._session._get_model_component('poly3')
         const = ui._session._get_model_component('const')
 
-        freeze(ds, 'poly')
-        thaw(ds, 'poly.c0')
-        thaw(ds, 'poly.c1')
-        thaw(ds, 'poly.c2')
-        thaw(ds, 'const')
+        datastack.freeze(ds, 'poly')
+        datastack.thaw(ds, 'poly.c0')
+        datastack.thaw(ds, 'poly.c1')
+        datastack.thaw(ds, 'poly.c2')
+        datastack.thaw(ds, 'const')
 
         assert poly1.c0.frozen is False
         assert poly1.c1.frozen is False
@@ -368,31 +379,33 @@ class test_partial_oo(SherpaTestCase):
         assert poly3.c2.frozen is False
         assert poly3.c3.frozen is True
 
-        set_par(ds, 'poly.c1', 0.45)
+        datastack.set_par(ds, 'poly.c1', 0.45)
 
         assert poly1.c1.val == 0.45
         assert poly2.c1.val == 0.45
         assert poly3.c1.val == 0.45
 
-        set_par(ds[1], 'poly.c1', 0.1)
+        datastack.set_par(ds[1], 'poly.c1', 0.1)
 
         assert poly1.c1.val == 0.1
         assert poly2.c1.val == 0.45
         assert poly3.c1.val == 0.45
 
-        set_par(ds, 'const.c0', 2)
+        datastack.set_par(ds, 'const.c0', 2)
 
         assert const.c0.val == 2
 
-        set_par(ds, 'const.integrate', False)
-        freeze(ds, 'const.c0')
+        datastack.set_par(ds, 'const.integrate', False)
+        datastack.freeze(ds, 'const.c0')
 
-        vals = get_par(ds, 'poly.c1.val')
+        vals = datastack.get_par(ds, 'poly.c1.val')
         assert ([0.1, 0.45, 0.45] == vals).all()
 
-        pars = get_par(ds, 'const.c0')
+        # QUS: pars is not checked, so is this just
+        # checking that get_par doesn't fail?
+        pars = datastack.get_par(ds, 'const.c0')
 
-        fit(ds)
+        datastack.fit(ds)
 
         assert round(poly1.c1.val) == 1
         assert round(poly1.c2.val) == 3
@@ -410,31 +423,31 @@ class test_partial_oo(SherpaTestCase):
         x3 = np.arange(50)+200
         y3 = 2*(x3**2+3*x3)
 
-        load_arrays(ds, [[x1, y1], [x2, y2], [x3, y3]])
+        datastack.load_arrays(ds, [[x1, y1], [x2, y2], [x3, y3]])
 
-        set_template_id("foo")
+        datastack.set_template_id("foo")
 
-        set_source(ds, 'const1d.constfoo * polynom1d.polyfoo')
+        datastack.set_source(ds, 'const1d.constfoo * polynom1d.polyfoo')
 
         const1 = ui._session._get_model_component('const1')
         const2 = ui._session._get_model_component('const2')
         const3 = ui._session._get_model_component('const3')
 
-        link(ds[2,3], 'const.c0')
+        datastack.link(ds[2,3], 'const.c0')
 
-        set_par(ds[2], 'const.c0', 3)
-        set_par(ds[1], 'const.c0', 7)
+        datastack.set_par(ds[2], 'const.c0', 3)
+        datastack.set_par(ds[1], 'const.c0', 7)
 
-        freeze(ds[1], 'const.c0')
+        datastack.freeze(ds[1], 'const.c0')
 
         assert const2.c0.frozen is False
 
-        fit(ds)
+        datastack.fit(ds)
 
         assert const2.c0.val == const3.c0.val
         assert const3.c0._link is const2.c0
 
-        unlink(ds, "const.c0")
+        datastack.unlink(ds, "const.c0")
 
         assert const3.c0._link is not const2.c0
 
@@ -446,12 +459,15 @@ class test_oo(SherpaTestCase):
         datastack.set_template_id("__ID")
         ui.clean()
         self.ds = datastack.DataStack()
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
         self.ds.clear_stack()
         datastack.clear_stack()
         datastack.set_template_id("__ID")
         ui.clean()
+        logger.setLevel(self.loggingLevel)
 
     def test_case_5(self):
         x1 = np.arange(50)+100
@@ -515,6 +531,8 @@ class test_oo(SherpaTestCase):
         vals = ds.get_par('poly.c1.val')
         assert ([0.1, 0.45, 0.45] == vals).all()
 
+        # QUS: pars is not checked, so is this just
+        # checking that get_par doesn't fail?
         pars = ds.get_par('const.c0')
 
         ds.fit()
@@ -563,95 +581,107 @@ class test_oo(SherpaTestCase):
 
         assert const3.c0._link is not const2.c0
 
+
 class test_pha(SherpaTestCase):
     def setUp(self):
-        clear_stack()
+        datastack.clear_stack()
         ui.clean()
-        set_template_id("ID")
+        datastack.set_template_id("ID")
         self._this_dir = os.path.dirname(sys.modules[self.__module__].__file__)
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
-        clear_stack()
+        datastack.clear_stack()
         ui.clean()
-        set_template_id("__ID")
+        datastack.set_template_id("__ID")
+        logger.setLevel(self.loggingLevel)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
     def test_case_6(self):
         datadir = '/'.join((self._this_dir, 'data'))
         ls = '@'+'/'.join((datadir, 'pha.lis'))
-        load_pha(ls)
+        rmf1 = '/'.join((datadir, "acisf04938_000N002_r0043_rmf3.fits"))
+        rmf2 = '/'.join((datadir, "acisf07867_000N001_r0002_rmf3.fits"))
+        arf1 = '/'.join((datadir, "acisf04938_000N002_r0043_arf3.fits"))
+        arf2 = '/'.join((datadir, "acisf07867_000N001_r0002_arf3.fits"))
+        datastack.load_pha(ls)
 
-        load_bkg_rmf([], '/'.join((datadir, "acisf04938_000N002_r0043_rmf3.fits")))
-        load_bkg_rmf([], '/'.join((datadir, "acisf07867_000N001_r0002_rmf3.fits")))
+        datastack.load_bkg_rmf([], rmf1)
+        datastack.load_bkg_rmf([], rmf2)
 
-        load_bkg_arf([], '/'.join((datadir, "acisf04938_000N002_r0043_arf3.fits")))
-        load_bkg_arf([], '/'.join((datadir, "acisf07867_000N001_r0002_arf3.fits")))
-
+        datastack.load_bkg_arf([], arf1)
+        datastack.load_bkg_arf([], arf2)
 
         # Define background models
-        bkg_arfs = get_bkg_arf([])
-        bkg_scales = get_bkg_scale([])
-        bkg_models = [const1d.c1 * acis_bkg_model('acis7s'),
-                      const1d.c2 * acis_bkg_model('acis7s')]
-        bkg_rsps = get_response([], bkg_id=1)
+        bkg_arfs = datastack.get_bkg_arf([])
+        bkg_scales = datastack.get_bkg_scale([])
+        bkg_models = [ui.const1d.c1 * acis_bkg_model('acis7s'),
+                      ui.const1d.c2 * acis_bkg_model('acis7s')]
+        bkg_rsps = datastack.get_response([], bkg_id=1)
         for i in range(2):
             id_ = i + 1
             # Make the ARF spectral response flat.  This is required for using
             # the acis_bkg_model.
             bkg_arfs[i].specresp = bkg_arfs[i].specresp * 0 + 1.
-            set_bkg_full_model(id_, bkg_rsps[i](bkg_models[i]))
+            datastack.set_bkg_full_model(id_, bkg_rsps[i](bkg_models[i]))
 
         # Fit background
-        notice(0.5, 8.)
-        set_method("neldermead")
-        set_stat("cash")
+        datastack.notice(0.5, 8.)
+        datastack.set_method("neldermead")
+        datastack.set_stat("cash")
 
-        thaw(c1.c0)
-        thaw(c2.c0)
-        fit_bkg()
-        freeze(c1.c0)
-        freeze(c2.c0)
+        datastack.thaw(c1.c0)
+        datastack.thaw(c2.c0)
+        datastack.fit_bkg()
+        datastack.freeze(c1.c0)
+        datastack.freeze(c2.c0)
 
         # Define source models
-        rsps = get_response([])
-        src_model = powlaw1d.pow1
+        rsps = datastack.get_response([])
+        src_model = ui.powlaw1d.pow1
         src_models = [src_model,
-                      src_model * const1d.ratio_12]
+                      src_model * ui.const1d.ratio_12]
         for i in range(2):
             id_ = i + 1
-            set_full_model(id_, (rsps[i](src_models[i])
-                                 + bkg_scales[i] * bkg_rsps[i](bkg_models[i])))
+            datastack.set_full_model(id_, (rsps[i](src_models[i]) +
+                                           bkg_scales[i] *
+                                           bkg_rsps[i](bkg_models[i])))
 
-        fit()
+        datastack.fit()
+
 
 class test_query(SherpaTestCase):
     def setUp(self):
-        clear_stack()
+        datastack.clear_stack()
         ui.clean()
-        set_template_id("__ID")
+        datastack.set_template_id("__ID")
         self._this_dir = os.path.dirname(sys.modules[self.__module__].__file__)
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
-        clear_stack()
+        datastack.clear_stack()
         ui.clean()
-        set_template_id("__ID")
-        set_stack_verbose(False)
+        datastack.set_template_id("__ID")
+        datastack.set_stack_verbose(False)
+        logger.setLevel(self.loggingLevel)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
     def test_case_7(self):
-        load_pha('@'+'/'.join((self._this_dir, 'data', 'pha.lis')))
+        datastack.load_pha('@'+'/'.join((self._this_dir, 'data', 'pha.lis')))
 
-        f = query_by_header_keyword('INSTRUME', 'ACIS')
+        f = datastack.query_by_header_keyword('INSTRUME', 'ACIS')
 
         assert f == [1,2]
 
-        f = query_by_obsid('7867')
+        f = datastack.query_by_obsid('7867')
 
         assert f == [2]
 
-        ds = DataStack()
+        ds = datastack.DataStack()
 
         ds.load_pha('@'+'/'.join((self._this_dir, 'data', 'pha.lis')))
 
@@ -659,6 +689,18 @@ class test_query(SherpaTestCase):
 
         assert f == [3]
 
-        f = query_by_obsid(ds, '7867')
+        f = datastack.query_by_obsid(ds, '7867')
 
         assert f == [4]
+
+if __name__ == '__main__':
+
+    from sherpa.utils import SherpaTest
+
+    import sys
+    if len(sys.argv) > 1:
+        datadir = sys.argv[1]
+    else:
+        datadir = None
+
+    SherpaTest(datastack).test(datadir=datadir)

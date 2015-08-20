@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,13 +20,16 @@
 
 import unittest
 from sherpa.models import TableModel, Gauss1D
-from sherpa.models.template import TemplateModel, create_template_model
+from sherpa.models.template import create_template_model
 from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
 from sherpa.utils.err import ModelErr
 from sherpa import ui
-import numpy, logging, os
+import numpy
+import logging
+import os
 
 logger = logging.getLogger("sherpa")
+
 
 class test_new_templates_ui(SherpaTestCase):
     def assign_model(self, name, obj):
@@ -36,12 +39,19 @@ class test_new_templates_ui(SherpaTestCase):
         ui.clean()
         ui.set_model_autoassign_func(self.assign_model)
         self.locals = {}
-        os.chdir(os.path.join(self.datadir, 'ciao4.3', name))
-        execfile(scriptname, {}, self.locals)
+        cwd = os.getcwd()
+        os.chdir(self.make_path('ciao4.3', name))
+        try:
+            execfile(scriptname, {}, self.locals)
+        finally:
+            os.chdir(cwd)
 
     def setUp(self):
+        self.loggingLevel = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
 
+    def tearDown(self):
+        logger.setLevel(self.loggingLevel)
 
     # Regression reported by Aneta (original report by Fabrizio Nicastro)
     # When restoring a file saved with an older version of sherpa,
@@ -51,12 +61,11 @@ class test_new_templates_ui(SherpaTestCase):
     def test_restore_is_discrete(self):
         self.run_thread('template_restore', 'test.py')
 
-
     # TestCase 1 load_template_model enables interpolation by default
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_load_template_with_interpolation(self):
         self.run_thread('load_template_with_interpolation')
-        try:   
+        try:
             self.assertEqualWithinTol(2023.46, ui.get_fit_results().parvals[0], 0.001)
             self.assertEqualWithinTol(2743.47, ui.get_fit_results().parvals[1], 0.001)
         except:
@@ -69,11 +78,12 @@ class test_new_templates_ui(SherpaTestCase):
         self.assertEqualWithinTol(2743.91, ui.get_fit_results().parvals[0], 0.001)
 
     # TestCase 2 load_template_model with template_interpolator_name=None disables interpolation
-    # TestCase 3.1 discrete templates fail when probed for values they do not represent (gridsearch with wrong values) 
+    # TestCase 3.1 discrete templates fail when probed for values they do not represent (gridsearch with wrong values)
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_load_template_model_without_interpolation(self):
-        try:   
-            self.run_thread('load_template_without_interpolation', scriptname='test_case_2_and_3.1.py')
+        try:
+            self.run_thread('load_template_without_interpolation',
+                            scriptname='test_case_2_and_3.1.py')
         except ModelErr:
             return
         self.fail('Fit should have failed: using gridsearch with wrong parvals')
@@ -81,23 +91,24 @@ class test_new_templates_ui(SherpaTestCase):
     # TestCase 3.2 discrete templates fail when probed for values they do not represent (continuous method with discrete template)
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_load_template_model_without_interpolation(self):
-        try:   
-            self.run_thread('load_template_without_interpolation', scriptname='test_case_3.2.py')
+        try:
+            self.run_thread('load_template_without_interpolation',
+                            scriptname='test_case_3.2.py')
         except ModelErr:
             return
         self.fail('Fit should have failed: using gridsearch with wrong parvals')
 
-
     # TestCase 4 gridsearch with right values succeeds
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_grid_search_with_discrete_template(self):
-        self.run_thread('load_template_without_interpolation', scriptname='test_case_4.py')
+        self.run_thread('load_template_without_interpolation',
+                        scriptname='test_case_4.py')
 
     # TestCase 5 user can access interpolators' parvals
     @unittest.skipIf(test_data_missing(), "required test data missing")
-    def test_grid_search_with_discrete_template(self):
-        self.run_thread('load_template_with_interpolation', scriptname='test_case_5.py')
-
+    def test_grid_search_with_discrete_template_parvals(self):
+        self.run_thread('load_template_with_interpolation',
+                        scriptname='test_case_5.py')
 
 
 class test_template(SherpaTestCase):
@@ -128,10 +139,10 @@ class test_template(SherpaTestCase):
     def tearDown(self):
         self.model = None
 
-
     def test_template_model_evaluation(self):
         self.model.thawedpars = [0,1,0,1]
-        vals = self.model(self.x)
+        # We want to evaluate the model, but do not check the result
+        self.model(self.x)
 
 #    def test_template_query_index(self):
 #        expected = 5
@@ -143,8 +154,14 @@ class test_template(SherpaTestCase):
 #        result = self.model.query([0,1,0,1])
 
 
-
 if __name__ == '__main__':
 
-    import sherpa.models as models
-    SherpaTest(models).test()
+    from sherpa import models
+
+    import sys
+    if len(sys.argv) > 1:
+        datadir = sys.argv[1]
+    else:
+        datadir = None
+
+    SherpaTest(models).test(datadir=datadir)

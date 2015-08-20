@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -28,6 +28,7 @@ from sherpa.astro.data import DataPHA
 
 logger = logging.getLogger('sherpa')
 
+
 class test_threads(SherpaTestCase):
 
     def setUp(self):
@@ -56,7 +57,7 @@ class test_threads(SherpaTestCase):
         ui.clean()
         ui.set_model_autoassign_func(self.assign_model)
         self.locals = {}
-        os.chdir(os.path.join(self.datadir, 'ciao4.3', name))
+        os.chdir(self.make_path('ciao4.3', name))
         execfile(scriptname, {}, self.locals)
 
     @unittest.skipIf(not has_fits_support(),
@@ -78,7 +79,7 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(ui.calc_energy_flux(), 9.614847e-13, 1e-4)
         self.assertEqualWithinTol(ui.calc_data_sum(), 706.85714092, 1e-4)
         self.assertEqualWithinTol(ui.calc_model_sum(), 638.45693377, 1e-4)
-        self.assertEqualWithinTol(ui.calc_source_sum(),0.046996409, 1e-4)
+        self.assertEqualWithinTol(ui.calc_source_sum(), 0.046996409, 1e-4)
         self.assertEqualWithinTol(ui.eqwidth(self.locals['p1'],
                                              ui.get_source()),-0.57731725, 1e-4)
         self.assertEqualWithinTol(ui.calc_kcorr([1,1.2,1.4,1.6,1.8,2], 0.5, 2),
@@ -114,9 +115,9 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['m1'].c3.val, -0.00277729, 1e-4)
         self.assertEqualWithinTol(self.locals['m2'].c0.val, 1.75548, 1e-4)
         self.assertEqualWithinTol(self.locals['m2'].c1.val, 0.198455, 1e-4)
-        self.assertEqual(ui.get_fit_results().nfev,9)
-        self.assertEqual(ui.get_fit_results().numpoints,11)
-        self.assertEqual(ui.get_fit_results().dof,9)
+        self.assertEqual(ui.get_fit_results().nfev, 9)
+        self.assertEqual(ui.get_fit_results().numpoints, 11)
+        self.assertEqual(ui.get_fit_results().dof, 9)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -132,8 +133,8 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['pl1'].gamma.val, 1.645, 1e-4)
         self.assertEqualWithinTol(self.locals['pl1'].ampl.val, 2.28323e-05, 1e-3)
         self.assertEqualWithinTol(self.locals['pl2'].ampl.val, 2.44585e-05, 1e-3)
-        self.assertEqual(ui.get_fit_results().numpoints,18)
-        self.assertEqual(ui.get_fit_results().dof,14)
+        self.assertEqual(ui.get_fit_results().numpoints, 18)
+        self.assertEqual(ui.get_fit_results().dof, 14)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -150,8 +151,8 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['b1'].norm.val, 0.00953809, 1e-2)
         self.assertEqualWithinTol(self.locals['b2'].kt.val, 0.563109, 1e-2)
         self.assertEqualWithinTol(self.locals['b2'].norm.val, 1.16118e-05, 1e-2)
-        self.assertEqual(ui.get_fit_results().numpoints,1330)
-        self.assertEqual(ui.get_fit_results().dof,1325)
+        self.assertEqual(ui.get_fit_results().numpoints, 1330)
+        self.assertEqual(ui.get_fit_results().dof, 1325)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -167,9 +168,9 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['g2'].xpos.val, 4070.78, 1e-4)
         self.assertEqualWithinTol(self.locals['g2'].ypos.val, 4249.33, 1e-4)
         self.assertEqualWithinTol(self.locals['g2'].ampl.val, 226.563, 1e-4)
-        #self.assertEqual(ui.get_fit_results().nfev,371)
-        self.assertEqual(ui.get_fit_results().numpoints,4881)
-        self.assertEqual(ui.get_fit_results().dof,4877)
+        # self.assertEqual(ui.get_fit_results().nfev,371)
+        self.assertEqual(ui.get_fit_results().numpoints, 4881)
+        self.assertEqual(ui.get_fit_results().dof, 4877)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -186,8 +187,8 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['abs1'].nh.val, 6.12101, 1e-2)
         self.assertEqualWithinTol(self.locals['power'].gamma.val, 1.41887, 1e-2)
         self.assertEqualWithinTol(self.locals['power'].ampl.val, 0.00199457, 1e-2)
-        self.assertEqual(ui.get_fit_results().numpoints,42)
-        self.assertEqual(ui.get_fit_results().dof,37)
+        self.assertEqual(ui.get_fit_results().numpoints, 42)
+        self.assertEqual(ui.get_fit_results().dof, 37)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -201,9 +202,9 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['src'].beta.val, 4.1633, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].xpos.val, 0.0, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].ampl.val, 4.42821, 1e-4)
-        self.assertEqual(ui.get_fit_results().nfev,92)
-        self.assertEqual(ui.get_fit_results().numpoints,38)
-        self.assertEqual(ui.get_fit_results().dof,35)
+        self.assertEqual(ui.get_fit_results().nfev, 92)
+        self.assertEqual(ui.get_fit_results().numpoints, 38)
+        self.assertEqual(ui.get_fit_results().dof, 35)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_radpro_dm(self):
@@ -222,9 +223,9 @@ class test_threads(SherpaTestCase):
             self.assertEqualWithinTol(self.locals['src'].beta.val, 4.1633, 1e-4)
             self.assertEqualWithinTol(self.locals['src'].xpos.val, 0.0, 1e-4)
             self.assertEqualWithinTol(self.locals['src'].ampl.val, 4.42821, 1e-4)
-            self.assertEqual(ui.get_fit_results().nfev,92)
-            self.assertEqual(ui.get_fit_results().numpoints,38)
-            self.assertEqual(ui.get_fit_results().dof,35)
+            self.assertEqual(ui.get_fit_results().nfev, 92)
+            self.assertEqual(ui.get_fit_results().numpoints, 38)
+            self.assertEqual(ui.get_fit_results().dof, 35)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -236,9 +237,9 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['g1'].ypos.val, 77.2271, 1e-2)
         self.assertEqualWithinTol(self.locals['g1'].xpos.val, 88.661, 1e-2)
         self.assertEqualWithinTol(self.locals['g1'].ampl.val, 166.649, 1e-2)
-        #self.assertEqual(ui.get_fit_results().nfev,342)
-        self.assertEqual(ui.get_fit_results().numpoints,4899)
-        self.assertEqual(ui.get_fit_results().dof,4895)
+        # self.assertEqual(ui.get_fit_results().nfev,342)
+        self.assertEqual(ui.get_fit_results().numpoints, 4899)
+        self.assertEqual(ui.get_fit_results().dof, 4895)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -255,9 +256,9 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['g1'].xpos.val, 88.940712, 1e-4)
         self.assertEqualWithinTol(self.locals['g1'].ypos.val, 76.577265, 1e-4)
         self.assertEqualWithinTol(self.locals['g1'].ampl.val, 36344.48324, 1e-4)
-        #self.assertEqual(ui.get_fit_results().nfev,978)
-        self.assertEqual(ui.get_fit_results().numpoints,4899)
-        self.assertEqual(ui.get_fit_results().dof,4895)
+        # self.assertEqual(ui.get_fit_results().nfev,978)
+        self.assertEqual(ui.get_fit_results().numpoints, 4899)
+        self.assertEqual(ui.get_fit_results().dof, 4895)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -268,9 +269,9 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['src'].r0.val, 83.0997, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].beta.val, 2.97737, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].ampl.val, 5.27604, 1e-4)
-        self.assertEqual(ui.get_fit_results().nfev,48)
-        self.assertEqual(ui.get_fit_results().numpoints,38)
-        self.assertEqual(ui.get_fit_results().dof,35)
+        self.assertEqual(ui.get_fit_results().nfev, 48)
+        self.assertEqual(ui.get_fit_results().numpoints, 38)
+        self.assertEqual(ui.get_fit_results().dof, 35)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -281,9 +282,9 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['b1'].r0.val, 4.25557, 1e-4)
         self.assertEqualWithinTol(self.locals['b1'].beta.val, 0.492232, 1e-4)
         self.assertEqualWithinTol(self.locals['b1'].ampl.val, 11.8129, 1e-4)
-        self.assertEqual(ui.get_fit_results().nfev,17)
-        self.assertEqual(ui.get_fit_results().numpoints,75)
-        self.assertEqual(ui.get_fit_results().dof,72)
+        self.assertEqual(ui.get_fit_results().nfev, 17)
+        self.assertEqual(ui.get_fit_results().numpoints, 75)
+        self.assertEqual(ui.get_fit_results().dof, 72)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -294,9 +295,9 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['b1'].r0.val, 19.2278, 1e-4)
         self.assertEqualWithinTol(self.locals['b1'].beta.val, 0.555464, 1e-4)
         self.assertEqualWithinTol(self.locals['b1'].ampl.val, 1.93706, 1e-4)
-        self.assertEqual(ui.get_fit_results().nfev,21)
-        self.assertEqual(ui.get_fit_results().numpoints,75)
-        self.assertEqual(ui.get_fit_results().dof,72)
+        self.assertEqual(ui.get_fit_results().nfev, 21)
+        self.assertEqual(ui.get_fit_results().numpoints, 75)
+        self.assertEqual(ui.get_fit_results().dof, 72)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -311,8 +312,8 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['mek1'].norm.val, 0.699761, 1e-4)
         self.assertEqualWithinTol(self.locals['mek2'].kt.val, 2.35845, 1e-4)
         self.assertEqualWithinTol(self.locals['mek2'].norm.val, 1.03724, 1e-4)
-        self.assertEqual(ui.get_fit_results().numpoints,446)
-        self.assertEqual(ui.get_fit_results().dof,441)
+        self.assertEqual(ui.get_fit_results().numpoints, 446)
+        self.assertEqual(ui.get_fit_results().dof, 441)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -323,9 +324,9 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['g1'].fwhm.val, 0.0232473, 1e-4)
         self.assertEqualWithinTol(self.locals['g1'].pos.val, 1.26713, 1e-4)
         self.assertEqualWithinTol(self.locals['g1'].ampl.val, 40.4503, 1e-4)
-        #self.assertEqual(ui.get_fit_results().nfev,19)
-        self.assertEqual(ui.get_fit_results().numpoints,50)
-        self.assertEqual(ui.get_fit_results().dof,47)
+        # self.assertEqual(ui.get_fit_results().nfev,19)
+        self.assertEqual(ui.get_fit_results().numpoints, 50)
+        self.assertEqual(ui.get_fit_results().dof, 47)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -338,9 +339,9 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['intrin'].nh.val, 11.0769, 1e-2)
         self.assertEqualWithinTol(self.locals['phard'].phoindex.val, 1.49055, 1e-2)
         self.assertEqualWithinTol(self.locals['phard'].norm.val, 0.00140301, 1e-2)
-        self.assertEqual(ui.get_fit_results().nfev,95)
-        self.assertEqual(ui.get_fit_results().numpoints,162)
-        self.assertEqual(ui.get_fit_results().dof,159)
+        self.assertEqual(ui.get_fit_results().nfev, 95)
+        self.assertEqual(ui.get_fit_results().numpoints, 162)
+        self.assertEqual(ui.get_fit_results().dof, 159)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -548,5 +549,12 @@ class test_threads(SherpaTestCase):
 if __name__ == '__main__':
 
     from sherpa.utils import SherpaTest
-    import sherpa.astro as astro
-    SherpaTest(astro).test(datadir="/data/scialg/testdata")
+    from sherpa import astro
+
+    import sys
+    if len(sys.argv) > 1:
+        datadir = sys.argv[1]
+    else:
+        datadir = None
+
+    SherpaTest(astro).test(datadir=datadir)

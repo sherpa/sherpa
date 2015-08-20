@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2013, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -17,16 +17,15 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
-
 import unittest
 from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
 from sherpa.utils import has_fits_support
-import sherpa.astro.ui as ui
+from sherpa.astro import ui
 import logging
 import os
 import numpy
 logger = logging.getLogger("sherpa")
+
 
 class test_more_ui(SherpaTestCase):
     def assign_model(self, name, obj):
@@ -36,16 +35,25 @@ class test_more_ui(SherpaTestCase):
         ui.clean()
         ui.set_model_autoassign_func(self.assign_model)
         self.locals = {}
-        os.chdir(os.path.join(self.datadir, 'ciao4.3', name))
-        execfile(scriptname, {}, self.locals)
+        cwd = os.getcwd()
+        os.chdir(self.make_path('ciao4.3', name))
+        try:
+            execfile(scriptname, {}, self.locals)
+        finally:
+            os.chdir(cwd)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
-        self.img = self.datadir + '/img.fits'
-        self.pha = self.datadir + '/threads/simultaneous/pi2286.fits'
-        self.rmf = self.datadir + '/threads/simultaneous/rmf2286.fits'
-        self.nan = self.datadir + '/ciao4.3/filternan/with_nan.fits'
+        self.img = self.make_path('img.fits')
+        self.pha = self.make_path('threads/simultaneous/pi2286.fits')
+        self.rmf = self.make_path('threads/simultaneous/rmf2286.fits')
+        self.nan = self.make_path('ciao4.3/filternan/with_nan.fits')
+        self.loggingLevel = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
+
+    def tearDown(self):
+        if hasattr(self, 'loggingLevel'):
+            logger.setLevel(self.loggingLevel)
 
     # bug 12784
     @unittest.skipIf(not has_fits_support(),
@@ -59,4 +67,8 @@ if __name__ == '__main__':
 
     import sys
     if len(sys.argv) > 1:
-        SherpaTest(ui).test(datadir=sys.argv[1])
+        datadir = sys.argv[1]
+    else:
+        datadir = None
+
+    SherpaTest(ui).test(datadir=datadir)
