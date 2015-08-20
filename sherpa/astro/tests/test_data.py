@@ -877,3 +877,16 @@ def test_rmf_get_x_unit():
     expected_rmf_x = (rmf_x_hi + rmf_x_lo)/2
     actual_rmf_x = rmf.get_x()
     np.testing.assert_array_almost_equal(expected_rmf_x, actual_rmf_x)
+
+
+def test_grouping_basic():
+    from sherpa.astro import ui
+    import numpy
+    ui.load_arrays("grouping", [1, 2, 3, 4, 5, 6, 7], [0, 1, 2, 3, 7, 8, 10], DataPHA)
+    numpy.testing.assert_array_equal(ui.get_counts("grouping"), [0, 1, 2, 3, 7, 8, 10])
+    assert ui.get_counts("grouping").sum() == 31
+    ui.group_counts("grouping", 5)
+    numpy.testing.assert_array_equal(ui.get_counts("grouping"), [6, 7, 8, 10])
+    assert ui.get_counts("grouping").sum() == 31
+
+

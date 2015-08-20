@@ -2052,7 +2052,7 @@ class DataPHA(Data1DInt):
             elif self.units == 'wavelength':
                 ebin = self._hc / elo - self._hc / ehi
             elif self.units == 'channel':
-                ebin = ehi - elo
+                ebin = 1
             else:
                 raise DataErr("bad", "quantity", self.units)
 
