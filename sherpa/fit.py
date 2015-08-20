@@ -21,14 +21,14 @@ from itertools import izip
 import logging
 import os
 import signal
-from numpy import power, arange, array, abs, iterable, sqrt, where, \
+from numpy import arange, array, abs, iterable, sqrt, where, \
     ones_like, isnan, isinf, float, float32, finfo, nan, any
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
-from sherpa.models import SimulFitModel, Parameter
+from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, LeastSq, \
     Likelihood
@@ -242,7 +242,7 @@ class FitResults(NoNewAttributesAfterInit):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('itermethodname'):
+        if 'itermethodname' not in state:
             self.__dict__['itermethodname'] = 'none'
 
     def __nonzero__(self):
@@ -345,7 +345,7 @@ class ErrorEstResults(NoNewAttributesAfterInit):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('iterfitname'):
+        if 'iterfitname' not in state:
             self.__dict__['iterfitname'] = 'none'
 
     def __repr__(self):
@@ -825,7 +825,7 @@ class IterFit(NoNewAttributesAfterInit):
         return final_fit_results
 
     def fit(self, statfunc, pars, parmins, parmaxes, statargs=(), statkwargs={}):
-        if (self.iterate == False):
+        if not self.iterate:
             return self.method.fit(statfunc, pars, parmins, parmaxes,
                                    statargs, statkwargs)
         else:
@@ -880,7 +880,7 @@ class Fit(NoNewAttributesAfterInit):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('_iterfit'):
+        if '_iterfit' not in state:
             self.__dict__['_iterfit'] = IterFit(self.data, self.model, self.stat, self.method,
                                                 {'name': 'none'})
 
@@ -1204,7 +1204,7 @@ class Fit(NoNewAttributesAfterInit):
                         parnums.append(count)
                         match = True
                     count = count + 1
-                if (match == False):
+                if not match:
                     raise EstErr('noparameter', p.fullname)
             parnums = array(parnums)
         else:
