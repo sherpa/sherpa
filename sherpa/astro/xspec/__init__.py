@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2010  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,6 +16,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import numpy
 
 import string
 from sherpa.models import Parameter, ArithmeticModel, modelCacher1d
@@ -162,7 +164,21 @@ class XSModel(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        return self._calc(*args, **kwargs)
+        # Ensure output is finite (Keith Arnaud mentioned that XSPEC
+        # does this as a check). This is done at this level (Python)
+        # rather than in the C++ interface since:
+        #  - it is easier
+        #  - it allows for the user to find out what bins are bad,
+        #    by directly calling the _calc function of a model
+        out = self._calc(*args, **kwargs)
+        if not numpy.isfinite(out).all():
+            # TODO: Should this be using a "Sherpa error class"?
+            # I am not convinced that FloatingPointError is the best
+            # type.
+            msg = "model {} has produced NaN or +/-Inf value".format(self.name)
+            raise FloatingPointError(msg)
+
+        return out
 
 
 class XSTableModel(XSModel):
