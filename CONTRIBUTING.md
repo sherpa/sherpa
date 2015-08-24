@@ -26,7 +26,7 @@ Contributing code
 
 Contributions to Sherpa are generally done via a [pull
 request](https://github.com/sherpa/sherpa/pulls) from your GitHub fork of the
-[Sherpa repository][https://github.com/sherpa/sherpa), although you will see
+[Sherpa repository](https://github.com/sherpa/sherpa), although you will see
 core developers using the Sherpa repository for development. At present we do
 not have a document describing our suggested development workflow, so we
 suggest you follow the [AstroPy
@@ -99,14 +99,14 @@ should have a descriptive name. For bug fixes, the name should include the
 bug ID and a short description of the bug fix. For new - or updated - 
 functionality, the name should be descriptive.
 
-Example: fix for [bug #64](https://github.com/sherpa/sherpa/issues/64):
+Example: fix for [bug #64](https://github.com/sherpa/sherpa/issues/64)
 
     % git remote add upstream https://github.com/sherpa/sherpa
     % git fetch upstream
     % git checkout -b bug-#64-comparison-to-None upstream/master
 
 Example: new functionality, such as
-[Setuptools not required](https://github.com/sherpa/sherpa/pull/65):
+[Setuptools not required](https://github.com/sherpa/sherpa/pull/65)
 
     % git remote add upstream https://github.com/sherpa/sherpa
     % git fetch upstream
@@ -115,8 +115,8 @@ Example: new functionality, such as
 **Software versions**
 
 At present Sherpa is built using Python 2.7, but there are plans to support
-Python 3 in the near future (this will be tracked in [issue
-#76](https://github.com/sherpa/sherpa/issues/76)).
+Python 3 in the near future (this will be tracked in
+[issue #76](https://github.com/sherpa/sherpa/issues/76)).
 
 Ideally, NumPy support should be 1.6 or greater, but please include a comment
 if you need to restrict (or relax) this further.
