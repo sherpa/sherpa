@@ -91,6 +91,27 @@ and run
 
 without a failure.
 
+**Git branch**
+
+The changes should be made in a branch which is based off of the ``master``
+branch of the [Sherpa repository](https://github.com/sherpa/sherpa), and
+should have a descriptive name. For bug fixes, the name should include the
+bug ID and a short description of the bug fix. For new - or updated - 
+functionality, the name should be descriptive.
+
+Example: fix for [bug #64](https://github.com/sherpa/sherpa/issues/64):
+
+    % git remote add upstream https://github.com/sherpa/sherpa
+    % git fetch upstream
+    % git checkout -b bug-#64-comparison-to-None upstream/master
+
+Example: new functionality, such as
+[Setuptools not required](https://github.com/sherpa/sherpa/pull/65):
+
+    % git remote add upstream https://github.com/sherpa/sherpa
+    % git fetch upstream
+    % git checkout -b setuptools-not-required upstream/master
+
 **Software versions**
 
 At present Sherpa is built using Python 2.7, but there are plans to support
@@ -116,6 +137,13 @@ the change. This may be relaxed when fixes to existing functionality are
 made, but please indicate that this is the case in the pull request.
 
 **Documentation**
+
+Does the Pull Request include the following (for simple fixes, such as
+a typo in the documentation, not all are required):
+
+ - a complete description of the feature
+ - the design outline
+ - the test cases exercised by the test suite
 
 Do the docstrings for any  new, or updated, code describe what the
 code does, the format of the inputs and outputs, references to
