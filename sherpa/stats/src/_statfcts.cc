@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -16,6 +16,7 @@
 //  with this program; if not, write to the Free Software Foundation, Inc.,
 //  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
+
 
 #include "sherpa/stat_extension.hh"
 #include "sherpa/stats.hh"
@@ -36,6 +37,7 @@ static PyMethodDef StatFcts[] = {
   STATFCT( calc_chi2_stat ),
   STATFCT( calc_chi2modvar_stat ),
   STATFCT( calc_lsq_stat ),
+  WSTATFCT( calc_wstat_stat ),
 
   { NULL, NULL, 0, NULL }
 

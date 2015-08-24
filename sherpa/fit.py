@@ -32,8 +32,7 @@ from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, LeastSq, \
-    Likelihood
-
+    Likelihood, WStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -478,6 +477,7 @@ class IterFit(NoNewAttributesAfterInit):
         bkg_dep = []
         data_size = None
         response_time = None
+
         len_datasets = len(self.data.datasets)
 
         data_size = zeros(len_datasets, dtype=int)
@@ -493,8 +493,8 @@ class IterFit(NoNewAttributesAfterInit):
                 bkg_dep = append(bkg_dep, tmp_bkg_dep)
                 response_time[2 * index] = mydata.exposure
                 response_time[2 * index + 1] = bkg.exposure
-            # else:
-            #     raise FitErr( 'no bkg file is supplied, use cstat instead' )
+            elif type(self.stat) is WStat:
+                raise FitErr('no bkg file is supplied, use cstat instead')
 
         return bkg_dep, data_size, response_time
 
@@ -511,7 +511,11 @@ class IterFit(NoNewAttributesAfterInit):
 
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
-        self.bkg, junk1, junk2 = self.get_bkg_data(self._dep)
+
+        self.bkg, datasize, responsetime = self.get_bkg_data(self._dep)
+        if type(self.stat) is WStat:
+            self._staterror = datasize
+            self._syserror = responsetime
 
         self._nfev = 0
         if outfile is not None:
@@ -958,7 +962,10 @@ class Fit(NoNewAttributesAfterInit):
         model = self.data.eval_model_to_fit(self.model)
         bkg = None
 
-        bkg, _, _ = self._iterfit.get_bkg_data(dep)
+        bkg, datasize, responsetime = self._iterfit.get_bkg_data(dep)
+        if type(self.stat) is WStat:
+            staterror = datasize
+            syserror = responsetime
         if 0 == len(bkg):
             return self.stat.calc_stat(dep, model, staterror, syserror)[0]
         else:
@@ -1029,7 +1036,7 @@ class Fit(NoNewAttributesAfterInit):
     def fit(self, outfile=None, clobber=False):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         if not iterable(dep) or len(dep) == 0:
-            #raise FitError('no noticed bins found in data set')
+            # raise FitError('no noticed bins found in data set')
             raise FitErr('nobins')
 
         if ((iterable(staterror) and 0.0 in staterror) and

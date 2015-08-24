@@ -19,7 +19,7 @@
 
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit
-from sherpa.utils.err import StatErr
+from sherpa.utils.err import FitErr, StatErr
 import sherpa.stats._statfcts
 
 from sherpa import get_config
@@ -29,7 +29,7 @@ from ConfigParser import ConfigParser
 __all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',
            'Chi2Gehrels', 'Chi2ConstVar', 'Chi2DataVar', 'Chi2ModVar',
            'Chi2XspecVar', 'Chi2',
-           'UserStat')
+           'UserStat', 'WStat')
 
 
 config = ConfigParser()
@@ -503,7 +503,71 @@ class UserStat(Stat):
                   weight=None, **kwargs):
         if not self._statfuncset:
             raise StatErr('nostat', self.name, 'calc_stat()')
+
         if 'bkg' in kwargs.keys():
+            bkg = kwargs.get('bkg')
             return self.statfunc(data, model, staterror, syserror, weight, bkg)
         else:
             return self.statfunc(data, model, staterror, syserror, weight)
+
+
+class WStat(Likelihood):
+    """Maximum likelihood function including background (XSPEC style).
+    This is equivalent to the X-Spec implementation of the
+    W statistic for CStat [1]_, from which the following documentation is
+    taken.
+    Suppose that each bin in the background spectrum is given its own
+    parameter so that the background model is b_i = f_i. A standard fit
+    for all these parameters would be impractical; however there is an
+    analytical solution for the best-fit f_i in terms of the other
+    variables which can be derived by using the fact that the derivative
+    of the likelihood (L) will be zero at the best fit. Solving for the
+    f_i and substituting gives the profile likelihood::
+      W = 2 sum_(i=1)^N t_s m_i + (t_s + t_b) f_i -
+          S_i ln(t_s m_i + t_s f_i) - B_i ln(t_b f_i) -
+          S_i (1- ln(S_i)) - B_i (1 - ln(B_i))
+    where
+      f_i = (S_i + B_i - (t_s + t_b) m_i + d_i) / (2 (t_s + t_b))
+    and
+      d_i = sqrt([(t_s + t_b) m_i - S_i - B_i]^2 +
+                 4(t_s + t_b) B_i m_i)
+    If any bin has S_i and/or B_i zero then its contribution to W (W_i)
+    is calculated as a special case. So, if S_i is zero then::
+      W_i = t_s m_i - B_i ln(t_b / (t_s + t_b))
+    If B_i is zero then there are two special cases. If
+    m_i < S_i / (t_s + t_b) then::
+      W_i = - t_b m_i - S_i ln(t_s / (t_s + t_b))
+    otherwise::
+      W_i = t_s m_i + S_i (ln(S_i) - ln(t_s m_i) - 1)
+    In practice, it works well for many cases but for weak sources can
+    generate an obviously wrong best fit. It is not clear why this happens
+    although binning to ensure that every bin contains at least one count
+    often seems to fix the problem. In the limit of large numbers of counts
+    per spectrum bin a second-order Taylor expansion shows that W tends to::
+      sum_(i=1)^N ( [S_i - t_s m_i - t_s f_i]^2 / (t_s (m_i + f_i)) +
+                    [B_i - t_b f_i]^2 / (t_b f_i) )
+    which is distributed as chi^2 with N - M degrees of freedom, where
+    the model m_i has M parameters (include the normalization).
+
+    References
+    ----------
+
+    .. [1] The description of the W statistic (`wstat`) in
+           https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
+
+    """
+    def __init__(self, name='wstat'):
+        Likelihood.__init__(self, name)
+
+    @staticmethod
+    def calc_stat(data, model, staterror=None, syserror=None,
+                      weight=None, **kwargs):
+        datasize = staterror
+        exposuretime = syserror
+
+        if 'bkg' in kwargs.keys():
+            bkg = kwargs.get('bkg')
+        else:
+            raise FitErr('no bkg file is supplied, use cstat instead')
+        return _statfcts.calc_wstat_stat(data, model, datasize, exposuretime,
+                                         bkg, truncation_value)

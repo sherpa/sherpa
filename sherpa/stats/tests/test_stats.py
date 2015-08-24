@@ -27,8 +27,9 @@ from sherpa.utils import has_package_from_list, has_fits_support
 
 from sherpa.models import PowLaw1D
 from sherpa.fit import Fit
-from sherpa.stats import Stat, Cash, LeastSq, UserStat
+from sherpa.stats import Stat, Cash, LeastSq, UserStat, WStat
 from sherpa.optmethods import LevMar, NelderMead
+from sherpa.utils.err import FitErr
 
 
 class MyCash(UserStat):
@@ -66,6 +67,7 @@ class MyChi(UserStat):
     def mycalc_stat(data, model, staterror=None, syserror=None, weight=None,
                     bkg=None):
         assert bkg is not None
+
         fvec = ((data - model) / staterror)**2
         stat = fvec.sum()
         return (stat, fvec)
@@ -176,6 +178,16 @@ class test_stats(SherpaTestCase):
             [346.51084808235697, 0.24721168701021015, 7.9993714921823997])
     }
 
+    _fit_wstat_results_bench = {
+        'succeeded': 1,
+        'numpoints': 446,
+        'dof': 443,
+        'istatval': 2163.97527961,
+        'statval': 780.781924704,
+        'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
+        'parvals': numpy.array(
+            [5340.4432676238393, 1.7046867505437482, 24952.931420356141])}
+
     def setUp(self):
         try:
             from sherpa.astro.xspec import XSphabs
@@ -239,6 +251,17 @@ class test_stats(SherpaTestCase):
         fit = Fit(data, self.model, MyChiNoBkg(), LevMar())
         results = fit.fit()
         self.compare_results(self._fit_mychinobkg_results_bench, results)
+
+    def test_wstat(self):
+        fit = Fit(self.data, self.model, WStat(), NelderMead())
+        results = fit.fit()
+        self.compare_results(self._fit_wstat_results_bench, results)
+
+    def test_wstat_error(self):
+        data = self.bkg
+        data.notice(0.5, 7.0)
+        fit = Fit(data, self.model, WStat(), NelderMead())
+        self.assertRaises(FitErr, fit.fit)
 
 
 def tstme(datadir=None):
