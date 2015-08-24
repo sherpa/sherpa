@@ -1,0 +1,48 @@
+
+If you are writing a paper and would like to cite Sherpa, we recommend
+the following papers:
+
+Sherpa: a mission-independent data analysis application
+http://adsabs.harvard.edu/abs/2001SPIE.4477...76F
+P. E. Freeman, S. Doe, A. Siemiginowska
+SPIE Proceedings, Vol. 4477, p.76, 2001	
+
+Developing Sherpa with Python
+http://adsabs.harvard.edu/abs/2007ASPC..376..543D
+S. Doe, et al.
+Astronomical Data Analysis Software and Systems XVI, 376, 543
+
+BibTeX entries for LaTeX users are
+
+@INPROCEEDINGS{2001SPIE.4477...76F,
+   author = {{Freeman}, P. and {Doe}, S. and {Siemiginowska}, A.},
+    title = "{Sherpa: a mission-independent data analysis application}",
+booktitle = {Astronomical Data Analysis},
+     year = 2001,
+   series = {Society of Photo-Optical Instrumentation Engineers (SPIE) Conference Series},
+   volume = 4477,
+   eprint = {astro-ph/0108426},
+   editor = {{Starck}, J.-L. and {Murtagh}, F.~D.},
+    month = nov,
+    pages = {76-87},
+      doi = {10.1117/12.447161},
+   adsurl = {http://adsabs.harvard.edu/abs/2001SPIE.4477...76F},
+  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+@INPROCEEDINGS{2007ASPC..376..543D,
+   author = {{Doe}, S. and {Nguyen}, D. and {Stawarz}, C. and {Refsdal}, B. and 
+	{Siemiginowska}, A. and {Burke}, D. and {Evans}, I. and {Evans}, J. and 
+	{McDowell}, J. and {Houck}, J. and {Nowak}, M.},
+    title = "{Developing Sherpa with Python}",
+booktitle = {Astronomical Data Analysis Software and Systems XVI},
+     year = 2007,
+   series = {Astronomical Society of the Pacific Conference Series},
+   volume = 376,
+   editor = {{Shaw}, R.~A. and {Hill}, F. and {Bell}, D.~J.},
+    month = oct,
+    pages = {543},
+   adsurl = {http://adsabs.harvard.edu/abs/2007ASPC..376..543D},
+  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
