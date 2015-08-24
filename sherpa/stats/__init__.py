@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,8 @@ import sherpa.stats._statfcts
 
 __all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',
            'Chi2Gehrels', 'Chi2ConstVar', 'Chi2DataVar', 'Chi2ModVar',
-           'Chi2XspecVar', 'Chi2')
+           'Chi2XspecVar', 'Chi2',
+           'UserStat')
 
 
 from sherpa import get_config
@@ -59,8 +60,8 @@ class Stat(NoNewAttributesAfterInit):
     def calc_staterror(self, data):
         raise NotImplementedError
 
-    def calc_stat(self, data, model, staterror=None, syserror=None,
-                  weight=None):
+    def calc_stat(self, data, model, staterror=None, syserror=None, \
+                      weight=None, bkg=None):
         raise NotImplementedError
 
 class Likelihood(Stat):
@@ -147,7 +148,8 @@ class Cash(Likelihood):
         Likelihood.__init__(self, name)
 
     @staticmethod
-    def calc_stat(data, model, staterror=None, syserror=None, weight=None):
+    def calc_stat(data, model, staterror=None, syserror=None, weight=None, \
+                      bkg=None):
         return _statfcts.calc_cash_stat(data, model, staterror, syserror,
                                         weight, truncation_value)
 
@@ -220,7 +222,8 @@ class CStat(Likelihood):
         Likelihood.__init__(self, name)
 
     @staticmethod
-    def calc_stat(data, model, staterror=None, syserror=None, weight=None):
+    def calc_stat(data, model, staterror=None, syserror=None, weight=None, \
+                      bkg=None):
         return _statfcts.calc_cstat_stat(data, model, staterror, syserror,
                                          weight, truncation_value)
 
@@ -278,7 +281,7 @@ class Chi2(Stat):
         raise StatErr('chi2noerr')
 
     @staticmethod
-    def calc_stat(data, model, staterror, syserror=None, weight=None):
+    def calc_stat(data, model, staterror, syserror=None, weight=None, bkg=None):
         return _statfcts.calc_chi2_stat(data, model, staterror,
                                         syserror, weight, truncation_value)
 
@@ -297,7 +300,8 @@ class LeastSq(Chi2):
         return numpy.ones_like(data)        
 
     @staticmethod
-    def calc_stat(data, model, staterror, syserror=None, weight=None):
+    def calc_stat(data, model, staterror, syserror=None, weight=None, \
+                      bkg=None):
         return _statfcts.calc_lsq_stat(data, model, staterror,
                                        syserror, weight, truncation_value)
 
@@ -417,7 +421,7 @@ class Chi2ModVar(Chi2):
         return numpy.zeros_like(data)
 
     @staticmethod
-    def calc_stat(data, model, staterror, syserror=None, weight=None):
+    def calc_stat(data, model, staterror, syserror=None, weight=None, bkg=None):
         return _statfcts.calc_chi2modvar_stat(data, model, staterror,
                                               syserror, weight,
                                               truncation_value)
@@ -496,7 +500,7 @@ class UserStat(Stat):
 
 
     def calc_stat(self, data, model, staterror=None, syserror=None,
-                  weight=None):
+                  weight=None, bkg=None):
         if not self._statfuncset:
             raise StatErr('nostat', self.name, 'calc_stat()')
-        return self.statfunc(data, model, staterror, syserror, weight)
+        return self.statfunc(data, model, staterror, syserror, weight, bkg)
