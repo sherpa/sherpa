@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -22,9 +22,11 @@
 int _sherpa_init_xspec_library();
 #define INIT_XSPEC _sherpa_init_xspec_library
 
+// Have sherpa include first so that Python.h is first, to avoid warning
+// messages about redefining _XOPEN_SOURCE
+#include "sherpa/astro/xspec_extension.hh"
 #include <iostream>
 #include <fstream>
-#include "sherpa/astro/xspec_extension.hh"
 
 #define ABUND_SIZE (30) // number of elements in Solar Abundance table
 
@@ -269,6 +271,8 @@ void xsmtbl(float* ear, int ne, float* param, const char* filenm, int ifl,
 	    float* photar, float* photer);
 
 // XSPEC convolution models
+// There is currently no high-level (Python) access to these
+// models; they are provided for experimentation.
 void C_cflux(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_xsgsmt(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_ireflct(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
@@ -295,10 +299,9 @@ int _sherpa_init_xspec_library()
 
 
   if ( !getenv("HEADAS") ) {
-    // Raise appropriate error message that XSPEC initialization failed.
     PyErr_SetString( PyExc_ImportError,
-		     (char*)"XSPEC initialization failed; "
-		     "check HEADAS environment variable" );
+		     (char*)"XSpec initialization failed; "
+                     "HEADAS environment variable is not set" );
     return EXIT_FAILURE;
   }
   
@@ -347,9 +350,15 @@ int _sherpa_init_xspec_library()
     fout.close();
 
     // Try to minimize model chatter for normal operation.
+    // TODO: is this a sensible value? It has advantages, but
+    //     means that users miss messages that XSpec users
+    //     would see (e.g. can't load in file) as it uses
+    //     a default of 10
     FPCHAT( 0 );
 
     // Set cosmology initial values to XSPEC initial values
+    // Is this needed? Also; it's a bit dangerous since the
+    // default values may differ with XSpec library version.
     csmph0( 70.0 );
     csmpq0( 0.0 );
     csmpl0( 0.73 );
@@ -366,6 +375,9 @@ int _sherpa_init_xspec_library()
     fout.close();
 
     // Raise appropriate error message that XSPEC initialization failed.
+    // Ideally would include the text of the thrown error, since the
+    // setting of the HEADAS environment variable may not be the culprit
+    //
     PyErr_SetString( PyExc_ImportError,
 		     (char*)"XSPEC initialization failed; "
 		     "check HEADAS environment variable" );
@@ -1263,19 +1275,19 @@ static PyMethodDef XSpecMethods[] = {
   XSPECTABLEMODEL_NORM( xsatbl ),
   XSPECTABLEMODEL_NORM( xsmtbl ),
   // XSPEC convolution models
-  XSPECMODELFCT_C(C_cflux, 3),
-  XSPECMODELFCT_C(C_xsgsmt, 2),
-  XSPECMODELFCT_C(C_ireflct, 7),
-  XSPECMODELFCT_C(C_kdblur, 4),
-  XSPECMODELFCT_C(C_kdblur2, 6),
-  XSPECMODELFCT_C(C_spinconv, 7),
-  XSPECMODELFCT_C(C_xslsmt, 2),
-  XSPECMODELFCT_C(C_PartialCovering, 1),
-  XSPECMODELFCT_C(C_rdblur, 4),
-  XSPECMODELFCT_C(C_reflct, 5),
-  XSPECMODELFCT_C(C_simpl, 3),
-  XSPECMODELFCT_C(C_zashift, 1),
-  XSPECMODELFCT_C(C_zmshift, 1),
+  XSPECMODELFCT_CON(C_cflux, 3),
+  XSPECMODELFCT_CON(C_xsgsmt, 2),
+  XSPECMODELFCT_CON(C_ireflct, 7),
+  XSPECMODELFCT_CON(C_kdblur, 4),
+  XSPECMODELFCT_CON(C_kdblur2, 6),
+  XSPECMODELFCT_CON(C_spinconv, 7),
+  XSPECMODELFCT_CON(C_xslsmt, 2),
+  XSPECMODELFCT_CON(C_PartialCovering, 1),
+  XSPECMODELFCT_CON(C_rdblur, 4),
+  XSPECMODELFCT_CON(C_reflct, 5),
+  XSPECMODELFCT_CON(C_simpl, 3),
+  XSPECMODELFCT_CON(C_zashift, 1),
+  XSPECMODELFCT_CON(C_zmshift, 1),
   
   { NULL, NULL, 0, NULL }
 
