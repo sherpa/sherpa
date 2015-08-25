@@ -98,6 +98,12 @@ if hasattr(fits.BinTableHDU, "from_columns"):
 else:
     _new_table = fits.new_table
 
+# fits.CardList is deprecated
+if hasattr(fits, 'Header'):
+    _new_header = fits.Header
+else:
+    _new_header = fits.CardList
+
 
 def _has_hdu(hdulist, id):
     try:
