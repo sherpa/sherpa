@@ -17,13 +17,31 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""
+Read and write FITS [1]_ files using the ``astropy.io.fits`` module [2]_,
+or ``PyFITS`` [3]_ (which is deprecated).
+
+The targeted support version of PyFITS is 3.3. It is not guaranteed that
+this module will work with earlier versions.
+
+References
+----------
+
+.. [1] https://en.wikipedia.org/wiki/FITS
+
+.. [2] http://astropy.readthedocs.org/en/latest/io/fits/
+
+.. [3] http://www.stsci.edu/institute/software_hardware/pyfits
+
+"""
 
 import numpy
 
 try:
-    import astropy.io.fits as fits
+    from astropy.io import fits
 except ImportError:
     import pyfits as fits
+
 import os
 from itertools import izip
 from sherpa.utils.err import IOErr
@@ -240,7 +258,7 @@ def read_table_blocks(arg, make_copy=False):
         hdus = fits.open(arg)
     else:
         raise IOErr('badfile', arg,
-                    "a binary FITS table or a PyFITS.BinTableHDU list")
+                    "a binary FITS table or a BinTableHDU list")
 
     cols = {}
     hdr = {}
@@ -289,11 +307,10 @@ def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
         filename = arg
     elif type(arg) is fits.HDUList and len(arg) > 0 and \
             arg[0].__class__ is fits.PrimaryHDU:
-
         tbl = arg
         filename = tbl[0]._file.name
     else:
-        msg = "a binary FITS table or a PyFITS.{} list".format(exptype)
+        msg = "a binary FITS table or a {} list".format(exptype)
         raise IOErr('badfile', arg, msg)
 
     return (tbl, filename)
@@ -519,7 +536,9 @@ def get_arf_data(arg, make_copy=False):
     """
     arg is a filename or a HDUList object
     """
-    arf, filename = _get_file_contents(arg, exptype="BinTableHDU", nobinary=True)
+
+    arf, filename = _get_file_contents(arg, exptype="BinTableHDU",
+                                       nobinary=True)
 
     try:
         if _has_hdu(arf, 'SPECRESP'):
@@ -554,7 +573,8 @@ def get_rmf_data(arg, make_copy=False):
     arg is a filename or a HDUList object.
     """
 
-    rmf, filename = _get_file_contents(arg, exptype="BinTableHDU", nobinary=True)
+    rmf, filename = _get_file_contents(arg, exptype="BinTableHDU",
+                                       nobinary=True)
 
     try:
         if _has_hdu(rmf, 'MATRIX'):
@@ -874,8 +894,8 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
         if data[name] is None:
             continue
         col = fits.Column(name=name.upper(),
-                            format=data[name].dtype.name.upper(),
-                            array=data[name])
+                          format=data[name].dtype.name.upper(),
+                          array=data[name])
         cols.append(data[name])
         coldefs.append(name.upper())
         collist.append(col)
@@ -921,8 +941,8 @@ def set_pha_data(filename, data, col_names, header=None,
         if data[name] is None:
             continue
         col = fits.Column(name=name.upper(),
-                            format=data[name].dtype.name.upper(),
-                            array=data[name])
+                          format=data[name].dtype.name.upper(),
+                          array=data[name])
         cols.append(data[name])
         coldefs.append(name.upper())
         collist.append(col)
@@ -932,7 +952,8 @@ def set_pha_data(filename, data, col_names, header=None,
         return
 
     pha = fits.new_table(fits.ColDefs(collist),
-                           header=fits.Header(hdrlist))
+
+                         header=fits.Header(hdrlist))
     pha.name = 'SPECTRUM'
     if packup:
         return pha
@@ -1034,7 +1055,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     cols = []
     for val, name in izip(args, fields):
         col = fits.Column(name=name.upper(), format=val.dtype.name.upper(),
-                            array=val)
+                          array=val)
         cols.append(col)
 
     tbl = fits.new_table(fits.ColDefs(cols))
