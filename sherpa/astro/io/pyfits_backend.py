@@ -17,13 +17,31 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""
+Read and write FITS [1]_ files using the ``astropy.io.fits`` module [2]_,
+or ``PyFITS`` [3]_ (which is deprecated).
+
+The targeted support version of PyFITS is 3.3. It is not guaranteed that
+this module will work with earlier versions.
+
+References
+----------
+
+.. [1] https://en.wikipedia.org/wiki/FITS
+
+.. [2] http://astropy.readthedocs.org/en/latest/io/fits/
+
+.. [3] http://www.stsci.edu/institute/software_hardware/pyfits
+
+"""
 
 import numpy
 
 try:
-    import astropy.io.fits as pyfits
+    from astropy.io import fits
 except ImportError:
-    import pyfits
+    import pyfits as fits
+
 import os
 from itertools import izip
 from sherpa.utils.err import IOErr
@@ -50,14 +68,14 @@ __all__ = ('get_table_data', 'get_image_data', 'get_arf_data', 'get_rmf_data',
 # Should we drop support for earlier versions?
 try:
     # pyfits-1.3 support
-    _VLF = pyfits.NP_pyfits._VLF
+    _VLF = fits.NP_pyfits._VLF
 except AttributeError:
     # pyfits-2.3.1 support
     try:
-        _VLF = pyfits.core._VLF
+        _VLF = fits.core._VLF
     except AttributeError:
         # pyfits-3.0 support
-        _VLF = pyfits.column._VLF
+        _VLF = fits.column._VLF
 
 
 def _has_hdu(hdulist, id):
@@ -114,7 +132,7 @@ def _get_wcs_key(hdu, key0, key1, fix_type=False, dtype=SherpaFloat):
 
 
 def _set_wcs_key(hdulist, name, val):
-    card = pyfits.Card(str(name), val)
+    card = fits.Card(str(name), val)
     hdulist.append(card)
 
 
@@ -213,15 +231,15 @@ def read_table_blocks(arg, make_copy=False):
 
     filename = ''
     hdus = None
-    if type(arg) is pyfits.HDUList:
+    if type(arg) is fits.HDUList:
         filename = arg[0]._file.name
         hdus = arg
     elif type(arg) in (str, unicode, numpy.str_) and is_binary_file(arg):
         filename = arg
-        hdus = pyfits.open(arg)
+        hdus = fits.open(arg)
     else:
         raise IOErr('badfile', arg,
-                    "a binary FITS table or a PyFITS.BinTableHDU list")
+                    "a binary FITS table or a BinTableHDU list")
 
     cols = {}
     hdr = {}
@@ -266,14 +284,14 @@ def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
     """
 
     if type(arg) == str and (not nobinary or is_binary_file(arg)):
-        tbl = pyfits.open(arg)
+        tbl = fits.open(arg)
         filename = arg
-    elif type(arg) is pyfits.HDUList and len(arg) > 0 and \
-            arg[0].__class__ is pyfits.PrimaryHDU:
+    elif type(arg) is fits.HDUList and len(arg) > 0 and \
+            arg[0].__class__ is fits.PrimaryHDU:
         tbl = arg
         filename = tbl[0]._file.name
     else:
-        msg = "a binary FITS table or a PyFITS.{} list".format(exptype)
+        msg = "a binary FITS table or a {} list".format(exptype)
         raise IOErr('badfile', arg, msg)
 
     return (tbl, filename)
@@ -290,7 +308,7 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
         # if there aren't any.
         for hdu in tbl:
             if blockname is None:
-                if hdu.__class__ is pyfits.BinTableHDU:
+                if hdu.__class__ is fits.BinTableHDU:
                     break
                 else:
                     continue
@@ -348,12 +366,12 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=False, fix_type=False,
         # if there aren't any.
         for hdu in tbl:
             if blockname is None:
-                if hdu.__class__ is pyfits.BinTableHDU:
+                if hdu.__class__ is fits.BinTableHDU:
                     break
                 else:
                     continue
             elif hdu.name.lower() == str(blockname).strip().lower() and \
-                    hdu.__class__ is pyfits.BinTableHDU:
+                    hdu.__class__ is fits.BinTableHDU:
                 break
 
         else:
@@ -501,7 +519,8 @@ def get_arf_data(arg, make_copy=False):
     arg is a filename or a HDUList object
     """
 
-    arf, filename = _get_file_contents(arg, exptype="BinTableHDU", nobinary=True)
+    arf, filename = _get_file_contents(arg, exptype="BinTableHDU",
+                                       nobinary=True)
 
     try:
         if _has_hdu(arf, 'SPECRESP'):
@@ -536,7 +555,8 @@ def get_rmf_data(arg, make_copy=False):
     arg is a filename or a HDUList object.
     """
 
-    rmf, filename = _get_file_contents(arg, exptype="BinTableHDU", nobinary=True)
+    rmf, filename = _get_file_contents(arg, exptype="BinTableHDU",
+                                       nobinary=True)
 
     try:
         if _has_hdu(rmf, 'MATRIX'):
@@ -848,10 +868,10 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
 
     col_names = list(col_names)
     col_names.remove("name")
-    # hdrlist = pyfits.CardList()
+    # hdrlist = fits.CardList()
 
     # for name in ['exposure','backscal', 'areascal']:
-    #     hdrlist.append(pyfits.Card(key=name.upper(),
+    #     hdrlist.append(fits.Card(key=name.upper(),
     #                    value=data[name]))
 
     collist = []
@@ -860,9 +880,9 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
     for name in col_names:
         if data[name] is None:
             continue
-        col = pyfits.Column(name=name.upper(),
-                            format=data[name].dtype.name.upper(),
-                            array=data[name])
+        col = fits.Column(name=name.upper(),
+                          format=data[name].dtype.name.upper(),
+                          array=data[name])
         cols.append(data[name])
         coldefs.append(name.upper())
         collist.append(col)
@@ -871,8 +891,8 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
         set_arrays(filename, cols, coldefs, ascii=ascii, clobber=clobber)
         return
 
-    tbl = pyfits.new_table(pyfits.ColDefs(collist))
-    # , header=pyfits.Header(hdrlist))
+    tbl = fits.new_table(fits.ColDefs(collist))
+    # , header=fits.Header(hdrlist))
     tbl.name = 'HISTOGRAM'
     if packup:
         return tbl
@@ -885,12 +905,12 @@ def set_pha_data(filename, data, col_names, header=None,
     if not packup and os.path.isfile(filename) and not clobber:
         raise IOErr("filefound", filename)
 
-    hdrlist = pyfits.CardList()
+    hdrlist = fits.CardList()
 
     for key in header.keys():
         if header[key] is None:
             continue
-        hdrlist.append(pyfits.Card(str(key.upper()), header[key]))
+        hdrlist.append(fits.Card(str(key.upper()), header[key]))
 
     collist = []
     cols = []
@@ -898,9 +918,9 @@ def set_pha_data(filename, data, col_names, header=None,
     for name in col_names:
         if data[name] is None:
             continue
-        col = pyfits.Column(name=name.upper(),
-                            format=data[name].dtype.name.upper(),
-                            array=data[name])
+        col = fits.Column(name=name.upper(),
+                          format=data[name].dtype.name.upper(),
+                          array=data[name])
         cols.append(data[name])
         coldefs.append(name.upper())
         collist.append(col)
@@ -909,8 +929,8 @@ def set_pha_data(filename, data, col_names, header=None,
         set_arrays(filename, cols, coldefs, ascii=ascii, clobber=clobber)
         return
 
-    pha = pyfits.new_table(pyfits.ColDefs(collist),
-                           header=pyfits.Header(hdrlist))
+    pha = fits.new_table(fits.ColDefs(collist),
+                         header=fits.Header(hdrlist))
     pha.name = 'SPECTRUM'
     if packup:
         return pha
@@ -928,7 +948,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
                    ascii=ascii, clobber=clobber)
         return
 
-    hdrlist = pyfits.CardList()
+    hdrlist = fits.CardList()
 
     # Write Image Header Keys
     for key in header.keys():
@@ -981,7 +1001,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
         _set_wcs_key(hdrlist, 'EQUINOX', equin)
 
     #
-    img = pyfits.PrimaryHDU(data['pixels'], header=pyfits.Header(hdrlist))
+    img = fits.PrimaryHDU(data['pixels'], header=fits.Header(hdrlist))
     if packup:
         return img
     img.writeto(filename, clobber=True)
@@ -1017,10 +1037,10 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
 
     cols = []
     for val, name in izip(args, fields):
-        col = pyfits.Column(name=name.upper(), format=val.dtype.name.upper(),
-                            array=val)
+        col = fits.Column(name=name.upper(), format=val.dtype.name.upper(),
+                          array=val)
         cols.append(col)
 
-    tbl = pyfits.new_table(pyfits.ColDefs(cols))
+    tbl = fits.new_table(fits.ColDefs(cols))
     tbl.name = 'TABLE'
     tbl.writeto(filename, clobber=True)
