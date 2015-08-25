@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,19 +18,17 @@
 #
 
 
-import inspect
-import sys
 from sherpa.utils import NoNewAttributesAfterInit
-from sherpa.utils.err import NotImplementedErr
 
 
 __all__ = ('Meta',)
 
 
 class Meta(NoNewAttributesAfterInit):
+    """A key-value store."""
 
     def __init__(self):
-        self.__header={}
+        self.__header = {}
         NoNewAttributesAfterInit.__init__(self)
 
     def __getitem__(self, name):
@@ -57,7 +55,7 @@ class Meta(NoNewAttributesAfterInit):
         return keys
 
     def has_key(self, key):
-        return self.__header.has_key(key)
+        return key in self.__header
 
     def values(self):
         return [self.__header[key] for key in self.keys()]
