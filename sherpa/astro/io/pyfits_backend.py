@@ -65,7 +65,11 @@ __all__ = ('get_table_data', 'get_image_data', 'get_arf_data', 'get_rmf_data',
            'get_pha_data', 'set_table_data', 'set_image_data', 'set_pha_data',
            'get_column_data', 'get_ascii_data')
 
-# Should we drop support for earlier versions?
+# Should we drop support for earlier versions? The code is only tested
+# using recent (3.3 or later) versions, so there are no guarantees
+# for earlier versions. Should the import order below be reversed,
+# so that later versions are tried first?
+#
 try:
     # pyfits-1.3 support
     _VLF = fits.NP_pyfits._VLF
@@ -76,6 +80,17 @@ except AttributeError:
     except AttributeError:
         # pyfits-3.0 support
         _VLF = fits.column._VLF
+
+
+# As fits.new_table is deprecated, use the from_columns method
+# if available. Note that this should only be done for binary
+# tables, as fits.TableHDU.from_columns should be used for
+# ASCII tables.
+#
+if hasattr(fits.BinTableHDU, "from_columns"):
+    _new_table = fits.BinTableHDU.from_columns
+else:
+    _new_table = fits.new_table
 
 
 def _has_hdu(hdulist, id):
@@ -887,11 +902,11 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
 
     col_names = list(col_names)
     col_names.remove("name")
-    # hdrlist = fits.CardList()
 
-    # for name in ['exposure','backscal', 'areascal']:
-    #     hdrlist.append(fits.Card(key=name.upper(),
-    #                    value=data[name]))
+    # The code used to create a header containing the
+    # exposure, backscal, and areascal keywords, but this has
+    # since been commented out, and the code has now been
+    # removed.
 
     collist, cols, coldefs = _create_columns(col_names, data)
 
@@ -899,8 +914,7 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
         set_arrays(filename, cols, coldefs, ascii=ascii, clobber=clobber)
         return
 
-    tbl = fits.new_table(fits.ColDefs(collist))
-    # , header=fits.Header(hdrlist))
+    tbl = _new_table(fits.ColDefs(collist))
     tbl.name = 'HISTOGRAM'
     if packup:
         return tbl
@@ -926,8 +940,7 @@ def set_pha_data(filename, data, col_names, header=None,
         set_arrays(filename, cols, coldefs, ascii=ascii, clobber=clobber)
         return
 
-    pha = fits.new_table(fits.ColDefs(collist),
-                         header=fits.Header(hdrlist))
+    pha = _new_table(fits.ColDefs(collist), header=fits.Header(hdrlist))
     pha.name = 'SPECTRUM'
     if packup:
         return pha
@@ -1038,6 +1051,6 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
                           array=val)
         cols.append(col)
 
-    tbl = fits.new_table(fits.ColDefs(cols))
+    tbl = _new_table(fits.ColDefs(cols))
     tbl.name = 'TABLE'
     tbl.writeto(filename, clobber=True)
