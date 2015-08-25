@@ -297,6 +297,29 @@ def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
     return (tbl, filename)
 
 
+def _find_binary_table(tbl, filename, blockname=None):
+    """Return the first binary table extension we find. If blockname
+    is not None then the name of the block has to match (case-insensitive
+    match), and any spaces are removed from blockname before checking.
+
+    Throws an exception if there aren't any.
+    """
+
+    if blockname is None:
+        for hdu in tbl:
+            if hdu.__class__ is fits.BinTableHDU:
+                return hdu
+
+    else:
+        blockname = str(blockname).strip().lower()
+        for hdu in tbl:
+            if hdu.name.lower() == blockname and \
+                    hdu.__class__ is fits.BinTableHDU:
+                return hdu
+
+    raise IOErr('badext', filename)
+
+
 def get_header_data(arg, blockname=None, hdrkeys=None):
     """Read in the header data."""
 
@@ -304,26 +327,13 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
 
     hdr = {}
     try:
-        # Use the first binary table extension we find.  Throw an exception
-        # if there aren't any.
-        for hdu in tbl:
-            if blockname is None:
-                if hdu.__class__ is fits.BinTableHDU:
-                    break
-                else:
-                    continue
-            elif hdu.name.lower() == str(blockname).strip().lower():
-                break
+        hdu = _find_binary_table(tbl, filename, blockname)
 
-        else:
-            raise IOErr('badext', filename)
+        if hdrkeys is None:
+            hdrkeys = hdu.header.keys()
 
-        if hdrkeys is not None:
-            for key in hdrkeys:
-                hdr[key] = _require_key(hdu, key, dtype=str)
-        else:
-            for key in hdu.header.keys():
-                hdr[key] = _require_key(hdu, key, dtype=str)
+        for key in hdrkeys:
+            hdr[key] = _require_key(hdu, key, dtype=str)
 
     finally:
         tbl.close()
@@ -362,26 +372,14 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=False, fix_type=False,
     tbl, filename = _get_file_contents(arg, exptype="BinTableHDU")
 
     try:
-        # Use the first binary table extension we find.  Throw an exception
-        # if there aren't any.
-        for hdu in tbl:
-            if blockname is None:
-                if hdu.__class__ is fits.BinTableHDU:
-                    break
-                else:
-                    continue
-            elif hdu.name.lower() == str(blockname).strip().lower() and \
-                    hdu.__class__ is fits.BinTableHDU:
-                break
-
-        else:
-            raise IOErr('badext', filename)
-
+        hdu = _find_binary_table(tbl, filename, blockname)
         cnames = list(hdu.columns.names)
 
+        # Try Channel, Counts or X,Y before defaulting to the first
+        # ncols columns in cnames (when colkeys is not given).
+        #
         if colkeys is not None:
             colkeys = [name.strip().upper() for name in list(colkeys)]
-        # Try Channel, Counts or X,Y before defaulting to first two table cols
         elif 'CHANNEL' in cnames and 'COUNTS' in cnames:
             colkeys = ['CHANNEL', 'COUNTS']
         elif 'X' in cnames and 'Y' in cnames:
@@ -469,11 +467,11 @@ def get_image_data(arg, make_copy=False):
             crpixw = crvalp + (crpixw - crpixp) * cdeltp
 
         sky = None
-        if cdeltp != () and crpixp != () and crvalp != () and transformstatus:
+        if transformstatus and cdeltp != () and crpixp != () and crvalp != ():
             sky = WCS('physical', 'LINEAR', crvalp, crpixp, cdeltp)
 
         eqpos = None
-        if cdeltw != () and crpixw != () and crvalw != () and transformstatus:
+        if transformstatus and cdeltw != () and crpixw != () and crvalw != ():
             eqpos = WCS('world', 'WCS', crvalw, crpixw, cdeltw)
 
         data['sky'] = sky
@@ -595,9 +593,12 @@ def get_rmf_data(arg, make_copy=False):
         # Beginning of non-Chandra RMF support
         fchan_col = list(hdu.columns.names).index('F_CHAN') + 1
         tlmin = _try_key(hdu, 'TLMIN' + str(fchan_col), True, SherpaUInt)
+
         if tlmin is not None:
             data['offset'] = tlmin
         else:
+            # QUS: should this actually be an error, rather than just
+            #      something that is logged to screen?
             error("Failed to locate TLMIN keyword for F_CHAN" +
                   " column in RMF file '%s'; "  % filename +
                   'Update the offset value in the RMF data set to' +
@@ -717,8 +718,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             # Make sure channel numbers not indices
             chan = list(hdu.columns.names).index('CHANNEL') + 1
             tlmin = _try_key(hdu, 'TLMIN' + str(chan), True, SherpaUInt)
-            if int(data['channel'][0]) == 0 or ((tlmin is not None) and
-                                                tlmin == 0):
+            if int(data['channel'][0]) == 0 or tlmin == 0:
                 data['channel'] = data['channel'] + 1
 
             data['counts'] = _try_col(hdu, 'COUNTS', fix_type=True)
@@ -860,6 +860,25 @@ def get_pha_data(arg, make_copy=False, use_background=False):
 
 # Write Functions
 
+def _create_columns(col_names, data):
+
+    collist = []
+    cols = []
+    coldefs = []
+    for name in col_names:
+        coldata = data[name]
+        if coldata is None:
+            continue
+
+        col = fits.Column(name=name.upper(), array=coldata,
+                          format=coldata.dtype.name.upper())
+        cols.append(coldata)
+        coldefs.append(name.upper())
+        collist.append(col)
+
+    return collist, cols, coldefs
+
+
 def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
                    ascii=False, clobber=False, packup=False):
 
@@ -874,18 +893,7 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
     #     hdrlist.append(fits.Card(key=name.upper(),
     #                    value=data[name]))
 
-    collist = []
-    cols = []
-    coldefs = []
-    for name in col_names:
-        if data[name] is None:
-            continue
-        col = fits.Column(name=name.upper(),
-                          format=data[name].dtype.name.upper(),
-                          array=data[name])
-        cols.append(data[name])
-        coldefs.append(name.upper())
-        collist.append(col)
+    collist, cols, coldefs = _create_columns(col_names, data)
 
     if ascii:
         set_arrays(filename, cols, coldefs, ascii=ascii, clobber=clobber)
@@ -912,18 +920,7 @@ def set_pha_data(filename, data, col_names, header=None,
             continue
         hdrlist.append(fits.Card(str(key.upper()), header[key]))
 
-    collist = []
-    cols = []
-    coldefs = []
-    for name in col_names:
-        if data[name] is None:
-            continue
-        col = fits.Column(name=name.upper(),
-                          format=data[name].dtype.name.upper(),
-                          array=data[name])
-        cols.append(data[name])
-        coldefs.append(name.upper())
-        collist.append(col)
+    collist, cols, coldefs = _create_columns(col_names, data)
 
     if ascii:
         set_arrays(filename, cols, coldefs, ascii=ascii, clobber=clobber)
@@ -940,7 +937,7 @@ def set_pha_data(filename, data, col_names, header=None,
 def set_image_data(filename, data, header, ascii=False, clobber=False,
                    packup=False):
 
-    if not packup and os.path.isfile(filename) and not clobber:
+    if not packup and not clobber and os.path.isfile(filename):
         raise IOErr("filefound", filename)
 
     if ascii:
@@ -1013,7 +1010,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
         write_arrays(filename, args, fields, clobber=clobber)
         return
 
-    if os.path.isfile(filename) and not clobber:
+    if not clobber and os.path.isfile(filename):
         raise IOErr("filefound", filename)
 
     if not numpy.iterable(args) or len(args) == 0:
