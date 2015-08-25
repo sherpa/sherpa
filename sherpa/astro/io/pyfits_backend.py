@@ -92,6 +92,12 @@ if hasattr(fits.BinTableHDU, "from_columns"):
 else:
     _new_table = fits.new_table
 
+# fits.CardList is deprecated
+if hasattr(fits, 'Header'):
+    _new_header = fits.Header
+else:
+    _new_header = fits.CardList
+
 
 def _has_hdu(hdulist, id):
     try:
@@ -927,7 +933,7 @@ def set_pha_data(filename, data, col_names, header=None,
     if not packup and os.path.isfile(filename) and not clobber:
         raise IOErr("filefound", filename)
 
-    hdrlist = fits.CardList()
+    hdrlist = _new_header()
 
     for key in header.keys():
         if header[key] is None:
@@ -958,7 +964,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
                    ascii=ascii, clobber=clobber)
         return
 
-    hdrlist = fits.CardList()
+    hdrlist = _new_header()
 
     # Write Image Header Keys
     for key in header.keys():
