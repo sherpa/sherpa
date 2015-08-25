@@ -265,20 +265,44 @@ def read_table_blocks(arg, make_copy=False):
     return filename, cols, hdr
 
 
-def get_header_data(arg, blockname=None, hdrkeys=None):
+# @DougBurke thinks that nobinary may just be a sign of a
+# missed copy-and-paste edit, as it's not at all obvious why
+# it isn't included there (alternatively, it may make sense to
+# just remove the binary check entirely and let the file I/O
+# fall over if it can't read the file).
+#
+# @DougBurke thinks that the exptype argument also seems to be
+# wrong, since there is *no* check here that the HDUList has
+# a table (or image), so why change the error message.
+#
+def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
+    """arg is a filename or a list of HDUs, with the first
+    one a PrimaryHDU. The return value is the list of
+    HDUs and the filename.
 
-    filename = ''
-    if type(arg) == str and is_binary_file(arg):
+    Set nobinary to True to avoid checking that the input
+    file is a binary file (via the is_binary_file routine).
+    """
+
+    if type(arg) == str and (not nobinary or is_binary_file(arg)):
         tbl = fits.open(arg)
         filename = arg
-    elif ((type(arg) is fits.HDUList) and
-          (len(arg) > 0) and
-          (arg[0].__class__ is fits.PrimaryHDU)):
+    elif type(arg) is fits.HDUList and len(arg) > 0 and \
+            arg[0].__class__ is fits.PrimaryHDU:
+
         tbl = arg
         filename = tbl[0]._file.name
     else:
-        raise IOErr('badfile', arg,
-                    "a binary FITS table or a PyFITS.BinTableHDU list")
+        msg = "a binary FITS table or a PyFITS.{} list".format(exptype)
+        raise IOErr('badfile', arg, msg)
+
+    return (tbl, filename)
+
+
+def get_header_data(arg, blockname=None, hdrkeys=None):
+    """Read in the header data."""
+
+    tbl, filename = _get_file_contents(arg, exptype="BinTableHDU")
 
     hdr = {}
     try:
@@ -290,7 +314,7 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
                     break
                 else:
                     continue
-            elif (hdu.name.lower() == str(blockname).strip().lower()):
+            elif hdu.name.lower() == str(blockname).strip().lower():
                 break
 
         else:
@@ -336,18 +360,8 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=False, fix_type=False,
     """
     arg is a filename or a HDUList object.
     """
-    filename = ''
-    if type(arg) == str and is_binary_file(arg):
-        tbl = fits.open(arg)
-        filename = arg
-    elif ((type(arg) is fits.HDUList) and
-          (len(arg) > 0) and
-          (arg[0].__class__ is fits.PrimaryHDU)):
-        tbl = arg
-        filename = tbl[0]._file.name
-    else:
-        raise IOErr('badfile', arg,
-                    "a binary FITS table or a PyFITS.BinTableHDU list")
+
+    tbl, filename = _get_file_contents(arg, exptype="BinTableHDU")
 
     try:
         # Use the first binary table extension we find.  Throw an exception
@@ -358,8 +372,8 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=False, fix_type=False,
                     break
                 else:
                     continue
-            elif (hdu.name.lower() == str(blockname).strip().lower() and
-                  hdu.__class__ is fits.BinTableHDU):
+            elif hdu.name.lower() == str(blockname).strip().lower() and \
+                    hdu.__class__ is fits.BinTableHDU:
                 break
 
         else:
@@ -370,9 +384,9 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=False, fix_type=False,
         if colkeys is not None:
             colkeys = [name.strip().upper() for name in list(colkeys)]
         # Try Channel, Counts or X,Y before defaulting to first two table cols
-        elif ('CHANNEL' in cnames) and ('COUNTS' in cnames):
+        elif 'CHANNEL' in cnames and 'COUNTS' in cnames:
             colkeys = ['CHANNEL', 'COUNTS']
-        elif ('X' in cnames) and ('Y' in cnames):
+        elif 'X' in cnames and 'Y' in cnames:
             colkeys = ['X', 'Y']
         else:
             colkeys = cnames[:ncols]
@@ -397,18 +411,7 @@ def get_image_data(arg, make_copy=False):
     """
     arg is a filename or a HDUList object
     """
-    filename = ''
-    if type(arg) == str and is_binary_file(arg):
-        hdu = fits.open(arg)
-        filename = arg
-    elif ((type(arg) is fits.HDUList) and
-          (len(arg) > 0 ) and
-          (arg[0].__class__ is fits.PrimaryHDU)):
-        hdu = arg
-        filename = hdu[0]._file.name
-    else:
-        raise IOErr('badfile', arg,
-                    "a binary FITS file or a PyFITS.PrimaryHDU list")
+    hdu, filename = _get_file_contents(arg)
 
     #   FITS uses logical-to-world where we use physical-to-world.
     #   For all transforms, update their physical-to-world
@@ -459,20 +462,19 @@ def get_image_data(arg, make_copy=False):
         crvalw = _get_wcs_key(img, 'CRVAL1', 'CRVAL2')
 
         # proper calculation of cdelt wrt PHYSICAL coords
-        if ((cdeltw != ()) and (cdeltp != ())):
+        if cdeltw != () and cdeltp != ():
             cdeltw = cdeltw / cdeltp
 
         # proper calculation of crpix wrt PHYSICAL coords
-        if ((crpixw != ()) and (crvalp != ()) and
-                (cdeltp != ()) and (crpixp != ())):
+        if crpixw != () and crvalp != () and cdeltp != () and crpixp != ():
             crpixw = crvalp + (crpixw - crpixp) * cdeltp
 
         sky = None
-        if(cdeltp != () and crpixp != () and crvalp != () and transformstatus):
+        if cdeltp != () and crpixp != () and crvalp != () and transformstatus:
             sky = WCS('physical', 'LINEAR', crvalp, crpixp, cdeltp)
 
         eqpos = None
-        if(cdeltw != () and crpixw != () and crvalw != () and transformstatus):
+        if cdeltw != () and crpixw != () and crvalw != () and transformstatus:
             eqpos = WCS('world', 'WCS', crvalw, crpixw, cdeltw)
 
         data['sky'] = sky
@@ -497,31 +499,34 @@ def get_image_data(arg, make_copy=False):
     return data, filename
 
 
+def _is_ogip_type(hdus, bltype, bltype2=None):
+    """Return True if hdus[1] exists and has
+    the given type (as determined by the HDUCLAS1 or HDUCLAS2
+    keywords). If bltype2 is None then bltype is used for
+    both checks, otherwise bltype2 is used for HDUCLAS2 and
+    bltype is for HDUCLAS1.
+    """
+
+    bnum = 1
+    if bltype2 is None:
+        bltype2 = bltype
+    return _has_hdu(hdus, bnum) and \
+        (_try_key(hdus[bnum], 'HDUCLAS1') == bltype or
+         _try_key(hdus[bnum], 'HDUCLAS2') == bltype2)
+
+
 def get_arf_data(arg, make_copy=False):
     """
     arg is a filename or a HDUList object
     """
-    filename = ''
-    if type(arg) == str:
-        arf = fits.open(arg)
-        filename = arg
-    elif ((type(arg) is fits.HDUList) and
-          (len(arg) > 0) and
-          (arg[0].__class__ is fits.PrimaryHDU)):
-        arf = arg
-        filename = arf[0]._file.name
-    else:
-        raise IOErr('badfile', arg,
-                    "a binary FITS file or a PyFITS.BinTableHDU list")
+    arf, filename = _get_file_contents(arg, exptype="BinTableHDU", nobinary=True)
 
     try:
         if _has_hdu(arf, 'SPECRESP'):
             hdu = arf['SPECRESP']
         elif _has_hdu(arf, 'AXAF_ARF'):
             hdu = arf['AXAF_ARF']
-        elif (_has_hdu(arf, 1) and
-              ((_try_key(arf[1], 'HDUCLAS1') == 'SPECRESP') or
-               (_try_key(arf[1], 'HDUCLAS2') == 'SPECRESP'))):
+        elif _is_ogip_type(arf, 'SPECRESP'):
             hdu = arf[1]
         else:
             raise IOErr('notrsp', filename, 'an ARF')
@@ -548,18 +553,8 @@ def get_rmf_data(arg, make_copy=False):
     """
     arg is a filename or a HDUList object.
     """
-    filename = ''
-    if type(arg) == str:
-        rmf = fits.open(arg)
-        filename = arg
-    elif ((type(arg) is fits.HDUList) and
-          (len(arg) > 0) and
-          (arg[0].__class__ is fits.PrimaryHDU)):
-        rmf = arg
-        filename = rmf[0]._file.name
-    else:
-        raise IOErr('badfile', arg,
-                    "a binary FITS file or a PyFITS.BinTableHDU list")
+
+    rmf, filename = _get_file_contents(arg, exptype="BinTableHDU", nobinary=True)
 
     try:
         if _has_hdu(rmf, 'MATRIX'):
@@ -568,9 +563,7 @@ def get_rmf_data(arg, make_copy=False):
             hdu = rmf['SPECRESP MATRIX']
         elif _has_hdu(rmf, 'AXAF_RMF'):
             hdu = rmf['AXAF_RMF']
-        elif (_has_hdu(rmf, 1) and
-              ((_try_key(rmf[1], 'HDUCLAS1') == 'RESPONSE') or
-               (_try_key(rmf[1], 'HDUCLAS2') == 'RSP_MATRIX'))):
+        elif _is_ogip_type(rmf, 'RESPONSE', bltype2='RSP_MATRIX'):
             hdu = rmf[1]
         else:
             raise IOErr('notrsp', filename, 'an RMF')
@@ -655,7 +648,7 @@ def get_rmf_data(arg, make_copy=False):
 
     # Flatten f_chan and n_chan vectors into 1D arrays as crates does
     # according to group
-    if((data['f_chan'].ndim > 1) and (data['n_chan'].ndim > 1)):
+    if data['f_chan'].ndim > 1 and data['n_chan'].ndim > 1:
         f_chan = []
         n_chan = []
         for grp, fch, nch, in izip(data['n_grp'], data['f_chan'],
@@ -667,7 +660,7 @@ def get_rmf_data(arg, make_copy=False):
         data['f_chan'] = numpy.asarray(f_chan, SherpaUInt)
         data['n_chan'] = numpy.asarray(n_chan, SherpaUInt)
     else:
-        if(len(data['n_grp']) == len(data['f_chan'])):
+        if len(data['n_grp']) == len(data['f_chan']):
             # filter out groups with zeroes.
             good = (data['n_grp'] > 0)
             data['f_chan'] = data['f_chan'][good]
@@ -680,32 +673,20 @@ def get_pha_data(arg, make_copy=False, use_background=False):
     """
     arg is a filename or a HDUList object
     """
-    filename = ''
-    if type(arg) == str and is_binary_file(arg):
-        pha = fits.open(arg)
-        filename = arg
-    elif ((type(arg) is fits.HDUList) and
-          (len(arg) > 0) and
-          (arg[0].__class__ is fits.PrimaryHDU)):
-        pha = arg
-        filename = pha[0]._file.name
-    else:
-        raise IOErr('badfile', arg,
-                    "a binary FITS spectrum or a PyFITS.BinTableHDU list")
+
+    pha, filename = _get_file_contents(arg, exptype="BinTableHDU")
 
     try:
         if _has_hdu(pha, 'SPECTRUM'):
             hdu = pha['SPECTRUM']
-        elif (_has_hdu(pha, 1) and
-              ((_try_key(pha[1], 'HDUCLAS1') == 'SPECTRUM') or
-               (_try_key(pha[1], 'HDUCLAS2') == 'SPECTRUM'))):
+        elif _is_ogip_type(pha, 'SPECTRUM'):
             hdu = pha[1]
         else:
             raise IOErr('notrsp', filename, "a PHA spectrum")
 
         if use_background:
             for block in pha:
-                if (_try_key(block, 'HDUCLAS2') == 'BKG'):
+                if _try_key(block, 'HDUCLAS2') == 'BKG':
                     hdu = block
 
         keys = ['BACKFILE', 'ANCRFILE', 'RESPFILE',
