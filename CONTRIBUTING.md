@@ -59,24 +59,6 @@ include the following:
   the [accepted requests](https://github.com/sherpa/sherpa/pulls?q=is%3Apr+is%3Aclosed)
   for examples of style and format.
   
-Other Tips
-----------
-
-When contributing trivial documentation fixes (i.e. fixes to typos, spelling,
-grammar) that do not contain any special markup and are not associated with
-code changes, include the string "[skip ci]" at the end of your commit
-message.  For example:
-
-    $ git commit -m "Fixed typo [skip ci]"
-
-This will prevent automated tests for running against your change, freeing
-up resources for testing non-trivial changes.
-
-If you already made the commit without including this string, you can edit
-your existing commit message by running:
-
-    $ git commit --amend
-
 Checklist for Contributed Code
 ------------------------------
 
