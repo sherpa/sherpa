@@ -35,7 +35,7 @@ import sherpa.io
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaFloat
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
-from sherpa.astro.data import *
+from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, DataPHA
 from sherpa import get_config
 from ConfigParser import ConfigParser
 
@@ -172,6 +172,36 @@ def read_rmf(arg):
     return DataRMF(filename, **data)
 
 
+def _read_ancillary(data, key, label, dname,
+                    read_func, output_once=True):
+    """Read in the file, if the key in data is set,
+    replacing the value with the full path to the file,
+    and return the resulf of calling read_func on the
+    file. dname is the directory where the input file is,
+    and is used to create the full path if it is not an
+    absolute path.
+
+    """
+
+    if not(data[key]) or data[key].lower() == 'none':
+        return None
+
+    out = None
+    try:
+        if os.path.dirname(data[key]) == '':
+            data[key] = os.path.join(dname, data[key])
+
+        out = read_func(data[key])
+        if output_once:
+            info('read {} file {}'.format(label, data[key]))
+
+    except:
+        if output_once:
+            warning(str(sys.exc_info()[1]))
+
+    return out
+
+
 def read_pha(arg, use_errors=False, use_background=False):
     """
     read_pha( filename [, use_errors=False [, use_background=False]] )
@@ -204,37 +234,18 @@ def read_pha(arg, use_errors=False, use_background=False):
                 data['staterror'] = None
                 data['syserror'] = None
 
-        arf = None
-        if data['arffile'] and data['arffile'].lower() != 'none':
-            is_bkg = ' '
-            if use_background:
-                is_bkg = ' (background) '
-            try:
-                if os.path.dirname(data['arffile']) == '':
-                    data['arffile'] = os.path.join(os.path.dirname(filename),
-                                                   data['arffile'])
-                arf = read_arf(data['arffile'])
-                if output_once:
-                    info('read ARF{}file {}'.format(is_bkg, data['arffile']))
-            except:
-                if output_once:
-                    warning(str(sys.exc_info()[1]))
+        dname = os.path.dirname(filename)
 
-        rmf = None
-        if data['rmffile'] and data['rmffile'].lower() != 'none':
-            is_bkg = ' '
-            if use_background:
-                is_bkg = ' (background) '
-            try:
-                if os.path.dirname(data['rmffile']) == '':
-                    data['rmffile'] = os.path.join(os.path.dirname(filename),
-                                                   data['rmffile'])
-                rmf = read_rmf(data['rmffile'])
-                if output_once:
-                    info('read RMF{}file {}'.fomat((is_bkg, data['rmffile'])))
-            except:
-                if output_once:
-                    warning(str(sys.exc_info()[1]))
+        lbl = 'ARF'
+        if use_background:
+            lbl = lbl + ' (background)'
+        arf = _read_ancillary(data, 'arffile', lbl, dname, read_arf,
+                              output_once)
+        lbl = 'RMF'
+        if use_background:
+            lbl = lbl + ' (background)'
+        rmf = _read_ancillary(data, 'rmffile', lbl, dname, read_rmf,
+                              output_once)
 
         backgrounds = []
 
@@ -284,8 +295,8 @@ def read_pha(arg, use_errors=False, use_background=False):
                             header=data['header'])
                 b.set_response(arf, rmf)
                 if output_once:
-                    info("read %s into a dataset from file %s" %
-                         (bkg_type, filename) )
+                    info("read {} into a dataset from file {}".format(
+                        bkg_type, filename))
                 backgrounds.append(b)
 
         for k in ['backfile', 'arffile', 'rmffile', 'backscup', 'backscdn',
@@ -336,6 +347,22 @@ def _pack_image(dataset):
     return data, header
 
 
+def _set_keyword(header, label, value):
+    """Extract the string form of the value, and store
+    the last path element in the header using the label
+    key.
+    """
+
+    if value is None:
+        return
+
+    name = getattr(value, 'name', 'none')
+    if name is not None and name.find('/') != -1:
+        name = name.split('/')[-1]
+
+    header[label] = name
+
+
 def _pack_pha(dataset):
     if not isinstance(dataset, DataPHA):
         raise IOErr('notpha', dataset.name)
@@ -352,23 +379,9 @@ def _pack_pha(dataset):
 
     header['EXPOSURE'] = getattr(dataset, 'exposure', 'none')
 
-    if rmf is not None:
-        name = getattr(rmf, 'name', 'none')
-        if name is not None and name.find('/') != -1:
-            name = name.split('/').pop()
-        header['RESPFILE'] = name
-
-    if bkg is not None:
-        name = getattr(bkg, 'name', 'none')
-        if name is not None and name.find('/') != -1:
-            name = name.split('/').pop()
-        header['BACKFILE'] = name
-
-    if arf is not None:
-        name = getattr(arf, 'name', 'none')
-        if name is not None and name.find('/') != -1:
-            name = name.split('/').pop()
-        header['ANCRFILE'] = name
+    _set_keyword(header, 'RESPFILE', rmf)
+    _set_keyword(header, 'BACKFILE', bkg)
+    _set_keyword(header, 'ANCRFILE', arf)
 
     # Columns
     col_names = ['channel', 'counts', 'stat_err', 'sys_err',
