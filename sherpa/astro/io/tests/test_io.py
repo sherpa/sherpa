@@ -32,6 +32,7 @@ important information.
 
 import unittest
 import tempfile
+import os
 
 import numpy
 from numpy.testing import assert_allclose
@@ -160,7 +161,10 @@ class TestWritePHA(SherpaTestCase):
         # hide warning messages from file I/O
         self._old_logger = logger.level
         logger.setLevel(logging.ERROR)
-        self._pha = io.read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+
+        dname = os.path.dirname(__file__)
+        fname = os.path.join(dname, '../../datastack/tests/data/3c273.pi')
+        self._pha = io.read_pha(fname)
 
     def tearDown(self):
         logger.setLevel(self._old_logger)
