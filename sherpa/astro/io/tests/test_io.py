@@ -24,6 +24,10 @@ These are aimed at low-level tests of the API, covering parts that
 are not handled by existing higher-level tests (i.e. of those parts
 of the API that provide wrappers around the IO backend code).
 
+Ideally the tests would check that - where relevant - the output
+files meet the required standards (e.g. OGIP compliant), but for
+now focus on ensuring that round-tripping the data doesn't lose
+important information.
 """
 
 import unittest
@@ -35,6 +39,10 @@ from numpy.testing import assert_allclose
 from sherpa.utils import SherpaTestCase, SherpaTest, has_fits_support
 from sherpa.astro import io
 from sherpa.data import Data1D
+from sherpa.astro.data import DataPHA
+
+import logging
+logger = logging.getLogger('sherpa')
 
 
 class WriteArrays(SherpaTestCase):
@@ -136,6 +144,58 @@ class TestWriteArraysColsASCII(TestWriteArraysNoColsASCII):
     def test_write_arrays(self):
         self.write_arrays()
 
+
+# Use files provided as part of datastack since this is installed
+# as part of Sherpa, rather than a file in the sherpa-test-data
+# directory, which may not be installed.
+#
+@unittest.skipIf(not has_fits_support(),
+                 'need pycrates, astropy.io.fits, or pyfits')
+class TestWritePHA(SherpaTestCase):
+    """Write out a PHA data set as a FITS file."""
+
+    longMessage = True
+
+    def setUp(self):
+        # hide warning messages from file I/O
+        self._old_logger = logger.level
+        logger.setLevel(logging.ERROR)
+        self._pha = io.read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+
+    def tearDown(self):
+        logger.setLevel(self._old_logger)
+
+    def testWrite(self):
+        ofh = tempfile.NamedTemporaryFile(suffix='sherpa_test')
+        io.write_pha(ofh.name, self._pha, ascii=False, clobber=True)
+
+        # limited checks
+        pha = io.read_pha(ofh.name)
+        self.assertIsInstance(pha, DataPHA)
+
+        for key in ["channel", "counts"]:
+            newval = getattr(pha, key)
+            oldval = getattr(self._pha, key)
+            assert_allclose(oldval, newval, err_msg=key)
+
+        # at present grouping and quality are not written out
+
+        for key in ["exposure", "backscal", "areascal"]:
+            newval = getattr(pha, key)
+            oldval = getattr(self._pha, key)
+            self.assertAlmostEqual(oldval, newval, msg=key)
+
+        """
+        Since the original file has RMF and ARF, the units
+        are energy, but on write out these files are not
+        created/saved, so when read back in the PHA has no
+        ARF/RMF, and will have units=channel.
+
+        for key in ["units"]:
+            newval = getattr(pha, key)
+            oldval = getattr(self._pha, key)
+            self.assertEqual(oldval, newval, msg=key)
+        """
 
 if __name__ == '__main__':
     SherpaTest(io).test()
