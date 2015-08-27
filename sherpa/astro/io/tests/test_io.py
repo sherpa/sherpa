@@ -37,16 +37,29 @@ import os
 import numpy
 from numpy.testing import assert_allclose
 
-from sherpa.utils import SherpaTestCase, SherpaTest, has_fits_support
-from sherpa.astro import io
+from sherpa.utils import SherpaTestCase, has_fits_support
 from sherpa.data import Data1D
 from sherpa.astro.data import DataPHA
 
 import logging
+
+# sherpa.astro.io fails if no backend is available,
+# so load it only if needed.
+#
+if has_fits_support():
+    from sherpa.astro import io
+else:
+    io = None
+
 logger = logging.getLogger('sherpa')
 
 
-class WriteArrays(SherpaTestCase):
+# It is not clear, between the numpytest and unittest documentation,
+# what the naming of the test classes should be.
+
+@unittest.skipIf(not has_fits_support(),
+                 'need pycrates, astropy.io.fits, or pyfits')
+class test_write_arrays(SherpaTestCase):
     """io.write_arrays is not exposed to the user, but is used by
     multiple routines, so test it out.
     """
@@ -102,7 +115,7 @@ class WriteArrays(SherpaTestCase):
 
 @unittest.skipIf(not has_fits_support(),
                  'need pycrates, astropy.io.fits, or pyfits')
-class TestWriteArraysNoColsFITS(WriteArrays):
+class test_write_arraysNoColsFITS(test_write_arrays):
 
     _fits = True
 
@@ -115,7 +128,7 @@ class TestWriteArraysNoColsFITS(WriteArrays):
 
 @unittest.skipIf(not has_fits_support(),
                  'need pycrates, astropy.io.fits, or pyfits')
-class TestWriteArraysColsFITS(TestWriteArraysNoColsFITS):
+class test_write_arraysColsFITS(test_write_arraysNoColsFITS):
 
     _colnames = True
 
@@ -125,7 +138,7 @@ class TestWriteArraysColsFITS(TestWriteArraysNoColsFITS):
 
 @unittest.skipIf(not has_fits_support(),
                  'need pycrates, astropy.io.fits, or pyfits')
-class TestWriteArraysNoColsASCII(WriteArrays):
+class test_write_arraysNoColsASCII(test_write_arrays):
 
     _fits = False
 
@@ -138,7 +151,7 @@ class TestWriteArraysNoColsASCII(WriteArrays):
 
 @unittest.skipIf(not has_fits_support(),
                  'need pycrates, astropy.io.fits, or pyfits')
-class TestWriteArraysColsASCII(TestWriteArraysNoColsASCII):
+class test_write_arraysColsASCII(test_write_arraysNoColsASCII):
 
     _colnames = True
 
@@ -202,4 +215,18 @@ class TestWritePHA(SherpaTestCase):
         """
 
 if __name__ == '__main__':
-    SherpaTest(io).test()
+
+    # As io is not defined when there's no FITS support,
+    # we can not just say SherpaTest(io).test() here.
+    # The following is the simplest thing I could come
+    # up with, but maybe there's a more-obvious solution.
+    #
+    import sys
+    classes = [s for s in dir() if s.startswith('test_')]
+    suites = []
+    for cname in classes:
+        cls = getattr(sys.modules[__name__], cname)
+        suites.append(unittest.TestLoader().loadTestsFromTestCase(cls))
+
+    suite = unittest.TestSuite(suites)
+    unittest.TextTestRunner().run(suite)
