@@ -41,7 +41,7 @@ config.read(get_config())
 truncation_flag = config.get('statistics', 'truncate').upper()
 truncation_value = float(config.get('statistics', 'trunc_value'))
 if (bool(truncation_flag) is False or truncation_flag == "FALSE" or
-    truncation_flag == "NONE" or truncation_flag == "0"):
+        truncation_flag == "NONE" or truncation_flag == "0"):
     truncation_value = 1.0e-25
 
 
@@ -67,6 +67,7 @@ class Stat(NoNewAttributesAfterInit):
 
 class Likelihood(Stat):
     """Maximum likelihood function"""
+
     def __init__(self, name='likelihood'):
         Stat.__init__(self, name)
 
@@ -147,6 +148,7 @@ class Cash(Likelihood):
            http://adsabs.harvard.edu/abs/1979ApJ...228..939C
 
     """
+
     def __init__(self, name='cash'):
         Likelihood.__init__(self, name)
 
@@ -221,6 +223,7 @@ class CStat(Likelihood):
            https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
 
     """
+
     def __init__(self, name='cstat'):
         Likelihood.__init__(self, name)
 
@@ -276,6 +279,7 @@ class Chi2(Stat):
     can be avoided by treating the background as a separate data set.
 
     """
+
     def __init__(self, name='chi2'):
         Stat.__init__(self, name)
 
@@ -297,6 +301,7 @@ class LeastSq(Chi2):
     statistic where the error on each point - sigma(i) - is 1.
 
     """
+
     def __init__(self, name='leastsq'):
         Stat.__init__(self, name)
 
@@ -349,6 +354,7 @@ class Chi2Gehrels(Chi2):
            http://adsabs.harvard.edu/abs/1986ApJ...303..336G
 
     """
+
     def __init__(self, name='chi2gehrels'):
         Chi2.__init__(self, name)
 
@@ -368,6 +374,7 @@ class Chi2ConstVar(Chi2):
     background has been subtracted from the data.
 
     """
+
     def __init__(self, name='chi2constvar'):
         Chi2.__init__(self, name)
 
@@ -392,6 +399,7 @@ class Chi2DataVar(Chi2):
     background has been subtracted from the data.
 
     """
+
     def __init__(self, name='chi2datavar'):
         Chi2.__init__(self, name)
 
@@ -417,6 +425,7 @@ class Chi2ModVar(Chi2):
     background-subtracted data.
 
     """
+
     def __init__(self, name='chi2modvar'):
         Chi2.__init__(self, name)
 
@@ -444,6 +453,7 @@ class Chi2XspecVar(Chi2):
     then the variance for that bin is set to 1.
 
     """
+
     def __init__(self, name='chi2xspecvar'):
         Chi2.__init__(self, name)
 
@@ -556,12 +566,13 @@ class WStat(Likelihood):
            https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
 
     """
+
     def __init__(self, name='wstat'):
         Likelihood.__init__(self, name)
 
     @staticmethod
     def calc_stat(data, model, staterror=None, syserror=None,
-                      weight=None, **kwargs):
+                  weight=None, **kwargs):
         datasize = staterror
         exposuretime = syserror
 
