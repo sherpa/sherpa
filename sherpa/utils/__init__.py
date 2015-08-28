@@ -84,7 +84,7 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaTest', 'SherpaTestCase',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'dataspace1d', 'dataspace2d', 'demuller',
            'erf', 'erfinv', 'export_method', 'extract_kernel',
-           'filter_bins', 'gamma', 'get_func_usage', 'get_fwhm',
+           'filter_bins', 'gamma', 'get_fwhm',
            'get_keyword_defaults', 'get_keyword_names', 'get_midpoint',
            'get_num_args', 'get_peak', 'get_position', 'get_valley',
            'guess_amplitude', 'guess_amplitude2d', 'guess_amplitude_at_ref',
@@ -493,43 +493,6 @@ def get_keyword_defaults(func, skip=0):
         return {}
     first = len(argspec[0]) - len(argspec[3])
     return dict(izip(argspec[0][first + skip:], argspec[3][skip:]))
-
-
-def get_func_usage(func):
-    """
-
-    Returns a string describing the function signature, similar to pydoc
-    but flexible enough to pipe to slsh
-
-    """
-    argspec = inspect.getargspec(func)
-
-    _, num_args, num_kargs = get_num_args(func)
-
-    msg = 'Usage: %s(' % func.__name__
-
-    for arg in argspec[0]:
-        if num_args > 0:
-            msg = '%s %s,' % (msg, arg)
-            num_args = num_args - 1
-
-        else:
-            msg = '%s [ %s,' % (msg, arg)
-
-    if argspec[1] is not None:
-        msg = '%s [ *%s,' % (msg, argspec[1])
-        num_kargs = num_kargs + 1
-
-    if argspec[2] is not None:
-        msg = '%s [ **%s,' % (msg, argspec[2])
-        num_kargs = num_kargs + 1
-
-    msg = msg.strip(',')
-
-    for i in xrange(num_kargs):
-        msg = '%s]' % msg
-
-    return '%s )' % msg
 
 
 def get_num_args(func):
