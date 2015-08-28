@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,11 @@
 #ifndef __sherpa_astro_xspec_extension_hh__
 #define __sherpa_astro_xspec_extension_hh__
 
-#include <cfloat>
+// Have sherpa includes first so that Python.h is first, to avoid warning
+// messages about redefining _XOPEN_SOURCE
 #include <sherpa/extension.hh>
 #include <sherpa/constants.hh>
+#include <cfloat>
 #include <vector>
 #include <sstream>
 #include <iostream>
