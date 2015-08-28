@@ -37,6 +37,17 @@ typedef sherpa::Array< float, NPY_FLOAT > FloatArray;
 typedef float FloatArrayType;
 
 
+// The spectrum number is set to 1. It used to be 0, but some code
+// (a user model, so not included in the XSpec model library being
+// built against) has been seen to behave strangely with a value of 0,
+// so a value of 1 is being used "just in case". A keyword argument
+// could be added so that the user can override this, but it is
+// only really woth doing once write access to the XFLT keywords
+// is added (and then working out how to take advantage of it; perhaps
+// a wrapper model that provides a parameter-like interface to the value
+// so that a model instance can be associated with a particular dataset).
+// This might be enough to then support the smaug model.
+
 template <npy_intp NumPars, bool HasNorm,
 void (*XSpecFunc)( float* ear, int* ne, float* param, int* ifl,
 		float* photar, float* photer )>
@@ -80,7 +91,7 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 		return NULL;
 	}
 
-	int ifl = 0;
+	int ifl = 1;
 
 	double hc = (sherpa::constants::c_ang<SherpaFloat>() *
 			sherpa::constants::h_kev<SherpaFloat>());
@@ -397,7 +408,8 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 
 	try {
 
-		XSpecFunc( &ear[0], nelem, &pars[0], 0, &result[0], &error[0], NULL );
+                int ifl = 1;
+		XSpecFunc( &ear[0], nelem, &pars[0], ifl, &result[0], &error[0], NULL );
 
 		// If there were gaps in the energy array, because of locations
 		// where xlo[i+1] != xhi[i], then this is place where we recalculate
@@ -421,7 +433,7 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 			ear2[0] = ear[bin_number];
 			ear2[1] = ear2[0] + gap_widths.back();
 			int ear2_nelem = 1;
-			XSpecFunc( &ear2[0], ear2_nelem, &pars[0], 0, &result[bin_number],
+			XSpecFunc( &ear2[0], ear2_nelem, &pars[0], ifl, &result[bin_number],
 					&error[bin_number], NULL );
 
 			gaps.pop_back();
@@ -492,7 +504,7 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 	}
 
 	// FIXME how to handle the spectrum number??
-	int ifl = 0;
+	int ifl = 1;
 
 	double hc = (sherpa::constants::c_ang<SherpaFloat>() *
 			sherpa::constants::h_kev<SherpaFloat>());
