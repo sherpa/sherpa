@@ -299,8 +299,8 @@ class ErrorEstResults(NoNewAttributesAfterInit):
                'sigma', 'percent', 'parnames', 'parvals', 'parmins',
                'parmaxes', 'nfits')
 
-    def __init__(self, fit, results, parlist=[]):
-        if (parlist == []):
+    def __init__(self, fit, results, parlist=None):
+        if (parlist is None):
             parlist = [p for p in fit.model.pars if not p.frozen]
 
         from sherpa.estmethods import est_success, est_hardmin, est_hardmax, est_hardminmax
@@ -431,7 +431,9 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
 class IterFit(NoNewAttributesAfterInit):
 
-    def __init__(self, data, model, stat, method, itermethod_opts={'name': 'none'}):
+    def __init__(self, data, model, stat, method, itermethod_opts=None):
+        if itermethod_opts is None:
+            itermethod_opts = {'name': 'none'}
         # Even if there is only a single data set, I will
         # want to treat the data and models I am given as
         # collections of data and models -- so, put data and
@@ -515,7 +517,7 @@ class IterFit(NoNewAttributesAfterInit):
         return cb
 
     def primini(self, statfunc, pars, parmins, parmaxes, statargs=(),
-                statkwargs={}):
+                statkwargs=None):
         """An iterative scheme, where the variance is computed from
         the model amplitudes.
 
@@ -556,7 +558,8 @@ class IterFit(NoNewAttributesAfterInit):
                http://adsabs.harvard.edu/abs/1995ASPC...77..331K
 
         """
-
+        if statkwargs is None:
+            statkwargs = {}
         # Primini's method can only be used with chi-squared;
         # raise exception if it is attempted with least-squares,
         # or maximum likelihood
@@ -638,7 +641,7 @@ class IterFit(NoNewAttributesAfterInit):
         return final_fit_results
 
     def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs=(),
-                 statkwargs={}):
+                 statkwargs=None):
         """Exclude points that are significately far away from the best fit.
 
         The `sigmarej` scheme is based on the IRAF `sfit` function
@@ -654,7 +657,8 @@ class IterFit(NoNewAttributesAfterInit):
         .. [1] http://iraf.net/irafhelp.php?val=sfit
 
         """
-
+        if statkwargs is None:
+            statkwargs = {}
         # Sigma-rejection can only be used with chi-squared;
         # raise exception if it is attempted with least-squares,
         # or maximum likelihood
@@ -824,7 +828,9 @@ class IterFit(NoNewAttributesAfterInit):
         # Return results from sigma rejection
         return final_fit_results
 
-    def fit(self, statfunc, pars, parmins, parmaxes, statargs=(), statkwargs={}):
+    def fit(self, statfunc, pars, parmins, parmaxes, statargs=(), statkwargs=None):
+        if statkwargs is None:
+            statkwargs = {}
         if not self.iterate:
             return self.method.fit(statfunc, pars, parmins, parmaxes,
                                    statargs, statkwargs)
@@ -836,7 +842,9 @@ class IterFit(NoNewAttributesAfterInit):
 class Fit(NoNewAttributesAfterInit):
 
     def __init__(self, data, model, stat=None, method=None, estmethod=None,
-                 itermethod_opts={'name': 'none'}):
+                 itermethod_opts=None):
+        if itermethod_opts is None:
+            itermethod_opts = {'name': 'none'}
         self.data = data
         self.model = model
 
