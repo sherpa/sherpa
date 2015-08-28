@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@ __all__ = ('GridSearch', 'OptMethod', 'LevMar', 'MonCar', 'NelderMead')
 
 class OptMethod(NoNewAttributesAfterInit):
 
-    def __init__(self, name, optfunc):        
+    def __init__(self, name, optfunc):
         self.name = name
         self._optfunc = optfunc
         self.config = self.default_config
@@ -666,7 +666,6 @@ class NelderMead(OptMethod):
 
 ###############################################################################
 
-## import sherpa.optmethods.myoptfcts
 ## from sherpa.optmethods.fminpowell import *
 ## from sherpa.optmethods.nmpfit import *
 
@@ -687,18 +686,14 @@ class NelderMead(OptMethod):
 ## __all__ = myall( __all__, 'MarLev' )
 ## __all__ = myall( __all__, 'MyMinim' )
 ## __all__ = myall( __all__, 'Nelder_Mead' )
-## __all__ = myall( __all__, 'NMPFIT' )        
+## __all__ = myall( __all__, 'NMPFIT' )
 ## __all__ = myall( __all__, 'Newuoa' )
 ## __all__ = myall( __all__, 'Odr' )
 ## __all__ = myall( __all__, 'OdrPack' )
 ## __all__ = myall( __all__, 'PortChi' )
-## __all__ = myall( __all__, 'PortFct' )    
+## __all__ = myall( __all__, 'PortFct' )
 ## __all__ = myall( __all__, 'ScipyPowell' )
 ## __all__ = myall( __all__, 'StoGo' )
-
-## class Bobyqa(OptMethod):
-##     def __init__(self, name='bobyqa'):
-##         OptMethod.__init__(self, name, myoptfcts.bobyqa)
 
 ## class Chokkan(OptMethod):
 ##     def __init__(self, name='chokkan'):
@@ -709,26 +704,10 @@ class NelderMead(OptMethod):
 ##    def __init__(self, name='clevmar'):
 ## 	OptMethod.__init__(self, name, optfcts.lmdif_cpp)
 
-## class Dif_Evo(OptMethod):
-##     def __init__(self, name='dif_evo'):
-##         OptMethod.__init__(self, name, myoptfcts.dif_evo)
-
-## class MarLev(OptMethod):
-##     def __init__(self, name='marlev'):
-##         OptMethod.__init__(self, name, myoptfcts.marquadt_levenberg)
-
 ## class MyMinim(OptMethod):
 
 ##     def __init__(self, name='simplex'):
 ## 	OptMethod.__init__(self, name, minim)
-
-## class Nelder_Mead(OptMethod):
-##     def __init__(self, name='nelder_mead'):
-##         OptMethod.__init__(self, name, myoptfcts.nelder_mead)
-
-## class Newuoa(OptMethod):
-##     def __init__(self, name='newuoa'):
-##         OptMethod.__init__(self, name, myoptfcts.newuoa)
 
 ## class NMPFIT(OptMethod):
 ##     def __init__(self, name='pytools_nmpfit'):
@@ -741,14 +720,6 @@ class NelderMead(OptMethod):
 ## class Odr(OptMethod):
 ##     def __init__(self, name='odr'):
 ##         OptMethod.__init__(self, name, odrf77)
-
-## class PortChi(OptMethod):
-##     def __init__(self, name='dn2fb'):
-##         OptMethod.__init__(self, name, myoptfcts.dn2fb)
-
-## class PortFct(OptMethod):
-##     def __init__(self, name='dmnfb'):
-##         OptMethod.__init__(self, name, myoptfcts.dmnfb)
 
 ## class ScipyPowell(OptMethod):
 ##     def __init__(self, name='scipypowell'):
