@@ -38,12 +38,15 @@ class test_ui(SherpaTestCase):
         self.doubledat = self.make_path('double.dat')
         self.doubletbl = self.make_path('double.fits')
         self.img = self.make_path('img.fits')
-        self.filter_single_int_ascii = self.make_path('filter_single_integer.dat')
-        self.filter_single_int_table = self.make_path('filter_single_integer.fits')
-        self.filter_single_log_table = self.make_path('filter_single_logical.fits')
+        self.filter_single_int_ascii = self.make_path(
+            'filter_single_integer.dat')
+        self.filter_single_int_table = self.make_path(
+            'filter_single_integer.fits')
+        self.filter_single_log_table = self.make_path(
+            'filter_single_logical.fits')
 
         self.func = lambda x: x
-        ui.dataspace1d(1,1000,dstype=ui.Data1D)
+        ui.dataspace1d(1, 1000, dstype=ui.Data1D)
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
@@ -59,8 +62,8 @@ class test_ui(SherpaTestCase):
     def test_table(self):
         ui.load_table(1, self.fits)
         ui.load_table(1, self.fits, 3)
-        ui.load_table(1, self.fits, 3, ["RMID","SUR_BRI","SUR_BRI_ERR"])
-        ui.load_table(1, self.fits, 4, ('R',"SUR_BRI",'SUR_BRI_ERR'),
+        ui.load_table(1, self.fits, 3, ["RMID", "SUR_BRI", "SUR_BRI_ERR"])
+        ui.load_table(1, self.fits, 4, ("R", "SUR_BRI", "SUR_BRI_ERR"),
                       ui.Data1DInt)
 
     @unittest.skipIf(not has_fits_support(),
@@ -68,7 +71,8 @@ class test_ui(SherpaTestCase):
     def test_load_table_fits(self):
         # QUS: why is this not in the sherpa-test-data repository?
         this_dir = os.path.dirname(os.path.abspath(__file__))
-        ui.load_table(1, os.path.join(this_dir, 'data', 'two_column_x_y.fits.gz'))
+        ui.load_table(1, os.path.join(this_dir, 'data',
+                                      'two_column_x_y.fits.gz'))
         data = ui.get_data(1)
         self.assertEqualWithinTol(data.x, [1, 2, 3])
         self.assertEqualWithinTol(data.y, [4, 5, 6])
@@ -159,7 +163,7 @@ class test_more_ui(SherpaTestCase):
         from sherpa.astro.instrument import RMFModelPHA
         self.assertTrue(isinstance(m, RMFModelPHA))
 
-    #bug #38
+    # bug #38
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
     @unittest.skipIf(test_data_missing(), "required test data missing")
@@ -168,6 +172,7 @@ class test_more_ui(SherpaTestCase):
         ui.notice_id('3c273', 0.3, 2)
         ui.group_counts('3c273', 30)
         ui.group_counts('3c273', 15)
+
 
 class test_image_12578(SherpaTestCase):
     @unittest.skipIf(test_data_missing(), "required test data missing")
@@ -208,7 +213,8 @@ class test_image_12578(SherpaTestCase):
         try:
             ui.set_coord("sky")
         except DataErr as e:
-            okmsg = "unknown coordinates: 'sky'\nValid options: logical, image, physical, world, wcs"
+            okmsg = "unknown coordinates: 'sky'\nValid options: " + \
+                    "logical, image, physical, world, wcs"
             self.assertEqual(okmsg, e.message)
             caught = True
         if not caught:
@@ -232,7 +238,7 @@ class test_psf_ui(SherpaTestCase):
         ui.dataspace1d(1, 10)
         for model in self.models1d:
             try:
-                ui.load_psf('psf1d', model+'.mdl')
+                ui.load_psf('psf1d', model + '.mdl')
                 ui.set_psf('psf1d')
                 mdl = ui.get_model_component('mdl')
                 self.assertTrue((numpy.array(mdl.get_center()) ==
@@ -242,14 +248,14 @@ class test_psf_ui(SherpaTestCase):
                 raise
 
     def test_psf_model2d(self):
-        ui.dataspace2d([216,261])
+        ui.dataspace2d([216, 261])
         for model in self.models2d:
             try:
-                ui.load_psf('psf2d', model+'.mdl')
+                ui.load_psf('psf2d', model + '.mdl')
                 ui.set_psf('psf2d')
                 mdl = ui.get_model_component('mdl')
                 self.assertTrue((numpy.array(mdl.get_center()) ==
-                                 numpy.array([108,130])).all())
+                                 numpy.array([108, 130])).all())
             except:
                 print model
                 raise
