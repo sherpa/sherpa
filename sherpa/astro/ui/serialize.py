@@ -104,6 +104,93 @@ def _save_intro(outfile=None):
     _send_to_outfile("from sherpa.astro.ui import *", outfile)
 
 
+def _save_response(label, respfile, id, rid, bid=None, outfile=None):
+    """Save the ARF or RMF
+
+    Parameters
+    ----------
+    label : str
+       Either ``arf`` or ``rmf``.
+    respfile : str
+       The name of the ARF or RMF.
+    id : id or str
+       The Sherpa data set identifier.
+    rid
+       The Sherpa response identifier for the data set.
+    bid
+       If not ``None`` then this indicates that this is the ARF for
+       a background dataset, and which such data set to use.
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       statistic settings printed to it.
+    """
+
+    id = _id_to_str(id)
+    rid = _id_to_str(rid)
+
+    cmd = 'load_{}({}, "{}", {}'.format(label, id, respfile, rid)
+    if bid is not None:
+        cmd += "{}".format(_id_to_str(bid))
+
+    cmd += ")"
+    _send_to_outfile(cmd, outfile)
+
+
+def _save_arf_response(state, id, rid, bid=None, outfile=None):
+    """Save the ARF.
+
+    Parameters
+    ----------
+    state
+    id : id or str
+       The Sherpa data set identifier.
+    rid
+       The Sherpa response identifier for the data set.
+    bid
+       If not ``None`` then this indicates that this is the ARF for
+       a background dataset, and which such data set to use.
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       statistic settings printed to it.
+    """
+
+    try:
+        respfile = state.get_arf(id, resp_id=rid, bkg_id=bid).name
+    except:
+        return
+
+    _save_response('arf', respfile, id, rid, bid=bid, outfile=outfile)
+
+
+def _save_rmf_response(state, id, rid, bid=None, outfile=None):
+    """Save the RMF.
+
+    Parameters
+    ----------
+    state
+    id : id or str
+       The Sherpa data set identifier.
+    rid
+       The Sherpa response identifier for the data set.
+    bid
+       If not ``None`` then this indicates that this is the ARF for
+       a background dataset, and which such data set to use.
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       statistic settings printed to it.
+    """
+
+    try:
+        respfile = state.get_rmf(id, resp_id=rid, bkg_id=bid).name
+    except:
+        return
+
+    _save_response('rmf', respfile, id, rid, bid=bid, outfile=outfile)
+
+
 def _save_data(state, funcs, outfile=None):
     """Save the data.
 
@@ -196,23 +283,9 @@ def _save_data(state, funcs, outfile=None):
             cmd_resp_id = ""
 
             for rid in rids:
-                cmd_resp_id = _id_to_str(rid)
+                _save_arf_response(state, id, rid, outfile=outfile)
+                _save_rmf_response(state, id, rid, outfile=outfile)
 
-                try:
-                    arf = state.get_arf(id, rid)
-                    cmd = "load_arf(%s,\"%s\",%s)" % (
-                        cmd_id, arf.name, cmd_resp_id)
-                    _send_to_outfile(cmd, outfile)
-                except:
-                    pass
-
-                try:
-                    rmf = state.get_rmf(id, rid)
-                    cmd = "load_rmf(%s,\"%s\",%s)" % (
-                        cmd_id, rmf.name, cmd_resp_id)
-                    _send_to_outfile(cmd, outfile)
-                except:
-                    pass
         except:
             pass
 
@@ -266,25 +339,9 @@ def _save_data(state, funcs, outfile=None):
                 _send_to_outfile(
                     "\n######### Background Spectral Responses\n", outfile)
                 rids = state.list_response_ids(id, bid)
-                cmd_resp_id = ""
                 for rid in rids:
-                    cmd_resp_id = _id_to_str(rid)
-
-                    try:
-                        arf = state.get_arf(id, rid, bid)
-                        cmd = "load_arf(%s,\"%s\",%s,%s)" % (
-                            cmd_id, arf.name, cmd_resp_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                    except:
-                        pass
-
-                    try:
-                        rmf = state.get_rmf(id, rid, bid)
-                        cmd = "load_rmf(%s,\"%s\",%s,%s)" % (
-                            cmd_id, rmf.name, cmd_resp_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                    except:
-                        pass
+                    _save_arf_response(state, id, rid, bid, outfile=outfile)
+                    _save_rmf_response(state, id, rid, bid, outfile=outfile)
 
         except:
             pass
