@@ -104,6 +104,52 @@ def _print_par(par):
               par.fullname, par.frozen)), linkstr)
 
 
+def _save_statistic(state, outfile):
+    """Save the statistic settings.
+
+    Parameters
+    ----------
+    state
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       statistic settings printed to it.
+    """
+
+    _send_to_outfile("\n######### Set Statistic\n", outfile)
+    cmd = "set_stat(\"%s\")" % state.get_stat_name()
+    _send_to_outfile(cmd, outfile)
+    _send_to_outfile("", outfile)
+
+
+def _save_fit_method(state, outfile):
+    """Save the statistic settings.
+
+    Parameters
+    ----------
+    state
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       fitting-method settings printed to it.
+    """
+
+    # Save fitting method
+
+    _send_to_outfile("\n######### Set Fitting Method\n", outfile)
+    cmd = "set_method(\"%s\")" % state.get_method_name()
+    _send_to_outfile(cmd, outfile)
+    _send_to_outfile("", outfile)
+
+    mdict = state.get_method_opt()
+    for key in mdict:
+        val = mdict.get(key)
+        cmd = "set_method_opt(\"%s\", %s)" % (key, val)
+        _send_to_outfile(cmd, outfile)
+
+    _send_to_outfile("", outfile)
+
+
 def _save_xspec(outfile=None):
     """Save the XSPEC settings, if the module is loaded.
 
@@ -441,26 +487,8 @@ def save_all(state, outfile=None, clobber=False):
 
     _send_to_outfile("", outfile)
 
-    # Save statistic
-
-    _send_to_outfile("\n######### Set Statistic\n", outfile)
-    cmd = "set_stat(\"%s\")" % state.get_stat_name()
-    _send_to_outfile(cmd, outfile)
-    _send_to_outfile("", outfile)
-
-    # Save fitting method
-
-    _send_to_outfile("\n######### Set Fitting Method\n", outfile)
-    cmd = "set_method(\"%s\")" % state.get_method_name()
-    _send_to_outfile(cmd, outfile)
-    _send_to_outfile("", outfile)
-
-    mdict = state.get_method_opt()
-    for key in mdict:
-        val = mdict.get(key)
-        cmd = "set_method_opt(\"%s\", %s)" % (key, val)
-        _send_to_outfile(cmd, outfile)
-    _send_to_outfile("", outfile)
+    _save_statistic(state, outfile)
+    _save_fit_method(state, outfile)
 
     # Save iterative fitting method (if any)
     if state.get_iter_method_name() != 'none':
@@ -932,26 +960,8 @@ def save_session(state, outfile=None, clobber=False):
 
     _send_to_outfile("", outfile)
 
-    # Save statistic
-
-    _send_to_outfile("\n######### Set Statistic\n", outfile)
-    cmd = "set_stat(\"%s\")" % state.get_stat_name()
-    _send_to_outfile(cmd, outfile)
-    _send_to_outfile("", outfile)
-
-    # Save fitting method
-
-    _send_to_outfile("\n######### Set Fitting Method\n", outfile)
-    cmd = "set_method(\"%s\")" % state.get_method_name()
-    _send_to_outfile(cmd, outfile)
-    _send_to_outfile("", outfile)
-
-    mdict = state.get_method_opt()
-    for key in mdict:
-        val = mdict.get(key)
-        cmd = "set_method_opt(\"%s\", %s)" % (key, val)
-        _send_to_outfile(cmd, outfile)
-    _send_to_outfile("", outfile)
+    _save_statistic(state, outfile)
+    _save_fit_method(state, outfile)
 
     # Save iterative fitting method (if any)
     if state.get_iter_method_name() != 'none':
