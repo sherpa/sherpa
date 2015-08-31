@@ -83,6 +83,246 @@ def _save_intro(outfile=None):
     _send_to_outfile("from sherpa.astro.ui import *", outfile)
 
 
+def _save_data(state, funcs, outfile=None):
+    """Save the data.
+
+    This can just be references to files, or serialization of
+    the data (or both).
+
+    Parameters
+    ----------
+    state
+    funcs : dict
+       A dictionary of function references with keys for ``load_data``
+       and ``set_coord``, where the function accepts the data set
+       identifier and returns a string representation of that command.
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       statistic settings printed to it.
+
+    Notes
+    -----
+    This does not - at least at present - save data to one or
+    more files to be read in by the script. If any data needs
+    to be serialized it is included in the script.
+    """
+
+    _send_to_outfile("\n######### Load Data Sets\n", outfile)
+
+    cmd_id = ""
+    cmd_resp_id = ""
+    cmd_bkg_id = ""
+
+    for id in state.list_data_ids():
+        # But if id is a string, then quote as a string
+        # But what about the rest of any possible load_data() options;
+        # how do we replicate the optional keywords that were possibly
+        # used?  Store them with data object?
+        cmd_id = _id_to_str(id)
+
+        cmd = funcs['load_data'](id)
+        # cmd = "load_data(%s,\"%s\")" % (cmd_id, state.get_data(id).name)
+        _send_to_outfile(cmd, outfile)
+
+        # Set physical or WCS coordinates here if applicable
+        # If can't be done, just pass to next
+        try:
+            _send_to_outfile(
+                "\n######### Set Image Coordinates \n", outfile)
+            # cmd = "set_coord(%s, %s)" % (cmd_id, repr(state.get_coord(id)))
+            cmd = funcs['set_coord'](id)
+            _send_to_outfile(cmd, outfile)
+        except:
+            pass
+
+        # PHA attributes; group data if applicable
+        try:
+            # Only store group flags and quality flags if they were changed
+            # from flags in the file
+            if not state.get_data(id)._original_groups:
+                if state.get_data(id).grouping is not None:
+                    _send_to_outfile(
+                        "\n######### Data Group Flags\n", outfile)
+                    cmd = "set_grouping(%s, " % cmd_id
+                    cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(
+                        id).tolist()) + ", numpy." + str(state.get_grouping(id).dtype) + "))"
+                    _send_to_outfile(cmd, outfile)
+
+                if state.get_data(id).quality is not None:
+                    _send_to_outfile(
+                        "\n######### Data Quality Flags\n", outfile)
+                    cmd = "set_quality(%s, " % cmd_id
+                    cmd = cmd + "val=numpy.array(" + repr(state.get_quality(
+                        id).tolist()) + ", numpy." + str(state.get_quality(id).dtype) + "))"
+                    _send_to_outfile(cmd, outfile)
+            # End check for original groups and quality flags
+            if state.get_data(id).grouped:
+                cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
+                    cmd_id, cmd_id)
+                _send_to_outfile(cmd, outfile)
+                _send_to_outfile("\t######### Group Data", outfile)
+                cmd = "\tgroup(%s)" % cmd_id
+                _send_to_outfile(cmd, outfile)
+        except:
+            pass
+
+        # Add responses and ARFs, if any
+        try:
+            _send_to_outfile(
+                "\n######### Data Spectral Responses\n", outfile)
+            rids = state.list_response_ids(id)
+            cmd_resp_id = ""
+
+            for rid in rids:
+                if type(rid) == str:
+                    cmd_resp_id = "\"%s\"" % rid
+                else:
+                    cmd_resp_id = "%s" % rid
+
+                try:
+                    arf = state.get_arf(id, rid)
+                    cmd = "load_arf(%s,\"%s\",%s)" % (
+                        cmd_id, arf.name, cmd_resp_id)
+                    _send_to_outfile(cmd, outfile)
+                except:
+                    pass
+
+                try:
+                    rmf = state.get_rmf(id, rid)
+                    cmd = "load_rmf(%s,\"%s\",%s)" % (
+                        cmd_id, rmf.name, cmd_resp_id)
+                    _send_to_outfile(cmd, outfile)
+                except:
+                    pass
+        except:
+            pass
+
+        # Check if this data set has associated backgrounds
+        try:
+            _send_to_outfile(
+                "\n######### Load Background Data Sets\n", outfile)
+            bids = state.list_bkg_ids(id)
+            cmd_bkg_id = ""
+            for bid in bids:
+                if type(bid) == str:
+                    cmd_bkg_id = "\"%s\"" % bid
+                else:
+                    cmd_bkg_id = "%s" % bid
+                cmd = "load_bkg(%s,\"%s\", bkg_id=%s)" % (
+                    cmd_id, state.get_bkg(id, bid).name, cmd_bkg_id)
+                _send_to_outfile(cmd, outfile)
+
+                # Group data if applicable
+                try:
+                    # Only store group flags and quality flags if they were changed
+                    # from flags in the file
+                    if not state.get_bkg(id, bid)._original_groups:
+                        if state.get_bkg(id, bid).grouping is not None:
+                            _send_to_outfile(
+                                "\n######### Background Group Flags\n", outfile)
+                            cmd = "set_grouping(%s, " % cmd_id
+                            cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(id).tolist()) + ", numpy." + str(
+                                state.get_grouping(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
+                            _send_to_outfile(cmd, outfile)
+
+                        if state.get_bkg(id, bid).quality is not None:
+                            _send_to_outfile(
+                                "\n######### Background Quality Flags\n", outfile)
+                            cmd = "set_quality(%s, " % cmd_id
+                            cmd = cmd + "val=numpy.array(" + repr(state.get_quality(id).tolist()) + ", numpy." + str(
+                                state.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
+                            _send_to_outfile(cmd, outfile)
+
+                    # End check for original groups and quality flags
+                    if state.get_bkg(id, bid).grouped:
+                        cmd = "if get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped:" % (
+                            cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
+                        _send_to_outfile(cmd, outfile)
+                        _send_to_outfile(
+                            "\t######### Group Background", outfile)
+                        cmd = "\tgroup(%s,%s)" % (cmd_id, cmd_bkg_id)
+                        _send_to_outfile(cmd, outfile)
+                except:
+                    pass
+
+                # Load background response, ARFs if any
+                _send_to_outfile(
+                    "\n######### Background Spectral Responses\n", outfile)
+                rids = state.list_response_ids(id, bid)
+                cmd_resp_id = ""
+                for rid in rids:
+                    if type(rid) == str:
+                        cmd_resp_id = "\"%s\"" % rid
+                    else:
+                        cmd_resp_id = "%s" % rid
+
+                    try:
+                        arf = state.get_arf(id, rid, bid)
+                        cmd = "load_arf(%s,\"%s\",%s,%s)" % (
+                            cmd_id, arf.name, cmd_resp_id, cmd_bkg_id)
+                        _send_to_outfile(cmd, outfile)
+                    except:
+                        pass
+
+                    try:
+                        rmf = state.get_rmf(id, rid, bid)
+                        cmd = "load_rmf(%s,\"%s\",%s,%s)" % (
+                            cmd_id, rmf.name, cmd_resp_id, cmd_bkg_id)
+                        _send_to_outfile(cmd, outfile)
+                    except:
+                        pass
+
+        except:
+            pass
+
+        # Set energy units if applicable
+        # If can't be done, just pass to next
+        try:
+            _send_to_outfile(
+                "\n######### Set Energy or Wave Units\n", outfile)
+            units = state.get_data(id).units
+            rate = state.get_data(id).rate
+            if rate:
+                rate = "\"rate\""
+            else:
+                rate = "\"counts\""
+            factor = state.get_data(id).plot_fac
+            cmd = "set_analysis(%s, %s, %s, %s)" % (cmd_id,
+                                                    repr(units),
+                                                    rate,
+                                                    repr(factor))
+            _send_to_outfile(cmd, outfile)
+        except:
+            pass
+
+        # Subtract background data if applicable
+        try:
+            if state.get_data(id).subtracted:
+                cmd = "if not get_data(%s).subtracted:" % cmd_id
+                _send_to_outfile(cmd, outfile)
+                _send_to_outfile(
+                    "\t######### Subtract Background Data", outfile)
+                cmd = "\tsubtract(%s)" % cmd_id
+                _send_to_outfile(cmd, outfile)
+        except:
+            pass
+
+        # Set filter if applicable
+        try:
+            _send_to_outfile("\n######### Filter Data\n", outfile)
+            if len(state.get_data(id).get_filter()) > 0:
+                filter = state.get_data(id).get_filter()
+                if len(state.get_data(id).get_dims()) == 1:
+                    cmd = "notice_id(%s,\"%s\")" % (cmd_id, filter)
+                    _send_to_outfile(cmd, outfile)
+                if len(state.get_data(id).get_dims()) == 2:
+                    cmd = "notice2d_id(%s,\"%s\")" % (cmd_id, filter)
+                    _send_to_outfile(cmd, outfile)
+        except:
+            pass
+
+
 def _print_par(par):
     """Convert a Sherpa parameter to a string.
 
@@ -594,227 +834,21 @@ def save_all(state, outfile=None, clobber=False):
     elif outfile is not None:
         raise ArgumentTypeErr('badarg', 'string or None')
 
+    funcs = {
+        'load_data': lambda id:
+        'load_data({},"{}")'.format(_id_to_str(id), state.get_data(id).name),
+        'set_coord': lambda id:
+        'set_coord({}, {})'.format(_id_to_str(id), repr(state.get_coord(id))),
+    }
+
     _save_intro(outfile)
-
-    # Save data files
-
-    _send_to_outfile("\n######### Load Data Sets\n", outfile)
-
-    cmd_id = ""
-    cmd_resp_id = ""
-    cmd_bkg_id = ""
-
-    for id in state.list_data_ids():
-        # But if id is a string, then quote as a string
-        # But what about the rest of any possible load_data() options;
-        # how do we replicate the optional keywords that were possibly
-        # used?  Store them with data object?
-        cmd_id = _id_to_str(id)
-        cmd = "load_data(%s,\"%s\")" % (cmd_id, state.get_data(id).name)
-        _send_to_outfile(cmd, outfile)
-
-        # Set physical or WCS coordinates here if applicable
-        # If can't be done, just pass to next
-        try:
-            _send_to_outfile(
-                "\n######### Set Image Coordinates \n", outfile)
-            cmd = "set_coord(%s, %s)" % (cmd_id, repr(state.get_coord(id)))
-            _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
-        # PHA attributes; group data if applicable
-        try:
-            # Only store group flags and quality flags if they were changed
-            # from flags in the file
-            if not state.get_data(id)._original_groups:
-                if state.get_data(id).grouping is not None:
-                    _send_to_outfile(
-                        "\n######### Data Group Flags\n", outfile)
-                    cmd = "set_grouping(%s, " % cmd_id
-                    cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(
-                        id).tolist()) + ", numpy." + str(state.get_grouping(id).dtype) + "))"
-                    _send_to_outfile(cmd, outfile)
-                if state.get_data(id).quality is not None:
-                    _send_to_outfile(
-                        "\n######### Data Quality Flags\n", outfile)
-                    cmd = "set_quality(%s, " % cmd_id
-                    cmd = cmd + "val=numpy.array(" + repr(state.get_quality(
-                        id).tolist()) + ", numpy." + str(state.get_quality(id).dtype) + "))"
-                    _send_to_outfile(cmd, outfile)
-            # End check for original groups and quality flags
-            if state.get_data(id).grouped:
-                cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
-                    cmd_id, cmd_id)
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("\t######### Group Data", outfile)
-                cmd = "\tgroup(%s)" % cmd_id
-                _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
-        # Add responses and ARFs, if any
-        try:
-            _send_to_outfile(
-                "\n######### Data Spectral Responses\n", outfile)
-            rids = state.list_response_ids(id)
-            cmd_resp_id = ""
-
-            for rid in rids:
-                if type(rid) == str:
-                    cmd_resp_id = "\"%s\"" % rid
-                else:
-                    cmd_resp_id = "%s" % rid
-
-                try:
-                    arf = state.get_arf(id, rid)
-                    cmd = "load_arf(%s,\"%s\",%s)" % (
-                        cmd_id, arf.name, cmd_resp_id)
-                    _send_to_outfile(cmd, outfile)
-                except:
-                    pass
-
-                try:
-                    rmf = state.get_rmf(id, rid)
-                    cmd = "load_rmf(%s,\"%s\",%s)" % (
-                        cmd_id, rmf.name, cmd_resp_id)
-                    _send_to_outfile(cmd, outfile)
-                except:
-                    pass
-        except:
-            pass
-
-        # Check if this data set has associated backgrounds
-        try:
-            _send_to_outfile(
-                "\n######### Load Background Data Sets\n", outfile)
-            bids = state.list_bkg_ids(id)
-            cmd_bkg_id = ""
-            for bid in bids:
-                if type(bid) == str:
-                    cmd_bkg_id = "\"%s\"" % bid
-                else:
-                    cmd_bkg_id = "%s" % bid
-                cmd = "load_bkg(%s,\"%s\", bkg_id=%s)" % (
-                    cmd_id, state.get_bkg(id, bid).name, cmd_bkg_id)
-                _send_to_outfile(cmd, outfile)
-
-                # Group data if applicable
-                try:
-                    # Only store group flags and quality flags if they were changed
-                    # from flags in the file
-                    if not state.get_bkg(id, bid)._original_groups:
-                        if state.get_bkg(id, bid).grouping is not None:
-                            _send_to_outfile(
-                                "\n######### Background Group Flags\n", outfile)
-                            cmd = "set_grouping(%s, " % cmd_id
-                            cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(id).tolist()) + ", numpy." + str(
-                                state.get_grouping(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
-                            _send_to_outfile(cmd, outfile)
-                        if state.get_bkg(id, bid).quality is not None:
-                            _send_to_outfile(
-                                "\n######### Background Quality Flags\n", outfile)
-                            cmd = "set_quality(%s, " % cmd_id
-                            cmd = cmd + "val=numpy.array(" + repr(state.get_quality(id).tolist()) + ", numpy." + str(
-                                state.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
-                            _send_to_outfile(cmd, outfile)
-                    # End check for original groups and quality flags
-                    if state.get_bkg(id, bid).grouped:
-                        cmd = "if get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped:" % (
-                            cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                        _send_to_outfile(
-                            "\t######### Group Background", outfile)
-                        cmd = "\tgroup(%s,%s)" % (cmd_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                except:
-                    pass
-
-                # Load background response, ARFs if any
-                _send_to_outfile(
-                    "\n######### Background Spectral Responses\n", outfile)
-                rids = state.list_response_ids(id, bid)
-                cmd_resp_id = ""
-                for rid in rids:
-                    if type(rid) == str:
-                        cmd_resp_id = "\"%s\"" % rid
-                    else:
-                        cmd_resp_id = "%s" % rid
-
-                    try:
-                        arf = state.get_arf(id, rid, bid)
-                        cmd = "load_arf(%s,\"%s\",%s,%s)" % (
-                            cmd_id, arf.name, cmd_resp_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                    except:
-                        pass
-
-                    try:
-                        rmf = state.get_rmf(id, rid, bid)
-                        cmd = "load_rmf(%s,\"%s\",%s,%s)" % (
-                            cmd_id, rmf.name, cmd_resp_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                    except:
-                        pass
-
-        except:
-            pass
-
-        # Set energy units if applicable
-        # If can't be done, just pass to next
-        try:
-            _send_to_outfile(
-                "\n######### Set Energy or Wave Units\n", outfile)
-            units = state.get_data(id).units
-            rate = state.get_data(id).rate
-            if rate:
-                rate = "\"rate\""
-            else:
-                rate = "\"counts\""
-            factor = state.get_data(id).plot_fac
-            cmd = "set_analysis(%s, %s, %s, %s)" % (cmd_id,
-                                                    repr(units),
-                                                    rate,
-                                                    repr(factor))
-            _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
-        # Subtract background data if applicable
-        try:
-            if state.get_data(id).subtracted:
-                cmd = "if not get_data(%s).subtracted:" % cmd_id
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile(
-                    "\t######### Subtract Background Data", outfile)
-                cmd = "\tsubtract(%s)" % cmd_id
-                _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
-        # Set filter if applicable
-        try:
-            _send_to_outfile("\n######### Filter Data\n", outfile)
-            if len(state.get_data(id).get_filter()) > 0:
-                filter = state.get_data(id).get_filter()
-                if len(state.get_data(id).get_dims()) == 1:
-                    cmd = "notice_id(%s,\"%s\")" % (cmd_id, filter)
-                    _send_to_outfile(cmd, outfile)
-                if len(state.get_data(id).get_dims()) == 2:
-                    cmd = "notice2d_id(%s,\"%s\")" % (cmd_id, filter)
-                    _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
+    _save_data(state, funcs, outfile)
     _send_to_outfile("", outfile)
-
     _save_statistic(state, outfile)
     _save_fit_method(state, outfile)
     _save_iter_method(state, outfile)
-
     _save_model_components(state, outfile)
     _save_models(state, outfile)
-
     _save_xspec(outfile)
 
 
@@ -833,12 +867,6 @@ def save_session(state, outfile=None, clobber=False):
     elif outfile is not None:
         raise ArgumentTypeErr('badarg', 'string or None')
 
-    _save_intro(outfile)
-
-    # Save data files
-
-    _send_to_outfile("\n######### Load Data Sets\n", outfile)
-
     def get_logged_call(call_name, id=None):
         if id is not None:
             if state._calls_tracker.has_key(id) and state._calls_tracker[id].has_key(call_name):
@@ -846,221 +874,18 @@ def save_session(state, outfile=None, clobber=False):
         else:
             if state._calls_tracker.has_key(call_name):
                 return state._calls_tracker[call_name]
-    cmd_id = ""
-    cmd_resp_id = ""
-    cmd_bkg_id = ""
 
-    for id in state.list_data_ids():
-        # But if id is a string, then quote as a string
-        # But what about the rest of any possible load_data() options;
-        # how do we replicate the optional keywords that were possibly
-        # used?  Store them with data object?
-        cmd_id = _id_to_str(id)
+    funcs = {
+        'load_data': lambda id: get_logged_call('load_data', id),
+        'set_coord': lambda id: get_logged_call('set_coord', id),
+    }
 
-        cmd = get_logged_call('load_data', id)
-        _send_to_outfile(cmd, outfile)
-
-        # Set physical or WCS coordinates here if applicable
-        # If can't be done, just pass to next
-        try:
-            _send_to_outfile(
-                "\n######### Set Image Coordinates \n", outfile)
-            cmd = get_logged_call('set_coord', id)
-            _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
-        # PHA attributes; group data if applicable
-        try:
-            # Only store group flags and quality flags if they were changed
-            # from flags in the file
-            if not state.get_data(id)._original_groups:
-                if state.get_data(id).grouping is not None:
-                    _send_to_outfile(
-                        "\n######### Data Group Flags\n", outfile)
-                    cmd = get_logged_call('set_grouping')
-                    cmd = "set_grouping(%s, " % cmd_id
-                    cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(
-                        id).tolist()) + ", numpy." + str(state.get_grouping(id).dtype) + "))"
-                    _send_to_outfile(cmd, outfile)
-                if state.get_data(id).quality is not None:
-                    _send_to_outfile(
-                        "\n######### Data Quality Flags\n", outfile)
-                    cmd = "set_quality(%s, " % cmd_id
-                    cmd = cmd + "val=numpy.array(" + repr(state.get_quality(
-                        id).tolist()) + ", numpy." + str(state.get_quality(id).dtype) + "))"
-                    _send_to_outfile(cmd, outfile)
-            # End check for original groups and quality flags
-            if state.get_data(id).grouped:
-                cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
-                    cmd_id, cmd_id)
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("\t######### Group Data", outfile)
-                cmd = "\tgroup(%s)" % cmd_id
-                _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
-        # Add responses and ARFs, if any
-        try:
-            _send_to_outfile(
-                "\n######### Data Spectral Responses\n", outfile)
-            rids = state.list_response_ids(id)
-            cmd_resp_id = ""
-
-            for rid in rids:
-                if type(rid) == str:
-                    cmd_resp_id = "\"%s\"" % rid
-                else:
-                    cmd_resp_id = "%s" % rid
-
-                try:
-                    arf = state.get_arf(id, rid)
-                    cmd = "load_arf(%s,\"%s\",%s)" % (
-                        cmd_id, arf.name, cmd_resp_id)
-                    _send_to_outfile(cmd, outfile)
-                except:
-                    pass
-
-                try:
-                    rmf = state.get_rmf(id, rid)
-                    cmd = "load_rmf(%s,\"%s\",%s)" % (
-                        cmd_id, rmf.name, cmd_resp_id)
-                    _send_to_outfile(cmd, outfile)
-                except:
-                    pass
-        except:
-            pass
-
-        # Check if this data set has associated backgrounds
-        try:
-            _send_to_outfile(
-                "\n######### Load Background Data Sets\n", outfile)
-            bids = state.list_bkg_ids(id)
-            cmd_bkg_id = ""
-            for bid in bids:
-                if type(bid) == str:
-                    cmd_bkg_id = "\"%s\"" % bid
-                else:
-                    cmd_bkg_id = "%s" % bid
-                cmd = "load_bkg(%s,\"%s\", bkg_id=%s)" % (
-                    cmd_id, state.get_bkg(id, bid).name, cmd_bkg_id)
-                _send_to_outfile(cmd, outfile)
-
-                # Group data if applicable
-                try:
-                    # Only store group flags and quality flags if they were changed
-                    # from flags in the file
-                    if not state.get_bkg(id, bid)._original_groups:
-                        if state.get_bkg(id, bid).grouping is not None:
-                            _send_to_outfile(
-                                "\n######### Background Group Flags\n", outfile)
-                            cmd = "set_grouping(%s, " % cmd_id
-                            cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(id).tolist()) + ", numpy." + str(
-                                state.get_grouping(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
-                            _send_to_outfile(cmd, outfile)
-                        if state.get_bkg(id, bid).quality is not None:
-                            _send_to_outfile(
-                                "\n######### Background Quality Flags\n", outfile)
-                            cmd = "set_quality(%s, " % cmd_id
-                            cmd = cmd + "val=numpy.array(" + repr(state.get_quality(id).tolist()) + ", numpy." + str(
-                                state.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
-                            _send_to_outfile(cmd, outfile)
-                    # End check for original groups and quality flags
-                    if state.get_bkg(id, bid).grouped:
-                        cmd = "if get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped:" % (
-                            cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                        _send_to_outfile(
-                            "\t######### Group Background", outfile)
-                        cmd = "\tgroup(%s,%s)" % (cmd_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                except:
-                    pass
-
-                # Load background response, ARFs if any
-                _send_to_outfile(
-                    "\n######### Background Spectral Responses\n", outfile)
-                rids = state.list_response_ids(id, bid)
-                cmd_resp_id = ""
-                for rid in rids:
-                    if type(rid) == str:
-                        cmd_resp_id = "\"%s\"" % rid
-                    else:
-                        cmd_resp_id = "%s" % rid
-
-                    try:
-                        arf = state.get_arf(id, rid, bid)
-                        cmd = "load_arf(%s,\"%s\",%s,%s)" % (
-                            cmd_id, arf.name, cmd_resp_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                    except:
-                        pass
-
-                    try:
-                        rmf = state.get_rmf(id, rid, bid)
-                        cmd = "load_rmf(%s,\"%s\",%s,%s)" % (
-                            cmd_id, rmf.name, cmd_resp_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                    except:
-                        pass
-
-        except:
-            pass
-
-        # Set energy units if applicable
-        # If can't be done, just pass to next
-        try:
-            _send_to_outfile(
-                "\n######### Set Energy or Wave Units\n", outfile)
-            units = state.get_data(id).units
-            rate = state.get_data(id).rate
-            if rate:
-                rate = "\"rate\""
-            else:
-                rate = "\"counts\""
-            factor = state.get_data(id).plot_fac
-            cmd = "set_analysis(%s, %s, %s, %s)" % (cmd_id,
-                                                    repr(units),
-                                                    rate,
-                                                    repr(factor))
-            _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
-        # Subtract background data if applicable
-        try:
-            if state.get_data(id).subtracted:
-                cmd = "if not get_data(%s).subtracted:" % cmd_id
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile(
-                    "\t######### Subtract Background Data", outfile)
-                cmd = "\tsubtract(%s)" % cmd_id
-                _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
-        # Set filter if applicable
-        try:
-            _send_to_outfile("\n######### Filter Data\n", outfile)
-            if len(state.get_data(id).get_filter()) > 0:
-                filter = state.get_data(id).get_filter()
-                if len(state.get_data(id).get_dims()) == 1:
-                    cmd = "notice_id(%s,\"%s\")" % (cmd_id, filter)
-                    _send_to_outfile(cmd, outfile)
-                if len(state.get_data(id).get_dims()) == 2:
-                    cmd = "notice2d_id(%s,\"%s\")" % (cmd_id, filter)
-                    _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
+    _save_intro(outfile)
+    _save_data(state, funcs, outfile)
     _send_to_outfile("", outfile)
-
     _save_statistic(state, outfile)
     _save_fit_method(state, outfile)
     _save_iter_method(state, outfile)
-
     _save_model_components(state, outfile)
     _save_models(state, outfile)
-
     _save_xspec(outfile)
