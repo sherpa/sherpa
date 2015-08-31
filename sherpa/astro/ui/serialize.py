@@ -123,15 +123,15 @@ def _save_response(label, respfile, id, rid, bid=None, outfile=None):
     outfile : None or str
        If ``None``, the message is printed to standard output,
        otherwise the file is opened (in append mode) and the
-       statistic settings printed to it.
+       values printed to it.
     """
 
     id = _id_to_str(id)
     rid = _id_to_str(rid)
 
-    cmd = 'load_{}({}, "{}", {}'.format(label, id, respfile, rid)
+    cmd = 'load_{}({}, "{}", resp_id={}'.format(label, id, respfile, rid)
     if bid is not None:
-        cmd += "{}".format(_id_to_str(bid))
+        cmd += ", bkg_id={}".format(_id_to_str(bid))
 
     cmd += ")"
     _send_to_outfile(cmd, outfile)
@@ -153,7 +153,7 @@ def _save_arf_response(state, id, rid, bid=None, outfile=None):
     outfile : None or str
        If ``None``, the message is printed to standard output,
        otherwise the file is opened (in append mode) and the
-       statistic settings printed to it.
+       values printed to it.
     """
 
     try:
@@ -175,12 +175,12 @@ def _save_rmf_response(state, id, rid, bid=None, outfile=None):
     rid
        The Sherpa response identifier for the data set.
     bid
-       If not ``None`` then this indicates that this is the ARF for
+       If not ``None`` then this indicates that this is the RMF for
        a background dataset, and which such data set to use.
     outfile : None or str
        If ``None``, the message is printed to standard output,
        otherwise the file is opened (in append mode) and the
-       statistic settings printed to it.
+       values printed to it.
     """
 
     try:
@@ -189,6 +189,99 @@ def _save_rmf_response(state, id, rid, bid=None, outfile=None):
         return
 
     _save_response('rmf', respfile, id, rid, bid=bid, outfile=outfile)
+
+
+def _save_pha_array(state, label, id, bid=None, outfile=None):
+    """Save a grouping or quality array for a PHA data set.
+
+    Parameters
+    ----------
+    state
+    label : "grouping" or "quality"
+    id : id or str
+       The Sherpa data set identifier.
+    bid
+       If not ``None`` then this indicates that the background dataset
+       is to be used.
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       settings printed to it.
+    """
+
+    # This is an internal routine, so just protect against accidents
+    if label not in ['grouping', 'quality']:
+        raise ValueError("Invalid label={}".format(label))
+
+    if bid is None:
+        data = state.get_data(id)
+        lbl = 'Data'
+    else:
+        data = state.get_bkg(id, bid)
+        lbl = 'Background'
+
+    vals = getattr(data, label)
+    if vals is None:
+        return
+
+    _send_to_outfile("\n######### {} {} flags\n".format(lbl, label), outfile)
+
+    # QUS: can we not use the vals variable here rather than
+    #      reassign it? i.e. isn't the "quality" (or "grouping"
+    #      field of get_data/get_bkg the same as state.get_grouping
+    #      or state.get_quality?
+    #
+    func = getattr(state, 'get_{}'.format(label))
+    vals = func(id, bkg_id=bid)
+
+    cmd = "set_{}({}, ".format(label, _id_to_str(id)) + \
+          "val=numpy.array(" + repr(vals.tolist()) + \
+          ", numpy.{})".format(vals.dtype)
+    if bid is not None:
+        cmd += ", bkg_id={}".format(_id_to_str(bid))
+
+    cmd += ")"
+    _send_to_outfile(cmd, outfile)
+
+
+def _save_pha_grouping(state, id, bid=None, outfile=None):
+    """Save the grouping column values for a PHA data set.
+
+    Parameters
+    ----------
+    state
+    id : id or str
+       The Sherpa data set identifier.
+    bid
+       If not ``None`` then this indicates that the background dataset
+       is to be used.
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       settings printed to it.
+    """
+
+    _save_pha_array(state, "grouping", id, bid=bid, outfile=outfile)
+
+
+def _save_pha_quality(state, id, bid=None, outfile=None):
+    """Save the quality column values for a PHA data set.
+
+    Parameters
+    ----------
+    state
+    id : id or str
+       The Sherpa data set identifier.
+    bid
+       If not ``None`` then this indicates that the background dataset
+       is to be used.
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       settings printed to it.
+    """
+
+    _save_pha_array(state, "quality", id, bid=bid, outfile=outfile)
 
 
 def _save_data(state, funcs, outfile=None):
@@ -249,21 +342,9 @@ def _save_data(state, funcs, outfile=None):
             # Only store group flags and quality flags if they were changed
             # from flags in the file
             if not state.get_data(id)._original_groups:
-                if state.get_data(id).grouping is not None:
-                    _send_to_outfile(
-                        "\n######### Data Group Flags\n", outfile)
-                    cmd = "set_grouping(%s, " % cmd_id
-                    cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(
-                        id).tolist()) + ", numpy." + str(state.get_grouping(id).dtype) + "))"
-                    _send_to_outfile(cmd, outfile)
+                _save_pha_grouping(state, id, outfile=outfile)
+                _save_pha_quality(state, id, outfile=outfile)
 
-                if state.get_data(id).quality is not None:
-                    _send_to_outfile(
-                        "\n######### Data Quality Flags\n", outfile)
-                    cmd = "set_quality(%s, " % cmd_id
-                    cmd = cmd + "val=numpy.array(" + repr(state.get_quality(
-                        id).tolist()) + ", numpy." + str(state.get_quality(id).dtype) + "))"
-                    _send_to_outfile(cmd, outfile)
             # End check for original groups and quality flags
             if state.get_data(id).grouped:
                 cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
@@ -308,20 +389,8 @@ def _save_data(state, funcs, outfile=None):
                     # from flags in the file
                     if not state.get_bkg(id, bid)._original_groups:
                         if state.get_bkg(id, bid).grouping is not None:
-                            _send_to_outfile(
-                                "\n######### Background Group Flags\n", outfile)
-                            cmd = "set_grouping(%s, " % cmd_id
-                            cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(id).tolist()) + ", numpy." + str(
-                                state.get_grouping(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
-                            _send_to_outfile(cmd, outfile)
-
-                        if state.get_bkg(id, bid).quality is not None:
-                            _send_to_outfile(
-                                "\n######### Background Quality Flags\n", outfile)
-                            cmd = "set_quality(%s, " % cmd_id
-                            cmd = cmd + "val=numpy.array(" + repr(state.get_quality(id).tolist()) + ", numpy." + str(
-                                state.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
-                            _send_to_outfile(cmd, outfile)
+                            _save_pha_grouping(state, id, bid, outfile=outfile)
+                            _save_pha_quality(state, id, bid, outfile=outfile)
 
                     # End check for original groups and quality flags
                     if state.get_bkg(id, bid).grouped:
