@@ -66,6 +66,21 @@ def _send_to_outfile(msg, filename=None):
         raise
 
 
+def _save_intro(outfile=None):
+    """The set-up for the serialized file (imports).
+
+    Parameters
+    ----------
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       statistic settings printed to it.
+    """
+
+    # QUS: should numpy only be loaded if it is needed?
+    _send_to_outfile("import numpy", outfile)
+
+
 def _print_par(par):
     """Convert a Sherpa parameter to a string.
 
@@ -577,8 +592,7 @@ def save_all(state, outfile=None, clobber=False):
     elif outfile is not None:
         raise ArgumentTypeErr('badarg', 'string or None')
 
-    # Import numpy
-    _send_to_outfile("import numpy", outfile)
+    _save_intro(outfile)
 
     # Save data files
 
@@ -817,8 +831,7 @@ def save_session(state, outfile=None, clobber=False):
     elif outfile is not None:
         raise ArgumentTypeErr('badarg', 'string or None')
 
-    # Import numpy
-    _send_to_outfile("import numpy", outfile)
+    _save_intro(outfile)
 
     # Save data files
 
