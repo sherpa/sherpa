@@ -375,14 +375,14 @@ def _save_models(state, outfile=None):
                 cmd = "set_full_model(%s, %s)" % (
                     cmd_id, the_full_model.name)
             elif the_source is not None and the_full_model is None:
-                cmd = "set_source(%s, %s)" % (cmd_id, state.the_source.name)
+                cmd = "set_source(%s, %s)" % (cmd_id, the_source.name)
             elif the_source is not None and the_full_model is not None:
                 if repr(the_source) == repr(the_full_model):
                     cmd = "set_full_model(%s, %s)" % (
                         cmd_id, the_full_model.name)
                 else:
                     cmd = "set_source(%s, %s)" % (
-                        cmd_id, state.the_source.name)
+                        cmd_id, the_source.name)
             else:
                 # You can't actually get here
                 cmd = ""
