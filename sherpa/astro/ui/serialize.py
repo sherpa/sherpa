@@ -66,6 +66,27 @@ def _send_to_outfile(msg, filename=None):
         raise
 
 
+def _id_to_str(id):
+    """Convert a data set identifier to a string value.
+
+    Parameters
+    ----------
+    id : int or str
+       The data set identifier.
+
+    Returns
+    -------
+    out : str
+       A string representation of the identifier for use
+       in the Python serialization.
+    """
+
+    if type(id) == str:
+        return '"{}"'.format(id)
+    else:
+        return str(id)
+
+
 def _save_intro(outfile=None):
     """The set-up for the serialized file (imports).
 
@@ -175,10 +196,7 @@ def _save_data(state, funcs, outfile=None):
             cmd_resp_id = ""
 
             for rid in rids:
-                if type(rid) == str:
-                    cmd_resp_id = "\"%s\"" % rid
-                else:
-                    cmd_resp_id = "%s" % rid
+                cmd_resp_id = _id_to_str(rid)
 
                 try:
                     arf = state.get_arf(id, rid)
@@ -205,10 +223,8 @@ def _save_data(state, funcs, outfile=None):
             bids = state.list_bkg_ids(id)
             cmd_bkg_id = ""
             for bid in bids:
-                if type(bid) == str:
-                    cmd_bkg_id = "\"%s\"" % bid
-                else:
-                    cmd_bkg_id = "%s" % bid
+                cmd_bkg_id = _id_to_str(bid)
+
                 cmd = "load_bkg(%s,\"%s\", bkg_id=%s)" % (
                     cmd_id, state.get_bkg(id, bid).name, cmd_bkg_id)
                 _send_to_outfile(cmd, outfile)
@@ -252,10 +268,7 @@ def _save_data(state, funcs, outfile=None):
                 rids = state.list_response_ids(id, bid)
                 cmd_resp_id = ""
                 for rid in rids:
-                    if type(rid) == str:
-                        cmd_resp_id = "\"%s\"" % rid
-                    else:
-                        cmd_resp_id = "%s" % rid
+                    cmd_resp_id = _id_to_str(rid)
 
                     try:
                         arf = state.get_arf(id, rid, bid)
@@ -363,27 +376,6 @@ def _print_par(par):
               par.fullname, repr(par.max),
               par.fullname, unitstr,
               par.fullname, par.frozen)), linkstr)
-
-
-def _id_to_str(id):
-    """Convert a data set identifier to a string value.
-
-    Parameters
-    ----------
-    id : int or str
-       The data set identifier.
-
-    Returns
-    -------
-    out : str
-       A string representation of the identifier for use
-       in the Python serialization.
-    """
-
-    if type(id) == str:
-        return '"{}"'.format(id)
-    else:
-        return str(id)
 
 
 def _save_statistic(state, outfile):
@@ -665,10 +657,7 @@ def _save_models(state, outfile=None):
             bids = state.list_bkg_ids(id)
             cmd_bkg_id = ""
             for bid in bids:
-                if type(bid) == str:
-                    cmd_bkg_id = "\"%s\"" % bid
-                else:
-                    cmd_bkg_id = "%s" % bid
+                cmd_bkg_id = _id_to_str(bid)
 
                 the_bkg_source = None
                 the_bkg_full_model = None
