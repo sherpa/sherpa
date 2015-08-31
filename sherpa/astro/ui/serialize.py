@@ -197,7 +197,7 @@ def save_all(state, outfile=None, clobber=False):
         try:
             # Only store group flags and quality flags if they were changed
             # from flags in the file
-            if (state.get_data(id)._original_groups == False):
+            if (not state.get_data(id)._original_groups):
                 if (state.get_data(id).grouping is not None):
                     _send_to_outfile(
                         "\n######### Data Group Flags\n", outfile)
@@ -213,8 +213,8 @@ def save_all(state, outfile=None, clobber=False):
                         id).tolist()) + ", numpy." + str(state.get_quality(id).dtype) + "))"
                     _send_to_outfile(cmd, outfile)
             # End check for original groups and quality flags
-            if (state.get_data(id).grouped == True):
-                cmd = "if (get_data(%s).grouping is not None and get_data(%s).grouped == False):" % (
+            if (state.get_data(id).grouped):
+                cmd = "if (get_data(%s).grouping is not None and not get_data(%s).grouped):" % (
                     cmd_id, cmd_id)
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("\t######### Group Data", outfile)
@@ -273,7 +273,7 @@ def save_all(state, outfile=None, clobber=False):
                 try:
                     # Only store group flags and quality flags if they were changed
                     # from flags in the file
-                    if (state.get_bkg(id, bid)._original_groups == False):
+                    if (not state.get_bkg(id, bid)._original_groups):
                         if (state.get_bkg(id, bid).grouping is not None):
                             _send_to_outfile(
                                 "\n######### Background Group Flags\n", outfile)
@@ -289,8 +289,8 @@ def save_all(state, outfile=None, clobber=False):
                                 state.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
                             _send_to_outfile(cmd, outfile)
                     # End check for original groups and quality flags
-                    if (state.get_bkg(id, bid).grouped == True):
-                        cmd = "if (get_bkg(%s,%s).grouping is not None and get_bkg(%s,%s).grouped == False):" % (
+                    if (state.get_bkg(id, bid).grouped):
+                        cmd = "if (get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped):" % (
                             cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
                         _send_to_outfile(cmd, outfile)
                         _send_to_outfile(
@@ -337,7 +337,7 @@ def save_all(state, outfile=None, clobber=False):
                 "\n######### Set Energy or Wave Units\n", outfile)
             units = state.get_data(id).units
             rate = state.get_data(id).rate
-            if (rate == True):
+            if (rate):
                 rate = "\"rate\""
             else:
                 rate = "\"counts\""
@@ -352,8 +352,8 @@ def save_all(state, outfile=None, clobber=False):
 
         # Subtract background data if applicable
         try:
-            if (state.get_data(id).subtracted == True):
-                cmd = "if (get_data(%s).subtracted == False):" % cmd_id
+            if (state.get_data(id).subtracted):
+                cmd = "if (not get_data(%s).subtracted):" % cmd_id
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile(
                     "\t######### Subtract Background Data", outfile)
@@ -485,7 +485,7 @@ def save_all(state, outfile=None, clobber=False):
                 "WARNING: User model not saved, add any user model to save file manually\n", outfile)
             continue
 
-        if (hasattr(mod, "integrate") == True):
+        if (hasattr(mod, "integrate")):
             cmd = "%s.integrate = %s" % (modelname, mod.integrate)
             _send_to_outfile(cmd, outfile)
             _send_to_outfile("", outfile)
@@ -493,18 +493,18 @@ def save_all(state, outfile=None, clobber=False):
         from sherpa.models import Parameter
         for par in mod.__dict__.values():
             if (type(par) == Parameter or
-                    issubclass(Parameter, type(par)) == True):
+                    issubclass(Parameter, type(par))):
                 par_attributes, par_linkstr = _print_par(par)
                 _send_to_outfile(par_attributes, outfile)
                 linkstr = linkstr + par_linkstr
         # If the model is a PSFModel, could have special
         # attributes "size" and "center" -- if so, record them.
         if (typename == "psfmodel"):
-            if (hasattr(mod, "size") == True):
+            if (hasattr(mod, "size")):
                 cmd = "%s.size = %s" % (modelname, repr(mod.size))
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("", outfile)
-            if (hasattr(mod, "center") == True):
+            if (hasattr(mod, "center")):
                 cmd = "%s.center = %s" % (modelname, repr(mod.center))
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("", outfile)
@@ -755,7 +755,7 @@ def save_session(state, outfile=None, clobber=False):
         try:
             # Only store group flags and quality flags if they were changed
             # from flags in the file
-            if (state.get_data(id)._original_groups == False):
+            if (not state.get_data(id)._original_groups):
                 if (state.get_data(id).grouping is not None):
                     _send_to_outfile(
                         "\n######### Data Group Flags\n", outfile)
@@ -772,8 +772,8 @@ def save_session(state, outfile=None, clobber=False):
                         id).tolist()) + ", numpy." + str(state.get_quality(id).dtype) + "))"
                     _send_to_outfile(cmd, outfile)
             # End check for original groups and quality flags
-            if (state.get_data(id).grouped == True):
-                cmd = "if (get_data(%s).grouping is not None and get_data(%s).grouped == False):" % (
+            if (state.get_data(id).grouped):
+                cmd = "if (get_data(%s).grouping is not None and not get_data(%s).grouped):" % (
                     cmd_id, cmd_id)
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("\t######### Group Data", outfile)
@@ -832,7 +832,7 @@ def save_session(state, outfile=None, clobber=False):
                 try:
                     # Only store group flags and quality flags if they were changed
                     # from flags in the file
-                    if (state.get_bkg(id, bid)._original_groups == False):
+                    if (not state.get_bkg(id, bid)._original_groups):
                         if (state.get_bkg(id, bid).grouping is not None):
                             _send_to_outfile(
                                 "\n######### Background Group Flags\n", outfile)
@@ -848,8 +848,8 @@ def save_session(state, outfile=None, clobber=False):
                                 state.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
                             _send_to_outfile(cmd, outfile)
                     # End check for original groups and quality flags
-                    if (state.get_bkg(id, bid).grouped == True):
-                        cmd = "if (get_bkg(%s,%s).grouping is not None and get_bkg(%s,%s).grouped == False):" % (
+                    if (state.get_bkg(id, bid).grouped):
+                        cmd = "if (get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped):" % (
                             cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
                         _send_to_outfile(cmd, outfile)
                         _send_to_outfile(
@@ -896,7 +896,7 @@ def save_session(state, outfile=None, clobber=False):
                 "\n######### Set Energy or Wave Units\n", outfile)
             units = state.get_data(id).units
             rate = state.get_data(id).rate
-            if (rate == True):
+            if (rate):
                 rate = "\"rate\""
             else:
                 rate = "\"counts\""
@@ -911,8 +911,8 @@ def save_session(state, outfile=None, clobber=False):
 
         # Subtract background data if applicable
         try:
-            if (state.get_data(id).subtracted == True):
-                cmd = "if (get_data(%s).subtracted == False):" % cmd_id
+            if (state.get_data(id).subtracted):
+                cmd = "if (not get_data(%s).subtracted):" % cmd_id
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile(
                     "\t######### Subtract Background Data", outfile)
@@ -1044,7 +1044,7 @@ def save_session(state, outfile=None, clobber=False):
                 "WARNING: User model not saved, add any user model to save file manually\n", outfile)
             continue
 
-        if (hasattr(mod, "integrate") == True):
+        if (hasattr(mod, "integrate")):
             cmd = "%s.integrate = %s" % (modelname, mod.integrate)
             _send_to_outfile(cmd, outfile)
             _send_to_outfile("", outfile)
@@ -1052,18 +1052,18 @@ def save_session(state, outfile=None, clobber=False):
         from sherpa.models import Parameter
         for par in mod.__dict__.values():
             if (type(par) == Parameter or
-                    issubclass(Parameter, type(par)) == True):
+                    issubclass(Parameter, type(par))):
                 par_attributes, par_linkstr = _print_par(par)
                 _send_to_outfile(par_attributes, outfile)
                 linkstr = linkstr + par_linkstr
         # If the model is a PSFModel, could have special
         # attributes "size" and "center" -- if so, record them.
         if (typename == "psfmodel"):
-            if (hasattr(mod, "size") == True):
+            if (hasattr(mod, "size")):
                 cmd = "%s.size = %s" % (modelname, repr(mod.size))
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("", outfile)
-            if (hasattr(mod, "center") == True):
+            if (hasattr(mod, "center")):
                 cmd = "%s.center = %s" % (modelname, repr(mod.center))
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("", outfile)
