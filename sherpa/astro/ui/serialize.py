@@ -330,6 +330,131 @@ def _save_model_components(state, outfile=None):
     _send_to_outfile(linkstr, outfile)
 
 
+def _save_models(state, outfile=None):
+    """Save the source, pileup, and background models.
+
+    Parameters
+    ----------
+    state
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       models printed to it.
+    """
+
+    # Save all source, pileup and background models
+
+    _send_to_outfile(
+        "\n######### Set Source, Pileup and Background Models\n", outfile)
+    for id in state.list_data_ids():
+        cmd_id = _id_to_str(id)
+
+        # If a data set has a source model associated with it,
+        # set that here -- try to distinguish cases where
+        # source model is different from whole model.
+        # If not, just pass
+        try:
+            the_source = None
+            the_full_model = None
+            try:
+                the_source = state.get_source(id)
+            except:
+                the_source = None
+                pass
+
+            try:
+                the_full_model = state.get_model(id)
+            except:
+                the_full_model = None
+                pass
+
+            if the_source is None and the_full_model is None:
+                cmd = ""
+                pass
+            elif the_source is None and the_full_model is not None:
+                cmd = "set_full_model(%s, %s)" % (
+                    cmd_id, the_full_model.name)
+            elif the_source is not None and the_full_model is None:
+                cmd = "set_source(%s, %s)" % (cmd_id, state.the_source.name)
+            elif the_source is not None and the_full_model is not None:
+                if repr(the_source) == repr(the_full_model):
+                    cmd = "set_full_model(%s, %s)" % (
+                        cmd_id, the_full_model.name)
+                else:
+                    cmd = "set_source(%s, %s)" % (
+                        cmd_id, state.the_source.name)
+            else:
+                # You can't actually get here
+                cmd = ""
+                pass
+            _send_to_outfile(cmd, outfile)
+            _send_to_outfile("", outfile)
+        except:
+            pass
+
+        # If any pileup models, try to set them.  If not, just pass.
+        try:
+            cmd = "set_pileup_model(%s, %s)" % (
+                cmd_id, state.get_pileup_model(id).name)
+            _send_to_outfile(cmd, outfile)
+        except:
+            pass
+
+        # Set background models (if any) associated with backgrounds
+        # tied to this data set -- if none, then pass.  Again, try
+        # to distinguish cases where background "source" model is
+        # different from whole background model.
+        try:
+            bids = state.list_bkg_ids(id)
+            cmd_bkg_id = ""
+            for bid in bids:
+                if type(bid) == str:
+                    cmd_bkg_id = "\"%s\"" % bid
+                else:
+                    cmd_bkg_id = "%s" % bid
+
+                the_bkg_source = None
+                the_bkg_full_model = None
+                try:
+                    the_bkg_source = state.get_bkg_source(bid)
+                except:
+                    the_bkg_source = None
+                    pass
+
+                try:
+                    the_bkg_full_model = state.get_bkg_model(id)
+                except:
+                    the_bkg_full_model = None
+                    pass
+
+                if the_bkg_source is None and the_bkg_full_model is None:
+                    cmd = ""
+                    pass
+                elif the_bkg_source is None and the_bkg_full_model is not None:
+                    cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
+                        cmd_id, the_bkg_full_model.name, cmd_bkg_id)
+                elif the_bkg_source is not None and the_bkg_full_model is None:
+                    cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
+                        cmd_id, the_bkg_source.name, cmd_bkg_id)
+                elif the_bkg_source is not None and \
+                      the_bkg_full_model is not None:
+                    if repr(the_bkg_source) == repr(the_bkg_full_model):
+                        cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
+                            cmd_id, the_bkg_full_model.name, cmd_bkg_id)
+                    else:
+                        cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
+                            cmd_id, the_bkg_source.name, cmd_bkg_id)
+                else:
+                    # You can't actually get here
+                    cmd = ""
+                    pass
+                _send_to_outfile(cmd, outfile)
+                _send_to_outfile("", outfile)
+
+        except:
+            pass
+
+
 def _save_xspec(outfile=None):
     """Save the XSPEC settings, if the module is loaded.
 
@@ -458,13 +583,12 @@ def save_all(state, outfile=None, clobber=False):
     # Save data files
 
     _send_to_outfile("\n######### Load Data Sets\n", outfile)
-    dids = state.list_data_ids()
 
     cmd_id = ""
     cmd_resp_id = ""
     cmd_bkg_id = ""
 
-    for id in dids:
+    for id in state.list_data_ids():
         # But if id is a string, then quote as a string
         # But what about the rest of any possible load_data() options;
         # how do we replicate the optional keywords that were possibly
@@ -673,118 +797,7 @@ def save_all(state, outfile=None, clobber=False):
     _save_iter_method(state, outfile)
 
     _save_model_components(state, outfile)
-
-    # Save all source, pileup and background models
-
-    _send_to_outfile(
-        "\n######### Set Source, Pileup and Background Models\n", outfile)
-    for id in dids:
-        cmd_id = _id_to_str(id)
-
-        # If a data set has a source model associated with it,
-        # set that here -- try to distinguish cases where
-        # source model is different from whole model.
-        # If not, just pass
-        try:
-            the_source = None
-            the_full_model = None
-            try:
-                the_source = state.get_source(id)
-            except:
-                the_source = None
-                pass
-
-            try:
-                the_full_model = state.get_model(id)
-            except:
-                the_full_model = None
-                pass
-
-            if the_source is None and the_full_model is None:
-                cmd = ""
-                pass
-            elif the_source is None and the_full_model is not None:
-                cmd = "set_full_model(%s, %s)" % (
-                    cmd_id, the_full_model.name)
-            elif the_source is not None and the_full_model is None:
-                cmd = "set_source(%s, %s)" % (cmd_id, state.the_source.name)
-            elif the_source is not None and the_full_model is not None:
-                if repr(the_source) == repr(the_full_model):
-                    cmd = "set_full_model(%s, %s)" % (
-                        cmd_id, the_full_model.name)
-                else:
-                    cmd = "set_source(%s, %s)" % (
-                        cmd_id, state.the_source.name)
-            else:
-                # You can't actually get here
-                cmd = ""
-                pass
-            _send_to_outfile(cmd, outfile)
-            _send_to_outfile("", outfile)
-        except:
-            pass
-
-        # If any pileup models, try to set them.  If not, just pass.
-        try:
-            cmd = "set_pileup_model(%s, %s)" % (
-                cmd_id, state.get_pileup_model(id).name)
-            _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
-        # Set background models (if any) associated with backgrounds
-        # tied to this data set -- if none, then pass.  Again, try
-        # to distinguish cases where background "source" model is
-        # different from whole background model.
-        try:
-            bids = state.list_bkg_ids(id)
-            cmd_bkg_id = ""
-            for bid in bids:
-                if type(bid) == str:
-                    cmd_bkg_id = "\"%s\"" % bid
-                else:
-                    cmd_bkg_id = "%s" % bid
-
-                the_bkg_source = None
-                the_bkg_full_model = None
-                try:
-                    the_bkg_source = state.get_bkg_source(bid)
-                except:
-                    the_bkg_source = None
-                    pass
-
-                try:
-                    the_bkg_full_model = state.get_bkg_model(id)
-                except:
-                    the_bkg_full_model = None
-                    pass
-
-                if the_bkg_source is None and the_bkg_full_model is None:
-                    cmd = ""
-                    pass
-                elif the_bkg_source is None and the_bkg_full_model is not None:
-                    cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                        cmd_id, the_bkg_full_model.name, cmd_bkg_id)
-                elif the_bkg_source is not None and the_bkg_full_model is None:
-                    cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                        cmd_id, the_bkg_source.name, cmd_bkg_id)
-                elif the_bkg_source is not None and \
-                      the_bkg_full_model is not None:
-                    if repr(the_bkg_source) == repr(the_bkg_full_model):
-                        cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                            cmd_id, the_bkg_full_model.name, cmd_bkg_id)
-                    else:
-                        cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                            cmd_id, the_bkg_source.name, cmd_bkg_id)
-                else:
-                    # You can't actually get here
-                    cmd = ""
-                    pass
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
-
-        except:
-            pass
+    _save_models(state, outfile)
 
     _save_xspec(outfile)
 
@@ -810,7 +823,6 @@ def save_session(state, outfile=None, clobber=False):
     # Save data files
 
     _send_to_outfile("\n######### Load Data Sets\n", outfile)
-    dids = state.list_data_ids()
 
     def get_logged_call(call_name, id=None):
         if id is not None:
@@ -823,7 +835,7 @@ def save_session(state, outfile=None, clobber=False):
     cmd_resp_id = ""
     cmd_bkg_id = ""
 
-    for id in dids:
+    for id in state.list_data_ids():
         # But if id is a string, then quote as a string
         # But what about the rest of any possible load_data() options;
         # how do we replicate the optional keywords that were possibly
@@ -1034,118 +1046,6 @@ def save_session(state, outfile=None, clobber=False):
     _save_iter_method(state, outfile)
 
     _save_model_components(state, outfile)
-
-    # Save all source, pileup and background models
-
-    _send_to_outfile(
-        "\n######### Set Source, Pileup and Background Models\n", outfile)
-    for id in dids:
-        cmd_id = _id_to_str(id)
-
-        # If a data set has a source model associated with it,
-        # set that here -- try to distinguish cases where
-        # source model is different from whole model.
-        # If not, just pass
-        try:
-            the_source = None
-            the_full_model = None
-            try:
-                the_source = state.get_source(id)
-            except:
-                the_source = None
-                pass
-
-            try:
-                the_full_model = state.get_model(id)
-            except:
-                the_full_model = None
-                pass
-
-            if the_source is None and the_full_model is None:
-                cmd = ""
-                pass
-            elif the_source is None and the_full_model is not None:
-                cmd = "set_full_model(%s, %s)" % (
-                    cmd_id, the_full_model.name)
-            elif the_source is not None and the_full_model is None:
-                cmd = "set_source(%s, %s)" % (cmd_id, state.the_source.name)
-            elif the_source is not None and the_full_model is not None:
-                if repr(the_source) == repr(the_full_model):
-                    cmd = "set_full_model(%s, %s)" % (
-                        cmd_id, the_full_model.name)
-                else:
-                    cmd = "set_source(%s, %s)" % (
-                        cmd_id, state.the_source.name)
-            else:
-                # You can't actually get here
-                cmd = ""
-                pass
-            _send_to_outfile(cmd, outfile)
-            _send_to_outfile("", outfile)
-        except:
-            pass
-
-        # If any pileup models, try to set them.  If not, just pass.
-        try:
-            cmd = "set_pileup_model(%s, %s)" % (
-                cmd_id, state.get_pileup_model(id).name)
-            _send_to_outfile(cmd, outfile)
-        except:
-            pass
-
-        # Set background models (if any) associated with backgrounds
-        # tied to this data set -- if none, then pass.  Again, try
-        # to distinguish cases where background "source" model is
-        # different from whole background model.
-        try:
-            bids = state.list_bkg_ids(id)
-            cmd_bkg_id = ""
-            for bid in bids:
-                if type(bid) == str:
-                    cmd_bkg_id = "\"%s\"" % bid
-                else:
-                    cmd_bkg_id = "%s" % bid
-
-                the_bkg_source = None
-                the_bkg_full_model = None
-                try:
-                    the_bkg_source = state.get_bkg_source(bid)
-                except:
-                    the_bkg_source = None
-                    pass
-
-                try:
-                    the_bkg_full_model = state.get_bkg_model(id)
-                except:
-                    the_bkg_full_model = None
-                    pass
-
-                if the_bkg_source is None and the_bkg_full_model is None:
-                    cmd = ""
-                    pass
-                elif the_bkg_source is None and the_bkg_full_model is not None:
-                    cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                        cmd_id, the_bkg_full_model.name, cmd_bkg_id)
-                elif the_bkg_source is not None and \
-                     the_bkg_full_model is None:
-                    cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                        cmd_id, the_bkg_source.name, cmd_bkg_id)
-                elif the_bkg_source is not None and \
-                     the_bkg_full_model is not None:
-                    if repr(the_bkg_source) == repr(the_bkg_full_model):
-                        cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                            cmd_id, the_bkg_full_model.name, cmd_bkg_id)
-                    else:
-                        cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                            cmd_id, the_bkg_source.name, cmd_bkg_id)
-                else:
-                    # You can't actually get here
-                    cmd = ""
-                    pass
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
-
-        except:
-            pass
+    _save_models(state, outfile)
 
     _save_xspec(outfile)
