@@ -312,7 +312,6 @@ def _save_data(state, funcs, outfile=None):
     _send_to_outfile("\n######### Load Data Sets\n", outfile)
 
     cmd_id = ""
-    cmd_resp_id = ""
     cmd_bkg_id = ""
 
     for id in state.list_data_ids():
@@ -967,6 +966,9 @@ def save_all(state, outfile=None, clobber=False):
 
 
 # What is this routine used for, and how is it different to save_all?
+# The only difference is that the load_data and set_coord values are
+# retrieved from the "loggable" facility. Do we need to keep this?
+#
 def save_session(state, outfile=None, clobber=False):
 
     # Check output file can be written to
@@ -982,12 +984,14 @@ def save_session(state, outfile=None, clobber=False):
         raise ArgumentTypeErr('badarg', 'string or None')
 
     def get_logged_call(call_name, id=None):
-        if id is not None:
-            if state._calls_tracker.has_key(id) and state._calls_tracker[id].has_key(call_name):
-                return state._calls_tracker[id][call_name]
-        else:
-            if state._calls_tracker.has_key(call_name):
+        try:
+            if id is None:
                 return state._calls_tracker[call_name]
+            else:
+                return state._calls_tracker[id][call_name]
+        except KeyError:
+            # QUS: should this error out or return None?
+            return None
 
     funcs = {
         'load_data': lambda id: get_logged_call('load_data', id),
