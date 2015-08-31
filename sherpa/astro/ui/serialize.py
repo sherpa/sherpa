@@ -361,7 +361,6 @@ def _save_data(state, funcs, outfile=None):
             _send_to_outfile(
                 "\n######### Data Spectral Responses\n", outfile)
             rids = state.list_response_ids(id)
-            cmd_resp_id = ""
 
             for rid in rids:
                 _save_arf_response(state, id, rid, outfile=outfile)
@@ -385,8 +384,8 @@ def _save_data(state, funcs, outfile=None):
 
                 # Group data if applicable
                 try:
-                    # Only store group flags and quality flags if they were changed
-                    # from flags in the file
+                    # Only store group flags and quality flags if they were
+                    # changed from flags in the file
                     if not state.get_bkg(id, bid)._original_groups:
                         if state.get_bkg(id, bid).grouping is not None:
                             _save_pha_grouping(state, id, bid, outfile=outfile)
@@ -450,14 +449,14 @@ def _save_data(state, funcs, outfile=None):
         # Set filter if applicable
         try:
             _send_to_outfile("\n######### Filter Data\n", outfile)
-            if len(state.get_data(id).get_filter()) > 0:
-                filter = state.get_data(id).get_filter()
-                if len(state.get_data(id).get_dims()) == 1:
-                    cmd = "notice_id(%s,\"%s\")" % (cmd_id, filter)
-                    _send_to_outfile(cmd, outfile)
-                if len(state.get_data(id).get_dims()) == 2:
-                    cmd = "notice2d_id(%s,\"%s\")" % (cmd_id, filter)
-                    _send_to_outfile(cmd, outfile)
+            fvals = state.get_data(id).get_filter()
+            ndims = len(state.get_data(id).get_dims())
+            if ndims == 1:
+                cmd = 'notice_id({}, "{}")'.format(cmd_id, fvals)
+                _send_to_outfile(cmd, outfile)
+            elif ndims == 2:
+                cmd = 'notice2d_id({}, "{}")'.format(cmd_id, fvals)
+                _send_to_outfile(cmd, outfile)
         except:
             pass
 
