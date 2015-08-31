@@ -131,7 +131,7 @@ def save_all(state, outfile=None, clobber=False):
                 par.fullname, par.link.fullname)
 
         unitstr = ""
-        if (type(par.units) == str):
+        if type(par.units) == str:
             unitstr = "\"%s\"" % par.units
 
         return ((('%s.default_val = %s\n' +
@@ -154,9 +154,9 @@ def save_all(state, outfile=None, clobber=False):
     # Check output file can be written to
 
     clobber = sherpa.utils.bool_cast(clobber)
-    if (type(outfile) != str and outfile is not None):
+    if type(outfile) != str and outfile is not None:
         raise ArgumentTypeErr('badarg', 'string or None')
-    if (type(outfile) == str and os.path.isfile(outfile) and not clobber):
+    if not clobber and type(outfile) == str and os.path.isfile(outfile):
         raise IOErr('filefound', outfile)
 
     # Import numpy
@@ -176,7 +176,7 @@ def save_all(state, outfile=None, clobber=False):
         # But what about the rest of any possible load_data() options;
         # how do we replicate the optional keywords that were possibly
         # used?  Store them with data object?
-        if (type(id) == str):
+        if type(id) == str:
             cmd_id = "\"%s\"" % id
         else:
             cmd_id = "%s" % id
@@ -197,15 +197,15 @@ def save_all(state, outfile=None, clobber=False):
         try:
             # Only store group flags and quality flags if they were changed
             # from flags in the file
-            if (not state.get_data(id)._original_groups):
-                if (state.get_data(id).grouping is not None):
+            if not state.get_data(id)._original_groups:
+                if state.get_data(id).grouping is not None:
                     _send_to_outfile(
                         "\n######### Data Group Flags\n", outfile)
                     cmd = "set_grouping(%s, " % cmd_id
                     cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(
                         id).tolist()) + ", numpy." + str(state.get_grouping(id).dtype) + "))"
                     _send_to_outfile(cmd, outfile)
-                if (state.get_data(id).quality is not None):
+                if state.get_data(id).quality is not None:
                     _send_to_outfile(
                         "\n######### Data Quality Flags\n", outfile)
                     cmd = "set_quality(%s, " % cmd_id
@@ -213,8 +213,8 @@ def save_all(state, outfile=None, clobber=False):
                         id).tolist()) + ", numpy." + str(state.get_quality(id).dtype) + "))"
                     _send_to_outfile(cmd, outfile)
             # End check for original groups and quality flags
-            if (state.get_data(id).grouped):
-                cmd = "if (get_data(%s).grouping is not None and not get_data(%s).grouped):" % (
+            if state.get_data(id).grouped:
+                cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
                     cmd_id, cmd_id)
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("\t######### Group Data", outfile)
@@ -231,7 +231,7 @@ def save_all(state, outfile=None, clobber=False):
             cmd_resp_id = ""
 
             for rid in rids:
-                if (type(rid) == str):
+                if type(rid) == str:
                     cmd_resp_id = "\"%s\"" % rid
                 else:
                     cmd_resp_id = "%s" % rid
@@ -261,7 +261,7 @@ def save_all(state, outfile=None, clobber=False):
             bids = state.list_bkg_ids(id)
             cmd_bkg_id = ""
             for bid in bids:
-                if (type(bid) == str):
+                if type(bid) == str:
                     cmd_bkg_id = "\"%s\"" % bid
                 else:
                     cmd_bkg_id = "%s" % bid
@@ -273,15 +273,15 @@ def save_all(state, outfile=None, clobber=False):
                 try:
                     # Only store group flags and quality flags if they were changed
                     # from flags in the file
-                    if (not state.get_bkg(id, bid)._original_groups):
-                        if (state.get_bkg(id, bid).grouping is not None):
+                    if not state.get_bkg(id, bid)._original_groups:
+                        if state.get_bkg(id, bid).grouping is not None:
                             _send_to_outfile(
                                 "\n######### Background Group Flags\n", outfile)
                             cmd = "set_grouping(%s, " % cmd_id
                             cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(id).tolist()) + ", numpy." + str(
                                 state.get_grouping(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
                             _send_to_outfile(cmd, outfile)
-                        if (state.get_bkg(id, bid).quality is not None):
+                        if state.get_bkg(id, bid).quality is not None:
                             _send_to_outfile(
                                 "\n######### Background Quality Flags\n", outfile)
                             cmd = "set_quality(%s, " % cmd_id
@@ -289,8 +289,8 @@ def save_all(state, outfile=None, clobber=False):
                                 state.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
                             _send_to_outfile(cmd, outfile)
                     # End check for original groups and quality flags
-                    if (state.get_bkg(id, bid).grouped):
-                        cmd = "if (get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped):" % (
+                    if state.get_bkg(id, bid).grouped:
+                        cmd = "if get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped:" % (
                             cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
                         _send_to_outfile(cmd, outfile)
                         _send_to_outfile(
@@ -306,7 +306,7 @@ def save_all(state, outfile=None, clobber=False):
                 rids = state.list_response_ids(id, bid)
                 cmd_resp_id = ""
                 for rid in rids:
-                    if (type(rid) == str):
+                    if type(rid) == str:
                         cmd_resp_id = "\"%s\"" % rid
                     else:
                         cmd_resp_id = "%s" % rid
@@ -337,7 +337,7 @@ def save_all(state, outfile=None, clobber=False):
                 "\n######### Set Energy or Wave Units\n", outfile)
             units = state.get_data(id).units
             rate = state.get_data(id).rate
-            if (rate):
+            if rate:
                 rate = "\"rate\""
             else:
                 rate = "\"counts\""
@@ -352,8 +352,8 @@ def save_all(state, outfile=None, clobber=False):
 
         # Subtract background data if applicable
         try:
-            if (state.get_data(id).subtracted):
-                cmd = "if (not get_data(%s).subtracted):" % cmd_id
+            if state.get_data(id).subtracted:
+                cmd = "if not get_data(%s).subtracted:" % cmd_id
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile(
                     "\t######### Subtract Background Data", outfile)
@@ -365,12 +365,12 @@ def save_all(state, outfile=None, clobber=False):
         # Set filter if applicable
         try:
             _send_to_outfile("\n######### Filter Data\n", outfile)
-            if (len(state.get_data(id).get_filter()) > 0):
+            if len(state.get_data(id).get_filter()) > 0:
                 filter = state.get_data(id).get_filter()
-                if (len(state.get_data(id).get_dims()) == 1):
+                if len(state.get_data(id).get_dims()) == 1:
                     cmd = "notice_id(%s,\"%s\")" % (cmd_id, filter)
                     _send_to_outfile(cmd, outfile)
-                if (len(state.get_data(id).get_dims()) == 2):
+                if len(state.get_data(id).get_dims()) == 2:
                     cmd = "notice2d_id(%s,\"%s\")" % (cmd_id, filter)
                     _send_to_outfile(cmd, outfile)
         except:
@@ -400,7 +400,7 @@ def save_all(state, outfile=None, clobber=False):
     _send_to_outfile("", outfile)
 
     # Save iterative fitting method (if any)
-    if (state.get_iter_method_name() != 'none'):
+    if state.get_iter_method_name() != 'none':
         _send_to_outfile(
             "\n######### Set Iterative Fitting Method\n", outfile)
         cmd = "set_iter_method(\"%s\")" % state.get_iter_method_name()
@@ -452,12 +452,12 @@ def save_all(state, outfile=None, clobber=False):
         # skip user models entirely, as they require importation of
         # user modules, beyond scope of this script.
 
-        if (typename != "psfmodel" and typename != "tabelmodel" and
-                typename != "usermodel"):
+        if typename != "psfmodel" and typename != "tabelmodel" and \
+           typename != "usermodel":
             # Normal case:  create an instance of the model.
             cmd = "eval(\"%s.%s\")" % (typename, modelname)
             _send_to_outfile(cmd, outfile)
-        if (typename == "psfmodel"):
+        if typename == "psfmodel":
             cmd = "load_psf(\"%s\", \"%s\")" % (mod._name, mod.kernel.name)
             _send_to_outfile(cmd, outfile)
             try:
@@ -466,45 +466,44 @@ def save_all(state, outfile=None, clobber=False):
                 _send_to_outfile(cmd, outfile)
             except:
                 pass
-        if (typename == "tablemodel"):
+        if typename == "tablemodel":
             # Create table model with load_table_model
             cmd = "load_table_model(\"%s\", \"%s\")" % (
                 modelname, mod.filename)
             _send_to_outfile(cmd, outfile)
 
-        if (typename == "convolutionkernel"):
+        if typename == "convolutionkernel":
             # Create general convolution kernel with load_conv
             cmd = "load_conv(\"%s\", \"%s\")" % (
                 modelname, mod.kernel.name)
             _send_to_outfile(cmd, outfile)
 
-        if (typename == "usermodel"):
+        if typename == "usermodel":
             # Skip user models -- don't create, don't set parameters
             # Go directly to next model in the model component list.
             _send_to_outfile(
                 "WARNING: User model not saved, add any user model to save file manually\n", outfile)
             continue
 
-        if (hasattr(mod, "integrate")):
+        if hasattr(mod, "integrate"):
             cmd = "%s.integrate = %s" % (modelname, mod.integrate)
             _send_to_outfile(cmd, outfile)
             _send_to_outfile("", outfile)
 
         from sherpa.models import Parameter
         for par in mod.__dict__.values():
-            if (type(par) == Parameter or
-                    issubclass(Parameter, type(par))):
+            if type(par) == Parameter or issubclass(Parameter, type(par)):
                 par_attributes, par_linkstr = _print_par(par)
                 _send_to_outfile(par_attributes, outfile)
                 linkstr = linkstr + par_linkstr
         # If the model is a PSFModel, could have special
         # attributes "size" and "center" -- if so, record them.
-        if (typename == "psfmodel"):
-            if (hasattr(mod, "size")):
+        if typename == "psfmodel":
+            if hasattr(mod, "size"):
                 cmd = "%s.size = %s" % (modelname, repr(mod.size))
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("", outfile)
-            if (hasattr(mod, "center")):
+            if hasattr(mod, "center"):
                 cmd = "%s.center = %s" % (modelname, repr(mod.center))
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("", outfile)
@@ -518,7 +517,7 @@ def save_all(state, outfile=None, clobber=False):
     _send_to_outfile(
         "\n######### Set Source, Pileup and Background Models\n", outfile)
     for id in dids:
-        if (type(id) == str):
+        if type(id) == str:
             cmd_id = "\"%s\"" % id
         else:
             cmd_id = "%s" % id
@@ -542,20 +541,16 @@ def save_all(state, outfile=None, clobber=False):
                 the_full_model = None
                 pass
 
-            if (the_source is None and
-                    the_full_model is None):
+            if the_source is None and the_full_model is None:
                 cmd = ""
                 pass
-            elif (the_source is None and
-                  the_full_model is not None):
+            elif the_source is None and the_full_model is not None:
                 cmd = "set_full_model(%s, %s)" % (
                     cmd_id, the_full_model.name)
-            elif (the_source is not None and
-                  the_full_model is None):
+            elif the_source is not None and the_full_model is None:
                 cmd = "set_source(%s, %s)" % (cmd_id, state.the_source.name)
-            elif (the_source is not None and
-                  the_full_model is not None):
-                if (repr(the_source) == repr(the_full_model)):
+            elif the_source is not None and the_full_model is not None:
+                if repr(the_source) == repr(the_full_model):
                     cmd = "set_full_model(%s, %s)" % (
                         cmd_id, the_full_model.name)
                 else:
@@ -586,7 +581,7 @@ def save_all(state, outfile=None, clobber=False):
             bids = state.list_bkg_ids(id)
             cmd_bkg_id = ""
             for bid in bids:
-                if (type(bid) == str):
+                if type(bid) == str:
                     cmd_bkg_id = "\"%s\"" % bid
                 else:
                     cmd_bkg_id = "%s" % bid
@@ -605,21 +600,18 @@ def save_all(state, outfile=None, clobber=False):
                     the_bkg_full_model = None
                     pass
 
-                if (the_bkg_source is None and
-                        the_bkg_full_model is None):
+                if the_bkg_source is None and the_bkg_full_model is None:
                     cmd = ""
                     pass
-                elif (the_bkg_source is None and
-                      the_bkg_full_model is not None):
+                elif the_bkg_source is None and the_bkg_full_model is not None:
                     cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
                         cmd_id, the_bkg_full_model.name, cmd_bkg_id)
-                elif (the_bkg_source is not None and
-                      the_bkg_full_model is None):
+                elif the_bkg_source is not None and the_bkg_full_model is None:
                     cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
                         cmd_id, the_bkg_source.name, cmd_bkg_id)
-                elif (the_bkg_source is not None and
-                      the_bkg_full_model is not None):
-                    if (repr(the_bkg_source) == repr(the_bkg_full_model)):
+                elif the_bkg_source is not None and \
+                      the_bkg_full_model is not None:
+                    if repr(the_bkg_source) == repr(the_bkg_full_model):
                         cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
                             cmd_id, the_bkg_full_model.name, cmd_bkg_id)
                     else:
@@ -636,7 +628,7 @@ def save_all(state, outfile=None, clobber=False):
             pass
 
     # Save XSPEC settings if XSPEC module has been loaded.
-    if (hasattr(sherpa.astro, "xspec")):
+    if hasattr(sherpa.astro, "xspec"):
         _send_to_outfile("\n######### XSPEC Module Settings\n", outfile)
         xspec_state = sherpa.astro.xspec.get_xsstate()
 
@@ -681,7 +673,7 @@ def save_session(state, outfile=None, clobber=False):
                 par.fullname, par.link.fullname)
 
         unitstr = ""
-        if (type(par.units) == str):
+        if type(par.units) == str:
             unitstr = "\"%s\"" % par.units
 
         return ((('%s.default_val = %s\n' +
@@ -704,9 +696,9 @@ def save_session(state, outfile=None, clobber=False):
     # Check output file can be written to
 
     clobber = sherpa.utils.bool_cast(clobber)
-    if (type(outfile) != str and outfile is not None):
+    if type(outfile) != str and outfile is not None:
         raise ArgumentTypeErr('badarg', 'string or None')
-    if (type(outfile) == str and os.path.isfile(outfile) and not clobber):
+    if not clobber and type(outfile) == str and os.path.isfile(outfile):
         raise IOErr('filefound', outfile)
 
     # Import numpy
@@ -733,7 +725,7 @@ def save_session(state, outfile=None, clobber=False):
         # But what about the rest of any possible load_data() options;
         # how do we replicate the optional keywords that were possibly
         # used?  Store them with data object?
-        if (type(id) == str):
+        if type(id) == str:
             cmd_id = "\"%s\"" % id
         else:
             cmd_id = "%s" % id
@@ -755,8 +747,8 @@ def save_session(state, outfile=None, clobber=False):
         try:
             # Only store group flags and quality flags if they were changed
             # from flags in the file
-            if (not state.get_data(id)._original_groups):
-                if (state.get_data(id).grouping is not None):
+            if not state.get_data(id)._original_groups:
+                if state.get_data(id).grouping is not None:
                     _send_to_outfile(
                         "\n######### Data Group Flags\n", outfile)
                     cmd = get_logged_call('set_grouping')
@@ -764,7 +756,7 @@ def save_session(state, outfile=None, clobber=False):
                     cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(
                         id).tolist()) + ", numpy." + str(state.get_grouping(id).dtype) + "))"
                     _send_to_outfile(cmd, outfile)
-                if (state.get_data(id).quality is not None):
+                if state.get_data(id).quality is not None:
                     _send_to_outfile(
                         "\n######### Data Quality Flags\n", outfile)
                     cmd = "set_quality(%s, " % cmd_id
@@ -772,8 +764,8 @@ def save_session(state, outfile=None, clobber=False):
                         id).tolist()) + ", numpy." + str(state.get_quality(id).dtype) + "))"
                     _send_to_outfile(cmd, outfile)
             # End check for original groups and quality flags
-            if (state.get_data(id).grouped):
-                cmd = "if (get_data(%s).grouping is not None and not get_data(%s).grouped):" % (
+            if state.get_data(id).grouped:
+                cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
                     cmd_id, cmd_id)
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("\t######### Group Data", outfile)
@@ -790,7 +782,7 @@ def save_session(state, outfile=None, clobber=False):
             cmd_resp_id = ""
 
             for rid in rids:
-                if (type(rid) == str):
+                if type(rid) == str:
                     cmd_resp_id = "\"%s\"" % rid
                 else:
                     cmd_resp_id = "%s" % rid
@@ -820,7 +812,7 @@ def save_session(state, outfile=None, clobber=False):
             bids = state.list_bkg_ids(id)
             cmd_bkg_id = ""
             for bid in bids:
-                if (type(bid) == str):
+                if type(bid) == str:
                     cmd_bkg_id = "\"%s\"" % bid
                 else:
                     cmd_bkg_id = "%s" % bid
@@ -832,15 +824,15 @@ def save_session(state, outfile=None, clobber=False):
                 try:
                     # Only store group flags and quality flags if they were changed
                     # from flags in the file
-                    if (not state.get_bkg(id, bid)._original_groups):
-                        if (state.get_bkg(id, bid).grouping is not None):
+                    if not state.get_bkg(id, bid)._original_groups:
+                        if state.get_bkg(id, bid).grouping is not None:
                             _send_to_outfile(
                                 "\n######### Background Group Flags\n", outfile)
                             cmd = "set_grouping(%s, " % cmd_id
                             cmd = cmd + "val=numpy.array(" + repr(state.get_grouping(id).tolist()) + ", numpy." + str(
                                 state.get_grouping(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
                             _send_to_outfile(cmd, outfile)
-                        if (state.get_bkg(id, bid).quality is not None):
+                        if state.get_bkg(id, bid).quality is not None:
                             _send_to_outfile(
                                 "\n######### Background Quality Flags\n", outfile)
                             cmd = "set_quality(%s, " % cmd_id
@@ -848,8 +840,8 @@ def save_session(state, outfile=None, clobber=False):
                                 state.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
                             _send_to_outfile(cmd, outfile)
                     # End check for original groups and quality flags
-                    if (state.get_bkg(id, bid).grouped):
-                        cmd = "if (get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped):" % (
+                    if state.get_bkg(id, bid).grouped:
+                        cmd = "if get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped:" % (
                             cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
                         _send_to_outfile(cmd, outfile)
                         _send_to_outfile(
@@ -865,7 +857,7 @@ def save_session(state, outfile=None, clobber=False):
                 rids = state.list_response_ids(id, bid)
                 cmd_resp_id = ""
                 for rid in rids:
-                    if (type(rid) == str):
+                    if type(rid) == str:
                         cmd_resp_id = "\"%s\"" % rid
                     else:
                         cmd_resp_id = "%s" % rid
@@ -896,7 +888,7 @@ def save_session(state, outfile=None, clobber=False):
                 "\n######### Set Energy or Wave Units\n", outfile)
             units = state.get_data(id).units
             rate = state.get_data(id).rate
-            if (rate):
+            if rate:
                 rate = "\"rate\""
             else:
                 rate = "\"counts\""
@@ -911,8 +903,8 @@ def save_session(state, outfile=None, clobber=False):
 
         # Subtract background data if applicable
         try:
-            if (state.get_data(id).subtracted):
-                cmd = "if (not get_data(%s).subtracted):" % cmd_id
+            if state.get_data(id).subtracted:
+                cmd = "if not get_data(%s).subtracted:" % cmd_id
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile(
                     "\t######### Subtract Background Data", outfile)
@@ -924,12 +916,12 @@ def save_session(state, outfile=None, clobber=False):
         # Set filter if applicable
         try:
             _send_to_outfile("\n######### Filter Data\n", outfile)
-            if (len(state.get_data(id).get_filter()) > 0):
+            if len(state.get_data(id).get_filter()) > 0:
                 filter = state.get_data(id).get_filter()
-                if (len(state.get_data(id).get_dims()) == 1):
+                if len(state.get_data(id).get_dims()) == 1:
                     cmd = "notice_id(%s,\"%s\")" % (cmd_id, filter)
                     _send_to_outfile(cmd, outfile)
-                if (len(state.get_data(id).get_dims()) == 2):
+                if len(state.get_data(id).get_dims()) == 2:
                     cmd = "notice2d_id(%s,\"%s\")" % (cmd_id, filter)
                     _send_to_outfile(cmd, outfile)
         except:
@@ -959,7 +951,7 @@ def save_session(state, outfile=None, clobber=False):
     _send_to_outfile("", outfile)
 
     # Save iterative fitting method (if any)
-    if (state.get_iter_method_name() != 'none'):
+    if state.get_iter_method_name() != 'none':
         _send_to_outfile(
             "\n######### Set Iterative Fitting Method\n", outfile)
         cmd = "set_iter_method(\"%s\")" % state.get_iter_method_name()
@@ -1011,12 +1003,12 @@ def save_session(state, outfile=None, clobber=False):
         # skip user models entirely, as they require importation of
         # user modules, beyond scope of this script.
 
-        if (typename != "psfmodel" and typename != "tabelmodel" and
-                typename != "usermodel"):
+        if typename != "psfmodel" and typename != "tabelmodel" and \
+           typename != "usermodel":
             # Normal case:  create an instance of the model.
             cmd = "eval(\"%s.%s\")" % (typename, modelname)
             _send_to_outfile(cmd, outfile)
-        if (typename == "psfmodel"):
+        if typename == "psfmodel":
             cmd = "load_psf(\"%s\", \"%s\")" % (mod._name, mod.kernel.name)
             _send_to_outfile(cmd, outfile)
             try:
@@ -1025,45 +1017,44 @@ def save_session(state, outfile=None, clobber=False):
                 _send_to_outfile(cmd, outfile)
             except:
                 pass
-        if (typename == "tablemodel"):
+        if typename == "tablemodel":
             # Create table model with load_table_model
             cmd = "load_table_model(\"%s\", \"%s\")" % (
                 modelname, mod.filename)
             _send_to_outfile(cmd, outfile)
 
-        if (typename == "convolutionkernel"):
+        if typename == "convolutionkernel":
             # Create general convolution kernel with load_conv
             cmd = "load_conv(\"%s\", \"%s\")" % (
                 modelname, mod.kernel.name)
             _send_to_outfile(cmd, outfile)
 
-        if (typename == "usermodel"):
+        if typename == "usermodel":
             # Skip user models -- don't create, don't set parameters
             # Go directly to next model in the model component list.
             _send_to_outfile(
                 "WARNING: User model not saved, add any user model to save file manually\n", outfile)
             continue
 
-        if (hasattr(mod, "integrate")):
+        if hasattr(mod, "integrate"):
             cmd = "%s.integrate = %s" % (modelname, mod.integrate)
             _send_to_outfile(cmd, outfile)
             _send_to_outfile("", outfile)
 
         from sherpa.models import Parameter
         for par in mod.__dict__.values():
-            if (type(par) == Parameter or
-                    issubclass(Parameter, type(par))):
+            if type(par) == Parameter or issubclass(Parameter, type(par)):
                 par_attributes, par_linkstr = _print_par(par)
                 _send_to_outfile(par_attributes, outfile)
                 linkstr = linkstr + par_linkstr
         # If the model is a PSFModel, could have special
         # attributes "size" and "center" -- if so, record them.
-        if (typename == "psfmodel"):
-            if (hasattr(mod, "size")):
+        if typename == "psfmodel":
+            if hasattr(mod, "size"):
                 cmd = "%s.size = %s" % (modelname, repr(mod.size))
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("", outfile)
-            if (hasattr(mod, "center")):
+            if hasattr(mod, "center"):
                 cmd = "%s.center = %s" % (modelname, repr(mod.center))
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("", outfile)
@@ -1077,7 +1068,7 @@ def save_session(state, outfile=None, clobber=False):
     _send_to_outfile(
         "\n######### Set Source, Pileup and Background Models\n", outfile)
     for id in dids:
-        if (type(id) == str):
+        if type(id) == str:
             cmd_id = "\"%s\"" % id
         else:
             cmd_id = "%s" % id
@@ -1101,20 +1092,16 @@ def save_session(state, outfile=None, clobber=False):
                 the_full_model = None
                 pass
 
-            if (the_source is None and
-                    the_full_model is None):
+            if the_source is None and the_full_model is None:
                 cmd = ""
                 pass
-            elif (the_source is None and
-                  the_full_model is not None):
+            elif the_source is None and the_full_model is not None:
                 cmd = "set_full_model(%s, %s)" % (
                     cmd_id, the_full_model.name)
-            elif (the_source is not None and
-                  the_full_model is None):
+            elif the_source is not None and the_full_model is None:
                 cmd = "set_source(%s, %s)" % (cmd_id, state.the_source.name)
-            elif (the_source is not None and
-                  the_full_model is not None):
-                if (repr(the_source) == repr(the_full_model)):
+            elif the_source is not None and the_full_model is not None:
+                if repr(the_source) == repr(the_full_model):
                     cmd = "set_full_model(%s, %s)" % (
                         cmd_id, the_full_model.name)
                 else:
@@ -1145,7 +1132,7 @@ def save_session(state, outfile=None, clobber=False):
             bids = state.list_bkg_ids(id)
             cmd_bkg_id = ""
             for bid in bids:
-                if (type(bid) == str):
+                if type(bid) == str:
                     cmd_bkg_id = "\"%s\"" % bid
                 else:
                     cmd_bkg_id = "%s" % bid
@@ -1164,21 +1151,19 @@ def save_session(state, outfile=None, clobber=False):
                     the_bkg_full_model = None
                     pass
 
-                if (the_bkg_source is None and
-                        the_bkg_full_model is None):
+                if the_bkg_source is None and the_bkg_full_model is None:
                     cmd = ""
                     pass
-                elif (the_bkg_source is None and
-                      the_bkg_full_model is not None):
+                elif the_bkg_source is None and the_bkg_full_model is not None:
                     cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
                         cmd_id, the_bkg_full_model.name, cmd_bkg_id)
-                elif (the_bkg_source is not None and
-                      the_bkg_full_model is None):
+                elif the_bkg_source is not None and \
+                     the_bkg_full_model is None:
                     cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
                         cmd_id, the_bkg_source.name, cmd_bkg_id)
-                elif (the_bkg_source is not None and
-                      the_bkg_full_model is not None):
-                    if (repr(the_bkg_source) == repr(the_bkg_full_model)):
+                elif the_bkg_source is not None and \
+                     the_bkg_full_model is not None:
+                    if repr(the_bkg_source) == repr(the_bkg_full_model):
                         cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
                             cmd_id, the_bkg_full_model.name, cmd_bkg_id)
                     else:
@@ -1195,7 +1180,7 @@ def save_session(state, outfile=None, clobber=False):
             pass
 
     # Save XSPEC settings if XSPEC module has been loaded.
-    if (hasattr(sherpa.astro, "xspec")):
+    if hasattr(sherpa.astro, "xspec"):
         _send_to_outfile("\n######### XSPEC Module Settings\n", outfile)
         xspec_state = sherpa.astro.xspec.get_xsstate()
 
