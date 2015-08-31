@@ -31,7 +31,7 @@ import sherpa.utils
 from sherpa.utils.err import ArgumentTypeErr, IOErr
 
 # Note: a lot of the serialization logic should probably be moved into
-#       the objects being serialized.
+#       the objects (or modules) being serialized.
 #
 
 
@@ -102,6 +102,40 @@ def _print_par(par):
               par.fullname, repr(par.max),
               par.fullname, unitstr,
               par.fullname, par.frozen)), linkstr)
+
+
+def _save_xspec(outfile=None):
+    """Save the XSPEC settings, if the module is loaded.
+
+    Parameters
+    ----------
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       XSPEC settings printed to it.
+    """
+
+    if not hasattr(sherpa.astro, "xspec"):
+        return
+
+    # TODO: should this make sure that the XSPEC module is loaded?
+    _send_to_outfile("\n######### XSPEC Module Settings\n", outfile)
+    xspec_state = sherpa.astro.xspec.get_xsstate()
+
+    cmd = "set_xschatter(%d)" % xspec_state["chatter"]
+    _send_to_outfile(cmd, outfile)
+    cmd = "set_xsabund(\"%s\")" % xspec_state["abund"]
+    _send_to_outfile(cmd, outfile)
+    cmd = "set_xscosmo(%g, %g, %g)" % (xspec_state["cosmo"][0],
+                                       xspec_state["cosmo"][1],
+                                       xspec_state["cosmo"][2])
+    _send_to_outfile(cmd, outfile)
+    cmd = "set_xsxsect(\"%s\")" % xspec_state["xsect"]
+    _send_to_outfile(cmd, outfile)
+    for name in xspec_state["modelstrings"].keys():
+        mstring = xspec_state["modelstrings"][name]
+        cmd = "set_xsxset(\"%s\", \"%s\")" % (name, mstring)
+        _send_to_outfile(cmd, outfile)
 
 
 def save_all(state, outfile=None, clobber=False):
@@ -656,25 +690,7 @@ def save_all(state, outfile=None, clobber=False):
         except:
             pass
 
-    # Save XSPEC settings if XSPEC module has been loaded.
-    if hasattr(sherpa.astro, "xspec"):
-        _send_to_outfile("\n######### XSPEC Module Settings\n", outfile)
-        xspec_state = sherpa.astro.xspec.get_xsstate()
-
-        cmd = "set_xschatter(%d)" % xspec_state["chatter"]
-        _send_to_outfile(cmd, outfile)
-        cmd = "set_xsabund(\"%s\")" % xspec_state["abund"]
-        _send_to_outfile(cmd, outfile)
-        cmd = "set_xscosmo(%g, %g, %g)" % (xspec_state["cosmo"][0],
-                                           xspec_state["cosmo"][1],
-                                           xspec_state["cosmo"][2])
-        _send_to_outfile(cmd, outfile)
-        cmd = "set_xsxsect(\"%s\")" % xspec_state["xsect"]
-        _send_to_outfile(cmd, outfile)
-        for name in xspec_state["modelstrings"].keys():
-            cmd = "set_xsxset(\"%s\", \"%s\")" % (name,
-                                                  xspec_state["modelstrings"][name])
-            _send_to_outfile(cmd, outfile)
+    _save_xspec(outfile)
 
 
 # What is this routine used for, and how is it different to save_all?
@@ -1166,22 +1182,4 @@ def save_session(state, outfile=None, clobber=False):
         except:
             pass
 
-    # Save XSPEC settings if XSPEC module has been loaded.
-    if hasattr(sherpa.astro, "xspec"):
-        _send_to_outfile("\n######### XSPEC Module Settings\n", outfile)
-        xspec_state = sherpa.astro.xspec.get_xsstate()
-
-        cmd = "set_xschatter(%d)" % xspec_state["chatter"]
-        _send_to_outfile(cmd, outfile)
-        cmd = "set_xsabund(\"%s\")" % xspec_state["abund"]
-        _send_to_outfile(cmd, outfile)
-        cmd = "set_xscosmo(%g, %g, %g)" % (xspec_state["cosmo"][0],
-                                           xspec_state["cosmo"][1],
-                                           xspec_state["cosmo"][2])
-        _send_to_outfile(cmd, outfile)
-        cmd = "set_xsxsect(\"%s\")" % xspec_state["xsect"]
-        _send_to_outfile(cmd, outfile)
-        for name in xspec_state["modelstrings"].keys():
-            cmd = "set_xsxset(\"%s\", \"%s\")" % (name,
-                                                  xspec_state["modelstrings"][name])
-            _send_to_outfile(cmd, outfile)
+    _save_xspec(outfile)
