@@ -80,6 +80,8 @@ def _save_intro(outfile=None):
     # QUS: should numpy only be loaded if it is needed?
     _send_to_outfile("import numpy", outfile)
 
+    _send_to_outfile("from sherpa.astro.ui import *", outfile)
+
 
 def _print_par(par):
     """Convert a Sherpa parameter to a string.
