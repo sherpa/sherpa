@@ -25,10 +25,14 @@ routines in this module are subject to change.
 """
 
 import os
+import logging
 
 import sherpa.utils
 
 from sherpa.utils.err import ArgumentTypeErr, IOErr
+
+logger = logging.getLogger(__name__)
+warning = logger.warning
 
 # Note: a lot of the serialization logic should probably be moved into
 #       the objects (or modules) being serialized.
@@ -278,9 +282,17 @@ def _save_model_components(state, outfile=None):
 
         if typename == "usermodel":
             # Skip user models -- don't create, don't set parameters
+            #
+            # At present this is reported for each component
+            msg = "User model '{}'".format(mod.name) + \
+                  " not saved, add any user model to save file manually"
+            warning(msg)
+
+            # This will cause a syntax error when the file is run,
+            # but this is a "good thing" here.
+            _send_to_outfile("WARNING: {}\n".format(msg), outfile)
+
             # Go directly to next model in the model component list.
-            _send_to_outfile(
-                "WARNING: User model not saved, add any user model to save file manually\n", outfile)
             continue
 
         if hasattr(mod, "integrate"):
