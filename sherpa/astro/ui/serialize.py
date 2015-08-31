@@ -263,10 +263,14 @@ def save_all(state, outfile=None, clobber=False):
     # Check output file can be written to
 
     clobber = sherpa.utils.bool_cast(clobber)
-    if type(outfile) != str and outfile is not None:
+    if type(outfile) == str:
+        if os.path.isfile(outfile):
+            if clobber:
+                os.remove(outfile)
+            else:
+                raise IOErr('filefound', outfile)
+    elif outfile is not None:
         raise ArgumentTypeErr('badarg', 'string or None')
-    if not clobber and type(outfile) == str and os.path.isfile(outfile):
-        raise IOErr('filefound', outfile)
 
     # Import numpy
     _send_to_outfile("import numpy", outfile)
@@ -727,10 +731,14 @@ def save_session(state, outfile=None, clobber=False):
     # Check output file can be written to
 
     clobber = sherpa.utils.bool_cast(clobber)
-    if type(outfile) != str and outfile is not None:
+    if type(outfile) == str:
+        if os.path.isfile(outfile):
+            if clobber:
+                os.remove(outfile)
+            else:
+                raise IOErr('filefound', outfile)
+    elif outfile is not None:
         raise ArgumentTypeErr('badarg', 'string or None')
-    if not clobber and type(outfile) == str and os.path.isfile(outfile):
-        raise IOErr('filefound', outfile)
 
     # Import numpy
     _send_to_outfile("import numpy", outfile)
