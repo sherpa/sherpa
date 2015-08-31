@@ -253,33 +253,6 @@ def _save_model_components(state, outfile=None):
         # skip user models entirely, as they require importation of
         # user modules, beyond scope of this script.
 
-        if typename != "psfmodel" and typename != "tabelmodel" and \
-           typename != "usermodel":
-            # Normal case:  create an instance of the model.
-            cmd = "eval(\"%s.%s\")" % (typename, modelname)
-            _send_to_outfile(cmd, outfile)
-        if typename == "psfmodel":
-            cmd = "load_psf(\"%s\", \"%s\")" % (mod._name, mod.kernel.name)
-            _send_to_outfile(cmd, outfile)
-            try:
-                psfmod = state.get_psf(id)
-                cmd_id = _id_to_str(id)
-                cmd = "set_psf(%s, %s)" % (cmd_id, psfmod._name)
-                _send_to_outfile(cmd, outfile)
-            except:
-                pass
-        if typename == "tablemodel":
-            # Create table model with load_table_model
-            cmd = "load_table_model(\"%s\", \"%s\")" % (
-                modelname, mod.filename)
-            _send_to_outfile(cmd, outfile)
-
-        if typename == "convolutionkernel":
-            # Create general convolution kernel with load_conv
-            cmd = "load_conv(\"%s\", \"%s\")" % (
-                modelname, mod.kernel.name)
-            _send_to_outfile(cmd, outfile)
-
         if typename == "usermodel":
             # Skip user models -- don't create, don't set parameters
             #
@@ -294,6 +267,39 @@ def _save_model_components(state, outfile=None):
 
             # Go directly to next model in the model component list.
             continue
+
+        elif typename == "psfmodel":
+            cmd = "load_psf(\"%s\", \"%s\")" % (mod._name, mod.kernel.name)
+            _send_to_outfile(cmd, outfile)
+            try:
+                psfmod = state.get_psf(id)
+                cmd_id = _id_to_str(id)
+                cmd = "set_psf(%s, %s)" % (cmd_id, psfmod._name)
+                _send_to_outfile(cmd, outfile)
+            except:
+                pass
+
+        elif typename == "tablemodel":
+            # Create table model with load_table_model
+            cmd = "load_table_model(\"%s\", \"%s\")" % (
+                modelname, mod.filename)
+            _send_to_outfile(cmd, outfile)
+
+        else:
+            # Normal case:  create an instance of the model.
+            cmd = "eval(\"%s.%s\")" % (typename, modelname)
+            _send_to_outfile(cmd, outfile)
+
+        # QUS: should this be included in the above checks?
+        #      @DougBurke doesn't think so, as the "normal
+        #      case" above should probably be run , but there's
+        #      no checks to verify this.
+        #
+        if typename == "convolutionkernel":
+            # Create general convolution kernel with load_conv
+            cmd = "load_conv(\"%s\", \"%s\")" % (
+                modelname, mod.kernel.name)
+            _send_to_outfile(cmd, outfile)
 
         if hasattr(mod, "integrate"):
             cmd = "%s.integrate = %s" % (modelname, mod.integrate)
