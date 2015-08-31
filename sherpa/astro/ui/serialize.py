@@ -104,6 +104,27 @@ def _print_par(par):
               par.fullname, par.frozen)), linkstr)
 
 
+def _id_to_str(id):
+    """Convert a data set identifier to a string value.
+
+    Parameters
+    ----------
+    id : int or str
+       The data set identifier.
+
+    Returns
+    -------
+    out : str
+       A string representation of the identifier for use
+       in the Python serialization.
+    """
+
+    if type(id) == str:
+        return '"{}"'.format(id)
+    else:
+        return str(id)
+
+
 def _save_statistic(state, outfile):
     """Save the statistic settings.
 
@@ -123,7 +144,7 @@ def _save_statistic(state, outfile):
 
 
 def _save_fit_method(state, outfile):
-    """Save the statistic settings.
+    """Save the fit method settings.
 
     Parameters
     ----------
@@ -148,6 +169,147 @@ def _save_fit_method(state, outfile):
         _send_to_outfile(cmd, outfile)
 
     _send_to_outfile("", outfile)
+
+
+def _save_iter_method(state, outfile=None):
+    """Save the iterated-fit method settings, if any.
+
+    Parameters
+    ----------
+    state
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       settings printed to it.
+    """
+
+    if state.get_iter_method_name() == 'none':
+        return
+
+    _send_to_outfile(
+        "\n######### Set Iterative Fitting Method\n", outfile)
+    cmd = "set_iter_method(\"%s\")" % state.get_iter_method_name()
+    _send_to_outfile(cmd, outfile)
+    _send_to_outfile("", outfile)
+
+    mdict = state.get_iter_method_opt()
+    for key in mdict:
+        val = mdict.get(key)
+        cmd = "set_iter_method_opt(\"%s\", %s)" % (key, val)
+        _send_to_outfile(cmd, outfile)
+
+    _send_to_outfile("", outfile)
+
+
+def _save_model_components(state, outfile=None):
+    """Save the model components.
+
+    Parameters
+    ----------
+    state
+    outfile : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       models printed to it.
+    """
+
+    # Have to call elements in list in reverse order (item at end of
+    # list was model first created), so that we get links right, if any
+
+    # To recreate attributes, print out dictionary as ordered pairs,
+    # for each parameter
+
+    _send_to_outfile(
+        "\n######### Set Model Components and Parameters\n", outfile)
+    all_model_components = state.list_model_components()
+    all_model_components.reverse()
+
+    # If there are any links between parameters, store link commands here
+    # Then, *after* processing all models in the for loop below, send
+    # link commands to outfile -- *all* models need to be created before
+    # *any* links between parameters can be established.
+    linkstr = ""
+    for mod in all_model_components:
+
+        # get actual model instance from the name we are given
+        # then get model type, and name of this instance.
+        mod = eval(mod)
+        typename = mod.type
+        modelname = mod.name.partition(".")[2]
+
+        # Special cases:
+
+        # account for PSF creation elsewhere (above, with load_data
+        # commands);
+
+        # for table models, use "load_table_model", to ensure we
+        # add to lists of known models *and* separate list of
+        # tabel models;
+
+        # skip user models entirely, as they require importation of
+        # user modules, beyond scope of this script.
+
+        if typename != "psfmodel" and typename != "tabelmodel" and \
+           typename != "usermodel":
+            # Normal case:  create an instance of the model.
+            cmd = "eval(\"%s.%s\")" % (typename, modelname)
+            _send_to_outfile(cmd, outfile)
+        if typename == "psfmodel":
+            cmd = "load_psf(\"%s\", \"%s\")" % (mod._name, mod.kernel.name)
+            _send_to_outfile(cmd, outfile)
+            try:
+                psfmod = state.get_psf(id)
+                cmd_id = _id_to_str(id)
+                cmd = "set_psf(%s, %s)" % (cmd_id, psfmod._name)
+                _send_to_outfile(cmd, outfile)
+            except:
+                pass
+        if typename == "tablemodel":
+            # Create table model with load_table_model
+            cmd = "load_table_model(\"%s\", \"%s\")" % (
+                modelname, mod.filename)
+            _send_to_outfile(cmd, outfile)
+
+        if typename == "convolutionkernel":
+            # Create general convolution kernel with load_conv
+            cmd = "load_conv(\"%s\", \"%s\")" % (
+                modelname, mod.kernel.name)
+            _send_to_outfile(cmd, outfile)
+
+        if typename == "usermodel":
+            # Skip user models -- don't create, don't set parameters
+            # Go directly to next model in the model component list.
+            _send_to_outfile(
+                "WARNING: User model not saved, add any user model to save file manually\n", outfile)
+            continue
+
+        if hasattr(mod, "integrate"):
+            cmd = "%s.integrate = %s" % (modelname, mod.integrate)
+            _send_to_outfile(cmd, outfile)
+            _send_to_outfile("", outfile)
+
+        from sherpa.models import Parameter
+        for par in mod.__dict__.values():
+            if type(par) == Parameter or issubclass(Parameter, type(par)):
+                par_attributes, par_linkstr = _print_par(par)
+                _send_to_outfile(par_attributes, outfile)
+                linkstr = linkstr + par_linkstr
+
+        # If the model is a PSFModel, could have special
+        # attributes "size" and "center" -- if so, record them.
+        if typename == "psfmodel":
+            if hasattr(mod, "size"):
+                cmd = "%s.size = %s" % (modelname, repr(mod.size))
+                _send_to_outfile(cmd, outfile)
+                _send_to_outfile("", outfile)
+            if hasattr(mod, "center"):
+                cmd = "%s.center = %s" % (modelname, repr(mod.center))
+                _send_to_outfile(cmd, outfile)
+                _send_to_outfile("", outfile)
+
+    # If there were any links made between parameters, send those
+    # link commands to outfile now; else, linkstr is just an empty string
+    _send_to_outfile(linkstr, outfile)
 
 
 def _save_xspec(outfile=None):
@@ -289,10 +451,7 @@ def save_all(state, outfile=None, clobber=False):
         # But what about the rest of any possible load_data() options;
         # how do we replicate the optional keywords that were possibly
         # used?  Store them with data object?
-        if type(id) == str:
-            cmd_id = "\"%s\"" % id
-        else:
-            cmd_id = "%s" % id
+        cmd_id = _id_to_str(id)
         cmd = "load_data(%s,\"%s\")" % (cmd_id, state.get_data(id).name)
         _send_to_outfile(cmd, outfile)
 
@@ -493,129 +652,16 @@ def save_all(state, outfile=None, clobber=False):
 
     _save_statistic(state, outfile)
     _save_fit_method(state, outfile)
+    _save_iter_method(state, outfile)
 
-    # Save iterative fitting method (if any)
-    if state.get_iter_method_name() != 'none':
-        _send_to_outfile(
-            "\n######### Set Iterative Fitting Method\n", outfile)
-        cmd = "set_iter_method(\"%s\")" % state.get_iter_method_name()
-        _send_to_outfile(cmd, outfile)
-        _send_to_outfile("", outfile)
-
-        mdict = state.get_iter_method_opt()
-        for key in mdict:
-            val = mdict.get(key)
-            cmd = "set_iter_method_opt(\"%s\", %s)" % (key, val)
-            _send_to_outfile(cmd, outfile)
-        _send_to_outfile("", outfile)
-
-    # Save all model components
-
-    # Have to call elements in list in reverse order (item at end of
-    # list was model first created), so that we get links right, if any
-
-    # To recreate attributes, print out dictionary as ordered pairs,
-    # for each parameter
-
-    _send_to_outfile(
-        "\n######### Set Model Components and Parameters\n", outfile)
-    all_model_components = state.list_model_components()
-    all_model_components.reverse()
-
-    # If there are any links between parameters, store link commands here
-    # Then, *after* processing all models in the for loop below, send
-    # link commands to outfile -- *all* models need to be created before
-    # *any* links between parameters can be established.
-    linkstr = ""
-    for mod in all_model_components:
-
-        # get actual model instance from the name we are given
-        # then get model type, and name of this instance.
-        mod = eval(mod)
-        typename = mod.type
-        modelname = mod.name.partition(".")[2]
-
-        # Special cases:
-
-        # account for PSF creation elsewhere (above, with load_data
-        # commands);
-
-        # for table models, use "load_table_model", to ensure we
-        # add to lists of known models *and* separate list of
-        # tabel models;
-
-        # skip user models entirely, as they require importation of
-        # user modules, beyond scope of this script.
-
-        if typename != "psfmodel" and typename != "tabelmodel" and \
-           typename != "usermodel":
-            # Normal case:  create an instance of the model.
-            cmd = "eval(\"%s.%s\")" % (typename, modelname)
-            _send_to_outfile(cmd, outfile)
-        if typename == "psfmodel":
-            cmd = "load_psf(\"%s\", \"%s\")" % (mod._name, mod.kernel.name)
-            _send_to_outfile(cmd, outfile)
-            try:
-                psfmod = state.get_psf(id)
-                cmd = "set_psf(%s, %s)" % (cmd_id, psfmod._name)
-                _send_to_outfile(cmd, outfile)
-            except:
-                pass
-        if typename == "tablemodel":
-            # Create table model with load_table_model
-            cmd = "load_table_model(\"%s\", \"%s\")" % (
-                modelname, mod.filename)
-            _send_to_outfile(cmd, outfile)
-
-        if typename == "convolutionkernel":
-            # Create general convolution kernel with load_conv
-            cmd = "load_conv(\"%s\", \"%s\")" % (
-                modelname, mod.kernel.name)
-            _send_to_outfile(cmd, outfile)
-
-        if typename == "usermodel":
-            # Skip user models -- don't create, don't set parameters
-            # Go directly to next model in the model component list.
-            _send_to_outfile(
-                "WARNING: User model not saved, add any user model to save file manually\n", outfile)
-            continue
-
-        if hasattr(mod, "integrate"):
-            cmd = "%s.integrate = %s" % (modelname, mod.integrate)
-            _send_to_outfile(cmd, outfile)
-            _send_to_outfile("", outfile)
-
-        from sherpa.models import Parameter
-        for par in mod.__dict__.values():
-            if type(par) == Parameter or issubclass(Parameter, type(par)):
-                par_attributes, par_linkstr = _print_par(par)
-                _send_to_outfile(par_attributes, outfile)
-                linkstr = linkstr + par_linkstr
-        # If the model is a PSFModel, could have special
-        # attributes "size" and "center" -- if so, record them.
-        if typename == "psfmodel":
-            if hasattr(mod, "size"):
-                cmd = "%s.size = %s" % (modelname, repr(mod.size))
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
-            if hasattr(mod, "center"):
-                cmd = "%s.center = %s" % (modelname, repr(mod.center))
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
-
-    # If there were any links made between parameters, send those
-    # link commands to outfile now; else, linkstr is just an empty string
-    _send_to_outfile(linkstr, outfile)
+    _save_model_components(state, outfile)
 
     # Save all source, pileup and background models
 
     _send_to_outfile(
         "\n######### Set Source, Pileup and Background Models\n", outfile)
     for id in dids:
-        if type(id) == str:
-            cmd_id = "\"%s\"" % id
-        else:
-            cmd_id = "%s" % id
+        cmd_id = _id_to_str(id)
 
         # If a data set has a source model associated with it,
         # set that here -- try to distinguish cases where
@@ -764,10 +810,7 @@ def save_session(state, outfile=None, clobber=False):
         # But what about the rest of any possible load_data() options;
         # how do we replicate the optional keywords that were possibly
         # used?  Store them with data object?
-        if type(id) == str:
-            cmd_id = "\"%s\"" % id
-        else:
-            cmd_id = "%s" % id
+        cmd_id = _id_to_str(id)
 
         cmd = get_logged_call('load_data', id)
         _send_to_outfile(cmd, outfile)
@@ -970,129 +1013,16 @@ def save_session(state, outfile=None, clobber=False):
 
     _save_statistic(state, outfile)
     _save_fit_method(state, outfile)
+    _save_iter_method(state, outfile)
 
-    # Save iterative fitting method (if any)
-    if state.get_iter_method_name() != 'none':
-        _send_to_outfile(
-            "\n######### Set Iterative Fitting Method\n", outfile)
-        cmd = "set_iter_method(\"%s\")" % state.get_iter_method_name()
-        _send_to_outfile(cmd, outfile)
-        _send_to_outfile("", outfile)
-
-        mdict = state.get_iter_method_opt()
-        for key in mdict:
-            val = mdict.get(key)
-            cmd = "set_iter_method_opt(\"%s\", %s)" % (key, val)
-            _send_to_outfile(cmd, outfile)
-        _send_to_outfile("", outfile)
-
-    # Save all model components
-
-    # Have to call elements in list in reverse order (item at end of
-    # list was model first created), so that we get links right, if any
-
-    # To recreate attributes, print out dictionary as ordered pairs,
-    # for each parameter
-
-    _send_to_outfile(
-        "\n######### Set Model Components and Parameters\n", outfile)
-    all_model_components = state.list_model_components()
-    all_model_components.reverse()
-
-    # If there are any links between parameters, store link commands here
-    # Then, *after* processing all models in the for loop below, send
-    # link commands to outfile -- *all* models need to be created before
-    # *any* links between parameters can be established.
-    linkstr = ""
-    for mod in all_model_components:
-
-        # get actual model instance from the name we are given
-        # then get model type, and name of this instance.
-        mod = eval(mod)
-        typename = mod.type
-        modelname = mod.name.partition(".")[2]
-
-        # Special cases:
-
-        # account for PSF creation elsewhere (above, with load_data
-        # commands);
-
-        # for table models, use "load_table_model", to ensure we
-        # add to lists of known models *and* separate list of
-        # tabel models;
-
-        # skip user models entirely, as they require importation of
-        # user modules, beyond scope of this script.
-
-        if typename != "psfmodel" and typename != "tabelmodel" and \
-           typename != "usermodel":
-            # Normal case:  create an instance of the model.
-            cmd = "eval(\"%s.%s\")" % (typename, modelname)
-            _send_to_outfile(cmd, outfile)
-        if typename == "psfmodel":
-            cmd = "load_psf(\"%s\", \"%s\")" % (mod._name, mod.kernel.name)
-            _send_to_outfile(cmd, outfile)
-            try:
-                psfmod = state.get_psf(id)
-                cmd = "set_psf(%s, %s)" % (cmd_id, psfmod._name)
-                _send_to_outfile(cmd, outfile)
-            except:
-                pass
-        if typename == "tablemodel":
-            # Create table model with load_table_model
-            cmd = "load_table_model(\"%s\", \"%s\")" % (
-                modelname, mod.filename)
-            _send_to_outfile(cmd, outfile)
-
-        if typename == "convolutionkernel":
-            # Create general convolution kernel with load_conv
-            cmd = "load_conv(\"%s\", \"%s\")" % (
-                modelname, mod.kernel.name)
-            _send_to_outfile(cmd, outfile)
-
-        if typename == "usermodel":
-            # Skip user models -- don't create, don't set parameters
-            # Go directly to next model in the model component list.
-            _send_to_outfile(
-                "WARNING: User model not saved, add any user model to save file manually\n", outfile)
-            continue
-
-        if hasattr(mod, "integrate"):
-            cmd = "%s.integrate = %s" % (modelname, mod.integrate)
-            _send_to_outfile(cmd, outfile)
-            _send_to_outfile("", outfile)
-
-        from sherpa.models import Parameter
-        for par in mod.__dict__.values():
-            if type(par) == Parameter or issubclass(Parameter, type(par)):
-                par_attributes, par_linkstr = _print_par(par)
-                _send_to_outfile(par_attributes, outfile)
-                linkstr = linkstr + par_linkstr
-        # If the model is a PSFModel, could have special
-        # attributes "size" and "center" -- if so, record them.
-        if typename == "psfmodel":
-            if hasattr(mod, "size"):
-                cmd = "%s.size = %s" % (modelname, repr(mod.size))
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
-            if hasattr(mod, "center"):
-                cmd = "%s.center = %s" % (modelname, repr(mod.center))
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
-
-    # If there were any links made between parameters, send those
-    # link commands to outfile now; else, linkstr is just an empty string
-    _send_to_outfile(linkstr, outfile)
+    _save_model_components(state, outfile)
 
     # Save all source, pileup and background models
 
     _send_to_outfile(
         "\n######### Set Source, Pileup and Background Models\n", outfile)
     for id in dids:
-        if type(id) == str:
-            cmd_id = "\"%s\"" % id
-        else:
-            cmd_id = "%s" % id
+        cmd_id = _id_to_str(id)
 
         # If a data set has a source model associated with it,
         # set that here -- try to distinguish cases where
