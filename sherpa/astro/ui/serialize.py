@@ -35,6 +35,75 @@ from sherpa.utils.err import ArgumentTypeErr, IOErr
 #
 
 
+def _send_to_outfile(msg, filename=None):
+    """Display the message.
+
+    Parameters
+    ----------
+    msg : None or str
+       The message to output. If ``None`` then the routine
+       returns immediately (with no output).
+    filename : None or str
+       If ``None``, the message is printed to standard output,
+       otherwise the file is opened (in append mode) and the
+       message printed to it.
+    """
+
+    if msg is None:
+        return
+
+    try:
+        if filename is None:
+            print msg
+        else:
+            outfile = file(filename, 'a')
+            print >> outfile, msg
+    except:
+        raise
+
+
+def _print_par(par):
+    """Convert a Sherpa parameter to a string.
+
+    Parameters
+    ----------
+    par
+       The Sherpa parameter object to serialize.
+
+    Returns
+    -------
+    out : str
+       A multi-line string serializing the contents of the
+       parameter.
+    """
+
+    linkstr = ""
+    if par.link is not None:
+        linkstr = "\nlink(%s, %s)\n" % (
+            par.fullname, par.link.fullname)
+
+    unitstr = ""
+    if type(par.units) == str:
+        unitstr = "\"%s\"" % par.units
+
+    return ((('%s.default_val = %s\n' +
+              '%s.default_min = %s\n' +
+              '%s.default_max = %s\n' +
+              '%s.val     = %s\n' +
+              '%s.min     = %s\n' +
+              '%s.max     = %s\n' +
+              '%s.units   = %s\n' +
+              '%s.frozen  = %s\n') %
+             (par.fullname, repr(par.default_val),
+              par.fullname, repr(par.default_min),
+              par.fullname, repr(par.default_max),
+              par.fullname, repr(par.val),
+              par.fullname, repr(par.min),
+              par.fullname, repr(par.max),
+              par.fullname, unitstr,
+              par.fullname, par.frozen)), linkstr)
+
+
 def save_all(state, outfile=None, clobber=False):
     """Save the information about the current session to a text file.
 
@@ -110,46 +179,6 @@ def save_all(state, outfile=None, clobber=False):
     # 7) Save optional keyword arguments for load_data/load_bkg
     #    8) Set model integrate flags                   DONE
     #    9) Subtract flags                              DONE
-
-    # Send output to stdout, or file
-
-    def _send_to_outfile(all, filename=None):
-        try:
-            if filename is None:
-                print all
-            else:
-                outfile = file(filename, 'a')
-                print >> outfile, all
-        except:
-            raise
-
-    # a helper function to print parameter attributes as we wish
-    def _print_par(par):
-        linkstr = ""
-        if par.link is not None:
-            linkstr = "\nlink(%s, %s)\n" % (
-                par.fullname, par.link.fullname)
-
-        unitstr = ""
-        if type(par.units) == str:
-            unitstr = "\"%s\"" % par.units
-
-        return ((('%s.default_val = %s\n' +
-                  '%s.default_min = %s\n' +
-                  '%s.default_max = %s\n' +
-                  '%s.val     = %s\n' +
-                  '%s.min     = %s\n' +
-                  '%s.max     = %s\n' +
-                  '%s.units   = %s\n' +
-                  '%s.frozen  = %s\n') %
-                 (par.fullname, repr(par.default_val),
-                  par.fullname, repr(par.default_min),
-                  par.fullname, repr(par.default_max),
-                  par.fullname, repr(par.val),
-                  par.fullname, repr(par.min),
-                  par.fullname, repr(par.max),
-                  par.fullname, unitstr,
-                  par.fullname, par.frozen)), linkstr)
 
     # Check output file can be written to
 
@@ -650,48 +679,6 @@ def save_all(state, outfile=None, clobber=False):
 
 # What is this routine used for, and how is it different to save_all?
 def save_session(state, outfile=None, clobber=False):
-
-    # Send output to stdout, or file
-
-    def _send_to_outfile(all, filename=None):
-        if all is None:
-            return
-        try:
-            if filename is None:
-                print all
-            else:
-                outfile = file(filename, 'a')
-                print >> outfile, all
-        except:
-            raise
-
-    # a helper function to print parameter attributes as we wish
-    def _print_par(par):
-        linkstr = ""
-        if par.link is not None:
-            linkstr = "\nlink(%s, %s)\n" % (
-                par.fullname, par.link.fullname)
-
-        unitstr = ""
-        if type(par.units) == str:
-            unitstr = "\"%s\"" % par.units
-
-        return ((('%s.default_val = %s\n' +
-                  '%s.default_min = %s\n' +
-                  '%s.default_max = %s\n' +
-                  '%s.val     = %s\n' +
-                  '%s.min     = %s\n' +
-                  '%s.max     = %s\n' +
-                  '%s.units   = %s\n' +
-                  '%s.frozen  = %s\n') %
-                 (par.fullname, repr(par.default_val),
-                  par.fullname, repr(par.default_min),
-                  par.fullname, repr(par.default_max),
-                  par.fullname, repr(par.val),
-                  par.fullname, repr(par.min),
-                  par.fullname, repr(par.max),
-                  par.fullname, unitstr,
-                  par.fullname, par.frozen)), linkstr)
 
     # Check output file can be written to
 
