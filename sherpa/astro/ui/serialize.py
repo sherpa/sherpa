@@ -733,23 +733,22 @@ def _save_models(state, outfile=None):
                 the_source = state.get_source(id)
             except:
                 the_source = None
-                pass
 
             try:
                 the_full_model = state.get_model(id)
             except:
                 the_full_model = None
-                pass
 
-            if the_source is None and the_full_model is None:
+            have_source = the_source is not None
+            have_full_model = the_full_model is not None
+            if not have_source and not have_full_model:
                 cmd = ""
-                pass
-            elif the_source is None and the_full_model is not None:
+            elif not have_source and have_full_model:
                 cmd = "set_full_model(%s, %s)" % (
                     cmd_id, the_full_model.name)
-            elif the_source is not None and the_full_model is None:
+            elif have_source and not have_full_model:
                 cmd = "set_source(%s, %s)" % (cmd_id, the_source.name)
-            elif the_source is not None and the_full_model is not None:
+            elif have_source and have_full_model:
                 if repr(the_source) == repr(the_full_model):
                     cmd = "set_full_model(%s, %s)" % (
                         cmd_id, the_full_model.name)
@@ -759,7 +758,7 @@ def _save_models(state, outfile=None):
             else:
                 # You can't actually get here
                 cmd = ""
-                pass
+
             _send_to_outfile(cmd, outfile)
             _send_to_outfile("", outfile)
         except:
@@ -789,25 +788,23 @@ def _save_models(state, outfile=None):
                     the_bkg_source = state.get_bkg_source(bid)
                 except:
                     the_bkg_source = None
-                    pass
 
                 try:
                     the_bkg_full_model = state.get_bkg_model(id)
                 except:
                     the_bkg_full_model = None
-                    pass
 
-                if the_bkg_source is None and the_bkg_full_model is None:
+                have_source = the_bkg_source is not None
+                have_full_model = the_bkg_full_model is not None
+                if not have_source and not have_full_model:
                     cmd = ""
-                    pass
-                elif the_bkg_source is None and the_bkg_full_model is not None:
+                elif not have_source and have_full_model:
                     cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
                         cmd_id, the_bkg_full_model.name, cmd_bkg_id)
-                elif the_bkg_source is not None and the_bkg_full_model is None:
+                elif have_source and not have_full_model:
                     cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
                         cmd_id, the_bkg_source.name, cmd_bkg_id)
-                elif the_bkg_source is not None and \
-                      the_bkg_full_model is not None:
+                elif have_source and have_full_model:
                     if repr(the_bkg_source) == repr(the_bkg_full_model):
                         cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
                             cmd_id, the_bkg_full_model.name, cmd_bkg_id)
@@ -817,7 +814,7 @@ def _save_models(state, outfile=None):
                 else:
                     # You can't actually get here
                     cmd = ""
-                    pass
+
                 _send_to_outfile(cmd, outfile)
                 _send_to_outfile("", outfile)
 
