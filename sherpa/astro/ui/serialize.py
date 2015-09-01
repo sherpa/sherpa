@@ -27,6 +27,8 @@ routines in this module are subject to change.
 import sys
 import logging
 
+import numpy
+
 import sherpa.utils
 
 logger = logging.getLogger(__name__)
@@ -221,6 +223,12 @@ def _save_pha_array(state, label, id, bid=None, fh=None):
     #
     func = getattr(state, 'get_{}'.format(label))
     vals = func(id, bkg_id=bid)
+
+    # The OGIP standard is for quality and grouping to be 2-byte
+    # integers -
+    # http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node7.html
+    # - then force that type here.
+    vals = vals.astype(numpy.int16)
 
     cmd = "set_{}({}, ".format(label, _id_to_str(id)) + \
           "val=numpy.array(" + repr(vals.tolist()) + \
