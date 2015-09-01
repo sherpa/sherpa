@@ -24,13 +24,10 @@ intended for public use. The API and semantics of the
 routines in this module are subject to change.
 """
 
-import os
 import sys
 import logging
 
 import sherpa.utils
-
-from sherpa.utils.err import ArgumentTypeErr, IOErr
 
 logger = logging.getLogger(__name__)
 warning = logger.warning
@@ -835,8 +832,8 @@ def _save_xspec(fh=None):
         _output(cmd, fh)
 
 
-def save_all(state, outfile=None, clobber=False):
-    """Save the information about the current session to a text file.
+def save_all(state, fh=None):
+    """Save the information about the current session to a file handle.
 
     This differs to the `save` command in that the output is human
     readable. Three consequences are:
@@ -849,20 +846,9 @@ def save_all(state, outfile=None, clobber=False):
 
     Parameters
     ----------
-    outfile : str, optional
-       If not given the results are displayed to the screen,
-       otherwise it is taken to be the name of the file to
-       write the results to.
-    clobber : bool, optional
-       If ``outfile`` is not ``None``, then this flag controls
-       whether an existing file can be overwritten (``True``)
-       or if it raises an exception (``False``, the default
-       setting).
-
-    Raises
-    ------
-    sherpa.utils.err.IOErr
-       If ``outfile`` already exists and ``clobber`` is ``False``.
+    fh : file_like, optional
+       If not given the results are displayed to standard out,
+       otherwise they are written to this file handle.
 
     See Also
     --------
@@ -884,14 +870,14 @@ def save_all(state, outfile=None, clobber=False):
     Examples
     --------
 
-    Write the current Sherpa session to the screen:
+    Write the current Sherpa session to the standard output:
 
     >>> save_all()
 
-    Save the session to the file 'fit.sherpa', overwriting
-    it if it already exists:
+    Save the session to a StringIO handle:
 
-    >>> save_all('fit.sherpa', clobber=True)
+    >>> buffer = StringIO.StringIO()
+    >>> save_all(buffer)
 
     """
 
@@ -912,21 +898,6 @@ def save_all(state, outfile=None, clobber=False):
     #    9) Subtract flags                              DONE
 
     # Check output file can be written to
-
-    clobber = sherpa.utils.bool_cast(clobber)
-    if type(outfile) == str:
-        if os.path.isfile(outfile):
-            if clobber:
-                os.remove(outfile)
-            else:
-                raise IOErr('filefound', outfile)
-
-        fh = file(outfile, 'w')
-
-    elif outfile is not None:
-        raise ArgumentTypeErr('badarg', 'string or None')
-    else:
-        fh = sys.stdout
 
     funcs = {
         'load_data': lambda id:
@@ -950,24 +921,7 @@ def save_all(state, outfile=None, clobber=False):
 # The only difference is that the load_data and set_coord values are
 # retrieved from the "loggable" facility. Do we need to keep this?
 #
-def save_session(state, outfile=None, clobber=False):
-
-    # Check output file can be written to
-
-    clobber = sherpa.utils.bool_cast(clobber)
-    if type(outfile) == str:
-        if os.path.isfile(outfile):
-            if clobber:
-                os.remove(outfile)
-            else:
-                raise IOErr('filefound', outfile)
-
-        fh = file(outfile, 'w')
-
-    elif outfile is not None:
-        raise ArgumentTypeErr('badarg', 'string or None')
-    else:
-        fh = sys.stdout
+def save_session(state, fh=None):
 
     def get_logged_call(call_name, id=None):
         try:

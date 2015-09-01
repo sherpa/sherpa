@@ -18,6 +18,7 @@
 #
 
 import os
+import sys
 import logging
 import numpy
 from itertools import izip
@@ -25,6 +26,7 @@ import sherpa.ui.utils
 from sherpa.ui.utils import _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
 from sherpa.utils.err import *
+# from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.data import Data1D
 import sherpa.astro.all
 import sherpa.astro.plot
@@ -12460,7 +12462,42 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        serialize.save_all(self, outfile=outfile, clobber=clobber)
+        clobber = sherpa.utils.bool_cast(clobber)
+        if type(outfile) == str:
+            if os.path.isfile(outfile):
+                if clobber:
+                    os.remove(outfile)
+                else:
+                    raise IOErr('filefound', outfile)
+
+            fh = file(outfile, 'w')
+
+        elif outfile is not None:
+            raise ArgumentTypeErr('badarg', 'string or None')
+        else:
+            fh = sys.stdout
+
+        serialize.save_all(self, fh)
+        if outfile is not None:
+            fh.close()
 
     def save_session(self, outfile=None, clobber=False):
-        serialize.save_session(self, outfile=outfile, clobber=clobber)
+
+        clobber = sherpa.utils.bool_cast(clobber)
+        if type(outfile) == str:
+            if os.path.isfile(outfile):
+                if clobber:
+                    os.remove(outfile)
+                else:
+                    raise IOErr('filefound', outfile)
+
+            fh = file(outfile, 'w')
+
+        elif outfile is not None:
+            raise ArgumentTypeErr('badarg', 'string or None')
+        else:
+            fh = sys.stdout
+
+        serialize.save_session(self, fh)
+        if outfile is not None:
+            fh.close()
