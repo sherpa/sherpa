@@ -25,6 +25,7 @@ routines in this module are subject to change.
 """
 
 import os
+import sys
 import logging
 
 import sherpa.utils
@@ -39,7 +40,7 @@ warning = logger.warning
 #
 
 
-def _send_to_outfile(msg, filename=None):
+def _output(msg, fh=None):
     """Display the message.
 
     Parameters
@@ -47,23 +48,18 @@ def _send_to_outfile(msg, filename=None):
     msg : None or str
        The message to output. If ``None`` then the routine
        returns immediately (with no output).
-    filename : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       message printed to it.
+    fh : None or a file handle
+       The file handle to write the message to. If fh is ``None``
+       then the standard output is used.
     """
 
     if msg is None:
         return
 
-    try:
-        if filename is None:
-            print msg
-        else:
-            outfile = file(filename, 'a')
-            print >> outfile, msg
-    except:
-        raise
+    if fh is None:
+        fh = sys.stdout
+
+    fh.write(msg + '\n')
 
 
 def _id_to_str(id):
@@ -87,24 +83,23 @@ def _id_to_str(id):
         return str(id)
 
 
-def _save_intro(outfile=None):
+def _save_intro(fh=None):
     """The set-up for the serialized file (imports).
 
     Parameters
     ----------
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       statistic settings printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
     # QUS: should numpy only be loaded if it is needed?
-    _send_to_outfile("import numpy", outfile)
+    _output("import numpy", fh)
 
-    _send_to_outfile("from sherpa.astro.ui import *", outfile)
+    _output("from sherpa.astro.ui import *", fh)
 
 
-def _save_response(label, respfile, id, rid, bid=None, outfile=None):
+def _save_response(label, respfile, id, rid, bid=None, fh=None):
     """Save the ARF or RMF
 
     Parameters
@@ -120,10 +115,9 @@ def _save_response(label, respfile, id, rid, bid=None, outfile=None):
     bid
        If not ``None`` then this indicates that this is the ARF for
        a background dataset, and which such data set to use.
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       values printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
     id = _id_to_str(id)
@@ -134,10 +128,10 @@ def _save_response(label, respfile, id, rid, bid=None, outfile=None):
         cmd += ", bkg_id={}".format(_id_to_str(bid))
 
     cmd += ")"
-    _send_to_outfile(cmd, outfile)
+    _output(cmd, fh)
 
 
-def _save_arf_response(state, id, rid, bid=None, outfile=None):
+def _save_arf_response(state, id, rid, bid=None, fh=None):
     """Save the ARF.
 
     Parameters
@@ -150,10 +144,9 @@ def _save_arf_response(state, id, rid, bid=None, outfile=None):
     bid
        If not ``None`` then this indicates that this is the ARF for
        a background dataset, and which such data set to use.
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       values printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
     try:
@@ -161,10 +154,10 @@ def _save_arf_response(state, id, rid, bid=None, outfile=None):
     except:
         return
 
-    _save_response('arf', respfile, id, rid, bid=bid, outfile=outfile)
+    _save_response('arf', respfile, id, rid, bid=bid, fh=fh)
 
 
-def _save_rmf_response(state, id, rid, bid=None, outfile=None):
+def _save_rmf_response(state, id, rid, bid=None, fh=None):
     """Save the RMF.
 
     Parameters
@@ -177,10 +170,9 @@ def _save_rmf_response(state, id, rid, bid=None, outfile=None):
     bid
        If not ``None`` then this indicates that this is the RMF for
        a background dataset, and which such data set to use.
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       values printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
     try:
@@ -188,10 +180,10 @@ def _save_rmf_response(state, id, rid, bid=None, outfile=None):
     except:
         return
 
-    _save_response('rmf', respfile, id, rid, bid=bid, outfile=outfile)
+    _save_response('rmf', respfile, id, rid, bid=bid, fh=fh)
 
 
-def _save_pha_array(state, label, id, bid=None, outfile=None):
+def _save_pha_array(state, label, id, bid=None, fh=None):
     """Save a grouping or quality array for a PHA data set.
 
     Parameters
@@ -203,10 +195,9 @@ def _save_pha_array(state, label, id, bid=None, outfile=None):
     bid
        If not ``None`` then this indicates that the background dataset
        is to be used.
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       settings printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
     # This is an internal routine, so just protect against accidents
@@ -224,7 +215,7 @@ def _save_pha_array(state, label, id, bid=None, outfile=None):
     if vals is None:
         return
 
-    _send_to_outfile("\n######### {} {} flags\n".format(lbl, label), outfile)
+    _output("\n######### {} {} flags\n".format(lbl, label), fh)
 
     # QUS: can we not use the vals variable here rather than
     #      reassign it? i.e. isn't the "quality" (or "grouping"
@@ -241,10 +232,10 @@ def _save_pha_array(state, label, id, bid=None, outfile=None):
         cmd += ", bkg_id={}".format(_id_to_str(bid))
 
     cmd += ")"
-    _send_to_outfile(cmd, outfile)
+    _output(cmd, fh)
 
 
-def _save_pha_grouping(state, id, bid=None, outfile=None):
+def _save_pha_grouping(state, id, bid=None, fh=None):
     """Save the grouping column values for a PHA data set.
 
     Parameters
@@ -255,16 +246,15 @@ def _save_pha_grouping(state, id, bid=None, outfile=None):
     bid
        If not ``None`` then this indicates that the background dataset
        is to be used.
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       settings printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
-    _save_pha_array(state, "grouping", id, bid=bid, outfile=outfile)
+    _save_pha_array(state, "grouping", id, bid=bid, fh=fh)
 
 
-def _save_pha_quality(state, id, bid=None, outfile=None):
+def _save_pha_quality(state, id, bid=None, fh=None):
     """Save the quality column values for a PHA data set.
 
     Parameters
@@ -275,16 +265,15 @@ def _save_pha_quality(state, id, bid=None, outfile=None):
     bid
        If not ``None`` then this indicates that the background dataset
        is to be used.
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       settings printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
-    _save_pha_array(state, "quality", id, bid=bid, outfile=outfile)
+    _save_pha_array(state, "quality", id, bid=bid, fh=fh)
 
 
-def _save_data(state, funcs, outfile=None):
+def _save_data(state, funcs, fh=None):
     """Save the data.
 
     This can just be references to files, or serialization of
@@ -297,10 +286,9 @@ def _save_data(state, funcs, outfile=None):
        A dictionary of function references with keys for ``load_data``
        and ``set_coord``, where the function accepts the data set
        identifier and returns a string representation of that command.
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       statistic settings printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
 
     Notes
     -----
@@ -309,7 +297,7 @@ def _save_data(state, funcs, outfile=None):
     to be serialized it is included in the script.
     """
 
-    _send_to_outfile("\n######### Load Data Sets\n", outfile)
+    _output("\n######### Load Data Sets\n", fh)
 
     cmd_id = ""
     cmd_bkg_id = ""
@@ -323,16 +311,16 @@ def _save_data(state, funcs, outfile=None):
 
         cmd = funcs['load_data'](id)
         # cmd = "load_data(%s,\"%s\")" % (cmd_id, state.get_data(id).name)
-        _send_to_outfile(cmd, outfile)
+        _output(cmd, fh)
 
         # Set physical or WCS coordinates here if applicable
         # If can't be done, just pass to next
         try:
-            _send_to_outfile(
-                "\n######### Set Image Coordinates \n", outfile)
+            _output(
+                "\n######### Set Image Coordinates \n", fh)
             # cmd = "set_coord(%s, %s)" % (cmd_id, repr(state.get_coord(id)))
             cmd = funcs['set_coord'](id)
-            _send_to_outfile(cmd, outfile)
+            _output(cmd, fh)
         except:
             pass
 
@@ -341,37 +329,37 @@ def _save_data(state, funcs, outfile=None):
             # Only store group flags and quality flags if they were changed
             # from flags in the file
             if not state.get_data(id)._original_groups:
-                _save_pha_grouping(state, id, outfile=outfile)
-                _save_pha_quality(state, id, outfile=outfile)
+                _save_pha_grouping(state, id, fh=fh)
+                _save_pha_quality(state, id, fh=fh)
 
             # End check for original groups and quality flags
             if state.get_data(id).grouped:
                 cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
                     cmd_id, cmd_id)
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("\t######### Group Data", outfile)
+                _output(cmd, fh)
+                _output("\t######### Group Data", fh)
                 cmd = "\tgroup(%s)" % cmd_id
-                _send_to_outfile(cmd, outfile)
+                _output(cmd, fh)
         except:
             pass
 
         # Add responses and ARFs, if any
         try:
-            _send_to_outfile(
-                "\n######### Data Spectral Responses\n", outfile)
+            _output(
+                "\n######### Data Spectral Responses\n", fh)
             rids = state.list_response_ids(id)
 
             for rid in rids:
-                _save_arf_response(state, id, rid, outfile=outfile)
-                _save_rmf_response(state, id, rid, outfile=outfile)
+                _save_arf_response(state, id, rid, fh=fh)
+                _save_rmf_response(state, id, rid, fh=fh)
 
         except:
             pass
 
         # Check if this data set has associated backgrounds
         try:
-            _send_to_outfile(
-                "\n######### Load Background Data Sets\n", outfile)
+            _output(
+                "\n######### Load Background Data Sets\n", fh)
             bids = state.list_bkg_ids(id)
             cmd_bkg_id = ""
             for bid in bids:
@@ -379,7 +367,7 @@ def _save_data(state, funcs, outfile=None):
 
                 cmd = "load_bkg(%s,\"%s\", bkg_id=%s)" % (
                     cmd_id, state.get_bkg(id, bid).name, cmd_bkg_id)
-                _send_to_outfile(cmd, outfile)
+                _output(cmd, fh)
 
                 # Group data if applicable
                 try:
@@ -387,28 +375,28 @@ def _save_data(state, funcs, outfile=None):
                     # changed from flags in the file
                     if not state.get_bkg(id, bid)._original_groups:
                         if state.get_bkg(id, bid).grouping is not None:
-                            _save_pha_grouping(state, id, bid, outfile=outfile)
-                            _save_pha_quality(state, id, bid, outfile=outfile)
+                            _save_pha_grouping(state, id, bid, fh=fh)
+                            _save_pha_quality(state, id, bid, fh=fh)
 
                     # End check for original groups and quality flags
                     if state.get_bkg(id, bid).grouped:
                         cmd = "if get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped:" % (
                             cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
-                        _send_to_outfile(
-                            "\t######### Group Background", outfile)
+                        _output(cmd, fh)
+                        _output(
+                            "\t######### Group Background", fh)
                         cmd = "\tgroup(%s,%s)" % (cmd_id, cmd_bkg_id)
-                        _send_to_outfile(cmd, outfile)
+                        _output(cmd, fh)
                 except:
                     pass
 
                 # Load background response, ARFs if any
-                _send_to_outfile(
-                    "\n######### Background Spectral Responses\n", outfile)
+                _output(
+                    "\n######### Background Spectral Responses\n", fh)
                 rids = state.list_response_ids(id, bid)
                 for rid in rids:
-                    _save_arf_response(state, id, rid, bid, outfile=outfile)
-                    _save_rmf_response(state, id, rid, bid, outfile=outfile)
+                    _save_arf_response(state, id, rid, bid, fh=fh)
+                    _save_rmf_response(state, id, rid, bid, fh=fh)
 
         except:
             pass
@@ -416,8 +404,8 @@ def _save_data(state, funcs, outfile=None):
         # Set energy units if applicable
         # If can't be done, just pass to next
         try:
-            _send_to_outfile(
-                "\n######### Set Energy or Wave Units\n", outfile)
+            _output(
+                "\n######### Set Energy or Wave Units\n", fh)
             units = state.get_data(id).units
             rate = state.get_data(id).rate
             if rate:
@@ -429,7 +417,7 @@ def _save_data(state, funcs, outfile=None):
                                                     repr(units),
                                                     rate,
                                                     repr(factor))
-            _send_to_outfile(cmd, outfile)
+            _output(cmd, fh)
         except:
             pass
 
@@ -437,25 +425,25 @@ def _save_data(state, funcs, outfile=None):
         try:
             if state.get_data(id).subtracted:
                 cmd = "if not get_data(%s).subtracted:" % cmd_id
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile(
-                    "\t######### Subtract Background Data", outfile)
+                _output(cmd, fh)
+                _output(
+                    "\t######### Subtract Background Data", fh)
                 cmd = "\tsubtract(%s)" % cmd_id
-                _send_to_outfile(cmd, outfile)
+                _output(cmd, fh)
         except:
             pass
 
         # Set filter if applicable
         try:
-            _send_to_outfile("\n######### Filter Data\n", outfile)
+            _output("\n######### Filter Data\n", fh)
             fvals = state.get_data(id).get_filter()
             ndims = len(state.get_data(id).get_dims())
             if ndims == 1:
                 cmd = 'notice_id({}, "{}")'.format(cmd_id, fvals)
-                _send_to_outfile(cmd, outfile)
+                _output(cmd, fh)
             elif ndims == 2:
                 cmd = 'notice2d_id({}, "{}")'.format(cmd_id, fvals)
-                _send_to_outfile(cmd, outfile)
+                _output(cmd, fh)
         except:
             pass
 
@@ -502,92 +490,87 @@ def _print_par(par):
               par.fullname, par.frozen)), linkstr)
 
 
-def _save_statistic(state, outfile):
+def _save_statistic(state, fh=None):
     """Save the statistic settings.
 
     Parameters
     ----------
     state
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       statistic settings printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
-    _send_to_outfile("\n######### Set Statistic\n", outfile)
+    _output("\n######### Set Statistic\n", fh)
     cmd = "set_stat(\"%s\")" % state.get_stat_name()
-    _send_to_outfile(cmd, outfile)
-    _send_to_outfile("", outfile)
+    _output(cmd, fh)
+    _output("", fh)
 
 
-def _save_fit_method(state, outfile):
+def _save_fit_method(state, fh=None):
     """Save the fit method settings.
 
     Parameters
     ----------
     state
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       fitting-method settings printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
     # Save fitting method
 
-    _send_to_outfile("\n######### Set Fitting Method\n", outfile)
+    _output("\n######### Set Fitting Method\n", fh)
     cmd = "set_method(\"%s\")" % state.get_method_name()
-    _send_to_outfile(cmd, outfile)
-    _send_to_outfile("", outfile)
+    _output(cmd, fh)
+    _output("", fh)
 
     mdict = state.get_method_opt()
     for key in mdict:
         val = mdict.get(key)
         cmd = "set_method_opt(\"%s\", %s)" % (key, val)
-        _send_to_outfile(cmd, outfile)
+        _output(cmd, fh)
 
-    _send_to_outfile("", outfile)
+    _output("", fh)
 
 
-def _save_iter_method(state, outfile=None):
+def _save_iter_method(state, fh=None):
     """Save the iterated-fit method settings, if any.
 
     Parameters
     ----------
     state
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       settings printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
     if state.get_iter_method_name() == 'none':
         return
 
-    _send_to_outfile(
-        "\n######### Set Iterative Fitting Method\n", outfile)
+    _output("\n######### Set Iterative Fitting Method\n", fh)
     cmd = "set_iter_method(\"%s\")" % state.get_iter_method_name()
-    _send_to_outfile(cmd, outfile)
-    _send_to_outfile("", outfile)
+    _output(cmd, fh)
+    _output("", fh)
 
     mdict = state.get_iter_method_opt()
     for key in mdict:
         val = mdict.get(key)
         cmd = "set_iter_method_opt(\"%s\", %s)" % (key, val)
-        _send_to_outfile(cmd, outfile)
+        _output(cmd, fh)
 
-    _send_to_outfile("", outfile)
+    _output("", fh)
 
 
-def _save_model_components(state, outfile=None):
+def _save_model_components(state, fh=None):
     """Save the model components.
 
     Parameters
     ----------
     state
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       models printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
     # Have to call elements in list in reverse order (item at end of
@@ -596,8 +579,7 @@ def _save_model_components(state, outfile=None):
     # To recreate attributes, print out dictionary as ordered pairs,
     # for each parameter
 
-    _send_to_outfile(
-        "\n######### Set Model Components and Parameters\n", outfile)
+    _output("\n######### Set Model Components and Parameters\n", fh)
     all_model_components = state.list_model_components()
     all_model_components.reverse()
 
@@ -636,19 +618,19 @@ def _save_model_components(state, outfile=None):
 
             # This will cause a syntax error when the file is run,
             # but this is a "good thing" here.
-            _send_to_outfile("WARNING: {}\n".format(msg), outfile)
+            _output("WARNING: {}\n".format(msg), fh)
 
             # Go directly to next model in the model component list.
             continue
 
         elif typename == "psfmodel":
             cmd = "load_psf(\"%s\", \"%s\")" % (mod._name, mod.kernel.name)
-            _send_to_outfile(cmd, outfile)
+            _output(cmd, fh)
             try:
                 psfmod = state.get_psf(id)
                 cmd_id = _id_to_str(id)
                 cmd = "set_psf(%s, %s)" % (cmd_id, psfmod._name)
-                _send_to_outfile(cmd, outfile)
+                _output(cmd, fh)
             except:
                 pass
 
@@ -656,12 +638,12 @@ def _save_model_components(state, outfile=None):
             # Create table model with load_table_model
             cmd = "load_table_model(\"%s\", \"%s\")" % (
                 modelname, mod.filename)
-            _send_to_outfile(cmd, outfile)
+            _output(cmd, fh)
 
         else:
             # Normal case:  create an instance of the model.
             cmd = "eval(\"%s.%s\")" % (typename, modelname)
-            _send_to_outfile(cmd, outfile)
+            _output(cmd, fh)
 
         # QUS: should this be included in the above checks?
         #      @DougBurke doesn't think so, as the "normal
@@ -672,18 +654,18 @@ def _save_model_components(state, outfile=None):
             # Create general convolution kernel with load_conv
             cmd = "load_conv(\"%s\", \"%s\")" % (
                 modelname, mod.kernel.name)
-            _send_to_outfile(cmd, outfile)
+            _output(cmd, fh)
 
         if hasattr(mod, "integrate"):
             cmd = "%s.integrate = %s" % (modelname, mod.integrate)
-            _send_to_outfile(cmd, outfile)
-            _send_to_outfile("", outfile)
+            _output(cmd, fh)
+            _output("", fh)
 
         from sherpa.models import Parameter
         for par in mod.__dict__.values():
             if type(par) == Parameter or issubclass(Parameter, type(par)):
                 par_attributes, par_linkstr = _print_par(par)
-                _send_to_outfile(par_attributes, outfile)
+                _output(par_attributes, fh)
                 linkstr = linkstr + par_linkstr
 
         # If the model is a PSFModel, could have special
@@ -691,34 +673,32 @@ def _save_model_components(state, outfile=None):
         if typename == "psfmodel":
             if hasattr(mod, "size"):
                 cmd = "%s.size = %s" % (modelname, repr(mod.size))
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
+                _output(cmd, fh)
+                _output("", fh)
             if hasattr(mod, "center"):
                 cmd = "%s.center = %s" % (modelname, repr(mod.center))
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
+                _output(cmd, fh)
+                _output("", fh)
 
     # If there were any links made between parameters, send those
     # link commands to outfile now; else, linkstr is just an empty string
-    _send_to_outfile(linkstr, outfile)
+    _output(linkstr, fh)
 
 
-def _save_models(state, outfile=None):
+def _save_models(state, fh=None):
     """Save the source, pileup, and background models.
 
     Parameters
     ----------
     state
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       models printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
     # Save all source, pileup and background models
 
-    _send_to_outfile(
-        "\n######### Set Source, Pileup and Background Models\n", outfile)
+    _output("\n######### Set Source, Pileup and Background Models\n", fh)
     for id in state.list_data_ids():
         cmd_id = _id_to_str(id)
 
@@ -759,8 +739,8 @@ def _save_models(state, outfile=None):
                 # You can't actually get here
                 cmd = ""
 
-            _send_to_outfile(cmd, outfile)
-            _send_to_outfile("", outfile)
+            _output(cmd, fh)
+            _output("", fh)
         except:
             pass
 
@@ -768,7 +748,7 @@ def _save_models(state, outfile=None):
         try:
             cmd = "set_pileup_model(%s, %s)" % (
                 cmd_id, state.get_pileup_model(id).name)
-            _send_to_outfile(cmd, outfile)
+            _output(cmd, fh)
         except:
             pass
 
@@ -815,45 +795,44 @@ def _save_models(state, outfile=None):
                     # You can't actually get here
                     cmd = ""
 
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
+                _output(cmd, fh)
+                _output("", fh)
 
         except:
             pass
 
 
-def _save_xspec(outfile=None):
+def _save_xspec(fh=None):
     """Save the XSPEC settings, if the module is loaded.
 
     Parameters
     ----------
-    outfile : None or str
-       If ``None``, the message is printed to standard output,
-       otherwise the file is opened (in append mode) and the
-       XSPEC settings printed to it.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
     """
 
     if not hasattr(sherpa.astro, "xspec"):
         return
 
     # TODO: should this make sure that the XSPEC module is loaded?
-    _send_to_outfile("\n######### XSPEC Module Settings\n", outfile)
+    _output("\n######### XSPEC Module Settings\n", fh)
     xspec_state = sherpa.astro.xspec.get_xsstate()
 
     cmd = "set_xschatter(%d)" % xspec_state["chatter"]
-    _send_to_outfile(cmd, outfile)
+    _output(cmd, fh)
     cmd = "set_xsabund(\"%s\")" % xspec_state["abund"]
-    _send_to_outfile(cmd, outfile)
+    _output(cmd, fh)
     cmd = "set_xscosmo(%g, %g, %g)" % (xspec_state["cosmo"][0],
                                        xspec_state["cosmo"][1],
                                        xspec_state["cosmo"][2])
-    _send_to_outfile(cmd, outfile)
+    _output(cmd, fh)
     cmd = "set_xsxsect(\"%s\")" % xspec_state["xsect"]
-    _send_to_outfile(cmd, outfile)
+    _output(cmd, fh)
     for name in xspec_state["modelstrings"].keys():
         mstring = xspec_state["modelstrings"][name]
         cmd = "set_xsxset(\"%s\", \"%s\")" % (name, mstring)
-        _send_to_outfile(cmd, outfile)
+        _output(cmd, fh)
 
 
 def save_all(state, outfile=None, clobber=False):
@@ -941,8 +920,13 @@ def save_all(state, outfile=None, clobber=False):
                 os.remove(outfile)
             else:
                 raise IOErr('filefound', outfile)
+
+        fh = file(outfile, 'w')
+
     elif outfile is not None:
         raise ArgumentTypeErr('badarg', 'string or None')
+    else:
+        fh = sys.stdout
 
     funcs = {
         'load_data': lambda id:
@@ -951,15 +935,15 @@ def save_all(state, outfile=None, clobber=False):
         'set_coord({}, {})'.format(_id_to_str(id), repr(state.get_coord(id))),
     }
 
-    _save_intro(outfile)
-    _save_data(state, funcs, outfile)
-    _send_to_outfile("", outfile)
-    _save_statistic(state, outfile)
-    _save_fit_method(state, outfile)
-    _save_iter_method(state, outfile)
-    _save_model_components(state, outfile)
-    _save_models(state, outfile)
-    _save_xspec(outfile)
+    _save_intro(fh)
+    _save_data(state, funcs, fh)
+    _output("", fh)
+    _save_statistic(state, fh)
+    _save_fit_method(state, fh)
+    _save_iter_method(state, fh)
+    _save_model_components(state, fh)
+    _save_models(state, fh)
+    _save_xspec(fh)
 
 
 # What is this routine used for, and how is it different to save_all?
@@ -977,8 +961,13 @@ def save_session(state, outfile=None, clobber=False):
                 os.remove(outfile)
             else:
                 raise IOErr('filefound', outfile)
+
+        fh = file(outfile, 'w')
+
     elif outfile is not None:
         raise ArgumentTypeErr('badarg', 'string or None')
+    else:
+        fh = sys.stdout
 
     def get_logged_call(call_name, id=None):
         try:
@@ -995,12 +984,12 @@ def save_session(state, outfile=None, clobber=False):
         'set_coord': lambda id: get_logged_call('set_coord', id),
     }
 
-    _save_intro(outfile)
-    _save_data(state, funcs, outfile)
-    _send_to_outfile("", outfile)
-    _save_statistic(state, outfile)
-    _save_fit_method(state, outfile)
-    _save_iter_method(state, outfile)
-    _save_model_components(state, outfile)
-    _save_models(state, outfile)
-    _save_xspec(outfile)
+    _save_intro(fh)
+    _save_data(state, funcs, fh)
+    _output("", fh)
+    _save_statistic(state, fh)
+    _save_fit_method(state, fh)
+    _save_iter_method(state, fh)
+    _save_model_components(state, fh)
+    _save_models(state, fh)
+    _save_xspec(fh)
