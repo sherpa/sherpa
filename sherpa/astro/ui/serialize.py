@@ -646,7 +646,8 @@ def _save_model_components(state, fh=None):
 
         else:
             # Normal case:  create an instance of the model.
-            cmd = "eval(\"%s.%s\")" % (typename, modelname)
+            cmd = 'create_model_component("{}", "{}")'.format(
+                typename, modelname)
             _output(cmd, fh)
 
         # QUS: should this be included in the above checks?

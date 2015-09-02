@@ -187,7 +187,7 @@ set_method_opt("ftol", 1.19209289551e-07)
 
 ######### Set Model Components and Parameters
 
-eval("xsapec.src")
+create_model_component("xsapec", "src")
 src.integrate = True
 
 src.redshift.default_val = 0.0
@@ -226,7 +226,7 @@ src.norm.max     = 9.9999999999999998e+23
 src.norm.units   = ""
 src.norm.frozen  = False
 
-eval("powlaw1d.pl")
+create_model_component("powlaw1d", "pl")
 pl.integrate = True
 
 pl.ampl.default_val = 1.0
@@ -256,7 +256,7 @@ pl.gamma.max     = 10.0
 pl.gamma.units   = ""
 pl.gamma.frozen  = False
 
-eval("xsphabs.gal")
+create_model_component("xsphabs", "gal")
 gal.integrate = True
 
 gal.nH.default_val = 1.0
@@ -437,6 +437,9 @@ class test_ui(SherpaTestCase):
         src_expr = ui.get_source()
         self.assertEqual('(xsphabs.gal * (powlaw1d.pl + xsapec.src))',
                          src_expr.name)
+        self.assertEqual('xsphabs.gal', gal.name)
+        self.assertEqual('powlaw1d.pl', pl.name)
+        self.assertEqual('xsapec.src', src.name)
 
 if __name__ == '__main__':
 
