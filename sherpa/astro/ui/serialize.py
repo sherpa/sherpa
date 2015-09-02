@@ -76,7 +76,7 @@ def _id_to_str(id):
        in the Python serialization.
     """
 
-    if type(id) == str:
+    if isinstance(id, basestring):
         return '"{}"'.format(id)
     else:
         return str(id)
@@ -474,7 +474,7 @@ def _print_par(par):
             par.fullname, par.link.fullname)
 
     unitstr = ""
-    if type(par.units) == str:
+    if isinstance(par.units, basestring):
         unitstr = "\"%s\"" % par.units
 
     return ((('%s.default_val = %s\n' +
@@ -884,8 +884,9 @@ def save_all(state, fh=None):
 
     Save the session to a StringIO handle:
 
-    >>> buffer = StringIO.StringIO()
-    >>> save_all(buffer)
+    >>> import StringIO
+    >>> store = StringIO.StringIO()
+    >>> save_all(store)
 
     """
 
