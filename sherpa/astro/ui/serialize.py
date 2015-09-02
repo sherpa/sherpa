@@ -668,7 +668,7 @@ def _save_model_components(state, fh=None):
 
         from sherpa.models import Parameter
         for par in mod.__dict__.values():
-            if type(par) == Parameter or issubclass(Parameter, type(par)):
+            if isinstance(par, Parameter):
                 par_attributes, par_linkstr = _print_par(par)
                 _output(par_attributes, fh)
                 linkstr = linkstr + par_linkstr
