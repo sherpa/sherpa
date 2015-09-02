@@ -726,22 +726,23 @@ def _save_models(state, fh=None):
 
             have_source = the_source is not None
             have_full_model = the_full_model is not None
-            if not have_source and not have_full_model:
-                cmd = ""
-            elif not have_source and have_full_model:
+
+            if have_source:
+                if have_full_model:
+                    if repr(the_source) == repr(the_full_model):
+                        cmd = "set_full_model(%s, %s)" % (
+                            cmd_id, the_full_model.name)
+                    else:
+                        cmd = "set_source(%s, %s)" % (
+                            cmd_id, the_source.name)
+                else:
+                    cmd = "set_source(%s, %s)" % (cmd_id, the_source.name)
+
+            elif have_full_model:
                 cmd = "set_full_model(%s, %s)" % (
                     cmd_id, the_full_model.name)
-            elif have_source and not have_full_model:
-                cmd = "set_source(%s, %s)" % (cmd_id, the_source.name)
-            elif have_source and have_full_model:
-                if repr(the_source) == repr(the_full_model):
-                    cmd = "set_full_model(%s, %s)" % (
-                        cmd_id, the_full_model.name)
-                else:
-                    cmd = "set_source(%s, %s)" % (
-                        cmd_id, the_source.name)
+
             else:
-                # You can't actually get here
                 cmd = ""
 
             _output(cmd, fh)
@@ -781,23 +782,24 @@ def _save_models(state, fh=None):
 
                 have_source = the_bkg_source is not None
                 have_full_model = the_bkg_full_model is not None
-                if not have_source and not have_full_model:
-                    cmd = ""
-                elif not have_source and have_full_model:
-                    cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                        cmd_id, the_bkg_full_model.name, cmd_bkg_id)
-                elif have_source and not have_full_model:
-                    cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                        cmd_id, the_bkg_source.name, cmd_bkg_id)
-                elif have_source and have_full_model:
-                    if repr(the_bkg_source) == repr(the_bkg_full_model):
-                        cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                            cmd_id, the_bkg_full_model.name, cmd_bkg_id)
+
+                if have_source:
+                    if have_full_model:
+                        if repr(the_bkg_source) == repr(the_bkg_full_model):
+                            cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
+                                cmd_id, the_bkg_full_model.name, cmd_bkg_id)
+                        else:
+                            cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
+                                cmd_id, the_bkg_source.name, cmd_bkg_id)
                     else:
                         cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
                             cmd_id, the_bkg_source.name, cmd_bkg_id)
+
+                elif have_full_model:
+                    cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
+                        cmd_id, the_bkg_full_model.name, cmd_bkg_id)
+
                 else:
-                    # You can't actually get here
                     cmd = ""
 
                 _output(cmd, fh)
