@@ -321,8 +321,7 @@ def _save_data(state, funcs, fh=None):
         # Set physical or WCS coordinates here if applicable
         # If can't be done, just pass to next
         try:
-            _output(
-                "\n######### Set Image Coordinates \n", fh)
+            _output("\n######### Set Image Coordinates\n", fh)
             # cmd = "set_coord(%s, %s)" % (cmd_id, repr(state.get_coord(id)))
             cmd = funcs['set_coord'](id)
             _output(cmd, fh)
