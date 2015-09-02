@@ -12402,7 +12402,7 @@ class Session(sherpa.ui.utils.Session):
     # Session Text Save Function
     ###########################################################################
 
-    def save_all(self, outfile=None, clobber=False):
+    def save_all(self, outfile=None, clobber=False, outfh=None):
         """Save the information about the current session to a text file.
 
         This differs to the `save` command in that the output is human
@@ -12417,14 +12417,19 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         outfile : str, optional
-           If not given the results are displayed to the screen,
-           otherwise it is taken to be the name of the file to
-           write the results to.
+           If given, the output is written to this file, and the
+           ``clobber`` parameter controls what happens if the
+           file already exists. If not given, then the
+           ``outfh`` parameter is used.
         clobber : bool, optional
            If ``outfile`` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
+        outfh : file-like, optional
+           If ``outfile`` is ``None`` then this is the file handle
+           (or file-like object, such as ``StringIO``) to write
+           to. If not set then the standard output is used.
 
         Raises
         ------
@@ -12460,44 +12465,54 @@ class Session(sherpa.ui.utils.Session):
 
         >>> save_all('fit.sherpa', clobber=True)
 
+        Write the contents to a StringIO object:
+
+        >>> import StringIO
+        >>> store = StringIO.StringIO()
+        >>> save_all(outfh=store)
+
         """
 
-        clobber = sherpa.utils.bool_cast(clobber)
-        if type(outfile) == str:
+        if isinstance(outfile, basestring):
             if os.path.isfile(outfile):
-                if clobber:
+                if sherpa.utils.bool_cast(clobber):
                     os.remove(outfile)
                 else:
                     raise IOErr('filefound', outfile)
 
-            fh = file(outfile, 'w')
+            with open(outfile, 'w') as fh:
+                serialize.save_all(self, fh)
 
         elif outfile is not None:
             raise ArgumentTypeErr('badarg', 'string or None')
+
         else:
-            fh = sys.stdout
+            if outfh is not None:
+                fh = outfh
+            else:
+                fh = sys.stdout
 
-        serialize.save_all(self, fh)
-        if outfile is not None:
-            fh.close()
+            serialize.save_all(self, fh)
 
-    def save_session(self, outfile=None, clobber=False):
+    def save_session(self, outfile=None, clobber=False, outfh=None):
 
-        clobber = sherpa.utils.bool_cast(clobber)
-        if type(outfile) == str:
+        if isinstance(outfile, basestring):
             if os.path.isfile(outfile):
-                if clobber:
+                if sherpa.utils.bool_cast(clobber):
                     os.remove(outfile)
                 else:
                     raise IOErr('filefound', outfile)
 
-            fh = file(outfile, 'w')
+            with open(outfile, 'w') as fh:
+                serialize.save_session(self, fh)
 
         elif outfile is not None:
             raise ArgumentTypeErr('badarg', 'string or None')
-        else:
-            fh = sys.stdout
 
-        serialize.save_session(self, fh)
-        if outfile is not None:
-            fh.close()
+        else:
+            if outfh is not None:
+                fh = outfh
+            else:
+                fh = sys.stdout
+
+            serialize.save_session(self, fh)
