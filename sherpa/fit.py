@@ -476,12 +476,12 @@ class IterFit(NoNewAttributesAfterInit):
 
         bkg_dep = []
         data_size = None
-        response_time = None
+        exposure_time = None
 
         len_datasets = len(self.data.datasets)
 
         data_size = zeros(len_datasets, dtype=int)
-        response_time = zeros(2 * len_datasets)
+        exposure_time = zeros(2 * len_datasets)
         for index in xrange(len_datasets):
             mydata = self.data.datasets[index]
             if hasattr(mydata, 'response_ids') and \
@@ -491,12 +491,12 @@ class IterFit(NoNewAttributesAfterInit):
                 tmp_bkg_dep = bkg.get_dep(True)
                 data_size[index] = tmp_bkg_dep.size
                 bkg_dep = append(bkg_dep, tmp_bkg_dep)
-                response_time[2 * index] = mydata.exposure
-                response_time[2 * index + 1] = bkg.exposure
+                exposure_time[2 * index] = mydata.exposure
+                exposure_time[2 * index + 1] = bkg.exposure
             elif type(self.stat) is WStat:
                 raise FitErr('no bkg file is supplied, use cstat instead')
 
-        return bkg_dep, data_size, response_time
+        return bkg_dep, data_size, exposure_time
 
     def _get_callback(self, outfile=None, clobber=False):
         if len(self.model.thawedpars) == 0:
@@ -512,10 +512,10 @@ class IterFit(NoNewAttributesAfterInit):
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
-        self.bkg, datasize, responsetime = self.get_bkg_data(self._dep)
+        self.bkg, datasize, exposuretime = self.get_bkg_data(self._dep)
         if type(self.stat) is WStat:
             self._staterror = datasize
-            self._syserror = responsetime
+            self._syserror = exposuretime
 
         self._nfev = 0
         if outfile is not None:

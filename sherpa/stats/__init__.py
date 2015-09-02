@@ -571,10 +571,8 @@ class WStat(Likelihood):
         Likelihood.__init__(self, name)
 
     @staticmethod
-    def calc_stat(data, model, staterror=None, syserror=None,
+    def calc_stat(data, model, datasize=None, exposuretime=None,
                   weight=None, **kwargs):
-        datasize = staterror
-        exposuretime = syserror
 
         if 'bkg' in kwargs.keys():
             bkg = kwargs.get('bkg')
