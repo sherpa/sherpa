@@ -315,14 +315,12 @@ def _save_data(state, funcs, fh=None):
         cmd_id = _id_to_str(id)
 
         cmd = funcs['load_data'](id)
-        # cmd = "load_data(%s,\"%s\")" % (cmd_id, state.get_data(id).name)
         _output(cmd, fh)
 
         # Set physical or WCS coordinates here if applicable
         # If can't be done, just pass to next
         try:
             _output("\n######### Set Image Coordinates\n", fh)
-            # cmd = "set_coord(%s, %s)" % (cmd_id, repr(state.get_coord(id)))
             cmd = funcs['set_coord'](id)
             _output(cmd, fh)
         except:
@@ -369,7 +367,7 @@ def _save_data(state, funcs, fh=None):
             for bid in bids:
                 cmd_bkg_id = _id_to_str(bid)
 
-                cmd = "load_bkg(%s,\"%s\", bkg_id=%s)" % (
+                cmd = 'load_bkg(%s, "%s", bkg_id=%s)' % (
                     cmd_id, state.get_bkg(id, bid).name, cmd_bkg_id)
                 _output(cmd, fh)
 
@@ -384,12 +382,12 @@ def _save_data(state, funcs, fh=None):
 
                     # End check for original groups and quality flags
                     if state.get_bkg(id, bid).grouped:
-                        cmd = "if get_bkg(%s,%s).grouping is not None and not get_bkg(%s,%s).grouped:" % (
+                        cmd = "if get_bkg(%s, %s).grouping is not None and not get_bkg(%s, %s).grouped:" % (
                             cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
                         _output(cmd, fh)
                         _output(
                             "    ######### Group Background", fh)
-                        cmd = "    group(%s,%s)" % (cmd_id, cmd_bkg_id)
+                        cmd = "    group(%s, %s)" % (cmd_id, cmd_bkg_id)
                         _output(cmd, fh)
                 except:
                     pass
@@ -413,9 +411,9 @@ def _save_data(state, funcs, fh=None):
             units = state.get_data(id).units
             rate = state.get_data(id).rate
             if rate:
-                rate = "\"rate\""
+                rate = '"rate"'
             else:
-                rate = "\"counts\""
+                rate = '"counts"'
             factor = state.get_data(id).plot_fac
             cmd = "set_analysis(%s, %s, %s, %s)" % (cmd_id,
                                                     repr(units),
@@ -474,7 +472,7 @@ def _print_par(par):
 
     unitstr = ""
     if isinstance(par.units, basestring):
-        unitstr = "\"%s\"" % par.units
+        unitstr = '"%s"' % par.units
 
     return ((('%s.default_val = %s\n' +
               '%s.default_min = %s\n' +
@@ -506,7 +504,7 @@ def _save_statistic(state, fh=None):
     """
 
     _output("\n######### Set Statistic\n", fh)
-    cmd = "set_stat(\"%s\")" % state.get_stat_name()
+    cmd = 'set_stat("%s")' % state.get_stat_name()
     _output(cmd, fh)
     _output("", fh)
 
@@ -525,14 +523,14 @@ def _save_fit_method(state, fh=None):
     # Save fitting method
 
     _output("\n######### Set Fitting Method\n", fh)
-    cmd = "set_method(\"%s\")" % state.get_method_name()
+    cmd = 'set_method("%s")' % state.get_method_name()
     _output(cmd, fh)
     _output("", fh)
 
     mdict = state.get_method_opt()
     for key in mdict:
         val = mdict.get(key)
-        cmd = "set_method_opt(\"%s\", %s)" % (key, val)
+        cmd = 'set_method_opt("%s", %s)' % (key, val)
         _output(cmd, fh)
 
     _output("", fh)
@@ -553,14 +551,14 @@ def _save_iter_method(state, fh=None):
         return
 
     _output("\n######### Set Iterative Fitting Method\n", fh)
-    cmd = "set_iter_method(\"%s\")" % state.get_iter_method_name()
+    cmd = 'set_iter_method("%s")' % state.get_iter_method_name()
     _output(cmd, fh)
     _output("", fh)
 
     mdict = state.get_iter_method_opt()
     for key in mdict:
         val = mdict.get(key)
-        cmd = "set_iter_method_opt(\"%s\", %s)" % (key, val)
+        cmd = 'set_iter_method_opt("%s", %s)' % (key, val)
         _output(cmd, fh)
 
     _output("", fh)
@@ -628,7 +626,7 @@ def _save_model_components(state, fh=None):
             continue
 
         elif typename == "psfmodel":
-            cmd = "load_psf(\"%s\", \"%s\")" % (mod._name, mod.kernel.name)
+            cmd = 'load_psf("%s", "%s")' % (mod._name, mod.kernel.name)
             _output(cmd, fh)
             try:
                 psfmod = state.get_psf(id)
@@ -640,7 +638,7 @@ def _save_model_components(state, fh=None):
 
         elif typename == "tablemodel":
             # Create table model with load_table_model
-            cmd = "load_table_model(\"%s\", \"%s\")" % (
+            cmd = 'load_table_model("%s", "%s")' % (
                 modelname, mod.filename)
             _output(cmd, fh)
 
@@ -657,7 +655,7 @@ def _save_model_components(state, fh=None):
         #
         if typename == "convolutionkernel":
             # Create general convolution kernel with load_conv
-            cmd = "load_conv(\"%s\", \"%s\")" % (
+            cmd = 'load_conv("%s", "%s")' % (
                 modelname, mod.kernel.name)
             _output(cmd, fh)
 
@@ -828,17 +826,17 @@ def _save_xspec(fh=None):
 
     cmd = "set_xschatter(%d)" % xspec_state["chatter"]
     _output(cmd, fh)
-    cmd = "set_xsabund(\"%s\")" % xspec_state["abund"]
+    cmd = 'set_xsabund("%s")' % xspec_state["abund"]
     _output(cmd, fh)
     cmd = "set_xscosmo(%g, %g, %g)" % (xspec_state["cosmo"][0],
                                        xspec_state["cosmo"][1],
                                        xspec_state["cosmo"][2])
     _output(cmd, fh)
-    cmd = "set_xsxsect(\"%s\")" % xspec_state["xsect"]
+    cmd = 'set_xsxsect("%s")' % xspec_state["xsect"]
     _output(cmd, fh)
     for name in xspec_state["modelstrings"].keys():
         mstring = xspec_state["modelstrings"][name]
-        cmd = "set_xsxset(\"%s\", \"%s\")" % (name, mstring)
+        cmd = 'set_xsxset("%s", "%s")' % (name, mstring)
         _output(cmd, fh)
 
 
