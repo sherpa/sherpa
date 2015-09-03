@@ -341,8 +341,8 @@ def _save_data(state, funcs, fh=None):
                 cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
                     cmd_id, cmd_id)
                 _output(cmd, fh)
-                _output("\t######### Group Data", fh)
-                cmd = "\tgroup(%s)" % cmd_id
+                _output("    ######### Group Data", fh)
+                cmd = "    group(%s)" % cmd_id
                 _output(cmd, fh)
         except:
             pass
@@ -388,8 +388,8 @@ def _save_data(state, funcs, fh=None):
                             cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
                         _output(cmd, fh)
                         _output(
-                            "\t######### Group Background", fh)
-                        cmd = "\tgroup(%s,%s)" % (cmd_id, cmd_bkg_id)
+                            "    ######### Group Background", fh)
+                        cmd = "    group(%s,%s)" % (cmd_id, cmd_bkg_id)
                         _output(cmd, fh)
                 except:
                     pass
@@ -431,8 +431,8 @@ def _save_data(state, funcs, fh=None):
                 cmd = "if not get_data(%s).subtracted:" % cmd_id
                 _output(cmd, fh)
                 _output(
-                    "\t######### Subtract Background Data", fh)
-                cmd = "\tsubtract(%s)" % cmd_id
+                    "    ######### Subtract Background Data", fh)
+                cmd = "    subtract(%s)" % cmd_id
                 _output(cmd, fh)
         except:
             pass
