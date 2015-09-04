@@ -611,7 +611,9 @@ def _save_model_components(state, fh=None):
         # user modules, beyond scope of this script.
 
         if typename == "usermodel":
-            # Skip user models -- don't create, don't set parameters
+            # Skip user models -- don't create, but do keep the
+            # parameter settings, as these mean it is feasible for
+            # a user to add back in the user model code.
             #
             # At present this is reported for each component
             msg = "User model '{}'".format(mod.name) + \
@@ -621,9 +623,6 @@ def _save_model_components(state, fh=None):
             # This will cause a syntax error when the file is run,
             # but this is a "good thing" here.
             _output("WARNING: {}\n".format(msg), fh)
-
-            # Go directly to next model in the model component list.
-            continue
 
         elif typename == "psfmodel":
             cmd = 'load_psf("%s", "%s")' % (mod._name, mod.kernel.name)

@@ -461,13 +461,63 @@ set_method_opt("ftol", 1.19209289551e-07)
 
 ######### Set Model Components and Parameters
 
+create_model_component("sin", "sin_model")
+sin_model.integrate = True
+
+sin_model.ampl.default_val = 1.0
+sin_model.ampl.default_min = 1.0000000000000001e-05
+sin_model.ampl.default_max = 3.4028234663852886e+38
+sin_model.ampl.val     = 1.0
+sin_model.ampl.min     = 1.0000000000000001e-05
+sin_model.ampl.max     = 3.4028234663852886e+38
+sin_model.ampl.units   = ""
+sin_model.ampl.frozen  = False
+
+sin_model.period.default_val = 1.0
+sin_model.period.default_min = 1e-10
+sin_model.period.default_max = 10.0
+sin_model.period.val     = 1.0
+sin_model.period.min     = 1e-10
+sin_model.period.max     = 10.0
+sin_model.period.units   = ""
+sin_model.period.frozen  = False
+
+sin_model.offset.default_val = 0.0
+sin_model.offset.default_min = 0.0
+sin_model.offset.default_max = 3.4028234663852886e+38
+sin_model.offset.val     = 0.0
+sin_model.offset.min     = 0.0
+sin_model.offset.max     = 3.4028234663852886e+38
+sin_model.offset.units   = ""
+sin_model.offset.frozen  = False
+
 WARNING: User model 'usermodel.mymodel' not saved, add any user model to save file manually
+
+mymodel.integrate = True
+
+mymodel.c.default_val = 2.0
+mymodel.c.default_min = -3.4028234663852886e+38
+mymodel.c.default_max = 3.4028234663852886e+38
+mymodel.c.val     = 2.0
+mymodel.c.min     = -10.0
+mymodel.c.max     = 10.0
+mymodel.c.units   = "m"
+mymodel.c.frozen  = False
+
+mymodel.m.default_val = 0.5
+mymodel.m.default_min = -3.4028234663852886e+38
+mymodel.m.default_max = 3.4028234663852886e+38
+mymodel.m.val     = 0.5
+mymodel.m.min     = 0.0
+mymodel.m.max     = 5.5
+mymodel.m.units   = ""
+mymodel.m.frozen  = True
 
 
 
 ######### Set Source, Pileup and Background Models
 
-set_full_model(3, usermodel.mymodel)
+set_full_model(3, (sin.sin_model + usermodel.mymodel))
 
 
 """
@@ -644,7 +694,7 @@ class test_ui(SherpaTestCase):
                          parunits=["m", ""],
                          parfrozen=[False, True])
 
-        ui.set_source(3, mymodel)
+        ui.set_source(3, ui.sin.sin_model + mymodel)
 
         ui.set_stat('cash')
         ui.set_method('simplex')
