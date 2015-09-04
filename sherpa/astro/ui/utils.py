@@ -12444,12 +12444,18 @@ class Session(sherpa.ui.utils.Session):
         Notes
         -----
 
-        Items which are not saved include:
+        This command will create a series of commands that restores
+        the current Sherpa set up. It does not save the set of commands
+        used. Not all Sherpa settings are saved. Items not fully restored
+        include:
 
-        - user models
+        - data created by calls to `load_arrays`, or changed from the
+          version on disk - e.g. by calls to `sherpa.astro.ui.set_counts`.
 
         - any optional keywords to comands such as `load_data`
           or `load_pha`
+
+        - user models may not be restored correctly
 
         - only a subset of Sherpa commands are saved.
 

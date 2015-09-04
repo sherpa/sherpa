@@ -491,7 +491,19 @@ sin_model.offset.max     = 3.4028234663852886e+38
 sin_model.offset.units   = ""
 sin_model.offset.frozen  = False
 
-WARNING: User model 'usermodel.mymodel' not saved, add any user model to save file manually
+print("Found user model 'mymodel'; please check it is saved correctly.")
+def mymodel_func(pars, x, xhi=None):
+    return pars[0] + pars[1] * x
+
+load_user_model(mymodel_func, "mymodel")
+add_user_model("mymodel",
+               parnames=['c', 'm'],
+               parvals=[2.0, 0.5],
+               parmins=[-10.0, 0.0],
+               parmaxs=[10.0, 5.5],
+               parunits=['m', ''],
+               parfrozen=[False, True]
+               )
 
 mymodel.integrate = True
 
@@ -538,6 +550,14 @@ set_xsxsect("bcmc")
     _canonical_usermodel += _canonical_xspec_extra
 
 
+def _dump_lines(cts):
+    """Dump outcts, an array of strings, to stdout, with line numbering"""
+    print("***\n")
+    for i, l in enumerate(cts):
+        print("{:02d} {}".format(i, l))
+    print("***\n")
+
+
 class test_ui(SherpaTestCase):
 
     def setUp(self):
@@ -577,6 +597,9 @@ class test_ui(SherpaTestCase):
         elines = expected.split('\n')
         glines = got.split('\n')
 
+        _dump_lines(elines)
+        _dump_lines(glines)
+
         for e, g in zip(elines, glines):
             self.assertEqual(e, g)
 
@@ -584,17 +607,6 @@ class test_ui(SherpaTestCase):
         # contents as it is easier to see what the difference
         # is this way around, since a difference in the
         # number of lines is often not very informative.
-        """
-        if len(elines) != len(glines):
-            print("***\n")
-            for i, l in enumerate(elines):
-                print("{:02d} {}".format(i, l))
-            print("***\n")
-            for i, l in enumerate(glines):
-                print("{:02d} {}".format(i, l))
-            print("***\n")
-        """
-
         self.assertEqual(len(elines), len(glines))
 
     def _compare(self, expected):

@@ -24,8 +24,9 @@ intended for public use. The API and semantics of the
 routines in this module are subject to change.
 """
 
-import sys
+import inspect
 import logging
+import sys
 
 import numpy
 
@@ -564,6 +565,98 @@ def _save_iter_method(state, fh=None):
     _output("", fh)
 
 
+# Is there something in the standard libraries that does this?
+def _reindent(code):
+    """Try to remove leading spaces. Somewhat hacky."""
+
+    # Assume the first line is 'def func()'
+    nspaces = code.find('def')
+    if nspaces < 1:
+        return code
+
+    # minimal safety checks (e.g. if there was an indented
+    # comment line).
+    out = []
+    for line in code.split("\n"):
+        if line[:nspaces].isspace():
+            out.append(line[nspaces:])
+        else:
+            out.append(line)
+
+    return "\n".join(out)
+
+# for user models, try to access the function definition via
+# the inspect module and then re-create it in the script.
+# An alternative would be to use the marshal module, and
+# store the bytecode for the function in the code (or use
+# pickle), but this is less readable and not guaranteed to
+# be compatible with different major versions of Python.
+# The idea is not to support all use case, but to try and
+# support the simple use case.
+#
+# The user warnings are displayed for each user model,
+# which could get annoying if there are many such models,
+# but probably better to tell the user about each one
+# than only the first.
+#
+def _handle_usermodel(mod, modelname, fh=None):
+
+    try:
+        pycode = inspect.getsource(mod.calc)
+    except IOError:
+        pycode = None
+
+    # in case getsource can return None, have check here
+    if pycode is None:
+        msg = "Unable to save Python code for user model " + \
+              "'{}' function {}".format(mod.name, )
+        warning(msg)
+        _output('print("{}")'.format(msg), fh)
+        _output("def {}(*args):".format(mod.calc.name), fh)
+        _output("    raise NotImplementedError('User model was " +
+                "not saved by save_all().'", fh)
+        _output("", fh)
+        return
+
+    msg = "Found user model '{}'; ".format(modelname) + \
+          "please check it is saved correctly."
+    warning(msg)
+
+    # Ensure the message is also seen if the script is run.
+    _output('print("{}")'.format(msg), fh)
+
+    _output(_reindent(pycode), fh)
+    cmd = 'load_user_model({}, "{}")'.format(
+        mod.calc.__name__, modelname)
+    _output(cmd, fh)
+
+    # Work out the add_user_pars call; this is explicit, i.e.
+    # it does not include logic to work out what arguments
+    # are not needed.
+    #
+    # Some of these values are over-written later on, but
+    # needed to set up the number of parameters, and good
+    # documentation (hopefully).
+    #
+    parnames = [p.name for p in mod.pars]
+    parvals = [p.default_val for p in mod.pars]
+    # parmins = [p.default_min for p in mod.pars]
+    # parmaxs = [p.default_max for p in mod.pars]
+    parmins = [p.min for p in mod.pars]
+    parmaxs = [p.max for p in mod.pars]
+    parunits = [p.units for p in mod.pars]
+    parfrozen = [p.frozen for p in mod.pars]
+
+    spaces = '               '
+    _output('add_user_model("{}",'.format(modelname), fh)
+    _output("{}parnames={},".format(spaces, parnames), fh)
+    _output("{}parvals={},".format(spaces, parvals), fh)
+    _output("{}parmins={},".format(spaces, parmins), fh)
+    _output("{}parmaxs={},".format(spaces, parmaxs), fh)
+    _output("{}parunits={},".format(spaces, parunits), fh)
+    _output("{}parfrozen={}".format(spaces, parfrozen), fh)
+    _output("{})\n".format(spaces), fh)
+
 def _save_model_components(state, fh=None):
     """Save the model components.
 
@@ -596,7 +689,7 @@ def _save_model_components(state, fh=None):
         # then get model type, and name of this instance.
         mod = eval(mod)
         typename = mod.type
-        modelname = mod.name.partition(".")[2]
+        modelname = mod.name.split(".")[1]
 
         # Special cases:
 
@@ -607,22 +700,8 @@ def _save_model_components(state, fh=None):
         # add to lists of known models *and* separate list of
         # tabel models;
 
-        # skip user models entirely, as they require importation of
-        # user modules, beyond scope of this script.
-
         if typename == "usermodel":
-            # Skip user models -- don't create, but do keep the
-            # parameter settings, as these mean it is feasible for
-            # a user to add back in the user model code.
-            #
-            # At present this is reported for each component
-            msg = "User model '{}'".format(mod.name) + \
-                  " not saved, add any user model to save file manually"
-            warning(msg)
-
-            # This will cause a syntax error when the file is run,
-            # but this is a "good thing" here.
-            _output("WARNING: {}\n".format(msg), fh)
+            _handle_usermodel(mod, modelname, fh)
 
         elif typename == "psfmodel":
             cmd = 'load_psf("%s", "%s")' % (mod._name, mod.kernel.name)
@@ -865,12 +944,18 @@ def save_all(state, fh=None):
     Notes
     -----
 
-    Items which are not saved include:
+    This command will create a series of commands that restores
+    the current Sherpa set up. It does not save the set of commands
+    used. Not all Sherpa settings are saved. Items not fully restored
+    include:
 
-    - user models
+    - data created by calls to `load_arrays`, or changed from the
+      version on disk - e.g. by calls to `sherpa.astro.ui.set_counts`.
 
     - any optional keywords to comands such as `load_data`
       or `load_pha`
+
+    - user models may not be restored correctly
 
     - only a subset of Sherpa commands are saved.
 
@@ -888,24 +973,6 @@ def save_all(state, fh=None):
     >>> save_all(store)
 
     """
-
-    # TODO:
-    #
-    #    1) Finish RMF, ARF settings for backgrounds    DONE
-    #    2) Add PSF models, table models, kernels etc.  DONE
-    #    2a) Account for multi-response model           DONE
-    #    2b) And background model (set_bkg)             DONE
-    #    2c) And pileup (set_pileup_model)              DONE
-    #    3) Any way to deal with user models?           SKIP
-    #    4) Energy, coord settings for every data set   DONE
-    #    5) Filters for each data set                   DONE
-    #    6) Group flags for each data set               DONE
-
-    # 7) Save optional keyword arguments for load_data/load_bkg
-    #    8) Set model integrate flags                   DONE
-    #    9) Subtract flags                              DONE
-
-    # Check output file can be written to
 
     funcs = {
         'load_data': lambda id:
