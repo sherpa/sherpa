@@ -32,6 +32,8 @@ import numpy
 
 import sherpa.utils
 
+from sherpa.astro.data import DataIMG, DataPHA
+
 logger = logging.getLogger(__name__)
 warning = logger.warning
 
@@ -918,6 +920,33 @@ def _save_xspec(fh=None):
         _output(cmd, fh)
 
 
+def _save_dataset(state, id):
+    """Given a dataset identifier, return the text needed to
+    re-create it.
+
+    The data set design does not make it easy to tell:
+
+    - if the data was read in from a file, or by load_arrays
+      (and the name field set by the user)
+
+    - if the data has been modified - e.g. by a call to set_counts -
+      after it was loaded.
+
+    - if in the correct directory (so paths may be wrong)
+
+    """
+
+    idstr = _id_to_str(id)
+    dset = state.get_data(id)
+    if isinstance(dset, DataPHA):
+        return 'load_pha({}, "{}")'.format(idstr, dset.name)
+
+    elif isinstance(dset, DataIMG):
+        return 'load_image({}, "{}")'.format(idstr, dset.name)
+
+    return 'load_data({}, "{}")'.format(idstr, dset.name)
+
+
 def save_all(state, fh=None):
     """Save the information about the current session to a file handle.
 
@@ -975,8 +1004,7 @@ def save_all(state, fh=None):
     """
 
     funcs = {
-        'load_data': lambda id:
-        'load_data({}, "{}")'.format(_id_to_str(id), state.get_data(id).name),
+        'load_data': lambda id: _save_dataset(state, id),
         'set_coord': lambda id:
         'set_coord({}, {})'.format(_id_to_str(id), repr(state.get_coord(id))),
     }

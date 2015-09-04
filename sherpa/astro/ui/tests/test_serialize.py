@@ -130,7 +130,7 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_data(1, "@@/threads/pha_intro/3c273.pi")
+load_pha(1, "@@/threads/pha_intro/3c273.pi")
 
 ######### Set Image Coordinates
 
@@ -284,7 +284,7 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_data("grp", "@@/threads/pha_intro/3c273.pi")
+load_pha("grp", "@@/threads/pha_intro/3c273.pi")
 
 ######### Set Image Coordinates
 
@@ -597,8 +597,8 @@ class test_ui(SherpaTestCase):
         elines = expected.split('\n')
         glines = got.split('\n')
 
-        _dump_lines(elines)
-        _dump_lines(glines)
+        # _dump_lines(elines)
+        # _dump_lines(glines)
 
         for e, g in zip(elines, glines):
             self.assertEqual(e, g)
