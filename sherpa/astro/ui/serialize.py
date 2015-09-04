@@ -910,7 +910,7 @@ def save_all(state, fh=None):
 
     funcs = {
         'load_data': lambda id:
-        'load_data({},"{}")'.format(_id_to_str(id), state.get_data(id).name),
+        'load_data({}, "{}")'.format(_id_to_str(id), state.get_data(id).name),
         'set_coord': lambda id:
         'set_coord({}, {})'.format(_id_to_str(id), repr(state.get_coord(id))),
     }

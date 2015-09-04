@@ -130,7 +130,7 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_data(1,"@@/threads/pha_intro/3c273.pi")
+load_data(1, "@@/threads/pha_intro/3c273.pi")
 
 ######### Set Image Coordinates
 
@@ -284,7 +284,7 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_data("grp","@@/threads/pha_intro/3c273.pi")
+load_data("grp", "@@/threads/pha_intro/3c273.pi")
 
 ######### Set Image Coordinates
 
@@ -410,6 +410,68 @@ set_source("grp", (xsphabs.ggal * powlaw1d.gpl))
 
 """
 
+
+# The serialization of the user model is not ideal, but check that
+# we return something useful.
+#
+# This is also a good test of serializing data sets that was
+# created by load_arrays (currently not very well).
+#
+_canonical_usermodel = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_data(3, "")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+
+######### Filter Data
+
+notice_id(3, "1.0000:14.0000")
+
+
+######### Set Statistic
+
+set_stat("cash")
+
+
+######### Set Fitting Method
+
+set_method("neldermead")
+
+set_method_opt("iquad", 1)
+set_method_opt("initsimplex", 0)
+set_method_opt("verbose", 0)
+set_method_opt("step", None)
+set_method_opt("finalsimplex", 9)
+set_method_opt("maxfev", None)
+set_method_opt("ftol", 1.19209289551e-07)
+
+
+######### Set Model Components and Parameters
+
+WARNING: User model 'usermodel.mymodel' not saved, add any user model to save file manually
+
+
+
+######### Set Source, Pileup and Background Models
+
+set_full_model(3, usermodel.mymodel)
+
+
+"""
+
 if has_xspec:
     _canonical_xspec_extra = """######### XSPEC Module Settings
 
@@ -423,6 +485,7 @@ set_xsxsect("bcmc")
     _canonical_empty_stats += _canonical_xspec_extra
     _canonical_pha_basic += _canonical_xspec_extra
     _canonical_pha_grouped += _canonical_xspec_extra
+    _canonical_usermodel += _canonical_xspec_extra
 
 
 class test_ui(SherpaTestCase):
@@ -471,6 +534,17 @@ class test_ui(SherpaTestCase):
         # contents as it is easier to see what the difference
         # is this way around, since a difference in the
         # number of lines is often not very informative.
+        """
+        if len(elines) != len(glines):
+            print("***\n")
+            for i, l in enumerate(elines):
+                print("{:02d} {}".format(i, l))
+            print("***\n")
+            for i, l in enumerate(glines):
+                print("{:02d} {}".format(i, l))
+            print("***\n")
+        """
+
         self.assertEqual(len(elines), len(glines))
 
     def _compare(self, expected):
@@ -548,6 +622,32 @@ class test_ui(SherpaTestCase):
 
         return fname, (grp, qual), \
             self._add_datadir_path(_canonical_pha_grouped)
+
+    def _setup_usermodel(self):
+        """Try a user model.
+        """
+
+        ui.clean()
+        # Note: array is not sorted on purpose, and float/int
+        # values.
+        ui.load_arrays(3, [1, 12.2, 2, 14], [4, 8, 12, 4])
+
+        def mymodel_func(pars, x, xhi=None):
+            return pars[0] + pars[1] * x
+
+        ui.load_user_model(mymodel_func, "mymodel")
+        ui.add_user_pars("mymodel",
+                         parnames=["c", "m"],
+                         parvals=[2, 0.5],
+                         parmins=[-10, 0],
+                         parmaxs=[10, 5.5],
+                         parunits=["m", ""],
+                         parfrozen=[False, True])
+
+        ui.set_source(3, mymodel)
+
+        ui.set_stat('cash')
+        ui.set_method('simplex')
 
     def test_restore_empty(self):
         "Can the empty state be evaluated?"
@@ -637,6 +737,13 @@ class test_ui(SherpaTestCase):
         self.assertEqual(gpl.gamma.max, 5.0)
 
         self.assertEqual(ui.calc_stat('grp'), statval)
+
+    # Since the code can NOT be restored, we currently do not
+    # try to load the script
+    def test_canonical_usermodel(self):
+
+        self._setup_usermodel()
+        self._compare(_canonical_usermodel)
 
 if __name__ == '__main__':
 
