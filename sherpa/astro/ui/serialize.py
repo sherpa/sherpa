@@ -809,7 +809,14 @@ def _save_models(state, fh=None):
 
             if have_source:
                 if have_full_model:
-                    if repr(the_source) == repr(the_full_model):
+                    # for now assume that set_full_model is only
+                    # used by PHA data sets.
+                    try:
+                        is_pha = isinstance(state.get_data(id), DataPHA)
+                    except:
+                        is_pha = False
+
+                    if is_pha and repr(the_source) == repr(the_full_model):
                         cmd = "set_full_model(%s, %s)" % (
                             cmd_id, the_full_model.name)
                     else:

@@ -534,7 +534,7 @@ mymodel.m.frozen  = True
 
 ######### Set Source, Pileup and Background Models
 
-set_full_model(3, (sin.sin_model + usermodel.mymodel))
+set_source(3, (sin.sin_model + usermodel.mymodel))
 
 
 """
