@@ -650,8 +650,8 @@ def _handle_usermodel(mod, modelname, fh=None):
     parunits = [p.units for p in mod.pars]
     parfrozen = [p.frozen for p in mod.pars]
 
-    spaces = '               '
-    _output('add_user_model("{}",'.format(modelname), fh)
+    spaces = '              '
+    _output('add_user_pars("{}",'.format(modelname), fh)
     _output("{}parnames={},".format(spaces, parnames), fh)
     _output("{}parvals={},".format(spaces, parvals), fh)
     _output("{}parmins={},".format(spaces, parmins), fh)
@@ -659,6 +659,7 @@ def _handle_usermodel(mod, modelname, fh=None):
     _output("{}parunits={},".format(spaces, parunits), fh)
     _output("{}parfrozen={}".format(spaces, parfrozen), fh)
     _output("{})\n".format(spaces), fh)
+
 
 def _save_model_components(state, fh=None):
     """Save the model components.

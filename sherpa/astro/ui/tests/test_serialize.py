@@ -21,6 +21,8 @@
 corresponding functions in sherpa.astro.ui.utils.
 """
 
+# TODO add pha test of fitting background model, and of using set_full_model
+
 import re
 import StringIO
 import tempfile
@@ -499,14 +501,14 @@ def mymodel_func(pars, x, xhi=None):
     return pars[0] + pars[1] * x
 
 load_user_model(mymodel_func, "mymodel")
-add_user_model("mymodel",
-               parnames=['c', 'm'],
-               parvals=[2.0, 0.5],
-               parmins=[-10.0, 0.0],
-               parmaxs=[10.0, 5.5],
-               parunits=['m', ''],
-               parfrozen=[False, True]
-               )
+add_user_pars("mymodel",
+              parnames=['c', 'm'],
+              parvals=[2.0, 0.5],
+              parmins=[-10.0, 0.0],
+              parmaxs=[10.0, 5.5],
+              parunits=['m', ''],
+              parfrozen=[False, True]
+              )
 
 mymodel.integrate = True
 
@@ -688,6 +690,51 @@ class test_ui(SherpaTestCase):
         return fname, (grp, qual), \
             self._add_datadir_path(_canonical_pha_grouped)
 
+    # currently unused
+    def _setup_pha_back(self):
+        """Fit the background, rather than subtract it.
+        """
+
+        ui.clean()
+        fname = self.make_path('threads', 'pha_intro', '3c273.pi')
+        ui.load_pha('grp', fname)
+        channels = ui.get_data('grp').channel
+
+        exclude = (channels < 20) | (channels > 800)
+        qual = exclude * 1
+
+        ui.group_counts('grp', 10, tabStops=exclude)
+        ui.set_quality('grp', exclude)
+
+        grp = ui.get_data('grp').grouping
+
+        bchannels = ui.get_bkg('grp').channel
+
+        bexclude = (bchannels < 10) | (bchannels > 850)
+        bqual = bexclude * 1
+
+        ui.group_counts('grp', 10, bkg_id=1)
+        ui.set_quality('grp', bexclude, bkg_id=1)
+
+        bgrp = ui.get_bkg('grp').grouping
+
+        ui.set_stat('chi2gehrels')
+        ui.notice_id('grp', 0.5, 6)
+        ui.notice_id('grp', 0.4, 7, bkg_id=1)
+        ui.set_source('grp', ui.xsphabs.ggal * ui.powlaw1d.gpl)
+        ui.set_bkg_source('grp', ui.steplo1d.bstep + ui.polynom1d.bpoly)
+
+        ui.set_xsabund('lodd')
+        ui.set_xsxsect('vern')
+
+        gpl.gamma.min = -5
+        ui.freeze(bpoly.c0)
+
+        ui.set_par('ggal.nh', val=2.0, frozen=True)
+
+        return fname, (grp, qual, bgrp, bqual), \
+            self._add_datadir_path(_canonical_pha_back)
+
     def _setup_usermodel(self):
         """Try a user model.
         """
@@ -803,12 +850,33 @@ class test_ui(SherpaTestCase):
 
         self.assertEqual(ui.calc_stat('grp'), statval)
 
-    # Since the code can NOT be restored, we currently do not
-    # try to load the script
     def test_canonical_usermodel(self):
 
         self._setup_usermodel()
         self._compare(_canonical_usermodel)
+
+    def test_restore_usermodel(self):
+        "Can the state be evaluated?"
+
+        self._setup_usermodel()
+        statval = ui.calc_stat(3)
+        self._restore()
+
+        # TODO: For the moment the source expression is created, in
+        # the serialized form, using set_full_model. This should
+        # be changed so that get_source can be used below.
+        #
+        # src_expr = ui.get_source(3)
+        src_expr = ui.get_model(3)
+        self.assertEqual(src_expr.name,
+                         '(sin.sin_model + usermodel.mymodel)')
+        self.assertTrue(mymodel.m.frozen, msg="is mymodel.m frozen?")
+        self.assertEqual(mymodel.c.val, 2.0)
+        self.assertEqual(mymodel.c.units, "m")
+        self.assertEqual(mymodel.m.max, 5.5)
+        self.assertEqual(mymodel.m.units, "")
+
+        self.assertEqual(ui.calc_stat(3), statval)
 
 if __name__ == '__main__':
 
