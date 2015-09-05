@@ -422,7 +422,10 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_data(3, "")
+load_arrays(3,
+            [1.0, 12.2, 2.0, 14.0],
+            [4, 8, 12, 4],
+            Data1D)
 
 ######### Set Image Coordinates
 

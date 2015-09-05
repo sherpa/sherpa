@@ -32,6 +32,7 @@ import numpy
 
 import sherpa.utils
 
+from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.astro.data import DataIMG, DataPHA
 
 logger = logging.getLogger(__name__)
@@ -938,13 +939,110 @@ def _save_dataset(state, id):
 
     idstr = _id_to_str(id)
     dset = state.get_data(id)
+
+    # For now assume that a missing name indicates the data
+    # was created by the user, otherwise it's a file name.
+    # The checks and error messages do not cover all situations,
+    # but hopefully the common ones.
+    #
+    # This logic should be moved into the DataXXX objects, since
+    # this is more extensible, and also the data object can
+    # retain knowledge of where the data came from.
+    #
+    if dset.name.strip() == '':
+        # Do not attempt to recreate all data sets at this
+        # time. They could be serialized, but leave for a
+        # later time (it may also make sense to actually
+        # save the data to an external file).
+        #
+        if isinstance(dset, DataPHA):
+            msg = "Unable to re-create PHA data set '{}'".format(id)
+            warning(msg)
+            return 'print("{}")'.format(msg)
+
+        elif isinstance(dset, DataIMG):
+            msg = "Unable to re-create image data set '{}'".format(id)
+            warning(msg)
+            return 'print("{}")'.format(msg)
+
+        # Fall back to load_arrays. As using isinstance,
+        # need to order the checks, since Data1DInt is
+        # a subclass of Data1D.
+        #
+        xs = dset.get_indep()
+        ys = dset.get_dep()
+        stat = dset.get_staterror()
+        sys = dset.get_syserror()
+
+        need_sys = sys is not None
+        if need_sys:
+            sys = "{}".format(sys.tolist())
+        else:
+            sys = "None"
+
+        need_stat = stat is not None or need_sys
+        if stat is not None:
+            stat = "{}".format(stat.tolist())
+        else:
+            stat = "None"
+
+        ys = "{}".format(ys.tolist())
+
+        out = 'load_arrays({},\n'.format(idstr)
+        if isinstance(dset, Data1DInt):
+            out += '            {},\n'.format(xs[0].tolist())
+            out += '            {},\n'.format(xs[1].tolist())
+            out += '            {},\n'.format(ys)
+            if need_stat:
+                out += '            {},\n'.format(stat)
+            if need_sys:
+                out += '            {},\n'.format(sys)
+            out += '            Data1DInt)'
+
+        elif isinstance(dset, Data1D):
+            out += '            {},\n'.format(xs[0].tolist())
+            out += '            {},\n'.format(ys)
+            if need_stat:
+                out += '            {},\n'.format(stat)
+            if need_sys:
+                out += '            {},\n'.format(sys)
+            out += '            Data1D)'
+
+        elif isinstance(dset, Data2DInt):
+            msg = "Unable to re-create Data2DInt data set '{}'".format(id)
+            warning(msg)
+            out = 'print("{}")'.format(msg)
+
+        elif isinstance(dset, Data2D):
+            out += '            {},\n'.format(xs[0].tolist())
+            out += '            {},\n'.format(xs[1].tolist())
+            out += '            {},\n'.format(ys)
+            out += '            {},\n'.format(dset.shape)
+            if need_stat:
+                out += '            {},\n'.format(stat)
+            if need_sys:
+                out += '            {},\n'.format(sys)
+            out += '            Data2D)'
+
+        else:
+            msg = "Unable to re-create {} data set '{}'".format(dset.__class__,
+                                                                id)
+            warning(msg)
+            out = 'print("{}")'.format(msg)
+
+        return out
+
+    # TODO: this does not handle options like selecting the columns
+    #       from a file, or the number of columns.
+    #
     if isinstance(dset, DataPHA):
-        return 'load_pha({}, "{}")'.format(idstr, dset.name)
-
+        dtype = 'pha'
     elif isinstance(dset, DataIMG):
-        return 'load_image({}, "{}")'.format(idstr, dset.name)
+        dtype = 'image'
+    else:
+        dtype = 'data'
 
-    return 'load_data({}, "{}")'.format(idstr, dset.name)
+    return 'load_{}({}, "{}")'.format(dtype, idstr, dset.name)
 
 
 def save_all(state, fh=None):
