@@ -21,7 +21,11 @@
 corresponding functions in sherpa.astro.ui.utils.
 """
 
-# TODO add pha test of fitting background model, and of using set_full_model
+# TODO add tests:
+#    set_full_model
+#    multiple sources
+#    linked parameters
+#
 
 import re
 import StringIO
@@ -412,6 +416,254 @@ set_source("grp", (xsphabs.ggal * powlaw1d.gpl))
 
 """
 
+_canonical_pha_back = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_pha("bgrp", "@@/threads/pha_intro/3c273.pi")
+
+######### Set Image Coordinates
+
+
+######### Data grouping flags
+
+set_grouping("bgrp", val=numpy.array([1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, 1, -1, 1, 1, -1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, 1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], numpy.int16))
+
+######### Data quality flags
+
+set_quality("bgrp", val=numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], numpy.int16))
+if get_data("bgrp").grouping is not None and not get_data("bgrp").grouped:
+    ######### Group Data
+    group("bgrp")
+
+######### Data Spectral Responses
+
+load_arf("bgrp", "@@/threads/pha_intro/3c273.arf", resp_id=1)
+load_rmf("bgrp", "@@/threads/pha_intro/3c273.rmf", resp_id=1)
+
+######### Load Background Data Sets
+
+load_bkg("bgrp", "@@/threads/pha_intro/3c273_bg.pi", bkg_id=1)
+
+######### Background grouping flags
+
+set_grouping("bgrp", val=numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], numpy.int16), bkg_id=1)
+
+######### Background quality flags
+
+set_quality("bgrp", val=numpy.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], numpy.int16), bkg_id=1)
+if get_bkg("bgrp", 1).grouping is not None and not get_bkg("bgrp", 1).grouped:
+    ######### Group Background
+    group("bgrp", 1)
+
+######### Background Spectral Responses
+
+load_arf("bgrp", "@@/threads/pha_intro/3c273.arf", resp_id=1, bkg_id=1)
+load_rmf("bgrp", "@@/threads/pha_intro/3c273.rmf", resp_id=1, bkg_id=1)
+
+######### Set Energy or Wave Units
+
+set_analysis("bgrp", 'energy', "rate", 0)
+
+######### Filter Data
+
+notice_id("bgrp", "0.489099994302:6.131999969482")
+
+
+######### Set Statistic
+
+set_stat("chi2xspecvar")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("verbose", 0)
+set_method_opt("factor", 100.0)
+set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("maxfev", None)
+set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)
+
+
+######### Set Model Components and Parameters
+
+create_model_component("powlaw1d", "gpl")
+gpl.integrate = True
+
+gpl.ampl.default_val = 1.0
+gpl.ampl.default_min = 0.0
+gpl.ampl.default_max = 3.4028234663852886e+38
+gpl.ampl.val     = 1.0
+gpl.ampl.min     = 0.0
+gpl.ampl.max     = 3.4028234663852886e+38
+gpl.ampl.units   = ""
+gpl.ampl.frozen  = False
+
+gpl.ref.default_val = 1.0
+gpl.ref.default_min = -3.4028234663852886e+38
+gpl.ref.default_max = 3.4028234663852886e+38
+gpl.ref.val     = 1.0
+gpl.ref.min     = -3.4028234663852886e+38
+gpl.ref.max     = 3.4028234663852886e+38
+gpl.ref.units   = ""
+gpl.ref.frozen  = True
+
+gpl.gamma.default_val = 1.0
+gpl.gamma.default_min = -10.0
+gpl.gamma.default_max = 10.0
+gpl.gamma.val     = 1.0
+gpl.gamma.min     = -5.0
+gpl.gamma.max     = 10.0
+gpl.gamma.units   = ""
+gpl.gamma.frozen  = False
+
+create_model_component("xsphabs", "ggal")
+ggal.integrate = True
+
+ggal.nH.default_val = 2.0
+ggal.nH.default_min = 0.0
+ggal.nH.default_max = 100000.0
+ggal.nH.val     = 2.0
+ggal.nH.min     = 0.0
+ggal.nH.max     = 100000.0
+ggal.nH.units   = "10^22 atoms / cm^2"
+ggal.nH.frozen  = True
+
+create_model_component("steplo1d", "bstep")
+bstep.integrate = True
+
+bstep.ampl.default_val = 1.0
+bstep.ampl.default_min = 0.0
+bstep.ampl.default_max = 3.4028234663852886e+38
+bstep.ampl.val     = 1.0
+bstep.ampl.min     = 0.0
+bstep.ampl.max     = 3.4028234663852886e+38
+bstep.ampl.units   = ""
+bstep.ampl.frozen  = False
+
+bstep.xcut.default_val = 0.0
+bstep.xcut.default_min = -3.4028234663852886e+38
+bstep.xcut.default_max = 3.4028234663852886e+38
+bstep.xcut.val     = 0.0
+bstep.xcut.min     = -3.4028234663852886e+38
+bstep.xcut.max     = 3.4028234663852886e+38
+bstep.xcut.units   = ""
+bstep.xcut.frozen  = False
+
+create_model_component("polynom1d", "bpoly")
+bpoly.integrate = True
+
+bpoly.c8.default_val = 0.0
+bpoly.c8.default_min = -3.4028234663852886e+38
+bpoly.c8.default_max = 3.4028234663852886e+38
+bpoly.c8.val     = 0.0
+bpoly.c8.min     = -3.4028234663852886e+38
+bpoly.c8.max     = 3.4028234663852886e+38
+bpoly.c8.units   = ""
+bpoly.c8.frozen  = True
+
+bpoly.offset.default_val = 0.0
+bpoly.offset.default_min = -3.4028234663852886e+38
+bpoly.offset.default_max = 3.4028234663852886e+38
+bpoly.offset.val     = 0.0
+bpoly.offset.min     = -3.4028234663852886e+38
+bpoly.offset.max     = 3.4028234663852886e+38
+bpoly.offset.units   = ""
+bpoly.offset.frozen  = True
+
+bpoly.c3.default_val = 0.0
+bpoly.c3.default_min = -3.4028234663852886e+38
+bpoly.c3.default_max = 3.4028234663852886e+38
+bpoly.c3.val     = 0.0
+bpoly.c3.min     = -3.4028234663852886e+38
+bpoly.c3.max     = 3.4028234663852886e+38
+bpoly.c3.units   = ""
+bpoly.c3.frozen  = True
+
+bpoly.c2.default_val = 0.0
+bpoly.c2.default_min = -3.4028234663852886e+38
+bpoly.c2.default_max = 3.4028234663852886e+38
+bpoly.c2.val     = 0.0
+bpoly.c2.min     = -3.4028234663852886e+38
+bpoly.c2.max     = 3.4028234663852886e+38
+bpoly.c2.units   = ""
+bpoly.c2.frozen  = True
+
+bpoly.c1.default_val = 0.0
+bpoly.c1.default_min = -3.4028234663852886e+38
+bpoly.c1.default_max = 3.4028234663852886e+38
+bpoly.c1.val     = 0.0
+bpoly.c1.min     = -3.4028234663852886e+38
+bpoly.c1.max     = 3.4028234663852886e+38
+bpoly.c1.units   = ""
+bpoly.c1.frozen  = True
+
+bpoly.c0.default_val = 1.0
+bpoly.c0.default_min = -3.4028234663852886e+38
+bpoly.c0.default_max = 3.4028234663852886e+38
+bpoly.c0.val     = 1.0
+bpoly.c0.min     = -3.4028234663852886e+38
+bpoly.c0.max     = 3.4028234663852886e+38
+bpoly.c0.units   = ""
+bpoly.c0.frozen  = True
+
+bpoly.c7.default_val = 0.0
+bpoly.c7.default_min = -3.4028234663852886e+38
+bpoly.c7.default_max = 3.4028234663852886e+38
+bpoly.c7.val     = 0.0
+bpoly.c7.min     = -3.4028234663852886e+38
+bpoly.c7.max     = 3.4028234663852886e+38
+bpoly.c7.units   = ""
+bpoly.c7.frozen  = True
+
+bpoly.c6.default_val = 0.0
+bpoly.c6.default_min = -3.4028234663852886e+38
+bpoly.c6.default_max = 3.4028234663852886e+38
+bpoly.c6.val     = 0.0
+bpoly.c6.min     = -3.4028234663852886e+38
+bpoly.c6.max     = 3.4028234663852886e+38
+bpoly.c6.units   = ""
+bpoly.c6.frozen  = True
+
+bpoly.c5.default_val = 0.0
+bpoly.c5.default_min = -3.4028234663852886e+38
+bpoly.c5.default_max = 3.4028234663852886e+38
+bpoly.c5.val     = 0.0
+bpoly.c5.min     = -3.4028234663852886e+38
+bpoly.c5.max     = 3.4028234663852886e+38
+bpoly.c5.units   = ""
+bpoly.c5.frozen  = True
+
+bpoly.c4.default_val = 0.0
+bpoly.c4.default_min = -3.4028234663852886e+38
+bpoly.c4.default_max = 3.4028234663852886e+38
+bpoly.c4.val     = 0.0
+bpoly.c4.min     = -3.4028234663852886e+38
+bpoly.c4.max     = 3.4028234663852886e+38
+bpoly.c4.units   = ""
+bpoly.c4.frozen  = True
+
+
+
+######### Set Source, Pileup and Background Models
+
+set_source("bgrp", (xsphabs.ggal * powlaw1d.gpl))
+
+set_bkg_full_model("bgrp", apply_rmf(apply_arf((38564.6089269 * (steplo1d.bstep + polynom1d.bpoly)))), bkg_id=1)
+
+
+######### XSPEC Module Settings
+
+set_xschatter(0)
+set_xsabund("lodd")
+set_xscosmo(72, 0.02, 0.71)
+set_xsxsect("vern")
+"""
+
 
 # The serialization of the user model is not ideal, but check that
 # we return something useful.
@@ -570,15 +822,15 @@ class test_ui(SherpaTestCase):
         self._old_logging_level = logger.level
         logger.setLevel(logging.ERROR)
         if has_xspec:
-            # try and avoid messages from setting XSPEC values, but
-            # it does not seem to work
-            self._xspec_chatter = ui.get_xschatter()
+            from sherpa.astro import xspec
+            self._xspec_state = xspec.get_xsstate()
             ui.set_xschatter(0)
 
     def tearDown(self):
         logger.setLevel(self._old_logging_level)
         if has_xspec:
-            ui.set_xschatter(self._xspec_chatter)
+            from sherpa.astro import xspec
+            xspec.set_xsstate(self._xspec_state)
 
         ui.clean()
 
@@ -690,49 +942,43 @@ class test_ui(SherpaTestCase):
         return fname, (grp, qual), \
             self._add_datadir_path(_canonical_pha_grouped)
 
-    # currently unused
     def _setup_pha_back(self):
         """Fit the background, rather than subtract it.
         """
 
         ui.clean()
         fname = self.make_path('threads', 'pha_intro', '3c273.pi')
-        ui.load_pha('grp', fname)
-        channels = ui.get_data('grp').channel
+        ui.load_pha('bgrp', fname)
 
-        exclude = (channels < 20) | (channels > 800)
-        qual = exclude * 1
+        ui.group_counts('bgrp', 10)
+        grp = ui.get_data('bgrp').grouping
 
-        ui.group_counts('grp', 10, tabStops=exclude)
-        ui.set_quality('grp', exclude)
-
-        grp = ui.get_data('grp').grouping
-
-        bchannels = ui.get_bkg('grp').channel
+        bchannels = ui.get_bkg('bgrp').channel
 
         bexclude = (bchannels < 10) | (bchannels > 850)
         bqual = bexclude * 1
 
-        ui.group_counts('grp', 10, bkg_id=1)
-        ui.set_quality('grp', bexclude, bkg_id=1)
+        ui.group_counts('bgrp', 10, tabStops=bexclude, bkg_id=1)
+        ui.set_quality('bgrp', bexclude, bkg_id=1)
 
-        bgrp = ui.get_bkg('grp').grouping
+        bgrp = ui.get_bkg('bgrp').grouping
 
-        ui.set_stat('chi2gehrels')
-        ui.notice_id('grp', 0.5, 6)
-        ui.notice_id('grp', 0.4, 7, bkg_id=1)
-        ui.set_source('grp', ui.xsphabs.ggal * ui.powlaw1d.gpl)
-        ui.set_bkg_source('grp', ui.steplo1d.bstep + ui.polynom1d.bpoly)
+        ui.set_stat('chi2xspecvar')
+        ui.notice_id('bgrp', 0.5, 6)
+        ui.notice_id('bgrp', 0.4, 7, bkg_id=1)
+        ui.set_source('bgrp', ui.xsphabs.ggal * ui.powlaw1d.gpl)
+        ui.set_bkg_source('bgrp', ui.steplo1d.bstep + ui.polynom1d.bpoly)
 
         ui.set_xsabund('lodd')
         ui.set_xsxsect('vern')
+        ui.set_xscosmo(72, 0.02, 0.71)
 
         gpl.gamma.min = -5
         ui.freeze(bpoly.c0)
 
         ui.set_par('ggal.nh', val=2.0, frozen=True)
 
-        return fname, (grp, qual, bgrp, bqual), \
+        return fname, (bgrp, bqual), \
             self._add_datadir_path(_canonical_pha_back)
 
     def _setup_usermodel(self):
@@ -849,6 +1095,53 @@ class test_ui(SherpaTestCase):
         self.assertEqual(gpl.gamma.max, 5.0)
 
         self.assertEqual(ui.calc_stat('grp'), statval)
+
+    @unittest.skipIf(test_data_missing(), "required test data missing")
+    def test_canonical_pha_back(self):
+
+        _, _, canonical = self._setup_pha_back()
+        self._compare(canonical)
+
+    @unittest.skipIf(True, "model is not restored correctly")
+    @unittest.skipIf(test_data_missing(), "required test data missing")
+    def test_restore_pha_back(self):
+        "Can the state be evaluated?"
+
+        fname, (bgrp,bqual), _ = self._setup_pha_back()
+        statval = ui.calc_stat('bgrp')
+
+        # At present the model is not saved correctly for the
+        # background component - it includes apply_arf/rmf
+        # statements - which means that running the saved script
+        # results in an error.
+        self._restore()
+
+        # this is really a check of the test setup
+        self.assertEqual(ui.get_xsabund(), 'angr')
+
+        self.assertEqual(['bgrp'], ui.list_data_ids())
+        self.assertEqual(fname, ui.get_data('bgrp').name)
+        self.assertFalse(ui.get_data('bgrp').subtracted,
+                         msg='Data should not be subtracted')
+
+        # TODO: add in a test of grouping and quality arrays
+
+        src_expr = ui.get_source('bgrp')
+        self.assertEqual(src_expr.name,
+                         '(xsphabs.ggal * powlaw1d.gpl)')
+
+        bg_expr = ui.get_bkg_source('bgrp')
+        self.assertEqual(bg_expr.name,
+                         '(steplo1d.bstep + polynom1d.bpoly)')
+
+        self.assertTrue(ggal.nh.frozen, msg="is ggal.nh frozen?")
+        self.assertTrue(bpoly.c0.frozen, msg="is bpoly.c0 frozen?")
+        self.assertEqual(ggal.nh.val, 2.0)
+        self.assertEqual(gpl.gamma.min, -5.0)
+
+        self.assertEqual(ui.get_xsabund(), 'lodd')
+
+        self.assertEqual(ui.calc_stat('bgrp'), statval)
 
     def test_canonical_usermodel(self):
 
