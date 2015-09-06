@@ -32,6 +32,9 @@ import StringIO
 import tempfile
 import unittest
 
+import numpy
+from numpy.testing import assert_array_equal
+
 from sherpa.utils import SherpaTest, SherpaTestCase, has_package_from_list, \
     test_data_missing
 from sherpa.astro import ui
@@ -1085,7 +1088,13 @@ class test_ui(SherpaTestCase):
         self.assertTrue(ui.get_data('grp').subtracted,
                         msg='Data should be subtracted')
 
-        # TODO: add in a test of grouping and quality arrays
+        g = ui.get_grouping('grp')
+        q = ui.get_quality('grp')
+        self.assertEqual(g.dtype, numpy.int16)
+        self.assertEqual(q.dtype, numpy.int16)
+
+        assert_array_equal(grp, g, err_msg='grouping column')
+        assert_array_equal(qual, q, err_msg='grouping column')
 
         src_expr = ui.get_source('grp')
         self.assertEqual(src_expr.name,
@@ -1116,15 +1125,29 @@ class test_ui(SherpaTestCase):
         # results in an error.
         self._restore()
 
-        # this is really a check of the test setup
-        self.assertEqual(ui.get_xsabund(), 'angr')
-
         self.assertEqual(['bgrp'], ui.list_data_ids())
         self.assertEqual(fname, ui.get_data('bgrp').name)
         self.assertFalse(ui.get_data('bgrp').subtracted,
                          msg='Data should not be subtracted')
 
-        # TODO: add in a test of grouping and quality arrays
+        # TODO: the group/quality checks have not been validated since
+        # the test is currently being skipped
+        g = ui.get_grouping('grp')
+        q = ui.get_quality('grp')
+        self.assertEqual(g.dtype, numpy.int16)
+        self.assertEqual(q.dtype, numpy.int16)
+
+        nchan = ui.get_data('grp').channel.size
+        assert_array_equal(g, np.ones(nchan), err_msg='src grouping')
+        assert_array_equal(q, np.zeros(nchan), err_msg='src quality')
+
+        bg = ui.get_grouping('grp', bkg_id=1)
+        bq = ui.get_quality('grp',bkg_id=1)
+        self.assertEqual(bg.dtype, numpy.int16)
+        self.assertEqual(bq.dtype, numpy.int16)
+
+        assert_array_equal(bg, bgrp, err_msg='bgnd grouping')
+        assert_array_equal(bq, bqual, err_msg='bgnd quality')
 
         src_expr = ui.get_source('bgrp')
         self.assertEqual(src_expr.name,
