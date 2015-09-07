@@ -792,8 +792,6 @@ def _save_models(state, fh=None):
         # source model is different from whole model.
         # If not, just pass
         try:
-            the_source = None
-            the_full_model = None
             try:
                 the_source = state.get_source(id)
             except:
@@ -855,15 +853,13 @@ def _save_models(state, fh=None):
             for bid in bids:
                 cmd_bkg_id = _id_to_str(bid)
 
-                the_bkg_source = None
-                the_bkg_full_model = None
                 try:
-                    the_bkg_source = state.get_bkg_source(bid)
+                    the_bkg_source = state.get_bkg_source(id, bkg_id=bid)
                 except:
                     the_bkg_source = None
 
                 try:
-                    the_bkg_full_model = state.get_bkg_model(id)
+                    the_bkg_full_model = state.get_bkg_model(id, bkg_id=bid)
                 except:
                     the_bkg_full_model = None
 
@@ -871,6 +867,9 @@ def _save_models(state, fh=None):
                 have_full_model = the_bkg_full_model is not None
 
                 if have_source:
+                    # This does not check for the dataset being a DataPHA
+                    # object, since (at present) it has to be, as it's the
+                    # only one to support backgrounds
                     if have_full_model:
                         if repr(the_bkg_source) == repr(the_bkg_full_model):
                             cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (

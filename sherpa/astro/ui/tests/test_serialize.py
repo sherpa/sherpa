@@ -656,7 +656,7 @@ bpoly.c4.frozen  = True
 
 set_source("bgrp", (xsphabs.ggal * powlaw1d.gpl))
 
-set_bkg_full_model("bgrp", apply_rmf(apply_arf((38564.6089269 * (steplo1d.bstep + polynom1d.bpoly)))), bkg_id=1)
+set_bkg_source("bgrp", (steplo1d.bstep + polynom1d.bpoly), bkg_id=1)
 
 
 ######### XSPEC Module Settings
