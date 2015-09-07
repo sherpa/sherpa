@@ -31,6 +31,7 @@ import sys
 import numpy
 
 import sherpa.utils
+from sherpa.utils.err import ArgumentErr
 
 from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.astro.data import DataIMG, DataPHA
@@ -282,6 +283,74 @@ def _save_pha_quality(state, id, bid=None, fh=None):
     _save_pha_array(state, "quality", id, bid=bid, fh=fh)
 
 
+def _handle_filter(state, id, fh):
+    """Set any filter expressions for source and background
+    components for data set id.
+
+    It is expected that there is a dataset with the given id
+    in the Sherpa session object (state).
+    """
+
+    cmd_id = _id_to_str(id)
+    _output("\n######### Filter Data\n", fh)
+    d = state.get_data(id)
+    fvals = d.get_filter()
+    ndims = len(d.get_dims())
+    if ndims == 1:
+        cmd = 'notice_id({}, "{}")'.format(cmd_id, fvals)
+        _output(cmd, fh)
+    elif ndims == 2:
+        cmd = 'notice2d_id({}, "{}")'.format(cmd_id, fvals)
+        _output(cmd, fh)
+    else:
+        # just in case
+        _output('print("Set notice range of id={} to {}")'.format(cmd_id,
+                                                                  fvals),
+                fh)
+
+    try:
+        bids = state.list_bkg_ids(id)
+    except ArgumentErr:
+        # Not a PHA data set
+        return
+
+    # Only set the noticed range if the data set does not have
+    # the background subtracted. It might be useful to keep any
+    # noticed range the user may have previously set - if switching
+    # between fitting and subtracting the background - but that is
+    # probably beyond the use case of the serialization.
+    #
+    if d.subtracted:
+        return
+
+    # NOTE: have to clear out the source filter before applying the
+    #       background one.
+    for bid in bids:
+        bkg_id = _id_to_str(bid)
+        fvals = state.get_bkg(id, bkg_id=bid).get_filter()
+
+        if ndims == 1:
+            _output('notice_id({}, None, None, bkg_id={})'.format(cmd_id,
+                                                                  bkg_id),
+                    fh)
+            cmd = 'notice_id({}, "{}", bkg_id={})'.format(cmd_id,
+                                                          fvals, bkg_id)
+            _output(cmd, fh)
+        elif ndims == 2:
+            _output('notice2d_id({}, None, None, bkg_id={})'.format(cmd_id,
+                                                                    bkg_id),
+                    fh)
+            cmd = 'notice2d_id({}, "{}", bkg_id={})'.format(cmd_id,
+                                                            fvals, bkg_id)
+            _output(cmd, fh)
+        else:
+            # just in case
+            msg = "Set notice range of id={} bkg_id={} to {}".format(cmd_id,
+                                                                     fvals,
+                                                                     bkg_id)
+            _output('print("{}")'.format(msg), fh)
+
+
 def _save_data(state, funcs, fh=None):
     """Save the data.
 
@@ -439,19 +508,7 @@ def _save_data(state, funcs, fh=None):
         except:
             pass
 
-        # Set filter if applicable
-        try:
-            _output("\n######### Filter Data\n", fh)
-            fvals = state.get_data(id).get_filter()
-            ndims = len(state.get_data(id).get_dims())
-            if ndims == 1:
-                cmd = 'notice_id({}, "{}")'.format(cmd_id, fvals)
-                _output(cmd, fh)
-            elif ndims == 2:
-                cmd = 'notice2d_id({}, "{}")'.format(cmd_id, fvals)
-                _output(cmd, fh)
-        except:
-            pass
+        _handle_filter(state, id, fh)
 
 
 def _print_par(par):
