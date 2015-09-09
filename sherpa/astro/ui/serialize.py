@@ -965,7 +965,8 @@ def _save_xspec(fh=None):
     if not hasattr(sherpa.astro, "xspec"):
         return
 
-    # TODO: should this make sure that the XSPEC module is loaded?
+    # TODO: should this make sure that the XSPEC module is in use?
+    #       i.e. only write these out if an XSPEC model is being used?
     _output("\n######### XSPEC Module Settings\n", fh)
     xspec_state = sherpa.astro.xspec.get_xsstate()
 

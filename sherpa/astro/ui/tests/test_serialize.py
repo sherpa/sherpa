@@ -103,7 +103,6 @@ set_method_opt("ftol", 1.19209289551e-07)
 
 ######### Set Source, Pileup and Background Models
 
-
 """
 
 # Change a few settings for statistic/method
@@ -137,7 +136,6 @@ set_method_opt("ftol", 1.19209289551e-07)
 
 
 ######### Set Source, Pileup and Background Models
-
 
 """
 
@@ -295,7 +293,6 @@ set_source(1, (xsphabs.gal * (powlaw1d.pl + xsapec.src)))
 
 
 
-
 """
 
 _canonical_pha_grouped = """import numpy
@@ -423,7 +420,6 @@ ggal.nH.frozen  = True
 ######### Set Source, Pileup and Background Models
 
 set_source("grp", (xsphabs.ggal * powlaw1d.gpl))
-
 
 
 
@@ -795,11 +791,11 @@ mymodel.m.frozen  = True
 
 set_source(3, (sin.sin_model + usermodel.mymodel))
 
-
 """
 
 if has_xspec:
-    _canonical_xspec_extra = """######### XSPEC Module Settings
+    _canonical_extra = """
+######### XSPEC Module Settings
 
 set_xschatter(0)
 set_xsabund("angr")
@@ -807,12 +803,14 @@ set_xscosmo(70, 0, 0.73)
 set_xsxsect("bcmc")
 """
 
-    _canonical_empty += _canonical_xspec_extra
-    _canonical_empty_stats += _canonical_xspec_extra
-    _canonical_pha_basic += _canonical_xspec_extra
-    _canonical_pha_grouped += _canonical_xspec_extra
-    _canonical_usermodel += _canonical_xspec_extra
+else:
+    _canonical_extra = ""
 
+_canonical_empty += _canonical_extra
+_canonical_empty_stats += _canonical_extra
+_canonical_pha_basic += _canonical_extra
+_canonical_pha_grouped += _canonical_extra
+_canonical_usermodel += _canonical_extra
 
 def _dump_lines(cts):
     """Dump outcts, an array of strings, to stdout, with line numbering"""
@@ -1050,12 +1048,14 @@ class test_ui(SherpaTestCase):
         self._compare(_canonical_empty_stats)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
+    @unittest.skipIf(not has_xspec, "xspec module is required")
     def test_canonical_pha_basic(self):
 
         _, canonical = self._setup_pha_basic()
         self._compare(canonical)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
+    @unittest.skipIf(not has_xspec, "xspec module is required")
     def test_restore_pha_basic(self):
         "Can the state be evaluated?"
 
@@ -1079,12 +1079,14 @@ class test_ui(SherpaTestCase):
         self.assertAlmostEqual(ui.calc_stat(), statval)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
+    @unittest.skipIf(not has_xspec, "xspec module is required")
     def test_canonical_pha_grouped(self):
 
         _, _, canonical = self._setup_pha_grouped()
         self._compare(canonical)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
+    @unittest.skipIf(not has_xspec, "xspec module is required")
     def test_restore_pha_grouped(self):
         "Can the state be evaluated?"
 
@@ -1116,12 +1118,14 @@ class test_ui(SherpaTestCase):
         self.assertAlmostEqual(ui.calc_stat('grp'), statval)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
+    @unittest.skipIf(not has_xspec, "xspec module is required")
     def test_canonical_pha_back(self):
 
         _, _, canonical = self._setup_pha_back()
         self._compare(canonical)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
+    @unittest.skipIf(not has_xspec, "xspec module is required")
     def test_restore_pha_back(self):
         "Can the state be evaluated?"
 
