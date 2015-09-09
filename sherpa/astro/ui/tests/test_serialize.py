@@ -25,9 +25,16 @@ corresponding functions in sherpa.astro.ui.utils.
 #    set_full_model
 #    multiple sources
 #    linked parameters
-#
 #    iter fit method
 #    check the noticed range after restoring it
+#    pha dataset; wavelength analysis
+#    pha2 dataset
+#    Chandra Source Catalog "pha3" dataset (src and bgnd in different
+#      extensions); DougBurke has noted that astropy backend fails if
+#      response files are gzipp-ed [may be acceptable behavior] but
+#      want test to check basic behavior
+#    psf model
+#    table model
 #
 
 import re
