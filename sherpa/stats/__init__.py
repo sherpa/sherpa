@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -249,8 +249,8 @@ class Chi2(Stat):
     the length of a background time segment, or a product of the two,
     etc.; and A(S) is the on-source "area". These terms may be defined
     for a particular type of data: for example, PHA data sets A(B) to
-    `BACKSCAL * EXPTIME` from the background data set and A(S) to
-    `BACKSCAL * EXPTIME` from the source data set.
+    `BACKSCAL * EXPOSURE` from the background data set and A(S) to
+    `BACKSCAL * EXPOSURE` from the source data set.
 
     There are different ways of defining the sigma(i) terms,
     supported by the sub-classes.
@@ -294,7 +294,7 @@ class LeastSq(Chi2):
 
     @staticmethod
     def calc_staterror(data):
-        return numpy.ones_like(data)        
+        return numpy.ones_like(data)
 
     @staticmethod
     def calc_stat(data, model, staterror, syserror=None, weight=None):
