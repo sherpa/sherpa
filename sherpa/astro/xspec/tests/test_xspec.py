@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -80,14 +80,9 @@ class test_xspec(SherpaTestCase):
         xhi = numpy.array(xx[1:])
         for model in models:
             cls = getattr(xs, model)
-            foo = cls('foo')
+            foo = cls(model)  # use an identifier in case there is an error
+            # The model checks that the values are all finite.
             vals = foo(xlo,xhi)
-            try:
-                self.assert_(not numpy.isnan(vals).any() and
-                             not numpy.isinf(vals).any() )
-            except AssertionError:
-                error('XS%s model evaluation failed' % model)
-                raise
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits')
