@@ -2476,7 +2476,7 @@ class Session(sherpa.ui.utils.Session):
         """Change the exposure time of a PHA data set.
 
         The exposure time of a PHA data set is taken from the
-        ``EXPTIME`` keyword in its header, but it can be changed
+        ``EXPOSURE`` keyword in its header, but it can be changed
         once the file has been loaded.
 
         Parameters
@@ -2517,7 +2517,7 @@ class Session(sherpa.ui.utils.Session):
         >>> etime = get_exposure()
         >>> set_exposure(etime * 1.05)
 
-        Use the EXPOSURE value from the ARF, rather than the EXPTIME
+        Use the EXPOSURE value from the ARF, rather than the
         value from the PHA file, for data set 2:
 
         >>> set_exposure(2, get_arf(2).exposure)
