@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,6 @@
 from math import sqrt
 from sherpa.utils import SherpaTestCase
 from sherpa.optmethods import optfcts
-## from sherpa.optmethods import myoptfcts
 ## from sherpa.optmethods import stogo
 from sherpa.optmethods import _tstoptfct
 
@@ -40,8 +39,6 @@ class test_optmethods(SherpaTestCase):
                  iprint=False ):
         self.tst( optfcts.neldermead, name + self.nm, fct, fmin,
                   x0, xmin, xmax, iprint=iprint )
-##         self.tst( myoptfcts.nelder_mead, name + self.nm, fct, fmin,
-##                   x0, xmin, xmax, iprint=iprint )
 ##         self.tst( stogo.stogo, name + '_stogo', fct, fmin,
 ##                   x0, xmin, xmax, iprint=iprint )
         self.tst( optfcts.montecarlo,  name + self.mc , fct, fmin,
@@ -88,7 +85,7 @@ class test_optmethods(SherpaTestCase):
         npar = 2
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.brown_badly_scaled, fmin, x0, xmin,
-                      xmax )        
+                      xmax )
 
     def test_beale(self):
         name = 'beale'
