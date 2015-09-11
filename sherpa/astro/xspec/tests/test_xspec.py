@@ -73,6 +73,13 @@ def get_xspec_models(xs):
     remove_item(models, 'XSAdditiveModel')
     remove_item(models, 'XSTableModel')
 
+    # The sirf model - in 12.8.2 and up to 12.9.0d at least - includes
+    # a read outside of an array. This has been seen to cause occasional
+    # errors in the Sherpa test case, so it is removed from the test
+    # for now. This problem has been reported to the XSPEC developers,
+    # so it will hopefully be fixed in one of ther 12.9.0 patches.
+    remove_item(models, 'XSsirf')
+
     # In XSPEC 12.8.2, the nteea model is written in such a way that
     # it fails in Sherpa (but not from within XSPEC). This has
     # been fixed in 12.9.0, but can cause problems for Sherpa tests
