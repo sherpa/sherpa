@@ -141,7 +141,7 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 	std::vector<int> gaps;
 	std::vector<double> gap_widths;
 
-	// The XSPEC functions expect the input array to be of length ne+1
+	// The XSPEC functions expect the input array to be of length nFlux+1
 	int near = nelem;
 	if( xhi ) {
 		near++;
@@ -282,7 +282,7 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 		for ( int ii = 0; ii < nelem; ii++ )
 			result[ii] *= pars[NumPars - 1];
 
-	// The XSPEC functions expect the output array to be of length ne
+	// The XSPEC functions expect the output array to be of length nFlux
 	// (one less than the input array), so set the last element to
 	// zero to avoid having random garbage in it
 	if( !xhi )
@@ -346,6 +346,8 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
           return NULL;
         }
 
+        int ifl = 1;
+        
 	double hc = (sherpa::constants::c_ang<SherpaFloat>() *
 			sherpa::constants::h_kev<SherpaFloat>());
 	bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
@@ -449,7 +451,6 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 
 	try {
 
-                int ifl = 1;
 		XSpecFunc( &ear[0], nelem, &pars[0], ifl, &result[0], &error[0], NULL );
 
 		// If there were gaps in the energy array, because of locations
@@ -735,7 +736,6 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
           return NULL;
         }
 
-	// FIXME how to handle the spectrum number??
 	int ifl = 1;
 
 	double hc = (sherpa::constants::c_ang<SherpaFloat>() *
@@ -745,7 +745,7 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 	std::vector<int> gaps;
 	std::vector<double> gap_widths;
 
-	// The XSPEC functions expect the input array to be of length ne+1
+	// The XSPEC functions expect the input array to be of length nFlux+1
 	int near = nelem;
 	if( xhi ) {
 		near++;
@@ -769,7 +769,13 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 		// SMD 11/21/12.
 
 		for (int i = 0; i < nelem-1; i++) {
-			if (0 != sao_fcmp(xhi[i], xlo[i+1], DBL_EPSILON)) {
+                        double cmp;
+			if ( is_wave ) {
+				cmp = sao_fcmp(xlo[i], xhi[i+1], DBL_EPSILON);
+			} else {
+				cmp = sao_fcmp(xhi[i], xlo[i+1], DBL_EPSILON);
+			}
+			if (0 != cmp) {
 				gaps.push_back(i);
 				double width = fabs(xhi[i] - xlo[i]);
 				if( is_wave ) {
@@ -780,9 +786,7 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 		}
 	}
 
-	//std::vector<FloatArrayType> ear(near);
-	float *ear = NULL;
-	ear = (float*)malloc(near*sizeof(float));
+	std::vector<FloatArrayType> ear(near);
 
 	for( int ii = 0; ii < nelem; ii++ ) {
 		if( is_wave ) {
@@ -833,13 +837,11 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 	if ( EXIT_SUCCESS != error.zeros( xlo.get_ndim(), xlo.get_dims() ) )
 		return NULL;
 
-	// Even though the XSPEC model function is Fortran, it could call
-	// C++ functions, so swallow exceptions here
+	// Swallow C++ exceptions
 
 	try {
 
-		XSpecFunc( ear, nelem, &pars[0], filename, ifl, &result[0],
-				&error[0] );
+		XSpecFunc( &ear[0], nelem, &pars[0], filename, ifl, &result[0], &error[0] );
 
 		// If there were gaps in the energy array, because of locations
 		// where xlo[i+1] != xhi[i], then this is place where we recalculate
@@ -858,22 +860,16 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 		// at affected bins *only*. SMD 11/21/12
 
 		while(!gaps.empty()) {
-			float *ear2 = NULL;
-			ear = (float*)malloc(2*sizeof(float));
+                  	std::vector<FloatArrayType> ear2(2);
 			int bin_number = gaps.back();
 			ear2[0] = ear[bin_number];
 			ear2[1] = ear2[0] + gap_widths.back();
 			int ear2_nelem = 1;
-			try {
-				XSpecFunc( ear2, ear2_nelem, &pars[0], filename, ifl,
-						&result[bin_number], &error[bin_number]);
-			} catch(...) {
-				if (ear2) free(ear2);
-				throw;
-			}
+                        XSpecFunc( &ear2[0], ear2_nelem, &pars[0], filename, ifl,
+                                   &result[bin_number], &error[bin_number]);
+                        
 			gaps.pop_back();
 			gap_widths.pop_back();
-			if (ear2) free(ear2);
 		}
 
 	} catch(...) {
@@ -889,13 +885,11 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 		for ( int ii = 0; ii < nelem; ii++ )
 			result[ii] *= pars[npars - 1];
 
-	// The XSPEC functions expect the output array to be of length ne
+	// The XSPEC functions expect the output array to be of length nFlux
 	// (one less than the input array), so set the last element to
 	// zero to avoid having random garbage in it
 	if( !xhi )
 		result[ result.get_size() - 1 ] = 0.0;
-
-	if( ear ) free(ear);
 
 	return result.return_new_ref();
 
