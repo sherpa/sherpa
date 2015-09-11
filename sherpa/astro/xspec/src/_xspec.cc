@@ -272,6 +272,7 @@ void xsmtbl(float* ear, int ne, float* param, const char* filenm, int ifl,
 
 // XSPEC convolution models
 void C_cflux(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_cpflux(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_xsgsmt(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_ireflct(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_kdblur(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
@@ -1275,19 +1276,20 @@ static PyMethodDef XSpecMethods[] = {
   XSPECTABLEMODEL_NORM( xsatbl ),
   XSPECTABLEMODEL_NORM( xsmtbl ),
   // XSPEC convolution models
-  XSPECMODELFCT_C(C_cflux, 3),
-  XSPECMODELFCT_C(C_xsgsmt, 2),
-  XSPECMODELFCT_C(C_ireflct, 7),
-  XSPECMODELFCT_C(C_kdblur, 4),
-  XSPECMODELFCT_C(C_kdblur2, 6),
-  XSPECMODELFCT_C(C_spinconv, 7),
-  XSPECMODELFCT_C(C_xslsmt, 2),
-  XSPECMODELFCT_C(C_PartialCovering, 1),
-  XSPECMODELFCT_C(C_rdblur, 4),
-  XSPECMODELFCT_C(C_reflct, 5),
-  XSPECMODELFCT_C(C_simpl, 3),
-  XSPECMODELFCT_C(C_zashift, 1),
-  XSPECMODELFCT_C(C_zmshift, 1),
+  XSPECMODELFCT_CON(C_cflux, 3),
+  XSPECMODELFCT_CON(C_cpflux, 3),
+  XSPECMODELFCT_CON(C_xsgsmt, 2),
+  XSPECMODELFCT_CON(C_ireflct, 7),
+  XSPECMODELFCT_CON(C_kdblur, 4),
+  XSPECMODELFCT_CON(C_kdblur2, 6),
+  XSPECMODELFCT_CON(C_spinconv, 7),
+  XSPECMODELFCT_CON(C_xslsmt, 2),
+  XSPECMODELFCT_CON(C_PartialCovering, 1),
+  XSPECMODELFCT_CON(C_rdblur, 4),
+  XSPECMODELFCT_CON(C_reflct, 5),
+  XSPECMODELFCT_CON(C_simpl, 3),
+  XSPECMODELFCT_CON(C_zashift, 1),
+  XSPECMODELFCT_CON(C_zmshift, 1),
   
   { NULL, NULL, 0, NULL }
 

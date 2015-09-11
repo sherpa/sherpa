@@ -309,18 +309,15 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 	DoubleArray pars;
 	DoubleArray xlo;
 	DoubleArray xhi;
-	DoubleArray fluxes;
 	DoubleArray *x;
 
-	if ( !PyArg_ParseTuple( args, (char*)"O&O&|O&O&",
+	if ( !PyArg_ParseTuple( args, (char*)"O&O&|O&",
 			(converter)convert_to_contig_array< DoubleArray >,
 			&pars,
 			(converter)convert_to_contig_array< DoubleArray >,
 			&xlo,
 			(converter)convert_to_contig_array< DoubleArray >,
-			&xhi,
-			(converter)convert_to_contig_array< DoubleArray >,
-			&fluxes ) )
+			&xhi ) )
 		return NULL;
 
 	npy_intp npars = pars.get_size();
@@ -442,11 +439,6 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 	if ( EXIT_SUCCESS != result.zeros( xlo.get_ndim(), xlo.get_dims() ) )
 		return NULL;
 
-	if (fluxes) {
-		for ( int ii = 0; ii < nelem; ii++ )
-			result[ii] = fluxes[ii];
-	}
-
 	// The XSPEC functions require fluxError to be non-NULL, so we create
 	// it but discard it after the computation is done
 	DoubleArray error;
@@ -501,6 +493,189 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 	if ( HasNorm )
 		for ( int ii = 0; ii < nelem; ii++ )
 			result[ii] *= pars[NumPars - 1];
+
+	// The XSPEC functions expect the output array to be of length nFlux
+	// (one less than the input array), so set the last element to
+	// zero to avoid having random garbage in it
+	if( !xhi )
+		result[ result.get_size() - 1 ] = 0.0;
+
+	return result.return_new_ref();
+
+}
+
+// Handle convolution models, which are assumed to have C-style
+// linkage.
+//
+// This template does not support non-contiguous grids.
+template <npy_intp NumPars,
+void (*XSpecFunc)( const double* energy, int nFlux,
+		const double* params, int spectrumNumber,
+		double* flux, double* fluxError,
+		const char* initStr )>
+PyObject* xspecmodelfct_con( PyObject* self, PyObject* args )
+{
+
+#ifdef INIT_XSPEC
+	if ( EXIT_SUCCESS != INIT_XSPEC() )
+		return NULL;
+#endif
+
+	DoubleArray pars;
+	DoubleArray xlo;
+	DoubleArray xhi;
+	DoubleArray fluxes;
+	DoubleArray *x;
+
+        // The arguments are parsed as
+        //   pars, fluxes, xlo
+        //   pars, fluxes, xlo, xhi
+        // where fluxes is the spectrum that is to be convolved
+        // by the model.
+        //
+	if ( !PyArg_ParseTuple( args, (char*)"O&O&O&|O&",
+			(converter)convert_to_contig_array< DoubleArray >,
+			&pars,
+			(converter)convert_to_contig_array< DoubleArray >,
+			&fluxes,
+			(converter)convert_to_contig_array< DoubleArray >,
+                        &xlo,
+			(converter)convert_to_contig_array< DoubleArray >,
+			&xhi ) )
+		return NULL;
+
+	npy_intp npars = pars.get_size();
+
+	if ( NumPars != npars ) {
+		std::ostringstream err;
+		err << "expected " << NumPars << " parameters, got " << npars;
+		PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+		return NULL;
+	}
+
+	int nelem = int( xlo.get_size() );
+
+	if ( nelem < 2 ) {
+		std::ostringstream err;
+		err << "input array must have at least 2 elements, found " << nelem;
+		PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+		return NULL;
+	}
+
+        if( xhi && (nelem != int(xhi.get_size())) ) {
+          std::ostringstream err;
+          err << "input arrays are not the same size: " << nelem
+              << " and " << int( xhi.get_size() );
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
+
+        // For now require the fluxes array to have the same
+        // size as the input grid. If xhi is not given then
+        // technically fluxes should be one less, but this is
+        // likely to cause problems (as it doesn't match how
+        // the rest of the interface works).
+        if( nelem != int(fluxes.get_size()) ) {
+          std::ostringstream err;
+          err << "flux array does not match the input grid: " << nelem
+              << " and " << int( fluxes.get_size() );
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
+        
+	double hc = (sherpa::constants::c_ang<SherpaFloat>() *
+			sherpa::constants::h_kev<SherpaFloat>());
+	bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
+
+	// The XSPEC functions expect the input array to be of length nFlux+1
+	int near = nelem;
+	if( xhi ) {
+		near++;
+
+                // raise an error if the grid is not contiguous
+		for (int i = 0; i < nelem-1; i++) {
+			double cmp;
+			if ( is_wave ) {
+				cmp = sao_fcmp(xlo[i], xhi[i+1], DBL_EPSILON);
+			} else {
+				cmp = sao_fcmp(xhi[i], xlo[i+1], DBL_EPSILON);
+			}
+			if (0 != cmp) {
+                          PyErr_SetString( PyExc_ValueError,
+                                           (char*)"XSPEC convolution model requires a contiguous grid" );
+                          return NULL;
+			}
+		}
+	}
+
+	std::vector<SherpaFloat> ear(near);
+
+	for( int ii = 0; ii < nelem; ii++ ) {
+		if( is_wave ) {
+
+			// wave analysis swaps edges, e.g. wave_hi <--> energy_lo
+			// if xhi is available use it
+			x = (xhi) ? &xhi : &xlo;
+
+			if ( 0.0 == (*x)[ii] ) {
+				PyErr_SetString( PyExc_ValueError,
+						(char*)"XSPEC model evaluation failed, division by zero" );
+				return NULL;
+			}
+			ear[ ii ] = ( SherpaFloat ) (hc / (*x)[ ii ]);
+		}
+		else
+			ear[ ii ] = ( SherpaFloat ) xlo[ ii ];
+	}
+
+	if( xhi ) {
+
+		if( is_wave ) {
+
+			// wave analysis swaps edges, e.g. wave_lo <--> energy_hi
+			// use xlo
+
+			if ( 0.0 == xlo[ xlo.get_size() - 1 ] ) {
+				PyErr_SetString( PyExc_ValueError,
+						(char*)"XSPEC model evaluation failed, division by zero" );
+				return NULL;
+			}
+			ear[ near - 1 ] = ( SherpaFloat ) (hc / xlo[ xlo.get_size() - 1 ]);
+		}
+		else
+			ear[ near - 1 ] = ( SherpaFloat ) xhi[ xhi.get_size() - 1 ];
+
+	}
+	else
+		nelem--;
+
+	DoubleArray result;
+	if ( EXIT_SUCCESS != result.zeros( xlo.get_ndim(), xlo.get_dims() ) )
+		return NULL;
+
+        for ( int ii = 0; ii < nelem; ii++ )
+          result[ii] = fluxes[ii];
+
+	// The XSPEC functions require fluxError to be non-NULL, so we create
+	// it but discard it after the computation is done
+	DoubleArray error;
+	if ( EXIT_SUCCESS != error.zeros( xlo.get_ndim(), xlo.get_dims() ) )
+		return NULL;
+
+	// Swallow C++ exceptions
+
+	try {
+
+                int ifl = 1;
+		XSpecFunc( &ear[0], nelem, &pars[0], ifl, &result[0], &error[0], NULL );
+
+	} catch(...) {
+
+		PyErr_SetString( PyExc_ValueError,
+				(char*)"XSPEC convolution model evaluation failed" );
+		return NULL;
+
+	}
 
 	// The XSPEC functions expect the output array to be of length nFlux
 	// (one less than the input array), so set the last element to
@@ -742,6 +917,8 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 #define XSPECMODELFCT_C_NORM(name, npars) \
 		FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, true, name >))
 
+#define XSPECMODELFCT_CON(name, npars) \
+		FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con< npars, name >))
 
 #define _XSPECTABLEMODELSPEC(name, has_norm) \
 		{ (char*)#name, \
