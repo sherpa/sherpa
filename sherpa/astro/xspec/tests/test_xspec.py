@@ -122,6 +122,7 @@ class test_xspec(SherpaTestCase):
 
     def setUp(self):
         from sherpa.astro import xspec
+        ui.clean()
         self._defaults = xspec.get_xsstate()
 
     def tearDown(self):
@@ -187,7 +188,13 @@ class test_xspec(SherpaTestCase):
         import sherpa.astro.xspec as xs
         mdl = xs.XSpowerlaw()
 
+        # Check when input array is too small (< 2 elements)
         self.assertRaises(TypeError, mdl, [0.1])
+
+        # Check when input arrays are not the same size (when the
+        # low and high bin edges are given)
+        self.assertRaises(TypeError, mdl, [0.1, 0.2, 0.3], [0.2, 0.3])
+        self.assertRaises(TypeError, mdl, [0.1, 0.2], [0.2, 0.3, 0.4])
 
     def test_xspec_models(self):
         import sherpa.astro.xspec as xs
@@ -228,6 +235,23 @@ class test_xspec(SherpaTestCase):
             assert_allclose(evals1, wvals1,
                             err_msg=emsg + "energy to wavelength")
 
+    def test_tablemodel_checks_input_length(self):
+
+        # see test_table_model for more information on the table
+        # model being used.
+        #
+        ui.load_table_model('mdl',
+                            self.make_path('xspec/tablemodel/RCS.mod'))
+        mdl = ui.get_model_component('mdl')
+
+        # Check when input array is too small (< 2 elements)
+        self.assertRaises(TypeError, mdl, [0.1])
+
+        # Check when input arrays are not the same size (when the
+        # low and high bin edges are given)
+        self.assertRaises(TypeError, mdl, [0.1, 0.2, 0.3], [0.2, 0.3])
+        self.assertRaises(TypeError, mdl, [0.1, 0.2], [0.2, 0.3, 0.4])
+
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_xspec_tablemodel(self):
         # Just test one table model; use the same scheme as
@@ -243,6 +267,8 @@ class test_xspec(SherpaTestCase):
         # when used in the test suite it appears that the tmod
         # global symbol is not created, so need to access the component
         tmod = ui.get_model_component('tmod')
+
+        self.assertEqual(tmod.name, 'xstablemodel.tmod')
 
         egrid, elo, ehi, wgrid, wlo, whi = make_grid()
 

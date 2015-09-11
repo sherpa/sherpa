@@ -36,6 +36,30 @@ namespace sherpa { namespace astro { namespace xspec {
 typedef sherpa::Array< float, NPY_FLOAT > FloatArray;
 typedef float FloatArrayType;
 
+// XSpec models can be called from Sherpa using either
+//   - a single array for the grid
+//   - two arrays for the grid
+//
+// The first form is straightforward, since this is what the XSpec
+// models expect. In this case a 0 is added to the end of the array
+// returned by XSpec since Sherpa expects that the input and output
+// arrays have the same length.
+//
+// When given two arrays, there is the possibility of a non-contiguous
+// grid - e.g. if the low values are [0.1,0.2,0.6,0.7] and the high
+// values are [0.2,0.3,0.7,0.8] then the range 0.3 to 0.6 is not
+// required. This requires passing through the arrays to find any
+// gaps, and then dealing with them. The approach is to
+// just create a grid as if there were no gaps; that is, the model would
+// be evaluated on the grid [0.1,0.2,0.6,0.7,0.8] but record the position
+// and correct widths for the "gaps" and then re-run the model to
+// "fill in" the output array, on a bin-by-bin basis. In this case
+// the model would be called a second time to evaluate the model
+// for the grid [0.2,0.3] and this value inserted into the second
+// bin of the flux array created by the first call. This can lead
+// to errors (in XSPEC 12.8.2 the apec-style models will crash when
+// called with only two bins; this has been fixed in 12.9.0).
+
 // When creating the flux and flux error arrays to be sent to
 // the XSpec routines, the arrays are filled with 0's - that is
 // the zeros array method is used, rather than create. This is
@@ -48,7 +72,8 @@ typedef float FloatArrayType;
 // The spectrum number is set to 1. It used to be 0, but some code
 // (a user model, so not included in the XSpec model library being
 // built against) has been seen to behave strangely with a value of 0,
-// so a value of 1 is being used "just in case". A keyword argument
+// so a value of 1 is being used "just in case". This is also the
+// approach that XSPEC (the application) uses. A keyword argument
 // could be added so that the user can override this, but it is
 // only really woth doing once write access to the XFLT keywords
 // is added (and then working out how to take advantage of it; perhaps
@@ -98,6 +123,14 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
 		PyErr_SetString( PyExc_TypeError, err.str().c_str() );
 		return NULL;
 	}
+
+        if( xhi && (nelem != int(xhi.get_size())) ) {
+          std::ostringstream err;
+          err << "input arrays are not the same size: " << nelem
+              << " and " << int( xhi.get_size() );
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
 
 	int ifl = 1;
 
@@ -308,6 +341,14 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
 		return NULL;
 	}
 
+        if( xhi && (nelem != int(xhi.get_size())) ) {
+          std::ostringstream err;
+          err << "input arrays are not the same size: " << nelem
+              << " and " << int( xhi.get_size() );
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
+
 	double hc = (sherpa::constants::c_ang<SherpaFloat>() *
 			sherpa::constants::h_kev<SherpaFloat>());
 	bool is_wave = (xlo[0] > xlo[nelem-1]) ? true : false;
@@ -510,6 +551,14 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 		PyErr_SetString( PyExc_TypeError, err.str().c_str() );
 		return NULL;
 	}
+
+        if( xhi && (nelem != int(xhi.get_size())) ) {
+          std::ostringstream err;
+          err << "input arrays are not the same size: " << nelem
+              << " and " << int( xhi.get_size() );
+          PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+          return NULL;
+        }
 
 	// FIXME how to handle the spectrum number??
 	int ifl = 1;
