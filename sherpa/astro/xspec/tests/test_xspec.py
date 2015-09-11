@@ -123,6 +123,24 @@ def make_grid():
     return egrid, elo, ehi, wgrid, wlo, whi
 
 
+def make_grid_noncontig2():
+    """Return the 'standard' non-contiguous grid used in these tests,
+    with 2 gaps.
+
+    The grid from make_grid is modified to make one gap.
+    """
+
+    egrid, elo, ehi, wgrid, wlo, whi = make_grid()
+
+    # remove two sections
+    idx1 = (elo <= 1.1) | (elo >= 1.4)
+    idx2 = (elo <= 2.3) | (elo >= 2.9)
+    idx = idx1 & idx2
+
+    # at the moment do not return the original grid and filter
+    return elo[idx], ehi[idx], wlo[idx], whi[idx]
+
+
 @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
                  "required sherpa.astro.xspec module missing")
 class test_xspec(SherpaTestCase):
@@ -242,6 +260,30 @@ class test_xspec(SherpaTestCase):
             assert_allclose(evals1, wvals1,
                             err_msg=emsg + "energy to wavelength")
 
+    def test_xspec_models_noncontiguous2(self):
+        """Note that there is no test that the non-contiguous grid
+        results are similar to the result from using a contiguous
+        grid and then filtering out the missing bins. The way that
+        some models are implemented make this a tricky test to
+        write (due to numerical tolerances), as bins at the
+        edges may not match well.
+        """
+
+        import sherpa.astro.xspec as xs
+        models = get_xspec_models(xs)
+
+        elo, ehi, wlo, whi = make_grid_noncontig2()
+        for model in models:
+            cls = getattr(xs, model)
+            mdl = cls(model)  # use an identifier in case there is an error
+
+            evals2 = mdl(elo, ehi)
+            wvals2 = mdl(wlo, whi)
+            emsg = "{} non-contiguous model evaluation failed: ".format(model)
+
+            assert_allclose(evals2, wvals2,
+                            err_msg=emsg + "energy to wavelength")
+
     def test_tablemodel_checks_input_length(self):
 
         # see test_table_model for more information on the table
@@ -282,21 +324,34 @@ class test_xspec(SherpaTestCase):
         evals1 = tmod(egrid)
         evals2 = tmod(elo, ehi)
 
-        # wvals1 = tmod(wgrid)
-        # wvals2 = tmod(wlo, whi)
+        wvals1 = tmod(wgrid)
+        wvals2 = tmod(wlo, whi)
 
-        # Direct comparison of wavelength and energy grid.
-        #
         emsg = "table model evaluation failed: "
+        assert_array_equal(evals1[:-1], evals2,
+                           err_msg=emsg + "energy comparison")
+
+        assert_allclose(evals1, wvals1,
+                        err_msg=emsg + "single arg")
+        assert_allclose(evals2, wvals2,
+                        err_msg=emsg + "two args")
+
+    @unittest.skipIf(test_data_missing(), "required test data missing")
+    def test_xspec_tablemodel_noncontiguous2(self):
+
+        ui.load_table_model('tmod',
+                            self.make_path('xspec/tablemodel/RCS.mod'))
+        tmod = ui.get_model_component('tmod')
+
+        elo, ehi, wlo, whi = make_grid_noncontig2()
+
+        evals2 = tmod(elo, ehi)
+        wvals2 = tmod(wlo, whi)
+
+        emsg = "table model non-contiguous evaluation failed: "
         rtol = 1e-3
-
-        assert_allclose(evals1[:-1], evals2, rtol=rtol,
-                        err_msg=emsg + "energy comparison")
-
-        # assert_allclose(evals1, wvals1, rtol=rtol,
-        #                 err_msg=emsg + "single arg")
-        # assert_allclose(evals2, wvals2, rtol=rtol,
-        #                 err_msg=emsg + "two args")
+        assert_allclose(evals2, wvals2, rtol=rtol,
+                        err_msg=emsg + "energy to wavelength")
 
     def test_convolution_model_cflux(self):
         # Use the cflux convolution model, since this gives
@@ -306,6 +361,9 @@ class test_xspec(SherpaTestCase):
         # providing access to this functionality).
         #
         import sherpa.astro.xspec as xs
+
+        if not hasattr(xs._xspec, 'C_cflux'):
+            self.skipTest('cflux convolution model is missing')
 
         # The energy grid should extend beyond the energy grid
         # used to evaluate the model, to avoid any edge effects.
@@ -342,25 +400,46 @@ class test_xspec(SherpaTestCase):
         pars = [elo, ehi, lflux]
         y2 = xs._xspec.C_cflux(pars, y1, egrid)
 
-        expected = y1 * 10**lflux / f1
-        numpy.testing.assert_allclose(expected, y2)
+        elo = egrid[:-1]
+        ehi = egrid[1:]
+        wgrid = _hc / egrid
+        whi = wgrid[:-1]
+        wlo = wgrid[1:]
 
-        # TODO: should test elo/ehi and wavelength
+        expected = y1 * 10**lflux / f1
+        numpy.testing.assert_allclose(expected, y2,
+                                      err_msg='energy, single grid')
+
+        y1 = mdl1(wgrid)
+        y2 = xs._xspec.C_cflux(pars, y1, wgrid)
+        numpy.testing.assert_allclose(expected, y2,
+                                      err_msg='wavelength, single grid')
+
+        expected = expected[:-1]
+
+        y1 = mdl1(elo, ehi)
+        y2 = xs._xspec.C_cflux(pars, y1, elo, ehi)
+        numpy.testing.assert_allclose(expected, y2,
+                                      err_msg='energy, two arrays')
+
+        y1 = mdl1(wlo, whi)
+        y2 = xs._xspec.C_cflux(pars, y1, wlo, whi)
+        numpy.testing.assert_allclose(expected, y2,
+                                      err_msg='wavelength, two arrays')
 
     def test_convolution_model_cpflux_noncontiguous(self):
         # The models should raise an error if given a non-contiguous
         # grid.
         import sherpa.astro.xspec as xs
 
-        elo = [0.1, 0.2, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9]
-        ehi = [0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9, 1.0]
+        if not hasattr(xs._xspec, 'C_cpflux'):
+            self.skipTest('cpflux convolution model is missing')
 
-        wlo = _hc / numpy.asarray(ehi)
-        whi = _hc / numpy.asarray(elo)
+        elo, ehi, wlo, whi = make_grid_noncontig2()
 
         lflux = -5.0
         pars = [0.2, 0.8, lflux]
-        y1 = numpy.zeros(len(elo))
+        y1 = numpy.zeros(elo.size)
 
         self.assertRaises(ValueError, xs._xspec.C_cpflux, pars, y1, elo, ehi)
         self.assertRaises(ValueError, xs._xspec.C_cpflux, pars, y1, wlo, whi)
