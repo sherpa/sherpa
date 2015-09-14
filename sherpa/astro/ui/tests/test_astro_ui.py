@@ -532,7 +532,6 @@ class test_save_pha(SherpaTestCase):
     def tearDown(self):
         logger.setLevel(self._old_logger_level)
 
-    @unittest.expectedFailure
     def testWrite(self):
         ofh = tempfile.NamedTemporaryFile(suffix='sherpa_test')
         ui.save_pha(self._id, ofh.name, ascii=False, clobber=True)
