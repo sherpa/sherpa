@@ -113,6 +113,7 @@ namespace sherpa { namespace stats {
                                const iArrayType& data_size,
                                const ArrayType& exposure_time,
                                const ArrayType& bkg,
+                               const ArrayType& backscale_ratio,
                                ArrayType& fvec, DataType& val,
                                DataType trunc_value  )>
     PyObject* wstatfct( PyObject* self, PyObject* args ) {
@@ -122,21 +123,24 @@ namespace sherpa { namespace stats {
       iArrayType data_size;
       ArrayType exposure_time;
       ArrayType bkg;
+      ArrayType backscale_ratio;
       DataType trunc_value = 1.0e-25;
 
-      if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&d",
+      if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&O&d",
                               CONVERTME( ArrayType ), &yraw,
                               CONVERTME( ArrayType ), &model,
                               CONVERTME( iArrayType ), &data_size,
                               CONVERTME( ArrayType ), &exposure_time,
                               CONVERTME( ArrayType ), &bkg,
+                              CONVERTME( ArrayType ), &backscale_ratio,
                               &trunc_value ) )
         return NULL;
 
       const npy_intp nelem = yraw.get_size();
 
       if ( ( model.get_size( ) != nelem ) || bkg.get_size( ) != nelem ||
-           ( 2 * data_size.get_size( ) != exposure_time.get_size( ) ) ) {
+           ( 2 * data_size.get_size( ) != exposure_time.get_size( ) ) ||
+           data_size.get_size( ) != backscale_ratio.get_size( ) ) {
         PyErr_SetString( PyExc_TypeError,
                          (char*)"statistic input array sizes do not match" );
         return NULL;
@@ -156,8 +160,8 @@ namespace sherpa { namespace stats {
         return NULL;
       DataType val = 0.0;
       if ( EXIT_SUCCESS != StatFunc( nelem, yraw, model, data_size, 
-                                     exposure_time, bkg, fvec, val,
-                                     trunc_value ) ) {
+                                     exposure_time, bkg, backscale_ratio,
+                                     fvec, val, trunc_value ) ) {
         PyErr_SetString( PyExc_ValueError,
                          (char*)"statistic calculation failed");
         return NULL;

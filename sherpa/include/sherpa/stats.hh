@@ -349,7 +349,7 @@ namespace sherpa { namespace stats {
                              DataType* fvec, 
                              const DataType src_exp_time,
                              const DataType bkg_exp_time,
-                             DataType trunc_value ) {
+                             const DataType trunc_value ) {
 
     // 
     // heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
@@ -506,8 +506,9 @@ template <typename ArrayType, typename ConstArrayType, typename DataType,
                               const iArrayType& data_size,
                               const ConstArrayType& exposure_time,
                               const ConstArrayType& bkg,
+                              const ConstArrayType& backscale_ratio,
                               ArrayType& fvec, DataType& stat,
-                              DataType trunc_value ) {
+                              const DataType trunc_value ) {
 
   const IndexType num_data_sets = data_size.get_size( );
 
@@ -520,7 +521,11 @@ template <typename ArrayType, typename ConstArrayType, typename DataType,
     const double* bkg_raw = &bkg[ offset ];
 
     double resp_exp_time = exposure_time[ 2 * ii ];
-    double bkg_exp_time  = exposure_time[ 2 * ii + 1 ];
+
+    //
+    // Must scale the background area to the source area
+    //
+    double bkg_exp_time  = exposure_time[ 2 * ii + 1 ] * backscale_ratio[ ii ];
 
     my_calc_w_stat( data_size[ ii ], src_raw,
                     src_model, bkg_raw, &fvec[ offset ],

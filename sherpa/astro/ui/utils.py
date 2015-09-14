@@ -3010,7 +3010,7 @@ class Session(sherpa.ui.utils.Session):
         -------
         axis : array
            The dependent axis values. The model estimate is compared
-           to these values during fitting. For PHA data sets, the 
+           to these values during fitting. For PHA data sets, the
            return array will match the grouping scheme applied to
            the data set.
 
@@ -7573,7 +7573,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Group the default data set so that each bin has a 
+        Group the default data set so that each bin has a
         signal-to-noise ratio of at least 5:
 
         >>> group_snr(20)
@@ -7774,7 +7774,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Group the default data set so that each bin contains 
+        Group the default data set so that each bin contains
         a signal-to-noise ratio of at least 5:
 
         >>> group_adapt_snr(5)
@@ -9127,7 +9127,7 @@ class Session(sherpa.ui.utils.Session):
                         warning(('data set %r is background-subtracted; ' +
                                  'background models will be ignored') % id)
                 elif not (bkg_models or bkg_srcs):
-                    if d.background_ids:
+                    if d.background_ids and 'wstat' != self._current_stat.name:
                         warning(('data set %r has associated backgrounds, ' +
                                  'but they have not been subtracted, ' +
                                  'nor have background models been set') % id)
@@ -11605,7 +11605,7 @@ class Session(sherpa.ui.utils.Session):
         gaussian for the line), fit it, and then evaluate the
         equivalent width of the line. The example assumes that
         this is a PHA data set, with an associated response,
-        so that the analysis can be done in wavelength units. 
+        so that the analysis can be done in wavelength units.
 
         >>> set_source(powlaw1d.cont + gauss1d.line)
         >>> set_analysis('wavelength')

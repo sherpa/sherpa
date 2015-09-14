@@ -19,7 +19,7 @@
 
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit
-from sherpa.utils.err import FitErr, StatErr
+from sherpa.utils.err import StatErr
 import sherpa.stats._statfcts
 
 from sherpa import get_config
@@ -61,7 +61,7 @@ class Stat(NoNewAttributesAfterInit):
         raise NotImplementedError
 
     def calc_stat(self, data, model, staterror=None, syserror=None,
-                  weight=None, **kwargs):
+                  weight=None, bkg=None):
         raise NotImplementedError
 
 
@@ -154,7 +154,7 @@ class Cash(Likelihood):
 
     @staticmethod
     def calc_stat(data, model, staterror=None, syserror=None, weight=None,
-                  **kwargs):
+                  bkg=None):
         return _statfcts.calc_cash_stat(data, model, staterror, syserror,
                                         weight, truncation_value)
 
@@ -229,7 +229,7 @@ class CStat(Likelihood):
 
     @staticmethod
     def calc_stat(data, model, staterror=None, syserror=None, weight=None,
-                  **kwargs):
+                  bkg=None):
         return _statfcts.calc_cstat_stat(data, model, staterror, syserror,
                                          weight, truncation_value)
 
@@ -289,7 +289,7 @@ class Chi2(Stat):
 
     @staticmethod
     def calc_stat(data, model, staterror, syserror=None, weight=None,
-                  **kwargs):
+                  bkg=None):
         return _statfcts.calc_chi2_stat(data, model, staterror,
                                         syserror, weight, truncation_value)
 
@@ -311,7 +311,7 @@ class LeastSq(Chi2):
 
     @staticmethod
     def calc_stat(data, model, staterror, syserror=None, weight=None,
-                  **kwargs):
+                  bkg=None):
         return _statfcts.calc_lsq_stat(data, model, staterror,
                                        syserror, weight, truncation_value)
 
@@ -436,7 +436,7 @@ class Chi2ModVar(Chi2):
 
     @staticmethod
     def calc_stat(data, model, staterror, syserror=None, weight=None,
-                  **kwargs):
+                  bkg=None):
         return _statfcts.calc_chi2modvar_stat(data, model, staterror,
                                               syserror, weight,
                                               truncation_value)
@@ -510,15 +510,16 @@ class UserStat(Stat):
         return self.errfunc(data)
 
     def calc_stat(self, data, model, staterror=None, syserror=None,
-                  weight=None, **kwargs):
+                  weight=None, bkg=None):
         if not self._statfuncset:
             raise StatErr('nostat', self.name, 'calc_stat()')
 
-        if 'bkg' in kwargs.keys():
-            bkg = kwargs.get('bkg')
-            return self.statfunc(data, model, staterror, syserror, weight, bkg)
-        else:
+        print 'UserStat: bkg =', bkg
+        if bkg is None or bkg['bkg'] is None:
             return self.statfunc(data, model, staterror, syserror, weight)
+        else:
+            return self.statfunc(data, model, staterror, syserror, weight,
+                                 bkg['bkg'])
 
 
 class WStat(Likelihood):
@@ -572,11 +573,13 @@ class WStat(Likelihood):
 
     @staticmethod
     def calc_stat(data, model, datasize=None, exposuretime=None,
-                  weight=None, **kwargs):
+                  weight=None, bkg=None):
+        if bkg is None or bkg['bkg'] is None:
+            raise StatErr('usecstat')
 
-        if 'bkg' in kwargs.keys():
-            bkg = kwargs.get('bkg')
-        else:
-            raise FitErr('no bkg file is supplied, use cstat instead')
-        return _statfcts.calc_wstat_stat(data, model, datasize, exposuretime,
-                                         bkg, truncation_value)
+        return _statfcts.calc_wstat_stat(data, model,
+                                         bkg['data_size'],
+                                         bkg['exposure_time'],
+                                         bkg['bkg'],
+                                         bkg['backscale_ratio'],
+                                         truncation_value)
