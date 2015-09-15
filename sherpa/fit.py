@@ -23,7 +23,7 @@ import os
 import signal
 from numpy import arange, array, abs, iterable, sqrt, where, \
     ones_like, isnan, isinf, float, float32, finfo, nan, any, zeros, append, \
-    int
+    int, ones
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
@@ -474,17 +474,27 @@ class IterFit(NoNewAttributesAfterInit):
     def get_bkg_data(self, dep):
         """get the bkg data for wstat and the user defined statistics"""
 
+        def set_backscale_ratio(bkg_backscal, src_backscal, num):
+            if hasattr(bkg_backscal, '__iter__') is False and \
+                    hasattr(src_backscal, '__iter__') is False:
+                bkg = bkg_backscal * ones(num)
+                src = src_backscal * ones(num)
+            else:
+                bkg = bkg_backscal
+                src = src_backscal
+            return bkg / src
+
         result = {'bkg': None, 'backscale_ratio': None, 'data_size': None,
                   'exposure_time': None}
         bkg_dep = []
         data_size = None
         exposure_time = None
+        backscale_ratio = []
 
         len_datasets = len(self.data.datasets)
 
         data_size = zeros(len_datasets, dtype=int)
         exposure_time = zeros(2 * len_datasets)
-        backscale_ratio = zeros(len_datasets)
         for index in xrange(len_datasets):
             mydata = self.data.datasets[index]
             if hasattr(mydata, 'response_ids') and \
@@ -496,7 +506,9 @@ class IterFit(NoNewAttributesAfterInit):
                 bkg_dep = append(bkg_dep, tmp_bkg_dep)
                 exposure_time[2 * index] = mydata.exposure
                 exposure_time[2 * index + 1] = bkg.exposure
-                backscale_ratio[index] = bkg.backscal / mydata.backscal
+                ratio = set_backscale_ratio(bkg.backscal, mydata.backscal,
+                                            data_size[index])
+                backscale_ratio = append(backscale_ratio, ratio)
             else:
                 return result
 

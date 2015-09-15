@@ -346,9 +346,10 @@ namespace sherpa { namespace stats {
   inline int my_calc_w_stat( IndexType num, const DataType* src_raw,
                              const DataType* src_model,
                              const DataType* bkg_raw,
+                             const DataType* backscale_ratio,
                              DataType* fvec, 
                              const DataType src_exp_time,
-                             const DataType bkg_exp_time,
+                             const DataType my_bkg_exp_time,
                              const DataType trunc_value ) {
 
     // 
@@ -371,12 +372,18 @@ namespace sherpa { namespace stats {
     //  s  i
     //
 
-    DataType src_bkg_time = src_exp_time + bkg_exp_time;
-    DataType ln_ts_div_src_bkg_time = std::log( src_exp_time / src_bkg_time );
-    DataType ln_tb_div_src_bkg_time = std::log( bkg_exp_time / src_bkg_time );
-
     for ( IndexType ii = num - 1; ii >= 0; --ii ) {
-      
+
+      //
+      // Must scale the background area to the source area
+      //
+      DataType bkg_exp_time = my_bkg_exp_time * backscale_ratio[ ii ];
+      DataType src_bkg_time = src_exp_time + bkg_exp_time;
+      DataType ln_ts_div_src_bkg_time = 
+        std::log( src_exp_time / src_bkg_time );
+      DataType ln_tb_div_src_bkg_time = 
+        std::log( bkg_exp_time / src_bkg_time );
+
       DataType msubi = src_model[ ii ] / src_exp_time;
       DataType tb_msubi = bkg_exp_time * msubi;
       DataType ts_msubi = src_exp_time * msubi;
@@ -519,16 +526,14 @@ template <typename ArrayType, typename ConstArrayType, typename DataType,
     const double* src_raw = &yraw[ offset ];
     const double* src_model = &model[ offset ];
     const double* bkg_raw = &bkg[ offset ];
+    const double* ratio_backscale = &backscale_ratio[ offset ];
+
 
     double resp_exp_time = exposure_time[ 2 * ii ];
-
-    //
-    // Must scale the background area to the source area
-    //
-    double bkg_exp_time  = exposure_time[ 2 * ii + 1 ] * backscale_ratio[ ii ];
+    double bkg_exp_time  = exposure_time[ 2 * ii + 1 ];
 
     my_calc_w_stat( data_size[ ii ], src_raw,
-                    src_model, bkg_raw, &fvec[ offset ],
+                    src_model, bkg_raw, ratio_backscale, &fvec[ offset ],
                     resp_exp_time, bkg_exp_time, trunc_value );
 
     offset += data_size[ ii ];

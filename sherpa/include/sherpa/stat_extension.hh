@@ -140,7 +140,7 @@ namespace sherpa { namespace stats {
 
       if ( ( model.get_size( ) != nelem ) || bkg.get_size( ) != nelem ||
            ( 2 * data_size.get_size( ) != exposure_time.get_size( ) ) ||
-           data_size.get_size( ) != backscale_ratio.get_size( ) ) {
+           nelem != backscale_ratio.get_size( ) ) {
         PyErr_SetString( PyExc_TypeError,
                          (char*)"statistic input array sizes do not match" );
         return NULL;
