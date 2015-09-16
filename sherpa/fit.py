@@ -32,7 +32,7 @@ from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, LeastSq, \
-    Likelihood
+    Likelihood, WStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -195,7 +195,7 @@ class FitResults(NoNewAttributesAfterInit):
         _qval = None
         _rstat = None
         _covarerr = results[4].get('covarerr')
-        if (isinstance(fit.stat, (CStat, Chi2)) and
+        if (isinstance(fit.stat, (CStat, WStat, Chi2)) and
                 not isinstance(fit.stat, LeastSq)):
             if _dof > 0 and results[2] >= 0.0:
                 _qval = igamc(_dof / 2., results[2] / 2.)
@@ -474,12 +474,17 @@ class IterFit(NoNewAttributesAfterInit):
     def get_bkg_data(self, dep):
         """get the bkg data for wstat and the user defined statistics"""
 
-        def set_backscale_ratio(bkg_backscal, src_backscal, num):
+        def vectorize_backscale_ratio(bkg_backscal, src_backscal, num):
+            '''return the ratio of bkg_backscal/src_backscal as a numpy
+            array of length n. bkg_backscal and/or src_backscal can be
+            either a floating point number or a numpy array'''
             if hasattr(bkg_backscal, '__iter__') is False and \
                     hasattr(src_backscal, '__iter__') is False:
+                # both backscal are floating point numbers, generate arrays
                 bkg = bkg_backscal * ones(num)
-                src = src_backscal * ones(num)
+                src = src_backscal
             else:
+                # at least one of the backscals is a numpy array
                 bkg = bkg_backscal
                 src = src_backscal
             return bkg / src
@@ -506,8 +511,9 @@ class IterFit(NoNewAttributesAfterInit):
                 bkg_dep = append(bkg_dep, tmp_bkg_dep)
                 exposure_time[2 * index] = mydata.exposure
                 exposure_time[2 * index + 1] = bkg.exposure
-                ratio = set_backscale_ratio(bkg.backscal, mydata.backscal,
-                                            data_size[index])
+                ratio = vectorize_backscale_ratio(bkg.backscal,
+                                                  mydata.backscal,
+                                                  data_size[index])
                 backscale_ratio = append(backscale_ratio, ratio)
             else:
                 return result

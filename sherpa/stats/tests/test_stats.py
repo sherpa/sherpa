@@ -185,6 +185,7 @@ class test_stats(SherpaTestCase):
         'dof': 443,
         'istatval': 14000.5250801,
         'statval': 1156.57701288,
+        'rstat' : 2.6107833248,
         'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
         'parvals': numpy.array(
             [5864.278543739505, 1.6569575154646112, 29868.225197035885])}
