@@ -85,7 +85,6 @@ class test_load_pha3_gzip(SherpaTestCase):
         self.assertEqual(arf.name, barf.name)
         self.assertEqual(rmf.name, brmf.name)
 
-    @unittest.expectedFailure
     def testReadExplicit(self):
         """Include .gz in the file name"""
 
@@ -102,7 +101,6 @@ class test_load_pha3_gzip(SherpaTestCase):
         bpha = ui.get_bkg(idval, bkg_id=1)
         self.assertEqual(pha.name, bpha.name + '.gz')
 
-    @unittest.expectedFailure
     def testReadImplicit(self):
         """Exclude .gz from the file name"""
 

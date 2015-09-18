@@ -45,7 +45,8 @@ except ImportError:
 import os
 from itertools import izip
 from sherpa.utils.err import IOErr
-from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
+from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
+import sherpa.utils
 from sherpa.io import get_ascii_data, write_arrays
 from sherpa.astro.io.meta import Meta
 
@@ -261,6 +262,66 @@ def _try_vec_or_key(hdu, name, size, dtype=SherpaFloat, fix_type=False):
 
 # Read Functions
 
+# Crates supports reading gzipped files both when the '.gz' suffix
+# is given and even when it is not (i.e. if you ask to load 'foo.fits'
+# and 'foo.fits.gz' exists, then it will use this). This requires some
+# effort to emulate with the astropy backend.
+
+def is_binary_file(fname):
+    """Do we think the file contains binary data?
+
+    Parameters
+    ----------
+    fname : str
+       The file name.
+
+    Returns
+    -------
+    flag : bool
+       ``True`` if the file appears to contain binary data,
+       ``False`` otherwise.
+
+    Notes
+    -----
+    This is a wrapper around the version in sherpa.utils which
+    attempts to transparently support reading from a `.gz`
+    version if the input file name does not exist.
+    """
+
+    if not os.path.exists(fname):
+        fname = fname + '.gz'
+
+    return sherpa.utils.is_binary_file(fname)
+
+
+def open_fits(filename):
+    """Try and open filename as a FITS file.
+
+    Parameters
+    ----------
+    filename : str
+       The name of the FITS file to open. If the file
+       can not be opened then '.gz' is appended to the
+       name and the attempt is tried again.
+
+    Returns
+    -------
+    out
+       The return value from the `astropy.io.fits.open`
+       function.
+    """
+
+    try:
+        return fits.open(filename)
+    except IOError as e:
+        try:
+            # This will try 'foo.gz.gz'.
+            return fits.open(filename + '.gz')
+        except IOError:
+            # Raise the original error
+            raise e
+
+
 def read_table_blocks(arg, make_copy=False):
 
     filename = ''
@@ -270,7 +331,7 @@ def read_table_blocks(arg, make_copy=False):
         hdus = arg
     elif type(arg) in (str, unicode, numpy.str_) and is_binary_file(arg):
         filename = arg
-        hdus = fits.open(arg)
+        hdus = open_fits(arg)
     else:
         raise IOErr('badfile', arg,
                     "a binary FITS table or a BinTableHDU list")
@@ -318,7 +379,7 @@ def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
     """
 
     if type(arg) == str and (not nobinary or is_binary_file(arg)):
-        tbl = fits.open(arg)
+        tbl = open_fits(arg)
         filename = arg
     elif type(arg) is fits.HDUList and len(arg) > 0 and \
             arg[0].__class__ is fits.PrimaryHDU:
