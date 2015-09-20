@@ -40,6 +40,25 @@ __all__ = ('SourcePlot', 'ARFPlot', 'BkgDataPlot', 'BkgModelPlot',
            'OrderPlot', 'ModelHistogram', 'BkgModelHistogram')
 
 
+def to_latex(txt):
+    """Add any backend-specific markup to indicate LaTeX.
+
+    Parameters
+    ----------
+    txt : str
+       The LaTeX input (the contents are going to be interpreted
+       as LaTeX so do not send in text that is not to be converted).
+
+    Returns
+    -------
+    out : str
+       The LaTeX text including the markup to indicate to the
+       plotting backend to display as LaTeX.
+    """
+
+    return backend.get_latex_for_string(txt)
+
+
 class ModelHistogram(HistogramPlot):
     "Derived class for creating 1D PHA model histogram plots"
     histo_prefs = backend.get_model_histo_defaults()
@@ -128,14 +147,20 @@ class SourcePlot(HistogramPlot):
         quant = 'keV'
 
         if self.units == "wavelength":
-            prefix_quant = '\\lambda'
-            quant = '\\AA'
+            # No other labels use the LaTeX forms for lambda and
+            # Angstrom, so use the text version here too.
+            # prefix_quant = to_latex('\\lambda')
+            # quant = to_latex('\\AA')
+            prefix_quant = 'lambda'
+            quant = 'Angstrom'
             (self.xlo, self.xhi) = (self.xhi, self.xlo)
 
         xmid = abs(self.xhi - self.xlo)
 
+        sqr = to_latex('^2')
+
         self.xlabel = '%s (%s)' % (self.units.capitalize(), quant)
-        self.ylabel = '%s  Photons/sec/cm^2%s'
+        self.ylabel = '%s  Photons/sec/cm' + sqr + '%s'
 
         if data.plot_fac == 0:
             self.y /= xmid
@@ -148,8 +173,8 @@ class SourcePlot(HistogramPlot):
 
         elif data.plot_fac == 2:
             self.y *= xmid
-            self.ylabel = self.ylabel % ('%s^{2} f(%s)' % (prefix_quant,
-                                                           prefix_quant),
+            self.ylabel = self.ylabel % ('%s%s f(%s)' % (prefix_quant, sqr,
+                                                         prefix_quant),
                                          ' %s ' % quant)
         else:
             raise PlotErr('plotfac', 'Source', data.plot_fac)
@@ -459,7 +484,8 @@ class EnergyFluxHistogram(FluxHistogram):
     def __init__(self):
         FluxHistogram.__init__(self)
         self.title = "Energy flux distribution"
-        self.xlabel = "Energy flux (ergs cm^{-2} sec^{-1})"
+        self.xlabel = "Energy flux (ergs cm{} sec{})".format(
+            to_latex('^{-2}'), to_latex('^{-1}'))
         self.ylabel = "Frequency"
 
 
@@ -469,5 +495,6 @@ class PhotonFluxHistogram(FluxHistogram):
     def __init__(self):
         FluxHistogram.__init__(self)
         self.title = "Photon flux distribution"
-        self.xlabel = "Photon flux (Photons cm^{-2} sec^{-1})"
+        self.xlabel = "Photon flux (Photons cm{} sec{})".format(
+            to_latex('^{-2}'), to_latex('^{-1}'))
         self.ylabel = "Frequency"

@@ -156,7 +156,8 @@ class DataARF(Data1DInt):
         return 'Energy (keV)'
 
     def get_ylabel(self):
-        return 'cm^2'
+        from sherpa.plot import backend
+        return 'cm' + backend.get_latex_for_string('^2')
 
 
 class DataRMF(Data1DInt):
@@ -1517,8 +1518,10 @@ class DataPHA(Data1DInt):
                 ylabel += '/channel'
 
         if self.plot_fac:
-            ylabel += ' X %s^%s' % (self.units.capitalize(),
-                                    str(self.plot_fac))
+            from sherpa.plot import backend
+            latex = backend.get_latex_for_string(
+                '^{}'.format(self.plot_fac))
+            ylabel += ' X {}{}'.format(self.units.capitalize(), latex)
 
         return ylabel
 
