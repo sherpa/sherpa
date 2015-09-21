@@ -80,7 +80,7 @@ script:
         python -c "import sherpa; sherpa.test()";
     fi
   - if [ ${TEST} == package ];
-        then cd /home;
+        then cd $HOME;
         sherpa_test;
     fi
 
