@@ -45,7 +45,8 @@ except ImportError:
 import os
 from itertools import izip
 from sherpa.utils.err import IOErr
-from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
+from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
+import sherpa.utils
 from sherpa.io import get_ascii_data, write_arrays
 from sherpa.astro.io.meta import Meta
 
@@ -145,16 +146,29 @@ def _get_meta_data(hdu):
     return meta
 
 
+# Note: it is not really WCS specific, but leave the name alone for now.
 def _get_wcs_key(hdu, key0, key1, fix_type=False, dtype=SherpaFloat):
+    """Return the pair of keyword values as an array of values of
+    the requested datatype. If either key is missing then return
+    ().
+    """
+
     if _has_key(hdu, key0) and _has_key(hdu, key1):
         return numpy.array([_try_key(hdu, key0, fix_type, dtype),
                             _try_key(hdu, key1, fix_type, dtype)], dtype)
     return ()
 
 
-def _set_wcs_key(hdulist, name, val):
-    card = fits.Card(str(name), val)
-    hdulist.append(card)
+def _add_keyword(hdrlist, name, val):
+    """Add the name,val pair to hdulist."""
+    name = str(name).upper()
+    if name in ['', 'COMMENT', 'HISTORY']:
+        # The values are assumed to be an array of strings
+        for v in val:
+            hdrlist.append(fits.Card(name, v))
+
+    else:
+        hdrlist.append(fits.Card(name, val))
 
 
 def _try_col(hdu, name, dtype=SherpaFloat, fix_type=False):
@@ -248,6 +262,66 @@ def _try_vec_or_key(hdu, name, size, dtype=SherpaFloat, fix_type=False):
 
 # Read Functions
 
+# Crates supports reading gzipped files both when the '.gz' suffix
+# is given and even when it is not (i.e. if you ask to load 'foo.fits'
+# and 'foo.fits.gz' exists, then it will use this). This requires some
+# effort to emulate with the astropy backend.
+
+def is_binary_file(fname):
+    """Do we think the file contains binary data?
+
+    Parameters
+    ----------
+    fname : str
+       The file name.
+
+    Returns
+    -------
+    flag : bool
+       ``True`` if the file appears to contain binary data,
+       ``False`` otherwise.
+
+    Notes
+    -----
+    This is a wrapper around the version in sherpa.utils which
+    attempts to transparently support reading from a `.gz`
+    version if the input file name does not exist.
+    """
+
+    if not os.path.exists(fname):
+        fname = fname + '.gz'
+
+    return sherpa.utils.is_binary_file(fname)
+
+
+def open_fits(filename):
+    """Try and open filename as a FITS file.
+
+    Parameters
+    ----------
+    filename : str
+       The name of the FITS file to open. If the file
+       can not be opened then '.gz' is appended to the
+       name and the attempt is tried again.
+
+    Returns
+    -------
+    out
+       The return value from the `astropy.io.fits.open`
+       function.
+    """
+
+    try:
+        return fits.open(filename)
+    except IOError as e:
+        try:
+            # This will try 'foo.gz.gz'.
+            return fits.open(filename + '.gz')
+        except IOError:
+            # Raise the original error
+            raise e
+
+
 def read_table_blocks(arg, make_copy=False):
 
     filename = ''
@@ -257,7 +331,7 @@ def read_table_blocks(arg, make_copy=False):
         hdus = arg
     elif type(arg) in (str, unicode, numpy.str_) and is_binary_file(arg):
         filename = arg
-        hdus = fits.open(arg)
+        hdus = open_fits(arg)
     else:
         raise IOErr('badfile', arg,
                     "a binary FITS table or a BinTableHDU list")
@@ -305,7 +379,7 @@ def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
     """
 
     if type(arg) == str and (not nobinary or is_binary_file(arg)):
-        tbl = fits.open(arg)
+        tbl = open_fits(arg)
         filename = arg
     elif type(arg) is fits.HDUList and len(arg) > 0 and \
             arg[0].__class__ is fits.PrimaryHDU:
@@ -927,18 +1001,28 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
     tbl.writeto(filename, clobber=True)
 
 
+def _create_header(header):
+    """Create a FITS header with the contents of header,
+    the Sherpa representation of the key,value store.
+    """
+
+    hdrlist = _new_header()
+    for key in header.keys():
+        if header[key] is None:
+            continue
+
+        _add_keyword(hdrlist, key, header[key])
+
+    return hdrlist
+
+
 def set_pha_data(filename, data, col_names, header=None,
                  ascii=False, clobber=False, packup=False):
 
     if not packup and os.path.isfile(filename) and not clobber:
         raise IOErr("filefound", filename)
 
-    hdrlist = _new_header()
-
-    for key in header.keys():
-        if header[key] is None:
-            continue
-        hdrlist.append(fits.Card(str(key.upper()), header[key]))
+    hdrlist = _create_header(header)
 
     collist, cols, coldefs = _create_columns(col_names, data)
 
@@ -964,13 +1048,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
                    ascii=ascii, clobber=clobber)
         return
 
-    hdrlist = _new_header()
-
-    # Write Image Header Keys
-    for key in header.keys():
-        if header[key] is None:
-            continue
-        _set_wcs_key(hdrlist, key, header[key])
+    hdrlist = _create_header(header)
 
     # Write Image WCS Header Keys
     if data['eqpos'] is not None:
@@ -984,17 +1062,17 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
         crpixp = data['sky'].crpix
         crvalp = data['sky'].crval
 
-        _set_wcs_key(hdrlist, 'MTYPE1', 'sky     ')
-        _set_wcs_key(hdrlist, 'MFORM1', 'x,y     ')
-        _set_wcs_key(hdrlist, 'CTYPE1P', 'x      ')
-        _set_wcs_key(hdrlist, 'CTYPE2P', 'y      ')
-        _set_wcs_key(hdrlist, 'WCSNAMEP', 'PHYSICAL')
-        _set_wcs_key(hdrlist, 'CDELT1P', cdeltp[0])
-        _set_wcs_key(hdrlist, 'CDELT2P', cdeltp[1])
-        _set_wcs_key(hdrlist, 'CRPIX1P', crpixp[0])
-        _set_wcs_key(hdrlist, 'CRPIX2P', crpixp[1])
-        _set_wcs_key(hdrlist, 'CRVAL1P', crvalp[0])
-        _set_wcs_key(hdrlist, 'CRVAL2P', crvalp[1])
+        _add_keyword(hdrlist, 'MTYPE1', 'sky     ')
+        _add_keyword(hdrlist, 'MFORM1', 'x,y     ')
+        _add_keyword(hdrlist, 'CTYPE1P', 'x      ')
+        _add_keyword(hdrlist, 'CTYPE2P', 'y      ')
+        _add_keyword(hdrlist, 'WCSNAMEP', 'PHYSICAL')
+        _add_keyword(hdrlist, 'CDELT1P', cdeltp[0])
+        _add_keyword(hdrlist, 'CDELT2P', cdeltp[1])
+        _add_keyword(hdrlist, 'CRPIX1P', crpixp[0])
+        _add_keyword(hdrlist, 'CRPIX2P', crpixp[1])
+        _add_keyword(hdrlist, 'CRVAL1P', crvalp[0])
+        _add_keyword(hdrlist, 'CRVAL2P', crvalp[1])
 
         if data['eqpos'] is not None:
             # Simply the inverse of read transformations in get_image_data
@@ -1002,19 +1080,19 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
             crpixw = ((crpixw - crvalp) / cdeltp + crpixp )
 
     if data['eqpos'] is not None:
-        _set_wcs_key(hdrlist, 'MTYPE2', 'EQPOS   ')
-        _set_wcs_key(hdrlist, 'MFORM2', 'RA,DEC  ')
-        _set_wcs_key(hdrlist, 'CTYPE1', 'RA---TAN')
-        _set_wcs_key(hdrlist, 'CTYPE2', 'DEC--TAN')
-        _set_wcs_key(hdrlist, 'CDELT1', cdeltw[0])
-        _set_wcs_key(hdrlist, 'CDELT2', cdeltw[1])
-        _set_wcs_key(hdrlist, 'CRPIX1', crpixw[0])
-        _set_wcs_key(hdrlist, 'CRPIX2', crpixw[1])
-        _set_wcs_key(hdrlist, 'CRVAL1', crvalw[0])
-        _set_wcs_key(hdrlist, 'CRVAL2', crvalw[1])
-        _set_wcs_key(hdrlist, 'CUNIT1', 'deg     ')
-        _set_wcs_key(hdrlist, 'CUNIT2', 'deg     ')
-        _set_wcs_key(hdrlist, 'EQUINOX', equin)
+        _add_keyword(hdrlist, 'MTYPE2', 'EQPOS   ')
+        _add_keyword(hdrlist, 'MFORM2', 'RA,DEC  ')
+        _add_keyword(hdrlist, 'CTYPE1', 'RA---TAN')
+        _add_keyword(hdrlist, 'CTYPE2', 'DEC--TAN')
+        _add_keyword(hdrlist, 'CDELT1', cdeltw[0])
+        _add_keyword(hdrlist, 'CDELT2', cdeltw[1])
+        _add_keyword(hdrlist, 'CRPIX1', crpixw[0])
+        _add_keyword(hdrlist, 'CRPIX2', crpixw[1])
+        _add_keyword(hdrlist, 'CRVAL1', crvalw[0])
+        _add_keyword(hdrlist, 'CRVAL2', crvalw[1])
+        _add_keyword(hdrlist, 'CUNIT1', 'deg     ')
+        _add_keyword(hdrlist, 'CUNIT2', 'deg     ')
+        _add_keyword(hdrlist, 'EQUINOX', equin)
 
     #
     img = fits.PrimaryHDU(data['pixels'], header=fits.Header(hdrlist))

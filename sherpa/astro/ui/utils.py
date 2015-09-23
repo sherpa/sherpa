@@ -22,14 +22,15 @@ import logging
 import numpy
 from itertools import izip
 import sherpa.ui.utils
-from sherpa.ui.utils import _check_type, _send_to_pager
+from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
-from sherpa.utils.err import *
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
+    IdentifierErr, IOErr, ModelErr
 from sherpa.data import Data1D
 import sherpa.astro.all
 import sherpa.astro.plot
 
-from sherpa.ui.utils import loggable
+# from sherpa.ui.utils import loggable
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -103,7 +104,7 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     def __setstate__(self, state):
-        if not state.has_key('_background_sources'):
+        if '_background_sources' not in state:
             self.__dict__['_background_sources'] = state.pop(
                 '_background_models')
 
@@ -3010,7 +3011,7 @@ class Session(sherpa.ui.utils.Session):
         -------
         axis : array
            The dependent axis values. The model estimate is compared
-           to these values during fitting. For PHA data sets, the 
+           to these values during fitting. For PHA data sets, the
            return array will match the grouping scheme applied to
            the data set.
 
@@ -4165,7 +4166,8 @@ class Session(sherpa.ui.utils.Session):
         self.save_arrays(filename, [x, err], ['X', 'ERR'],
                          ascii, clobber)
 
-    def save_pha(self, id, filename=None, bkg_id=None, ascii=False, clobber=False):
+    def save_pha(self, id, filename=None, bkg_id=None, ascii=False,
+                 clobber=False):
         """Save a PHA data set to a file.
 
         Parameters
@@ -7573,7 +7575,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Group the default data set so that each bin has a 
+        Group the default data set so that each bin has a
         signal-to-noise ratio of at least 5:
 
         >>> group_snr(20)
@@ -7774,7 +7776,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Group the default data set so that each bin contains 
+        Group the default data set so that each bin contains
         a signal-to-noise ratio of at least 5:
 
         >>> group_adapt_snr(5)
@@ -8034,13 +8036,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
         d = sherpa.astro.data.DataPHA('', None, None)
-        if self._data.has_key(id):
+        if id in self._data:
             d = self._get_pha_data(id)
         else:
             # Make empty header OGIP compliant
             # And add appropriate values to header from input values
-            d.header = dict(HDUCLASS="OGIP", HDUCLAS1="SPECTRUM", HDUCLAS2="TOTAL",
-                            HDUCLAS3="TYPE:I", HDUCLAS4="COUNT", HDUVERS="1.1.0")
+            d.header = dict(HDUCLASS="OGIP", HDUCLAS1="SPECTRUM",
+                            HDUCLAS2="TOTAL", HDUCLAS3="TYPE:I",
+                            HDUCLAS4="COUNT", HDUVERS="1.1.0")
             self.set_data(id, d)
 
         if rmf is None:
@@ -9004,9 +9007,7 @@ class Session(sherpa.ui.utils.Session):
                                       nint=nint, addmodel=addmodel,
                                       addredshift=addredshift)
 
-        except Exception, e:
-            # print e, type(e)
-            #raise e
+        except Exception:
             x = None
             y = None
             try:
@@ -9177,7 +9178,7 @@ class Session(sherpa.ui.utils.Session):
             for bi in data.background_ids:
                 mod = None
                 ds = self.get_bkg(i, bi)
-                if bkg_models.has_key(bi) or bkg_sources.has_key(bi):
+                if bi in bkg_models or bi in bkg_sources:
                     mod = self.get_bkg_model(i, bi)
 
                 if mod is not None:
@@ -9374,12 +9375,12 @@ class Session(sherpa.ui.utils.Session):
         ids = f = None
         fit_bkg = False
 
-        if kwargs.has_key('bkg_only') and kwargs.pop('bkg_only'):
+        if 'bkg_only' in kwargs and kwargs.pop('bkg_only'):
             fit_bkg = True
 
         # validate the kwds to f.fit() so user typos do not
         # result in regular fit
-        #valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
+        # valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
         valid_keys = ('outfile', 'clobber', 'filter_nan')
         for key in kwargs.keys():
             if key not in valid_keys:
@@ -9390,7 +9391,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             ids, f = self._get_fit(id, otherids)
 
-        if kwargs.has_key('filter_nan') and kwargs.pop('filter_nan'):
+        if 'filter_nan' in kwargs and kwargs.pop('filter_nan'):
             for i in ids:
                 self.get_data(i).mask = self.get_data(
                     i).mask & numpy.isfinite(self.get_data(i).get_x())
@@ -10473,7 +10474,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg(1, 2, overplot=True)
 
         """
-        bkg = self.get_bkg(id, bkg_id)
+        _ = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgdataplot, None, bkg_id, **kwargs)
 
     def plot_bkg_model(self, id=None, bkg_id=None, **kwargs):
@@ -10524,7 +10525,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_model('jet', bkg_id=2, overplot=True)
 
         """
-        bkg = self.get_bkg(id, bkg_id)
+        _ = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgmodelhisto, None, bkg_id, **kwargs)
 
     def plot_bkg_resid(self, id=None, bkg_id=None, **kwargs):
@@ -10576,7 +10577,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_resid('jet', bkg_id=2, overplot=True)
 
         """
-        bkg = self.get_bkg(id, bkg_id)
+        _ = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgresidplot, None, bkg_id, **kwargs)
 
     def plot_bkg_ratio(self, id=None, bkg_id=None, **kwargs):
@@ -10628,7 +10629,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_ratio('jet', bkg_id=2, overplot=True)
 
         """
-        bkg = self.get_bkg(id, bkg_id)
+        _ = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgratioplot, None, bkg_id, **kwargs)
 
     def plot_bkg_delchi(self, id=None, bkg_id=None, **kwargs):
@@ -10680,7 +10681,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_delchi('jet', bkg_id=2, overplot=True)
 
         """
-        bkg = self.get_bkg(id, bkg_id)
+        _ = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgdelchiplot, None, bkg_id, **kwargs)
 
     def plot_bkg_chisqr(self, id=None, bkg_id=None, **kwargs):
@@ -10732,7 +10733,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_chisqr('jet', bkg_id=2, overplot=True)
 
         """
-        bkg = self.get_bkg(id, bkg_id)
+        _ = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgchisqrplot, None, bkg_id, **kwargs)
 
     def plot_bkg_fit(self, id=None, bkg_id=None, **kwargs):
@@ -10782,7 +10783,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_fit()
 
         """
-        bkg = self.get_bkg(id, bkg_id)
+        _ = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgfitplot, None, bkg_id, **kwargs)
 
     def plot_bkg_source(self, id=None, lo=None, hi=None, bkg_id=None, **kwargs):
@@ -10836,7 +10837,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg_source('jet', bkg_id=2, overplot=True)
 
         """
-        bkg = self.get_bkg(id, bkg_id)
+        _ = self.get_bkg(id, bkg_id)
         self._plot(id, self._bkgsourceplot, None, bkg_id, lo, hi, **kwargs)
 
     # DOC-TODO: I am assuming it accepts a scales parameter
@@ -10927,7 +10928,8 @@ class Session(sherpa.ui.utils.Session):
         efplot = self._energyfluxplot
         if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
             efplot = self._prepare_energy_flux_plot(efplot, lo, hi, id, num,
-                                                    bins, correlated, numcores, bkg_id)
+                                                    bins, correlated,
+                                                    numcores, bkg_id)
         try:
             sherpa.plot.begin()
             efplot.plot(**kwargs)
@@ -11027,7 +11029,8 @@ class Session(sherpa.ui.utils.Session):
         pfplot = self._photonfluxplot
         if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
             pfplot = self._prepare_photon_flux_plot(pfplot, lo, hi, id, num,
-                                                    bins, correlated, numcores, bkg_id)
+                                                    bins, correlated,
+                                                    numcores, bkg_id)
         try:
             sherpa.plot.begin()
             pfplot.plot(**kwargs)
@@ -11105,9 +11108,9 @@ class Session(sherpa.ui.utils.Session):
                                     clearwindow=clearwindow)
 
             oldval = rp.plot_prefs['xlog']
-            if ((self._bkgdataplot.plot_prefs.has_key('xlog') and
+            if (('xlog' in self._bkgdataplot.plot_prefs and
                  self._bkgdataplot.plot_prefs['xlog']) or
-                (self._bkgmodelplot.plot_prefs.has_key('xlog') and
+                ('xlog' in self._bkgmodelplot.plot_prefs and
                  self._bkgmodelplot.plot_prefs['xlog'])):
                 rp.plot_prefs['xlog'] = True
 
@@ -11189,9 +11192,9 @@ class Session(sherpa.ui.utils.Session):
                                     clearwindow=clearwindow)
 
             oldval = dp.plot_prefs['xlog']
-            if ((self._bkgdataplot.plot_prefs.has_key('xlog') and
+            if (('xlog' in self._bkgdataplot.plot_prefs and
                  self._bkgdataplot.plot_prefs['xlog']) or
-                (self._bkgmodelplot.plot_prefs.has_key('xlog') and
+                ('xlog' in self._bkgmodelplot.plot_prefs and
                  self._bkgmodelplot.plot_prefs['xlog'])):
                 dp.plot_prefs['xlog'] = True
 
@@ -11531,7 +11534,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             src = self.get_source(id)
 
-        if None == modelcomponent:
+        if modelcomponent is None:
             modelcomponent = src
 
         correlated = sherpa.utils.bool_cast(correlated)
@@ -11539,7 +11542,7 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(modelcomponent, sherpa.models.model.Model):
             raise ArgumentTypeErr('badarg', 'modelcomponent', 'a model')
 
-        if False == Xrays:
+        if not Xrays:
             samples = self.calc_energy_flux(lo=lo, hi=hi, id=id,
                                             bkg_id=bkg_id)
         else:
@@ -11605,7 +11608,7 @@ class Session(sherpa.ui.utils.Session):
         gaussian for the line), fit it, and then evaluate the
         equivalent width of the line. The example assumes that
         this is a PHA data set, with an associated response,
-        so that the analysis can be done in wavelength units. 
+        so that the analysis can be done in wavelength units.
 
         >>> set_source(powlaw1d.cont + gauss1d.line)
         >>> set_analysis('wavelength')
