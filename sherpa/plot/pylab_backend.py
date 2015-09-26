@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -35,7 +35,7 @@ __all__ = ('clear_window','point','plot','histo','contour','set_subplot','init',
            'get_ratio_contour_defaults','get_confid_plot_defaults',
            'get_confid_contour_defaults', 'set_window_redraw', 'set_jointplot',
            'get_model_histo_defaults', 'get_histo_defaults',
-           'get_component_plot_defaults','get_component_histo_defaults', 
+           'get_component_plot_defaults','get_component_histo_defaults',
            'vline', 'hline', 'get_scatter_plot_defaults', 'get_cdf_plot_defaults',
            'get_latex_for_string')
 
@@ -59,7 +59,11 @@ def _choose(test, iftrue, iffalse=None):
     return iffalse
 
 
-_errorbar_defaults = get_keyword_defaults(pylab.Axes.errorbar)
+# In matplotlib 1.5RC1 the kwargs to pylab.Axes.errorbar are not
+# explictit, but they appear to be set for pybal.errorbar, so
+# switch to that.
+# _errorbar_defaults = get_keyword_defaults(pylab.Axes.errorbar)
+_errorbar_defaults = get_keyword_defaults(pylab.errorbar)
 
 
 def clear_window():
@@ -122,7 +126,7 @@ _linestyle_map = {
     'noline'  : ' ',
     'solid'   : '-',
     'dot'     : ':',
-    'dash'    : '--', 
+    'dash'    : '--',
     'dotdash' : '-.',
     }
 
