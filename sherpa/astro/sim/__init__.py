@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,6 +17,32 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Include calibration uncertainties in Bayesian Low-Count X-ray Spectral (BLoCXS) analysis.
+
+This module adds the "pragbayes" and "fullbayes" jumping rules for use with
+the pyBLoCXS MCMC code. These rules support calibration uncertainties in the
+ARF of PHA files, as discussed in [1]_:
+
+- ``PragBayes`` is used when effective area calibration uncertainty is to be
+  included in the calculation. In this case, at eacn nominal MCMC iteration, a
+  new calibration product is generated, and a series of ``N`` steps (which can
+  be changed using ``set_sampler_opt``) are carried out with this calibration
+  product, using the ``MetropolisMH`` rule. When the steps are finished, the
+  *last* iteration is stored in the chain and the process repeated. This
+  can *only* be used with PHA data sets, and requires a special formulation
+  of the ARF to include calibration uncertainties.
+
+- ``FullBayes``, is an experimental rule that extends the behavior of
+  the ``PragBayes`` rule.
+
+References
+----------
+
+.. [1] "Accounting for Calibration Uncertainties in X-ray Analysis:
+       Effective Areas in Spectral Fitting", Lee et al., 2011, ApJ, 731, 126
+       http://adsabs.harvard.edu/abs/2011ApJ...731..126L
+
+"""
 
 from sherpa.sim import MCMC as _MCMC
 from sherpa.sim import _samplers as __samplers
@@ -32,7 +58,6 @@ _walkers.update(dict(pragbayes=WalkWithSubIters, fullbayes=WalkWithSubIters))
 
 class MCMC(_MCMC):
     """
-
     High-level UI to pyBLoCXS that joins the loop in 'Walk' with the jumping
     rule in 'Sampler'.  Implements a user interface for configuration.  This
     class implements a calc_stat() function using the Sherpa interface to 'Fit'.
