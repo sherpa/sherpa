@@ -514,7 +514,6 @@ class UserStat(Stat):
         if not self._statfuncset:
             raise StatErr('nostat', self.name, 'calc_stat()')
 
-        print 'UserStat: bkg =', bkg
         if bkg is None or bkg['bkg'] is None:
             return self.statfunc(data, model, staterror, syserror, weight)
         else:

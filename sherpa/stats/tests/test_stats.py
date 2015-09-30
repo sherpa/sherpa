@@ -232,23 +232,23 @@ class test_stats(SherpaTestCase):
         results = fit.fit()
         self.compare_results(self._fit_mycash_results_bench, results)
 
-    def test_mycash_stat(self):
+    def test_mycash_data_and_model_have_bkg(self):
         fit = Fit(self.data, self.model, MyCashWithBkg(), NelderMead())
         results = fit.fit()
         self.compare_results(self._fit_mycash_results_bench, results)
 
-    def test_mychi_stat(self):
+    def test_mychi_data_and_model_have_bkg(self):
         fit = Fit(self.data, self.model, MyChiWithBkg(), LevMar())
         results = fit.fit()
         self.compare_results(self._fit_mychi_results_bench, results)
 
-    def test_cashnobkg(self):
+    def test_mycash_data_and_model_donothave_bkg(self):
         data = self.bkg
         fit = Fit(data, self.model, MyCashNoBkg(), NelderMead())
         results = fit.fit()
         self.compare_results(self._fit_mycashnobkg_results_bench, results)
 
-    def test_chinobkg(self):
+    def test_mychi_data_and_model_donothave_bkg(self):
         data = self.bkg
         fit = Fit(data, self.model, MyChiNoBkg(), LevMar())
         results = fit.fit()
@@ -259,6 +259,7 @@ class test_stats(SherpaTestCase):
         results = fit.fit()
         self.compare_results(self._fit_wstat_results_bench, results)
 
+    # The following test passes if run by itself but fails when run with others
     # def test_wstat1(self):
     #     pha_fname = self.make_path("stats/acisf09122_000N001_r0013_pha3.fits")
     #     ui.load_pha(pha_fname)
