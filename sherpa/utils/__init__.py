@@ -98,7 +98,7 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaTest', 'SherpaTestCase',
            'parse_expr', 'poisson_noise', 'print_fields', 'rebin',
            'sao_arange', 'sao_fcmp', 'set_origin', 'sum_intervals', 'zeroin',
            'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile',
-           'TraceCalls')
+           'TraceCalls','get_valid_args')
 
 _guess_ampl_scale = 1.e+3
 
@@ -1924,6 +1924,7 @@ def is_in(arg, seq):
             return True
     return False
 
+
 def is_iterable(arg):
     return isinstance(arg, list) or isinstance(arg, tuple) \
            or isinstance(arg, numpy.ndarray) or numpy.iterable(arg)
@@ -2723,3 +2724,10 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
     except (ZeroDivisionError, OutOfBoundErr):
         return [[xb, fb], [[xa, fa], [xc, fc]], nfev[0]]
+
+
+def get_valid_args(func):
+    valid_args = func.func_code.co_varnames[:func.func_code.co_argcount]
+    kwargs_length = len(func.func_defaults)  # number of keyword arguments
+    valid_kwargs = valid_args[-kwargs_length:]  # because kwargs are last
+    return valid_kwargs

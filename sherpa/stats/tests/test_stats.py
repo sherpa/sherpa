@@ -45,7 +45,6 @@ class MyCashWithBkg(UserStat):
     @staticmethod
     def cash_withbkg(data, model, staterror=None, syserror=None, weight=None,
                      bkg=None):
-        assert bkg is not None
         fvec = model - (data * numpy.log(model))
         if weight is not None:
             fvec = fvec * weight
@@ -67,8 +66,6 @@ class MyChiWithBkg(UserStat):
     @staticmethod
     def chi_withbkg(data, model, staterror=None, syserror=None, weight=None,
                     bkg=None):
-        assert bkg is not None
-
         fvec = ((data - model) / staterror)**2
         stat = fvec.sum()
         return (stat, fvec)
@@ -185,7 +182,7 @@ class test_stats(SherpaTestCase):
         'dof': 443,
         'istatval': 14000.5250801,
         'statval': 1156.57701288,
-        'rstat' : 2.6107833248,
+        'rstat': 2.6107833248,
         'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
         'parvals': numpy.array(
             [5864.278543739505, 1.6569575154646112, 29868.225197035885])}
@@ -251,6 +248,28 @@ class test_stats(SherpaTestCase):
     def test_mychi_data_and_model_donothave_bkg(self):
         data = self.bkg
         fit = Fit(data, self.model, MyChiNoBkg(), LevMar())
+        results = fit.fit()
+        self.compare_results(self._fit_mychinobkg_results_bench, results)
+
+    def test_mycash_datahasbkg_modelhasnobkg(self):
+        fit = Fit(self.data, self.model, MyCashNoBkg(), NelderMead())
+        results = fit.fit()
+        self.compare_results(self._fit_mycash_results_bench, results)
+
+    def test_mycash_nobkgdata_modelhasbkg(self):
+        data = self.bkg
+        fit = Fit(data, self.model, MyCashWithBkg(), NelderMead())
+        results = fit.fit()
+        self.compare_results(self._fit_mycashnobkg_results_bench, results)
+
+    def test_mychi_datahasbkg_modelhasnobkg(self):
+        fit = Fit(self.data, self.model, MyChiNoBkg(), LevMar())
+        results = fit.fit()
+        self.compare_results(self._fit_mychi_results_bench, results)
+
+    def test_mychi_nobkgdata_modelhasbkg(self):
+        data = self.bkg
+        fit = Fit(data, self.model, MyChiWithBkg(), LevMar())
         results = fit.fit()
         self.compare_results(self._fit_mychinobkg_results_bench, results)
 

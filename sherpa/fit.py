@@ -25,19 +25,27 @@ from numpy import arange, array, abs, iterable, sqrt, where, \
     ones_like, isnan, isinf, float, float32, finfo, nan, any, zeros, append, \
     int, ones
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
-    bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
+    bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp, \
+    get_valid_args
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, LeastSq, \
-    Likelihood, WStat
+    Likelihood, WStat, UserStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
 __all__ = ('FitResults', 'ErrorEstResults', 'Fit')
+
+
+# def get_valid_args(func):
+#     valid_args = func.func_code.co_varnames[:func.func_code.co_argcount]
+#     kwargs_length = len(func.func_defaults)  # number of keyword arguments
+#     valid_kwargs = valid_args[-kwargs_length:]  # because kwargs are last
+#     return valid_kwargs
 
 
 def evaluates_model(func):
@@ -557,13 +565,22 @@ class IterFit(NoNewAttributesAfterInit):
 
             self.model.thawedpars = pars
             model = self.data.eval_model_to_fit(self.model)
-            if self.bkg_data['bkg'] is None:
-                stat = self.stat.calc_stat(self._dep, model, self._staterror,
-                                           self._syserror)
+            valid_args = get_valid_args(self.stat.calc_stat)
+            if is_in('bkg', valid_args):
+                if isinstance(self.stat, UserStat):
+                    stat = self.stat.calc_stat(self._dep, model,
+                                               self._staterror,
+                                               syserror=self._syserror,
+                                               bkg=self.bkg_data['bkg'])
+                else:
+                    stat = self.stat.calc_stat(self._dep, model,
+                                               self._staterror,
+                                               syserror=self._syserror,
+                                               bkg=self.bkg_data)
             else:
-                stat = self.stat.calc_stat(self._dep, model, self._staterror,
-                                           self._syserror, bkg=self.bkg_data)
-
+                stat = self.stat.calc_stat(self._dep, model,
+                                           self._staterror,
+                                           syserror=self._syserror)
             if self._file is not None:
                 vals = ['%5e %5e' % (self._nfev, stat[0])]
                 vals.extend(['%5e' % val for val in self.model.thawedpars])
@@ -983,11 +1000,19 @@ class Fit(NoNewAttributesAfterInit):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         model = self.data.eval_model_to_fit(self.model)
         bkg_data = self._iterfit.get_bkg_data(dep)
-        if bkg_data['bkg'] is None:
-            return self.stat.calc_stat(dep, model, staterror, syserror)[0]
+        valid_args = get_valid_args(self.stat.calc_stat)
+        if is_in('bkg', valid_args):
+            if isinstance(self.stat, UserStat):
+                return self.stat.calc_stat(dep, model, staterror,
+                                           syserror=syserror,
+                                           bkg=bkg_data['bkg'])[0]
+            else:
+                return self.stat.calc_stat(dep, model, staterror,
+                                           syserror=syserror,
+                                           bkg=bkg_data)[0]
         else:
-            return self.stat.calc_stat(dep, model, staterror, syserror,
-                                       bkg=bkg_data)[0]
+            return self.stat.calc_stat(dep, model, staterror,
+                                       syserror=syserror)[0]
 
     def calc_chisqr(self):
         """Calculate the per-bin chi-squared statistic.

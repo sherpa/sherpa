@@ -571,7 +571,7 @@ class WStat(Likelihood):
         Likelihood.__init__(self, name)
 
     @staticmethod
-    def calc_stat(data, model, datasize=None, exposuretime=None,
+    def calc_stat(data, model, staterror=None, syserror=None,
                   weight=None, bkg=None):
         if bkg is None or bkg['bkg'] is None:
             raise StatErr('usecstat')
