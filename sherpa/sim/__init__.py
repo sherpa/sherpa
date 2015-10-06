@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,7 +24,7 @@ from sherpa.sim.mh import *
 
 from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults, \
     sao_fcmp
-from sherpa.stats import Cash, CStat
+from sherpa.stats import Cash, CStat, WStat
 
 import numpy
 import logging
@@ -471,7 +471,7 @@ class MCMC(NoNewAttributesAfterInit):
 
 
     def get_draws(self, fit, sigma, niter=1000):
-        """ 
+        """
         Run pyblocxs using current sampler and current sampler configuration
         options for *niter* number of iterations.  The results are returned as a
         3-tuple of Numpy ndarrays.  The tuple specifys an array of statistic
@@ -491,8 +491,8 @@ class MCMC(NoNewAttributesAfterInit):
         >>> stats, accept, params = get_draws(fit, niter=1e4)
 
         """
-        if not isinstance(fit.stat, (Cash, CStat)):
-            raise ValueError("Fit statistic must be cash or cstat, not %s" %
+        if not isinstance(fit.stat, (Cash, CStat,WStat)):
+            raise ValueError("Fit statistic must be cash, cstat or wstat, not %s" %
                              fit.stat.name)
 
         mu = fit.model.thawedpars
@@ -556,7 +556,7 @@ class MCMC(NoNewAttributesAfterInit):
 
         try:
             fit.model.startup()
-            self.sample = sampler(calc_stat, sigma, mu, dof, fit)        
+            self.sample = sampler(calc_stat, sigma, mu, dof, fit)
             self.walk = walker(self.sample, niter)
             stats, accept, params = self.walk(**sampler_kwargs)
         finally:
