@@ -19,15 +19,23 @@
 
 """Monte-Carlo Markov Chain support for low-count data (Poisson statistics).
 
-The ``sherpa.sim`` module provides support for estimating the credible
-interval of parameters in a fit to low-count data, for which Poisson
-statistics hold, using a Bayesian algorithm and a Monte-Carlo
-Markov Chain (MCMC). It was originally known as the pyBLoCXS
-(python Bayesian Low-Count X-ray Spectral) package [1]_, but has
-since been incorporated into Sherpa.
+The ``sherpa.sim`` module provides support for exploring the posterior
+probability density of parameters in a fit to low-count data, for
+which Poisson statistics hold, using a Bayesian algorithm and a
+Monte-Carlo Markov Chain (MCMC). It was originally known as the
+pyBLoCXS (python Bayesian Low-Count X-ray Spectral) package [1]_, but
+has since been incorporated into Sherpa.
 
 The Sherpa UI modules - e.g. `sherpa.ui` and `sherpa.astro.ui` - provide
 many of the routines described below (e.g. ``list_samplers``).
+
+Acknowledgements
+----------------
+
+The original version of the code was developed by the CHASC
+Astro-Statistics collaboration http://hea-www.harvard.edu/AstroStat/,
+and was called pyBLoCXS. It has since been developed by the
+Chandra X-ray Center and weas added to Sherpa in version 4.5.1.
 
 Overview
 --------
@@ -341,9 +349,9 @@ class MCMC(NoNewAttributesAfterInit):
         """Set the prior function to use with a parameter.
 
         The default prior used by ``get_draws`` for each parameter
-        is flat, varying between the soft minimum and maximum
-        values of the parameter (as given by the ``min`` and
-        ``max`` attributes of the parameter object). The ``set_prior``
+        is flat, varying between the hard minimum and maximum
+        values of the parameter (as given by the ``hard_min`` and
+        ``hard_max`` attributes of the parameter object). The ``set_prior``
         function is used to change the form of the prior for a
         parameter.
 
@@ -443,9 +451,9 @@ class MCMC(NoNewAttributesAfterInit):
         The jumping rules are:
 
         MH
-           The Metropolis-Hastings rule, which jumps from the best-fit
-           location, even if the previous iteration had moved away from
-           it.
+           The Metropolis-Hastings rule, which always jumps from the
+           best-fit location, even if the previous iteration had moved
+           away from it.
 
         MetropolisMH
            This is the Metropolis with Metropolis-Hastings algorithm,
