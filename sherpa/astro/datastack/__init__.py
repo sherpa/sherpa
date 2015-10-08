@@ -32,6 +32,14 @@ commands used to load data, set source models, get and set parameters,
 fit, and plot. It is intended for use when simultaneously fitting a
 common source model to multiple data sets.
 
+Acknowledgements
+----------------
+
+The Datastack code was developed by Thomas Aldcroft and originally
+provided as an external package for Sherpa, available at
+http://cxc.harvard.edu/contrib/datastack/. The code was added to
+Sherpa in version 4.7.1.
+
 Example: PHA data
 -----------------
 
