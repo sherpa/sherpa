@@ -213,47 +213,6 @@ def _assign_model_to_main(name, model):
 # Session
 #
 ###############################################################################
-class loggable(object):
-
-    def __init__(self, with_id=False, with_keyword=False, with_name=None):
-        self.with_id = with_id
-        self.with_keyword = with_keyword
-        self.with_name = with_name
-
-    def __call__(self, func):
-        if self.with_name:
-            name = self.with_name
-        else:
-            name = func.__name__
-
-        def log_decorator(*args, **kwargs):
-            ret = func(*args, **kwargs)
-            session = args[0]
-            line = readline.get_history_item(
-                readline.get_current_history_length())
-            if self.with_id:
-                the_args = inspect.getcallargs(func, *args, **kwargs)
-                id = the_args['id']
-                if self.with_keyword:
-                    model = the_args[self.with_keyword]
-                    if model is None:
-                        id = None
-                id = session._fix_id(id)
-                # otherwise don't do anything and let normal error handling
-                # take action
-                if id is not None:
-                    if not session._calls_tracker.has_key(id):
-                        session._calls_tracker[id] = dict()
-                    session._calls_tracker[id][name] = line
-            else:
-                session._calls_tracker[name] = line
-            return ret
-        # this is needed because __init__.py will recreate the methods, see
-        # that file for info (look up 'decorator')
-        log_decorator._original = func
-        return log_decorator
-
-
 class Session(NoNewAttributesAfterInit):
 
     ###########################################################################
@@ -264,7 +223,6 @@ class Session(NoNewAttributesAfterInit):
         self.clean()
         self._model_types = {}
         self._model_globals = numpy.__dict__.copy()
-        self._calls_tracker = dict()
         NoNewAttributesAfterInit.__init__(self)
         global _session
         _session = self
@@ -15628,12 +15586,3 @@ class Session(NoNewAttributesAfterInit):
         """
         return sherpa.image.Image.xpaset(arg, data)
 
-#    def log_model_call(self, id, model, func_name):
-#	id_ = id
-#	if model is None:
-#		id_ = None
-#	id_ = self._fix_id(id_)
-#	if not self._calls_tracker.has_key(id_):
-#		self._calls_tracker[id_] = dict()
-#	line = readline.get_history_item(readline.get_current_history_length())
-#	self._calls_tracker[id_][func_name] = line

@@ -29,8 +29,6 @@ from sherpa.data import Data1D
 import sherpa.astro.all
 import sherpa.astro.plot
 
-from sherpa.ui.utils import loggable
-
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
@@ -546,7 +544,6 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     # DOC-NOTE: also in sherpa.utils
-    #@loggable(with_id=True, with_name='load_data')
     def dataspace1d(self, start, stop, step=1, numbins=None,
                     id=None, bkg_id=None, dstype=sherpa.data.Data1DInt):
         """Create the independent axis for a 1D data set.
@@ -780,7 +777,6 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: rework the Data type notes section (also needed for
     # unpack_arrays)
-    #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_arrays(self, id, *args):
         """Create a data set from array values.
 
@@ -941,7 +937,6 @@ class Session(sherpa.ui.utils.Session):
     # as it's needed in multiple places (ideally in the
     # DataX class documentation, but users may not find it)
     # DOC-TODO: what do the shape arguments for Data2D/Data2DInt mean?
-    #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_table(self, id, filename=None, ncols=2, colkeys=None,
                    dstype=Data1D):
         """Load a FITS binary file as a data set.
@@ -1137,7 +1132,6 @@ class Session(sherpa.ui.utils.Session):
     # have been read from a FITS binary table.
     # DOC-TODO: how best to include datastack support?
     # DOC-TODO: what does shape mean here (how is it encoded)?
-    #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_ascii(self, id, filename=None, ncols=2, colkeys=None,
                    dstype=Data1D, sep=' ', comment='#'):
         """Load an ASCII file as a data set.
@@ -1315,7 +1309,6 @@ class Session(sherpa.ui.utils.Session):
         return data
 
     # DOC-NOTE: also in sherpa.utils
-    #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_data(self, id, filename=None, *args, **kwargs):
         """Load a data set from a file.
 
@@ -1444,7 +1437,6 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
-    #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_image(self, id, arg=None, coord='logical',
                    dstype=sherpa.astro.data.DataIMG):
         """Load an image as a data set.
@@ -1612,7 +1604,6 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_pha(arg, use_errors, True)
 
     # DOC-TODO: how best to include datastack support?
-    #@loggable(with_id=True, with_keyword='arg', with_name='load_data')
     def load_pha(self, id, arg=None, use_errors=False):
         """Load a PHA data set.
 
@@ -4729,7 +4720,6 @@ class Session(sherpa.ui.utils.Session):
     #        raise ArgumentTypeError('response identifiers must be integers ' +
     #                                'or strings')
 
-    #@loggable(with_id=True)
     def get_arf(self, id=None, resp_id=None, bkg_id=None):
         """Return the ARF associated with a PHA data set.
 
@@ -4927,7 +4917,6 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how to describe I/O backend support?
     # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     # from PyFITS lands soon.
-    #@loggable(with_id=True, with_keyword='arg')
     def load_arf(self, id, arg=None, resp_id=None, bkg_id=None):
         """Load an ARF from a file and add it to a PHA data set.
 
@@ -5053,7 +5042,6 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how to describe I/O backend support?
     # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     # from PyFITS lands soon.
-    #@loggable(with_id=True, with_keyword='arg')
     def load_bkg_arf(self, id, arg=None):
         """Load an ARF from a file and add it to the background of a
         PHA data set.
@@ -5176,7 +5164,6 @@ class Session(sherpa.ui.utils.Session):
             resp_id = resp_ids.pop(0)
             self.load_arf(id, filename, resp_id)
 
-    #@loggable(with_id=True)
     def get_rmf(self, id=None, resp_id=None, bkg_id=None):
         """Return the RMF associated with a PHA data set.
 
@@ -5369,7 +5356,6 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how to describe I/O backend support?
     # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     # from PyFITS lands soon.
-    #@loggable(with_id=True, with_keyword='arg')
     def load_rmf(self, id, arg=None, resp_id=None, bkg_id=None):
         """Load a RMF from a file and add it to a PHA data set.
 
@@ -5490,7 +5476,6 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how to describe I/O backend support?
     # DOC-TODO: labelling as AstroPy HDUList; i.e. assuming conversion
     # from PyFITS lands soon.
-    #@loggable(with_id=True, with_keyword='arg')
     def load_bkg_rmf(self, id, arg=None):
         """Load a RMF from a file and add it to the background of a
         PHA data set.
@@ -5801,7 +5786,6 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
     # DOC-TODO: should the arguments be renamed to better match optional
     # nature of the routine (e.g. can call set_analysis('energy'))?
-    #@loggable(with_id=True, with_keyword='quantity')
     def set_analysis(self, id, quantity=None, type='rate', factor=0):
         """Set the units used when fitting and displaying spectral data.
 
@@ -5915,7 +5899,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: docs need to be added to sherpa.astro.data.set_coord
     # DOC-TODO: how best to document the wcssubs support?
-    #@loggable(with_id=True, with_keyword='coord')
     def set_coord(self, id, coord=None):
         """Set the coordinate system to use for image analysis.
 
@@ -6561,7 +6544,6 @@ class Session(sherpa.ui.utils.Session):
             self.ignore2d_id(id, regions)
 
     # DOC-TODO: how best to include datastack support? How is it handled here?
-    #@loggable(with_id=True, with_keyword='arg')
     def load_bkg(self, id, arg=None, use_errors=False, bkg_id=None):
         """Load the background from a file and add it to a PHA data set.
 
@@ -6636,7 +6618,6 @@ class Session(sherpa.ui.utils.Session):
         else:
             self.set_bkg(id, bkgsets, bkg_id)
 
-    #@loggable(with_id=True)
     def group(self, id=None, bkg_id=None):
         """Turn on the grouping for a PHA data set.
 
@@ -7044,7 +7025,6 @@ class Session(sherpa.ui.utils.Session):
 
         return data.quality
 
-    #@loggable(with_id=True)
     def ungroup(self, id=None, bkg_id=None):
         """Turn off the grouping for a PHA data set.
 
@@ -7156,7 +7136,6 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how to set the quality if using tabstops to indicate
     # "bad" channels, rather than ones to ignore
 
-    #@loggable(with_id=True, with_keyword='num')
     def group_bins(self, id, num=None, bkg_id=None, tabStops=None):
         """Group into a fixed number of bins.
 
@@ -7270,7 +7249,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: should num= be renamed val= to better match
     # underlying code/differ from group_bins?
-    #@loggable(with_id=True, with_keyword='num')
     def group_width(self, id, num=None, bkg_id=None, tabStops=None):
         """Group into a fixed bin width.
 
@@ -7378,7 +7356,6 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_width(num, tabStops)
 
-    #@loggable(with_id=True, with_keyword='num')
     def group_counts(self, id, num=None, bkg_id=None,
                      maxLength=None, tabStops=None):
         """Group into a minimum number of counts per bin.
@@ -7495,7 +7472,6 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: check the Poisson stats claim; I'm guessing it means
     ###           gaussian (i.e. sqrt(n))
-    #@loggable(with_id=True, with_keyword='snr')
     def group_snr(self, id, snr=None, bkg_id=None,
                   maxLength=None, tabStops=None, errorCol=None):
         """Group into a minimum signal-to-noise ratio.
@@ -7594,7 +7570,6 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_snr(snr, maxLength, tabStops, errorCol)
 
-    #@loggable(with_id=True, with_keyword='min')
     def group_adapt(self, id, min=None, bkg_id=None,
                     maxLength=None, tabStops=None):
         """Adaptively group to a minimum number of counts.
@@ -7692,7 +7667,6 @@ class Session(sherpa.ui.utils.Session):
         data.group_adapt(min, maxLength, tabStops)
 
     # DOC-TODO: shouldn't this be snr=None rather than min=None
-    #@loggable(with_id=True, with_keyword='min')
     def group_adapt_snr(self, id, min=None, bkg_id=None,
                         maxLength=None, tabStops=None, errorCol=None):
         """Adaptively group to a minimum signal-to-noise ratio.
@@ -7795,7 +7769,6 @@ class Session(sherpa.ui.utils.Session):
             data = self.get_bkg(id, bkg_id)
         data.group_adapt_snr(min, maxLength, tabStops, errorCol)
 
-    #@loggable(with_id=True)
     def subtract(self, id=None):
         """Subtract the background estimate from a data set.
 
@@ -7886,7 +7859,6 @@ class Session(sherpa.ui.utils.Session):
                 'subtractset', 'data set', str(self._fix_id(id)), 'True')
         self._get_pha_data(id).subtract()
 
-    #@loggable(with_id=True)
     def unsubtract(self, id=None):
         """Undo any background subtraction for the data set.
 
@@ -8140,7 +8112,6 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
     # PSF
     ###########################################################################
-    #@loggable
     def load_psf(self, modelname, filename_or_model, *args, **kwargs):
         kernel = filename_or_model
         if isinstance(filename_or_model, basestring):
@@ -8166,7 +8137,6 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     # DOC-NOTE: also in sherpa.utils
-    #@loggable(with_id=True, with_keyword='model')
     def set_full_model(self, id, model=None):
         """Define the convolved model expression for a data set.
 
@@ -8303,7 +8273,6 @@ class Session(sherpa.ui.utils.Session):
 
         return model
 
-    #@loggable(with_id=True)
     def get_response(self, id=None, bkg_id=None):
         """Return the respone information applied to a PHA data set.
 
@@ -8410,7 +8379,6 @@ class Session(sherpa.ui.utils.Session):
         return self._get_item(id, self._pileup_models, 'pileup model',
                               'has not been set')
 
-    #@loggable(with_id=True, with_keyword='model')
     # DOC-NOTE: should this be made a general function, since it
     # presumably does not care about pileup, just adds the
     # given model into the expression? Or is it PHA specific?
@@ -8602,7 +8570,6 @@ class Session(sherpa.ui.utils.Session):
                 model = resp(src)
         return model
 
-    #@loggable(with_id=True, with_keyword='model')
     def set_bkg_full_model(self, id, model=None, bkg_id=None):
         """Define the convolved background model expression for a PHA data set.
 
@@ -8708,7 +8675,6 @@ class Session(sherpa.ui.utils.Session):
         self._runparamprompt(model.pars)
 
     # DOC-TODO: should probably explain more about how backgrounds are fit?
-    #@loggable(with_id=True, with_keyword='model')
     def set_bkg_model(self, id, model=None, bkg_id=None):
         """Set the background model expression for a PHA data set.
 
@@ -8897,7 +8863,6 @@ class Session(sherpa.ui.utils.Session):
     # also in sherpa.utils
     # DOC-NOTE: can filename be a crate/hdulist?
     # DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
-    #@loggable()
     def load_table_model(self, modelname, filename, method=sherpa.utils.linear_interp, *args, **kwargs):
         """Load tabular or image data and use it as a model component.
 
@@ -12566,563 +12531,6 @@ class Session(sherpa.ui.utils.Session):
                     if (self.get_data(id).grouping is not None):
                         _send_to_outfile(
                             "\n######### Data Group Flags\n", outfile)
-                        cmd = "set_grouping(%s, " % cmd_id
-                        cmd = cmd + "val=numpy.array(" + repr(self.get_grouping(
-                            id).tolist()) + ", numpy." + str(self.get_grouping(id).dtype) + "))"
-                        _send_to_outfile(cmd, outfile)
-                    if (self.get_data(id).quality is not None):
-                        _send_to_outfile(
-                            "\n######### Data Quality Flags\n", outfile)
-                        cmd = "set_quality(%s, " % cmd_id
-                        cmd = cmd + "val=numpy.array(" + repr(self.get_quality(
-                            id).tolist()) + ", numpy." + str(self.get_quality(id).dtype) + "))"
-                        _send_to_outfile(cmd, outfile)
-                # End check for original groups and quality flags
-                if (self.get_data(id).grouped == True):
-                    cmd = "if (get_data(%s).grouping is not None and get_data(%s).grouped == False):" % (
-                        cmd_id, cmd_id)
-                    _send_to_outfile(cmd, outfile)
-                    _send_to_outfile("\t######### Group Data", outfile)
-                    cmd = "\tgroup(%s)" % cmd_id
-                    _send_to_outfile(cmd, outfile)
-            except:
-                pass
-
-            # Add responses and ARFs, if any
-            try:
-                _send_to_outfile(
-                    "\n######### Data Spectral Responses\n", outfile)
-                rids = self.list_response_ids(id)
-                cmd_resp_id = ""
-
-                for rid in rids:
-                    if (type(rid) == str):
-                        cmd_resp_id = "\"%s\"" % rid
-                    else:
-                        cmd_resp_id = "%s" % rid
-
-                    try:
-                        arf = self.get_arf(id, rid)
-                        cmd = "load_arf(%s,\"%s\",%s)" % (
-                            cmd_id, arf.name, cmd_resp_id)
-                        _send_to_outfile(cmd, outfile)
-                    except:
-                        pass
-
-                    try:
-                        rmf = self.get_rmf(id, rid)
-                        cmd = "load_rmf(%s,\"%s\",%s)" % (
-                            cmd_id, rmf.name, cmd_resp_id)
-                        _send_to_outfile(cmd, outfile)
-                    except:
-                        pass
-            except:
-                pass
-
-            # Check if this data set has associated backgrounds
-            try:
-                _send_to_outfile(
-                    "\n######### Load Background Data Sets\n", outfile)
-                bids = self.list_bkg_ids(id)
-                cmd_bkg_id = ""
-                for bid in bids:
-                    if (type(bid) == str):
-                        cmd_bkg_id = "\"%s\"" % bid
-                    else:
-                        cmd_bkg_id = "%s" % bid
-                    cmd = "load_bkg(%s,\"%s\", bkg_id=%s)" % (
-                        cmd_id, self.get_bkg(id, bid).name, cmd_bkg_id)
-                    _send_to_outfile(cmd, outfile)
-
-                    # Group data if applicable
-                    try:
-                        # Only store group flags and quality flags if they were changed
-                        # from flags in the file
-                        if (self.get_bkg(id, bid)._original_groups == False):
-                            if (self.get_bkg(id, bid).grouping is not None):
-                                _send_to_outfile(
-                                    "\n######### Background Group Flags\n", outfile)
-                                cmd = "set_grouping(%s, " % cmd_id
-                                cmd = cmd + "val=numpy.array(" + repr(self.get_grouping(id).tolist()) + ", numpy." + str(
-                                    self.get_grouping(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
-                                _send_to_outfile(cmd, outfile)
-                            if (self.get_bkg(id, bid).quality is not None):
-                                _send_to_outfile(
-                                    "\n######### Background Quality Flags\n", outfile)
-                                cmd = "set_quality(%s, " % cmd_id
-                                cmd = cmd + "val=numpy.array(" + repr(self.get_quality(id).tolist()) + ", numpy." + str(
-                                    self.get_quality(id, bid).dtype) + "), bkg_id=" + cmd_bkg_id + ")"
-                                _send_to_outfile(cmd, outfile)
-                        # End check for original groups and quality flags
-                        if (self.get_bkg(id, bid).grouped == True):
-                            cmd = "if (get_bkg(%s,%s).grouping is not None and get_bkg(%s,%s).grouped == False):" % (
-                                cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
-                            _send_to_outfile(cmd, outfile)
-                            _send_to_outfile(
-                                "\t######### Group Background", outfile)
-                            cmd = "\tgroup(%s,%s)" % (cmd_id, cmd_bkg_id)
-                            _send_to_outfile(cmd, outfile)
-                    except:
-                        pass
-
-                    # Load background response, ARFs if any
-                    _send_to_outfile(
-                        "\n######### Background Spectral Responses\n", outfile)
-                    rids = self.list_response_ids(id, bid)
-                    cmd_resp_id = ""
-                    for rid in rids:
-                        if (type(rid) == str):
-                            cmd_resp_id = "\"%s\"" % rid
-                        else:
-                            cmd_resp_id = "%s" % rid
-
-                        try:
-                            arf = self.get_arf(id, rid, bid)
-                            cmd = "load_arf(%s,\"%s\",%s,%s)" % (
-                                cmd_id, arf.name, cmd_resp_id, cmd_bkg_id)
-                            _send_to_outfile(cmd, outfile)
-                        except:
-                            pass
-
-                        try:
-                            rmf = self.get_rmf(id, rid, bid)
-                            cmd = "load_rmf(%s,\"%s\",%s,%s)" % (
-                                cmd_id, rmf.name, cmd_resp_id, cmd_bkg_id)
-                            _send_to_outfile(cmd, outfile)
-                        except:
-                            pass
-
-            except:
-                pass
-
-            # Set energy units if applicable
-            # If can't be done, just pass to next
-            try:
-                _send_to_outfile(
-                    "\n######### Set Energy or Wave Units\n", outfile)
-                units = self.get_data(id).units
-                rate = self.get_data(id).rate
-                if (rate == True):
-                    rate = "\"rate\""
-                else:
-                    rate = "\"counts\""
-                factor = self.get_data(id).plot_fac
-                cmd = "set_analysis(%s, %s, %s, %s)" % (cmd_id,
-                                                        repr(units),
-                                                        rate,
-                                                        repr(factor))
-                _send_to_outfile(cmd, outfile)
-            except:
-                pass
-
-            # Subtract background data if applicable
-            try:
-                if (self.get_data(id).subtracted == True):
-                    cmd = "if (get_data(%s).subtracted == False):" % cmd_id
-                    _send_to_outfile(cmd, outfile)
-                    _send_to_outfile(
-                        "\t######### Subtract Background Data", outfile)
-                    cmd = "\tsubtract(%s)" % cmd_id
-                    _send_to_outfile(cmd, outfile)
-            except:
-                pass
-
-            # Set filter if applicable
-            try:
-                _send_to_outfile("\n######### Filter Data\n", outfile)
-                if (len(self.get_data(id).get_filter()) > 0):
-                    filter = self.get_data(id).get_filter()
-                    if (len(self.get_data(id).get_dims()) == 1):
-                        cmd = "notice_id(%s,\"%s\")" % (cmd_id, filter)
-                        _send_to_outfile(cmd, outfile)
-                    if (len(self.get_data(id).get_dims()) == 2):
-                        cmd = "notice2d_id(%s,\"%s\")" % (cmd_id, filter)
-                        _send_to_outfile(cmd, outfile)
-            except:
-                pass
-
-        _send_to_outfile("", outfile)
-
-        # Save statistic
-
-        _send_to_outfile("\n######### Set Statistic\n", outfile)
-        cmd = "set_stat(\"%s\")" % self.get_stat_name()
-        _send_to_outfile(cmd, outfile)
-        _send_to_outfile("", outfile)
-
-        # Save fitting method
-
-        _send_to_outfile("\n######### Set Fitting Method\n", outfile)
-        cmd = "set_method(\"%s\")" % self.get_method_name()
-        _send_to_outfile(cmd, outfile)
-        _send_to_outfile("", outfile)
-
-        mdict = self.get_method_opt()
-        for key in mdict:
-            val = mdict.get(key)
-            cmd = "set_method_opt(\"%s\", %s)" % (key, val)
-            _send_to_outfile(cmd, outfile)
-        _send_to_outfile("", outfile)
-
-        # Save iterative fitting method (if any)
-        if (self.get_iter_method_name() != 'none'):
-            _send_to_outfile(
-                "\n######### Set Iterative Fitting Method\n", outfile)
-            cmd = "set_iter_method(\"%s\")" % self.get_iter_method_name()
-            _send_to_outfile(cmd, outfile)
-            _send_to_outfile("", outfile)
-
-            mdict = self.get_iter_method_opt()
-            for key in mdict:
-                val = mdict.get(key)
-                cmd = "set_iter_method_opt(\"%s\", %s)" % (key, val)
-                _send_to_outfile(cmd, outfile)
-            _send_to_outfile("", outfile)
-
-        # Save all model components
-
-        # Have to call elements in list in reverse order (item at end of
-        # list was model first created), so that we get links right, if any
-
-        # To recreate attributes, print out dictionary as ordered pairs,
-        # for each parameter
-
-        _send_to_outfile(
-            "\n######### Set Model Components and Parameters\n", outfile)
-        all_model_components = self.list_model_components()
-        all_model_components.reverse()
-
-        # If there are any links between parameters, store link commands here
-        # Then, *after* processing all models in the for loop below, send
-        # link commands to outfile -- *all* models need to be created before
-        # *any* links between parameters can be established.
-        linkstr = ""
-        for mod in all_model_components:
-
-            # get actual model instance from the name we are given
-            # then get model type, and name of this instance.
-            mod = eval(mod)
-            typename = mod.type
-            modelname = mod.name.partition(".")[2]
-
-            # Special cases:
-
-            # account for PSF creation elsewhere (above, with load_data
-            # commands);
-
-            # for table models, use "load_table_model", to ensure we
-            # add to lists of known models *and* separate list of
-            # tabel models;
-
-            # skip user models entirely, as they require importation of
-            # user modules, beyond scope of this script.
-
-            if (typename != "psfmodel" and typename != "tabelmodel" and
-                    typename != "usermodel"):
-                # Normal case:  create an instance of the model.
-                cmd = "eval(\"%s.%s\")" % (typename, modelname)
-                _send_to_outfile(cmd, outfile)
-            if (typename == "psfmodel"):
-                cmd = "load_psf(\"%s\", \"%s\")" % (mod._name, mod.kernel.name)
-                _send_to_outfile(cmd, outfile)
-                try:
-                    psfmod = self.get_psf(id)
-                    cmd = "set_psf(%s, %s)" % (cmd_id, psfmod._name)
-                    _send_to_outfile(cmd, outfile)
-                except:
-                    pass
-            if (typename == "tablemodel"):
-                # Create table model with load_table_model
-                cmd = "load_table_model(\"%s\", \"%s\")" % (
-                    modelname, mod.filename)
-                _send_to_outfile(cmd, outfile)
-
-            if (typename == "convolutionkernel"):
-                # Create general convolution kernel with load_conv
-                cmd = "load_conv(\"%s\", \"%s\")" % (
-                    modelname, mod.kernel.name)
-                _send_to_outfile(cmd, outfile)
-
-            if (typename == "usermodel"):
-                # Skip user models -- don't create, don't set parameters
-                # Go directly to next model in the model component list.
-                _send_to_outfile(
-                    "WARNING: User model not saved, add any user model to save file manually\n", outfile)
-                continue
-
-            if (hasattr(mod, "integrate") == True):
-                cmd = "%s.integrate = %s" % (modelname, mod.integrate)
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
-
-            from sherpa.models import Parameter
-            for par in mod.__dict__.values():
-                if (type(par) == Parameter or
-                        issubclass(Parameter, type(par)) == True):
-                    par_attributes, par_linkstr = _print_par(par)
-                    _send_to_outfile(par_attributes, outfile)
-                    linkstr = linkstr + par_linkstr
-            # If the model is a PSFModel, could have special
-            # attributes "size" and "center" -- if so, record them.
-            if (typename == "psfmodel"):
-                if (hasattr(mod, "size") == True):
-                    cmd = "%s.size = %s" % (modelname, repr(mod.size))
-                    _send_to_outfile(cmd, outfile)
-                    _send_to_outfile("", outfile)
-                if (hasattr(mod, "center") == True):
-                    cmd = "%s.center = %s" % (modelname, repr(mod.center))
-                    _send_to_outfile(cmd, outfile)
-                    _send_to_outfile("", outfile)
-
-        # If there were any links made between parameters, send those
-        # link commands to outfile now; else, linkstr is just an empty string
-        _send_to_outfile(linkstr, outfile)
-
-        # Save all source, pileup and background models
-
-        _send_to_outfile(
-            "\n######### Set Source, Pileup and Background Models\n", outfile)
-        for id in dids:
-            if (type(id) == str):
-                cmd_id = "\"%s\"" % id
-            else:
-                cmd_id = "%s" % id
-
-            # If a data set has a source model associated with it,
-            # set that here -- try to distinguish cases where
-            # source model is different from whole model.
-            # If not, just pass
-            try:
-                the_source = None
-                the_full_model = None
-                try:
-                    the_source = self.get_source(id)
-                except:
-                    the_source = None
-                    pass
-
-                try:
-                    the_full_model = self.get_model(id)
-                except:
-                    the_full_model = None
-                    pass
-
-                if (the_source is None and
-                        the_full_model is None):
-                    cmd = ""
-                    pass
-                elif (the_source is None and
-                      the_full_model is not None):
-                    cmd = "set_full_model(%s, %s)" % (
-                        cmd_id, the_full_model.name)
-                elif (the_source is not None and
-                      the_full_model is None):
-                    cmd = "set_source(%s, %s)" % (cmd_id, the_source.name)
-                elif (the_source is not None and
-                      the_full_model is not None):
-                    if (repr(the_source) == repr(the_full_model)):
-                        cmd = "set_full_model(%s, %s)" % (
-                            cmd_id, the_full_model.name)
-                    else:
-                        cmd = "set_source(%s, %s)" % (
-                            cmd_id, the_source.name)
-                else:
-                    # You can't actually get here
-                    cmd = ""
-                    pass
-                _send_to_outfile(cmd, outfile)
-                _send_to_outfile("", outfile)
-            except:
-                pass
-
-            # If any pileup models, try to set them.  If not, just pass.
-            try:
-                cmd = "set_pileup_model(%s, %s)" % (
-                    cmd_id, self.get_pileup_model(id).name)
-                _send_to_outfile(cmd, outfile)
-            except:
-                pass
-
-            # Set background models (if any) associated with backgrounds
-            # tied to this data set -- if none, then pass.  Again, try
-            # to distinguish cases where background "source" model is
-            # different from whole background model.
-            try:
-                bids = self.list_bkg_ids(id)
-                cmd_bkg_id = ""
-                for bid in bids:
-                    if (type(bid) == str):
-                        cmd_bkg_id = "\"%s\"" % bid
-                    else:
-                        cmd_bkg_id = "%s" % bid
-
-                    the_bkg_source = None
-                    the_bkg_full_model = None
-                    try:
-                        the_bkg_source = self.get_bkg_source(bid)
-                    except:
-                        the_bkg_source = None
-                        pass
-
-                    try:
-                        the_bkg_full_model = self.get_bkg_model(id)
-                    except:
-                        the_bkg_full_model = None
-                        pass
-
-                    if (the_bkg_source is None and
-                            the_bkg_full_model is None):
-                        cmd = ""
-                        pass
-                    elif (the_bkg_source is None and
-                          the_bkg_full_model is not None):
-                        cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                            cmd_id, the_bkg_full_model.name, cmd_bkg_id)
-                    elif (the_bkg_source is not None and
-                          the_bkg_full_model is None):
-                        cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                            cmd_id, the_bkg_source.name, cmd_bkg_id)
-                    elif (the_bkg_source is not None and
-                          the_bkg_full_model is not None):
-                        if (repr(the_bkg_source) == repr(the_bkg_full_model)):
-                            cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                                cmd_id, the_bkg_full_model.name, cmd_bkg_id)
-                        else:
-                            cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                                cmd_id, the_bkg_source.name, cmd_bkg_id)
-                    else:
-                        # You can't actually get here
-                        cmd = ""
-                        pass
-                    _send_to_outfile(cmd, outfile)
-                    _send_to_outfile("", outfile)
-
-            except:
-                pass
-
-        # Save XSPEC settings if XSPEC module has been loaded.
-        if (hasattr(sherpa.astro, "xspec")):
-            _send_to_outfile("\n######### XSPEC Module Settings\n", outfile)
-            xspec_state = sherpa.astro.xspec.get_xsstate()
-
-            cmd = "set_xschatter(%d)" % xspec_state["chatter"]
-            _send_to_outfile(cmd, outfile)
-            cmd = "set_xsabund(\"%s\")" % xspec_state["abund"]
-            _send_to_outfile(cmd, outfile)
-            cmd = "set_xscosmo(%g, %g, %g)" % (xspec_state["cosmo"][0],
-                                               xspec_state["cosmo"][1],
-                                               xspec_state["cosmo"][2])
-            _send_to_outfile(cmd, outfile)
-            cmd = "set_xsxsect(\"%s\")" % xspec_state["xsect"]
-            _send_to_outfile(cmd, outfile)
-            for name in xspec_state["modelstrings"].keys():
-                cmd = "set_xsxset(\"%s\", \"%s\")" % (name,
-                                                      xspec_state["modelstrings"][name])
-                _send_to_outfile(cmd, outfile)
-
-    def save_session(self, outfile=None, clobber=False):
-
-        # Send output to stdout, or file
-
-        def _send_to_outfile(all, filename=None):
-            if all is None:
-                return
-            try:
-                if filename is None:
-                    print all
-                else:
-                    outfile = file(filename, 'a')
-                    print >> outfile, all
-            except:
-                raise
-
-        # a helper function to print parameter attributes as we wish
-        def _print_par(par):
-            linkstr = ""
-            if par.link is not None:
-                linkstr = "\nlink(%s, %s)\n" % (
-                    par.fullname, par.link.fullname)
-
-            unitstr = ""
-            if (type(par.units) == str):
-                unitstr = "\"%s\"" % par.units
-
-            return ((('%s.default_val = %s\n' +
-                      '%s.default_min = %s\n' +
-                      '%s.default_max = %s\n' +
-                      '%s.val     = %s\n' +
-                      '%s.min     = %s\n' +
-                      '%s.max     = %s\n' +
-                      '%s.units   = %s\n' +
-                      '%s.frozen  = %s\n') %
-                     (par.fullname, repr(par.default_val),
-                      par.fullname, repr(par.default_min),
-                      par.fullname, repr(par.default_max),
-                      par.fullname, repr(par.val),
-                      par.fullname, repr(par.min),
-                      par.fullname, repr(par.max),
-                      par.fullname, unitstr,
-                      par.fullname, par.frozen)), linkstr)
-
-        # Check output file can be written to
-
-        clobber = sherpa.utils.bool_cast(clobber)
-        if (type(outfile) != str and outfile is not None):
-            raise ArgumentTypeErr('badarg', 'string or None')
-        if (type(outfile) == str and os.path.isfile(outfile) and not clobber):
-            raise IOErr('filefound', outfile)
-
-        # Import numpy
-        _send_to_outfile("import numpy", outfile)
-
-        # Save data files
-
-        _send_to_outfile("\n######### Load Data Sets\n", outfile)
-        dids = self.list_data_ids()
-
-        def get_logged_call(call_name, id=None):
-            if id is not None:
-                if self._calls_tracker.has_key(id) and self._calls_tracker[id].has_key(call_name):
-                    return self._calls_tracker[id][call_name]
-            else:
-                if self._calls_tracker.has_key(call_name):
-                    return self._calls_tracker[call_name]
-        cmd_id = ""
-        cmd_resp_id = ""
-        cmd_bkg_id = ""
-
-        for id in dids:
-            # But if id is a string, then quote as a string
-            # But what about the rest of any possible load_data() options;
-            # how do we replicate the optional keywords that were possibly
-            # used?  Store them with data object?
-            if (type(id) == str):
-                cmd_id = "\"%s\"" % id
-            else:
-                cmd_id = "%s" % id
-
-            cmd = get_logged_call('load_data', id)
-            _send_to_outfile(cmd, outfile)
-
-            # Set physical or WCS coordinates here if applicable
-            # If can't be done, just pass to next
-            try:
-                _send_to_outfile(
-                    "\n######### Set Image Coordinates \n", outfile)
-                cmd = get_logged_call('set_coord', id)
-                _send_to_outfile(cmd, outfile)
-            except:
-                pass
-
-            # PHA attributes; group data if applicable
-            try:
-                # Only store group flags and quality flags if they were changed
-                # from flags in the file
-                if (self.get_data(id)._original_groups == False):
-                    if (self.get_data(id).grouping is not None):
-                        _send_to_outfile(
-                            "\n######### Data Group Flags\n", outfile)
-                        cmd = get_logged_call('set_grouping')
                         cmd = "set_grouping(%s, " % cmd_id
                         cmd = cmd + "val=numpy.array(" + repr(self.get_grouping(
                             id).tolist()) + ", numpy." + str(self.get_grouping(id).dtype) + "))"
