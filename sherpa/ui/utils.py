@@ -2069,7 +2069,8 @@ class Session(NoNewAttributesAfterInit):
          'chi2modvar',
          'chi2xspecvar',
          'cstat',
-         'leastsq']
+         'leastsq',
+         'wstat']
 
         """
         keys = self._stats.keys()[:]
@@ -2181,34 +2182,41 @@ class Session(NoNewAttributesAfterInit):
         -----
         The available statistics include:
 
-        ``cash``
+        cash
            A maximum likelihood function [1]_.
 
-        ``chi2``
+        chi2
            \chi^2 statistic using the supplied error values.
 
-        ``chi2constvar``
+        chi2constvar
            \chi^2 with constant variance computed from the counts
            data.
 
-        ``chi2datavar``
+        chi2datavar
            \chi^2 with data variance.
 
-        ``chi2gehrels``
+        chi2gehrels
            \chi^2 with gehrels method [2]_. This is the default method.
 
-        ``chi2modvar``
+        chi2modvar
            \chi^2 with model amplitude variance.
 
-        ``chi2xspecvar``
+        chi2xspecvar
            \chi^2 with data variance (XSPEC-style,
            variance = 1.0 if data less than or equal to 0.0).
 
-        ``cstat``
-           A maximum likelihood function
+        cstat
+           A maximum likelihood function for when there is no
+           background or the background is being modelled
            (the XSPEC implementation of the Cash function) [3]_.
 
-        ``leastsq``
+        wstat
+           A maximum likelihood function which includes
+           the background data as part of the fit (i.e. for
+           when it is not being explicitly modelled)
+           (the XSPEC implementation of the Cash function) [3]_.
+
+        leastsq
            The least-squares statisic (the error is not used in
            this statistic).
 
