@@ -17,6 +17,182 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Monte-Carlo Markov Chain support for low-count data (Poisson statistics).
+
+The ``sherpa.sim`` module provides support for exploring the posterior
+probability density of parameters in a fit to low-count data, for
+which Poisson statistics hold, using a Bayesian algorithm and a
+Monte-Carlo Markov Chain (MCMC). It was originally known as the
+pyBLoCXS (python Bayesian Low-Count X-ray Spectral) package [1]_, but
+has since been incorporated into Sherpa.
+
+The Sherpa UI modules - e.g. `sherpa.ui` and `sherpa.astro.ui` - provide
+many of the routines described below (e.g. ``list_samplers``).
+
+Acknowledgements
+----------------
+
+The original version of the code was developed by the CHASC
+Astro-Statistics collaboration http://hea-www.harvard.edu/AstroStat/,
+and was called pyBLoCXS. It has since been developed by the
+Chandra X-ray Center and weas added to Sherpa in version 4.5.1.
+
+Overview
+--------
+
+The algorithm explores parameter space at a suspected minimum -
+i.e. after a standard Sherpa fit. It supports a flexible definition of priors
+and allows for variations in the calibration information. It can be used to
+compute posterior predictive p-values for the likelihood ratio test
+[2]_. Future versions will allow for the incorporation of calibration
+uncertainty [3]_.
+
+MCMC is a complex computational technique that requires some sophistication on
+the part of its users to ensure that it both converges and explores the
+posterior distribution properly. The pyBLoCXS code has been tested with a
+number of simple single-component spectral models. It should be used with
+great care in more complex settings. The code is based on the methods in
+[4]_ but employs a different MCMC sampler than is described in that article.
+A general description of the techniques employed along with their
+convergence diagnostics can be found in the Appendices of [4]_
+and in [5]_.
+
+Jumping Rules
+-------------
+
+The jumping rule determines how each step in the Monte-Carlo Markov
+Chain is calculated. The setting can be changed using ``set_sampler``.
+The ``sherpa.sim`` module provides the following rules, which may
+be augmented by other modules:
+
+- ``MH`` uses a Metropolis-Hastings jumping rule that is a multivariate
+  t-distribution with user-specified degrees of freedom centered on the
+  best-fit parameters, and with multivariate scale determined by the
+  ``covar`` function applied at the best-fit location.
+
+- ``MetropolisMH`` mixes this Metropolis Hastings jumping rule with a
+  Metropolis jumping rule centered at the current draw, in both cases
+  drawing from the same t-distribution as used with ``MH``. The
+  probability of using the best-fit location as the start of the jump
+  is given by the ``p_M`` parameter of the rule (use ``get_sampler`` or
+  ``get_sampler_opt`` to view and ``set_sampler_opt`` to set this value),
+  otherwise the jump is from the previous location in the chain.
+
+Options for the sampler are retrieved and set by ``get_sampler`` or
+``get_sampler_opt``, and ``set_sampler_opt`` respectively. The list of
+available samplers is given by ``list_samplers``.
+
+Choosing the parameter values
+-----------------------------
+
+By default, the prior on each parameter is taken to be flat, varying
+from the parameter minima to maxima values. This prior can be changed
+using the ``set_prior`` function, which can set the prior for a
+parameter to a function or Sherpa model. The list of currently set
+prior-parameter pairs is returned by the ``list_priors`` function, and the
+prior function associated with a particular Sherpa model parameter may be
+accessed with ``get_prior``.
+
+Running the chain
+-----------------
+
+The ``get_draws`` function runs a pyBLoCXS chain using fit information
+associated with the specified data set(s), and the currently set sampler and
+parameter priors, for a specified number of iterations. It returns an array of
+statistic values, an array of acceptance Booleans, and a 2-D array of
+associated parameter values.
+
+Analyzing the results
+---------------------
+
+The module contains several routines to visualize the results of the chain,
+including ``plot_trace``, ``plot_cdf``, and ``plot_pdf``, along with
+``sherpa.utils.get_error_estimates`` for calculating the limits from a
+parameter chain.
+
+References
+----------
+
+.. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
+
+.. [2] "Statistics, Handle with Care: Detecting Multiple Model Components
+       with the Likelihood Ratio Test", Protassov et al., 2002, ApJ, 571, 545
+       http://adsabs.harvard.edu/abs/2002ApJ...571..545P
+
+.. [3] "Accounting for Calibration Uncertainties in X-ray Analysis:
+       Effective Areas in Spectral Fitting", Lee et al., 2011, ApJ, 731, 126
+       http://adsabs.harvard.edu/abs/2011ApJ...731..126L
+
+.. [4] "Analysis of Energy Spectra with Low Photon Counts via Bayesian
+       Posterior Simulation", van Dyk et al. 2001, ApJ, 548, 224
+       http://adsabs.harvard.edu/abs/2001ApJ...548..224V
+
+.. [5] Chapter 11 of Gelman, Carlin, Stern, and Rubin
+       (Bayesian Data Analysis, 2nd Edition, 2004, Chapman & Hall/CRC).
+
+Example
+-------
+
+Analysis proceeds as normal, up to the point that a good fit has
+been determined, as shown below (note that a Poisson likelihood,
+such as the ``cash`` statistic, must be used)::
+
+    from sherpa.astro import ui
+    ui.load_pha('src.pi')
+    ui.notice(0.5, 7)
+    ui.set_source(ui.xsphabs.gal * ui.xspowerlaw.pl)
+    ui.set_stat('cash')
+    ui.set_method('simplex')
+    ui.fit()
+    ui.covar()
+
+Once the best-fit location has been determined (which may require
+multiple calls to ``fit``), the chain can be run. In this example
+the default sampler (``MetropolisMH``) and default parameter priors
+(flat, varying between the minimum and maximum values) are used,
+as well as the default number of iterations (1000)::
+
+    stats, accept, params = ui.get_draws()
+
+The ``stats`` array contains the fit statistic for each iteration
+(the first element of these arrays is the starting point of the chain,
+so there will be 1001 elements in this case). The "trace" - i.e.
+statistic versus iteration - can be plotted using::
+
+    ui.plot_trace(stats, name='stat')
+
+The ``accept`` array indicates whether, at each iteration, the proposed
+jump was accepted, (``True``) or if the previous iterations parameter
+values are used. This can be used to look at the acceptance rate for
+the chain (dropping the last element and a burn-in period, which
+here is arbitrarily taken to be 100)::
+
+    nburn = 100
+    arate = accept[nburn:-1].sum() * 1.0 / (len(accept) - nburn - 1)
+    print("acceptance rate = {}".format(arate))
+
+The trace of the parameter values can also be displayed; in this
+example a burn-in period has not been removed)::
+
+    par1 = params[:, 0]
+    par2 = params[:, 1]
+    ui.plot_trace(par1, name='par1')
+    ui.plot_trace(par2, name='par2')
+
+The cumulative distribution can also be viewed::
+
+    ui.plot_cdf(par1[nburn:], name='par1')
+
+as well as the probability density::
+
+    ui.plot_[pdf(par2[nburn:], name='par2')
+
+The traces can be used to estimate the credible interval for a
+parameter::
+
+    pval, plo, phi = sherpa.utils.get_error_estimates(par1[nburn:])
+
+"""
 
 from sherpa.sim.simulate import *
 from sherpa.sim.sample import *
@@ -172,12 +348,12 @@ class MCMC(NoNewAttributesAfterInit):
     def set_prior(self, par, prior):
         """Set the prior function to use with a parameter.
 
-        The pyBLoCXS Markov Chain Monte Carlo (MCMC) algorithm [1]_
-        supports Bayesian Low-Count X-ray Spectral analysis. By
-        default, a flat prior is used for each parameter in the fit,
-        varying between its soft minimum and maximum values.  The
-        `set_prior` function is used to change the form of the prior
-        for a parameter.
+        The default prior used by ``get_draws`` for each parameter
+        is flat, varying between the hard minimum and maximum
+        values of the parameter (as given by the ``hard_min`` and
+        ``hard_max`` attributes of the parameter object). The ``set_prior``
+        function is used to change the form of the prior for a
+        parameter.
 
         Parameters
         ----------
@@ -190,49 +366,44 @@ class MCMC(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_draws : Run the pyBLoCXS MCMC algorithm.
+        get_draws : Run the MCMC algorithm.
         get_prior : Set the prior function to use with a parameter.
-        set_sampler : Set the pyBLoCXS sampler.
-
-        References
-        ----------
-
-        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+        set_sampler : Set the MCMC sampler.
 
         Examples
         --------
 
-        Set the prior for the `kT` parameter of the `therm` instance
+        Set the prior for the ``kT`` parameter of the ``therm`` instance
         to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
-        keV:
+        keV::
 
-        >>> create_model_component('xsapec', 'therm')
-        >>> create_model_component('gauss1d', 'p_temp')
-        >>> p_temp.pos = 1.7
-        >>> p.temo_fwhm = 0.35
-        >>> set_prior(therm.kT, p_temp)
+            >>> create_model_component('xsapec', 'therm')
+            >>> create_model_component('gauss1d', 'p_temp')
+            >>> p_temp.pos = 1.7
+            >>> p_temp.fwhm = 0.35
+            >>> set_prior(therm.kT, p_temp)
 
-        Create a function (`lognorm`) and use it as the prior the the
-        `nH` parameter of the `abs1` instance:
+        Create a function (``lognorm``) and use it as the prior the the
+        ``nH`` parameter of the ``abs1`` instance::
 
-        >>> create_model_component('xsphabs', 'abs1')
-        >>> def lognorm(x):
-           # center on 10^20 cm^2 with a sigma of 0.5
-           sigma = 0.5
-           x0 = 20
-           # nH is in units of 10^-22 so convert
-           dx = np.log10(x) + 22 - x0
-           norm = sigma / np.sqrt(2 * np.pi)
-           return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
+            >>> create_model_component('xsphabs', 'abs1')
+            >>> def lognorm(x):
+               # center on 10^20 cm^2 with a sigma of 0.5
+               sigma = 0.5
+               x0 = 20
+               # nH is in units of 10^-22 so convert
+               dx = np.log10(x) + 22 - x0
+               norm = sigma / np.sqrt(2 * np.pi)
+               return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
 
-        >>> set_prior(abs1.nH, lognorm)
+            >>> set_prior(abs1.nH, lognorm)
 
         """
         self.priors[par.fullname] = prior
 
 
     def list_samplers(self):
-        """List the pyBLoCXS samplers.
+        """List the samplers available for MCMC analysis with ``get_draws``.
 
         Returns
         -------
@@ -242,8 +413,8 @@ class MCMC(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_sampler_name : Return the name of the current pyBLoCXS sampler.
-        set_sampler : Set the pyBLoCXS sampler.
+        get_sampler_name : Return the name of the current MCMC sampler.
+        set_sampler : Set the MCMC sampler.
 
         Examples
         --------
@@ -256,10 +427,10 @@ class MCMC(NoNewAttributesAfterInit):
 
 
     def set_sampler(self, sampler):
-        """Set the pyBLoCXS sampler.
+        """Set the MCMC sampler.
 
         The sampler determines the type of jumping rule to
-        be used when running the MCMC analysis.
+        be used by ``get_draws``.
 
         Parameters
         ----------
@@ -270,44 +441,40 @@ class MCMC(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_draws : Run the pyBLoCXS MCMC algorithm.
-        list_samplers : List the pyBLoCXS samplers.
-        set_sampler : Set the pyBLoCXS sampler.
-        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+        get_draws : Run the MCMC algorithm.
+        list_samplers : List the MCMC samplers.
+        set_sampler : Set the MCMC sampler.
+        set_sampler_opt : Set an option for the current MCMC sampler.
 
         Notes
         -----
-        The jumping rules are [1]_:
+        The jumping rules are:
 
         MH
-           The 'MH' option refers to the Metropolis-Hastings rule,
-           which always jumps from the best-fit location.
+           The Metropolis-Hastings rule, which always jumps from the
+           best-fit location, even if the previous iteration had moved
+           away from it.
 
         MetropolisMH
            This is the Metropolis with Metropolis-Hastings algorithm,
-           that jumps from the best-fit with probability 'p_M',
+           that jumps from the best-fit with probability ``p_M``,
            otherwise it jumps from the last accepted jump. The
-           value of `p_M` can be changed using `set_sampler_opt`.
+           value of ``p_M`` can be changed using `set_sampler_opt`.
 
         PragBayes
            This is used when the effective area calibration
            uncertainty is to be included in the calculation. At each
            nominal MCMC iteration, a new calibration product is
-           generated, and a series of N (the `nsubiters` option) MCMC
+           generated, and a series of N (the ``nsubiters`` option) MCMC
            sub-iteration steps are carried out, choosing between
            Metropolis and Metropolis-Hastings types of samplers with
-           probability `p_M`.  Only the last of these sub-iterations
-           are kept in the chain.  The `nsubiters` and `p_M` values
+           probability ``p_M``.  Only the last of these sub-iterations
+           are kept in the chain.  The ``nsubiters`` and ``p_M`` values
            can be changed using `set_sampler_opt`.
 
         FullBayes
            Another sampler for use when including uncertainties due
            to the effective area.
-
-        References
-        ----------
-
-        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
 
         Examples
         --------
@@ -335,7 +502,7 @@ class MCMC(NoNewAttributesAfterInit):
 
 
     def get_sampler(self):
-        """Return the current pyBLoCXS sampler options.
+        """Return the current MCMC sampler options.
 
         Returns
         -------
@@ -346,10 +513,10 @@ class MCMC(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_sampler_name : Return the name of the current pyBLoCXS sampler.
-        get_sampler_opt : Return an option of the current pyBLoCXS sampler.
-        set_sampler : Set the pyBLoCXS sampler.
-        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+        get_sampler_name : Return the name of the current MCMC sampler.
+        get_sampler_opt : Return an option of the current MCMC sampler.
+        set_sampler : Set the MCMC sampler.
+        set_sampler_opt : Set an option for the current MCMC sampler.
 
         """
         #return self.sampler
@@ -357,7 +524,7 @@ class MCMC(NoNewAttributesAfterInit):
 
 
     def get_sampler_name(self):
-        """Return the name of the current pyBLoCXS sampler.
+        """Return the name of the current MCMC sampler.
 
         Returns
         -------
@@ -365,8 +532,8 @@ class MCMC(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_sampler : Return the current pyBLoCXS sampler options.
-        set_sampler : Set the pyBLoCXS sampler.
+        get_sampler : Return the current MCMC sampler options.
+        set_sampler : Set the MCMC sampler.
 
         Examples
         --------
@@ -379,7 +546,7 @@ class MCMC(NoNewAttributesAfterInit):
 
 
     def get_sampler_opt(self, opt):
-        """Return an option of the current pyBLoCXS sampler.
+        """Return an option of the current MCMC sampler.
 
         Returns
         -------
@@ -389,8 +556,8 @@ class MCMC(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_sampler : Return the current pyBLoCXS sampler options.
-        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+        get_sampler : Return the current MCMC sampler options.
+        set_sampler_opt : Set an option for the current MCMC sampler.
 
         Examples
         --------
@@ -403,60 +570,55 @@ class MCMC(NoNewAttributesAfterInit):
 
 
     def set_sampler_opt(self, opt, value):
-        """Set an option for the current pyBLoCXS sampler.
+        """Set an option for the current MCMC sampler.
 
         Parameters
         ----------
         opt : str
            The option to change. Use `get_sampler` to view the
            available options for the current sampler.
-        value :
+        value
            The value for the option.
 
         See Also
         --------
-        get_sampler : Return the current pyBLoCXS sampler options.
+        get_sampler : Return the current MCMC sampler options.
         set_prior: Set the prior function to use with a parameter.
-        set_sampler : Set the pyBLoCXS sampler.
+        set_sampler : Set the MCMC sampler.
 
         Notes
         -----
-        The options depend on the sampler [1]_. The options include:
+        The options depend on the sampler. The options include:
 
-        `defaultprior`
-           Set to `False` when the default prior (flat, between the
+        defaultprior
+           Set to ``False`` when the default prior (flat, between the
            parameter's soft limits) should not be used. Use
            `set_prior` to set the form of the prior for each
            parameter.
 
-        `inv`
+        inv
            A bool, or array of bools, to indicate which parameter is
            on the inverse scale.
 
-        `log`
+        log
            A bool, or array of bools, to indicate which parameter is
            on the logarithm (natural log) scale.
 
-        `original`
+        original
            A bool, or array of bools, to indicate which parameter is
            on the original scale.
 
-        `p_M`
+        p_M
            The proportion of jumps generatd by the Metropolis
            jumping rule.
 
-        `priorshape`
+        priorshape
            An array of bools indicating which parameters have a
            user-defined prior functions set with `set_prior`.
 
-        `scale`
+        scale
            Multiply the output of `covar` by this factor and
            use the result as the scale of the t-distribution.
-
-        References
-        ----------
-
-        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
 
         Examples
         --------
@@ -467,28 +629,41 @@ class MCMC(NoNewAttributesAfterInit):
         """
         self._set_sampler_opt(opt, value)
 
-
-
-
     def get_draws(self, fit, sigma, niter=1000):
-        """
-        Run pyblocxs using current sampler and current sampler configuration
-        options for *niter* number of iterations.  The results are returned as a
-        3-tuple of Numpy ndarrays.  The tuple specifys an array of statistic
-        values, an array of acceptance flags, and a 2-D array of associated
-        parameter values.
+        """Run the pyBLoCXS MCMC algorithm.
 
+        The function runs a Markov Chain Monte Carlo (MCMC) algorithm
+        designed to carry out Bayesian Low-Count X-ray Spectral
+        (BLoCXS) analysis. Unlike many MCMC algorithms, it is
+        designed to explore the parameter space at the suspected
+        statistic minimum (i.e.  after using `fit`). The return
+        values include the statistic value, parameter values, and a
+        flag indicating whether the row represents a jump from the
+        current location or not.
 
-        `fit`    Sherpa fit object
-        `sigma`  Covariance matrix, centered on the best-fit parameter values
-        `niter`  Number of iterations, default = 1000
+        Parameters
+        ----------
+        fit
+           The Sherpa fit object to use.
+        sigma
+           The covariance matrix, defined at the best-fit parameter
+           values.
+        niter : int, optional
+           The number of draws to use. The default is ``1000``.
 
-        returns a tuple of ndarrays e.g. (stats, accept, params)
-
-        Examples
-        --------
-
-        >>> stats, accept, params = get_draws(fit, niter=1e4)
+        Returns
+        -------
+        stats, accept, params
+           The results of the MCMC chain. The stats and accept arrays
+           contain niter+1 elements, with the first row being the
+           starting values. The params array has (nparams,niter+1)
+           elements, where nparams is the number of free parameters in
+           the model expression, and the first column contains the
+           values that the chain starts at. The accept array contains
+           boolean values, indicating whether the jump, or step, was
+           accepted (``True``), so the parameter values and statistic
+           change, or it wasn't, in which case there is no change to
+           the previous row.
 
         """
         if not isinstance(fit.stat, (Cash, CStat,WStat)):

@@ -1322,7 +1322,7 @@ class Session(NoNewAttributesAfterInit):
 
         Unlike the other ``list_xxx`` commands, this does not
         return an array. Instead it acts like the ``show_xxx``
-        family of commands. 
+        family of commands.
 
         Parameters
         ----------
@@ -1632,12 +1632,12 @@ class Session(NoNewAttributesAfterInit):
         .. [1] J.J. More, "The Levenberg Marquardt algorithm:
            implementation and theory," in Lecture Notes in Mathematics
            630: Numerical Analysis, G.A. Watson (Ed.), Springer-Verlag:
-           Berlin, 1978, pp.105-116. 
+           Berlin, 1978, pp.105-116.
 
         .. [2] Storn, R. and Price, K. "Differential Evolution: A
            Simple and Efficient Adaptive Scheme for Global Optimization
            over Continuous Spaces." J. Global Optimization 11, 341-359,
-           1997. 
+           1997.
 
         .. [3] Jeffrey C. Lagarias, James A. Reeds, Margaret H. Wright,
            Paul E. Wright "Convergence Properties of the Nelder-Mead
@@ -1947,31 +1947,31 @@ class Session(NoNewAttributesAfterInit):
         -----
         The supported fields for the ``primini`` scheme are:
 
-        ``maxiters``
+        maxiters
            The maximum number of iterations to perform.
 
-        ``tol``
+        tol
            The iteration stops when the change in the best-fit
            statistic varies by less than this value.
 
         The supported fields for the ``sigmarej`` scheme are:
 
-        ``grow``
+        grow
            The number of points adjacent to a rejected point that
            should also be removed. A value of ``0`` means that only the
            discrepant point is removed whereas a value of ``1`` means
            that the two adjacent points (one lower and one higher)
            will also be removed.
 
-        ``hrej``
+        hrej
            The rejection criterion in units of sigma, for data
            points above the model (it must be >= 0).
 
-        ``lrej``
+        lrej
            The rejection criterion in units of sigma, for data
            points below the model (it must be >= 0).
 
-        ``maxiters``
+        maxiters
            The maximum number of iterations to perform. If this
            value is ``0`` then the fit will run until it has
            converged.
@@ -2142,29 +2142,29 @@ class Session(NoNewAttributesAfterInit):
            A maximum likelihood function [1]_.
 
         chi2
-           \chi^2 statistic using the supplied error values.
+           Chi-squared statistic using the supplied error values.
 
         chi2constvar
-           \chi^2 with constant variance computed from the counts
+           Chi-squared with constant variance computed from the counts
            data.
 
         chi2datavar
-           \chi^2 with data variance.
+           Chi-squared with data variance.
 
         chi2gehrels
-           \chi^2 with gehrels method [2]_. This is the default method.
+           Chi-squared with gehrels method [2]_. This is the default method.
 
         chi2modvar
-           \chi^2 with model amplitude variance.
+           Chi-squared with model amplitude variance.
 
         chi2xspecvar
-           \chi^2 with data variance (XSPEC-style,
+           Chi-squared with data variance (XSPEC-style,
            variance = 1.0 if data less than or equal to 0.0).
 
         cstat
-           A maximum likelihood function for when there is no
-           background or the background is being modelled
-           (the XSPEC implementation of the Cash function) [3]_.
+           A maximum likelihood function (the XSPEC implementation of
+           the Cash function) [3]_. This does *not* include support
+           for including the background.
 
         wstat
            A maximum likelihood function which includes
@@ -5300,7 +5300,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         fit : Fit one or more data sets.
-        guess : Set model parameters to values matching the data. 
+        guess : Set model parameters to values matching the data.
         paramprompt : Control how parameter values are set.
         set_par : Set the value, limits, or behavior of a model parameter.
 
@@ -6412,16 +6412,16 @@ class Session(NoNewAttributesAfterInit):
         Create a two-parameter model of the form "y = mx + c",
         where the intercept is the first parameter and the slope the
         second, set the parameter names and default values, then
-        use it in a source expression:
+        use it in a source expression::
 
-        >>> def func1d(pars, x, xhi=None):
-                if xhi is not None:
-                    x = (x + xhi)/2
-                return x * pars[1] + pars[0]
+            >>> def func1d(pars, x, xhi=None):
+                    if xhi is not None:
+                        x = (x + xhi)/2
+                    return x * pars[1] + pars[0]
 
-        >>> load_user_model(func1d, "myfunc")
-        >>> add_user_pars(myfunc, ["c","m"], [0,1])
-        >>> set_source(myfunc + gauss1d.gline)
+            >>> load_user_model(func1d, "myfunc")
+            >>> add_user_pars(myfunc, ["c","m"], [0,1])
+            >>> set_source(myfunc + gauss1d.gline)
 
         """
         usermodel = sherpa.models.UserModel(modelname)
@@ -6593,14 +6593,14 @@ class Session(NoNewAttributesAfterInit):
 
         Define a chi-square statistic with the label "qstat":
 
-        >>> def qstat(d, m, staterr=None, syserr=None, w=None):
-                if staterr is None:
-                    staterr = 1
-                c = ((d-m) / staterr)
-                return ((c*c).sum(), c)
+            >>> def qstat(d, m, staterr=None, syserr=None, w=None):
+                    if staterr is None:
+                        staterr = 1
+                    c = ((d-m) / staterr)
+                    return ((c*c).sum(), c)
 
-        >>> load_user_stat("qstat", qstat)
-        >>> set_stat("qstat")
+            >>> load_user_stat("qstat", qstat)
+            >>> set_stat("qstat")
 
         """
         userstat = sherpa.stats.UserStat(calc_stat_func,
@@ -9588,12 +9588,10 @@ class Session(NoNewAttributesAfterInit):
     #
     # DOC-TODO: should this use functools.wraps or something similar,
     #           to avoid copying the docs?
-    # DOC-TODO: integrate the existing pyblocks python documentation - e.g.
-    #           http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
     ###########################################################################
 
     def set_sampler_opt(self, opt, value):
-        """Set an option for the current pyBLoCXS sampler.
+        """Set an option for the current MCMC sampler.
 
         Parameters
         ----------
@@ -9605,48 +9603,43 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_sampler : Return the current pyBLoCXS sampler options.
+        get_sampler : Return the current MCMC sampler options.
         set_prior: Set the prior function to use with a parameter.
-        set_sampler : Set the pyBLoCXS sampler.
+        set_sampler : Set the MCMC sampler.
 
         Notes
         -----
-        The options depend on the sampler [1]_. The options include:
+        The options depend on the sampler. The options include:
 
-        ``defaultprior``
+        defaultprior
            Set to ``False`` when the default prior (flat, between the
            parameter's soft limits) should not be used. Use
            `set_prior` to set the form of the prior for each
            parameter.
 
-        ``inv``
+        inv
            A bool, or array of bools, to indicate which parameter is
            on the inverse scale.
 
-        ``log``
+        log
            A bool, or array of bools, to indicate which parameter is
            on the logarithm (natural log) scale.
 
-        ``original``
+        original
            A bool, or array of bools, to indicate which parameter is
            on the original scale.
 
-        ``p_M``
+        p_M
            The proportion of jumps generatd by the Metropolis
            jumping rule.
 
-        ``priorshape``
+        priorshape
            An array of bools indicating which parameters have a
            user-defined prior functions set with `set_prior`.
 
-        ``scale``
+        scale
            Multiply the output of `covar` by this factor and
            use the result as the scale of the t-distribution.
-
-        References
-        ----------
-
-        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
 
         Examples
         --------
@@ -9657,7 +9650,7 @@ class Session(NoNewAttributesAfterInit):
         self._pyblocxs.set_sampler_opt(opt, value)
 
     def get_sampler_opt(self, opt):
-        """Return an option of the current pyBLoCXS sampler.
+        """Return an option of the current MCMC sampler.
 
         Returns
         -------
@@ -9667,8 +9660,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_sampler : Return the current pyBLoCXS sampler options.
-        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+        get_sampler : Return the current MCMC sampler options.
+        set_sampler_opt : Set an option for the current MCMC sampler.
 
         Examples
         --------
@@ -9680,7 +9673,7 @@ class Session(NoNewAttributesAfterInit):
         return self._pyblocxs.get_sampler_opt(opt)
 
     def get_sampler_name(self):
-        """Return the name of the current pyBLoCXS sampler.
+        """Return the name of the current MCMC sampler.
 
         Returns
         -------
@@ -9688,8 +9681,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_sampler : Return the current pyBLoCXS sampler options.
-        set_sampler : Set the pyBLoCXS sampler.
+        get_sampler : Return the current MCMC sampler options.
+        set_sampler : Set the MCMC sampler.
 
         Examples
         --------
@@ -9701,7 +9694,7 @@ class Session(NoNewAttributesAfterInit):
         return self._pyblocxs.get_sampler_name()
 
     def set_sampler(self, sampler):
-        """Set the pyBLoCXS sampler.
+        """Set the MCMC sampler.
 
         The sampler determines the type of jumping rule to
         be used when running the MCMC analysis.
@@ -9716,21 +9709,22 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_draws : Run the pyBLoCXS MCMC algorithm.
-        list_samplers : List the pyBLoCXS samplers.
-        set_sampler : Set the pyBLoCXS sampler.
-        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+        list_samplers : List the MCMC samplers.
+        set_sampler : Set the MCMC sampler.
+        set_sampler_opt : Set an option for the current MCMC sampler.
 
         Notes
         -----
-        The jumping rules are [1]_:
+        The jumping rules are:
 
         MH
-           The 'MH' option refers to the Metropolis-Hastings rule,
-           which always jumps from the best-fit location.
+           The Metropolis-Hastings rule, which jumps from the best-fit
+           location, even if the previous iteration had moved away from
+           it.
 
         MetropolisMH
            This is the Metropolis with Metropolis-Hastings algorithm,
-           that jumps from the best-fit with probability 'p_M',
+           that jumps from the best-fit with probability ``p_M``,
            otherwise it jumps from the last accepted jump. The
            value of ``p_M`` can be changed using `set_sampler_opt`.
 
@@ -9749,11 +9743,6 @@ class Session(NoNewAttributesAfterInit):
            Another sampler for use when including uncertainties due
            to the effective area.
 
-        References
-        ----------
-
-        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
-
         Examples
         --------
 
@@ -9763,7 +9752,7 @@ class Session(NoNewAttributesAfterInit):
         self._pyblocxs.set_sampler(sampler)
 
     def get_sampler(self):
-        """Return the current pyBLoCXS sampler options.
+        """Return the current MCMC sampler options.
 
         Returns
         -------
@@ -9774,10 +9763,10 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_sampler_name : Return the name of the current pyBLoCXS sampler.
-        get_sampler_opt : Return an option of the current pyBLoCXS sampler.
-        set_sampler : Set the pyBLoCXS sampler.
-        set_sampler_opt : Set an option for the current pyBLoCXS sampler.
+        get_sampler_name : Return the name of the current MCMC sampler.
+        get_sampler_opt : Return an option of the current MCMC sampler.
+        set_sampler : Set the MCMC sampler.
+        set_sampler_opt : Set an option for the current MCMC sampler.
 
         """
         return self._pyblocxs.get_sampler()
@@ -9786,12 +9775,12 @@ class Session(NoNewAttributesAfterInit):
     def set_prior(self, par, prior):
         """Set the prior function to use with a parameter.
 
-        The pyBLoCXS Markov Chain Monte Carlo (MCMC) algorithm [1]_
-        supports Bayesian Low-Count X-ray Spectral analysis. By
-        default, a flat prior is used for each parameter in the fit,
-        varying between its soft minimum and maximum values.  The
-        `set_prior` function is used to change the form of the prior
-        for a parameter.
+        The default prior used by ``get_draws`` for each parameter
+        is flat, varying between the soft minimum and maximum
+        values of the parameter (as given by the ``min`` and
+        ``max`` attributes of the parameter object). The ``set_prior``
+        function is used to change the form of the prior for a
+        parameter.
 
         Parameters
         ----------
@@ -9806,40 +9795,35 @@ class Session(NoNewAttributesAfterInit):
         --------
         get_draws : Run the pyBLoCXS MCMC algorithm.
         get_prior : Set the prior function to use with a parameter.
-        set_sampler : Set the pyBLoCXS sampler.
-
-        References
-        ----------
-
-        .. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
+        set_sampler : Set the MCMC sampler.
 
         Examples
         --------
 
         Set the prior for the ``kT`` parameter of the ``therm`` component
         to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
-        keV:
+        keV::
 
-        >>> create_model_component('xsapec', 'therm')
-        >>> create_model_component('gauss1d', 'p_temp')
-        >>> p_temp.pos = 1.7
-        >>> p.temo_fwhm = 0.35
-        >>> set_prior(therm.kT, p_temp)
+            >>> create_model_component('xsapec', 'therm')
+            >>> create_model_component('gauss1d', 'p_temp')
+            >>> p_temp.pos = 1.7
+            >>> p_temp.fwhm = 0.35
+            >>> set_prior(therm.kT, p_temp)
 
         Create a function (``lognorm``) and use it as the prior the the
-        ``nH`` parameter of the ``abs1`` model component:
+        ``nH`` parameter of the ``abs1`` model component::
 
-        >>> create_model_component('xsphabs', 'abs1')
-        >>> def lognorm(x):
-           # center on 10^20 cm^2 with a sigma of 0.5
-           sigma = 0.5
-           x0 = 20
-           # nH is in units of 10^-22 so convert
-           dx = np.log10(x) + 22 - x0
-           norm = sigma / np.sqrt(2 * np.pi)
-           return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
+            >>> create_model_component('xsphabs', 'abs1')
+            >>> def lognorm(x):
+               # center on 10^20 cm^2 with a sigma of 0.5
+               sigma = 0.5
+               x0 = 20
+               # nH is in units of 10^-22 so convert
+               dx = np.log10(x) + 22 - x0
+               norm = sigma / np.sqrt(2 * np.pi)
+               return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
 
-        >>> set_prior(abs1.nH, lognorm)
+            >>> set_prior(abs1.nH, lognorm)
 
         """
         self._pyblocxs.set_prior(par, prior)
@@ -9875,26 +9859,34 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.get_prior(par)
 
-    # DOC-TODO: include examples once this returns something useful
     def list_priors(self):
         """Return the priors set for model parameters, if any.
 
         Returns
         -------
-        priors : string
-           A string representation of the dictionary mapping between
-           parameters (keys) and priot functions (values).
+        priors : dict
+           The dictionary of mappings between parameters (keys)
+           and prior functions (values) created by `set_prior`.
 
         See Also
         --------
         get_prior : Return the prior function for a parameter.
         set_prior : Set the prior function to use with a parameter.
 
+        Examples
+        --------
+
+        In this example a prior on the ``PhoIndex`` parameter of the
+        ``pl`` instance has been set to be a gaussian:
+
+        >>> list_priors()
+        {'pl.PhoIndex': <Gauss1D model instance 'gauss1d.gline'>}
+
         """
         return self._pyblocxs.list_priors()
 
     def list_samplers(self):
-        """List the pyBLoCXS samplers.
+        """List the MCMC samplers.
 
         Returns
         -------
@@ -9904,7 +9896,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_sampler_name : Return the name of the current pyBLoCXS sampler.
+        get_sampler_name : Return the name of the current MCMC sampler.
 
         Examples
         --------
@@ -9915,20 +9907,19 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.list_samplers()
 
-    # DOC-TODO: fix up the URL since it should be an internal
-    # reference (ie documented here)
     # DOC-TODO: add pointers on what to do with the return values
     def get_draws(self, id=None, otherids=(), niter=1000):
         """Run the pyBLoCXS MCMC algorithm.
 
         The function runs a Markov Chain Monte Carlo (MCMC) algorithm
         designed to carry out Bayesian Low-Count X-ray Spectral
-        (BLoCXS) analysis [1]_. Unlike many MCMC algorithms, it is
+        (BLoCXS) analysis. Unlike many MCMC algorithms, it is
         designed to explore the parameter space at the suspected
-        statistic minimum (i.e.  after using `fit`) [2]_. The return
+        statistic minimum (i.e.  after using `fit`). The return
         values include the statistic value, parameter values, and a
         flag indicating whether the row represents a jump from the
-        current location or not.
+        current location or not. For more information see the
+        `sherpa.sim` module and [1]_.
 
         Parameters
         ----------
@@ -9945,15 +9936,17 @@ class Session(NoNewAttributesAfterInit):
         -------
         stats, accept, params
            The results of the MCMC chain. The stats and accept arrays
-           contain niter+1 elements, with the first row being the
-           starting values. The params array has (nparams,niter+1)
+           contain ``niter+1`` elements, with the first row being the
+           starting values. The params array has ``(nparams, niter+1)``
            elements, where nparams is the number of free parameters in
            the model expression, and the first column contains the
            values that the chain starts at. The accept array contains
            boolean values, indicating whether the jump, or step, was
            accepted (``True``), so the parameter values and statistic
            change, or it wasn't, in which case there is no change to
-           the previous row.
+           the previous row. The `sherpa.utils.get_error_estimates`
+           routine can be used to calculate the credible one-sigma
+           interval from the params array.
 
         See Also
         --------
@@ -9964,7 +9957,7 @@ class Session(NoNewAttributesAfterInit):
         plot_scatter : Create a scatter plot.
         plot_trace : Create a trace plot of row number versus value.
         set_prior : Set the prior function to use with a parameter.
-        set_sampler : Set the pyBLoCXS sampler.
+        set_sampler : Set the MCMC sampler.
 
         Notes
         -----
@@ -9985,8 +9978,6 @@ class Session(NoNewAttributesAfterInit):
                548, 224
                http://adsabs.harvard.edu/abs/2001ApJ...548..224V
 
-        .. [2] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/#high-level-user-interface-functions
-
         Examples
         --------
         Fit a source and then run a chain to investigate the parameter
@@ -10005,8 +9996,11 @@ class Session(NoNewAttributesAfterInit):
         >>> names = [p.fullname for p in get_source().pars if not p.frozen]
         >>> plot_cdf(params[0,:], name=names[0], xlabel=names[0])
         >>> plot_pdf(params[1,:], name=names[1], xlabel=names[1])
-        >>> accept[1:].sum() / 1.0e4
+        >>> accept[:-1].sum() * 1.0 / len(accept - 1)
         0.4287
+
+        In a full analysis a burn-in period would normally be removed
+        from the chain before using it.
 
         """
 
