@@ -48,7 +48,7 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda/bin:$PATH
   - conda update --yes conda
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy=1.9 matplotlib
   - conda config --add channels https://conda.binstar.org/sherpa
   - pip install -r test_requirements.txt
   - if [ ${TEST} == package ];
@@ -73,7 +73,7 @@ install:
   - python setup.py $INSTALL_TYPE
 
 script:
-  - if [ -n "${FITS}" ]; then conda install --yes ${FITS}; fi
+  - if [ -n "${FITS}" ]; then conda install --yes ${FITS} numpy=1.8; fi
   - if [ ${TEST} == submodule ]; then python setup.py test; fi
   - if [ ${TEST} == smoke ];
         then cd /home;
