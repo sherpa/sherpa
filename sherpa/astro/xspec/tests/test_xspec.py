@@ -284,6 +284,7 @@ class test_xspec(SherpaTestCase):
             assert_allclose(evals2, wvals2,
                             err_msg=emsg + "energy to wavelength")
 
+    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_tablemodel_checks_input_length(self):
 
         # see test_table_model for more information on the table
