@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -51,7 +51,6 @@ namespace sherpa { namespace stats {
 
   }
 
-
   template <typename ArrayType,
 	    typename DataType,
 	    int (*StatFunc)( npy_intp num, const ArrayType& yraw,
@@ -59,62 +58,7 @@ namespace sherpa { namespace stats {
 			     const ArrayType& staterror,
 			     const ArrayType& syserror,
 			     const ArrayType& weight,
-			     ArrayType& dev, DataType& val)>
-  PyObject* statfct_noerr( PyObject* self, PyObject* args )
-  {
-
-    ArrayType yraw;
-    ArrayType model;
-    ArrayType staterror;  // Not used in calculation
-    ArrayType syserror;   // Not used in calculation
-    ArrayType weight;
-    PyObject* dummy = NULL;
-
-    if ( !PyArg_ParseTuple( args, (char*)"O&O&OOO&",
-			    (converter)convert_to_array< ArrayType >, &yraw,
-			    (converter)convert_to_array< ArrayType >, &model,
-			    &dummy,
-			    &dummy,
-			    (converter)array_or_none< ArrayType >, &weight ) )
-      return NULL;
-
-    npy_intp nelem = yraw.get_size();
-
-    if ( ( model.get_size() != nelem ) ||
-	 ( weight && ( weight.get_size() != nelem ) ) ) {
-      PyErr_SetString( PyExc_TypeError,
-		       (char*)"statistic input array sizes do not match" );
-      return NULL;
-    }
-
-    // dev is needed for temporary storage
-    ArrayType dev;
-    if ( EXIT_SUCCESS != dev.create( yraw.get_ndim(), yraw.get_dims() ) )
-      return NULL;
-
-    DataType val = 0.0;
-
-    if ( EXIT_SUCCESS != StatFunc( nelem, yraw, model, staterror, syserror,
-				   weight, dev, val ) ) {
-      PyErr_SetString( PyExc_ValueError, (char*)"statistic calculation failed");
-      return NULL;
-    }
-
-    // Py_None MUST be incremented before being returned!!
-    Py_INCREF(Py_None);
-    return Py_BuildValue( (char*)"(dO)", val, Py_None );
-
-  }
-
-
-  template <typename ArrayType,
-	    typename DataType,
-	    int (*StatFunc)( npy_intp num, const ArrayType& yraw,
-			     const ArrayType& model,
-			     const ArrayType& staterror,
-			     const ArrayType& syserror,
-			     const ArrayType& weight,
-			     ArrayType& dev, DataType& val, 
+			     ArrayType& fvec, DataType& val, 
 			     DataType& trunc_value )>
   PyObject* statfct( PyObject* self, PyObject* args )
   {
@@ -124,7 +68,7 @@ namespace sherpa { namespace stats {
     ArrayType staterror;
     ArrayType syserror;
     ArrayType weight;
-    double trunc_value = -1.0;
+    DataType trunc_value = 1.0e-25;
 
     if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&d",
 			    (converter)convert_to_array< ArrayType >, &yraw,
@@ -147,21 +91,85 @@ namespace sherpa { namespace stats {
       return NULL;
     }
 
-    ArrayType dev;
-    if ( EXIT_SUCCESS != dev.create( yraw.get_ndim(), yraw.get_dims() ) )
+    ArrayType fvec;
+    if ( EXIT_SUCCESS != fvec.create( yraw.get_ndim(), yraw.get_dims() ) )
       return NULL;
 
     DataType val = 0.0;
 
     if ( EXIT_SUCCESS != StatFunc( nelem, yraw, model, staterror, syserror,
-				   weight, dev, val, trunc_value ) ) {
+				   weight, fvec, val, trunc_value ) ) {
       PyErr_SetString( PyExc_ValueError, (char*)"statistic calculation failed");
       return NULL;
     }
 
-    return Py_BuildValue( (char*)"(dN)", val, dev.return_new_ref() );
+    return Py_BuildValue( (char*)"(dN)", val, fvec.return_new_ref() );
 
   }
+
+    template <typename ArrayType, typename DataType, typename iArrayType,
+              int (*StatFunc)( npy_intp num, const ArrayType& yraw,
+                               const ArrayType& model,
+                               const iArrayType& data_size,
+                               const ArrayType& exposure_time,
+                               const ArrayType& bkg,
+                               const ArrayType& backscale_ratio,
+                               ArrayType& fvec, DataType& val,
+                               DataType trunc_value  )>
+    PyObject* wstatfct( PyObject* self, PyObject* args ) {
+
+      ArrayType yraw;
+      ArrayType model;
+      iArrayType data_size;
+      ArrayType exposure_time;
+      ArrayType bkg;
+      ArrayType backscale_ratio;
+      DataType trunc_value = 1.0e-25;
+
+      if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&O&d",
+                              CONVERTME( ArrayType ), &yraw,
+                              CONVERTME( ArrayType ), &model,
+                              CONVERTME( iArrayType ), &data_size,
+                              CONVERTME( ArrayType ), &exposure_time,
+                              CONVERTME( ArrayType ), &bkg,
+                              CONVERTME( ArrayType ), &backscale_ratio,
+                              &trunc_value ) )
+        return NULL;
+
+      const npy_intp nelem = yraw.get_size();
+
+      if ( ( model.get_size( ) != nelem ) || bkg.get_size( ) != nelem ||
+           ( 2 * data_size.get_size( ) != exposure_time.get_size( ) ) ||
+           nelem != backscale_ratio.get_size( ) ) {
+        PyErr_SetString( PyExc_TypeError,
+                         (char*)"statistic input array sizes do not match" );
+        return NULL;
+      }
+
+      npy_intp sum_data_size = 0;
+      for ( npy_intp ii = 0; ii < data_size.get_size( ); ++ii )
+        sum_data_size += data_size[ ii ];
+      if ( nelem != sum_data_size ) {
+        PyErr_SetString( PyExc_TypeError,
+                         (char*)"data size do not match" );
+        return NULL;
+      }
+
+      ArrayType fvec;
+      if ( EXIT_SUCCESS != fvec.create( yraw.get_ndim(), yraw.get_dims() ) )
+        return NULL;
+      DataType val = 0.0;
+      if ( EXIT_SUCCESS != StatFunc( nelem, yraw, model, data_size, 
+                                     exposure_time, bkg, backscale_ratio,
+                                     fvec, val, trunc_value ) ) {
+        PyErr_SetString( PyExc_ValueError,
+                         (char*)"statistic calculation failed");
+        return NULL;
+      }
+
+      return Py_BuildValue( (char*)"(dN)", val, fvec.return_new_ref() );
+
+    }
 
 
 }  }  /* namespace stats, namespace sherpa */
@@ -170,14 +178,20 @@ namespace sherpa { namespace stats {
 #define _STATFCTPTR(name) \
   sherpa::stats::name< SherpaFloatArray, SherpaFloatArray, SherpaFloat, \
                        npy_intp >
+#define _WSTATFCTPTR(name) \
+  sherpa::stats::name< SherpaFloatArray, SherpaFloatArray, SherpaFloat, \
+                       npy_intp, IntArray >
 
 #define _STATFCTSPEC(name, ftype) \
   FCTSPEC(name, (sherpa::stats::ftype< SherpaFloatArray, SherpaFloat, \
                                        _STATFCTPTR(name) >))
+#define _WSTATFCTSPEC(name, ftype) \
+  FCTSPEC(name, (sherpa::stats::ftype< SherpaFloatArray, SherpaFloat, \
+                 IntArray, _WSTATFCTPTR(name) >))
 
 #define STATERRFCT(name)	_STATFCTSPEC(name, staterrfct)
 #define STATFCT(name)		_STATFCTSPEC(name, statfct)
-#define STATFCT_NOERR(name)	_STATFCTSPEC(name, statfct_noerr)
+#define WSTATFCT(name)		_WSTATFCTSPEC(name, wstatfct)
 
 
 #endif /* __sherpa_stat_extension_hh__ */

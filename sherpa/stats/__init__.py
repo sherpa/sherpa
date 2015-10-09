@@ -29,7 +29,7 @@ from ConfigParser import ConfigParser
 __all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',
            'Chi2Gehrels', 'Chi2ConstVar', 'Chi2DataVar', 'Chi2ModVar',
            'Chi2XspecVar', 'Chi2',
-           'UserStat')
+           'UserStat', 'WStat')
 
 
 config = ConfigParser()
@@ -41,7 +41,7 @@ config.read(get_config())
 truncation_flag = config.get('statistics', 'truncate').upper()
 truncation_value = float(config.get('statistics', 'trunc_value'))
 if (bool(truncation_flag) is False or truncation_flag == "FALSE" or
-    truncation_flag == "NONE" or truncation_flag == "0"):
+        truncation_flag == "NONE" or truncation_flag == "0"):
     truncation_value = 1.0e-25
 
 
@@ -61,12 +61,13 @@ class Stat(NoNewAttributesAfterInit):
         raise NotImplementedError
 
     def calc_stat(self, data, model, staterror=None, syserror=None,
-                  weight=None, **kwargs):
+                  weight=None, bkg=None):
         raise NotImplementedError
 
 
 class Likelihood(Stat):
     """Maximum likelihood function"""
+
     def __init__(self, name='likelihood'):
         Stat.__init__(self, name)
 
@@ -147,12 +148,13 @@ class Cash(Likelihood):
            http://adsabs.harvard.edu/abs/1979ApJ...228..939C
 
     """
+
     def __init__(self, name='cash'):
         Likelihood.__init__(self, name)
 
     @staticmethod
     def calc_stat(data, model, staterror=None, syserror=None, weight=None,
-                  **kwargs):
+                  bkg=None):
         return _statfcts.calc_cash_stat(data, model, staterror, syserror,
                                         weight, truncation_value)
 
@@ -160,9 +162,10 @@ class Cash(Likelihood):
 class CStat(Likelihood):
     """Maximum likelihood function (XSPEC style).
 
-    This is equivalent to the X-Spec implementation of the
-    Cash statistic [1]_. It does *not* include the background
-    modelling.
+    This is equivalent to the XSpec implementation of the
+    Cash statistic [1]_ except that it requires a model to be fit
+    to the background. To handle the background in the same manner
+    as XSpec, use the WStat statistic.
 
     Counts are sampled from the Poisson distribution, and so the best
     way to assess the quality of model fits is to use the product of
@@ -221,12 +224,13 @@ class CStat(Likelihood):
            https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
 
     """
+
     def __init__(self, name='cstat'):
         Likelihood.__init__(self, name)
 
     @staticmethod
     def calc_stat(data, model, staterror=None, syserror=None, weight=None,
-                  **kwargs):
+                  bkg=None):
         return _statfcts.calc_cstat_stat(data, model, staterror, syserror,
                                          weight, truncation_value)
 
@@ -276,6 +280,7 @@ class Chi2(Stat):
     can be avoided by treating the background as a separate data set.
 
     """
+
     def __init__(self, name='chi2'):
         Stat.__init__(self, name)
 
@@ -285,7 +290,7 @@ class Chi2(Stat):
 
     @staticmethod
     def calc_stat(data, model, staterror, syserror=None, weight=None,
-                  **kwargs):
+                  bkg=None):
         return _statfcts.calc_chi2_stat(data, model, staterror,
                                         syserror, weight, truncation_value)
 
@@ -297,6 +302,7 @@ class LeastSq(Chi2):
     statistic where the error on each point - sigma(i) - is 1.
 
     """
+
     def __init__(self, name='leastsq'):
         Stat.__init__(self, name)
 
@@ -306,7 +312,7 @@ class LeastSq(Chi2):
 
     @staticmethod
     def calc_stat(data, model, staterror, syserror=None, weight=None,
-                  **kwargs):
+                  bkg=None):
         return _statfcts.calc_lsq_stat(data, model, staterror,
                                        syserror, weight, truncation_value)
 
@@ -349,6 +355,7 @@ class Chi2Gehrels(Chi2):
            http://adsabs.harvard.edu/abs/1986ApJ...303..336G
 
     """
+
     def __init__(self, name='chi2gehrels'):
         Chi2.__init__(self, name)
 
@@ -368,6 +375,7 @@ class Chi2ConstVar(Chi2):
     background has been subtracted from the data.
 
     """
+
     def __init__(self, name='chi2constvar'):
         Chi2.__init__(self, name)
 
@@ -392,6 +400,7 @@ class Chi2DataVar(Chi2):
     background has been subtracted from the data.
 
     """
+
     def __init__(self, name='chi2datavar'):
         Chi2.__init__(self, name)
 
@@ -417,6 +426,7 @@ class Chi2ModVar(Chi2):
     background-subtracted data.
 
     """
+
     def __init__(self, name='chi2modvar'):
         Chi2.__init__(self, name)
 
@@ -427,7 +437,7 @@ class Chi2ModVar(Chi2):
 
     @staticmethod
     def calc_stat(data, model, staterror, syserror=None, weight=None,
-                  **kwargs):
+                  bkg=None):
         return _statfcts.calc_chi2modvar_stat(data, model, staterror,
                                               syserror, weight,
                                               truncation_value)
@@ -444,6 +454,7 @@ class Chi2XspecVar(Chi2):
     then the variance for that bin is set to 1.
 
     """
+
     def __init__(self, name='chi2xspecvar'):
         Chi2.__init__(self, name)
 
@@ -500,10 +511,91 @@ class UserStat(Stat):
         return self.errfunc(data)
 
     def calc_stat(self, data, model, staterror=None, syserror=None,
-                  weight=None, **kwargs):
+                  weight=None, bkg=None):
         if not self._statfuncset:
             raise StatErr('nostat', self.name, 'calc_stat()')
-        if 'bkg' in kwargs.keys():
-            return self.statfunc(data, model, staterror, syserror, weight, bkg)
-        else:
+
+        if bkg is None or bkg['bkg'] is None:
             return self.statfunc(data, model, staterror, syserror, weight)
+        else:
+            return self.statfunc(data, model, staterror, syserror, weight,
+                                 bkg['bkg'])
+
+
+class WStat(Likelihood):
+    """Maximum likelihood function including background (XSPEC style).
+    
+    This is equivalent to the XSpec implementation of the
+    W statistic for CStat [1]_, and includes the background data in
+    the fit statistic. If a model is being fit to the background then
+    the CStat statistic should be used.
+
+    The following description is taken from [1]_.
+    
+    Suppose that each bin in the background spectrum is given its own
+    parameter so that the background model is b_i = f_i. A standard fit
+    for all these parameters would be impractical; however there is an
+    analytical solution for the best-fit f_i in terms of the other
+    variables which can be derived by using the fact that the derivative
+    of the likelihood (L) will be zero at the best fit. Solving for the
+    f_i and substituting gives the profile likelihood::
+    
+      W = 2 sum_(i=1)^N t_s m_i + (t_s + t_b) f_i -
+          S_i ln(t_s m_i + t_s f_i) - B_i ln(t_b f_i) -
+          S_i (1- ln(S_i)) - B_i (1 - ln(B_i))
+
+    where::
+
+      f_i = (S_i + B_i - (t_s + t_b) m_i + d_i) / (2 (t_s + t_b))
+      d_i = sqrt([(t_s + t_b) m_i - S_i - B_i]^2 +
+                 4(t_s + t_b) B_i m_i)
+                 
+    If any bin has S_i and/or B_i zero then its contribution to W (W_i)
+    is calculated as a special case. So, if S_i is zero then::
+
+      W_i = t_s m_i - B_i ln(t_b / (t_s + t_b))
+
+    If B_i is zero then there are two special cases. If
+    m_i < S_i / (t_s + t_b) then::
+
+      W_i = - t_b m_i - S_i ln(t_s / (t_s + t_b))
+
+    otherwise::
+
+      W_i = t_s m_i + S_i (ln(S_i) - ln(t_s m_i) - 1)
+
+    In practice, it works well for many cases but for weak sources can
+    generate an obviously wrong best fit. It is not clear why this happens
+    although binning to ensure that every bin contains at least one count
+    often seems to fix the problem. In the limit of large numbers of counts
+    per spectrum bin a second-order Taylor expansion shows that W tends to::
+
+      sum_(i=1)^N ( [S_i - t_s m_i - t_s f_i]^2 / (t_s (m_i + f_i)) +
+                    [B_i - t_b f_i]^2 / (t_b f_i) )
+
+    which is distributed as chi^2 with N - M degrees of freedom, where
+    the model m_i has M parameters (include the normalization).
+
+    References
+    ----------
+
+    .. [1] The description of the W statistic (`wstat`) in
+           https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
+
+    """
+
+    def __init__(self, name='wstat'):
+        Likelihood.__init__(self, name)
+
+    @staticmethod
+    def calc_stat(data, model, staterror=None, syserror=None,
+                  weight=None, bkg=None):
+        if bkg is None or bkg['bkg'] is None:
+            raise StatErr('usecstat')
+
+        return _statfcts.calc_wstat_stat(data, model,
+                                         bkg['data_size'],
+                                         bkg['exposure_time'],
+                                         bkg['bkg'],
+                                         bkg['backscale_ratio'],
+                                         truncation_value)

@@ -27,11 +27,13 @@ from sherpa.utils import has_package_from_list, has_fits_support
 
 from sherpa.models import PowLaw1D
 from sherpa.fit import Fit
-from sherpa.stats import Stat, Cash, LeastSq, UserStat
+from sherpa.stats import Stat, Cash, LeastSq, UserStat, WStat
 from sherpa.optmethods import LevMar, NelderMead
+from sherpa.utils.err import StatErr
+from sherpa.astro import ui
 
 
-class MyCash(UserStat):
+class MyCashWithBkg(UserStat):
 
     def __init__(self, name='mycash'):
         UserStat.__init__(self, name)
@@ -41,19 +43,18 @@ class MyCash(UserStat):
         return None
 
     @staticmethod
-    def mycalc_stat(data, model, staterror=None, syserror=None, weight=None,
-                    bkg=None):
-        assert bkg is not None
+    def cash_withbkg(data, model, staterror=None, syserror=None, weight=None,
+                     bkg=None):
         fvec = model - (data * numpy.log(model))
         if weight is not None:
             fvec = fvec * weight
         return 2.0 * sum(fvec), fvec
 
-    calc_stat = mycalc_stat
+    calc_stat = cash_withbkg
     calc_staterror = mycal_staterror
 
 
-class MyChi(UserStat):
+class MyChiWithBkg(UserStat):
 
     def __init__(self, name='mychi'):
         UserStat.__init__(self, name)
@@ -63,14 +64,13 @@ class MyChi(UserStat):
         return numpy.ones_like(data)
 
     @staticmethod
-    def mycalc_stat(data, model, staterror=None, syserror=None, weight=None,
+    def chi_withbkg(data, model, staterror=None, syserror=None, weight=None,
                     bkg=None):
-        assert bkg is not None
         fvec = ((data - model) / staterror)**2
         stat = fvec.sum()
         return (stat, fvec)
 
-    calc_stat = mycalc_stat
+    calc_stat = chi_withbkg
     calc_staterror = mycal_staterror
 
 
@@ -84,14 +84,14 @@ class MyCashNoBkg(UserStat):
         return None
 
     @staticmethod
-    def mycalc_stat(data, model, staterror=None, syserror=None,
-                    weight=None):
+    def cash_nobkg(data, model, staterror=None, syserror=None,
+                   weight=None):
         fvec = model - (data * numpy.log(model))
         if weight is not None:
             fvec = fvec * weight
         return 2.0 * sum(fvec), fvec
 
-    calc_stat = mycalc_stat
+    calc_stat = cash_nobkg
     calc_staterror = mycal_staterror
 
 
@@ -105,12 +105,12 @@ class MyChiNoBkg(UserStat):
         return numpy.ones_like(data)
 
     @staticmethod
-    def mycalc_stat(data, model, staterror=None, syserror=None, weight=None):
+    def chi_nobkg(data, model, staterror=None, syserror=None, weight=None):
         fvec = ((data - model) / staterror)**2
         stat = fvec.sum()
         return (stat, fvec)
 
-    calc_stat = mycalc_stat
+    calc_stat = chi_nobkg
     calc_staterror = mycal_staterror
 
 
@@ -176,9 +176,20 @@ class test_stats(SherpaTestCase):
             [346.51084808235697, 0.24721168701021015, 7.9993714921823997])
     }
 
+    _fit_wstat_results_bench = {
+        'succeeded': 1,
+        'numpoints': 446,
+        'dof': 443,
+        'istatval': 14000.5250801,
+        'statval': 1156.57701288,
+        'rstat': 2.6107833248,
+        'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
+        'parvals': numpy.array(
+            [5864.278543739505, 1.6569575154646112, 29868.225197035885])}
+
     def setUp(self):
         try:
-            from sherpa.astro.xspec import XSphabs
+            from sherpa.astro.xspec import XSphabs, XSpowerlaw
             from sherpa.astro.io import read_pha
         except:
             return
@@ -218,27 +229,75 @@ class test_stats(SherpaTestCase):
         results = fit.fit()
         self.compare_results(self._fit_mycash_results_bench, results)
 
-    def test_mycash_stat(self):
-        fit = Fit(self.data, self.model, MyCash(), NelderMead())
+    def test_mycash_data_and_model_have_bkg(self):
+        fit = Fit(self.data, self.model, MyCashWithBkg(), NelderMead())
         results = fit.fit()
         self.compare_results(self._fit_mycash_results_bench, results)
 
-    def test_mychi_stat(self):
-        fit = Fit(self.data, self.model, MyChi(), LevMar())
+    def test_mychi_data_and_model_have_bkg(self):
+        fit = Fit(self.data, self.model, MyChiWithBkg(), LevMar())
         results = fit.fit()
         self.compare_results(self._fit_mychi_results_bench, results)
 
-    def test_cashnobkg(self):
+    def test_mycash_data_and_model_donothave_bkg(self):
         data = self.bkg
         fit = Fit(data, self.model, MyCashNoBkg(), NelderMead())
         results = fit.fit()
         self.compare_results(self._fit_mycashnobkg_results_bench, results)
 
-    def test_chinobkg(self):
+    def test_mychi_data_and_model_donothave_bkg(self):
         data = self.bkg
         fit = Fit(data, self.model, MyChiNoBkg(), LevMar())
         results = fit.fit()
         self.compare_results(self._fit_mychinobkg_results_bench, results)
+
+    def test_mycash_datahasbkg_modelhasnobkg(self):
+        fit = Fit(self.data, self.model, MyCashNoBkg(), NelderMead())
+        results = fit.fit()
+        self.compare_results(self._fit_mycash_results_bench, results)
+
+    def test_mycash_nobkgdata_modelhasbkg(self):
+        data = self.bkg
+        fit = Fit(data, self.model, MyCashWithBkg(), NelderMead())
+        results = fit.fit()
+        self.compare_results(self._fit_mycashnobkg_results_bench, results)
+
+    def test_mychi_datahasbkg_modelhasnobkg(self):
+        fit = Fit(self.data, self.model, MyChiNoBkg(), LevMar())
+        results = fit.fit()
+        self.compare_results(self._fit_mychi_results_bench, results)
+
+    def test_mychi_nobkgdata_modelhasbkg(self):
+        data = self.bkg
+        fit = Fit(data, self.model, MyChiWithBkg(), LevMar())
+        results = fit.fit()
+        self.compare_results(self._fit_mychinobkg_results_bench, results)
+
+    def test_wstat(self):
+        fit = Fit(self.data, self.model, WStat(), NelderMead())
+        results = fit.fit()
+        self.compare_results(self._fit_wstat_results_bench, results)
+
+    # The following test passes if run by itself but fails when run with others
+    # def test_wstat1(self):
+    #     pha_fname = self.make_path("stats/acisf09122_000N001_r0013_pha3.fits")
+    #     ui.load_pha(pha_fname)
+    #     #ui.set_analysis('energy')
+    #     ui.ignore(None, None)
+    #     ui.notice(1.0, 1.6)
+    #     src = ui.xsphabs.gal * ui.xspowerlaw.pl
+    #     gal.nh = 0.1
+    #     pl.phoindex = 0.7
+    #     pl.norm = 1e-4
+    #     ui.set_source(src)
+    #     ui.set_stat('wstat')
+    #     assert numpy.allclose(46.455049531, ui.calc_stat(), 1.e-7, 1.e-7)
+
+    def test_wstat_error(self):
+        data = self.bkg
+        data.notice(0.5, 7.0)
+        fit = Fit(data, self.model, WStat(), NelderMead())
+        self.assertRaises(StatErr, fit.fit)
 
 
 def tstme(datadir=None):

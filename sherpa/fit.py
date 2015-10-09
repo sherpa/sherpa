@@ -23,22 +23,29 @@ import os
 import signal
 from numpy import arange, array, abs, iterable, sqrt, where, \
     ones_like, isnan, isinf, float, float32, finfo, nan, any, zeros, append, \
-    int
+    int, ones
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
-    bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
+    bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp, \
+    get_valid_args
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, LeastSq, \
-    Likelihood
-
+    Likelihood, WStat, UserStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
 __all__ = ('FitResults', 'ErrorEstResults', 'Fit')
+
+
+# def get_valid_args(func):
+#     valid_args = func.func_code.co_varnames[:func.func_code.co_argcount]
+#     kwargs_length = len(func.func_defaults)  # number of keyword arguments
+#     valid_kwargs = valid_args[-kwargs_length:]  # because kwargs are last
+#     return valid_kwargs
 
 
 def evaluates_model(func):
@@ -196,7 +203,7 @@ class FitResults(NoNewAttributesAfterInit):
         _qval = None
         _rstat = None
         _covarerr = results[4].get('covarerr')
-        if (isinstance(fit.stat, (CStat, Chi2)) and
+        if (isinstance(fit.stat, (CStat, WStat, Chi2)) and
                 not isinstance(fit.stat, LeastSq)):
             if _dof > 0 and results[2] >= 0.0:
                 _qval = igamc(_dof / 2., results[2] / 2.)
@@ -451,7 +458,7 @@ class IterFit(NoNewAttributesAfterInit):
         # Data set attributes needed to store fitting values between
         # calls to fit
         self._dep = None
-        self.bkg = None
+        self.bkg_data = None
         self._staterror = None
         self._syserror = None
         self._nfev = 0
@@ -477,13 +484,32 @@ class IterFit(NoNewAttributesAfterInit):
     def get_bkg_data(self, dep):
         """get the bkg data for wstat and the user defined statistics"""
 
+        def vectorize_backscale_ratio(bkg_backscal, src_backscal, num):
+            '''return the ratio of bkg_backscal/src_backscal as a numpy
+            array of length n. bkg_backscal and/or src_backscal can be
+            either a floating point number or a numpy array'''
+            if hasattr(bkg_backscal, '__iter__') is False and \
+                    hasattr(src_backscal, '__iter__') is False:
+                # both backscal are floating point numbers, generate arrays
+                bkg = bkg_backscal * ones(num)
+                src = src_backscal
+            else:
+                # at least one of the backscals is a numpy array
+                bkg = bkg_backscal
+                src = src_backscal
+            return bkg / src
+
+        result = {'bkg': None, 'backscale_ratio': None, 'data_size': None,
+                  'exposure_time': None}
         bkg_dep = []
         data_size = None
-        response_time = None
+        exposure_time = None
+        backscale_ratio = []
+
         len_datasets = len(self.data.datasets)
 
         data_size = zeros(len_datasets, dtype=int)
-        response_time = zeros(2 * len_datasets)
+        exposure_time = zeros(2 * len_datasets)
         for index in xrange(len_datasets):
             mydata = self.data.datasets[index]
             if hasattr(mydata, 'response_ids') and \
@@ -493,12 +519,20 @@ class IterFit(NoNewAttributesAfterInit):
                 tmp_bkg_dep = bkg.get_dep(True)
                 data_size[index] = tmp_bkg_dep.size
                 bkg_dep = append(bkg_dep, tmp_bkg_dep)
-                response_time[2 * index] = mydata.exposure
-                response_time[2 * index + 1] = bkg.exposure
-            # else:
-            #     raise FitErr( 'no bkg file is supplied, use cstat instead' )
+                exposure_time[2 * index] = mydata.exposure
+                exposure_time[2 * index + 1] = bkg.exposure
+                ratio = vectorize_backscale_ratio(bkg.backscal,
+                                                  mydata.backscal,
+                                                  data_size[index])
+                backscale_ratio = append(backscale_ratio, ratio)
+            else:
+                return result
 
-        return bkg_dep, data_size, response_time
+        result['bkg'] = bkg_dep
+        result['backscale_ratio'] = backscale_ratio
+        result['data_size'] = data_size
+        result['exposure_time'] = exposure_time
+        return result
 
     def _get_callback(self, outfile=None, clobber=False):
         if len(self.model.thawedpars) == 0:
@@ -513,7 +547,8 @@ class IterFit(NoNewAttributesAfterInit):
 
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
-        self.bkg, junk1, junk2 = self.get_bkg_data(self._dep)
+
+        self.bkg_data = self.get_bkg_data(self._dep)
 
         self._nfev = 0
         if outfile is not None:
@@ -532,14 +567,22 @@ class IterFit(NoNewAttributesAfterInit):
 
             self.model.thawedpars = pars
             model = self.data.eval_model_to_fit(self.model)
-            if 0 == len(self.bkg):
-                stat = self.stat.calc_stat(self._dep, model,
-                                           self._staterror, self._syserror)
+            valid_args = get_valid_args(self.stat.calc_stat)
+            if is_in('bkg', valid_args):
+                if isinstance(self.stat, UserStat):
+                    stat = self.stat.calc_stat(self._dep, model,
+                                               self._staterror,
+                                               syserror=self._syserror,
+                                               bkg=self.bkg_data['bkg'])
+                else:
+                    stat = self.stat.calc_stat(self._dep, model,
+                                               self._staterror,
+                                               syserror=self._syserror,
+                                               bkg=self.bkg_data)
             else:
                 stat = self.stat.calc_stat(self._dep, model,
-                                           self._staterror, self._syserror,
-                                           bkg=self.bkg)
-
+                                           self._staterror,
+                                           syserror=self._syserror)
             if self._file is not None:
                 vals = ['%5e %5e' % (self._nfev, stat[0])]
                 vals.extend(['%5e' % val for val in self.model.thawedpars])
@@ -964,14 +1007,20 @@ class Fit(NoNewAttributesAfterInit):
         """
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         model = self.data.eval_model_to_fit(self.model)
-        bkg = None
-
-        bkg, _, _ = self._iterfit.get_bkg_data(dep)
-        if 0 == len(bkg):
-            return self.stat.calc_stat(dep, model, staterror, syserror)[0]
+        bkg_data = self._iterfit.get_bkg_data(dep)
+        valid_args = get_valid_args(self.stat.calc_stat)
+        if is_in('bkg', valid_args):
+            if isinstance(self.stat, UserStat):
+                return self.stat.calc_stat(dep, model, staterror,
+                                           syserror=syserror,
+                                           bkg=bkg_data['bkg'])[0]
+            else:
+                return self.stat.calc_stat(dep, model, staterror,
+                                           syserror=syserror,
+                                           bkg=bkg_data)[0]
         else:
-            return self.stat.calc_stat(dep, model, staterror, syserror,
-                                       bkg=bkg)[0]
+            return self.stat.calc_stat(dep, model, staterror,
+                                       syserror=syserror)[0]
 
     def calc_chisqr(self):
         """Calculate the per-bin chi-squared statistic.
@@ -1037,7 +1086,7 @@ class Fit(NoNewAttributesAfterInit):
     def fit(self, outfile=None, clobber=False):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         if not iterable(dep) or len(dep) == 0:
-            #raise FitError('no noticed bins found in data set')
+            # raise FitError('no noticed bins found in data set')
             raise FitErr('nobins')
 
         if ((iterable(staterror) and 0.0 in staterror) and

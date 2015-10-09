@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -73,7 +73,7 @@ __all__ = ('Plot', 'Contour', 'Point', 'SplitPlot', 'JointPlot',
            'PSFPlot','PSFContour','begin', 'end', 'exceptions', 'backend',
            'SourcePlot', 'SourceContour', 'Histogram')
 
-_stats_noerr = ('cash', 'cstat', 'leastsq')
+_stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
 
 begin = backend.begin
 end = backend.end
@@ -372,7 +372,7 @@ class CDFPlot(Plot):
                   overplot=overplot, clearwindow=clearwindow)
         Plot.vline(self.median, overplot=True, clearwindow=False,
                    **self.median_defaults)
-        Plot.vline(self.lower, overplot=True, clearwindow=False, 
+        Plot.vline(self.lower, overplot=True, clearwindow=False,
                    **self.lower_defaults)
         Plot.vline(self.upper, overplot=True, clearwindow=False,
                    **self.upper_defaults)
@@ -464,7 +464,7 @@ class SplitPlot(Plot,Contour):
             self._cleared_window = True
 
     def _reset_used(self):
-        self._used = numpy.zeros((self.rows, self.cols), numpy.bool_)        
+        self._used = numpy.zeros((self.rows, self.cols), numpy.bool_)
 
     def _next_subplot(self):
         row, col = numpy.where(self._used == False)
@@ -1235,7 +1235,7 @@ class ResidContour(ModelContour):
     def contour(self, overcontour=False, clearwindow=True):
         Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
                         title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
-                        overcontour=overcontour, clearwindow=clearwindow)    
+                        overcontour=overcontour, clearwindow=clearwindow)
 
 
 class RatioPlot(ModelPlot):
@@ -1805,7 +1805,7 @@ class IntervalUncertainty(Confidence1D):
         xvals = self._interval_init(fit, par)
 
         for i in thawed:
-            i.freeze()                    
+            i.freeze()
 
         def eval_uncert(val):
             if self.log:
