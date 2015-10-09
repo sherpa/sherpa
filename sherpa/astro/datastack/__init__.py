@@ -1,39 +1,218 @@
-"""
-Manipulate a stack of data in Sherpa.
+# Copyright (c) 2010,2014,2015 Smithsonian Astrophysical Observatory
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the Smithsonian Astrophysical Observatory nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-The methods in the DataStack class provide a way to automatically apply
-familiar Sherpa commands such as `set_par`, `freeze`, or `plot_fit`
-to a stack of datasets.  This simplifies simultaneous fitting of
-multiple datasets.
+"""Support multiple data sets when using Sherpa commands.
 
-:Copyright: Smithsonian Astrophysical Observatory (2014,2015)
-:Author: Tom Aldcroft (aldcroft@head.cfa.harvard.edu)
-:Author: Omar Laurino (olaurino@head.cfa.harvard.edu)
+The ``sherpa.astro.datastack`` module supports manipulating a stack
+of related datasets and simultaneously fitting a model to them. It
+provides stack-enabled (i.e. vectorized) versions of the key Sherpa
+commands used to load data, set source models, get and set parameters,
+fit, and plot. It is intended for use when simultaneously fitting a
+common source model to multiple data sets.
+
+Acknowledgements
+----------------
+
+The Datastack code was developed by Thomas Aldcroft and originally
+provided as an external package for Sherpa, available at
+http://cxc.harvard.edu/contrib/datastack/. The code was added to
+Sherpa in version 4.7.1.
+
+Example: PHA data
+-----------------
+
+In the following example, ``src.lis`` is an ASCII text file
+with the name of a PHA file to load on each line::
+
+    from sherpa.astro import datastack
+    from sherpa.astro import ui
+    datastack.load_pha("@src.lis")
+
+At this point the PHA files are loaded into data sets ``1`` to ``n``,
+where ``n`` is the number of lines in the ``src.lis``. Any ancillary
+files - such as background, ARF, and RMF - will be loaded in as if
+the files were loaded separately.
+
+The loaded data sets can be shown using::
+
+    datastack.show_stack()
+
+The module uses the special identifier ``[]`` to indicate all
+members of a stack, so::
+
+    datastack.set_source([], ui.xsphabs.gal * ui.xspowerlaw.pl)
+
+will set each file to have the *same* model (in this case an
+absorbed power law). Adding the suffix ``__ID`` to a component
+name will create a separate component for each data set; so::
+
+    src = ui.const1d.c__ID * ui.xsphabs.gal * ui.xspowerlaw.pl
+    datastack.set_source([], src)
+    ui.freeze(pl.norm)
+
+will have a common absorbing component (``gal``) and power law
+model (``pl``), but each data set has a separate constant term
+labelled ``c`` followed by the data set identifier (e.g.
+``c1`` and ``c2``). Since the normalization of the power law
+component has been frozen the constant term represents the
+normalization of each component (i.e. the model shape is
+assumed constant, but its amplitude is not). These expressions
+can be viewed using the command::
+
+    ui.show_source()
+
+The ``integrate`` flag of the constant model component should
+be turned off (so that the component acts as a scalar term rather
+than including the bin-width). The ``datastack`` module does not
+provide a simple way to do this, so the setting of each component
+has to be changed individually::
+
+    for did in datastack.get_stack_ids():
+        mdl = ui.get_model_component('c{}'.format(did))
+        mdl.integrate = False
+
+The ``datastack`` module provides versions of the ``sherpa.astro.ui``
+module which accept ``[]``, so::
+
+    datastack.subtract([])
+
+will subtract the background from each data set. Some commands are
+the same - so either of the following will filter the data::
+
+    ui.notice(0.5, 7)
+    datastack.notice(0.5, 7)
+
+The data and model for each data set can be viewed with::
+
+    datastack.plot_fit([])
+
+and the model fit to all the data sets as normal::
+
+    ui.fit()
+
+Loading data
+------------
+
+Multiple inputs (referred to as a stack here) can be specified
+either from an ASCII file - one file name per line - by placing
+the ``@`` character before the file name, or as a comma-separated
+list of names:
+
+- ``load_data``
+- ``load_ascii``
+- ``load_pha``
+- ``load_bkg``
+
+The ``load_arrays`` function is slightly different, in that it
+accepts a list of array arguments, one for each dataset.
+
+Examples include::
+
+    datastack.load_data("@srcs.lis")
+    datastack.load_pha("obs1.pha,obs2.pha,obs3.pha")
+    datastack.load_arrays([[x1, y1], [x2, y2]])
+
+Identifying a stack
+-------------------
+
+When reading in a stack of data, the individual data sets
+are numbered sequentially. These identifiers can be used to
+select individual data sets using functions from the
+``sherpa.astro.ui`` module. The functions from the ``datastack``
+module work with a datastack identifier, which can be:
+
+- ``[]``
+- an iterable sequence of data set identifiers
+- a datastack instance reference
+- a subset of a datastack instance
+
+So::
+
+    datastack.plot_data([])
+    datastack.plot_data([1,3])
+
+plots all the data sets, and then just the first and third entries.
+The following repeats the example, using a ``DataStack`` object::
+
+    ds = datastack.DataStack()
+    ds.load_data('@src.lis')
+    datastack.plot_data(ds)
+    datastack.plot_data(ds[1,3])
+
+Note that when accessing a subset of a DataStack object - e.g.
+``ds[1,3]`` - the numbers match the data set identifiers (and so
+start at ``1``, not ``0``).
+
+Setting a model for a stack
+---------------------------
+
+The functions
+
+- ``set_source``
+- ``set_model``
+- ``set_bkg_model``
+- ``set_full_model``
+- ``set_bkg_full_model``
+
+can be used to set the source expression for a datastack. This
+expression can include models with components that are shared between
+data sets and models which have a component per data set. The
+later case are created by using the identifier ``__ID`` in the
+name of the component. The following call will fit the sum of a
+polynomial and gaussian model to the data, with the same parameters
+used for each data set (the model components are called ``bgnd``
+and ``src`` respectively)::
+
+    datastack.set_source([], ui.polynom1d.bgnd + ui.gauss1d.src)
+
+whereas::
+
+    datastack.set_source([], ui.polynom1d.bgnd__ID + ui.gauss1d.src)
+
+fits a single gaussian model (``src``) to all data sets, but allows the
+polynomial to vary between datasets (with names ``bgnd1``, ``bgnd2``,
+...).
+
+Utility functions for data stacks
+---------------------------------
+
+The following functions are provided:
+
+- ``get_stack_ids``, which returns the data set identifiers that are
+  included in the data stack,
+- ``show_stack``, which prints the data sets available in the data stack,
+  together with some basic metadata,
+- ``clear_models``, to remove all the model expressions from a data stack,
+- and ``clear_stack``, to remove all the data sets that are part of the
+  data stack.
+
+Information about data sets which match a particular query are provided
+by the ``query_by_header_keyword``, ``query_by_obsid``, and ``query``
+functions.
+
 """
-## Copyright (c) 2010,2014,2015 Smithsonian Astrophysical Observatory
-## All rights reserved.
-## 
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are met:
-##     * Redistributions of source code must retain the above copyright
-##       notice, this list of conditions and the following disclaimer.
-##     * Redistributions in binary form must reproduce the above copyright
-##       notice, this list of conditions and the following disclaimer in the
-##       documentation and/or other materials provided with the distribution.
-##     * Neither the name of the Smithsonian Astrophysical Observatory nor the
-##       names of its contributors may be used to endorse or promote products
-##       derived from this software without specific prior written permission.
-## 
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-## ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-## WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-## DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
-## DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-## (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-## LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-## ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-## (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS  
-## SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import sys
 import types
@@ -68,16 +247,21 @@ def set_stack_verbosity(level):
     logger.setLevel(level)
 
 def set_stack_verbose(verbose=True):
-    """Configure whether stack functions print informational messages.
-    :param verbose: print messages if True (default=True)
-    :returns: None
+    """Should stack functions print informational messages?
+
+    Parameters
+    ----------
+    verbose : bool, opt
+       If ``True`` then display messages at the logging level
+       of ``INFO`` or above. If ``False`` only display
+       ``WARNING`` messages or above.
     """
     if verbose:
         logger.setLevel(logging.INFO)
     else:
         logger.setLevel(logging.WARNING)
 
-# Get plot package 
+# Get plot package
 _cp = ConfigParser.ConfigParser()
 _cp.read(sherpa.get_config())
 _plot_pkg =  _cp.get('options', 'plot_pkg')
@@ -160,7 +344,7 @@ class DataStack(object):
 
     def __getitem__(self, item):
         """Overload datastack getitem ds[item(s)] to set self.filter_ids to a tuple
-        corresponding to the specified items.  
+        corresponding to the specified items.
         """
         try:
             ids = (item + '',)
@@ -181,23 +365,31 @@ class DataStack(object):
 
     def clear_models(self):
         """Clear all model components in the stack.
-        :returns: None
+
+        See Also
+        --------
+        clear_stack, clean, show_stack
         """
         for dataset in self.datasets:
             dataset['model_comps'] = {}
 
     def clear_stack(self):
         """Clear all datasets in the stack.
-        :returns: None
+
+        See Also
+        --------
+        clear_models, clean, show_stack
         """
         for dataid in self.dataset_ids:
             del _all_dataset_ids[dataid]
         self.__init__()
 
     def show_stack(self):
-        """Show the data id and file name (where meaningful) for selected
-        datasets in stack.
-        :returns: None
+        """Display basic information about the contents of the data stack.
+
+        A brief summary of each data set in the stack is printed to the
+        standard output channel. The information displayed depends on the
+        type of each data set.
         """
         for dataset in self.filter_datasets():
             obsid = "N/A"
@@ -209,8 +401,13 @@ class DataStack(object):
             print('{0}: {1} {2}: {3} {4}: {5}'.format(dataset['id'], dataset['data'].name, 'OBS_ID', obsid, "MJD_OBS", time))
 
     def get_stack_ids(self):
-        """Get the ids for all datasets in stack
-        :returns: list of ids
+        """Return the data set identifiers in the stack.
+
+        Returns
+        -------
+        ids : array of int or str
+           The data set identifiers.
+
         """
         return self.ids
 
@@ -254,7 +451,26 @@ class DataStack(object):
 
         self._add_dataset(dataid)
 
+    # NOTE: this doc string is over-ridden by the contents of the
+    #       sherpa.astro.ui version
     def load_arrays(self, *args, **kwargs):
+        """Load multiple data arrays.
+
+        This extends ``sherpa.astro.ui.load_arrays`` to load multiple
+        data sets with one call. The array arguments are supplied as an
+        array of arrays, one for each data set. The other arguments are
+        as supported by ``sherpa.astro.ui.load_arrays``.
+
+        Examples
+        --------
+
+        Create three data sets, using the array pairs ``x1, y1``,
+        ``x2, y2``, and ``x3, y3``.
+
+        >>> load_arrays([[x1, y1], [x2, y2], [x3, y3]])
+
+        """
+
         if len(args) == 0:
             raise AttributeError("load_arrays takes at least one argument (got none).")
 
@@ -352,10 +568,7 @@ class DataStack(object):
 
     def _set_model_factory(func):
         def wrapfunc(self, model):
-            """
-            Run a model-setting function for each of the datasets.  
-            :rtype: None
-            """
+            """Run a model-setting function for each of the datasets."""
             datasets = self.filter_datasets()
             try:
                 # if model is passed as a string
@@ -401,9 +614,12 @@ class DataStack(object):
 
     def _sherpa_cmd_factory(func):
         def wrapfunc(self, *args, **kwargs):
-            """
-            Apply an arbitrary Sherpa function to each of the datasets.  
-            :rtype: List of results
+            """Apply an arbitrary Sherpa function to each of the datasets.
+
+            Returns
+            -------
+            out : list
+               The return value of each call, which may be ``None``.
             """
             datasets = self.filter_datasets()
             logger.info('Running {0} with args={1} and kwargs={2} for ids={3}'.format(
@@ -448,13 +664,26 @@ class DataStack(object):
 
         See thaw(), freeze(), set_par() and get_par() for examples.
 
-        :param func: Sherpa function that takes a full parameter name specification and
-                     optional args, e.g. set_par() used as set_par('mekal_7.kt', 2.0)
-        :param par: Param name or model compoent name ('mekal.kt' or 'mekal')
-        :param msg: Format string to indicate action.
-        :param *args: Optional function arguments
+        Parameters
+        ----------
+        func
+           The Sherpa function to call. It should take a full parameter name
+           specification and optional args, e.g. ``set_par`` since it can
+           be called as ``set_par('mekal_7.kt', 2.0)``.
+        par : str
+           The name of the parameter of model component.
+        msg : str
+           The format string to inficate action.
+        *args
+           Any remaining arguments to send to the function.
+        *args
+           Any keyword arguments to send to the function.
 
-        :rtype: numpy array of function return values ordered by shell
+        Returns
+        -------
+        out : list
+           A list of the return value from each function call, which can
+           be ``None``.
         """
 
         vals = par.split('.')
@@ -478,20 +707,28 @@ class DataStack(object):
 
         return retvals
 
+    # NOTE: this doc string is over-ridden by the contents of the
+    #       sherpa.astro.ui version
     def thaw(self, *pars):
         """Apply thaw command to specified parameters for each dataset.
 
-        :param pars: parameter specifiers in format <model_type>.<par_name>
-        :rtype: None
+        Parameters
+        ----------
+        pars
+           The names of the parameters or model components to thaw.
         """
         for par in pars:
             self._sherpa_par(ui.thaw, par, 'Thawing %s')
 
+    # NOTE: this doc string is over-ridden by the contents of the
+    #       sherpa.astro.ui version
     def freeze(self, *pars):
         """Apply freeze command to specified parameters for each dataset.
 
-        :param pars: parameter specifiers in format <model_type>.<par_name>
-        :rtype: None
+        Parameters
+        ----------
+        pars
+           The names of the parameters or model components to freeze.
         """
         for par in pars:
             self._sherpa_par(ui.freeze, par, 'Freezing %s')
@@ -504,11 +741,15 @@ class DataStack(object):
         attr = parts[-1]
         return parname, attr, self._sherpa_par(eval, parname, msg % attr)
 
+    # NOTE: this doc string is over-ridden by the contents of the
+    #       sherpa.astro.ui version
     def get_par(self, par):
-        """Get parameter attribute value for each dataset.
+        """Get parameter object for each dataset.
 
-        :param par: parameter specifier in format <model_type>.<par_name>
-        :rtype: None
+        Parameters
+        ----------
+        par : str
+           The name of the parameters, incuding the model component name.
         """
         parname, attr, pars = self._get_parname_attr_pars(par, 'Getting %%s.%s')
         return numpy.array([getattr(x, attr) for x in pars])
@@ -516,9 +757,13 @@ class DataStack(object):
     def set_par(self, par, val):
         """Set parameter attribute value for each dataset.
 
-        :param par: parameter spec: <model_type>.<attr> or <model_type>.<par>.<attr>
-        :param val: parameter value
-        :rtype: None
+        Parameters
+        ----------
+        par : str
+           The name of the parameter, including the attribute name.
+        val
+           The parameter attribute value.
+
         """
         parname, attr, pars = self._get_parname_attr_pars(par, 'Setting %%%%s.%%s = %s' % val)
         for x in pars:
@@ -540,12 +785,14 @@ class DataStack(object):
 
     def _sherpa_fit_func(func):
         def _fit(self, *args, **kwargs):
-            """Fit simultaneously all the datasets in the stack using the current
-            source models. 
+            """Fit or error analysis for all the datasets in the stack.
 
-            :args: additional args that get passed to the sherpa fit() routine
-            :kwargs: additional keyword args that get passed to the sherpa fit() routine
-            :rtype: None
+            Parameters
+            ----------
+            args
+               Any additional arguments to be passed to the call.
+            kwargs
+               Any keyword arguments to be passed to the call.
             """
             ids = tuple(x['id'] for x in self.filter_datasets())
             func(*(ids + args), **kwargs)
@@ -563,15 +810,16 @@ class DataStack(object):
     def _print_window(self, *args, **kwargs):
         """Save figure for each dataset.
 
-        Here is the text for index.rst:
-
-        In the ``print_window`` command if a filename is supplied (for saving to a
-        set of files) it should have a ``#`` character which will be replaced by the
-        dataset ``id`` in each case.
-
-        :param args: list arguments to pass to print_window
-        :param kwargs: named (keyword) arguments to pass to print_window
-        :rtype: None
+        Parameters
+        ----------
+        args
+           The parameters sent to the plotting back end to create a hardcopy
+           version of the plot. The first argument - if given - is taken to
+           be the filename, and any ``#`` character in it will be replaced
+           by the data set identifier (so that multiple files will be
+           created).
+        kwargs
+           Any keyword arguments to pass to the plotting back end.
         """
         orig_args = args
         for dataset in self.filter_datasets():
@@ -595,12 +843,16 @@ class DataStack(object):
 
     def _sherpa_plot_func(func):
         def _sherpa_plot(self, *args, **kwargs):
-            """Call Sherpa plot ``func`` for each dataset.
+            """Call the Sherpa plot ``func`` for each dataset.
 
-            :param func: Sherpa plot function
-            :param args: plot function list arguments
-            :param kwargs: plot function named (keyword) arguments
-            :rtype: None
+            Parameters
+            ----------
+            func
+               The Sherpa plot function
+            args
+               The arguments to the function.
+            kwargs
+               The keyword arguments to the function.
             """
             # FIXME We need to make sure ChIPS is initialized.
             # As a hack, we just call begin() and end() on the chips backend
@@ -657,12 +909,16 @@ class DataStack(object):
 
     def _matplotlib_func(func, axis_cmd=False):
         def _matplotlib(self, *args, **kwargs):
-            """Call matplotlib plot ``func`` for each dataset.
+            """Call the matplotlib plot ``func`` for each dataset.
 
-            :param func: Sherpa plot function
-            :param args: plot function list arguments
-            :param kwargs: plot function named (keyword) arguments
-            :rtype: None
+            Parameters
+            ----------
+            func
+               The matplotlib plot function
+            args
+               The arguments to the function.
+            kwargs
+               The keyword arguments to the function.
             """
             orig_args = args
             for dataset in self.filter_datasets():
@@ -697,6 +953,36 @@ class DataStack(object):
         plot_set_yscale = _matplotlib_func('set_yscale', axis_cmd=True)
 
     def query(self, func):
+        """Return the data sets identified by a function.
+
+        Parameters
+        ----------
+        func
+           A function which accepts a Sherpa Data object and
+           returns ``True`` if the data set matches.
+
+        Returns
+        -------
+        matches : list of int or str
+           A list of the data set identifiers that match. This
+           list may be empty.
+
+        See Also
+        --------
+        query_by_header_keyword, query_by_obsid
+
+        Examples
+        --------
+
+        This query function selects those data sets which have
+        been grouped, or had their background subtracted, or both.
+
+        >>> myquery = lambda d: d.subtracted or d.grouped
+        >>> query(myquery)
+        []
+
+        """
+
         output = []
         for dataset in self.filter_datasets():
             id = dataset['id']
@@ -705,6 +991,34 @@ class DataStack(object):
         return output
 
     def query_by_header_keyword(self, keyword, value):
+        """Return the data sets which contain the given keyword value.
+
+        Parameters
+        ----------
+        keyword : str
+           The keyword to search for (it is looked for in the ``header``
+           attribute of each data set, using a case-sensitive search).
+        value
+           The value of the keyword.
+
+        Returns
+        -------
+        matches : list of int or str
+           A list of the data set identifiers that match the query. This
+           list may be empty.
+
+        See Also
+        --------
+        query, query_by_obsid
+
+        Examples
+        --------
+
+        >>> query_by_header_keyword('TELESCOP', 'CHANDRA')
+        [1, 2]
+
+        """
+
         def func(dataset):
             if hasattr(dataset, 'header'):
                 if keyword in dataset.header.keys() and dataset.header[keyword] == str(value):
@@ -713,6 +1027,32 @@ class DataStack(object):
         return self.query(func)
 
     def query_by_obsid(self, value):
+        """Return the data sets which match the OBS_ID value.
+
+        Parameters
+        ----------
+        value : int or str
+           The value to match against the ``OBS_ID`` keyword in
+           the header of each data set.
+
+        Returns
+        -------
+        matches : list of int or str
+           A list of the data set identifiers that match. This
+           list may be empty.
+
+        See Also
+        --------
+        query, query_by_header_keyword
+
+        Examples
+        --------
+
+        >>> query_by_obsid(7867)
+        [3]
+
+        """
+
         return self.query_by_header_keyword('OBS_ID', value)
 
 
@@ -723,7 +1063,7 @@ def _sherpa_ui_wrap(func):
     def wrap(*args, **kwargs):
         wrapfunc = func
         if args:
-            if isinstance(args[0], DataStack): 
+            if isinstance(args[0], DataStack):
                 datastack, args = args[0], args[1:]
             # If the first argument is a list and it's either empty or made of non-iterables, then it's a datastack definition.
             # If the list contains iterable it must be arrays for load_arrays.
@@ -754,7 +1094,7 @@ def _datastack_wrap(func):
         if not args:
             args = ([],) + args
 
-        if isinstance(args[0], DataStack): 
+        if isinstance(args[0], DataStack):
             datastack, args = args[0], args[1:]
         elif isinstance(args[0], list) and not (len(args[0])>0 and hasattr(args[0][0],'__iter__')):
             datastack, args = (DATASTACK[args[0]] if args[0] else DATASTACK), args[1:]
@@ -781,6 +1121,16 @@ for funcname in ['clear_stack', 'show_stack', 'get_stack_ids', 'query', 'query_b
     setattr(_module, funcname, _datastack_wrap(getattr(DataStack, funcname)))
 
 def clean():
+    """Remove the models and data from the data stack and Sherpa.
+
+    This function clears out the models and data set up in the data
+    stack and in the Sherpa session.
+
+    See Also
+    --------
+    clear_models, clear_stack
+    sherpa.astro.ui.clean
+    """
     DATASTACK.clear_models()
     DATASTACK.clear_stack()
     ui.clean()
