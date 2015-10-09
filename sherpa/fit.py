@@ -22,7 +22,8 @@ import logging
 import os
 import signal
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, float, float32, finfo, nan, any
+    ones_like, isnan, isinf, float, float32, finfo, nan, any, zeros, append, \
+    int
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
@@ -450,6 +451,7 @@ class IterFit(NoNewAttributesAfterInit):
         # Data set attributes needed to store fitting values between
         # calls to fit
         self._dep = None
+        self.bkg = None
         self._staterror = None
         self._syserror = None
         self._nfev = 0
@@ -472,9 +474,35 @@ class IterFit(NoNewAttributesAfterInit):
     def _sig_handler(self, signum, frame):
         raise KeyboardInterrupt()
 
+    def get_bkg_data(self, dep):
+        """get the bkg data for wstat and the user defined statistics"""
+
+        bkg_dep = []
+        data_size = None
+        response_time = None
+        len_datasets = len(self.data.datasets)
+
+        data_size = zeros(len_datasets, dtype=int)
+        response_time = zeros(2 * len_datasets)
+        for index in xrange(len_datasets):
+            mydata = self.data.datasets[index]
+            if hasattr(mydata, 'response_ids') and \
+                    hasattr(mydata, 'background_ids') and \
+                    len(mydata.response_ids) and len(mydata.background_ids):
+                bkg = mydata.get_background(mydata.background_ids[0])
+                tmp_bkg_dep = bkg.get_dep(True)
+                data_size[index] = tmp_bkg_dep.size
+                bkg_dep = append(bkg_dep, tmp_bkg_dep)
+                response_time[2 * index] = mydata.exposure
+                response_time[2 * index + 1] = bkg.exposure
+            # else:
+            #     raise FitErr( 'no bkg file is supplied, use cstat instead' )
+
+        return bkg_dep, data_size, response_time
+
     def _get_callback(self, outfile=None, clobber=False):
         if len(self.model.thawedpars) == 0:
-            #raise FitError('model has no thawed parameters')
+            # raise FitError('model has no thawed parameters')
             raise FitErr('nothawedpar')
 
         # support Sherpa use with SAMP
@@ -485,11 +513,12 @@ class IterFit(NoNewAttributesAfterInit):
 
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
+        self.bkg, junk1, junk2 = self.get_bkg_data(self._dep)
 
         self._nfev = 0
         if outfile is not None:
             if os.path.isfile(outfile) and not clobber:
-                #raise FitError("'%s' exists, and clobber==False" % outfile)
+                # raise FitError("'%s' exists, and clobber==False" % outfile)
                 raise FitErr('noclobererr', outfile)
             self._file = file(outfile, 'w')
             names = ['# nfev statistic']
@@ -503,8 +532,13 @@ class IterFit(NoNewAttributesAfterInit):
 
             self.model.thawedpars = pars
             model = self.data.eval_model_to_fit(self.model)
-            stat = self.stat.calc_stat(
-                self._dep, model, self._staterror, self._syserror)
+            if 0 == len(self.bkg):
+                stat = self.stat.calc_stat(self._dep, model,
+                                           self._staterror, self._syserror)
+            else:
+                stat = self.stat.calc_stat(self._dep, model,
+                                           self._staterror, self._syserror,
+                                           bkg=self.bkg)
 
             if self._file is not None:
                 vals = ['%5e %5e' % (self._nfev, stat[0])]
@@ -930,7 +964,14 @@ class Fit(NoNewAttributesAfterInit):
         """
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         model = self.data.eval_model_to_fit(self.model)
-        return self.stat.calc_stat(dep, model, staterror, syserror)[0]
+        bkg = None
+
+        bkg, _, _ = self._iterfit.get_bkg_data(dep)
+        if 0 == len(bkg):
+            return self.stat.calc_stat(dep, model, staterror, syserror)[0]
+        else:
+            return self.stat.calc_stat(dep, model, staterror, syserror,
+                                       bkg=bkg)[0]
 
     def calc_chisqr(self):
         """Calculate the per-bin chi-squared statistic.

@@ -22,14 +22,15 @@ from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.utils.err import StatErr
 import sherpa.stats._statfcts
 
+from sherpa import get_config
+from ConfigParser import ConfigParser
+
 
 __all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',
            'Chi2Gehrels', 'Chi2ConstVar', 'Chi2DataVar', 'Chi2ModVar',
-           'Chi2XspecVar', 'Chi2')
+           'Chi2XspecVar', 'Chi2',
+           'UserStat')
 
-
-from sherpa import get_config
-from ConfigParser import ConfigParser
 
 config = ConfigParser()
 config.read(get_config())
@@ -37,11 +38,11 @@ config.read(get_config())
 # truncation_flag indicates whether or not model truncation
 # should be performed.  If true, use the truncation_value from
 # the config file.
-truncation_flag = config.get('statistics','truncate').upper()
-truncation_value = float(config.get('statistics','trunc_value'))
+truncation_flag = config.get('statistics', 'truncate').upper()
+truncation_value = float(config.get('statistics', 'trunc_value'))
 if (bool(truncation_flag) is False or truncation_flag == "FALSE" or
     truncation_flag == "NONE" or truncation_flag == "0"):
-    truncation_value = -1.0
+    truncation_value = 1.0e-25
 
 
 class Stat(NoNewAttributesAfterInit):
@@ -60,8 +61,9 @@ class Stat(NoNewAttributesAfterInit):
         raise NotImplementedError
 
     def calc_stat(self, data, model, staterror=None, syserror=None,
-                  weight=None):
+                  weight=None, **kwargs):
         raise NotImplementedError
+
 
 class Likelihood(Stat):
     """Maximum likelihood function"""
@@ -74,10 +76,12 @@ class Likelihood(Stat):
         # return 1 to avoid dividing by 0 by some optimization methods.
         return numpy.ones_like(data)
 
-## DOC-TODO: where is the truncate/trunc_value stored for objects
-##           AHA: it appears to be taken straight from the config
-##           file rather than associated with the Stat class
-## DOC-TODO: where to talk about the .sherpa.rc config file?
+# DOC-TODO: where is the truncate/trunc_value stored for objects
+#           AHA: it appears to be taken straight from the config
+#           file rather than associated with the Stat class
+# DOC-TODO: where to talk about the .sherpa.rc config file?
+
+
 class Cash(Likelihood):
     """Maximum likelihood function.
 
@@ -147,7 +151,8 @@ class Cash(Likelihood):
         Likelihood.__init__(self, name)
 
     @staticmethod
-    def calc_stat(data, model, staterror=None, syserror=None, weight=None):
+    def calc_stat(data, model, staterror=None, syserror=None, weight=None,
+                  **kwargs):
         return _statfcts.calc_cash_stat(data, model, staterror, syserror,
                                         weight, truncation_value)
 
@@ -220,7 +225,8 @@ class CStat(Likelihood):
         Likelihood.__init__(self, name)
 
     @staticmethod
-    def calc_stat(data, model, staterror=None, syserror=None, weight=None):
+    def calc_stat(data, model, staterror=None, syserror=None, weight=None,
+                  **kwargs):
         return _statfcts.calc_cstat_stat(data, model, staterror, syserror,
                                          weight, truncation_value)
 
@@ -278,9 +284,11 @@ class Chi2(Stat):
         raise StatErr('chi2noerr')
 
     @staticmethod
-    def calc_stat(data, model, staterror, syserror=None, weight=None):
+    def calc_stat(data, model, staterror, syserror=None, weight=None,
+                  **kwargs):
         return _statfcts.calc_chi2_stat(data, model, staterror,
                                         syserror, weight, truncation_value)
+
 
 class LeastSq(Chi2):
     """Least Squared Statistic.
@@ -297,7 +305,8 @@ class LeastSq(Chi2):
         return numpy.ones_like(data)
 
     @staticmethod
-    def calc_stat(data, model, staterror, syserror=None, weight=None):
+    def calc_stat(data, model, staterror, syserror=None, weight=None,
+                  **kwargs):
         return _statfcts.calc_lsq_stat(data, model, staterror,
                                        syserror, weight, truncation_value)
 
@@ -417,7 +426,8 @@ class Chi2ModVar(Chi2):
         return numpy.zeros_like(data)
 
     @staticmethod
-    def calc_stat(data, model, staterror, syserror=None, weight=None):
+    def calc_stat(data, model, staterror, syserror=None, weight=None,
+                  **kwargs):
         return _statfcts.calc_chi2modvar_stat(data, model, staterror,
                                               syserror, weight,
                                               truncation_value)
@@ -457,9 +467,7 @@ class UserStat(Stat):
             self.errfunc = errfunc
             self._staterrfuncset = True
 
-
         Stat.__init__(self, name)
-
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -474,29 +482,28 @@ class UserStat(Stat):
     def __setstate__(self, state):
         # Populate the function pointers we deleted at pickle time with
         # no-ops.
-        self.__dict__['statfunc']=(lambda x: None)
-        self.__dict__['errfunc']=(lambda x: None)
+        self.__dict__['statfunc'] = (lambda x: None)
+        self.__dict__['errfunc'] = (lambda x: None)
         self.__dict__.update(state)
-
 
     def set_statfunc(self, func):
         self.statfunc = func
         self._statfuncset = True
 
-
     def set_errfunc(self, func):
         self.errfunc = func
         self._staterrfuncset = True
-
 
     def calc_staterror(self, data):
         if not self._staterrfuncset:
             raise StatErr('nostat', self.name, 'calc_staterror()')
         return self.errfunc(data)
 
-
     def calc_stat(self, data, model, staterror=None, syserror=None,
-                  weight=None):
+                  weight=None, **kwargs):
         if not self._statfuncset:
             raise StatErr('nostat', self.name, 'calc_stat()')
-        return self.statfunc(data, model, staterror, syserror, weight)
+        if 'bkg' in kwargs.keys():
+            return self.statfunc(data, model, staterror, syserror, weight, bkg)
+        else:
+            return self.statfunc(data, model, staterror, syserror, weight)
