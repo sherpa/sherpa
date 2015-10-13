@@ -6,6 +6,9 @@ include versioneer.py
 include README.md
 include COPYRIGHT
 include LICENSE
+include RELEASE_NOTES
+include CITATION
+include CONTRIBUTING.md
 
 recursive-include helpers *.py
 
