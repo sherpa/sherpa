@@ -43,8 +43,9 @@ import sys
 
 __all__ = ('banner', 'get_include', 'test')
 
-__versionstr__ = '4.7.1'
-__version__ = 40701
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 class Formatter(logging.Formatter):
     def format(self, record):
@@ -68,7 +69,7 @@ _banner = """
 Welcome to Sherpa: CXC's Modeling and Fitting Package
 -----------------------------------------------------
 Version: Sherpa %s Monday, July 19, 2010
-""" % __versionstr__
+""" % __version__
 
 
 def _banner_fancy(file=sys.stdout):
@@ -138,7 +139,3 @@ def clitest():
         print """Cannot import pytest and pytest-cov.
             Please run 'pip install -r test_requirements.txt' first"""
         sys.exit(1)
-
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions

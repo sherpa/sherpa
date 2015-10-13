@@ -282,7 +282,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         self._sherpa_version = sherpa.__version__
-        self._sherpa_version_string = sherpa.__versionstr__
+        self._sherpa_version_string = sherpa.__version__
 
         self._default_id = 1
         self._paramprompt = False
