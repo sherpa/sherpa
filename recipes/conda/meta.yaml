@@ -1,6 +1,6 @@
 package:
  name: sherpa
- version: "4.7"
+ version: "4.8.0"
 
 build:
  number: 1
@@ -16,7 +16,7 @@ requirements:
 
  run:
   - python 2.7.*
-  - numpy 1.8.*
+  - numpy >1.8
   - setuptools
 
 about:
