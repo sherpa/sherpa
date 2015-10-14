@@ -23,7 +23,8 @@ from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
 from sherpa.models import ArithmeticModel, Parameter
 from sherpa import ui
 import numpy
-
+import logging
+logger = logging.getLogger("sherpa")
 
 class UserModel(ArithmeticModel):
 
@@ -42,6 +43,9 @@ class test_ui(SherpaTestCase):
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
+
         self.ascii = self.make_path('threads/ascii_table/sim.poisson.1.dat')
         self.single = self.make_path('single.dat')
         self.double = self.make_path('double.dat')
@@ -49,6 +53,10 @@ class test_ui(SherpaTestCase):
         self.func = lambda x: x
 
         ui.dataspace1d(1,1000,dstype=ui.Data1D)
+
+    def tearDown(self):
+        if hasattr(self, '_old_logger_level'):
+            logger.setLevel(self._old_logger_level)
 
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_ascii(self):
@@ -124,10 +132,12 @@ class test_psf_ui(SherpaTestCase):
     models2d = ['gauss2d', 'delta2d', 'normgauss2d']
 
     def setUp(self):
-        pass
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
-        pass
+        if hasattr(self, '_old_logger_level'):
+            logger.setLevel(self._old_logger_level)
 
     def test_psf_model1d(self):
         ui.dataspace1d(1, 10)
