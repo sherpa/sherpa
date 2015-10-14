@@ -1,6 +1,6 @@
 # -*- Mode: Shell-Script -*-  Not really, but shows comments correctly
 # 
-#  Copyright (C) 2012  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -107,10 +107,3 @@ set_preference_autoload(True)
 
 sys.path = old_sys_path
 
-# Replace native help text, for Sherpa HLUI functions, with pointer to
-# ahelp text for these functions.
-for func in get_functions(): 
-    try:
-        eval(func).__doc__="Type ahelp("+func+") for more details."
-    except:
-        pass
