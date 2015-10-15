@@ -159,11 +159,7 @@ if test -s $HOME/.sherpa.rc ; then
 fi
 
 # setup the users home directory with all the Sherpa, ChIPS config files
-if test "$batch" = "yes"; then
-    sherpa_py "batch"
-else
-    sherpa_py
-fi
+ciao_app_setup.sh sherpa .sherpa.rc .chips.rc $batch
 
 cmd=""
 
