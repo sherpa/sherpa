@@ -51,7 +51,7 @@ import ipython_cxc
 import ahelp_interface
 
 def _initialize_sherpa_app_():
-    # These are the minimum CIAO version supported by this version of Sherpa.
+    # These are the versions Sherpa was tested and packaged with.
     min_chips_version = "4.8.0"
     min_crates_version = "4.8.0"
 
