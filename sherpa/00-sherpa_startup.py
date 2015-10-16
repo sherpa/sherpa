@@ -1,5 +1,5 @@
 # -*- Mode: Shell-Script -*-  Not really, but shows comments correctly
-# 
+#
 #  Copyright (C) 2012, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -51,11 +51,12 @@ import ipython_cxc
 import ahelp_interface
 
 def _initialize_sherpa_app_():
-    sherpa_version = 0
-    chips_version = 0
-    chips_version_str = "0"
-    crates_version = 0
-    crates_version_str = '0.0.0'
+    # These are the versions Sherpa was tested and packaged with.
+    min_chips_version = "4.8.0"
+    min_crates_version = "4.8.0"
+
+    chips_version = "0.0.0"
+    crates_version = '0.0.0'
     sherpa_path = ''
 
     try:
@@ -69,39 +70,30 @@ def _initialize_sherpa_app_():
         pass
 
     try:
-        from pycrates import __versionstr__ as crates_version_str
-    except:
-        pass
-
-    try:
-        from pychips import __versionstr__ as chips_version_str
-    except:
-        pass
-
-    try:
-        from sherpa import __version__ as sherpa_version
-    except:
-        pass
-
-    try:
         from sherpa import __file__ as sherpa_path
         sherpa_path = os.path.dirname(sherpa_path)
     except:
         pass
     site_path = sherpa_path.replace('/sherpa','',-1)
 
-    if sherpa_version > 0 and crates_version < 40501:
-        print "Warning: Importing CRATES version {0}; CRATES version 4.5.1 is now available, consider upgrading".format (crates_version_str)
+    versions = zip(min_crates_version.split('.'), crates_version.split('.'))
 
-    if sherpa_version > 0 and chips_version < 40501:
-        print "Warning: Importing ChIPS version {0}; ChIPS version 4.5.1 is now available, consider upgrading".format (chips_version_str)
+    for min_crates_ver, creates_ver in versions[:-1]:
+        if int(min_crates_ver) > int(crates_ver):
+            print "Warning: Importing CRATES version {}. This version is different than the one Sherpa {} was built and tested with and you may get unexpected results.".format(crates_version, sherpa_version)
+            break
 
+    versions = zip(min_chips_version.split('.'), chips_version.split('.'))
 
+    for min_chips_ver, chips_ver in versions[:-1]:
+        if int(min_chips_ver) > int(chips_ver):
+            print "Warning: Importing CHiPS version {}. This version is different than the one Sherpa {} was built and tested with and you may get unexpected results.".format(chips_version, sherpa_version)
+            break
 
 _initialize_sherpa_app_()
 
 ahelp_interface.__ciao_ahelp_context__ = 'py.sherpa'
-ipython_cxc.init ("sherpa")
+ipython_cxc.init("sherpa")
 
 set_preference_autoload(True)
 

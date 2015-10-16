@@ -35,15 +35,17 @@ usage()
 
 banner()
 {
-   default_versionstr="Sherpa 4.7.1"
+   default_versionstr="Sherpa 4.8.0"
    echo "-----------------------------------------------------"
    echo "Welcome to Sherpa: CXC's Modeling and Fitting Package"
    echo "-----------------------------------------------------"
    if [ "x${ASCDS_INSTALL}" != "x" ]; then
-       if [ -r ${ASCDS_INSTALL}/VERSION ]; then
-	   numfields=`head -n 1 $ASCDS_INSTALL/VERSION | awk '{print NF}'`
+       if [ -r ${ASCDS_INSTALL}/VERSION_sherpa ]; then
+	   numfields=`head -n 1 $ASCDS_INSTALL/VERSION_sherpa | awk '{print NF}'`
 	   if [ $numfields = "6" ]; then
-	       echo "CIAO 4.7 Sherpa version 1 `awk '{print $3" "$4" "$5" "$6}' ${ASCDS_INSTALL}/VERSION`"
+           ciao_version=`awk '{print $2}' ${ASCDS_INSTALL}/VERSION_sherpa | cut -d '.' -f 1-2`
+           sherpa_version=`awk '{print $2}' ${ASCDS_INSTALL}/VERSION_sherpa | cut -d '.' -f 3` 
+	       echo "CIAO ${ciao_version} Sherpa version ${sherpa_version} `awk '{print $3" "$4" "$5" "$6}' ${ASCDS_INSTALL}/VERSION_sherpa`"
 	   else
 	       echo $default_versionstr
 	   fi
@@ -157,11 +159,7 @@ if test -s $HOME/.sherpa.rc ; then
 fi
 
 # setup the users home directory with all the Sherpa, ChIPS config files
-if test "$batch" = "yes"; then
-    sherpa_py "batch"
-else
-    sherpa_py
-fi
+ciao_app_setup.sh sherpa .sherpa.rc .chips.rc $batch
 
 cmd=""
 
