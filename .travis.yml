@@ -25,6 +25,7 @@ matrix:
     - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule
       python: "2.7"
       sudo: required
+      dist: trusty
 #      addons:
 #        apt:
 #          packages:
