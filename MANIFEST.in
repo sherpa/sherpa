@@ -31,10 +31,7 @@ include sherpa/astro/utils/src/_wcs.cc
 include sherpa/optmethods/tests/tstoptfct.hh
 include sherpa/optmethods/tests/tstopt.hh
 
-# Sherpa executable
-include sherpa/sherpa
-include sherpa/ipythonrc-sherpa
-include sherpa/sherpa_py
+# Sherpa configuration files
 include sherpa/sherpa.rc
 include sherpa/sherpa-standalone.rc
 
