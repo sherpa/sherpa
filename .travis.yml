@@ -19,8 +19,6 @@ addons:
 
 matrix:
   fast_finish: true
-  allow_failures:
-    - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule
   include:
     - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule
       python: "2.7"
