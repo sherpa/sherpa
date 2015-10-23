@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
+# import numpy
 
 import string
 from sherpa.models import Parameter, ArithmeticModel, modelCacher1d
@@ -160,6 +160,7 @@ __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'get_xsversion', 'set_xsxset', 'get_xsxset', 'set_xsstate',
            'get_xsstate')
 
+
 class XSModel(ArithmeticModel):
 
     @modelCacher1d
@@ -171,12 +172,18 @@ class XSModel(ArithmeticModel):
         #  - it allows for the user to find out what bins are bad,
         #    by directly calling the _calc function of a model
         out = self._calc(*args, **kwargs)
-        if not numpy.isfinite(out).all():
-            # TODO: Should this be using a "Sherpa error class"?
-            # I am not convinced that FloatingPointError is the best
-            # type.
-            msg = "model {} has produced NaN or +/-Inf value".format(self.name)
-            raise FloatingPointError(msg)
+
+        # This check is being skipped in the 4.8.0 release as it
+        # has had un-intended consequences. It should be re-evaluated
+        # once we have had more experience with the issue.
+        #
+        # if not numpy.isfinite(out).all():
+        #     # TODO: Should this be using a "Sherpa error class"?
+        #     # I am not convinced that FloatingPointError is the best
+        #     # type.
+        #     msg = "model {} has created NaN or +/-Inf value".format(
+        #           self.name)
+        #     raise FloatingPointError(msg)
 
         return out
 

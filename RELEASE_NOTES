@@ -49,9 +49,7 @@ used either `print` or `sys.stderr.write`.
 it needs is missing - return 0's for all bins, rather than random values. This
 should make it more obvious that something has gone wrong (for instance if the
 XSPEC chatter level is low enough not to show any error messages, as is the
-case for the default setting used by Sherpa, namely 0). If the model returns
-an invalid value - defined as an infinite value or NaN - then the model class
-will raise an error (using the Python `FloatingPointError` exception)
+case for the default setting used by Sherpa, namely 0).
 
 #82: The XSpec "spectrum number" value is now set to 1 rather than 0, as this
 value is 1-based in Xspec.
