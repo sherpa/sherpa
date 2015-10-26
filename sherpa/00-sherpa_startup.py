@@ -78,7 +78,7 @@ def _initialize_sherpa_app_():
 
     versions = zip(min_crates_version.split('.'), crates_version.split('.'))
 
-    for min_crates_ver, creates_ver in versions[:-1]:
+    for min_crates_ver, crates_ver in versions[:-1]:
         if int(min_crates_ver) > int(crates_ver):
             print "Warning: Importing CRATES version {}. This version is different than the one Sherpa {} was built and tested with and you may get unexpected results.".format(crates_version, sherpa_version)
             break
