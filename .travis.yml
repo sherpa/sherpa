@@ -19,12 +19,11 @@ addons:
 
 matrix:
   fast_finish: true
-  allow_failures:
-    - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule
   include:
     - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule
       python: "2.7"
       sudo: required
+      dist: trusty
 #      addons:
 #        apt:
 #          packages:
@@ -49,7 +48,7 @@ before_install:
   - export PATH=/home/travis/miniconda/bin:$PATH
   - conda update --yes conda
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy=1.9 matplotlib
-  - conda config --add channels https://conda.binstar.org/sherpa
+  - conda config --add channels https://conda.anaconda.org/sherpa
   - pip install -r test_requirements.txt
   - if [ ${TEST} == package ];
      then pip install ./sherpa-test-data;
