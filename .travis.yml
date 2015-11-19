@@ -42,10 +42,11 @@ env:
   - FITS="astropy" INSTALL_TYPE=install TEST=smoke
 
 before_install:
+  - export MINICONDA=/home/travis/miniconda
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
+  - ./miniconda.sh -b -p $MINICONDA
+  - export PATH=$MINICONDA/bin:$PATH
   - conda update --yes conda
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy=1.9 matplotlib
   - conda config --add channels https://conda.anaconda.org/sherpa
@@ -57,8 +58,8 @@ before_install:
   - if [ -n "${XSPEC}" ];
      then sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
      conda install --yes -c https://conda.anaconda.org/cxc/channel/dev xspec-modelsonly;
-     export HEADAS=/home/travis/miniconda/Xspec/spectral;
-     export LD_LIBRARY_PATH=/home/travis/miniconda/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
+     export HEADAS=$MINICONDA/Xspec/spectral;
+     export LD_LIBRARY_PATH=$MINICONDA/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
      sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
      sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=$LD_LIBRARY_PATH|g" setup.cfg;
     fi
