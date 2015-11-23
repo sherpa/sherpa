@@ -193,11 +193,11 @@ class test_stats(SherpaTestCase):
         from sherpa.astro.xspec import XSphabs
         from sherpa.astro.io import read_pha
 
-        pha_fname = self.make_path("stats/9774.pi")
+        pha_fname = self.make_path("9774.pi")
         self.data = read_pha(pha_fname)
         self.data.notice(0.5, 7.0)
 
-        bkg_fname = self.make_path("stats/9774_bg.pi")
+        bkg_fname = self.make_path("9774_bg.pi")
         self.bkg = read_pha(bkg_fname)
 
         abs1 = XSphabs('abs1')
