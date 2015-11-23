@@ -40,7 +40,7 @@ class UserModel(ArithmeticModel):
 class test_ui(SherpaTestCase):
 
     def setUp(self):
-        self.ascii = self.make_path('threads/ascii_table/sim.poisson.1.dat')
+        self.ascii = self.make_path('sim.poisson.1.dat')
         self.single = self.make_path('single.dat')
         self.double = self.make_path('double.dat')
         self.filter = self.make_path('filter_single_integer.dat')

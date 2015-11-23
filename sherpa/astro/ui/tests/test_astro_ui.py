@@ -39,7 +39,7 @@ logger = logging.getLogger("sherpa")
 class test_ui(SherpaTestCase):
 
     def setUp(self):
-        self.ascii = self.make_path('threads/ascii_table/sim.poisson.1.dat')
+        self.ascii = self.make_path('sim.poisson.1.dat')
         self.fits = self.make_path('1838_rprofile_rmid.fits')
         self.singledat = self.make_path('single.dat')
         self.singletbl = self.make_path('single.fits')
@@ -110,9 +110,9 @@ class test_more_ui(SherpaTestCase):
         self._old_logger_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
         self.img = self.make_path('img.fits')
-        self.pha = self.make_path('threads/simultaneous/pi2286.fits')
-        self.rmf = self.make_path('threads/simultaneous/rmf2286.fits')
-        self.pha3c273 = self.make_path('ciao4.3/pha_intro/3c273.pi')
+        self.pha = self.make_path('pi2286.fits')
+        self.rmf = self.make_path('rmf2286.fits')
+        self.pha3c273 = self.make_path('3c273.pi')
 
     def tearDown(self):
         logger.setLevel(self._old_logger_level)
@@ -236,7 +236,7 @@ class test_psf_ui(SherpaTestCase):
 @requires_fits
 class test_stats_ui(SherpaTestCase):
     def setUp(self):
-        self.data = self.make_path('threads/chi2/3c273.pi')
+        self.data = self.make_path('3c273.pi')
         ui.clean()
 
     # bugs #11400, #13297, #12365
