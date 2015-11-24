@@ -36,14 +36,7 @@ class test_more_ui(SherpaTestCase):
     def run_thread(self, name, scriptname='fit.py'):
         ui.clean()
         ui.set_model_autoassign_func(self.assign_model)
-        self.locals = {}
-        cwd = os.getcwd()
-        os.chdir(self.datadir)
-        try:
-            scriptname = name + "-" + scriptname
-            execfile(scriptname, {}, self.locals)
-        finally:
-            os.chdir(cwd)
+        super(test_more_ui, self).run_thread(name, scriptname=scriptname)
 
     def setUp(self):
         self.img = self.make_path('img.fits')
