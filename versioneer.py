@@ -292,7 +292,7 @@ import sys
 from distutils.core import Command
 from helpers import commands
 _sdist = commands['sdist']
-_build = commands['build']
+from numpy.distutils.command.build import build as _build
 
 # these configuration settings will be overridden by setup.py after it
 # imports us
