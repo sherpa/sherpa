@@ -25,11 +25,6 @@ matrix:
       python: "2.7"
       sudo: required
       dist: trusty
-#      addons:
-#        apt:
-#          packages:
-#            - *default_apt
-#            - [libwcs4 wcslib-dev libx11-dev tcl]
     - env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
       python: "2.7"
     - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5
@@ -63,6 +58,18 @@ before_install:
   - if [ ${TEST} == package ];
      then pip install ./sherpa-test-data;
      git submodule deinit -f .;
+    fi
+  - if [ -n "${XSPEC}" ];
+     then DS9_SITE=http://ds9.si.edu/download/linux64/;
+     XPA_SITE=http://ds9.si.edu/download/linux64_5/;
+     DS9_TAR=ds9.linux64.7.3.2.tar.gz;
+     XPA_TAR=xpa.linux64_5.2.1.14.tar.gz;
+     wget $DS9_SITE$DS9_TAR;
+     wget $XPA_SITE$XPA_TAR;
+     THIS_DIR=`pwd`;
+     cd $MINICONDA/bin; tar xf $THIS_DIR/$DS9_TAR; tar xf $THIS_DIR/$XPA_TAR; cd -;
+     export DISPLAY=:99;
+     /sbin/start-stop-daemon --start --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16;
     fi
   - if [ -n "${XSPEC}" ];
      then sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
