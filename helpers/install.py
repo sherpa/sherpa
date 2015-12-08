@@ -25,7 +25,6 @@ from deps import build_deps
 
 class install(_install):
     def run(self):
-        self.get_finalized_command('sherpa_config', True).build_configure()
         self.get_finalized_command('xspec_config', True).run()
         self.get_finalized_command('sherpa_config', True).run()
         _install.run(self)
