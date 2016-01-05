@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.63])
 
-AC_INIT([region], [4.7], [cxchelp@head.cfa.harvard.edu])
+AC_INIT([region], [4.8], [cxchelp@head.cfa.harvard.edu])
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/region_create.c])
@@ -31,12 +31,6 @@ fi
 AC_PROG_SED
 
 LT_INIT
-
-AC_ARG_ENABLE([standalone],
-   AS_HELP_STRING([--enable-standalone], [Enable standalone build]))
-
-AM_CONDITIONAL([STANDALONE], [test "x$enable_standalone" = "xyes"])
-
 
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lm':

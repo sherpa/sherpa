@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.63])
 
-AC_INIT(sherpa-dependencies, 4.7, cxchelp@head.cfa.harvard.edu)
+AC_INIT(sherpa-dependencies, 4.8, cxchelp@head.cfa.harvard.edu)
 AM_INIT_AUTOMAKE([foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -25,8 +25,8 @@ AC_ARG_ENABLE([region],
   AS_HELP_STRING([--enable-region], [Build region library shipped with Sherpa]))
 
 AS_IF([test "x$enable_region" = "xyes"], [
-  AC_CONFIG_SUBDIRS([region-4.7])
-  AC_SUBST(region, region-4.7)
+  AC_CONFIG_SUBDIRS([region-4.8])
+  AC_SUBST(region, region-4.8)
 ])
 
 AC_ARG_ENABLE([group],
