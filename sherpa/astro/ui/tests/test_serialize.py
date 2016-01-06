@@ -812,13 +812,6 @@ _canonical_pha_basic += _canonical_extra
 _canonical_pha_grouped += _canonical_extra
 _canonical_usermodel += _canonical_extra
 
-def _dump_lines(cts):
-    """Dump outcts, an array of strings, to stdout, with line numbering"""
-    print("***\n")
-    for i, l in enumerate(cts):
-        print("{:02d} {}".format(i, l))
-    print("***\n")
-
 
 class test_ui(SherpaTestCase):
 
