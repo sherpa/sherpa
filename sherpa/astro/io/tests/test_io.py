@@ -24,7 +24,8 @@ from sherpa.astro import ui
 
 
 class test_89_issues(SherpaTestCase):
-    @skipIf(not has_fits_support() or not has_package_from_list("sherpa.astro.xspec"), "fits support required")
+    @skipIf(not has_package_from_list("sherpa.astro.xspec"), "xspec required")
+    @skipIf(not has_fits_support(), "fits support required")
     def test_mod_fits(self):
         ui.clean()
         tablemodelfile = self.make_path("xspec", "tablemodel", "RCS.mod")
