@@ -353,7 +353,7 @@ def _find_binary_table(tbl, filename, blockname=None):
     else:
         blockname = str(blockname).strip().lower()
         for hdu in tbl:
-            if hdu.name.lower() == blockname and \
+            if hdu.name.lower() == blockname or \
                     hdu.__class__ is fits.BinTableHDU:
                 return hdu
 
