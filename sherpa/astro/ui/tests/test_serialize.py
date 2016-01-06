@@ -849,6 +849,10 @@ class test_ui(SherpaTestCase):
 
         return re.sub('@@', dname, output, count=0)
 
+    def _compile(self, output):
+        # Let it just throw an exception in case of failure.
+        compile(output, "test.py", "exec")
+
     def _compare_lines(self, expected, got):
         """Check that each line in got matches that in
         expected. This is to provide a more-readable
@@ -878,6 +882,12 @@ class test_ui(SherpaTestCase):
         output = StringIO.StringIO()
         ui.save_all(outfh=output)
         output = output.getvalue()
+
+        # check the output is a valid Python program.
+        # this check does not guard against potential issues,
+        # but ensures that the program can compile.
+        self._compile(output)
+
         self._compare_lines(expected, output)
 
     def _restore(self):
@@ -1017,6 +1027,13 @@ class test_ui(SherpaTestCase):
 
         ui.set_stat('cash')
         ui.set_method('simplex')
+
+    def test_compile_failure(self):
+        try:
+            self._compile("foo bar")
+        except:
+            return
+        self.fail("Compilation should have failed")
 
     def test_restore_empty(self):
         "Can the empty state be evaluated?"
