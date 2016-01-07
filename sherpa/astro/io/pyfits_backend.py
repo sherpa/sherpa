@@ -42,6 +42,8 @@ try:
 except ImportError:
     import pyfits as fits
 
+from numpy.compat import basestring
+
 import os
 from itertools import izip
 from sherpa.utils.err import IOErr
@@ -269,12 +271,10 @@ def _try_vec_or_key(hdu, name, size, dtype=SherpaFloat, fix_type=False):
 
 def read_table_blocks(arg, make_copy=False):
 
-    filename = ''
-    hdus = None
-    if type(arg) is fits.HDUList:
+    if isinstance(arg, fits.HDUList):
         filename = arg[0]._file.name
         hdus = arg
-    elif type(arg) in (str, unicode, numpy.str_) and is_binary_file(arg):
+    elif isinstance(arg, basestring) and is_binary_file(arg):
         filename = arg
         hdus = fits.open(arg)
     else:
@@ -323,11 +323,11 @@ def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
     file is a binary file (via the is_binary_file routine).
     """
 
-    if type(arg) == str and (not nobinary or is_binary_file(arg)):
+    if isinstance(arg, basestring) and (not nobinary or is_binary_file(arg)):
         tbl = fits.open(arg)
         filename = arg
-    elif type(arg) is fits.HDUList and len(arg) > 0 and \
-            arg[0].__class__ is fits.PrimaryHDU:
+    elif isinstance(arg, fits.HDUList) and len(arg) > 0 and \
+            isinstance(arg[0], fits.PrimaryHDU):
         tbl = arg
         filename = tbl[0]._file.name
     else:
@@ -347,14 +347,14 @@ def _find_binary_table(tbl, filename, blockname=None):
 
     if blockname is None:
         for hdu in tbl:
-            if hdu.__class__ is fits.BinTableHDU:
+            if isinstance(hdu, fits.BinTableHDU):
                 return hdu
 
     else:
         blockname = str(blockname).strip().lower()
         for hdu in tbl:
             if hdu.name.lower() == blockname or \
-                    hdu.__class__ is fits.BinTableHDU:
+                    isinstance(hdu, fits.BinTableHDU):
                 return hdu
 
     raise IOErr('badext', filename)
@@ -391,7 +391,7 @@ def get_column_data(*args):
 
     cols = []
     for arg in args:
-        if not (type(arg) in (numpy.ndarray, list, tuple) or arg is None):
+        if arg is not None and not isinstance(arg, (numpy.ndarray, list, tuple)):
             raise IOErr('badarray', arg)
         if arg is not None:
             vals = numpy.asarray(arg)
