@@ -35,6 +35,7 @@ import numpy.random
 import numpytest
 import numpy.fft
 # Note: _utils.gsl_fcmp is not exported from this module; is this intentional?
+from unittest import skipIf
 from sherpa.utils._utils import calc_ftest, calc_mlr, igamc, igam, \
     incbet, gamma, lgam, erf, ndtri, sao_fcmp, rebin, \
     hist1d, hist2d, sum_intervals, neville, sao_arange
@@ -92,7 +93,7 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaTest', 'SherpaTestCase',
            'guess_reference', 'histogram1d', 'histogram2d', 'igam', 'igamc',
            'incbet', 'interpolate', 'is_binary_file', 'Knuth_close',
            'lgam', 'linear_interp', 'nearest_interp',
-           'test_data_missing', 'neville', 'neville2d',
+           'neville', 'neville2d', 'requires_data', 'requires_fits', 'requires_package',
            'new_muller', 'normalize', 'numpy_convolve',
            'pad_bounding_box', 'parallel_map', 'param_apply_limits',
            'parse_expr', 'poisson_noise', 'print_fields', 'rebin',
@@ -285,15 +286,17 @@ class SherpaTestCase(numpytest.NumpyTestCase):
         self.assertTrue(numpy.all(sao_fcmp(first, second, tol)), msg)
 
 
-def test_data_missing():
+def requires_data(test_function):
     """
-    Returns True if external data (i.e. data not distributed with Sherpa
+    Decorator for functions requiring external data (i.e. data not distributed with Sherpa
     itself) is missing.  This is used to skip tests that require such data.
     """
-    return SherpaTestCase.datadir is None
+    condition = SherpaTestCase.datadir is None
+    msg = "required test data missing"
+    return skipIf(condition, msg)(test_function)
 
 
-def has_package_from_list(*packages):
+def _has_package_from_list(*packages):
     """
     Returns True if at least one of the ``packages`` args is importable.
     """
@@ -306,15 +309,50 @@ def has_package_from_list(*packages):
     return False
 
 
-def has_fits_support():
+def requires_package(msg=None, *packages):
+    """
+    Decorator for test functions requiring specific packages.
+    """
+    condition = _has_package_from_list(*packages)
+    msg = msg or "required module missing among {}.".format(", ".join(packages))
+
+    def decorator(test_function):
+        return skipIf(not condition, msg)(test_function)
+    return decorator
+
+
+def requires_xspec(test_function):
+    """Decorator for test functions requiring xspec"""
+    return requires_package('xspec required', 'sherpa.astro.xspec')(test_function)
+
+
+def requires_ds9(test_function):
+    """Decorator for test functions requiring ds9"""
+    return requires_package('ds9 required', 'sherpa.image.ds9_backend')(test_function)
+
+
+def requires_fits(test_function):
     """
     Returns True if there is an importable backend for FITS I/O.
     Used to skip tests requiring fits_io
     """
-    return has_package_from_list('pyfits',
-                                 'astropy.io.fits',
-                                 'pycrates',
-                                 )
+    packages = ('pyfits',
+                'astropy.io.fits',
+                'pycrates',
+                )
+    msg = "FITS backend required"
+    return requires_package(msg, *packages)(test_function)
+
+
+def requires_pylab(test_function):
+    """
+    Returns True if the pylab module is available (pylab).
+    Used to skip tests requiring matplotlib
+    """
+    packages = ('pylab',
+                )
+    msg = "matplotlib backend required"
+    return requires_package(msg, *packages)(test_function)
 
 
 class SherpaTest(numpytest.NumpyTest):

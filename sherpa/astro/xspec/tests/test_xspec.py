@@ -21,8 +21,8 @@ import unittest
 import numpy
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
-from sherpa.utils import SherpaTestCase, test_data_missing
-from sherpa.utils import has_package_from_list, has_fits_support
+from sherpa.utils import SherpaTestCase
+from sherpa.utils import requires_data, requires_fits, requires_xspec
 
 
 # Conversion between wavelength (Angstrom) and energy (keV)
@@ -141,8 +141,7 @@ def make_grid_noncontig2():
     return elo[idx], ehi[idx], wlo[idx], whi[idx]
 
 
-@unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
-                 "required sherpa.astro.xspec module missing")
+@requires_xspec
 class test_xspec(SherpaTestCase):
 
     def setUp(self):
@@ -284,7 +283,7 @@ class test_xspec(SherpaTestCase):
             assert_allclose(evals2, wvals2,
                             err_msg=emsg + "energy to wavelength")
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
     def test_tablemodel_checks_input_length(self):
 
         # see test_table_model for more information on the table
@@ -302,7 +301,7 @@ class test_xspec(SherpaTestCase):
         self.assertRaises(TypeError, mdl, [0.1, 0.2, 0.3], [0.2, 0.3])
         self.assertRaises(TypeError, mdl, [0.1, 0.2], [0.2, 0.3, 0.4])
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
     def test_xspec_tablemodel(self):
         # Just test one table model; use the same scheme as
         # test_xspec_models_noncontiguous().
@@ -337,7 +336,7 @@ class test_xspec(SherpaTestCase):
         assert_allclose(evals2, wvals2,
                         err_msg=emsg + "two args")
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
     def test_xspec_tablemodel_noncontiguous2(self):
 
         ui.load_table_model('tmod',
@@ -445,9 +444,8 @@ class test_xspec(SherpaTestCase):
         self.assertRaises(ValueError, xs._xspec.C_cpflux, pars, y1, elo, ehi)
         self.assertRaises(ValueError, xs._xspec.C_cpflux, pars, y1, wlo, whi)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, astropy.io.fits, or pyfits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
     def test_set_analysis_wave_fabrizio(self):
         rmf = self.make_path('ciao4.3/fabrizio/Data/3c273.rmf')
         arf = self.make_path('ciao4.3/fabrizio/Data/3c273.arf')

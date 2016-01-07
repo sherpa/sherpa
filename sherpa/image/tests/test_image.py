@@ -22,7 +22,7 @@ import numpy
 import os
 import sherpa
 from sherpa.image import *
-from sherpa.utils import SherpaTestCase, has_package_from_list
+from sherpa.utils import SherpaTestCase, requires_ds9
 
 # Create a 10x10 array for the tests.
 class Data(object):
@@ -50,9 +50,9 @@ def get_arr_from_imager(im):
     data_out = numpy.float_(data_out)
     return data_out
 
+
+@requires_ds9
 class test_image(SherpaTestCase):
-    @unittest.skipIf(not has_package_from_list('sherpa.image.ds9_backend'),
-                     "required package sherpa.image.ds9_backend not available")
     def test_ds9(self):
         im = sherpa.image.ds9_backend.DS9.DS9Win(sherpa.image.ds9_backend.DS9._DefTemplate, False)
         im.doOpen()
@@ -61,8 +61,6 @@ class test_image(SherpaTestCase):
         im.xpaset("quit")
         self.assertEqualWithinTol((data.y - data_out).sum(), 0.0, 1e-4)
 
-    @unittest.skipIf(not has_package_from_list('sherpa.image.ds9_backend'),
-                     "required package sherpa.image.ds9_backend not available")
     def test_image(self):
         im = Image()
         im.image(data.y)
@@ -70,8 +68,6 @@ class test_image(SherpaTestCase):
         im.xpaset("quit")
         self.assertEqualWithinTol((data.y - data_out).sum(), 0.0, 1e-4)
 
-    @unittest.skipIf(not has_package_from_list('sherpa.image.ds9_backend'),
-                     "required package sherpa.image.ds9_backend not available")
     def test_data_image(self):
         im = DataImage()
         im.prepare_image(data)
@@ -80,8 +76,6 @@ class test_image(SherpaTestCase):
         im.xpaset("quit")
         self.assertEqualWithinTol((data.y - data_out).sum(), 0.0, 1e-4)
 
-    @unittest.skipIf(not has_package_from_list('sherpa.image.ds9_backend'),
-                     "required package sherpa.image.ds9_backend not available")
     def test_model_image(self):
         im = ModelImage()
         im.prepare_image(data, 1)
@@ -90,8 +84,6 @@ class test_image(SherpaTestCase):
         im.xpaset("quit")
         self.assertEqualWithinTol((data.y - data_out).sum(), 0.0, 1e-4)
 
-    @unittest.skipIf(not has_package_from_list('sherpa.image.ds9_backend'),
-                     "required package sherpa.image.ds9_backend not available")
     def test_ratio_image(self):
         im = RatioImage()
         im.prepare_image(data, 1)
@@ -103,8 +95,6 @@ class test_image(SherpaTestCase):
         # reassigns the ratio there to be one.
         self.assertEqualWithinTol(data_out.sum(), 99.0, 1e-4)
 
-    @unittest.skipIf(not has_package_from_list('sherpa.image.ds9_backend'),
-                     "required package sherpa.image.ds9_backend not available")
     def test_resid_image(self):
         im = ResidImage()
         im.prepare_image(data, 1)

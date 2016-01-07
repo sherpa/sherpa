@@ -18,8 +18,8 @@
 #
 
 import unittest
-from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
-from sherpa.utils import has_fits_support
+from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.utils import requires_data, requires_fits
 from sherpa.astro import ui
 import logging
 import os
@@ -27,6 +27,8 @@ import numpy
 logger = logging.getLogger("sherpa")
 
 
+@requires_data
+@requires_fits
 class test_more_ui(SherpaTestCase):
     def assign_model(self, name, obj):
         self.locals[name] = obj
@@ -42,7 +44,6 @@ class test_more_ui(SherpaTestCase):
         finally:
             os.chdir(cwd)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
         self.img = self.make_path('img.fits')
         self.pha = self.make_path('threads/simultaneous/pi2286.fits')
@@ -56,9 +57,6 @@ class test_more_ui(SherpaTestCase):
             logger.setLevel(self.loggingLevel)
 
     # bug 12784
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_filter_nan(self):
         self.run_thread('filternan')
         self.assertFalse(numpy.isnan(ui.get_fit_results().statval))

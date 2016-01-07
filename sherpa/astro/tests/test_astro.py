@@ -21,10 +21,9 @@ import unittest
 import logging
 import os
 import os.path
-from sherpa.utils import SherpaTestCase, test_data_missing
-# from sherpa.utils import has_package_from_list, has_fits_support
-from sherpa.utils import has_fits_support
-from sherpa.astro import ui
+from sherpa.utils import SherpaTestCase
+from sherpa.utils import requires_data, requires_fits, requires_xspec
+import sherpa.astro.ui as ui
 from sherpa.astro.data import DataPHA
 
 logger = logging.getLogger('sherpa')
@@ -37,6 +36,7 @@ except ImportError:
 
 # has_xspec = has_package_from_list("sherpa.astro.xspec")
 
+@requires_data
 class test_threads(SherpaTestCase):
 
     def setUp(self):
@@ -75,11 +75,9 @@ class test_threads(SherpaTestCase):
         os.chdir(self.make_path('ciao4.3', name))
         execfile(scriptname, {}, self.locals)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+
+    @requires_fits
+    @requires_xspec
     def test_pha_intro(self):
         self.run_thread('pha_intro')
         # astro.ui imported as ui, instead of
@@ -105,16 +103,12 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints,44)
         self.assertEqual(ui.get_fit_results().dof,42)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_pha_read(self):
         self.run_thread('pha_read')
         self.assertEqual(type(ui.get_data()), DataPHA)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_basic(self):
         # In data1.dat for this test, there is a comment with one
         # word at the beginning -- deliberately would break when reading
@@ -134,11 +128,8 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 11)
         self.assertEqual(ui.get_fit_results().dof, 9)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_simultaneous(self):
         self.run_thread('simultaneous')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 7.4429, 1e-4)
@@ -151,11 +142,8 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 18)
         self.assertEqual(ui.get_fit_results().dof, 14)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_sourceandbg(self):
         self.run_thread('sourceandbg')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 947.5, 1e-4)
@@ -169,9 +157,7 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 1330)
         self.assertEqual(ui.get_fit_results().dof, 1325)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_spatial(self):
         self.run_thread('spatial')
         self.assertEqualWithinTol(ui.get_fit_results().statval, -59229.749441, 1e-4)
@@ -187,11 +173,8 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 4881)
         self.assertEqual(ui.get_fit_results().dof, 4877)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_pileup(self):
         self.run_thread('pileup')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 53.6112, 1e-4)
@@ -205,9 +188,7 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 42)
         self.assertEqual(ui.get_fit_results().dof, 37)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_radpro(self):
         self.run_thread('radpro')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 217.450, 1e-4)
@@ -221,7 +202,6 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 38)
         self.assertEqual(ui.get_fit_results().dof, 35)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_radpro_dm(self):
         # This test is completely redundant to test_radpro above.
         # The only difference is that here I test if using DM syntax
@@ -242,9 +222,7 @@ class test_threads(SherpaTestCase):
             self.assertEqual(ui.get_fit_results().numpoints, 38)
             self.assertEqual(ui.get_fit_results().dof, 35)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_psf2d(self):
         self.run_thread('psf')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 4066.78, 1e-4)
@@ -256,9 +234,7 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 4899)
         self.assertEqual(ui.get_fit_results().dof, 4895)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_fpsf2d(self):
         self.run_thread('fpsf')
         self.assertEqualWithinTol(ui.get_fit_results().statval, -4053.6635, 1e-4)
@@ -275,9 +251,7 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 4899)
         self.assertEqual(ui.get_fit_results().dof, 4895)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_radpro_psf(self):
         self.run_thread('radpro_psf')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 200.949, 1e-4)
@@ -288,9 +262,7 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 38)
         self.assertEqual(ui.get_fit_results().dof, 35)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_linepro(self):
         self.run_thread('linepro')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 203.34, 1e-4)
@@ -301,9 +273,7 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 75)
         self.assertEqual(ui.get_fit_results().dof, 72)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_kernel(self):
         self.run_thread('kernel')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 98.5793, 1e-4)
@@ -314,11 +284,8 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 75)
         self.assertEqual(ui.get_fit_results().dof, 72)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_spectrum(self):
         self.run_thread('spectrum')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 0.0496819, 1e-4)
@@ -330,9 +297,7 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 446)
         self.assertEqual(ui.get_fit_results().dof, 441)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_histo(self):
         self.run_thread('histo')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 14.7264, 1e-4)
@@ -343,11 +308,8 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 50)
         self.assertEqual(ui.get_fit_results().dof, 47)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_xmm(self):
         self.run_thread('xmm')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 118.085, 1e-4)
@@ -358,9 +320,7 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 162)
         self.assertEqual(ui.get_fit_results().dof, 159)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     # As of CIAO 4.5, can filter on channel number, even when
     # data are grouped! Test results should exactly match CIAO 4.4
     # fit results in grouped/fit.py
@@ -371,11 +331,8 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['aa'].gamma.val, 1.83906, 1e-4)
         self.assertEqualWithinTol(self.locals['aa'].ampl.val, 0.000301258, 1e-4)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_proj(self):
         self.run_thread('proj')
         # Fit 1
@@ -446,11 +403,8 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['proj_res2'].parmaxes[2],
                                   0.0981627, 1e-2)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_proj_bubble(self):
         self.run_thread('proj_bubble')
         # Fit -- Results from reminimize
@@ -479,11 +433,8 @@ class test_threads(SherpaTestCase):
 
     # New tests based on SDS threads -- we should catch these errors
     # (if any occur) so SDS doesn't waste time tripping over them.
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_counts(self):
         self.run_thread('counts')
         self.assertEqualWithinTol(self.locals['counts_data1'], 52701.0, 1e-4)
@@ -494,11 +445,8 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['eflux2'], 1.39662954483e-08, 1e-3)
         self.assertEqualWithinTol(self.locals['pflux1'], 1.6178938637, 1e-2)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_stats_all(self):
         self.run_thread('stats_all')
         self.assertEqualWithinTol(self.locals['stat_lsqr'],213746.236464,1e-4)
@@ -510,9 +458,7 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['stat_chi2x'],1204.69363458,1e-4)
         self.assertEqualWithinTol(self.locals['stat_cstat'],1210.56896183,1e-4)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_lev3fft(self):
         self.run_thread('lev3fft', scriptname='bar.py')
         self.assertEqualWithinTol(self.locals['src'].fwhm.val, 0.04418584, 1e-4)
@@ -525,25 +471,17 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 3307)
         self.assertEqual(ui.get_fit_results().dof, 3302)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_setfullmodel(self):
         self.run_thread('setfullmodel')
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
     def test_bug13537(self):
         self.run_thread('bug13537')
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_xspec,
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_xspec
     def test_xmm2(self):
         self.run_thread('xmm2')
         self.assertEqualWithinTol(ui.get_data().channel[0], 1.0, 1e-4)

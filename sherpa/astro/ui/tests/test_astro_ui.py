@@ -25,7 +25,7 @@ import numpy
 from numpy.testing import assert_allclose
 
 from sherpa.utils import SherpaTest, SherpaTestCase
-from sherpa.utils import test_data_missing, has_fits_support
+from sherpa.utils import requires_data, requires_fits
 from sherpa.astro import ui
 from sherpa.data import Data1D
 from sherpa.astro.data import DataPHA
@@ -36,7 +36,7 @@ logger = logging.getLogger("sherpa")
 
 class test_ui(SherpaTestCase):
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
     def setUp(self):
         self.ascii = self.make_path('threads/ascii_table/sim.poisson.1.dat')
         self.fits = self.make_path('1838_rprofile_rmid.fits')
@@ -55,17 +55,15 @@ class test_ui(SherpaTestCase):
         self.func = lambda x: x
         ui.dataspace1d(1, 1000, dstype=ui.Data1D)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
     def test_ascii(self):
         ui.load_ascii(1, self.ascii)
         ui.load_ascii(1, self.ascii, 2)
         ui.load_ascii(1, self.ascii, 2, ("col2", "col1"))
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
     def test_table(self):
         ui.load_table(1, self.fits)
         ui.load_table(1, self.fits, 3)
@@ -73,8 +71,7 @@ class test_ui(SherpaTestCase):
         ui.load_table(1, self.fits, 4, ('R', "SUR_BRI", 'SUR_BRI_ERR'),
                       ui.Data1DInt)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
+    @requires_fits
     def test_load_table_fits(self):
         # QUS: why is this not in the sherpa-test-data repository?
         this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -85,52 +82,45 @@ class test_ui(SherpaTestCase):
         self.assertEqualWithinTol(data.y, [4, 5, 6])
 
     # Test table model
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
     def test_table_model_ascii_table(self):
         ui.load_table_model('tbl', self.singledat)
         ui.load_table_model('tbl', self.doubledat)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
     def test_table_model_fits_table(self):
         ui.load_table_model('tbl', self.singletbl)
         ui.load_table_model('tbl', self.doubletbl)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
     def test_table_model_fits_image(self):
         ui.load_table_model('tbl', self.img)
 
     # Test user model
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
     def test_user_model_ascii_table(self):
         ui.load_user_model(self.func, 'mdl', self.singledat)
         ui.load_user_model(self.func, 'mdl', self.doubledat)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
     def test_user_model_fits_table(self):
         ui.load_user_model(self.func, 'mdl', self.singletbl)
         ui.load_user_model(self.func, 'mdl', self.doubletbl)
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
     def test_filter_ascii(self):
         ui.load_filter(self.filter_single_int_ascii)
         ui.load_filter(self.filter_single_int_ascii, ignore=True)
 
     # Test load_filter
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
     def test_filter_table(self):
         ui.load_filter(self.filter_single_int_table)
         ui.load_filter(self.filter_single_int_table, ignore=True)
@@ -139,8 +129,10 @@ class test_ui(SherpaTestCase):
         ui.load_filter(self.filter_single_log_table, ignore=True)
 
 
+@requires_data
+@requires_fits
 class test_more_ui(SherpaTestCase):
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_data
     def setUp(self):
         self._old_logger_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
@@ -153,9 +145,6 @@ class test_more_ui(SherpaTestCase):
         logger.setLevel(self._old_logger_level)
 
     # bug #12732
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_string_model_with_rmf(self):
         ui.load_pha("foo", self.pha)
         ui.load_rmf("foo", self.rmf)
@@ -170,10 +159,7 @@ class test_more_ui(SherpaTestCase):
         from sherpa.astro.instrument import RMFModelPHA
         self.assertTrue(isinstance(m, RMFModelPHA))
 
-    # bug #38
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    #bug #38
     def test_bug38(self):
         ui.load_pha('3c273', self.pha3c273)
         ui.notice_id('3c273', 0.3, 2)
@@ -181,8 +167,9 @@ class test_more_ui(SherpaTestCase):
         ui.group_counts('3c273', 15)
 
 
+@requires_data
+@requires_fits
 class test_image_12578(SherpaTestCase):
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
         self.img = self.make_path('img.fits')
         self.loggingLevel = logger.getEffectiveLevel()
@@ -194,9 +181,6 @@ class test_image_12578(SherpaTestCase):
             logger.setLevel(self.loggingLevel)
 
     # bug #12578
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_set_coord_bad_coord(self):
         from sherpa.utils.err import IdentifierErr, DataErr
 
@@ -270,20 +254,17 @@ class test_psf_ui(SherpaTestCase):
     # bug #12503
     def test_psf_pars_are_frozen(self):
         ui.load_psf('psf', ui.beta2d.p1)
-        self.assertEqual([], p1.thawedpars)
+        self.assertEqual([], ui.beta2d.p1.thawedpars)
 
 
+@requires_data
+@requires_fits
 class test_stats_ui(SherpaTestCase):
-
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
         self.data = self.make_path('threads/chi2/3c273.pi')
         ui.clean()
 
     # bugs #11400, #13297, #12365
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_chi2(self):
 
         # Case 1: first ds has no error, second has, chi2-derived (chi2gehrels)
@@ -417,8 +398,7 @@ class test_stats_ui(SherpaTestCase):
         self.assertEqual('chi2', stat12)
 
 
-@unittest.skipIf(not has_fits_support(),
-                 'need pycrates, astropy.io.fits, or pyfits')
+@requires_fits
 class test_save_arrays_base(SherpaTestCase):
 
     # _colnames:  specify column names (True) or not
@@ -465,8 +445,7 @@ class test_save_arrays_base(SherpaTestCase):
         self.assertIsNone(out.syserror, msg="syserror")
 
 
-@unittest.skipIf(not has_fits_support(),
-                 'need pycrates, astropy.io.fits, or pyfits')
+@requires_fits
 class test_save_arrays_nocols_FITS(test_save_arrays_base):
 
     _fits = True
@@ -478,8 +457,7 @@ class test_save_arrays_nocols_FITS(test_save_arrays_base):
         self.save_arrays()
 
 
-@unittest.skipIf(not has_fits_support(),
-                 'need pycrates, astropy.io.fits, or pyfits')
+@requires_fits
 class test_save_arrays_cols_FITS(test_save_arrays_nocols_FITS):
 
     _colnames = True
@@ -488,8 +466,7 @@ class test_save_arrays_cols_FITS(test_save_arrays_nocols_FITS):
         self.save_arrays()
 
 
-@unittest.skipIf(not has_fits_support(),
-                 'need pycrates, astropy.io.fits, or pyfits')
+@requires_fits
 class test_save_arrays_nocols_ASCII(test_save_arrays_base):
 
     _fits = False
@@ -501,8 +478,7 @@ class test_save_arrays_nocols_ASCII(test_save_arrays_base):
         self.save_arrays()
 
 
-@unittest.skipIf(not has_fits_support(),
-                 'need pycrates, astropy.io.fits, or pyfits')
+@requires_fits
 class test_save_arrays_cols_ASCII(test_save_arrays_nocols_ASCII):
 
     _colnames = True
@@ -511,9 +487,8 @@ class test_save_arrays_cols_ASCII(test_save_arrays_nocols_ASCII):
         self.save_arrays()
 
 
-@unittest.skipIf(not has_fits_support(),
-                 'need pycrates, astropy.io.fits, or pyfits')
-@unittest.skipIf(test_data_missing(), 'required test data missing')
+@requires_fits
+@requires_data
 class test_save_pha(SherpaTestCase):
     """Write out a PHA data set as a FITS file."""
 
