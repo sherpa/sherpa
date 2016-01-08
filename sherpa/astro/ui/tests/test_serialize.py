@@ -944,7 +944,7 @@ class test_ui(SherpaTestCase):
         ui.set_stat('chi2gehrels')
         ui.notice_id('grp', 0.5, 6)
         ui.set_source('grp', ui.xsphabs.ggal * ui.powlaw1d.gpl)
-        gpl.gamma.max = 5
+        ui.powlaw1d.gpl.gamma.max = 5
         ui.set_par('ggal.nh', val=2.0, frozen=True)
 
         return fname, (grp, qual), \
@@ -987,8 +987,8 @@ class test_ui(SherpaTestCase):
         ui.set_xsxsect('vern')
         ui.set_xscosmo(72, 0.02, 0.71)
 
-        gpl.gamma.min = -5
-        ui.freeze(bpoly.c0)
+        ui.powlaw1d.gpl.gamma.min = -5
+        ui.freeze(ui.polynom1d.bpoly.c0)
 
         ui.set_par('ggal.nh', val=2.0, frozen=True)
 
@@ -1016,6 +1016,7 @@ class test_ui(SherpaTestCase):
                          parunits=["m", ""],
                          parfrozen=[False, True])
 
+        mymodel = ui.get_model_component("mymodel")
         ui.set_source(3, ui.sin.sin_model + mymodel)
 
         ui.set_stat('cash')
@@ -1082,9 +1083,9 @@ class test_ui(SherpaTestCase):
         src_expr = ui.get_source()
         self.assertEqual(src_expr.name,
                          '(xsphabs.gal * (powlaw1d.pl + xsapec.src))')
-        self.assertEqual(gal.name, 'xsphabs.gal')
-        self.assertEqual(pl.name, 'powlaw1d.pl')
-        self.assertEqual(src.name, 'xsapec.src')
+        self.assertEqual(ui.xsphabs.gal.name, 'xsphabs.gal')
+        self.assertEqual(ui.powlaw1d.pl.name, 'powlaw1d.pl')
+        self.assertEqual(ui.xsapec.src.name, 'xsapec.src')
 
         self.assertAlmostEqual(ui.calc_stat(), statval)
 
@@ -1121,9 +1122,9 @@ class test_ui(SherpaTestCase):
         src_expr = ui.get_source('grp')
         self.assertEqual(src_expr.name,
                          '(xsphabs.ggal * powlaw1d.gpl)')
-        self.assertTrue(ggal.nh.frozen, msg="is ggal.nh frozen?")
-        self.assertEqual(ggal.nh.val, 2.0)
-        self.assertEqual(gpl.gamma.max, 5.0)
+        self.assertTrue(ui.xsphabs.ggal.nh.frozen, msg="is ggal.nh frozen?")
+        self.assertEqual(ui.xsphabs.ggal.nh.val, 2.0)
+        self.assertEqual(ui.powlaw1d.gpl.gamma.max, 5.0)
 
         self.assertAlmostEqual(ui.calc_stat('grp'), statval)
 
@@ -1192,10 +1193,10 @@ class test_ui(SherpaTestCase):
         self.assertEqual(bg_expr.name,
                          '(steplo1d.bstep + polynom1d.bpoly)')
 
-        self.assertTrue(ggal.nh.frozen, msg="is ggal.nh frozen?")
-        self.assertTrue(bpoly.c0.frozen, msg="is bpoly.c0 frozen?")
-        self.assertEqual(ggal.nh.val, 2.0)
-        self.assertEqual(gpl.gamma.min, -5.0)
+        self.assertTrue(ui.xsphabs.ggal.nh.frozen, msg="is ggal.nh frozen?")
+        self.assertTrue(ui.polynom1d.bpoly.c0.frozen, msg="is bpoly.c0 frozen?")
+        self.assertEqual(ui.xsphabs.ggal.nh.val, 2.0)
+        self.assertEqual(ui.powlaw1d.gpl.gamma.min, -5.0)
 
         self.assertEqual(ui.get_xsabund(), 'lodd')
         self.assertEqual(ui.get_xsxsect(), 'vern')
@@ -1226,6 +1227,7 @@ class test_ui(SherpaTestCase):
         src_expr = ui.get_model(3)
         self.assertEqual(src_expr.name,
                          '(sin.sin_model + usermodel.mymodel)')
+        mymodel = ui.get_model_component("mymodel")
         self.assertTrue(mymodel.m.frozen, msg="is mymodel.m frozen?")
         self.assertEqual(mymodel.c.val, 2.0)
         self.assertEqual(mymodel.c.units, "m")
