@@ -873,7 +873,7 @@ class test_ui(SherpaTestCase):
         StringIO object) to the string value expected.
         """
         output = StringIO.StringIO()
-        ui.save_all(outfh=output)
+        ui.save_all(output)
         output = output.getvalue()
 
         # check the output is a valid Python program.
@@ -891,7 +891,7 @@ class test_ui(SherpaTestCase):
         """
 
         output = StringIO.StringIO()
-        ui.save_all(outfh=output)
+        ui.save_all(output)
         output = output.getvalue()
         ui.clean()
         try:

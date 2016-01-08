@@ -12368,7 +12368,7 @@ class Session(sherpa.ui.utils.Session):
     # Session Text Save Function
     ###########################################################################
 
-    def save_all(self, outfile=None, clobber=False, outfh=None):
+    def save_all(self, outfile=None, clobber=False):
         """Save the information about the current session to a text file.
 
         This differs to the `save` command in that the output is human
@@ -12382,20 +12382,18 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        outfile : str, optional
+        outfile : str or file-like, optional
            If given, the output is written to this file, and the
            ``clobber`` parameter controls what happens if the
-           file already exists. If not given, then the
-           ``outfh`` parameter is used.
+           file already exists.
+           ``outfile`` can be a filename string or a file handle
+           (or file-like object, such as ``StringIO``) to write
+           to. If not set then the standard output is used.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If ``outfile`` is a filename, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
-        outfh : file-like, optional
-           If ``outfile`` is ``None`` then this is the file handle
-           (or file-like object, such as ``StringIO``) to write
-           to. If not set then the standard output is used.
 
         Raises
         ------
@@ -12441,7 +12439,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> import StringIO
         >>> store = StringIO.StringIO()
-        >>> save_all(outfh=store)
+        >>> save_all(store)
 
         """
 
@@ -12455,12 +12453,9 @@ class Session(sherpa.ui.utils.Session):
             with open(outfile, 'w') as fh:
                 serialize.save_all(self, fh)
 
-        elif outfile is not None:
-            raise ArgumentTypeErr('badarg', 'string or None')
-
         else:
-            if outfh is not None:
-                fh = outfh
+            if outfile is not None:
+                fh = outfile
             else:
                 fh = sys.stdout
 
