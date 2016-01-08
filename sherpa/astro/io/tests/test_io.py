@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils import SherpaTestCase, has_fits_support, has_package_from_list
+from sherpa.utils import SherpaTestCase, has_fits_support, has_package_from_list, test_data_missing
 from sherpa.astro import ui
 
 from unittest import skipIf
@@ -31,6 +31,7 @@ class test_89_issues(SherpaTestCase):
 
     @skipIf(not has_package_from_list("sherpa.astro.xspec"), "xspec required")
     @skipIf(not has_fits_support(), "fits support required")
+    @skipIf(test_data_missing(), "required test data missing")
     def test_mod_fits(self):
         tablemodelfile = self.make_path("xspec", "tablemodel", "RCS.mod")
         ui.load_table_model("tmod", tablemodelfile)

@@ -100,12 +100,6 @@ if hasattr(fits.BinTableHDU, "from_columns"):
 else:
     _new_table = fits.new_table
 
-# fits.CardList is deprecated
-if hasattr(fits, 'Header'):
-    _new_header = fits.Header
-else:
-    _new_header = fits.CardList
-
 
 def _has_hdu(hdulist, id):
     try:
@@ -304,16 +298,19 @@ def read_table_blocks(arg, make_copy=False):
     return filename, cols, hdr
 
 
-# @DougBurke thinks that nobinary may just be a sign of a
-# missed copy-and-paste edit, as it's not at all obvious why
-# it isn't included there (alternatively, it may make sense to
-# just remove the binary check entirely and let the file I/O
-# fall over if it can't read the file).
+# TODO @DougBurke comments:
+# Is the check for a binary file even useful here; perhaps the code should just try and open the file
+# and we deal with the error (it's "more pythonic")
 #
-# @DougBurke thinks that the exptype argument also seems to be
-# wrong, since there is *no* check here that the HDUList has
-# a table (or image), so why change the error message.
+# If we do want to include a binary-file check, then all the callers of
+# _get_file_contents should be reviewed to see if they should include the binary-file check
 #
+# the exptype argument lets the error message be changed; however, does this make sence since the code that does call
+# this function with exptype="BinTableHDU" aren't guaranteed that there is a binary table in the file (very likely,
+# but it is possible to write a FITS file with only a PrimaryHDU or have an ImageHDU [or whatever it's called]
+# falling it [*]).
+# I haven't checked the FITS standard to see if either of these are valid, but that doesn't mean that they
+# can't be created. It could be that astropy will error out if it reads such a file, but I haven't checked this either.
 def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
     """arg is a filename or a list of HDUs, with the first
     one a PrimaryHDU. The return value is the list of
