@@ -4,13 +4,15 @@
 /*_C_INSERT_GPL_LICENSE_HERE_*/
 #include "region_priv.h"
 #include "regpar.h"
-int test_link_jcm( void );
 #include <ctype.h>
+#include <float.h>
+
 extern char     *regParseStr;
 extern char     *regParseStrEnd;
 extern regRegion *my_Gregion;
 static int world_coord;
 static int world_size;
+int test_link_jcm( void );
 %}
 
 
@@ -19,6 +21,8 @@ static int world_size;
 %token REG_FIELD REG_TEXT REG_STRING REG_LINE
 %token <dval> REG_NUMBER 
 %token  colName
+// Unsupported shapes (also Rhombi)
+%token REG_ELLIPTANNULUS REG_DIAMOND REG_ROTDIAMOND 
 
 %union {
   double dval;
@@ -28,7 +32,6 @@ static int world_size;
   struct polyside
   { double *polyX; double *polyY; long polyS; } PolySide;
 }
-
 
 %type <my_shape> reg_shape
 %type <my_region> reg_comp
@@ -54,7 +57,7 @@ reg_comp:
  | reg_shape {
                 $$ = regCreateRegion(NULL, NULL );
                 regAddShape( $$ , regOR, $1 ); 
-		my_Gregion = $$;
+		        my_Gregion = $$;
              }
  | error "" { yyerrok; }
 
@@ -63,30 +66,30 @@ reg_comp:
 
 reg_xcoord:
         reg_value
-          {  $$ = $1; world_coord = 0; }
+          {  $$ = $1; world_coord = RC_UNK; }
      |  reg_value 'd'
-          {  $$ = $1; world_coord = 1; }
+          {  $$ = $1; world_coord = RC_WORLD; }
      |  REG_NUMBER ':' REG_NUMBER ':' REG_NUMBER  
           {
            double ndeg, nmin, nsec, nval;
            ndeg = $1; nmin = $3; nsec = $5;
            nval = ( ndeg + nmin / 60.0 + nsec / 3600.0 );
-           world_coord = 1;
+           world_coord = RC_WORLD;
            $$ = nval * 15.0;
           }
 ;
 
 reg_ycoord:
         reg_value
-          {  $$ = $1; world_coord = 0; }
+          {  $$ = $1; world_coord = RC_UNK; }
      |  reg_value 'd'
-          {  $$ = $1; world_coord = 1; }
+          {  $$ = $1; world_coord = RC_WORLD; }
      |  REG_NUMBER ':' REG_NUMBER ':' REG_NUMBER  
           {
            double ndeg, nmin, nsec, nval;
            ndeg = $1; nmin = $3; nsec = $5;
            nval = ( ndeg + nmin / 60.0 + nsec / 3600.0 );
-           world_coord = 1;
+           world_coord = RC_WORLD;
            $$ = nval;
           }
      |  REG_MINUS REG_NUMBER ':' REG_NUMBER ':' REG_NUMBER  
@@ -94,7 +97,7 @@ reg_ycoord:
            double ndeg, nmin, nsec, nval;
            ndeg = $2; nmin = $4; nsec = $6;
            nval = ( ndeg + nmin / 60.0 + nsec / 3600.0 );
-           world_coord = 1;
+           world_coord = RC_WORLD;
            $$ = -nval;
           }
 ;
@@ -119,24 +122,25 @@ reg_angle:
 
 reg_size:
         reg_value
-          {  $$ = $1; world_size = 0; }
+          {  $$ = $1; world_size = RC_UNK; }
       | reg_value 'p'
-          {  $$ = $1; world_size = 0; }
+          {  $$ = $1; world_size = RC_PHYSICAL; }
       | reg_value 'i'     
-          {  $$ = $1; world_size = 0;  /* This is logical coords; we need to fix this */ }
+          {  $$ = $1; world_size = RC_LOGICAL; }
       | reg_value 'd'
-          {  $$ = $1; world_size = 1; }
+          {  $$ = $1; world_size = RC_WORLD; }
       | reg_value '\''
-          {  $$ = $1 / 60.0; world_size = 1; }
+          {  $$ = $1 / 60.0; world_size = RC_WORLD; }
       | reg_value '\'' '\''
-          {  $$ = $1 / 3600.0; world_size = 1; }
+          {  $$ = $1 / 3600.0; world_size = RC_WORLD; }
       | reg_value '\"'
-          {  $$ = $1 / 3600.0; world_size = 1; }
+          {  $$ = $1 / 3600.0; world_size = RC_WORLD; }
 ;
 
 
+
 reg_shape: 
-    REG_FIELD '(' ')' 
+   REG_FIELD '(' ')' 
      { 
        $$ = regCreateNewWorldShape( regFIELD, regInclude, NULL, NULL, 0, NULL, NULL, world_coord, world_size );
        if ( $$ == NULL ) {
@@ -476,6 +480,7 @@ reg_shape:
 	   YYERROR;
          }
      }
+
    | REG_POLY '(' reg_ordered_pair ')'
      { 
        $$ = regCreateNewWorldShape( regPOLYGON, regInclude, $3.polyX, $3.polyY, 
@@ -499,7 +504,84 @@ reg_shape:
 	 YYERROR;
        }
      }
+   
+   // ELLIIPTANNULUS is not yet supported. Add a constructor method for the shape then fill in the methods 
+   // below.
+   | REG_ELLIPTANNULUS '(' reg_xcoord ',' reg_ycoord ',' reg_size ',' reg_size ',' reg_size ',' reg_size ')'
+     {
+        double x[1]; double y[1]; double r1[2]; double r2[2];
+        x[0]=$3; y[0]=$5; r1[0]=$7; r1[1]=$9; r2[0] = $11; r2[1] = $13;
+ 	    
+        fprintf(stderr, "ERROR: Elliptannuli are not yet supported.\n");
+        my_Gregion = NULL;
+	    YYERROR;
+     }
+   | REG_ELLIPTANNULUS '(' reg_xcoord ',' reg_ycoord ',' reg_size ',' reg_size ',' reg_size ',' reg_size ',' reg_angle ')'
+     {
+        double x[1]; double y[1]; double r1[2]; double r2[2];  double a[1];
+        x[0]=$3; y[0]=$5; r1[0]=$7; r1[1]=$9; r2[0] = $11; r2[1] = $13; a[0]=$15;
+ 	    
+        fprintf(stderr, "ERROR: Elliptannuli are not yet supported.\n");
+        my_Gregion = NULL;
+	    YYERROR;
+     }
+   | REG_NEG REG_ELLIPTANNULUS '(' reg_xcoord ',' reg_ycoord ',' reg_size ',' reg_size ',' reg_size ',' reg_size ')'
+     {
+        double x[1]; double y[1]; double r1[2]; double r2[2];
+        x[0]=$4; y[0]=$6; r1[0]=$8; r1[1]=$10; r2[0] = $12; r2[1] = $14;
+ 	    
+        fprintf(stderr, "ERROR: Elliptannuli are not yet supported.\n");
+        my_Gregion = NULL;
+	    YYERROR;
+     }
+   | REG_NEG REG_ELLIPTANNULUS '(' reg_xcoord ',' reg_ycoord ',' reg_size ',' reg_size ',' reg_size ',' reg_size ',' reg_angle ')'
+     {
+        double x[1]; double y[1]; double r1[2]; double r2[2];  double a[1];
+        x[0]=$4; y[0]=$6; r1[0]=$8; r1[1]=$10; r2[0] = $12; r2[1] = $14; a[0]=$16;
+ 	    
+        fprintf(stderr, "ERROR: Elliptannuli are not yet supported.\n");
+        my_Gregion = NULL;
+	    YYERROR;
+     }
 
+
+   // DIAMONDS are currently not supported - when they are fill in the constructors below.
+   | REG_DIAMOND '(' reg_xcoord ',' reg_ycoord ',' reg_size ',' reg_size ')'
+     {
+        double x[1]; double y[1]; double r[2]; 
+        x[0]=$3; y[0]=$5; r[0]=$7; r[1]=$9; 
+ 	    
+        fprintf(stderr, "ERROR: Diamonds are not yet supported.\n");
+        my_Gregion = NULL;
+	    YYERROR;
+     }
+   | REG_NEG REG_DIAMOND '(' reg_xcoord ',' reg_ycoord ',' reg_size ',' reg_size ')'
+     {
+        double x[1]; double y[1]; double r[2]; 
+        x[0]=$4; y[0]=$6; r[0]=$8; r[1]=$10; 
+ 	    
+        fprintf(stderr, "ERROR: Diamonds are not yet supported.\n");
+        my_Gregion = NULL;
+	    YYERROR;
+     }
+   | REG_ROTDIAMOND '(' reg_xcoord ',' reg_ycoord ',' reg_size ',' reg_size ',' reg_angle ')'
+     {
+        double x[1]; double y[1]; double r[2]; double a[1];
+        x[0]=$3; y[0]=$5; r[0]=$7; r[1]=$9; a[0] = $11;
+ 	    
+        fprintf(stderr, "ERROR: Diamonds are not yet supported.\n");
+        my_Gregion = NULL;
+	    YYERROR;
+     }
+   | REG_NEG REG_DIAMOND '(' reg_xcoord ',' reg_ycoord ',' reg_size ',' reg_size ',' reg_angle ')'
+     {
+        double x[1]; double y[1]; double r[2]; double a[1];
+        x[0]=$4; y[0]=$6; r[0]=$8; r[1]=$10; a[0] = $12;
+ 	    
+        fprintf(stderr, "ERROR: Diamonds are not yet supported.\n");
+        my_Gregion = NULL;
+	    YYERROR;
+     }
 ;
 
 reg_ordered_pair:
@@ -525,41 +607,53 @@ reg_ordered_pair:
 
 regRegion* regParse( char* buf )
 {
-  regRegion* regptr;
-  char* ptr;
-  /* my_Gregion is declared externally*/
-  my_Gregion = NULL;
-  regParseStr = buf;
-
-  if ( !buf )
-   return NULL;
-  ptr = buf;
-  while( *ptr == ' ' || *ptr == '(' ) ptr++;
-  if ( !isalpha( *ptr ) && *ptr != '!' )
-  {
-   /* Not a region ( always begins with alpha or ! ) */
-   return NULL;
-  }
-
-  regParseStrEnd = buf + strlen( buf );
-/*  yydebug = 1; */
-    yyparse();
- regptr = my_Gregion;
- return regptr;
-}
-
-
-void yyerror( char* msg )
-{
+    // Needed to clear buff prior to parsing.
+    regYYrestart(NULL);
   
-  my_Gregion = NULL;
-  return;
+    regRegion* regptr;
+    char* ptr;
+
+    // my_Gregion is declared externally
+    my_Gregion = NULL;
+    regParseStr = buf;
+    
+    // Needed to ensure extent is correctly set
+    double fx[2] ={ -DBL_MAX, DBL_MAX };
+    double fy[2] ={ -DBL_MAX, DBL_MAX };
+
+    if ( !buf ) {
+        return NULL;
+    }
+    
+    ptr = buf;
+    while( *ptr == ' ' || *ptr == '(' ) ptr++;
+    if ( !isalpha( *ptr ) && *ptr != '!' )
+    {
+        // Not a region ( always begins with alpha or ! )
+        return NULL;
+    }
+
+    regParseStrEnd = buf + strlen( buf );
+    
+    // uncomment to access debug mode
+    // regYYdebug = 1;
+
+    regYYparse();
+    regptr = my_Gregion;
+
+    // If we have successfully parsed a region then be sure to set the
+    // appropriate bounds.
+    if (regptr) {
+        regExtent(regptr, fx, fy, regptr->xregbounds, regptr->yregbounds);
+    }
+
+    return regptr;
 }
 
-int yywrap( void )
+
+void regYYerror( char* msg )
 {
-  return 1;
+    my_Gregion = NULL;
+    return;
 }
-
-
 

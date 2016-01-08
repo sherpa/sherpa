@@ -37,7 +37,7 @@ build_triplet = @build@
 host_triplet = @host@
 subdir = src
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+	$(srcdir)/Makefile.in reglexer.c regparser.c regparser.h
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
@@ -72,9 +72,12 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libregion_la_LIBADD =
-am_libregion_la_OBJECTS = region_create.lo region_inside.lo \
-	region_util.lo region_extent.lo region_attribute.lo \
-	regparser.lo reglexer.lo
+am_libregion_la_OBJECTS = reglexer.lo regparser.lo region_area.lo \
+	region_convert.lo region_create.lo region_extent.lo \
+	region_eval.lo region_logic.lo region_repr.lo region_shape.lo \
+	regShape_utils.lo regAnnulus.lo regField.lo regPolygon.lo \
+	regSector.lo regMask.lo regCircle.lo regEllipse.lo regBox.lo \
+	regPoint.lo regRectangle.lo regPie.lo
 libregion_la_OBJECTS = $(am_libregion_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -89,6 +92,15 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+@MAINTAINER_MODE_FALSE@am__skiplex = test -f $@ ||
+LEXCOMPILE = $(LEX) $(LFLAGS) $(AM_LFLAGS)
+LTLEXCOMPILE = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(LEX) $(LFLAGS) $(AM_LFLAGS)
+YLWRAP = $(top_srcdir)/ylwrap
+@MAINTAINER_MODE_FALSE@am__skipyacc = test -f $@ ||
+YACCCOMPILE = $(YACC) $(YFLAGS) $(AM_YFLAGS)
+LTYACCCOMPILE = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(YACC) $(YFLAGS) $(AM_YFLAGS)
 SOURCES = $(libregion_la_SOURCES)
 DIST_SOURCES = $(libregion_la_SOURCES)
 HEADERS = $(include_HEADERS)
@@ -213,27 +225,33 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 BUILT_SOURCES = regparser.c reglexer.c
-lib_LTLIBRARIES = libregion.la
-include_HEADERS = cxcregion.h
-libregion_la_SOURCES = \
-	region_create.c    \
-	region_inside.c    \
-	region_util.c      \
-	region_extent.c    \
-	region_attribute.c \
-        regparser.c        \
-	reglexer.c         \
-        region_priv.h      \
-        regpar.h           \
-        regparser.h        \
-        regparser.tab.h
 
-EXTRA_DIST = reglexer.c.tmp reglexer.l regparser.y 
+# Overrides the prefix name in generated bison code. Replace if upgrading to bison 2.6+
+AM_YFLAGS = -d -p"regYY"
+
+# Need this for ylwrap
+AM_LFLAGS = -o lex.yy.c
+lib_LTLIBRARIES = libregion.la
+include_HEADERS = cxcregion.h region_priv.h regpar.h
+libregion_la_SOURCES = \
+    reglexer.l regparser.y \
+ 	region_area.c \
+	region_convert.c \
+	region_create.c \
+	region_extent.c \
+	region_eval.c \
+ 	region_logic.c \
+	region_repr.c \
+	region_shape.c \
+ 	regShape_utils.c \
+ 	regAnnulus.c regField.c regPolygon.c regSector.c regMask.c \
+ 	regCircle.c regEllipse.c regBox.c regPoint.c regRectangle.c regPie.c
+
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .c .l .lo .o .obj .y
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -295,6 +313,11 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
+regparser.h: regparser.c
+	@if test ! -f $@; then \
+	  rm -f regparser.c; \
+	  $(MAKE) $(AM_MAKEFLAGS) regparser.c; \
+	else :; fi
 libregion.la: $(libregion_la_OBJECTS) $(libregion_la_DEPENDENCIES) 
 	$(LINK) -rpath $(libdir) $(libregion_la_OBJECTS) $(libregion_la_LIBADD) $(LIBS)
 
@@ -304,11 +327,26 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_attribute.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regAnnulus.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regBox.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regCircle.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regEllipse.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regField.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regMask.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regPie.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regPoint.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regPolygon.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regRectangle.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regSector.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regShape_utils.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_area.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_convert.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_create.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_eval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_extent.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_inside.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_logic.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_repr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/region_shape.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reglexer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regparser.Plo@am__quote@
 
@@ -332,6 +370,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+.l.c:
+	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ -- $(LEXCOMPILE)
+
+.y.c:
+	$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -475,10 +519,13 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-rm -f reglexer.c
+	-rm -f regparser.c
+	-rm -f regparser.h
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
-clean-am: clean-generic clean-libLTLIBRARIES clean-libtool clean-local \
+clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -550,7 +597,7 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 .MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libtool clean-local ctags distclean \
+	clean-libLTLIBRARIES clean-libtool ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-dvi \
@@ -564,29 +611,6 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 	tags uninstall uninstall-am uninstall-includeHEADERS \
 	uninstall-libLTLIBRARIES
 
-
-#INC_FILES = cxcregion.h
-#PKG_FILES = cxcregion.pc
-
-regparser.c: regparser.y
-	echo $(YACC)
-	$(YACC) -bregparser -d $(YFLAGS) $<
-	$(SED) 's/yy/regYY/g' regparser.tab.c > regparser.c
-	$(SED) 's/yy/regYY/g' regparser.tab.h > regparser.h
-
-resed:
-	$(SED) 's/yy/regYY/g' regparser.tab.c > regparser.c
-	$(SED) 's/yy/regYY/g' regparser.tab.h > regparser.h
-	$(SED) 's/yy/regYY/g' reglexer.c.tmp >reglexer.c
-
-reglexer.c: reglexer.l
-	rm -f $@.tmp
-	$(LEX) -t $< > $@.tmp
-	- chmod +w $@.tmp 
-	$(SED) 's/yy/regYY/g' $@.tmp > $@
-
-clean-local:
-	-rm -f regparser.c reglexer.c *.o regparser.h regparser.tab.c regparser.tab.h
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

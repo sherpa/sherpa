@@ -2,10 +2,6 @@
 /*_C_INSERT_SAO_COPYRIGHT_HERE_(2007)_*/
 /*_C_INSERT_GPL_LICENSE_HERE_*/
   
-  /* test
-   *
-   */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -37,9 +33,12 @@ regRegion *my_Gregion;
   void regLEXerror(const char* message);
 %}
 
+%option noyywrap
+%option prefix="regYY"
+
 %%
 
-["][0-9A-Za-z~_./#]*["] { strcpy( yylval.str, yytext ); return( REG_STRING ); }
+["][0-9A-Za-z~_./#]*["] { strcpy( regYYlval.str, yytext ); return( REG_STRING ); }
 
 [cC][iI][rR]([cC]([Ll]([Ee])?)?)? { return( REG_CIRCLE ); }
 
@@ -68,9 +67,19 @@ regRegion *my_Gregion;
 
 [Ff][Ii][Ee][Ll][Dd]  { return( REG_FIELD ); }
 
-[ ]*[+]?[0-9]+  { yylval.dval=atof(yytext); return ( REG_NUMBER ); }
-[ ]*[+]?[0-9]+\.?[0-9]*([EeDd][+-]?[0-9]+)?  { yylval.dval=atof(yytext); return ( REG_NUMBER ); }
-[ ]*[+]?\.[0-9]*([EeDd][+-]?[0-9]+)?  { yylval.dval=atof(yytext); return ( REG_NUMBER ); }
+[Ee][Ll][Ll][Ii][Pp][Tt][Aa][Nn][Nn]([Uu]([Ll]([Uu]([Ss])?)?)?)? { return ( REG_ELLIPTANNULUS ); }
+
+[Dd][Ii][Aa]([Mm]([Oo]([Nn]([Dd])?)?)?)? { return REG_DIAMOND; }
+
+[Rr][Hh][Oo]([Mm]([Bb]([Uu]([Ss])?)?)?)? { return REG_DIAMOND; }
+
+[Rr][Oo][Tt][Dd][Ii][Aa]([Mm]([Oo]([Nn]([Dd])?)?)?)? { return REG_ROTDIAMOND; }
+
+[Rr][Oo][Tt][Rr][Hh][Oo]([Mm]([Bb]([Uu]([Ss])?)?)?)? { return REG_ROTDIAMOND; }
+
+[ ]*[+]?[0-9]+  { regYYlval.dval=atof(yytext); return ( REG_NUMBER ); }
+[ ]*[+]?[0-9]+\.?[0-9]*([EeDd][+-]?[0-9]+)?  { regYYlval.dval=atof(yytext); return ( REG_NUMBER ); }
+[ ]*[+]?\.[0-9]*([EeDd][+-]?[0-9]+)?  { regYYlval.dval=atof(yytext); return ( REG_NUMBER ); }
 
 
 [-] { return( REG_MINUS ); }
@@ -83,11 +92,7 @@ regRegion *my_Gregion;
 \n { return( 0 ); }
 .   { return( yytext[0]);} ;
 
-
-
 %%
-
-
 
 
 #ifdef FLEX_SCANNER
