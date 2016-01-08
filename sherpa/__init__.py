@@ -40,11 +40,11 @@ import os.path
 import sys
 
 
-
-__all__ = ('banner', 'get_include', 'test')
+__all__ = ('get_include', 'test')
 
 __versionstr__ = '4.7.1'
 __version__ = 40701
+
 
 class Formatter(logging.Formatter):
     def format(self, record):
@@ -63,26 +63,11 @@ log.setLevel(logging.INFO)
 del Formatter, log, handler
 
 
-_banner = """
------------------------------------------------------
-Welcome to Sherpa: CXC's Modeling and Fitting Package
------------------------------------------------------
-Version: Sherpa %s Monday, July 19, 2010
-""" % __versionstr__
-
-
-def _banner_fancy(file=sys.stdout):
-    "Print a welcome message to the specified file object"
-    print >> file, _banner
-
-def banner(file=sys.stdout):
-    "No-op function; override with fancier version if desired to print banner"
-    pass
-
 def get_include():
     "Get the root path for installed Sherpa header files"
 
     return os.path.join(os.path.dirname(__file__), 'include')
+
 
 def get_config():
     "Get the path for the installed Sherpa configuration file"
@@ -138,6 +123,7 @@ def clitest():
         print """Cannot import pytest and pytest-cov.
             Please run 'pip install -r test_requirements.txt' first"""
         sys.exit(1)
+
 
 from ._version import get_versions
 __version__ = get_versions()['version']
