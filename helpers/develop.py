@@ -29,8 +29,10 @@ try:
             _develop.run(self)
             sherpa_config = self.get_finalized_command('sherpa_config', True)
             self.announce("install stk and group extensions locally")
-            shutil.copyfile(sherpa_config.stk_location, os.path.join(os.getcwd(), 'stk.so'))
-            shutil.copyfile(sherpa_config.group_location, os.path.join(os.getcwd(), 'group.so'))
+            if not sherpa_config.disable_stk:
+                shutil.copyfile(sherpa_config.stk_location, os.path.join(os.getcwd(), 'stk.so'))
+            if not sherpa_config.disable_group:
+                shutil.copyfile(sherpa_config.group_location, os.path.join(os.getcwd(), 'group.so'))
 
 except ImportError:
     from distutils.core import Command

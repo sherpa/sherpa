@@ -18,7 +18,6 @@
 #
 
 
-from build import build
 from clean import clean
 from develop import develop
 from install import install
@@ -28,7 +27,6 @@ from sherpa_config import sherpa_config
 from xspec_config import xspec_config
 
 commands = {
-    'build': build,
     'clean': clean,
     'install': install,
     'sdist': sdist,

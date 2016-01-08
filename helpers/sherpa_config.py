@@ -136,6 +136,5 @@ class sherpa_config(Command):
         return configure
 
     def run(self):
-        if not os.path.exists('extern/built'):
-            configure = self.build_configure()
-            build_deps(configure)
+        configure = self.build_configure()
+        build_deps(configure)
