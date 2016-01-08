@@ -17,10 +17,11 @@ addons:
       - flex
       - bison
 
+# We use matrix include so that xspec builds (which are more complicated and long) are started first
 matrix:
   fast_finish: true
   include:
-    - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule
+    - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
       python: "2.7"
       sudo: required
       dist: trusty
@@ -29,27 +30,35 @@ matrix:
 #          packages:
 #            - *default_apt
 #            - [libwcs4 wcslib-dev libx11-dev tcl]
-    - env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule
+    - env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
       python: "2.7"
-    - env: INSTALL_TYPE=install TEST=package
+    - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5
       python: "2.7"
-    - env: INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true"
+    - env: INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true" MATPLOTLIBVER=1.5
+      python: "2.7"
+    - env: FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
+      python: "2.7"
+    - env: FITS="astropy" INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.4 NUMPYVER=1.9
+      python: "2.7"
+    - env: FITS="astropy" INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5 NUMPYVER=1.10
       python: "2.7"
 
-env:
-  - FITS="astropy" INSTALL_TYPE=develop TEST=submodule
-  - FITS="astropy" INSTALL_TYPE=install TEST=package
-  - FITS="astropy" INSTALL_TYPE=install TEST=smoke
+env:  FITS="astropy" INSTALL_TYPE=install TEST=smoke MATPLOTLIBVER=1.5
 
 before_install:
+  - export SHERPA_CHANNEL=https://conda.anaconda.org/sherpa
   - export MINICONDA=/home/travis/miniconda
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p $MINICONDA
   - export PATH=$MINICONDA/bin:$PATH
   - conda update --yes conda
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy=1.9 matplotlib
-  - conda config --add channels https://conda.anaconda.org/sherpa
+  - if [ -n "${FITS}" ]; then conda install --yes -c ${SHERPA_CHANNEL} ${FITS}; fi
+  - if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
+  - if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
+  - echo ${MATPLOTLIB} ${NUMPY} ${FITS}
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY}
+  - conda config --add channels ${SHERPA_CHANNEL}
   - pip install -r test_requirements.txt
   - if [ ${TEST} == package ];
      then pip install ./sherpa-test-data;
@@ -73,7 +82,6 @@ install:
   - python setup.py $INSTALL_TYPE
 
 script:
-  - if [ -n "${FITS}" ]; then conda install --yes ${FITS} numpy=1.8; fi
   - if [ ${TEST} == submodule ]; then python setup.py test; fi
   - if [ ${TEST} == smoke ];
         then cd /home;
