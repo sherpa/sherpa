@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -351,7 +351,7 @@ def _handle_filter(state, id, fh):
             _output('print("{}")'.format(msg), fh)
 
 
-def _save_data(state, funcs, fh=None):
+def _save_data(state, fh=None):
     """Save the data.
 
     This can just be references to files, or serialization of
@@ -360,10 +360,6 @@ def _save_data(state, funcs, fh=None):
     Parameters
     ----------
     state
-    funcs : dict
-       A dictionary of function references with keys for ``load_data``
-       and ``set_coord``, where the function accepts the data set
-       identifier and returns a string representation of that command.
     fh : None or file-like
        If ``None``, the information is printed to standard output,
        otherwise the information is added to the file handle.
@@ -387,14 +383,16 @@ def _save_data(state, funcs, fh=None):
         # used?  Store them with data object?
         cmd_id = _id_to_str(id)
 
-        cmd = funcs['load_data'](id)
+        cmd = _save_dataset(state, id)
         _output(cmd, fh)
 
         # Set physical or WCS coordinates here if applicable
         # If can't be done, just pass to next
         try:
+            # TODO: add a test of the following
             _output("\n######### Set Image Coordinates\n", fh)
-            cmd = funcs['set_coord'](id)
+            cmd = 'set_coord({}, {})'.format(_id_to_str(id),
+                                             repr(state.get_coord(id)))
             _output(cmd, fh)
         except:
             pass
@@ -1141,8 +1139,8 @@ def save_all(state, fh=None):
     used. Not all Sherpa settings are saved. Items not fully restored
     include:
 
-    - data created by calls to `load_arrays`, or changed from the
-      version on disk - e.g. by calls to `sherpa.astro.ui.set_counts`.
+    - data sets changed from the version on disk - e.g. by calls to
+      `sherpa.astro.ui.set_counts`
 
     - any optional keywords to comands such as `load_data`
       or `load_pha`
@@ -1166,14 +1164,8 @@ def save_all(state, fh=None):
 
     """
 
-    funcs = {
-        'load_data': lambda id: _save_dataset(state, id),
-        'set_coord': lambda id:
-        'set_coord({}, {})'.format(_id_to_str(id), repr(state.get_coord(id))),
-    }
-
     _save_intro(fh)
-    _save_data(state, funcs, fh)
+    _save_data(state, fh)
     _output("", fh)
     _save_statistic(state, fh)
     _save_fit_method(state, fh)
