@@ -68,15 +68,6 @@ class test_ui(SherpaTestCase):
         ui.load_table(1, self.fits, 4, ('R', "SUR_BRI", 'SUR_BRI_ERR'),
                       ui.Data1DInt)
 
-    def test_load_table_fits(self):
-        # QUS: why is this not in the sherpa-test-data repository?
-        this_dir = os.path.dirname(os.path.abspath(__file__))
-        ui.load_table(1, os.path.join(this_dir, 'data',
-                                      'two_column_x_y.fits.gz'))
-        data = ui.get_data(1)
-        self.assertEqualWithinTol(data.x, [1, 2, 3])
-        self.assertEqualWithinTol(data.y, [4, 5, 6])
-
     # Test table model
     def test_table_model_ascii_table(self):
         ui.load_table_model('tbl', self.singledat)
@@ -522,6 +513,21 @@ class test_save_pha(SherpaTestCase):
             oldval = getattr(self._pha, key)
             self.assertEqual(oldval, newval, msg=key)
         """
+
+
+@requires_fits
+class test_basic_io(SherpaTestCase):
+    def setUp(self):
+        ui.clean()
+
+    def test_load_table_fits(self):
+        # QUS: why is this not in the sherpa-test-data repository?
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        ui.load_table(1, os.path.join(this_dir, 'data',
+                                      'two_column_x_y.fits.gz'))
+        data = ui.get_data(1)
+        self.assertEqualWithinTol(data.x, [1, 2, 3])
+        self.assertEqualWithinTol(data.y, [4, 5, 6])
 
 if __name__ == '__main__':
 
