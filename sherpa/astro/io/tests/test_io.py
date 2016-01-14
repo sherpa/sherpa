@@ -50,6 +50,7 @@ class test_89_issues(SherpaTestCase):
             assert len(w) == 0
 
     @skipIf(not has_package_from_list("sherpa.astro.io.pyfits_backend"), "this is a pyfits/astropy test")
+    @skipIf(test_data_missing(), "required test data missing")
     def test_warnings_are_gone_pha(self):
         pha = self.make_path("threads", "pha_intro", "3c273.pi")
         with warnings.catch_warnings(record=True) as w:

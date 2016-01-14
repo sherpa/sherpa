@@ -325,7 +325,9 @@ class SherpaTest(numpytest.NumpyTest):
         SherpaTestCase.datadir = datadir
 
         try:
-            numpytest.NumpyTest.test(self, level, verbosity)
+            result = numpytest.NumpyTest.test(self, level, verbosity)
+            if result is None or result.failures or result.errors or result.unexpectedSuccesses:
+                raise Exception("Test failures were detected")
         finally:
             SherpaTestCase.datadir = old_datadir
 
