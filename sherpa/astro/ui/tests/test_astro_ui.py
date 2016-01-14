@@ -34,9 +34,10 @@ import logging
 logger = logging.getLogger("sherpa")
 
 
+@requires_fits
+@requires_data
 class test_ui(SherpaTestCase):
 
-    @requires_data
     def setUp(self):
         self.ascii = self.make_path('threads/ascii_table/sim.poisson.1.dat')
         self.fits = self.make_path('1838_rprofile_rmid.fits')
@@ -55,15 +56,11 @@ class test_ui(SherpaTestCase):
         self.func = lambda x: x
         ui.dataspace1d(1, 1000, dstype=ui.Data1D)
 
-    @requires_data
-    @requires_fits
     def test_ascii(self):
         ui.load_ascii(1, self.ascii)
         ui.load_ascii(1, self.ascii, 2)
         ui.load_ascii(1, self.ascii, 2, ("col2", "col1"))
 
-    @requires_data
-    @requires_fits
     def test_table(self):
         ui.load_table(1, self.fits)
         ui.load_table(1, self.fits, 3)
@@ -71,7 +68,6 @@ class test_ui(SherpaTestCase):
         ui.load_table(1, self.fits, 4, ('R', "SUR_BRI", 'SUR_BRI_ERR'),
                       ui.Data1DInt)
 
-    @requires_fits
     def test_load_table_fits(self):
         # QUS: why is this not in the sherpa-test-data repository?
         this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -82,45 +78,31 @@ class test_ui(SherpaTestCase):
         self.assertEqualWithinTol(data.y, [4, 5, 6])
 
     # Test table model
-    @requires_data
-    @requires_fits
     def test_table_model_ascii_table(self):
         ui.load_table_model('tbl', self.singledat)
         ui.load_table_model('tbl', self.doubledat)
 
-    @requires_data
-    @requires_fits
     def test_table_model_fits_table(self):
         ui.load_table_model('tbl', self.singletbl)
         ui.load_table_model('tbl', self.doubletbl)
 
-    @requires_data
-    @requires_fits
     def test_table_model_fits_image(self):
         ui.load_table_model('tbl', self.img)
 
     # Test user model
-    @requires_data
-    @requires_fits
     def test_user_model_ascii_table(self):
         ui.load_user_model(self.func, 'mdl', self.singledat)
         ui.load_user_model(self.func, 'mdl', self.doubledat)
 
-    @requires_data
-    @requires_fits
     def test_user_model_fits_table(self):
         ui.load_user_model(self.func, 'mdl', self.singletbl)
         ui.load_user_model(self.func, 'mdl', self.doubletbl)
 
-    @requires_data
-    @requires_fits
     def test_filter_ascii(self):
         ui.load_filter(self.filter_single_int_ascii)
         ui.load_filter(self.filter_single_int_ascii, ignore=True)
 
     # Test load_filter
-    @requires_data
-    @requires_fits
     def test_filter_table(self):
         ui.load_filter(self.filter_single_int_table)
         ui.load_filter(self.filter_single_int_table, ignore=True)
@@ -132,7 +114,7 @@ class test_ui(SherpaTestCase):
 @requires_data
 @requires_fits
 class test_more_ui(SherpaTestCase):
-    @requires_data
+
     def setUp(self):
         self._old_logger_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
@@ -253,8 +235,10 @@ class test_psf_ui(SherpaTestCase):
 
     # bug #12503
     def test_psf_pars_are_frozen(self):
-        ui.load_psf('psf', ui.beta2d.p1)
-        self.assertEqual([], ui.beta2d.p1.thawedpars)
+        ui.create_model_component("beta2d", "p1")
+        p1 = ui.get_model_component("p1")
+        ui.load_psf('psf', p1)
+        self.assertEqual([], p1.thawedpars)
 
 
 @requires_data

@@ -47,6 +47,7 @@ _datay = numpy.array(
        0.])
 
 
+# TODO: many tests in this class do not perform any assertions
 class test_plot(SherpaTestCase):
 
     def setUp(self):
