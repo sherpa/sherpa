@@ -22,12 +22,20 @@ import logging
 import os
 import os.path
 from sherpa.utils import SherpaTestCase, test_data_missing
-from sherpa.utils import has_package_from_list, has_fits_support
-import sherpa.astro.ui as ui
+# from sherpa.utils import has_package_from_list, has_fits_support
+from sherpa.utils import has_fits_support
+from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 
 logger = logging.getLogger('sherpa')
 
+try:
+    from sherpa.astro import xspec
+    has_xspec = True
+except ImportError:
+    has_xspec = False
+
+# has_xspec = has_package_from_list("sherpa.astro.xspec")
 
 class test_threads(SherpaTestCase):
 
@@ -45,10 +53,17 @@ class test_threads(SherpaTestCase):
         self.old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.CRITICAL)
 
+        # Store XSPEC settings, if applicable
+        if has_xspec:
+            self.old_xspec = xspec.get_xsstate()
+
     def tearDown(self):
         os.chdir(self.startdir)
         ui._session.__dict__.update(self.old_state)
         logger.setLevel(self.old_level)
+
+        if has_xspec:
+            xspec.set_xsstate(self.old_xspec)
 
     def assign_model(self, name, obj):
         self.locals[name] = obj
@@ -62,7 +77,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_pha_intro(self):
@@ -121,7 +136,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_simultaneous(self):
@@ -138,7 +153,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_sourceandbg(self):
@@ -174,7 +189,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_pileup(self):
@@ -214,7 +229,7 @@ class test_threads(SherpaTestCase):
         # Since any other I/O backend would not understand DM syntax,
         # I make this test a no-op unless CRATES is used as the I/O
         # backend.  SMD 05/23/13
-        if (True == self.is_crates_io):
+        if self.is_crates_io:
             self.run_thread('radpro_dm')
             self.assertEqualWithinTol(ui.get_fit_results().statval, 217.450, 1e-4)
             self.assertEqualWithinTol(ui.get_fit_results().rstat, 6.21287, 1e-4)
@@ -301,7 +316,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_spectrum(self):
@@ -330,7 +345,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_xmm(self):
@@ -358,7 +373,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_proj(self):
@@ -433,7 +448,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_proj_bubble(self):
@@ -466,7 +481,7 @@ class test_threads(SherpaTestCase):
     # (if any occur) so SDS doesn't waste time tripping over them.
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_counts(self):
@@ -481,7 +496,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_stats_all(self):
@@ -512,7 +527,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_setfullmodel(self):
@@ -526,7 +541,7 @@ class test_threads(SherpaTestCase):
 
     @unittest.skipIf(not has_fits_support(),
                      'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
+    @unittest.skipIf(not has_xspec,
                      "required sherpa.astro.xspec module missing")
     @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_xmm2(self):
