@@ -247,7 +247,7 @@ namespace sherpa { namespace stats {
 				ArrayType& err ) {
 
     for ( IndexType ii = num - 1; ii >= 0; --ii )
-      if ( yraw[ ii ] <= 0.0 )
+      if ( yraw[ ii ] < 0.0 )
 	return EXIT_FAILURE;
       else
 	err[ ii ] = std::sqrt( yraw[ ii ] );
