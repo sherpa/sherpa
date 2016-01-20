@@ -210,12 +210,12 @@ class test_stats(SherpaTestCase):
 
         for key in ["istatval", "statval"]:
             assert numpy.allclose(float(arg1[key]), float(getattr(arg2, key)),
-                                  1.e-7, 1.e-7)
+                                  1.e-6, 1.e-6)
 
         for key in ["parvals"]:
             try:
                 assert numpy.allclose(arg1[key], getattr(arg2, key),
-                                      1.e-4, 1.e-4)
+                                      1.e-3, 1.e-3)
             except AssertionError:
                 print 'parvals bench: ', arg1[key]
                 print 'parvals fit:   ', getattr(arg2, key)
