@@ -987,6 +987,24 @@ class Fit(NoNewAttributesAfterInit):
         """
         self.model.guess(*self.data.to_guess(), **kwargs)
 
+    def _calc_stat(self):
+        dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
+        model = self.data.eval_model_to_fit(self.model)
+        bkg_data = self._iterfit.get_bkg_data(dep)
+        valid_args = get_valid_args(self.stat.calc_stat)
+        if is_in('bkg', valid_args):
+            if isinstance(self.stat, UserStat):
+                return self.stat.calc_stat(dep, model, staterror,
+                                           syserror=syserror,
+                                           bkg=bkg_data['bkg'])
+            else:
+                return self.stat.calc_stat(dep, model, staterror,
+                                           syserror=syserror,
+                                           bkg=bkg_data)
+        else:
+            return self.stat.calc_stat(dep, model, staterror,
+                                       syserror=syserror)
+
     def calc_stat(self):
         """Calculate the fit statistic for a data set.
 
@@ -1005,22 +1023,7 @@ class Fit(NoNewAttributesAfterInit):
         calc_chisqr : Calculate the per-bin chi-squared statistic.
 
         """
-        dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
-        model = self.data.eval_model_to_fit(self.model)
-        bkg_data = self._iterfit.get_bkg_data(dep)
-        valid_args = get_valid_args(self.stat.calc_stat)
-        if is_in('bkg', valid_args):
-            if isinstance(self.stat, UserStat):
-                return self.stat.calc_stat(dep, model, staterror,
-                                           syserror=syserror,
-                                           bkg=bkg_data['bkg'])[0]
-            else:
-                return self.stat.calc_stat(dep, model, staterror,
-                                           syserror=syserror,
-                                           bkg=bkg_data)[0]
-        else:
-            return self.stat.calc_stat(dep, model, staterror,
-                                       syserror=syserror)[0]
+        return self._calc_stat()[0]
 
     def calc_chisqr(self):
         """Calculate the per-bin chi-squared statistic.
@@ -1053,9 +1056,8 @@ class Fit(NoNewAttributesAfterInit):
         return stat * stat
 
     def calc_stat_info(self):
-        dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
+        stat, fvec = self._calc_stat()
         model = self.data.eval_model_to_fit(self.model)
-        stat, fvec = self.stat.calc_stat(dep, model, staterror, syserror)
 
         qval = None
         rstat = None
