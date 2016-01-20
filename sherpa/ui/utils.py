@@ -9964,7 +9964,7 @@ class Session(NoNewAttributesAfterInit):
         return self._pyblocxs.list_samplers()
 
     # DOC-TODO: add pointers on what to do with the return values
-    def get_draws(self, id=None, otherids=(), niter=1000):
+    def get_draws(self, id=None, otherids=(), niter=1000, covar_matrix=None):
         """Run the pyBLoCXS MCMC algorithm.
 
         The function runs a Markov Chain Monte Carlo (MCMC) algorithm
@@ -10069,11 +10069,12 @@ class Session(NoNewAttributesAfterInit):
         # if fit_results is None:
         #    raise TypeError("Fit has not been run")
 
-        covar_results = self.get_covar_results()
-        if covar_results is None:
-            raise TypeError("Covariance has not been calculated")
+        if covar_matrix is None:
+            covar_results = self.get_covar_results()
+            if covar_results is None:
+                raise TypeError("Covariance has not been calculated")
 
-        covar_matrix = covar_results.extra_output
+            covar_matrix = covar_results.extra_output
 
         stats, accept, params = self._pyblocxs.get_draws(
             fit, covar_matrix, niter=niter)
