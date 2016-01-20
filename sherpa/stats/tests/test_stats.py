@@ -22,8 +22,8 @@ import os.path
 import numpy
 import unittest
 
-from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
-from sherpa.utils import has_package_from_list, has_fits_support
+from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.utils import requires_data, requires_xspec, requires_fits
 
 from sherpa.models import PowLaw1D
 from sherpa.fit import Fit
@@ -114,11 +114,9 @@ class MyChiNoBkg(UserStat):
     calc_staterror = mycal_staterror
 
 
-@unittest.skipIf(not has_fits_support(),
-                 'need pycrates, pyfits or astropy.io.fits')
-@unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
-                 "required sherpa.astro.xspec module missing")
-@unittest.skipIf(test_data_missing(), "required test data missing")
+@requires_fits
+@requires_xspec
+@requires_data
 class test_stats(SherpaTestCase):
 
     _fit_mycash_results_bench = {

@@ -17,38 +17,33 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
 import os.path
 import sherpa
-from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
+from sherpa.utils import SherpaTest, SherpaTestCase, requires_data
 from sherpa import ui
 
 
+@requires_data
 class test_sherpa(SherpaTestCase):
 
     def test_include_dir(self):
         incdir = os.path.join(sherpa.get_include(), 'sherpa')
         self.assert_(os.path.isdir(incdir))
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def setUp(self):
         self.agn2 = self.make_path('ciao4.3/faulty_load_data/agn2')
         self.agn2_fixed = self.make_path('ciao4.3/faulty_load_data/agn2_fixed')
         self.template_idx = self.make_path('ciao4.3/faulty_load_data/table.txt')
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_not_reading_header_without_comment(self):
         self.assertRaises(ValueError, ui.load_data, self.agn2)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_reading_floats(self):
         ui.load_data(self.agn2_fixed)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_reading_strings(self):
         ui.load_data(self.template_idx, require_floats=False)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
     def test_require_float(self):
         self.assertRaises(ValueError, ui.load_data, self.agn2)
 

@@ -16,12 +16,13 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-import unittest
-from sherpa.utils import SherpaTestCase, test_data_missing
+import numpy
+from sherpa.utils import SherpaTestCase
 from sherpa.astro.data import DataPHA
-from sherpa.all import *
-from sherpa.astro.all import *
+from sherpa.astro.plot import SourcePlot
+from sherpa.models.basic import PowLaw1D
+from sherpa.astro.optical import AbsorptionGaussian
+
 import logging
 logger = logging.getLogger('sherpa')
 

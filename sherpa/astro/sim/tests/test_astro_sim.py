@@ -19,8 +19,8 @@
 
 import unittest
 import logging
-from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
-from sherpa.utils import has_package_from_list, has_fits_support
+from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.utils import requires_data, requires_fits, requires_xspec
 from sherpa.astro import sim
 
 from sherpa.astro.instrument import Response1D
@@ -34,10 +34,8 @@ logger = logging.getLogger('sherpa')
 
 class test_sim(SherpaTestCase):
 
-    @unittest.skipIf(not has_fits_support(),
-                     'need pycrates, pyfits or astropy.io.fits')
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
-                     "required sherpa.astro.xspec module missing")
+    @requires_fits
+    @requires_xspec
     def setUp(self):
         try:
             from sherpa.astro.io import read_pha
@@ -71,9 +69,8 @@ class test_sim(SherpaTestCase):
         if hasattr(self, 'old_level'):
             logger.setLevel(self.old_level)
 
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_xspec
+    @requires_data
     def test_pragbayes_simarf(self):
         mcmc = sim.MCMC()
 
@@ -98,9 +95,8 @@ class test_sim(SherpaTestCase):
         #     print 'param: ', str(params.std(1))
         #     raise
 
-    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'),
-                     "required sherpa.astro.xspec module missing")
-    @unittest.skipIf(test_data_missing(), "required test data missing")
+    @requires_xspec
+    @requires_data
     def test_pragbayes_pcaarf(self):
         mcmc = sim.MCMC()
 

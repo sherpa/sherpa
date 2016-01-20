@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils import SherpaTestCase, has_fits_support, has_package_from_list, test_data_missing
+from sherpa.utils import SherpaTestCase, requires_data, requires_fits, requires_xspec
 from sherpa.astro import ui
 
 from unittest import skipIf
@@ -29,16 +29,16 @@ class test_89_issues(SherpaTestCase):
     def setUp(self):
         ui.clean()
 
-    @skipIf(not has_package_from_list("sherpa.astro.xspec"), "xspec required")
-    @skipIf(not has_fits_support(), "fits support required")
-    @skipIf(test_data_missing(), "required test data missing")
+    @requires_data
+    @requires_fits
+    @requires_xspec
     def test_mod_fits(self):
         tablemodelfile = self.make_path("xspec", "tablemodel", "RCS.mod")
         ui.load_table_model("tmod", tablemodelfile)
         tmod = ui.get_model_component("tmod")
         self.assertEqual("xstablemodel.tmod", tmod.name)
 
-    @skipIf(not has_package_from_list("sherpa.astro.io.pyfits_backend"), "this is a pyfits/astropy test")
+    @requires_fits
     def test_warnings_are_gone_arrays(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -49,8 +49,8 @@ class test_89_issues(SherpaTestCase):
                 ui.save_data(1, f.name, ascii=False, clobber=True)
             assert len(w) == 0
 
-    @skipIf(not has_package_from_list("sherpa.astro.io.pyfits_backend"), "this is a pyfits/astropy test")
-    @skipIf(test_data_missing(), "required test data missing")
+    @requires_fits
+    @requires_data
     def test_warnings_are_gone_pha(self):
         pha = self.make_path("threads", "pha_intro", "3c273.pi")
         with warnings.catch_warnings(record=True) as w:

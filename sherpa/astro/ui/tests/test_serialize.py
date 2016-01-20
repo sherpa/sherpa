@@ -40,20 +40,18 @@ corresponding functions in sherpa.astro.ui.utils.
 import re
 import StringIO
 import tempfile
-import unittest
 
 import numpy
 from numpy.testing import assert_array_equal
 
-from sherpa.utils import SherpaTest, SherpaTestCase, has_package_from_list, \
-    test_data_missing
+from sherpa.utils import SherpaTest, SherpaTestCase, requires_data, requires_xspec, _has_package_from_list
 from sherpa.astro import ui
 # from sherpa.astro.ui import serialize
 
 import logging
 logger = logging.getLogger('sherpa')
 
-has_xspec = has_package_from_list("sherpa.astro.xspec")
+has_xspec = _has_package_from_list("sherpa.astro.xspec")
 
 # The tests can either check that the output ASCII is identical
 # to a canonical form, or try to execute the saved file and
@@ -1058,15 +1056,15 @@ class test_ui(SherpaTestCase):
 
         self._compare(_canonical_empty_stats)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
-    @unittest.skipIf(not has_xspec, "xspec module is required")
+    @requires_data
+    @requires_xspec
     def test_canonical_pha_basic(self):
 
         _, canonical = self._setup_pha_basic()
         self._compare(canonical)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
-    @unittest.skipIf(not has_xspec, "xspec module is required")
+    @requires_data
+    @requires_xspec
     def test_restore_pha_basic(self):
         "Can the state be evaluated?"
 
@@ -1089,15 +1087,15 @@ class test_ui(SherpaTestCase):
 
         self.assertAlmostEqual(ui.calc_stat(), statval)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
-    @unittest.skipIf(not has_xspec, "xspec module is required")
+    @requires_data
+    @requires_xspec
     def test_canonical_pha_grouped(self):
 
         _, _, canonical = self._setup_pha_grouped()
         self._compare(canonical)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
-    @unittest.skipIf(not has_xspec, "xspec module is required")
+    @requires_data
+    @requires_xspec
     def test_restore_pha_grouped(self):
         "Can the state be evaluated?"
 
@@ -1128,15 +1126,15 @@ class test_ui(SherpaTestCase):
 
         self.assertAlmostEqual(ui.calc_stat('grp'), statval)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
-    @unittest.skipIf(not has_xspec, "xspec module is required")
+    @requires_data
+    @requires_xspec
     def test_canonical_pha_back(self):
 
         _, _, canonical = self._setup_pha_back()
         self._compare(canonical)
 
-    @unittest.skipIf(test_data_missing(), "required test data missing")
-    @unittest.skipIf(not has_xspec, "xspec module is required")
+    @requires_data
+    @requires_xspec
     def test_restore_pha_back(self):
         "Can the state be evaluated?"
 

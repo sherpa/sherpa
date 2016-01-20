@@ -17,11 +17,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils import SherpaTestCase, has_package_from_list
-from unittest import skipIf
+from sherpa.utils import SherpaTestCase, requires_pylab
 
 
-@skipIf(not has_package_from_list("pylab"), "pylab required")
+@requires_pylab
 class pylab_test(SherpaTestCase):
 
     def test_axes_default(self):
