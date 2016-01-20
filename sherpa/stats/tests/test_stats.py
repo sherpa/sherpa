@@ -299,6 +299,17 @@ class test_stats(SherpaTestCase):
         fit = Fit(data, self.model, WStat(), NelderMead())
         self.assertRaises(StatErr, fit.fit)
 
+    def test_get_stat_info(self):
+        fname_3c273 = self.make_path("threads/pha_intro/3c273.pi")
+        ui.load_pha(fname_3c273)
+        src = ui.xspowerlaw.pl
+        ui.set_source(src)
+        ui.guess(pl)
+        ui.set_stat('wstat')
+        stat_info = ui.get_stat_info()[0]
+        assert stat_info.dof == 44
+        assert stat_info.numpoints == 46
+
 
 def tstme(datadir=None):
     import sherpa.stats as stats

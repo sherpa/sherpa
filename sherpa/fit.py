@@ -64,6 +64,21 @@ def evaluates_model(func):
     return run
 
 
+def stat_calc_wrapper(valid_args, stat, dep, model, staterror, syserror,
+                      bkg_data):
+
+    if is_in('bkg', valid_args):
+        if isinstance(stat, UserStat):
+            result = stat.calc_stat(dep, model, staterror, syserror=syserror,
+                                    bkg=bkg_data['bkg'])
+        else:
+            result = stat.calc_stat(dep, model, staterror, syserror=syserror,
+                                    bkg=bkg_data)
+    else:
+        result = stat.calc_stat(dep, model, staterror, syserror=syserror)
+    return result
+
+
 class StatInfoResults(NoNewAttributesAfterInit):
 
     """A summary of the current statistic value for
@@ -568,21 +583,9 @@ class IterFit(NoNewAttributesAfterInit):
             self.model.thawedpars = pars
             model = self.data.eval_model_to_fit(self.model)
             valid_args = get_valid_args(self.stat.calc_stat)
-            if is_in('bkg', valid_args):
-                if isinstance(self.stat, UserStat):
-                    stat = self.stat.calc_stat(self._dep, model,
-                                               self._staterror,
-                                               syserror=self._syserror,
-                                               bkg=self.bkg_data['bkg'])
-                else:
-                    stat = self.stat.calc_stat(self._dep, model,
-                                               self._staterror,
-                                               syserror=self._syserror,
-                                               bkg=self.bkg_data)
-            else:
-                stat = self.stat.calc_stat(self._dep, model,
-                                           self._staterror,
-                                           syserror=self._syserror)
+            stat = stat_calc_wrapper(valid_args, self.stat, self._dep, model,
+                                     self._staterror, self._syserror,
+                                     self.bkg_data)
             if self._file is not None:
                 vals = ['%5e %5e' % (self._nfev, stat[0])]
                 vals.extend(['%5e' % val for val in self.model.thawedpars])
@@ -1009,18 +1012,8 @@ class Fit(NoNewAttributesAfterInit):
         model = self.data.eval_model_to_fit(self.model)
         bkg_data = self._iterfit.get_bkg_data(dep)
         valid_args = get_valid_args(self.stat.calc_stat)
-        if is_in('bkg', valid_args):
-            if isinstance(self.stat, UserStat):
-                return self.stat.calc_stat(dep, model, staterror,
-                                           syserror=syserror,
-                                           bkg=bkg_data['bkg'])[0]
-            else:
-                return self.stat.calc_stat(dep, model, staterror,
-                                           syserror=syserror,
-                                           bkg=bkg_data)[0]
-        else:
-            return self.stat.calc_stat(dep, model, staterror,
-                                       syserror=syserror)[0]
+        return stat_calc_wrapper(valid_args, self.stat, dep, model, staterror,
+                                 syserror, bkg_data)[0]
 
     def calc_chisqr(self):
         """Calculate the per-bin chi-squared statistic.
@@ -1055,13 +1048,17 @@ class Fit(NoNewAttributesAfterInit):
     def calc_stat_info(self):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         model = self.data.eval_model_to_fit(self.model)
-        stat, fvec = self.stat.calc_stat(dep, model, staterror, syserror)
+        bkg_data = self._iterfit.get_bkg_data(dep)
+        valid_args = get_valid_args(self.stat.calc_stat)
+        stat, fvec = stat_calc_wrapper(valid_args, self.stat, dep, model,
+                                       staterror, syserror, bkg_data)
+        # stat, fvec = self.stat.calc_stat(dep, model, staterror, syserror)
 
         qval = None
         rstat = None
         numpoints = len(model)
         dof = numpoints - len(self.model.thawedpars)
-        if (isinstance(self.stat, (CStat, Chi2)) and
+        if (isinstance(self.stat, (CStat, WStat, Chi2)) and
                 not isinstance(self.stat, LeastSq)):
             if stat >= 0.0:
                 qval = igamc(dof / 2., stat / 2.)
