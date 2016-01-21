@@ -21,6 +21,7 @@
 from subprocess import call
 from multiprocessing import cpu_count
 import os
+import sys
 
 def clean_deps():
     prefix = os.getcwd()
@@ -38,7 +39,9 @@ def build_deps(configure):
         prefix=os.getcwd()
         os.chdir('extern')
         os.chmod(configure[0], 0755)
-        out = call(configure)
+        env = os.environ.copy()
+        env['PYTHON'] = sys.executable
+        out = call(configure, env=env)
         if out != 0: exit(out)
     #    cflags = '-fPIC'
     #    out = call(['make', 'CFLAGS='+cflags,'-j'+str(cpu_count()+1), 'install'])
