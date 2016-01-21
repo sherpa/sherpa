@@ -18,10 +18,9 @@
 #
 
 
-from sherpa.utils.test import SherpaTestCase, requires_fits
+from sherpa.utils.test import SherpaTest, SherpaTestCase, requires_fits
 import os
 import sys
-import unittest
 from sherpa.astro import ui
 from sherpa.astro import datastack
 from acis_bkg_model import acis_bkg_model
@@ -690,9 +689,6 @@ class test_query(SherpaTestCase):
 
 if __name__ == '__main__':
 
-    from sherpa.utils import SherpaTest
-
-    import sys
     if len(sys.argv) > 1:
         datadir = sys.argv[1]
     else:

@@ -20,7 +20,7 @@
 import numpy
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
-from sherpa.utils.test import SherpaTestCase, \
+from sherpa.utils.test import SherpaTest, SherpaTestCase, \
     requires_data, requires_fits, requires_xspec
 
 
@@ -512,7 +512,6 @@ if __name__ == '__main__':
     import os
     import sys
     import sherpa.astro.xspec as xs
-    from sherpa.utils import SherpaTest
 
     if len(sys.argv) > 1:
         datadir = sys.argv[1]

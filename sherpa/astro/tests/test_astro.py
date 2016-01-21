@@ -20,7 +20,7 @@
 import logging
 import os
 import os.path
-from sherpa.utils.test import SherpaTestCase, requires_data, \
+from sherpa.utils.test import SherpaTest, SherpaTestCase, requires_data, \
     requires_fits, requires_xspec
 import sherpa.astro.ui as ui
 from sherpa.astro.data import DataPHA
@@ -496,7 +496,6 @@ class test_threads(SherpaTestCase):
 
 if __name__ == '__main__':
 
-    from sherpa.utils import SherpaTest
     from sherpa import astro
 
     import sys

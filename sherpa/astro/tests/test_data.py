@@ -19,7 +19,7 @@
 
 import numpy
 from sherpa.astro.data import DataPHA
-from sherpa.utils.test import SherpaTestCase
+from sherpa.utils.test import SherpaTest, SherpaTestCase
 
 import logging
 logger = logging.getLogger('sherpa')
@@ -251,6 +251,5 @@ class test_filter_wave_grid(SherpaTestCase):
 
 if __name__ == '__main__':
 
-    from sherpa.utils import SherpaTest
     import sherpa.astro
     SherpaTest(sherpa.astro).test()

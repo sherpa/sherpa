@@ -19,7 +19,7 @@
 
 import numpy
 import sherpa.all as sherpa
-from sherpa.utils.test import SherpaTestCase, requires_data
+from sherpa.utils.test import SherpaTest, SherpaTestCase, requires_data
 
 _datax = numpy.array(
     [  0.,   1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.,
@@ -397,7 +397,6 @@ class test_confidence(SherpaTestCase):
         # self.ru.contour()
 
 if __name__ == '__main__':
-    from sherpa.utils import SherpaTest
     import sherpa.plot
 
     import sys

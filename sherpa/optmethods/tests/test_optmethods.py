@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils.test import SherpaTestCase
+from sherpa.utils.test import SherpaTestCase, SherpaTest
 from sherpa.optmethods import optfcts
 from sherpa.optmethods import _tstoptfct
 
@@ -295,7 +295,6 @@ class test_optmethods(SherpaTestCase):
         self.tst_all( name, _tstoptfct.chebyquad, fmin, x0, xmin, xmax )
 
 def tstme():
-    from sherpa.utils import SherpaTest
     import sherpa.optmethods
     SherpaTest(sherpa.optmethods).test()
 
