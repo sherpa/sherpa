@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,23 +17,22 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
 import numpy
-import os
 import sherpa
-from sherpa.image import *
-from sherpa.utils import SherpaTestCase, requires_ds9
+from sherpa.image import Image, DataImage, ModelImage, RatioImage, ResidImage
+from sherpa.utils.test import SherpaTestCase, requires_ds9
+
 
 # Create a 10x10 array for the tests.
 class Data(object):
     def __init__(self):
         self.name = None
-        self.y = numpy.arange(0,(10*10)/2,0.5)
-        self.y = self.y.reshape(10,10)
+        self.y = numpy.arange(0, (10 * 10) / 2, 0.5)
+        self.y = self.y.reshape(10, 10)
         self.eqpos = None
         self.sky = None
 
-    def get_img(self,model=None):
+    def get_img(self, model=None):
         if model is not None:
             return (self.y, self.y)
         else:
@@ -41,12 +40,13 @@ class Data(object):
 
 data = Data()
 
+
 def get_arr_from_imager(im):
     # DS9 returns data as unordered string
     # Turn it into a 10x10 array
     data_out = im.xpaget("data image 1 1 10 10 yes")
     data_out = data_out.split()
-    data_out = numpy.array(data_out).reshape(10,10)
+    data_out = numpy.array(data_out).reshape(10, 10)
     data_out = numpy.float_(data_out)
     return data_out
 

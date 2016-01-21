@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,8 @@
 
 from numpy import arange, array
 import sherpa.astro.optical as models
-from sherpa.utils import SherpaFloat, SherpaTestCase
+from sherpa.utils import SherpaFloat
+from sherpa.utils.test import SherpaTestCase
 from sherpa.models.model import ArithmeticModel
 
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,8 +25,8 @@ import tempfile
 import numpy
 from numpy.testing import assert_allclose
 
-from sherpa.utils import SherpaTest, SherpaTestCase
-from sherpa.utils import requires_data, requires_fits
+from sherpa.utils.test import SherpaTest, SherpaTestCase, \
+    requires_data, requires_fits
 from sherpa.astro import ui
 from sherpa.data import Data1D
 from sherpa.astro.data import DataPHA

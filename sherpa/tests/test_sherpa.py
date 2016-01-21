@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 
 import os.path
 import sherpa
-from sherpa.utils import SherpaTest, SherpaTestCase, requires_data
+from sherpa.utils.test import SherpaTest, SherpaTestCase, requires_data
 from sherpa import ui
 
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -44,7 +44,8 @@ import tempfile
 import numpy
 from numpy.testing import assert_array_equal
 
-from sherpa.utils import SherpaTest, SherpaTestCase, requires_data, requires_xspec, _has_package_from_list
+from sherpa.utils.test import SherpaTest, SherpaTestCase, \
+    requires_data, requires_xspec, _has_package_from_list
 from sherpa.astro import ui
 # from sherpa.astro.ui import serialize
 

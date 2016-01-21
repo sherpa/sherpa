@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 import numpy
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.test import SherpaTestCase
 from sherpa.astro.data import DataPHA
 from sherpa.astro.plot import SourcePlot
 from sherpa.models.basic import PowLaw1D

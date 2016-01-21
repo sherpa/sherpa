@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,8 +19,10 @@
 
 import operator
 from numpy import arange
-from sherpa.utils import SherpaFloat, SherpaTestCase
-from sherpa.models.parameter import *
+from sherpa.utils import SherpaFloat
+from sherpa.utils.test import SherpaTestCase
+from sherpa.models.parameter import Parameter, UnaryOpParameter, \
+    BinaryOpParameter, ConstantParameter
 from sherpa.utils.err import ParameterErr
 
 
@@ -62,9 +64,9 @@ class test_parameter(SherpaTestCase):
 
     def test_min_max(self):
         for attr, sign in (('min', -1), ('max', 1)):
-            setattr(self.p, attr, sign*99)
+            setattr(self.p, attr, sign * 99)
             val = getattr(self.p, attr)
-            self.assertEqual(val, sign*99)
+            self.assertEqual(val, sign * 99)
             self.assert_(type(val) is SherpaFloat)
             self.assertRaises(ValueError, setattr, self.p, attr, 'ham')
             self.assertRaises(ParameterErr, setattr, self.p, attr, -101)
@@ -96,7 +98,7 @@ class test_parameter(SherpaTestCase):
         self.assertRaises(ParameterErr, setattr, self.afp, 'link', self.p)
         self.assertRaises(ParameterErr, setattr, self.p, 'link', 3)
         self.assertRaises(ParameterErr, setattr, self.p, 'link',
-                          3*self.p + 2)
+                          3 * self.p + 2)
 
     def test_iter(self):
         for part in self.p:
@@ -136,4 +138,4 @@ class test_composite_parameter(SherpaTestCase):
         cmplx = (3 * self.p + self.p2) / (self.p ** 3.2)
         p = self.p.val
         p2 = self.p2.val
-        self.assertEqual(cmplx.val, (3*p + p2) / (p ** 3.2))
+        self.assertEqual(cmplx.val, (3 * p + p2) / (p ** 3.2))

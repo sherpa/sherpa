@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from math import sqrt
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.test import SherpaTestCase
 from sherpa.optmethods import optfcts
-## from sherpa.optmethods import stogo
 from sherpa.optmethods import _tstoptfct
+
 
 class test_optmethods(SherpaTestCase):
 

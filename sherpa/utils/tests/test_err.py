@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2013  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2013, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,21 +17,23 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils import *
+from sherpa import utils
+from sherpa.utils.test import SherpaTestCase, SherpaTest
 from sherpa.utils.err import SherpaErr
 from sherpa.utils.err import ModelErr
+
 
 class test_err(SherpaTestCase):
 
     def test_NewSherpaErr(self):
-        class OldSherpaErr( Exception ): 
-            "Old class for all Sherpa exceptions" 
-            def __init__( self, dict, key, *args ): 
-                if dict.has_key( key ): 
-                    errmsg = dict[ key ] % args 
-                else: 
-                    errmsg = "unknown key '%s'" % key 
-                Exception.__init__(self, errmsg) 
+        class OldSherpaErr(Exception):
+            "Old class for all Sherpa exceptions"
+            def __init__(self, dict, key, *args):
+                if key in dict:
+                    errmsg = dict[key] % args
+                else:
+                    errmsg = "unknown key '%s'" % key
+                Exception.__init__(self, errmsg)
 
         dict = {'simple':'simple message', 'arg':'argument: %s'}
 
@@ -53,11 +55,10 @@ class test_err(SherpaTestCase):
         self.assertEqual('My Error', err.message)
 
         # Test #5: verify the user provided example, which exercises a derived class
-        err = ModelErr("Unable to frobnicate model %s" % 'modelname') 
+        err = ModelErr("Unable to frobnicate model %s" % 'modelname')
         self.assertEqual('Unable to frobnicate model modelname', err.message)
 
 
 if __name__ == '__main__':
 
-    import sherpa.utils as utils
     SherpaTest(utils).test()
