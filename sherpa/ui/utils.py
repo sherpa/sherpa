@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,25 +20,24 @@
 import copy
 import copy_reg
 import cPickle as pickle
-import inspect
 from itertools import izip
 import logging
 import sys
 import os
-import re
 import numpy
 import sherpa.all
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, export_method
-from sherpa.utils.err import *
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
+    IdentifierErr, IOErr, ModelErr, SessionErr
 
-info = logging.getLogger(__name__).info
-warning = logging.getLogger(__name__).warning
+# There are three "raise AttributeErr(..)" lines below which have been changed
+# to the Python AttributeError class, as Sherpa has no AttributeErr class.
 
 from sherpa import get_config
 from ConfigParser import ConfigParser
 
-import readline
-import inspect
+info = logging.getLogger(__name__).info
+warning = logging.getLogger(__name__).warning
 
 config = ConfigParser()
 config.read(get_config())
@@ -96,7 +95,7 @@ def _send_to_pager(all, filename=None, clobber=False):
     clobber = sherpa.utils.bool_cast(clobber)
     try:
         if filename is None:
-            if (os.environ.has_key('PAGER') == True):
+            if 'PAGER' in os.environ:
                 pager = os.popen(os.environ['PAGER'], 'w')
             else:
                 if (os.access('/bin/more', os.X_OK) == 1):
@@ -237,7 +236,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._model_globals.update(state['_model_types'])
 
-        if not state.has_key('_sources'):
+        if '_sources' not in state:
             self.__dict__['_sources'] = state.pop('_models')
 
         self.__dict__.update(state)
@@ -1912,7 +1911,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if isinstance(meth, basestring):
-            if (self._itermethods.has_key(meth) == True):
+            if meth in self._itermethods:
                 self._current_itermethod = self._itermethods[meth]
             else:
                 raise TypeError(meth + ' is not an iterative fitting method')
@@ -3492,8 +3491,10 @@ class Session(NoNewAttributesAfterInit):
         return sherpa.io.read_arrays(*args)
 
     # DOC-NOTE: also in sherpa.utils
+
     def unpack_data(self, filename, ncols=2, colkeys=None,
-                    dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
+                    dstype=sherpa.data.Data1D, sep=' ', comment='#',
+                    require_floats=True):
         """Create a sherpa data object from a file.
 
         The object returned by `unpack_data` can be used in a
@@ -3562,7 +3563,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     def load_data(self, id, filename=None, ncols=2, colkeys=None,
-                  dstype=sherpa.data.Data1D, sep=' ', comment='#', require_floats=True):
+                  dstype=sherpa.data.Data1D, sep=' ', comment='#',
+                  require_floats=True):
         """Load a data set from a file.
 
         Parameters
@@ -3629,7 +3631,8 @@ class Session(NoNewAttributesAfterInit):
             id, filename = filename, id
         self.set_data(id, self.unpack_data(filename, ncols=ncols,
                                            colkeys=colkeys, dstype=dstype,
-                                           sep=sep, comment=comment, require_floats=require_floats))
+                                           sep=sep, comment=comment,
+                                           require_floats=require_floats))
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: rework the Data type notes section (also needed by unpack_arrays)
@@ -3714,23 +3717,34 @@ class Session(NoNewAttributesAfterInit):
         fields = None
 
         if type(d) in (sherpa.data.Data2D, sherpa.data.Data2DInt):
-            backup = d.y
             if objtype == 'delchi':
-                raise AttributeErr('badfunc', "save_delchi()", "images")
+                # raise AttributeErr('badfunc', "save_delchi()", "images")
+                raise AttributeError("save_delchi() can not be used " +
+                                     "with 2D datasets")
 
-            imgtype = getattr(self, 'get_' + objtype + '_image', None)
+            funcname = "get_{}_image()".format(objtype)
+            """
+            imgtype = getattr(self, funcname, None)
             if imgtype is None:
-                raise AttributeErr(
-                    'attributeerr', 'session', 'get_%s_image()' % objtype)
+                # raise AttributeErr('attributeerr', 'session', fname)
+                raise AttributeError("Unable to find " + funcname)
+            """
+            imgtype = getattr(self, funcname)
+
             obj = imgtype(id)
             args = [obj.y]
             fields = [str(objtype).upper()]
 
         else:
-            plottype = getattr(self, 'get_' + objtype + '_plot', None)
+            funcname = "get_{}_plot".format(objtype)
+            """
+            plottype = getattr(self, funcname, None)
             if plottype is None:
-                raise AttributeErr(
-                    'attributeerr', 'session', 'get_%s_plot()' % objtype)
+                # raise AttributeErr('attributeerr', 'session', funcname)
+                raise AttributeError("Unable to find " + funcname)
+            """
+            plottype = getattr(self, funcname)
+
             obj = plottype(id)
             args = [obj.x, obj.y]
             fields = ["X", str(objtype).upper()]
@@ -5115,12 +5129,12 @@ class Session(NoNewAttributesAfterInit):
         # If model component name is a model type name
         # or session function name, don't create it, raise
         # warning
-        if (self._model_types.has_key(cmpt.name) is True):
+        if cmpt.name in self._model_types:
             modeltype = cmpt.name
             del cmpt
             raise IdentifierErr('badidmodel', modeltype)
 
-        if (cmpt.name.lower() in _builtin_symbols_):
+        if cmpt.name.lower() in _builtin_symbols_:
             modeltype = cmpt.name
             del cmpt
             raise IdentifierErr('badidnative', modeltype)
@@ -6045,16 +6059,16 @@ class Session(NoNewAttributesAfterInit):
         try:
             data = self.unpack_data(filename, ncols, colkeys,
                                     dstype, sep, comment)
-            y = data.get_y()
             x = data.get_x()
-        # we have to check for the case of a *single* column in ascii file
-        # extract the single array from the read and bypass the dataset
+            y = data.get_y()
+
         except TypeError:
+            # we have to check for the case of a *single* column in the file
+            # extract the single array from the read and bypass the dataset
             y = sherpa.io.get_ascii_data(filename, ncols=1, colkeys=colkeys,
                                          sep=sep, dstype=dstype,
                                          comment=comment)[1].pop()
-        except:
-            raise
+
         return (x, y)
 
     # DOC-TODO: I am not sure I have the data format correct.
@@ -6163,7 +6177,8 @@ class Session(NoNewAttributesAfterInit):
             raise sherpa.utils.err.IOErr('notascii', templatefile)
 
         names, cols = sherpa.io.read_file_data(templatefile,
-                                               sep=sep, comment=comment, require_floats=False)
+                                               sep=sep, comment=comment,
+                                               require_floats=False)
 
         if len(names) > len(cols):
             raise sherpa.utils.err.IOErr('toomanycols')
@@ -7373,7 +7388,7 @@ class Session(NoNewAttributesAfterInit):
         for i in ids:
             ds = self.get_data(i)
             mod = None
-            if self._models.has_key(i) or self._sources.has_key(i):
+            if i in self._models or i in self._sources:
                 mod = self._get_model(i)
 
             # The issue with putting a try/catch here is that if an exception
@@ -11203,7 +11218,7 @@ class Session(NoNewAttributesAfterInit):
                 # Using _get_fit becomes very complicated using simulfit
                 # models and datasets
                 #
-                #ids, f = self._get_fit(id)
+                # ids, f = self._get_fit(id)
                 plotobj.prepare(self.get_data(id), self.get_model(id),
                                 self.get_stat())
 
@@ -11258,7 +11273,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             sherpa.plot.end()
 
-    def _plot(self, id, plotobj, *args,  **kwargs):
+    def _plot(self, id, plotobj, *args, **kwargs):
         # if len(args) > 0:
         #    raise SherpaError("cannot create plot for multiple data sets")
         obj = plotobj
@@ -12334,9 +12349,9 @@ class Session(NoNewAttributesAfterInit):
                                     clearwindow=clearwindow)
 
             oldval = rp.plot_prefs['xlog']
-            if ((self._dataplot.plot_prefs.has_key('xlog') and
+            if (('xlog' in self._dataplot.plot_prefs and
                  self._dataplot.plot_prefs['xlog']) or
-                (self._modelplot.plot_prefs.has_key('xlog') and
+                ('xlog' in self._modelplot.plot_prefs and
                  self._modelplot.plot_prefs['xlog'])):
                 rp.plot_prefs['xlog'] = True
 
@@ -12418,9 +12433,9 @@ class Session(NoNewAttributesAfterInit):
                                     clearwindow=clearwindow)
 
             oldval = dp.plot_prefs['xlog']
-            if ((self._dataplot.plot_prefs.has_key('xlog') and
+            if (('xlog' in self._dataplot.plot_prefs and
                  self._dataplot.plot_prefs['xlog']) or
-                (self._modelplot.plot_prefs.has_key('xlog') and
+                ('xlog' in self._modelplot.plot_prefs and
                  self._modelplot.plot_prefs['xlog'])):
                 dp.plot_prefs['xlog'] = True
 
@@ -12748,7 +12763,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _contour(self, id, plotobj, **kwargs):
         # if len(args) > 0:
-        #raise SherpaError("cannot create contour plot for multiple data sets")
+        # raise SherpaError("cannot create contour plot for multiple data sets")
         obj = plotobj
 
         if not sherpa.utils.bool_cast(kwargs.pop('replot', False)):
@@ -12764,7 +12779,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _overcontour(self, id, plotobj, **kwargs):
         # if len(args) > 0:
-        #raise SherpaError("cannot overplot contours for multiple data sets")
+        # raise SherpaError("cannot overplot contours for multiple data sets")
         obj = plotobj
 
         if not sherpa.utils.bool_cast(kwargs.pop('replot', False)):
@@ -13523,9 +13538,9 @@ class Session(NoNewAttributesAfterInit):
         return self._regproj
 
     def get_reg_unc(self, par0=None, par1=None, id=None, otherids=None,
-                    recalc=False, min=None, max=None, nloop=(10, 10), delv=None,
-                    fac=4, log=(False, False), sigma=(1, 2, 3), levels=None,
-                    numcores=None):
+                    recalc=False, min=None, max=None, nloop=(10, 10),
+                    delv=None, fac=4, log=(False, False), sigma=(1, 2, 3),
+                    levels=None, numcores=None):
         """Return the region-uncertainty object.
 
         This returns (and optionally calculates) the data used to
@@ -13635,9 +13650,9 @@ class Session(NoNewAttributesAfterInit):
         prepare_dict = sherpa.utils.get_keyword_defaults(plotobj.prepare)
         plot_dict = sherpa.utils.get_keyword_defaults(plotobj.plot)
         for key in kwargs.keys():
-            if prepare_dict.has_key(key):
+            if key in prepare_dict:
                 prepare_dict[key] = kwargs[key]
-            if plot_dict.has_key(key):
+            if key in plot_dict:
                 plot_dict[key] = kwargs[key]
 
         if sherpa.utils.bool_cast(kwargs['replot']):
@@ -13890,9 +13905,9 @@ class Session(NoNewAttributesAfterInit):
         prepare_dict = sherpa.utils.get_keyword_defaults(plotobj.prepare)
         cont_dict = sherpa.utils.get_keyword_defaults(plotobj.contour)
         for key in kwargs.keys():
-            if prepare_dict.has_key(key):
+            if key in prepare_dict:
                 prepare_dict[key] = kwargs[key]
-            if cont_dict.has_key(key):
+            if key in cont_dict:
                 cont_dict[key] = kwargs[key]
 
         if sherpa.utils.bool_cast(kwargs['replot']):
@@ -13913,9 +13928,9 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self, par0, par1, id=None, otherids=None, replot=False,
-                 fast=True, min=None, max=None, nloop=(10, 10), delv=None, fac=4,
-                 log=(False, False), sigma=(1, 2, 3), levels=None, numcores=None,
-                 overplot=False):
+                 fast=True, min=None, max=None, nloop=(10, 10), delv=None,
+                 fac=4, log=(False, False), sigma=(1, 2, 3), levels=None,
+                 numcores=None, overplot=False):
         """Plot the statistic value as two parameters are varied.
 
         Create a confidence plot of the fit statistic as a function of
@@ -14042,8 +14057,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_unc(self, par0, par1, id=None, otherids=None, replot=False,
                 min=None, max=None, nloop=(10, 10), delv=None, fac=4,
-                log=(False, False), sigma=(1, 2, 3), levels=None, numcores=None,
-                overplot=False):
+                log=(False, False), sigma=(1, 2, 3), levels=None,
+                numcores=None, overplot=False):
         """Plot the statistic value as two parameters are varied.
 
         Create a confidence plot of the fit statistic as a function of
@@ -14171,10 +14186,10 @@ class Session(NoNewAttributesAfterInit):
                        numcores=numcores, overplot=overplot)
 
     # Aliases
-    #interval_projection = int_proj
-    #interval_uncertainty = int_unc
-    #region_projection = reg_proj
-    #region_uncertainty = reg_unc
+    # interval_projection = int_proj
+    # interval_uncertainty = int_unc
+    # region_projection = reg_proj
+    # region_uncertainty = reg_unc
 
     ###########################################################################
     # Basic imaging
@@ -15587,4 +15602,3 @@ class Session(NoNewAttributesAfterInit):
 
         """
         return sherpa.image.Image.xpaset(arg, data)
-
