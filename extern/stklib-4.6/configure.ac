@@ -13,7 +13,7 @@ AC_CONFIG_MACRO_DIR([m4])
 LT_INIT
 
 AM_PATH_PYTHON([2.7])
-AX_PYTHON_DEVEL([>'2.7' <'3.0'])
+AX_PYTHON_DEVEL([<'3.0'])
 AX_PYTHON_NUMPY
 
 # Checks for programs.
