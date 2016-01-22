@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -33,7 +33,7 @@ class UserModel(ArithmeticModel):
                                               self.param2))
 
     def calc(self, p, x, *args, **kwargs):
-        return p[0]*x+p[1]
+        return p[0] * x + p[1]
 
 
 @requires_data
@@ -46,19 +46,17 @@ class test_ui(SherpaTestCase):
         self.filter = self.make_path('filter_single_integer.dat')
         self.func = lambda x: x
 
-        ui.dataspace1d(1,1000,dstype=ui.Data1D)
+        ui.dataspace1d(1, 1000, dstype=ui.Data1D)
 
     def test_ascii(self):
         ui.load_data(1, self.ascii)
         ui.load_data(1, self.ascii, 2)
         ui.load_data(1, self.ascii, 2, ("col2", "col1"))
 
-
     # Test table model
     def test_table_model_ascii_table(self):
         ui.load_table_model('tbl', self.single)
         ui.load_table_model('tbl', self.double)
-
 
     # Test user model
     def test_user_model_ascii_table(self):
@@ -77,7 +75,7 @@ class test_ui(SherpaTestCase):
         ui.load_psf('psf1', 'gauss2d.g1')
         ui.set_full_model('psf1(gauss2d.g2)+const2d.c1')
         ui.get_model()
-#        ui.get_source()
+        # ui.get_source()
 
     # Bug 12644
     def test_source_methods_with_full_model(self):
@@ -123,7 +121,7 @@ class test_psf_ui(SherpaTestCase):
         ui.dataspace1d(1, 10)
         for model in self.models1d:
             try:
-                ui.load_psf('psf1d', model+'.mdl')
+                ui.load_psf('psf1d', model + '.mdl')
                 ui.set_psf('psf1d')
                 mdl = ui.get_model_component('mdl')
                 self.assertTrue((numpy.array(mdl.get_center()) ==
@@ -132,16 +130,15 @@ class test_psf_ui(SherpaTestCase):
                 print model
                 raise
 
-
     def test_psf_model2d(self):
-        ui.dataspace2d([216,261])
+        ui.dataspace2d([216, 261])
         for model in self.models2d:
             try:
-                ui.load_psf('psf2d', model+'.mdl')
+                ui.load_psf('psf2d', model + '.mdl')
                 ui.set_psf('psf2d')
                 mdl = ui.get_model_component('mdl')
                 self.assertTrue((numpy.array(mdl.get_center()) ==
-                                 numpy.array([108,130])).all())
+                                 numpy.array([108, 130])).all())
             except:
                 print model
                 raise
