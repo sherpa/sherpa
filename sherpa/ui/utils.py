@@ -2358,9 +2358,7 @@ class Session(NoNewAttributesAfterInit):
            the default identifier is used, as returned by
            `get_default_id`.
         filename : str
-           The name of the file to read in. Supported formats depends
-           on the I/O library in use (Crates or AstroPy) and the
-           type of data set (e.g. 1D or 2D).
+           The name of the ASCII file to read in.
         ncols : int, optional
            The number of columns to read in (the first ``ncols`` columns
            in the file).
@@ -2400,15 +2398,10 @@ class Session(NoNewAttributesAfterInit):
 
         >>> load_staterror('tbl.dat', colkeys=['col3'])
 
-        When using the Crates I/O library, the file name can include
-        CIAO Data Model syntax, such as column selection:
-
-        >>> load_staterror('tbl.dat[cols col3]')
-
-        Read in the first column from the file 'errors.fits' as the
+        Read in the first column from the file 'errors.dat' as the
         statistical errors for the 'core' data set:
 
-        >>> load_staterror('core', 'errors.fits')
+        >>> load_staterror('core', 'errors.dat')
 
         """
         if filename is None:
@@ -2432,9 +2425,7 @@ class Session(NoNewAttributesAfterInit):
            the default identifier is used, as returned by
            `get_default_id`.
         filename : str
-           The name of the file to read in. Supported formats depends
-           on the I/O library in use (Crates or AstroPy) and the
-           type of data set (e.g. 1D or 2D).
+           The name of the ASCII file to read in.
         ncols : int, optional
            The number of columns to read in (the first ``ncols`` columns
            in the file).
@@ -2473,15 +2464,10 @@ class Session(NoNewAttributesAfterInit):
 
         >>> load_syserror('tbl.dat', colkeys=['col3'])
 
-        When using the Crates I/O library, the file name can include
-        CIAO Data Model syntax, such as column selection:
-
-        >>> load_syserror('tbl.dat[cols col3]')
-
-        Read in the first column from the file 'errors.fits' as the
+        Read in the first column from the file 'errors.dat' as the
         systematic errors for the 'core' data set:
 
-        >>> load_syserror('core', 'errors.fits')
+        >>> load_syserror('core', 'errors.dat')
 
         """
         if filename is None:
@@ -2492,8 +2478,6 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
-    # DOC-TODO: labelling as AstroPy; i.e. assuming conversion
-    # from PyFITS lands soon.
     def load_filter(self, id, filename=None, ignore=False, ncols=2,
                     *args, **kwargs):
         """Load the filter array from a file and add to a data set.
@@ -2505,10 +2489,8 @@ class Session(NoNewAttributesAfterInit):
            the default identifier is used, as returned by
            `get_default_id`.
         filename : str
-           The name of the file that contains the filter
-           information. This file can be a FITS table or an ASCII
-           file. Selection of the relevant column depends on the I/O
-           library in use (Crates or AstroPy).
+           The name of the ASCII file that contains the filter
+           information.
         ignore : bool, optional
            If ``False`` (the default) then include bins with a non-zero
            filter value, otherwise exclude these bins.
@@ -2549,11 +2531,6 @@ class Session(NoNewAttributesAfterInit):
         Select the FILTER column of the file:
 
         >>> load_filter(2, 'filt.dat', colkeys=['FILTER'])
-
-        When using Crates as the I/O library, the above can
-        also be written as
-
-        >>> load_filter(2, 'filt.dat[cols filter]')
 
         """
         if filename is None:
@@ -3503,9 +3480,7 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         filename : str
-           The name of the file to read in. Supported formats depends
-           on the I/O library in use (Crates or AstroPy) and the
-           type of data set (e.g. 1D or 2D).
+           The name of the ASCII file to read in.
         ncols : int, optional
            The number of columns to read in (the first ``ncols`` columns
            in the file).
@@ -3543,6 +3518,10 @@ class Session(NoNewAttributesAfterInit):
         set_data : Set a data set.
         unpack_arrays : Create a sherpa data object from arrays of data.
 
+        Notes
+        -----
+        The file reading is performed by `sherpa.io.read_data`.
+
         Examples
         --------
 
@@ -3572,9 +3551,7 @@ class Session(NoNewAttributesAfterInit):
         id : int or str
            The identifier for the data set to use.
         filename : str
-           The name of the file to read in. Supported formats depends
-           on the I/O library in use (Crates or AstroPy) and the
-           type of data set (e.g. 1D or 2D).
+           The name of the ASCII file to read in.
         ncols : int, optional
            The number of columns to read in (the first ``ncols`` columns
            in the file).
@@ -3624,7 +3601,7 @@ class Session(NoNewAttributesAfterInit):
         >>> load_data('hist.dat', dstype=Data1DInt)
 
         >>> cols = ['rmid', 'sur_bri', 'sur_bri_err']
-        >>> load_data(2, 'profile.fits', colkeys=cols)
+        >>> load_data(2, 'profile.dat', colkeys=cols)
 
         """
         if filename is None:
@@ -4921,7 +4898,6 @@ class Session(NoNewAttributesAfterInit):
         --------
         create_model_component : Create a model component.
         list_models : List the available model types.
-        load_table : Load a FITS binary file as a data set.
         load_table_model : Load tabular data and use it as a model component.
         load_user_model : Create a user-defined model.
         set_model : Set the source model expression for a data set.
@@ -5685,8 +5661,8 @@ class Session(NoNewAttributesAfterInit):
         Apply different PSFs to different components, as well as an
         unconvolved component:
 
-        >>> load_psf("psf1", "psf1.fits")
-        >>> load_psf("psf2", "psf2.fits")
+        >>> load_psf("psf1", "psf1.dat")
+        >>> load_psf("psf2", "psf2.dat")
         >>> smodel = psf1(gauss2d.src1) + psf2(beta2d.src2) + const2d.bgnd
         >>> set_full_model("src", smodel)
 
@@ -6136,6 +6112,7 @@ class Session(NoNewAttributesAfterInit):
         The data file - the last column of the template index file -
         is read in and the first two columns used to set up the x and
         y values (`Data1D`) or xlo, xhi, and y values (`Data1DInt`).
+        These files must be in ASCII format.
 
         The ``method`` parameter determines how the template data values
         are interpolated onto the source data grid.
@@ -6268,8 +6245,6 @@ class Session(NoNewAttributesAfterInit):
         sherpa.models.template.interpolators[
             name] = (interpolator_class, kwargs)
 
-    # also in sherpa.astro.utils
-    # DOC-NOTE: does it make sense to allow ncols to vary here?
     def load_table_model(self, modelname, filename, ncols=2, colkeys=None,
                          dstype=sherpa.data.Data1D, sep=' ', comment='#',
                          method=sherpa.utils.linear_interp):
@@ -6286,11 +6261,10 @@ class Session(NoNewAttributesAfterInit):
         modelname : str
            The identifier for this table model.
         filename : str
-           The name of the file to read in. Supported formats depends
-           on the I/O library in use (Crates or AstroPy).
+           The name of the ASCII file to read in.
         ncols : int, optional
            The number of columns to read in (the first ``ncols`` columns
-           in the file).
+           in the file). It should be 1 or 2.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
            ``None``.
@@ -6324,12 +6298,12 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Load in the data from filt.fits and use it to multiply
+        Load in the data from filt.dat and use it to multiply
         the source model (a power law and a gaussian). Allow
         the amplitude for the table model to vary between 1
         and 1e6, starting at 1e3.
 
-        >>> load_table_model('filt', 'filt.fits')
+        >>> load_table_model('filt', 'filt.dat')
         >>> set_source(filt * (powlaw1d.pl + gauss1d.gline))
         >>> set_par(filt.ampl, 1e3, min=1, max=1e6)
 
@@ -6388,7 +6362,6 @@ class Session(NoNewAttributesAfterInit):
         --------
         add_model : Create a user-defined model class.
         add_user_pars : Add parameter information to a user model.
-        load_table : Load a FITS binary file as a data set.
         load_table_model : Load tabular data and use it as a model component.
         load_template_model : Load a set of templates and use it as a model component.
         set_model : Set the source model expression for a data set.
@@ -6655,9 +6628,7 @@ class Session(NoNewAttributesAfterInit):
         modelname : str
            The identifier for this PSF model.
         filename_or_model : str or model instance
-           The form of the model. This can be a file name, which will
-           be read in using the chosen Sherpa I/O library, or a
-           model component.
+           This can be the name of an ASCII file or a Sherpa model component.
         *args, **kwargs
            Arguments for `unpack_data` if ``filename_or_model``
            is a file.
@@ -6730,9 +6701,7 @@ class Session(NoNewAttributesAfterInit):
         modelname : str
            The identifier for this PSF model.
         filename_or_model : str or model instance
-           The form of the PSF. This can be a file name, which will
-           be read in using the chosen Sherpa I/O library, or a
-           model component.
+           This can be the name of an ASCII file or a Sherpa model component.
         *args, **kwargs
            Arguments for `unpack_data` if ``filename_or_model``
            is a file.
@@ -6758,11 +6727,11 @@ class Session(NoNewAttributesAfterInit):
         >>> gpsf.theta = 30 * np.pi / 180
         >>> image_psf()
 
-        Create a PSF model from the data in the file
-        'line_profile.fits' and apply it to the data set called
+        Create a PSF model from the data in the ASCII file
+        'line_profile.dat' and apply it to the data set called
         'bgnd':
 
-        >>> load_psf('pmodel', 'line_profile.fits')
+        >>> load_psf('pmodel', 'line_profile.dat')
         >>> set_psf('bgnd', 'pmodel')
 
         """
@@ -6871,10 +6840,10 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Use the data in the file 'line_profile.fits' as the PSF for
+        Use the data in the ASCII file 'line_profile.dat' as the PSF for
         the default data set:
 
-        >>> load_psf('psf1', 'line_profile.fits')
+        >>> load_psf('psf1', 'line_profile.dat')
         >>> set_psf(psf1)
 
         Use the same PSF for different data sets:
