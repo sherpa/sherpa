@@ -33,7 +33,7 @@ class test_89_issues(SherpaTestCase):
     @requires_fits
     @requires_xspec
     def test_mod_fits(self):
-        tablemodelfile = self.make_path("xspec", "tablemodel", "RCS.mod")
+        tablemodelfile = self.make_path("xspec-tablemodel-RCS.mod")
         ui.load_table_model("tmod", tablemodelfile)
         tmod = ui.get_model_component("tmod")
         self.assertEqual("xstablemodel.tmod", tmod.name)
@@ -52,7 +52,7 @@ class test_89_issues(SherpaTestCase):
     @requires_fits
     @requires_data
     def test_warnings_are_gone_pha(self):
-        pha = self.make_path("threads", "pha_intro", "3c273.pi")
+        pha = self.make_path("3c273.pi")
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             with NamedTemporaryFile() as f:

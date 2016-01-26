@@ -908,7 +908,7 @@ class test_ui(SherpaTestCase):
         """
 
         ui.clean()
-        fname = self.make_path('threads', 'pha_intro', '3c273.pi')
+        fname = self.make_path('3c273.pi')
         ui.load_pha(1, fname)
         ui.subtract()
         ui.set_stat('chi2datavar')
@@ -926,7 +926,7 @@ class test_ui(SherpaTestCase):
         """
 
         ui.clean()
-        fname = self.make_path('threads', 'pha_intro', '3c273.pi')
+        fname = self.make_path('3c273.pi')
         ui.load_pha('grp', fname)
         channels = ui.get_data('grp').channel
 
@@ -953,7 +953,7 @@ class test_ui(SherpaTestCase):
         """
 
         ui.clean()
-        fname = self.make_path('threads', 'pha_intro', '3c273.pi')
+        fname = self.make_path('3c273.pi')
         ui.load_pha('bgrp', fname)
 
         # Note: do not group the source dataset
