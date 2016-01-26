@@ -20,14 +20,14 @@
 import os.path
 
 import numpy
-import unittest
 
-from sherpa.utils import SherpaTest, SherpaTestCase
 from sherpa.utils import requires_data, requires_xspec, requires_fits
+from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.data import Data1D
 
 from sherpa.models import PowLaw1D
 from sherpa.fit import Fit
-from sherpa.stats import Stat, Cash, LeastSq, UserStat, WStat
+from sherpa.stats import Cash, UserStat, WStat
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.utils.err import StatErr
 from sherpa.astro import ui
@@ -301,6 +301,15 @@ class test_stats(SherpaTestCase):
         data.notice(0.5, 7.0)
         fit = Fit(data, self.model, WStat(), NelderMead())
         self.assertRaises(StatErr, fit.fit)
+
+    def test_chi2datavar(self):
+        num = 3
+        xy = numpy.array(range(num))
+        ui.load_arrays(1, xy, xy, Data1D)
+        ui.set_stat('chi2datavar')
+        err = ui.get_staterror()
+        for index, yyy in enumerate(xy):
+            assert numpy.allclose(err[index], numpy.sqrt(yyy), 1.0e-7, 1.0e-7)
 
 
 def tstme(datadir=None):
