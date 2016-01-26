@@ -491,7 +491,7 @@ class test_save_pha(SherpaTestCase):
         logger.setLevel(logging.ERROR)
 
         self._id = 1
-        fname = self.make_path('ciao4.3/pha_intro/3c273.pi')
+        fname = self.make_path('3c273.pi')
         ui.load_pha(self._id, fname)
         self._pha = ui.get_data(self._id)
 
