@@ -36,19 +36,13 @@ class test_more_ui(SherpaTestCase):
     def run_thread(self, name, scriptname='fit.py'):
         ui.clean()
         ui.set_model_autoassign_func(self.assign_model)
-        self.locals = {}
-        cwd = os.getcwd()
-        os.chdir(self.make_path('ciao4.3', name))
-        try:
-            execfile(scriptname, {}, self.locals)
-        finally:
-            os.chdir(cwd)
+        super(test_more_ui, self).run_thread(name, scriptname=scriptname)
 
     def setUp(self):
         self.img = self.make_path('img.fits')
-        self.pha = self.make_path('threads/simultaneous/pi2286.fits')
-        self.rmf = self.make_path('threads/simultaneous/rmf2286.fits')
-        self.nan = self.make_path('ciao4.3/filternan/with_nan.fits')
+        self.pha = self.make_path('pi2286.fits')
+        self.rmf = self.make_path('rmf2286.fits')
+        self.nan = self.make_path('with_nan.fits')
         self.loggingLevel = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
 

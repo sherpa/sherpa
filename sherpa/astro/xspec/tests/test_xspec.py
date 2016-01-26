@@ -290,7 +290,7 @@ class test_xspec(SherpaTestCase):
         # model being used.
         #
         ui.load_table_model('mdl',
-                            self.make_path('xspec/tablemodel/RCS.mod'))
+                            self.make_path('xspec-tablemodel-RCS.mod'))
         mdl = ui.get_model_component('mdl')
 
         # Check when input array is too small (< 2 elements)
@@ -311,7 +311,7 @@ class test_xspec(SherpaTestCase):
         # retrieved July 9 2015. The exact model is irrelevant for this
         # test, so this was chosen as it's relatively small.
         ui.load_table_model('tmod',
-                            self.make_path('xspec/tablemodel/RCS.mod'))
+                            self.make_path('xspec-tablemodel-RCS.mod'))
 
         # when used in the test suite it appears that the tmod
         # global symbol is not created, so need to access the component
@@ -340,7 +340,7 @@ class test_xspec(SherpaTestCase):
     def test_xspec_tablemodel_noncontiguous2(self):
 
         ui.load_table_model('tmod',
-                            self.make_path('xspec/tablemodel/RCS.mod'))
+                            self.make_path('xspec-tablemodel-RCS.mod'))
         tmod = ui.get_model_component('tmod')
 
         elo, ehi, wlo, whi = make_grid_noncontig2()
@@ -447,8 +447,8 @@ class test_xspec(SherpaTestCase):
     @requires_data
     @requires_fits
     def test_set_analysis_wave_fabrizio(self):
-        rmf = self.make_path('ciao4.3/fabrizio/Data/3c273.rmf')
-        arf = self.make_path('ciao4.3/fabrizio/Data/3c273.arf')
+        rmf = self.make_path('3c273.rmf')
+        arf = self.make_path('3c273.arf')
 
         ui.set_model("fabrizio", "xspowerlaw.p1")
         ui.fake_pha("fabrizio", arf, rmf, 10000)

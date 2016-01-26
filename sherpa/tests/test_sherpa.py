@@ -31,9 +31,9 @@ class test_sherpa(SherpaTestCase):
         self.assert_(os.path.isdir(incdir))
 
     def setUp(self):
-        self.agn2 = self.make_path('ciao4.3/faulty_load_data/agn2')
-        self.agn2_fixed = self.make_path('ciao4.3/faulty_load_data/agn2_fixed')
-        self.template_idx = self.make_path('ciao4.3/faulty_load_data/table.txt')
+        self.agn2 = self.make_path('agn2')
+        self.agn2_fixed = self.make_path('agn2_fixed')
+        self.template_idx = self.make_path('table.txt')
 
     def test_not_reading_header_without_comment(self):
         self.assertRaises(ValueError, ui.load_data, self.agn2)

@@ -39,13 +39,7 @@ class test_new_templates_ui(SherpaTestCase):
     def run_thread(self, name, scriptname='fit.py'):
         ui.clean()
         ui.set_model_autoassign_func(self.assign_model)
-        self.locals = {}
-        cwd = os.getcwd()
-        os.chdir(self.make_path('ciao4.3', name))
-        try:
-            execfile(scriptname, {}, self.locals)
-        finally:
-            os.chdir(cwd)
+        super(test_new_templates_ui, self).run_thread(name, scriptname=scriptname)
 
     def setUp(self):
         self.loggingLevel = logger.getEffectiveLevel()
@@ -59,6 +53,9 @@ class test_new_templates_ui(SherpaTestCase):
     # we need to make sure models are assigned an is_discrete field.
     # For model that do not have the is_discrete field, fallback to False.
     def test_restore_is_discrete(self):
+        # TODO: test.py test is a dummy test. We need to implement a real
+        # test. Take a look at the old testdata/ciao4.3/template_restore
+        # directory for help.
         self.run_thread('template_restore', 'test.py')
 
     # TestCase 1 load_template_model enables interpolation by default
