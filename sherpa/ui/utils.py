@@ -6295,6 +6295,15 @@ class Session(NoNewAttributesAfterInit):
         are: `linear_interp`, `nearest_interp`, `neville`, and
         `neville2d`.
 
+        When reading in two columns, the data will be re-ordered
+        so that the first column read in (the independent axis)
+        is numerically increasing.
+
+        If ``ncols=1``, only the model values (dependent axis) are
+        read in. In this case, the data set to which the model
+        is applied - via ``set_source`` - must have the same number
+        of data points as the model.
+
         Examples
         --------
 

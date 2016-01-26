@@ -17,8 +17,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import os
+import sys
+
 from sherpa.utils import SherpaTest, SherpaTestCase, requires_data
-from sherpa.utils.err import IdentifierErr, IOErr
+from sherpa.utils import linear_interp, nearest_interp, neville
+from sherpa.utils.err import IdentifierErr, IOErr, ModelErr
 from sherpa.models import ArithmeticModel, Parameter
 from sherpa.models.basic import TableModel
 from sherpa import ui
@@ -116,20 +120,40 @@ class test_ui(SherpaTestCase):
             self.assertEquals(emsg, str(e))
 
 
-@requires_data
+# For now have the data files as part of the Sherpa
+# repository, rather than the sherpa-test-data submodule
+#
+# @requires_data
 class test_table_model(SherpaTestCase):
 
+    interp1d = [linear_interp, nearest_interp, neville]
+
+    # would like to over-ride make_path, but this method is used
+    # for the FITS tests
+    def make_local_path(self, fname):
+        """Use local data directory, rather than sherpa-test-data"""
+        thisfile = sys.modules[self.__module__].__file__
+        thisdir = os.path.dirname(thisfile)
+        return os.path.join(thisdir, 'data', fname)
+
     def setUp(self):
-        self.ascii_onecol = self.make_path('single.dat')
-        self.ascii_twocol = self.make_path('double.dat')
+        self.ascii_onecol = self.make_local_path('gauss1d-onecol.dat')
+        self.ascii_twocol = self.make_local_path('gauss1d.dat')
+        self.ascii_threecol = self.make_local_path('gauss1d-error.dat')
+
+        # the values in self.ascii_threecol
+        dtype = np.float32
+        self.x = np.asarray([80, 95, 110, 125, 140, 155, 170,
+                             185, 200], dtype=dtype)
+        self.y = np.asarray([0, 0, 9, 35, 93, 96, 49, 15, 0],
+                            dtype=dtype)
+        self.dy = np.asarray([1.86603, 1.86603, 4.1225, 6.97913,
+                              10.6825, 10.8362, 8.05337, 4.96863,
+                              1.86603], dtype=dtype)
+
         # note: There is no FITS support in sherpa.ui.load_table_model,
         #       it is only available in sherpa.astro.ui.load_table_model
-        self.fits_onecol = self.make_path('single.fits')
         self.fits_twocol = self.make_path('double.fits')
-
-        # TODO: add tests to check that the model evaluation/interpolation
-        #       works
-        # ui.dataspace1d(1, 1000, dstype=ui.Data1D)
 
     # should really be in SherpaTestCase
     def tearDown(self):
@@ -162,6 +186,12 @@ class test_table_model(SherpaTestCase):
 
         self.assertAlmostEqual(1.0, par.val)
 
+    def test_fail_on_missing_col(self):
+        """Error out if a column is missing."""
+
+        self.assertRaises(IOErr, ui.load_table_model, 'failed',
+                          self.ascii_twocol, colkeys=['a', 'b'])
+
     def _test_table1(self, tname):
         """Tests for a one-column file"""
 
@@ -172,9 +202,7 @@ class test_table_model(SherpaTestCase):
         self.assertEqual(None, x, msg='No X axis for table')
 
         y = mdl.get_y()
-        self.assertEqual(1000, y.size,
-                         msg='Correct #rows for table')
-        self.assertEqual(1000, y.size,
+        self.assertEqual(9, y.size,
                          msg='Correct #rows for table')
 
         # I do not think we guarantee the type of the column, so
@@ -188,9 +216,9 @@ class test_table_model(SherpaTestCase):
         x = mdl.get_x()
         y = mdl.get_y()
 
-        self.assertEqual(1000, x.size,
+        self.assertEqual(9, x.size,
                          msg='Correct #rows for table (X)')
-        self.assertEqual(1000, y.size,
+        self.assertEqual(9, y.size,
                          msg='Correct #rows for table (Y)')
 
         # I do not think we guarantee the type of the column, so
@@ -201,44 +229,233 @@ class test_table_model(SherpaTestCase):
         self.assertIn(x.dtype, (np.float32, np.float64))
         self.assertIn(y.dtype, (np.float32, np.float64))
 
-    def _test_yvals(self, tname1, tname2):
-        """Check that the y values of the two components are similar."""
+    def _test_table3(self, tname):
+        """Tests for a three-column file: col1 col2"""
+        mdl = ui.get_model_component(tname)
 
-        y1 = ui.get_model_component(tname1).get_y()
-        y2 = ui.get_model_component(tname2).get_y()
+        x = mdl.get_x()
+        y = mdl.get_y()
 
-        # Could probably use assert_array_equal here, but use a
-        # tolerance, since these are floating-point values
-        assert_allclose(y1, y2, err_msg='y values for table model')
+        self.assertEqual(9, x.size,
+                         msg='Correct #rows for table (X)')
+        self.assertEqual(9, y.size,
+                         msg='Correct #rows for table (Y)')
+
+        # I do not think we guarantee the type of the column, so
+        # support both 32 and 64 bit data types. I would expect
+        # both columns to have the same data type, but there
+        # could be a reason that this is not true, so do not
+        # enforce it here.
+        self.assertIn(x.dtype, (np.float32, np.float64))
+        self.assertIn(y.dtype, (np.float32, np.float64))
 
     def test_ascii_table1(self):
         """Read in a one-column ASCII file"""
         ui.load_table_model('tbl1', self.ascii_onecol)
         self._test_table1('tbl1')
 
+        m = ui.get_model_component('tbl1')
+        y = m.get_y()
+        assert_allclose(self.y, y)
+
     def test_ascii_table2(self):
         """Read in a two-column ASCII file"""
         ui.load_table_model('tbl2', self.ascii_twocol)
         self._test_table2('tbl2')
 
-    def test_ascii_yvalue(self):
-        """Check the Y values are as expected."""
+        m = ui.get_model_component('tbl2')
+        x = m.get_x()
+        y = m.get_y()
+        assert_allclose(self.x, x)
+        assert_allclose(self.y, y)
 
-        # this is just a consistency test, and relies on
-        # the two files having the same Y values
-        ui.load_table_model('tbl1', self.ascii_onecol)
-        ui.load_table_model('tbl2', self.ascii_twocol)
-        self._test_yvals('tbl1', 'tbl2')
+    def test_ascii_table3_col12(self):
+        """Read in a three-column ASCII file: col1 col2"""
+        ui.load_table_model('tbl3', self.ascii_threecol)
+        self._test_table2('tbl3')
 
-    def test_fits_table1(self):
+        m = ui.get_model_component('tbl3')
+        x = m.get_x()
+        y = m.get_y()
+        assert_allclose(self.x, x)
+        assert_allclose(self.y, y)
+
+    def test_ascii_table3_col13(self):
+        """Read in a three-column ASCII file: col1 col3"""
+        ui.load_table_model('tbl3', self.ascii_threecol,
+                            colkeys=['X', 'STAT_ERR'])
+        self._test_table2('tbl3')
+
+        m = ui.get_model_component('tbl3')
+        x = m.get_x()
+        y = m.get_y()
+        assert_allclose(self.x, x)
+        assert_allclose(self.dy, y)
+
+    def test_ascii_table3_col23(self):
+        """Read in a three-column ASCII file: col2 col3"""
+        ui.load_table_model('tbl3', self.ascii_threecol,
+                            colkeys=['Y', 'STAT_ERR'])
+        self._test_table2('tbl3')
+
+        # Note: the values are sorted on read
+        m = ui.get_model_component('tbl3')
+        x = m.get_x()
+        y = m.get_y()
+
+        idx = np.argsort(self.y)
+        assert_allclose(self.y[idx], x)
+        assert_allclose(self.dy[idx], y)
+
+    def test_ascii_table3_ncols1(self):
+        """Read in a three-column ASCII file: ncols=1"""
+        ui.load_table_model('tbl1', self.ascii_threecol, ncols=1)
+        self._test_table1('tbl1')
+
+        m = ui.get_model_component('tbl1')
+        y = m.get_y()
+        assert_allclose(self.x, y)
+
+    def test_ascii_table3_ncols2(self):
+        """Read in a three-column ASCII file: ncols=2"""
+        ui.load_table_model('tbl3', self.ascii_threecol, ncols=2)
+        self._test_table2('tbl3')
+
+        m = ui.get_model_component('tbl3')
+        x = m.get_x()
+        y = m.get_y()
+        assert_allclose(self.x, x)
+        assert_allclose(self.y, y)
+
+    # Is it worth checking that FITS files are not supported (it
+    # does trigger an error condition so improves code coverage)?
+    #
+    @requires_data
+    def test_fits_errors_out(self):
         """FITS files are unsupported"""
-        self.assertRaises(IOErr, ui.load_table_model, 'ftbl1',
-                          self.fits_onecol)
-
-    def test_fits_table2(self):
-        """FITS files are unsupported"""
-        self.assertRaises(IOErr, ui.load_table_model, 'ftbl2',
+        self.assertRaises(IOErr, ui.load_table_model, 'ftbl',
                           self.fits_twocol)
+
+    def test_eval_basic1_fail(self):
+        """Model evaluation fails if #rows does not match."""
+
+        ui.load_table_model('fmodel', self.ascii_onecol)
+        ui.load_arrays(99, self.x[1:], self.y[1:])
+        ui.set_source(99, 'fmodel')
+        self.assertRaises(ModelErr, ui.calc_stat, 99)
+
+    def test_eval_basic1(self):
+        """Check the one-column file evaluates sensibly."""
+
+        ui.set_stat('leastsq')
+        nval = 2.1e6
+        for interp in self.interp1d:
+            ui.load_table_model('tbl1', self.ascii_onecol,
+                                method=interp)
+            m = ui.get_model_component('tbl1')
+            ui.load_arrays('tbl', self.x, self.y * nval, ui.Data1D)
+            ui.set_source('tbl', 'tbl1')
+            m.ampl = nval
+
+            sval = ui.calc_stat('tbl')
+            self.assertAlmostEqual(0.0, sval)
+
+    def test_eval_basic2(self):
+        """Check the two-column file evaluates sensibly.
+
+        Here the X axis values match the model, so
+        theoretically no interpolation is needed. Try out
+        the interpolation models.
+        """
+
+        ui.set_stat('leastsq')
+        nval = 2.1e6
+        for interp in self.interp1d:
+            ui.load_table_model('tbl2', self.ascii_twocol,
+                                method=interp)
+            m = ui.get_model_component('tbl2')
+            ui.load_arrays('tbl', self.x, self.y * nval, ui.Data1D)
+            ui.set_source('tbl', 'tbl2')
+            m.ampl = nval
+
+            sval = ui.calc_stat('tbl')
+            self.assertAlmostEqual(0.0, sval)
+
+    def test_eval_interp2(self):
+        """Check the two-column file evaluates sensibly.
+
+        Differences to test_eval_basic2 include:
+
+        * it uses different X-axis values
+        * model evaluation is explicit, rather than
+          implicit
+        * uses hard-coded values for the expected values
+        """
+
+        # Pick some values outside the data range; the expected values
+        # are based on a visual check of the interpolation results,
+        # and so are a regression test. The first/last points of
+        # nevile are exclued from the final comparison, since the
+        # tolerance on the comparison on these values is not really
+        # well defined.
+        #
+        xvals = [75, 100, 130, 150, 190, 210]
+        yexp = {}
+        yexp[linear_interp] = [0, 3, 54.3, 95, 10, -10]
+        yexp[nearest_interp] = [0, 0, 35, 96, 15, 0]
+        yexp[neville] = [165.55, 9.5, 55.3, 103.6, 5.3, 199.6]
+
+        for interp in self.interp1d:
+            ui.load_table_model('tbl2', self.ascii_twocol,
+                                method=interp)
+            m = ui.get_model_component('tbl2')
+            yint = m(xvals)
+
+            ydiff = yint - yexp[interp]
+            if interp == neville:
+                ydiff = ydiff[1:-1]
+
+            ymax = np.abs(ydiff).max()
+            self.assertLess(ymax, 0.1)
+
+    def test_eval_filter2(self):
+        """Can we filter the data?
+
+        Based on test_eval_interp2:
+
+        * uses Sherpa data set
+
+        * adds in a filter
+
+        """
+
+        # 120 and 140 will be filtered out
+        xvals = [75, 100, 120, 130, 140, 150, 190, 210]
+        yexp = {}
+        yexp[linear_interp] = [0, 3, -99, 54.3, -99, 95, 10, -10]
+        yexp[nearest_interp] = [0, 0, -99, 35, -99, 96, 15, 0]
+        yexp[neville] = [165.55, 9.5, -99, 55.3, -99, 103.6, 5.3, 199.6]
+
+        # These tolerances have been chosen to allow the tests to pass
+        # on a single machine; they may need to be adjusted for other
+        # machines.
+        smax = {linear_interp: 0.1, nearest_interp: 0.01, neville: 1.0}
+        ui.set_stat('leastsq')
+        for interp in self.interp1d:
+            ui.load_arrays('filt', xvals, yexp[interp])
+
+            ui.load_table_model('filt2', self.ascii_twocol,
+                                method=interp)
+            ui.set_source('filt', 'filt2')
+
+            ui.ignore_id('filt', 110, 125)
+            ui.ignore_id('filt', 135, 149)
+
+            # Use calc_stat_info in order to check dof
+            svals = ui.get_stat_info()
+            sval = svals[0]
+            self.assertEqual(5, sval.dof)
+            self.assertLess(sval.statval, smax[interp])
 
 
 class test_psf_ui(SherpaTestCase):
@@ -246,6 +463,8 @@ class test_psf_ui(SherpaTestCase):
     models1d = ['gauss1d', 'delta1d', 'normgauss1d']
     models2d = ['gauss2d', 'delta2d', 'normgauss2d']
 
+    # Commented out setUp/tearDown as they do nothing
+    #
     # def setUp(self):
     #     pass
 
@@ -281,7 +500,6 @@ class test_psf_ui(SherpaTestCase):
 
 if __name__ == '__main__':
 
-    import sys
     if len(sys.argv) > 1:
         datadir = sys.argv[1]
     else:

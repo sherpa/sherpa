@@ -1,0 +1,11 @@
+# gauss1d model, fwhm=40 pos=150 ampl=100: data is poisson realization
+#X Y
+80 0
+95 0
+110 9
+125 35
+140 93
+155 96
+170 49
+185 15
+200 0
