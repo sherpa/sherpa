@@ -145,7 +145,7 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_pha(1, "@@/threads/pha_intro/3c273.pi")
+load_pha(1, "@@/3c273.pi")
 
 ######### Set Image Coordinates
 
@@ -155,20 +155,20 @@ if get_data(1).grouping is not None and not get_data(1).grouped:
 
 ######### Data Spectral Responses
 
-load_arf(1, "@@/threads/pha_intro/3c273.arf", resp_id=1)
-load_rmf(1, "@@/threads/pha_intro/3c273.rmf", resp_id=1)
+load_arf(1, "@@/3c273.arf", resp_id=1)
+load_rmf(1, "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg(1, "@@/threads/pha_intro/3c273_bg.pi", bkg_id=1)
+load_bkg(1, "@@/3c273_bg.pi", bkg_id=1)
 if get_bkg(1, 1).grouping is not None and not get_bkg(1, 1).grouped:
     ######### Group Background
     group(1, 1)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/threads/pha_intro/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf(1, "@@/threads/pha_intro/3c273.rmf", resp_id=1, bkg_id=1)
+load_arf(1, "@@/3c273.arf", resp_id=1, bkg_id=1)
+load_rmf(1, "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -298,7 +298,7 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_pha("grp", "@@/threads/pha_intro/3c273.pi")
+load_pha("grp", "@@/3c273.pi")
 
 ######### Set Image Coordinates
 
@@ -316,12 +316,12 @@ if get_data("grp").grouping is not None and not get_data("grp").grouped:
 
 ######### Data Spectral Responses
 
-load_arf("grp", "@@/threads/pha_intro/3c273.arf", resp_id=1)
-load_rmf("grp", "@@/threads/pha_intro/3c273.rmf", resp_id=1)
+load_arf("grp", "@@/3c273.arf", resp_id=1)
+load_rmf("grp", "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg("grp", "@@/threads/pha_intro/3c273_bg.pi", bkg_id=1)
+load_bkg("grp", "@@/3c273_bg.pi", bkg_id=1)
 
 ######### Background grouping flags
 
@@ -336,8 +336,8 @@ if get_bkg("grp", 1).grouping is not None and not get_bkg("grp", 1).grouped:
 
 ######### Background Spectral Responses
 
-load_arf("grp", "@@/threads/pha_intro/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf("grp", "@@/threads/pha_intro/3c273.rmf", resp_id=1, bkg_id=1)
+load_arf("grp", "@@/3c273.arf", resp_id=1, bkg_id=1)
+load_rmf("grp", "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -428,7 +428,7 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_pha("bgrp", "@@/threads/pha_intro/3c273.pi")
+load_pha("bgrp", "@@/3c273.pi")
 
 ######### Set Image Coordinates
 
@@ -438,12 +438,12 @@ if get_data("bgrp").grouping is not None and not get_data("bgrp").grouped:
 
 ######### Data Spectral Responses
 
-load_arf("bgrp", "@@/threads/pha_intro/3c273.arf", resp_id=1)
-load_rmf("bgrp", "@@/threads/pha_intro/3c273.rmf", resp_id=1)
+load_arf("bgrp", "@@/3c273.arf", resp_id=1)
+load_rmf("bgrp", "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg("bgrp", "@@/threads/pha_intro/3c273_bg.pi", bkg_id=1)
+load_bkg("bgrp", "@@/3c273_bg.pi", bkg_id=1)
 
 ######### Background grouping flags
 
@@ -458,8 +458,8 @@ if get_bkg("bgrp", 1).grouping is not None and not get_bkg("bgrp", 1).grouped:
 
 ######### Background Spectral Responses
 
-load_arf("bgrp", "@@/threads/pha_intro/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf("bgrp", "@@/threads/pha_intro/3c273.rmf", resp_id=1, bkg_id=1)
+load_arf("bgrp", "@@/3c273.arf", resp_id=1, bkg_id=1)
+load_rmf("bgrp", "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
