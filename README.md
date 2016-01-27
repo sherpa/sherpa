@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/sherpa/sherpa.svg?branch=master)](https://travis-ci.org/sherpa/sherpa)
+[![DOI](https://zenodo.org/badge/683/sherpa/sherpa.svg)](https://zenodo.org/badge/latestdoi/683/sherpa/sherpa)
 
 <!-- TOC *generated with [DocToc](https://github.com/thlorenz/doctoc)* -->
 **Table of Contents**
