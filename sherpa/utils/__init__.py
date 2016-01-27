@@ -2731,6 +2731,6 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
 def get_valid_args(func):
     valid_args = func.func_code.co_varnames[:func.func_code.co_argcount]
-    kwargs_length = len(func.func_defaults)  # number of keyword arguments
-    valid_kwargs = valid_args[-kwargs_length:]  # because kwargs are last
+    kwargs_length = len(func.func_defaults) if func.func_defaults else 0 # number of keyword arguments
+    valid_kwargs = valid_args[-kwargs_length:] if kwargs_length else []  # because kwargs are last
     return valid_kwargs

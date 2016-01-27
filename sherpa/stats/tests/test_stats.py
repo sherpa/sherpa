@@ -31,6 +31,8 @@ from sherpa.stats import Stat, Cash, LeastSq, UserStat, WStat
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.utils.err import StatErr
 from sherpa.astro import ui
+import logging
+logger = logging.getLogger("sherpa")
 
 
 class MyCashWithBkg(UserStat):
@@ -186,11 +188,10 @@ class test_stats(SherpaTestCase):
             [5864.278543739505, 1.6569575154646112, 29868.225197035885])}
 
     def setUp(self):
-        try:
-            from sherpa.astro.xspec import XSphabs, XSpowerlaw
-            from sherpa.astro.io import read_pha
-        except:
-            return
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
+        from sherpa.astro.xspec import XSphabs
+        from sherpa.astro.io import read_pha
 
         pha_fname = self.make_path("stats/9774.pi")
         self.data = read_pha(pha_fname)
@@ -202,6 +203,10 @@ class test_stats(SherpaTestCase):
         abs1 = XSphabs('abs1')
         p1 = PowLaw1D('p1')
         self.model = abs1 + p1
+
+    def tearDown(self):
+        if hasattr(self, "_old_logger_level"):
+            logger.setLevel(self._old_logger_level)
 
     def compare_results(self, arg1, arg2):
 

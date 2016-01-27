@@ -1,0 +1,117 @@
+Release Notes
+Sherpa 4.8.0
+
+This version of Sherpa  introduces 'wstat' statistics which is an extension
+of 'cstat' with Poisson background data. It also provides the ability to include
+background data with the 'user statistics'.
+
+Many changes were aimed at improving the Xspec extension by making it more
+robust, intuitive, and by fixing several bugs. Sherpa 4.8.0 supports Xspec 12.9.0d
+and was also tested against versions 12.8.2e, 12.8.2l, and 12.8.2q.
+
+Most of the codebase was reviewed and cleaned up, in particular to remove the
+use of deprecated functionality and to comply with Python's PEP8 standard.
+More tests were added to the test suite, and
+a new testing infrastructure was put in place in order to simplify writing and
+running tests, and to measure the test suite code coverage.
+
+More details below (infrastructure changes are not shown):
+
+#32: Fix segfault from CRATES update in 4.8b1. Since v4.8b1 CRATES returns
+variable length arrays by default, rather than the zero-padded fixed length
+ones it used to return. Sherpa manipulated the arrays so to remove the
+zero-padding and obtaining variable length arrays. The change in the CRATES
+API resulted in Sherpa segfaulting when trying to manipulate the data coming
+from CRATES. In the patch, we use a new API offered by CRATES to get the
+old-style fixed-length arrays instead of the new default ones. In the future,
+we may want to update the Sherpa code to deal with the new arrays directly.
+
+#44: `save_quality` now correctly outputs 'QUALITY' as the column name,
+instead of 'GROUPS'.
+
+#48: Fix up several issues seen in plot labels - titles and Y-axis labels -
+for commands such as `sherpa.ui.plot_data`, `sherpa.ui.plot_fit_resid`, and
+`sherpa.ui.plot_chisqr`.
+
+#59: Fix bug #38 (grouping twice gives an IndexError exception). An un-handled
+corner case in one of the Sherpa internal methods (`utils.create_expr`) was
+triggering an `IndexError` when two `group_counts` operations were performed
+back to back. The fix handles the case so that applying `group_counts` twice
+does not result in an Exception.
+
+#77: Replace `==` and `!=` comparisons to `None` with `is` and `is not`.
+
+#78: OutOfBoundErr exceptions in some sherpa.utils
+functions are properly caught. There were several places where screen output
+used either `print` or `sys.stderr.write`.
+
+#81: Ensure that XSPEC models which fail - for instance, because a data file
+it needs is missing - return 0's for all bins, rather than random values. This
+should make it more obvious that something has gone wrong (for instance if the
+XSPEC chatter level is low enough not to show any error messages, as is the
+case for the default setting used by Sherpa, namely 0).
+
+#82: The XSpec "spectrum number" value is now set to 1 rather than 0, as this
+value is 1-based in Xspec.
+
+#83: Removed S-Lang scripts, files, and references in the code.
+
+#84: Clarified error messages in Xspec extension. Also, changed the class of
+the exception from `RuntimeError` to more appropriate exception types, in
+particular `LookupError`, `ValueError`, `KeyError`. This is a
+backwards-incompatible change, in that code that caught the `RuntimeError`
+will not catch the new error.
+
+#87: Some methods in `sherpa/fit.py` assigned mutable objects to default
+arguments. This has now been fixed. More instances of this issue have been
+identified (Bug #95) and will removed in the future.
+
+#90: Added background data to the UserStat class.
+
+#94: Implement wstat statistic as described at the following url:
+https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
+
+#96: Remove the unused myoptfct module.
+
+#99: Correct the documentation for the `set_exposure` function.
+
+#100 Fix bug #97, whereby the save_all function would not create the necessary
+`set_source()` line. This does not fix all cases, but it does the simple PHA
+case such as
+
+~~~~
+load_pha('src.pi')
+set_source(xsphabs.gal * powlaw1d.pl)
+save_all('test.out).
+~~~~
+
+It also ensures that files created by `save_all`
+can be run using IPython's %run directive, by explicitly importing the
+`sherpa.astro.ui` module.
+
+#101: Fix handling of non-contiguous bins in Xspec - i.e. when a model is
+called with both xlo and xhi arguments but the bins do not fully cover the
+energy, or wavelenth, range. This fixes #62 (for XSPEC 12.8.2; switching to
+XSPEC 12.9.0 should also fix it) and #56. It also fixes an (un-reported)
+problem with handling of non-contiguous grids when using a table model, where
+a crash was likely.  When an XSPEC model is called with both low and high
+values for the grid - i.e. with two arguments - then the two arrays are
+checked to have the same length, and a ValueError is raised if this condition
+does not hold. This is a breaking change, but the results are not guaranteed
+to be correct if the two arrays are not the same length.  The experimental
+interface for XSPEC convolution models has changed, so that the function call
+takes pars, fluxes, xlo, with optional xhi whereas before it was pars, xlo,
+xhi, fluxes. This is a breaking change, but this is in the low-level API that
+is not documented to users, and adds useful functionality (the ability to have
+xhi be optional). The cpflux convolution model has been added. Note that these
+models do not have Python classes associated with them as they are still an
+experimental interface.  The test suite has been updated to test the new and
+changed functionality in this PR. The choice of models is made so as to avoid
+known problematic models (with a version check where relevant).  It is
+believed that the changes in this PR fixes #42, although this is hard to prove
+conclusively given the erratic nature of the bug.
+
+#110: Update the sherpa.astro.datastack module documentation to include information from the
+CIAO ahelp documentation and to match the style used by the sherpa.astro.ui module.
+
+#111: Update the documentation to include more information about the pyBLoCXS code.

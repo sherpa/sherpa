@@ -39,6 +39,9 @@ logger = logging.getLogger("sherpa")
 class test_ui(SherpaTestCase):
 
     def setUp(self):
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
+
         self.ascii = self.make_path('threads/ascii_table/sim.poisson.1.dat')
         self.fits = self.make_path('1838_rprofile_rmid.fits')
         self.singledat = self.make_path('single.dat')
@@ -55,6 +58,10 @@ class test_ui(SherpaTestCase):
 
         self.func = lambda x: x
         ui.dataspace1d(1, 1000, dstype=ui.Data1D)
+
+    def tearDown(self):
+        if hasattr(self, '_old_logger_level'):
+            logger.setLevel(self._old_logger_level)
 
     def test_ascii(self):
         ui.load_ascii(1, self.ascii)
@@ -115,7 +122,8 @@ class test_more_ui(SherpaTestCase):
         self.pha3c273 = self.make_path('ciao4.3/pha_intro/3c273.pi')
 
     def tearDown(self):
-        logger.setLevel(self._old_logger_level)
+        if hasattr(self, "_old_logger_level"):
+            logger.setLevel(self._old_logger_level)
 
     # bug #12732
     def test_string_model_with_rmf(self):
@@ -191,10 +199,12 @@ class test_psf_ui(SherpaTestCase):
     models2d = ['beta2d', 'devaucouleurs2d', 'hubblereynolds', 'lorentz2d']
 
     def setUp(self):
-        pass
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
 
     def tearDown(self):
-        pass
+        if hasattr(self, "_old_logger_level"):
+            logger.setLevel(self._old_logger_level)
 
     @unittest.skip("TODO: failing test used to have a different name and " +
                    "was never executed")
@@ -236,8 +246,14 @@ class test_psf_ui(SherpaTestCase):
 @requires_fits
 class test_stats_ui(SherpaTestCase):
     def setUp(self):
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
         self.data = self.make_path('threads/chi2/3c273.pi')
         ui.clean()
+
+    def tearDown(self):
+        if hasattr(self, "_old_logger_level"):
+            logger.setLevel(self._old_logger_level)
 
     # bugs #11400, #13297, #12365
     def test_chi2(self):

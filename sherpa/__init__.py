@@ -42,8 +42,9 @@ import sys
 
 __all__ = ('get_include', 'test')
 
-__versionstr__ = '4.7.1'
-__version__ = 40701
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 
 class Formatter(logging.Formatter):
@@ -123,8 +124,3 @@ def clitest():
         print """Cannot import pytest and pytest-cov.
             Please run 'pip install -r test_requirements.txt' first"""
         sys.exit(1)
-
-
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions

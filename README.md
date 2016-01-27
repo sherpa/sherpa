@@ -157,7 +157,7 @@ Add the Sherpa conda repositories to your configuration:
 
 Create a new environment and install Sherpa:
 
-    $ conda create -n sherpa sherpa=4.7
+    $ conda create -n sherpa sherpa=4.8
 
 The above command will download and install Sherpa and its dependencies in an
 isolated environment, so that Sherpa will not interfere with your System's
@@ -372,7 +372,7 @@ used, but the full path should be in your own copy of the file):
     [CIAO](http://cxc.harvard.edu/ciao/). In this case the
     `wcs` library does not need to be specified because of
     the way the XSPEC models-only version was built with
-    CIAO 4.7.
+    CIAO 4.8.
 
         xspec_lib_dirs=$ASCDS_INSTALL/ots/lib
         xspec_libraries=XSFunctions XSModel XSUtil XS

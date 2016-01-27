@@ -49,6 +49,7 @@ def remove_item(xs, x):
     except ValueError:
         pass
 
+
 # There is an argument to be made that these tests only need
 # to exercise a small number of models (e.g. one each of the
 # different templates used in xspec_extension.hh - so single
@@ -153,6 +154,17 @@ class test_xspec(SherpaTestCase):
         from sherpa.astro import xspec
         xspec.set_xsstate(self._defaults)
 
+    # In Sherpa 4.8.0 development, the XSPEC model class included
+    # an explicit check that all the bins were finite. This has
+    # been removed as testing has shown there are complications when
+    # using this with some real-world responses. So add in an
+    # explicit - hopefully temporary - test here.
+    #
+    def assertFinite(self, vals, model, label):
+        emsg = "model {} is finite [{}]".format(model, label)
+        self.assertTrue(numpy.isfinite(vals).all(),
+                        msg=emsg)
+
     def test_create_model_instances(self):
         import sherpa.astro.xspec as xs
         count = 0
@@ -195,7 +207,8 @@ class test_xspec(SherpaTestCase):
         s1 = y1.sum()
         s2 = y2.sum()
         self.assertGreater(s1, 0.0, msg='powerlaw is positive')
-        self.assertAlmostEqual(s2, mfactor * s1, msg='powerlaw norm scaling')
+        self.assertAlmostEqual(s2, mfactor * s1,
+                               msg='powerlaw norm scaling')
 
     def test_evaluate_model(self):
         import sherpa.astro.xspec as xs
@@ -227,17 +240,23 @@ class test_xspec(SherpaTestCase):
         egrid, elo, ehi, wgrid, wlo, whi = make_grid()
         for model in models:
             cls = getattr(xs, model)
-            mdl = cls(model)  # use an identifier in case there is an error
+            # use an identifier in case there is an error
+            mdl = cls(model)
 
             # The model checks that the values are all finite,
             # so there is no need to check that the output of
             # mdl does not contain non-finite values.
+            # NOTE: this is no-longer the case, so include an
+            #       explicit check for the single-argument forms
             #
             evals1 = mdl(egrid)
             evals2 = mdl(elo, ehi)
 
             wvals1 = mdl(wgrid)
             wvals2 = mdl(wlo, whi)
+
+            self.assertFinite(evals1, model, "energy")
+            self.assertFinite(wvals1, model, "wavelength")
 
             emsg = "{} model evaluation failed: ".format(model)
 
@@ -274,12 +293,17 @@ class test_xspec(SherpaTestCase):
         elo, ehi, wlo, whi = make_grid_noncontig2()
         for model in models:
             cls = getattr(xs, model)
-            mdl = cls(model)  # use an identifier in case there is an error
+            # use an identifier in case there is an error
+            mdl = cls(model)
 
             evals2 = mdl(elo, ehi)
             wvals2 = mdl(wlo, whi)
-            emsg = "{} non-contiguous model evaluation failed: ".format(model)
 
+            self.assertFinite(evals2, model, "energy")
+            self.assertFinite(wvals2, model, "wavelength")
+
+            emsg = "{} non-contiguous model evaluation " + \
+                "failed: ".format(model)
             assert_allclose(evals2, wvals2,
                             err_msg=emsg + "energy to wavelength")
 
@@ -327,6 +351,9 @@ class test_xspec(SherpaTestCase):
         wvals1 = tmod(wgrid)
         wvals2 = tmod(wlo, whi)
 
+        self.assertFinite(evals1, tmod, "energy")
+        self.assertFinite(wvals1, tmod, "wavelength")
+
         emsg = "table model evaluation failed: "
         assert_array_equal(evals1[:-1], evals2,
                            err_msg=emsg + "energy comparison")
@@ -347,6 +374,9 @@ class test_xspec(SherpaTestCase):
 
         evals2 = tmod(elo, ehi)
         wvals2 = tmod(wlo, whi)
+
+        self.assertFinite(evals2, tmod, "energy")
+        self.assertFinite(wvals2, tmod, "wavelength")
 
         emsg = "table model non-contiguous evaluation failed: "
         rtol = 1e-3
@@ -400,6 +430,8 @@ class test_xspec(SherpaTestCase):
         pars = [elo, ehi, lflux]
         y2 = xs._xspec.C_cflux(pars, y1, egrid)
 
+        self.assertFinite(y2, "cflux", "energy")
+
         elo = egrid[:-1]
         ehi = egrid[1:]
         wgrid = _hc / egrid
@@ -412,6 +444,7 @@ class test_xspec(SherpaTestCase):
 
         y1 = mdl1(wgrid)
         y2 = xs._xspec.C_cflux(pars, y1, wgrid)
+        self.assertFinite(y2, "cflux", "wavelength")
         numpy.testing.assert_allclose(expected, y2,
                                       err_msg='wavelength, single grid')
 
