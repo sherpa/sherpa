@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1099,6 +1099,7 @@ def histogram2d(x, y, x_grid, y_grid):
     vals = hist2d(numpy.asarray(x), numpy.asarray(y), x_grid, y_grid)
     return vals.reshape((len(x_grid), len(y_grid)))
 
+
 def interp_util(xout, xin, yin):
     lenxin = len(xin)
 
@@ -1120,23 +1121,7 @@ def interp_util(xout, xin, yin):
 
 
 def linear_interp(xout, xin, yin):
-    """Linear interpolation of (xin,yin) onto xout."""
-    x0, x1, y0, y1 = interp_util(xout, xin, yin)
-    val = (xout - x0) / (x1 - x0) * (y1 - y0) + y0
-    if numpy.isnan(val).any():
-        # to handle the case where two adjacent elements of xout are equal
-        return nearest_interp(xout, xin, yin)
-    return val
-
-
-def nearest_interp(xout, xin, yin):
-    """Nearest-neighbor interpolation of (xin,yin) onto xout."""
-    x0, x1, y0, y1 = interp_util(xout, xin, yin)
-    return numpy.where((numpy.abs(xout - x0) < numpy.abs(xout - x1)), y0, y1)
-
-
-def interpolate(xout, xin, yin, function=linear_interp):
-    """Interpolate the curve defined by (xin, yin) at points xout.
+    """Linear one-dimensional interpolation.
 
     Parameters
     ----------
@@ -1146,16 +1131,110 @@ def interpolate(xout, xin, yin, function=linear_interp):
        The x values of the data to interpolate. This must be
        sorted so that it is monotonically increasing.
     yin : array_like
-       The y values of the data to interpolate.
-    function : func
-       The function to perfoem the interpolation.
+       The y values of the data to interpolate (must be the same
+       size as ``xin``).
+
+    Returns
+    -------
+    yout : NumPy array of numbers
+       The interpolated y values (same size as ``xout``).
+
+    See Also
+    --------
+    interpolate, nearest_interp, neville
+
+    Examples
+    --------
+    >>> x = [1.2, 3.4, 4.5, 5.2]
+    >>> y = [12.2, 14.4, 16.8, 15.5]
+    >>> xgrid = np.linspace(2, 5, 5)
+    >>> ygrid = linear_interp(xgrid, x, y)
+    """
+
+    x0, x1, y0, y1 = interp_util(xout, xin, yin)
+    val = (xout - x0) / (x1 - x0) * (y1 - y0) + y0
+    if numpy.isnan(val).any():
+        # to handle the case where two adjacent elements of xout are equal
+        return nearest_interp(xout, xin, yin)
+    return val
+
+
+def nearest_interp(xout, xin, yin):
+    """Nearest-neighbor one-dimensional interpolation.
+
+    Parameters
+    ----------
+    xout : array_like
+       The positions at which to interpolate.
+    xin : array_like
+       The x values of the data to interpolate. This must be
+       sorted so that it is monotonically increasing.
+    yin : array_like
+       The y values of the data to interpolate (must be the same
+       size as ``xin``).
+
+    Returns
+    -------
+    yout : NumPy array of numbers
+       The interpolated y values (same size as ``xout``).
+
+    See Also
+    --------
+    interpolate, linear_interp, neville
+
+    Examples
+    --------
+    >>> x = [1.2, 3.4, 4.5, 5.2]
+    >>> y = [12.2, 14.4, 16.8, 15.5]
+    >>> xgrid = np.linspace(2, 5, 5)
+    >>> ygrid = nearest_interp(xgrid, x, y)
+    """
+
+    x0, x1, y0, y1 = interp_util(xout, xin, yin)
+    return numpy.where((numpy.abs(xout - x0) < numpy.abs(xout - x1)), y0, y1)
+
+
+def interpolate(xout, xin, yin, function=linear_interp):
+    """One-dimensional interpolation.
+
+    Parameters
+    ----------
+    xout : array_like
+       The positions at which to interpolate.
+    xin : array_like
+       The x values of the data to interpolate. This must be
+       sorted so that it is monotonically increasing.
+    yin : array_like
+       The y values of the data to interpolate (must be the same
+       size as ``xin``).
+    function : func, optional
+       The function to perform the interpolation. It accepts
+       the arguments (xout, xin, yin) and returns the interpolated
+       values. The default is to use linear interpolation.
 
     Returns
     -------
     yout : array_like
-       This has the dimensions of xout and matches the data type of
-       yin.
+       The interpolated y values (same size as ``xout``).
 
+    See Also
+    --------
+    linear_interp, nearest_interp, neville
+
+    Examples
+    --------
+
+    Use linear interpolation to calculate the Y values for the
+    ``xgrid`` array:
+
+    >>> x = [1.2, 3.4, 4.5, 5.2]
+    >>> y = [12.2, 14.4, 16.8, 15.5]
+    >>> xgrid = np.linspace(2, 5, 5)
+    >>> ygrid = interpolate(xgrid, x, y)
+
+    Use Neville's algorithm for the interpolation:
+
+    >>> ygrid = interpolate(xgrid, x, y, neville)
     """
 
     if not callable(function):
