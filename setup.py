@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014  Smithsonian Astrophysical Observatory
+# Copyright (C) 2014, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -98,20 +98,24 @@ meta = dict(name='sherpa',
                           'sherpa.plot': ['tests/test_*.py'],
                           'sherpa.sim': ['tests/test_*.py'],
                           'sherpa.stats': ['tests/test_*.py'],
-                          'sherpa.ui': ['tests/test_*.py'],
+                          'sherpa.ui': ['tests/data/*', 'tests/test_*.py'],
                           'sherpa.utils': ['tests/test_*.py'],
                           'sherpa.astro': ['tests/test_*.py'],
-                          'sherpa.astro.datastack': ['tests/data/*', 'tests/*.py'],
+                          'sherpa.astro.datastack': ['tests/data/*',
+                                                     'tests/*.py'],
                           'sherpa.astro.io': ['tests/test_*.py'],
                           'sherpa.astro.models': ['tests/test_*.py'],
                           'sherpa.astro.optical': ['tests/test_*.py'],
                           'sherpa.astro.sim': ['tests/test_*.py'],
-                          'sherpa.astro.ui': ['tests/data/*', 'tests/test_*.py'],
+                          'sherpa.astro.ui': ['tests/data/*',
+                                              'tests/test_*.py'],
                           'sherpa.astro.utils': ['tests/test_*.py'],
                           },
             data_files=[('sherpa',
-                         ['sherpa/sherpa.rc', 'sherpa/sherpa-standalone.rc']), ],
-            ext_modules=static_ext_modules, cmdclass=versioneer.get_cmdclass(),
+                         ['sherpa/sherpa.rc',
+                          'sherpa/sherpa-standalone.rc']), ],
+            ext_modules=static_ext_modules,
+            cmdclass=versioneer.get_cmdclass(),
             entry_points={
                 'console_scripts': [
                     'sherpa_test = sherpa:clitest',
