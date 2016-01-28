@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,26 +21,27 @@ import numpy
 from sherpa.utils import SherpaFloat, get_num_args, is_binary_file
 from sherpa.utils.err import IOErr
 from sherpa.data import Data1D, BaseData
-from itertools import izip
 from exceptions import ValueError
 import os
 
 
 __all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
-          'write_arrays')
+           'write_arrays')
 
 
 def _is_subclass(t1, t2):
     return isinstance(t1, type) and issubclass(t1, t2) and (t1 is not t2)
 
-def _check_args( size, dstype ):
+
+def _check_args(size, dstype):
     # Find the number of required args minus self, filename
-    req_args = (get_num_args( dstype.__init__ )[1] - 2)
+    req_args = (get_num_args(dstype.__init__)[1] - 2)
 
     if size < req_args:
-        #raise IOErr('badargs', dstype.__name__, req_args)
-        raise TypeError("data set '%s' takes at least %s args" % 
+        # raise IOErr('badargs', dstype.__name__, req_args)
+        raise TypeError("data set '%s' takes at least %s args" %
                         (dstype.__name__, req_args))
+
 
 def read_file_data(filename, sep=' ', comment='#', require_floats=True):
     bad_chars = '\t\n\r,;: |'
@@ -56,9 +57,11 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
 
             line = line.strip()
 
-            #look for last commented line before data 
+            # look for last commented line before data
             if len(line) > 0 and line[0] == comment:
-                line = line.replace(comment, ' ') #slice off comment
+                # Slice off the comment
+                # TODO: why is this not just `line = line[1:]`?
+                line = line.replace(comment, ' ')
                 raw_names = line.strip().split(sep)
 
             elif line == '':
@@ -82,19 +85,22 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
     for col in cols:
         try:
             args.append(col.astype(SherpaFloat))
-        except ValueError, e:
+        except ValueError:
             if require_floats:
-                raise ValueError("The file %s could not be loaded, probably because it contained spurious data and/or strings" % (filename,))
+                raise ValueError("The file {} could not ".format(filename) +
+                                 "be loaded, probably because it contained " +
+                                 "spurious data and/or strings")
             args.append(col)
 
     names = [name.strip(bad_chars) for name in raw_names if name != '']
 
     if len(names) == 0:
-        names = ['col%i' % (i+1) for i in xrange(len(args))]
+        names = ['col%i' % (i + 1) for i in xrange(len(args))]
 
     return names, args
 
-def get_column_data( *args ):
+
+def get_column_data(*args):
     """
     get_column_data( *NumPy_args )
     """
@@ -109,11 +115,11 @@ def get_column_data( *args ):
             raise IOErr('badarray', arg)
 
         if arg is not None:
-            vals = numpy.asarray( vals )
+            vals = numpy.asarray(vals)
             for col in numpy.column_stack(vals):
-                cols.append( col )
+                cols.append(col)
         else:
-            cols.append( vals )
+            cols.append(vals)
 
     return cols
 
@@ -139,7 +145,7 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     if len(names) > len(args):
         raise IOErr('toomanycols')
 
-    assert( len(names) <= len(args) )
+    assert(len(names) <= len(args))
 
     for key in colkeys:
         if key not in names:
@@ -150,15 +156,15 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     return (colkeys, kwargs, filename)
 
 
-def read_data( filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
-               comment='#', require_floats=True):
+def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
+              comment='#', require_floats=True):
 
     colnames, args, name = get_ascii_data(filename, ncols, colkeys,
                                           sep, dstype, comment, require_floats)
     return dstype(name, *args)
 
 
-def read_arrays(*args): 
+def read_arrays(*args):
     """
     read_table( *NumPy_args [, dstype = Data1D ] )
     """
@@ -166,14 +172,14 @@ def read_arrays(*args):
     if len(args) == 0:
         raise IOErr('noarrays')
 
-    dstype=Data1D
+    dstype = Data1D
     if _is_subclass(args[-1], BaseData):
         dstype = args.pop()
 
     args = get_column_data(*args)
 
     # Determine max number of args for dataset constructor
-    _check_args( len(args), dstype )
+    _check_args(len(args), dstype)
 
     return dstype('', *args)
 
@@ -182,7 +188,7 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
                  clobber=False, linebreak='\n', format='%g'):
 
     if os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound",filename)
+        raise IOErr("filefound", filename)
 
     if not numpy.iterable(args) or len(args) == 0:
         raise IOErr('noarrayswrite')
