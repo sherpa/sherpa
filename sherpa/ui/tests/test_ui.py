@@ -151,10 +151,6 @@ class test_table_model(SherpaTestCase):
                               10.6825, 10.8362, 8.05337, 4.96863,
                               1.86603], dtype=dtype)
 
-        # note: There is no FITS support in sherpa.ui.load_table_model,
-        #       it is only available in sherpa.astro.ui.load_table_model
-        self.fits_twocol = self.make_path('double.fits')
-
     # should really be in SherpaTestCase
     def tearDown(self):
         ui.clean()
@@ -333,8 +329,8 @@ class test_table_model(SherpaTestCase):
     @requires_data
     def test_fits_errors_out(self):
         """FITS files are unsupported"""
-        self.assertRaises(IOErr, ui.load_table_model, 'ftbl',
-                          self.fits_twocol)
+        fname = self.make_path('double.fits')
+        self.assertRaises(IOErr, ui.load_table_model, 'ftbl', fname)
 
     def test_eval_basic1_fail(self):
         """Model evaluation fails if #rows does not match."""
@@ -456,6 +452,46 @@ class test_table_model(SherpaTestCase):
             sval = svals[0]
             self.assertEqual(5, sval.dof)
             self.assertLess(sval.statval, smax[interp])
+
+    def test_eval_integrated(self):
+        """Test handling with integrated data sets.
+
+        This is just to check that the current documentation,
+        which says that the table x-axis is the left edge of
+        the bin.
+        """
+
+        # make sure the grid is not evenly spaced, since this
+        # should show up any issues with trying to integrate
+        # the model over the grid.
+        #
+        xgrid = np.asarray([10, 17, 20, 22, 31, 35, 40])
+        xlo = xgrid[:-1]
+        xhi = xgrid[1:]
+
+        ytbl = np.asarray([-10, 10, 15, 20, 20, 10])
+        ymdl = ytbl / 2.0
+
+        # Use low-level routines to create the table model,
+        # to avoid having a new data set. This side-steps any
+        # of the code to handle filtering, but that is not
+        # relevant here.
+        #
+        def make_tm(method):
+            tmdl = TableModel('tmp')
+            tmdl.filename = 'tmp'
+            tmdl.method = method
+            tmdl.load(xlo, ytbl)
+            return tmdl
+
+        for interp in self.interp1d:
+            # Just to be sure that there is no cache issues,
+            # re-create the table each iteration
+            tmdl = make_tm(interp)
+
+            tmdl.ampl = 0.5
+            ycalc = tmdl(xlo, xhi)
+            assert_allclose(ymdl, ycalc)
 
 
 class test_psf_ui(SherpaTestCase):

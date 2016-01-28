@@ -6304,6 +6304,12 @@ class Session(NoNewAttributesAfterInit):
         is applied - via ``set_source`` - must have the same number
         of data points as the model.
 
+        When used with an integrated data set (for example,
+        `Data1DInt`), then the first column of the table - the
+        independent axis - should be the left-edge of the bin,
+        and the second column is the integrated value for that
+        bin.
+
         Examples
         --------
 
