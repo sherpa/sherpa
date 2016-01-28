@@ -2344,7 +2344,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_staterror(self, id, filename=None, ncols=2, *args, **kwargs):
-        """Load the statistical errors from a file.
+        """Load the statistical errors from an ASCII file.
 
         Read in a column or image from a file and use the values
         as the statistical errors for a data set. This over rides
@@ -2387,6 +2387,9 @@ class Session(NoNewAttributesAfterInit):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        See `unpack_data` for a description of the supported
+        file format.
+
         Examples
         --------
 
@@ -2413,7 +2416,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_syserror(self, id, filename=None, ncols=2, *args, **kwargs):
-        """Load the systematic errors from a file.
+        """Load the systematic errors from an ASCII file.
 
         Read in a column or image from a file and use the values
         as the systematic errors for a data set.
@@ -2453,6 +2456,9 @@ class Session(NoNewAttributesAfterInit):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        See `unpack_data` for a description of the supported
+        file format.
+
         Examples
         --------
 
@@ -2480,7 +2486,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: does ncols make sense here? (have removed for now)
     def load_filter(self, id, filename=None, ignore=False, ncols=2,
                     *args, **kwargs):
-        """Load the filter array from a file and add to a data set.
+        """Load the filter array from an ASCII file and add to a data set.
 
         Parameters
         ----------
@@ -2519,6 +2525,9 @@ class Session(NoNewAttributesAfterInit):
         they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
+
+        See `unpack_data` for a description of the supported
+        file format.
 
         Examples
         --------
@@ -3472,10 +3481,10 @@ class Session(NoNewAttributesAfterInit):
     def unpack_data(self, filename, ncols=2, colkeys=None,
                     dstype=sherpa.data.Data1D, sep=' ', comment='#',
                     require_floats=True):
-        """Create a sherpa data object from a file.
+        """Create a sherpa data object from an ASCII file.
 
-        The object returned by `unpack_data` can be used in a
-        `set_data` call.
+        This function is used to read in columns from an ASCII
+        file and convert them to a Sherpa data object.
 
         Parameters
         ----------
@@ -3520,7 +3529,32 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The file reading is performed by `sherpa.io.read_data`.
+
+        The file reading is performed by `sherpa.io.get_ascii_data`,
+        which reads in each line from the file, strips out any unsupported
+        characters (replacing them by the ``sep`` argument), skips
+        empty lines, and then identifies whether it is a comment or data
+        line.
+
+        The list of unsupported characters are: ``\t``, ``\n``,
+        ``\r``, comma, semi-colon, colon, space, and ``|``.
+
+        The last comment line before the data is used to define the
+        column names, splitting the line by the ``sep`` argument.
+        If there are no comment lines then the columns are named
+        starting at ``col1``, ``col2``, up to the number of columns.
+
+        Data lines are separated into columns - splitting by the
+        ``sep`` comment - and then converted to NumPy arrays.
+        If the ``require_floats`` argument is ``True`` then the
+        column will be converted to the `sherpa.utils.SherpaFloat`
+        type, with an error raised if this fails.
+
+        An error is raised if the number of columns per row
+        is not constant.
+
+        If the ``colkeys`` argument is used then a case-sensitive
+        match is used to determine what columns to return.
 
         Examples
         --------
@@ -3536,6 +3570,17 @@ class Session(NoNewAttributesAfterInit):
 
         >>> dat = unpack_data('src.dat', ncols=3)
 
+        Read in the X and Y columns from the file. The last line
+        before the data must contain the column names:
+
+        >>> dat = unpack_data('src.dat', colkeys=['X', 'Y'])
+
+        Read in a histogram:
+
+        >>> cols = ['XLO', 'XHI', 'Y']
+        >>> idat = unpack_data('hist.dat', colkeys=cols,
+                               dstype=ui.Data1DInt)
+
         """
         return self._read_data(sherpa.io.read_data, filename, ncols, colkeys,
                                sep, dstype, comment, require_floats)
@@ -3544,7 +3589,7 @@ class Session(NoNewAttributesAfterInit):
     def load_data(self, id, filename=None, ncols=2, colkeys=None,
                   dstype=sherpa.data.Data1D, sep=' ', comment='#',
                   require_floats=True):
-        """Load a data set from a file.
+        """Load a data set from an ASCII file.
 
         Parameters
         ----------
@@ -3592,6 +3637,9 @@ class Session(NoNewAttributesAfterInit):
         they are interpreted as the ``id`` and ``filename`` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
+
+        See `unpack_data` for a description of the supported
+        file format.
 
         Examples
         --------
@@ -3731,7 +3779,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_arrays(self, filename, args, fields=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
-        """Write a list of arrays to a file.
+        """Write a list of arrays to an ASCII file.
 
         Parameters
         ----------
@@ -3773,11 +3821,11 @@ class Session(NoNewAttributesAfterInit):
 
         >>> x = get_indep()
         >>> y = get_dep()
-        >>> save_arrays('src.dat', [x,y])
+        >>> save_arrays('src.dat', [x, y])
 
         Use the column names "r" and "surbri" for the columns:
 
-        >>> save_arrays('prof.txt', [x,y], fields=["r", "surbri"],
+        >>> save_arrays('prof.txt', [x, y], fields=["r", "surbri"],
                         clobber=True)
 
         """
@@ -6248,7 +6296,7 @@ class Session(NoNewAttributesAfterInit):
     def load_table_model(self, modelname, filename, ncols=2, colkeys=None,
                          dstype=sherpa.data.Data1D, sep=' ', comment='#',
                          method=sherpa.utils.linear_interp):
-        """Load tabular data and use it as a model component.
+        """Load ASCII tabular data and use it as a model component.
 
         A table model is defined on a grid of points which is
         interpolated onto the independent axis of the data set. The
@@ -6267,14 +6315,17 @@ class Session(NoNewAttributesAfterInit):
            in the file). It should be 1 or 2.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
-           ``None``.
+           ``None``, which uses the first ``ncols`` columns in the file.
+           The default column names are col followed by the column number,
+           so ``col1`` for the first column.
         dstype : data class to use, optional
            What type of data is to be used. Supported values include
            `Data1D` (the default) and `Data1DInt`.
         sep : str, optional
-           The separator character. The default is ``' '``.
+           The separator character for columns. The default is ``' '``.
         comment : str, optional
-           The comment character. The default is ``'#'``.
+           Lines starting with this string are ignored. The default
+           is ``'#'``.
         method : func
            The interpolation method to use to map the input data onto
            the coordinate grid of the data set. Linear,
@@ -6294,6 +6345,9 @@ class Session(NoNewAttributesAfterInit):
         Examples of interpolation schemes provided by `sherpa.utils`
         are: `linear_interp`, `nearest_interp`, `neville`, and
         `neville2d`.
+
+        See `unpack_data` for a description of the supported
+        file format.
 
         When reading in two columns, the data will be re-ordered
         so that the first column read in (the independent axis)
@@ -6408,6 +6462,9 @@ class Session(NoNewAttributesAfterInit):
 
         There is no way using this interface to indicate that the
         model is for 1D or 2D data.
+
+        The format for the input file, and how to control what columns
+        to read, are described in the help for the `unpack_data` function.
 
         Examples
         --------
