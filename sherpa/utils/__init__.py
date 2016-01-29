@@ -285,6 +285,43 @@ class SherpaTestCase(numpytest.NumpyTestCase):
 
         self.assertTrue(numpy.all(sao_fcmp(first, second, tol)), msg)
 
+    # for running regression tests from sherpa-test-data
+    def run_thread(self, name, scriptname='fit.py'):
+        """Run a regression test from the sherpa-test-data submodule.
+
+        Parameters
+        ----------
+        name : string
+           The name of the science thread to run (e.g., pha_read,
+           radpro). The name should match the corresponding thread
+           name in the sherpa-test-data submodule. See examples below.
+        scriptname : string
+           The suffix of the test script file name, usually "fit.py."
+
+        Examples
+        --------
+        Regression test script file names have the structure
+        "name-scriptname.py." By default, scriptname is set to "fit.py."
+        For example, if one wants to run the regression test
+        "pha_read-fit.py," they would write
+
+        >>> run_thread("pha_read")
+
+        If the regression test name is "lev3fft-bar.py," they would do
+
+        >>> run_thread("lev3fft", scriptname="bar.py")
+
+        """
+
+        self.locals = {}
+        cwd = os.getcwd()
+        os.chdir(self.datadir)
+        scriptname = name + "-" + scriptname
+        try:
+            execfile(scriptname, {}, self.locals)
+        finally:
+            os.chdir(cwd)
+
 
 def requires_data(test_function):
     """

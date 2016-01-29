@@ -48,7 +48,6 @@ class test_threads(SherpaTestCase):
                 self.is_crates_io = True
         except:
             self.is_crates_io = False
-        self.startdir = os.getcwd()
         self.old_state = ui._session.__dict__.copy()
         self.old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.CRITICAL)
@@ -58,7 +57,6 @@ class test_threads(SherpaTestCase):
             self.old_xspec = xspec.get_xsstate()
 
     def tearDown(self):
-        os.chdir(self.startdir)
         ui._session.__dict__.update(self.old_state)
         logger.setLevel(self.old_level)
 
@@ -71,9 +69,7 @@ class test_threads(SherpaTestCase):
     def run_thread(self, name, scriptname='fit.py'):
         ui.clean()
         ui.set_model_autoassign_func(self.assign_model)
-        self.locals = {}
-        os.chdir(self.make_path('ciao4.3', name))
-        execfile(scriptname, {}, self.locals)
+        super(test_threads, self).run_thread(name, scriptname=scriptname)
 
 
     @requires_fits
