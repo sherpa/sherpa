@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,6 +16,15 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+
+def set_xspec_chatter():
+    try:
+        from sherpa.astro import xspec
+        xspec.set_xschatter(50)
+    except ImportError:
+        # Well, it looks like xspec is not available. Passing.
+        pass
 
 try:
     from setuptools.command.test import test
@@ -36,6 +45,7 @@ try:
             self.test_suite = True
 
         def run_tests(self):
+            set_xspec_chatter()
             # import here, cause outside the eggs aren't loaded
             import pytest
             if not self.pytest_args:
