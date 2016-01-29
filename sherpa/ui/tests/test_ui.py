@@ -124,17 +124,26 @@ class test_ui(SherpaTestCase):
 # repository, rather than the sherpa-test-data submodule
 #
 # @requires_data
-class test_table_model(SherpaTestCase):
+class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
 
+    # Where should the functions used to set/query/change the
+    # Sherpa be accessed.
+    #
+    state = None
+
+    # What interpolation functions should be used. Note that
+    # the code is somewhat hard-coded to these values (e.g. for
+    # selecting tolerances), so perhaps more, or less, abstraction
+    # is needed.
+    #
     interp1d = [linear_interp, nearest_interp, neville]
 
-    # would like to over-ride make_path, but this method is used
-    # for the FITS tests
+    # would like to over-ride make_path, but it is used
+    # for the FITS tests, so need a separate one.
+    #
     def make_local_path(self, fname):
-        """Use local data directory, rather than sherpa-test-data"""
-        thisfile = sys.modules[self.__module__].__file__
-        thisdir = os.path.dirname(thisfile)
-        return os.path.join(thisdir, 'data', fname)
+        """Use local data directory"""
+        raise NotImplementedError
 
     def setUp(self):
         self.ascii_onecol = self.make_local_path('gauss1d-onecol.dat')
@@ -153,16 +162,21 @@ class test_table_model(SherpaTestCase):
 
     # should really be in SherpaTestCase
     def tearDown(self):
-        ui.clean()
+        self.state.clean()
 
     def test_basic(self):
         """Check that a table can be created and has expected properties"""
 
-        self.assertTrue('tbl' not in ui.list_model_components())
-        ui.load_table_model('tbl', self.ascii_onecol)
-        self.assertTrue('tbl' in ui.list_model_components(),
+        flag = 'tbl' in self.state.list_model_components()
+        self.assertFalse(flag)
+
+        self.state.load_table_model('tbl', self.ascii_onecol)
+
+        flag = 'tbl' in self.state.list_model_components()
+        self.assertTrue(flag,
                         msg='Model component is added to system database')
-        mdl = ui.get_model_component('tbl')
+
+        mdl = self.state.get_model_component('tbl')
         self.assertTrue(isinstance(mdl, TableModel), msg='Is a Table Model')
 
         # There is something strange with the name field, as it can be
@@ -182,16 +196,16 @@ class test_table_model(SherpaTestCase):
 
         self.assertAlmostEqual(1.0, par.val)
 
-    def test_fail_on_missing_col(self):
-        """Error out if a column is missing."""
-
-        self.assertRaises(IOErr, ui.load_table_model, 'failed',
-                          self.ascii_twocol, colkeys=['a', 'b'])
+    # def test_fail_on_missing_col(self):
+    #     """Error out if a column is missing."""
+    #
+    #     self.assertRaises(IOErr, self.state.load_table_model, 'failed',
+    #                       self.ascii_twocol, colkeys=['a', 'b'])
 
     def _test_table1(self, tname):
         """Tests for a one-column file"""
 
-        mdl = ui.get_model_component(tname)
+        mdl = self.state.get_model_component(tname)
         x = mdl.get_x()
         y = mdl.get_y()
 
@@ -207,7 +221,7 @@ class test_table_model(SherpaTestCase):
 
     def _test_table2(self, tname):
         """Tests for a two-column file"""
-        mdl = ui.get_model_component(tname)
+        mdl = self.state.get_model_component(tname)
 
         x = mdl.get_x()
         y = mdl.get_y()
@@ -227,7 +241,7 @@ class test_table_model(SherpaTestCase):
 
     def _test_table3(self, tname):
         """Tests for a three-column file: col1 col2"""
-        mdl = ui.get_model_component(tname)
+        mdl = self.state.get_model_component(tname)
 
         x = mdl.get_x()
         y = mdl.get_y()
@@ -247,19 +261,19 @@ class test_table_model(SherpaTestCase):
 
     def test_ascii_table1(self):
         """Read in a one-column ASCII file"""
-        ui.load_table_model('tbl1', self.ascii_onecol)
+        self.state.load_table_model('tbl1', self.ascii_onecol)
         self._test_table1('tbl1')
 
-        m = ui.get_model_component('tbl1')
+        m = self.state.get_model_component('tbl1')
         y = m.get_y()
         assert_allclose(self.y, y)
 
     def test_ascii_table2(self):
         """Read in a two-column ASCII file"""
-        ui.load_table_model('tbl2', self.ascii_twocol)
+        self.state.load_table_model('tbl2', self.ascii_twocol)
         self._test_table2('tbl2')
 
-        m = ui.get_model_component('tbl2')
+        m = self.state.get_model_component('tbl2')
         x = m.get_x()
         y = m.get_y()
         assert_allclose(self.x, x)
@@ -267,10 +281,10 @@ class test_table_model(SherpaTestCase):
 
     def test_ascii_table3_col12(self):
         """Read in a three-column ASCII file: col1 col2"""
-        ui.load_table_model('tbl3', self.ascii_threecol)
+        self.state.load_table_model('tbl3', self.ascii_threecol)
         self._test_table2('tbl3')
 
-        m = ui.get_model_component('tbl3')
+        m = self.state.get_model_component('tbl3')
         x = m.get_x()
         y = m.get_y()
         assert_allclose(self.x, x)
@@ -278,11 +292,11 @@ class test_table_model(SherpaTestCase):
 
     def test_ascii_table3_col13(self):
         """Read in a three-column ASCII file: col1 col3"""
-        ui.load_table_model('tbl3', self.ascii_threecol,
-                            colkeys=['X', 'STAT_ERR'])
+        self.state.load_table_model('tbl3', self.ascii_threecol,
+                                    colkeys=['X', 'STAT_ERR'])
         self._test_table2('tbl3')
 
-        m = ui.get_model_component('tbl3')
+        m = self.state.get_model_component('tbl3')
         x = m.get_x()
         y = m.get_y()
         assert_allclose(self.x, x)
@@ -290,12 +304,12 @@ class test_table_model(SherpaTestCase):
 
     def test_ascii_table3_col23(self):
         """Read in a three-column ASCII file: col2 col3"""
-        ui.load_table_model('tbl3', self.ascii_threecol,
-                            colkeys=['Y', 'STAT_ERR'])
+        self.state.load_table_model('tbl3', self.ascii_threecol,
+                                    colkeys=['Y', 'STAT_ERR'])
         self._test_table2('tbl3')
 
         # Note: the values are sorted on read
-        m = ui.get_model_component('tbl3')
+        m = self.state.get_model_component('tbl3')
         x = m.get_x()
         y = m.get_y()
 
@@ -305,55 +319,47 @@ class test_table_model(SherpaTestCase):
 
     def test_ascii_table3_ncols1(self):
         """Read in a three-column ASCII file: ncols=1"""
-        ui.load_table_model('tbl1', self.ascii_threecol, ncols=1)
+        self.state.load_table_model('tbl1', self.ascii_threecol, ncols=1)
         self._test_table1('tbl1')
 
-        m = ui.get_model_component('tbl1')
+        m = self.state.get_model_component('tbl1')
         y = m.get_y()
         assert_allclose(self.x, y)
 
     def test_ascii_table3_ncols2(self):
         """Read in a three-column ASCII file: ncols=2"""
-        ui.load_table_model('tbl3', self.ascii_threecol, ncols=2)
+        self.state.load_table_model('tbl3', self.ascii_threecol, ncols=2)
         self._test_table2('tbl3')
 
-        m = ui.get_model_component('tbl3')
+        m = self.state.get_model_component('tbl3')
         x = m.get_x()
         y = m.get_y()
         assert_allclose(self.x, x)
         assert_allclose(self.y, y)
 
-    # Is it worth checking that FITS files are not supported (it
-    # does trigger an error condition so improves code coverage)?
-    #
-    @requires_data
-    def test_fits_errors_out(self):
-        """FITS files are unsupported"""
-        fname = self.make_path('double.fits')
-        self.assertRaises(IOErr, ui.load_table_model, 'ftbl', fname)
-
     def test_eval_basic1_fail(self):
         """Model evaluation fails if #rows does not match."""
 
-        ui.load_table_model('fmodel', self.ascii_onecol)
-        ui.load_arrays(99, self.x[1:], self.y[1:])
-        ui.set_source(99, 'fmodel')
-        self.assertRaises(ModelErr, ui.calc_stat, 99)
+        self.state.load_table_model('fmodel', self.ascii_onecol)
+        self.state.load_arrays(99, self.x[1:], self.y[1:])
+        self.state.set_source(99, 'fmodel')
+        self.assertRaises(ModelErr, self.state.calc_stat, 99)
 
     def test_eval_basic1(self):
         """Check the one-column file evaluates sensibly."""
 
-        ui.set_stat('leastsq')
+        self.state.set_stat('leastsq')
         nval = 2.1e6
         for interp in self.interp1d:
-            ui.load_table_model('tbl1', self.ascii_onecol,
-                                method=interp)
-            m = ui.get_model_component('tbl1')
-            ui.load_arrays('tbl', self.x, self.y * nval, ui.Data1D)
-            ui.set_source('tbl', 'tbl1')
+            self.state.load_table_model('tbl1', self.ascii_onecol,
+                                        method=interp)
+            m = self.state.get_model_component('tbl1')
+            self.state.load_arrays('tbl', self.x, self.y * nval,
+                                   self.state.Data1D)
+            self.state.set_source('tbl', 'tbl1')
             m.ampl = nval
 
-            sval = ui.calc_stat('tbl')
+            sval = self.state.calc_stat('tbl')
             self.assertAlmostEqual(0.0, sval)
 
     def test_eval_basic2(self):
@@ -364,17 +370,18 @@ class test_table_model(SherpaTestCase):
         the interpolation models.
         """
 
-        ui.set_stat('leastsq')
+        self.state.set_stat('leastsq')
         nval = 2.1e6
         for interp in self.interp1d:
-            ui.load_table_model('tbl2', self.ascii_twocol,
-                                method=interp)
-            m = ui.get_model_component('tbl2')
-            ui.load_arrays('tbl', self.x, self.y * nval, ui.Data1D)
-            ui.set_source('tbl', 'tbl2')
+            self.state.load_table_model('tbl2', self.ascii_twocol,
+                                        method=interp)
+            m = self.state.get_model_component('tbl2')
+            self.state.load_arrays('tbl', self.x, self.y * nval,
+                                   self.state.Data1D)
+            self.state.set_source('tbl', 'tbl2')
             m.ampl = nval
 
-            sval = ui.calc_stat('tbl')
+            sval = self.state.calc_stat('tbl')
             self.assertAlmostEqual(0.0, sval)
 
     def test_eval_interp2(self):
@@ -402,9 +409,9 @@ class test_table_model(SherpaTestCase):
         yexp[neville] = [165.55, 9.5, 55.3, 103.6, 5.3, 199.6]
 
         for interp in self.interp1d:
-            ui.load_table_model('tbl2', self.ascii_twocol,
-                                method=interp)
-            m = ui.get_model_component('tbl2')
+            self.state.load_table_model('tbl2', self.ascii_twocol,
+                                        method=interp)
+            m = self.state.get_model_component('tbl2')
             yint = m(xvals)
 
             ydiff = yint - yexp[interp]
@@ -436,19 +443,19 @@ class test_table_model(SherpaTestCase):
         # on a single machine; they may need to be adjusted for other
         # machines.
         smax = {linear_interp: 0.1, nearest_interp: 0.01, neville: 1.0}
-        ui.set_stat('leastsq')
+        self.state.set_stat('leastsq')
         for interp in self.interp1d:
-            ui.load_arrays('filt', xvals, yexp[interp])
+            self.state.load_arrays('filt', xvals, yexp[interp])
 
-            ui.load_table_model('filt2', self.ascii_twocol,
-                                method=interp)
-            ui.set_source('filt', 'filt2')
+            self.state.load_table_model('filt2', self.ascii_twocol,
+                                        method=interp)
+            self.state.set_source('filt', 'filt2')
 
-            ui.ignore_id('filt', 110, 125)
-            ui.ignore_id('filt', 135, 149)
+            self.state.ignore_id('filt', 110, 125)
+            self.state.ignore_id('filt', 135, 149)
 
             # Use calc_stat_info in order to check dof
-            svals = ui.get_stat_info()
+            svals = self.state.get_stat_info()
             sval = svals[0]
             self.assertEqual(5, sval.dof)
             self.assertLess(sval.statval, smax[interp])
@@ -492,6 +499,36 @@ class test_table_model(SherpaTestCase):
             tmdl.ampl = 0.5
             ycalc = tmdl(xlo, xhi)
             assert_allclose(ymdl, ycalc)
+
+
+class test_table_model(BaseTableModelTestCase, SherpaTestCase):
+
+    state = ui
+
+    def make_local_path(self, fname):
+        """Use local data directory"""
+        # Is there a better way than this?
+        thisfile = sys.modules[self.__module__].__file__
+        thisdir = os.path.dirname(thisfile)
+        return os.path.join(thisdir, 'data', fname)
+
+    # Is it worth checking that FITS files are not supported (it
+    # does trigger an error condition so improves code coverage)?
+    #
+    @requires_data
+    def test_fits_errors_out(self):
+        """FITS files are unsupported"""
+        fname = self.make_path('double.fits')
+        self.assertRaises(IOErr,
+                          self.state.load_table_model, 'ftbl', fname)
+
+    # TODO: why does this test fail in sherpa.astro.ui - i.e. no
+    #       error is thrown? Have moved out of Base...TestCase for now
+    def test_fail_on_missing_col(self):
+        """Error out if a column is missing."""
+
+        self.assertRaises(IOErr, self.state.load_table_model, 'failed',
+                          self.ascii_twocol, colkeys=['a', 'b'])
 
 
 class test_psf_ui(SherpaTestCase):

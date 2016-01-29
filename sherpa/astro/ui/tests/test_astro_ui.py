@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,6 +18,7 @@
 #
 
 import os
+import sys
 import unittest
 import tempfile
 
@@ -30,13 +31,15 @@ from sherpa.astro import ui
 from sherpa.data import Data1D
 from sherpa.astro.data import DataPHA
 
+from sherpa.ui.tests import test_ui
+
 import logging
 logger = logging.getLogger("sherpa")
 
 
 @requires_fits
 @requires_data
-class test_ui(SherpaTestCase):
+class test_astro_ui(SherpaTestCase):
 
     def setUp(self):
         self.ascii = self.make_path('threads/ascii_table/sim.poisson.1.dat')
@@ -68,6 +71,8 @@ class test_ui(SherpaTestCase):
         ui.load_table(1, self.fits, 4, ('R', "SUR_BRI", 'SUR_BRI_ERR'),
                       ui.Data1DInt)
 
+    # TODO: moving teste to test_table_model
+    """
     # Test table model
     def test_table_model_ascii_table(self):
         ui.load_table_model('tbl', self.singledat)
@@ -89,6 +94,8 @@ class test_ui(SherpaTestCase):
         ui.load_user_model(self.func, 'mdl', self.singletbl)
         ui.load_user_model(self.func, 'mdl', self.doubletbl)
 
+    """
+
     def test_filter_ascii(self):
         ui.load_filter(self.filter_single_int_ascii)
         ui.load_filter(self.filter_single_int_ascii, ignore=True)
@@ -102,9 +109,25 @@ class test_ui(SherpaTestCase):
         ui.load_filter(self.filter_single_log_table, ignore=True)
 
 
+class test_table_model(test_ui.BaseTableModelTestCase, SherpaTestCase):
+
+    state = ui
+
+    # for now, hard-code a path to the sherpa/ui/tests/ directory
+    def make_local_path(self, fname):
+        """Use local data directory"""
+        # Is there a better way than this?
+        thisfile = sys.modules[self.__module__].__file__
+        thisdir = os.path.dirname(thisfile)
+        return os.path.join(thisdir, '../../../ui/tests',
+                            'data', fname)
+
+    # TODO: add some tests!
+
+
 @requires_data
 @requires_fits
-class test_more_ui(SherpaTestCase):
+class test_more_astro_ui(SherpaTestCase):
 
     def setUp(self):
         self._old_logger_level = logger.getEffectiveLevel()
@@ -185,7 +208,7 @@ class test_image_12578(SherpaTestCase):
             self.fail("Test Case #2: DataErr Exception not caught")
 
 
-class test_psf_ui(SherpaTestCase):
+class test_psf_astro_ui(SherpaTestCase):
 
     models1d = ['beta1d', 'lorentz1d', 'normbeta1d']
     models2d = ['beta2d', 'devaucouleurs2d', 'hubblereynolds', 'lorentz2d']
@@ -234,7 +257,7 @@ class test_psf_ui(SherpaTestCase):
 
 @requires_data
 @requires_fits
-class test_stats_ui(SherpaTestCase):
+class test_stats_astro_ui(SherpaTestCase):
     def setUp(self):
         self.data = self.make_path('threads/chi2/3c273.pi')
         ui.clean()
@@ -531,7 +554,6 @@ class test_basic_io(SherpaTestCase):
 
 if __name__ == '__main__':
 
-    import sys
     if len(sys.argv) > 1:
         datadir = sys.argv[1]
     else:
