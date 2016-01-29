@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,6 @@
 #
 
 
-import unittest
 from sherpa.models import TableModel, Gauss1D
 from sherpa.models.template import create_template_model
 from sherpa.utils import SherpaTest, SherpaTestCase, requires_data
@@ -64,35 +63,44 @@ class test_new_templates_ui(SherpaTestCase):
     # TestCase 1 load_template_model enables interpolation by default
     def test_load_template_with_interpolation(self):
         self.run_thread('load_template_with_interpolation')
-        try:
-            self.assertEqualWithinTol(2023.46, ui.get_fit_results().parvals[0], 0.001)
-            self.assertEqualWithinTol(2743.47, ui.get_fit_results().parvals[1], 0.001)
-        except:
-            self.assertEqualWithinTol(2743.47, ui.get_fit_results().parvals[0], 0.001)
-            self.assertEqualWithinTol(2023.46, ui.get_fit_results().parvals[1], 0.001)
+        pvals = ui.get_fit_results().parvals
+        pmin = pvals[0]
+        pmax = pvals[1]
+        if pmax < pmin:
+            (pmin, pmax) = (pmax, pmin)
+
+        tol = 0.001
+        self.assertEqualWithinTol(2023.46, pmin, tol)
+        self.assertEqualWithinTol(2743.47, pmax, tol)
 
     def test_load_template_interpolator(self):
         self.run_thread('load_template_interpolator')
-        self.assertEqualWithinTol(2743.91, ui.get_fit_results().parvals[0], 0.001)
+        pval = ui.get_fit_results().parvals[0]
+        self.assertEqualWithinTol(2743.91, pval, 0.001)
 
-    # TestCase 2 load_template_model with template_interpolator_name=None disables interpolation
-    # TestCase 3.1 discrete templates fail when probed for values they do not represent (gridsearch with wrong values)
-    def test_load_template_model_without_interpolation(self):
+    # TestCase 2 load_template_model with template_interpolator_name=None
+    # disables interpolation
+    #
+    # TestCase 3.1 discrete templates fail when probed for values they do
+    # not represent (gridsearch with wrong values)
+    def test_load_template_model_without_interpolation_2_31(self):
         try:
             self.run_thread('load_template_without_interpolation',
                             scriptname='test_case_2_and_3.1.py')
         except ModelErr:
             return
-        self.fail('Fit should have failed: using gridsearch with wrong parvals')
+        self.fail('Fit should have failed: gridsearch with wrong parvals')
 
-    # TestCase 3.2 discrete templates fail when probed for values they do not represent (continuous method with discrete template)
-    def test_load_template_model_without_interpolation(self):
+    # TestCase 3.2 discrete templates fail when probed for values they do
+    # not represent (continuous method with discrete template)
+    #
+    def test_load_template_model_without_interpolation_32(self):
         try:
             self.run_thread('load_template_without_interpolation',
                             scriptname='test_case_3.2.py')
         except ModelErr:
             return
-        self.fail('Fit should have failed: using gridsearch with wrong parvals')
+        self.fail('Fit should have failed: gridsearch with wrong parvals')
 
     # TestCase 4 gridsearch with right values succeeds
     def test_grid_search_with_discrete_template(self):
@@ -115,7 +123,7 @@ class test_template(SherpaTestCase):
         g1 = Gauss1D('g1')
 
         # create a 4-dimensional grid from 0 to 1 inclusive, shape = (16,4)
-        grid = numpy.mgrid[ [slice(0,2,1) for ii in range(self.num)] ]
+        grid = numpy.mgrid[[slice(0, 2, 1) for ii in range(self.num)]]
         grid = numpy.asarray(map(numpy.ravel, grid)).T
         coords = numpy.linspace(0.01, 6, 100)
         names = ["p%i" % i for i in range(self.num)]
@@ -134,16 +142,15 @@ class test_template(SherpaTestCase):
         self.model = None
 
     def test_template_model_evaluation(self):
-        self.model.thawedpars = [0,1,0,1]
+        self.model.thawedpars = [0, 1, 0, 1]
         # We want to evaluate the model, but do not check the result
         self.model(self.x)
 
 #    def test_template_query_index(self):
 #        expected = 5
 #        result = self.model.query_index([0,1,0,1])
-#        self.assertEqual(expected, result,
-#                         "Expected %s instead of %s" % (str(expected), str(result)))
-
+#        self.assertEqual(expected, result)
+#
 #    def test_template_query(self):
 #        result = self.model.query([0,1,0,1])
 
