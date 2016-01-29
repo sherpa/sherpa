@@ -495,19 +495,27 @@ def get_image_data(arg, make_copy=False):
         crvalw = _get_wcs_key(img, 'CRVAL1', 'CRVAL2')
 
         # proper calculation of cdelt wrt PHYSICAL coords
-        if cdeltw != () and cdeltp != ():
+        if (isinstance(cdeltw, numpy.ndarray)
+                and isinstance(cdeltp, numpy.ndarray)):
             cdeltw = cdeltw / cdeltp
 
         # proper calculation of crpix wrt PHYSICAL coords
-        if crpixw != () and crvalp != () and cdeltp != () and crpixp != ():
+        if (isinstance(crpixw, numpy.ndarray)
+                and isinstance(crvalp, numpy.ndarray)
+                and isinstance(cdeltp, numpy.ndarray)
+                and isinstance(crpixp, numpy.ndarray)):
             crpixw = crvalp + (crpixw - crpixp) * cdeltp
 
         sky = None
-        if transformstatus and cdeltp != () and crpixp != () and crvalp != ():
+        if (transformstatus and isinstance(cdeltp, numpy.ndarray)
+                and isinstance(crpixp, numpy.ndarray)
+                and isinstance(crvalp, numpy.ndarray)):
             sky = WCS('physical', 'LINEAR', crvalp, crpixp, cdeltp)
 
         eqpos = None
-        if transformstatus and cdeltw != () and crpixw != () and crvalw != ():
+        if (transformstatus and isinstance(cdeltw, numpy.ndarray)
+                and isinstance(crpixw, numpy.ndarray)
+                and isinstance(crvalw, numpy.ndarray)):
             eqpos = WCS('world', 'WCS', crvalw, crpixw, cdeltw)
 
         data['sky'] = sky
