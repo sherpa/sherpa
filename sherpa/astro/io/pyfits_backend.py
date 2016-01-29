@@ -269,12 +269,21 @@ def _try_vec_or_key(hdu, name, size, dtype=SherpaFloat, fix_type=False):
 # and 'foo.fits.gz' exists, then it will use this). This requires some
 # effort to emulate with the astropy backend.
 
-def is_binary_file(fname):
+def _infer_and_check_filename(filename):
+    fname = filename  # keep filename unchanged
+    if not os.path.exists(fname):
+        fname += '.gz'  # try to find a gzipped version, following CXC/Crates conventions.
+        if not os.path.exists(fname):  # fail fast
+            raise IOErr('filenotfound', filename)  # error message reports the original filename requested
+    return fname
+
+
+def is_binary_file(filename):
     """Do we think the file contains binary data?
 
     Parameters
     ----------
-    fname : str
+    filename : str
        The file name.
 
     Returns
@@ -289,10 +298,7 @@ def is_binary_file(fname):
     attempts to transparently support reading from a `.gz`
     version if the input file name does not exist.
     """
-
-    if not os.path.exists(fname):
-        fname = fname + '.gz'
-
+    fname = _infer_and_check_filename(filename)
     return sherpa.utils.is_binary_file(fname)
 
 
@@ -312,16 +318,8 @@ def open_fits(filename):
        The return value from the `astropy.io.fits.open`
        function.
     """
-
-    try:
-        return fits.open(filename)
-    except IOError as e:
-        try:
-            # This will try 'foo.gz.gz'.
-            return fits.open(filename + '.gz')
-        except IOError:
-            # Raise the original error
-            raise e
+    fname = _infer_and_check_filename(filename)
+    return fits.open(fname)
 
 
 def read_table_blocks(arg, make_copy=False):
