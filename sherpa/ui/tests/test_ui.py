@@ -131,6 +131,21 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
     #
     state = None
 
+    # Full path to files containing 1, 2, and 3 columns of data
+    # with names given by colnames
+    #
+    file_onecol = None
+    file_twocol = None
+    file_threecol = None
+    colnames = None
+
+    # The data values that are in the three columns of the
+    # data file.
+    #
+    x = None
+    y = None
+    dy = None
+
     # What interpolation functions should be used. Note that
     # the code is somewhat hard-coded to these values (e.g. for
     # selecting tolerances), so perhaps more, or less, abstraction
@@ -138,39 +153,32 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
     #
     interp1d = [linear_interp, nearest_interp, neville]
 
-    # would like to over-ride make_path, but it is used
-    # for the FITS tests, so need a separate one.
+    # would like to over-ride make_path, but it is a bit clearer
+    # keeping this separate.
     #
     def make_local_path(self, fname):
         """Use local data directory"""
         raise NotImplementedError
 
     def setUp(self):
-        self.ascii_onecol = self.make_local_path('gauss1d-onecol.dat')
-        self.ascii_twocol = self.make_local_path('gauss1d.dat')
-        self.ascii_threecol = self.make_local_path('gauss1d-error.dat')
-
-        # the values in self.ascii_threecol
-        dtype = np.float32
-        self.x = np.asarray([80, 95, 110, 125, 140, 155, 170,
-                             185, 200], dtype=dtype)
-        self.y = np.asarray([0, 0, 9, 35, 93, 96, 49, 15, 0],
-                            dtype=dtype)
-        self.dy = np.asarray([1.86603, 1.86603, 4.1225, 6.97913,
-                              10.6825, 10.8362, 8.05337, 4.96863,
-                              1.86603], dtype=dtype)
+        # depending on the order of tests, there can be a problem
+        # with test_ascii_eval (if there are any other model components
+        # defined). Until there is a call to clean() in
+        # SherpaTestCase.tearDown then explicitly clean up here.
+        #
+        self.state.clean()
 
     # should really be in SherpaTestCase
     def tearDown(self):
         self.state.clean()
 
-    def test_basic(self):
+    def _test_basic(self, filename):
         """Check that a table can be created and has expected properties"""
 
         flag = 'tbl' in self.state.list_model_components()
         self.assertFalse(flag)
 
-        self.state.load_table_model('tbl', self.ascii_onecol)
+        self.state.load_table_model('tbl', filename)
 
         flag = 'tbl' in self.state.list_model_components()
         self.assertTrue(flag,
@@ -217,58 +225,61 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
         self.assertIn(gotvals.dtype, (np.float32, np.float64))
         assert_allclose(expvals, gotvals)
 
-    def test_ascii_table1(self):
-        """Read in a one-column ASCII file"""
+    def _test_table1(self, filename, yexp, ncols=2):
+        """Read in a one-column file"""
 
-        self.state.load_table_model('tbl1', self.ascii_onecol)
+        self.state.load_table_model('tbl1', filename, ncols=ncols)
         mdl = self.state.get_model_component('tbl1')
         self._checkcol(None, mdl.get_x())
-        self._checkcol(self.y, mdl.get_y())
+        self._checkcol(yexp, mdl.get_y())
 
-    def test_ascii_table2(self):
-        """Read in a two-column ASCII file"""
-        self.state.load_table_model('tbl2', self.ascii_twocol)
+    def _test_table2(self, filename, xexp, yexp, ncols=2, colkeys=None):
+        """Read in a two-column file"""
+
+        self.state.load_table_model('tbl2', filename,
+                                    ncols=ncols, colkeys=colkeys)
         mdl = self.state.get_model_component('tbl2')
-        self._checkcol(self.x, mdl.get_x())
-        self._checkcol(self.y, mdl.get_y())
+        self._checkcol(xexp, mdl.get_x())
+        self._checkcol(yexp, mdl.get_y())
 
-    def test_ascii_table3_col12(self):
-        """Read in a three-column ASCII file: col1 col2"""
-        self.state.load_table_model('tbl3', self.ascii_threecol)
-        mdl = self.state.get_model_component('tbl3')
-        self._checkcol(self.x, mdl.get_x())
-        self._checkcol(self.y, mdl.get_y())
+    def test_basic(self):
+        """Check that a table can be created from a file"""
+        self._test_basic(self.file_onecol)
 
-    def test_ascii_table3_col13(self):
-        """Read in a three-column ASCII file: col1 col3"""
-        self.state.load_table_model('tbl3', self.ascii_threecol,
-                                    colkeys=['X', 'STAT_ERR'])
-        mdl = self.state.get_model_component('tbl3')
-        self._checkcol(self.x, mdl.get_x())
-        self._checkcol(self.dy, mdl.get_y())
+    def test_table1(self):
+        """Read in a one-column file"""
+        self._test_table1(self.file_onecol, self.y)
 
-    def test_ascii_table3_col23(self):
-        """Read in a three-column ASCII file: col2 col3"""
-        self.state.load_table_model('tbl3', self.ascii_threecol,
-                                    colkeys=['Y', 'STAT_ERR'])
-        mdl = self.state.get_model_component('tbl3')
+    def test_table2(self):
+        """Read in a two-column file"""
+        self._test_table2(self.file_twocol, self.x, self.y)
+
+    def test_table3_col12(self):
+        """Read in a three-column file: col1 col2"""
+        self._test_table2(self.file_threecol, self.x, self.y)
+
+    def test_table3_col13(self):
+        """Read in a three-column file: col1 col3"""
+        colkeys = [self.colnames[0], self.colnames[2]]
+        self._test_table2(self.file_threecol, self.x, self.dy,
+                          colkeys=colkeys)
+
+    def test_table3_col23(self):
+        """Read in a three-column file: col2 col3"""
         idx = np.argsort(self.y)
-        self._checkcol(self.y[idx], mdl.get_x())
-        self._checkcol(self.dy[idx], mdl.get_y())
+        x = self.y[idx]
+        y = self.dy[idx]
+        colkeys = [self.colnames[1], self.colnames[2]]
+        self._test_table2(self.file_threecol, x, y,
+                          colkeys=colkeys)
 
-    def test_ascii_table3_ncols1(self):
-        """Read in a three-column ASCII file: ncols=1"""
-        self.state.load_table_model('tbl1', self.ascii_threecol, ncols=1)
-        mdl = self.state.get_model_component('tbl1')
-        self._checkcol(None, mdl.get_x())
-        self._checkcol(self.x, mdl.get_y())
+    def test_table3_ncols1(self):
+        """Read in a three-column file: ncols=1"""
+        self._test_table1(self.file_threecol, self.x, ncols=1)
 
-    def test_ascii_table3_ncols2(self):
-        """Read in a three-column ASCII file: ncols=2"""
-        self.state.load_table_model('tbl3', self.ascii_threecol, ncols=2)
-        mdl = self.state.get_model_component('tbl3')
-        self._checkcol(self.x, mdl.get_x())
-        self._checkcol(self.y, mdl.get_y())
+    def test_table3_ncols2(self):
+        """Read in a three-column file: ncols=2"""
+        self._test_table2(self.file_threecol, self.x, self.y, ncols=2)
 
     # Since the previous tests have checked that the data has
     # been read in, the evaluation tests do not have to cover
@@ -276,14 +287,16 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
     #   - 2 column with and with-out filtering
     #   - integrated (probably not really needed)
     #
-    def test_ascii_eval(self):
+    def test_eval(self):
         """Basic test of evaluating the table model"""
 
+        # should really have the normalization and tolerance
+        # defined by the class.
         norm = 2.1e6
         self.state.set_stat('leastsq')
 
         for interp in self.interp1d:
-            self.state.load_table_model('tbl', self.ascii_twocol,
+            self.state.load_table_model('tbl', self.file_twocol,
                                         method=interp)
             mdl = self.state.get_model_component('tbl')
             mdl.ampl = norm
@@ -303,14 +316,14 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
             self.assertAlmostEqual(0.0, res.statval)
             self.assertEqual(5, res.numpoints)
 
-    def test_ascii_eval_interp(self):
+    def test_eval_interp(self):
         """Basic test of evaluating the table model: interpolation"""
 
         norm = 2.1e6
         self.state.set_stat('leastsq')
 
         for interp in self.interp1d:
-            self.state.load_table_model('tbl', self.ascii_twocol,
+            self.state.load_table_model('tbl', self.file_twocol,
                                         method=interp)
             mdl = self.state.get_model_component('tbl')
             mdl.ampl = norm
@@ -331,18 +344,39 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
             self.assertAlmostEqual(0.0, res.statval)
             self.assertEqual(3, res.numpoints)
 
-    def test_ascii_onecol_fail(self):
+    def test_onecol_fail(self):
         """Model evaluation fails if #rows does not match."""
 
-        self.state.load_table_model('fmodel', self.ascii_onecol)
+        self.state.load_table_model('fmodel', self.file_onecol)
         self.state.load_arrays(99, self.x[1:], self.y[1:])
         self.state.set_source(99, 'fmodel')
         self.assertRaises(ModelErr, self.state.calc_stat, 99)
 
 
-class test_table_model(BaseTableModelTestCase, SherpaTestCase):
+class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):
 
     state = ui
+
+    def setUp(self):
+
+        super(test_table_model_ascii, self).setUp()
+
+        self.file_onecol = self.make_local_path('gauss1d-onecol.dat')
+        self.file_twocol = self.make_local_path('gauss1d.dat')
+        self.file_threecol = self.make_local_path('gauss1d-error.dat')
+
+        # the column names in self.file_one/two/threecol
+        self.colnames = ['X', 'Y', 'STAT_ERR']
+
+        # the values in self.file_threecol
+        dtype = np.float32
+        self.x = np.asarray([80, 95, 110, 125, 140, 155, 170,
+                             185, 200], dtype=dtype)
+        self.y = np.asarray([0, 0, 9, 35, 93, 96, 49, 15, 0],
+                            dtype=dtype)
+        self.dy = np.asarray([1.86603, 1.86603, 4.1225, 6.97913,
+                              10.6825, 10.8362, 8.05337, 4.96863,
+                              1.86603], dtype=dtype)
 
     def make_local_path(self, fname):
         """Use local data directory"""
@@ -351,23 +385,24 @@ class test_table_model(BaseTableModelTestCase, SherpaTestCase):
         thisdir = os.path.dirname(thisfile)
         return os.path.join(thisdir, 'data', fname)
 
-    # Is it worth checking that FITS files are not supported (it
-    # does trigger an error condition so improves code coverage)?
-    #
-    @requires_data
+    # TODO: why does this test fail in sherpa.astro.ui - i.e. no
+    #       error is thrown? Have moved out of Base...TestCase for now
+    #       Need to look at the code, but it is probably the
+    #       fall-over-to-XSPEC-table-model case
+    def test_fail_on_missing_col(self):
+        """Error out if a column is missing."""
+        self.assertRaises(IOErr, self.state.load_table_model, 'failed',
+                          self.file_twocol, colkeys=['a', 'b'])
+
+
+@requires_data
+class test_table_model_fits(SherpaTestCase):
+    """FITS files are not supported."""
+
     def test_fits_errors_out(self):
         """FITS files are unsupported"""
         fname = self.make_path('double.fits')
-        self.assertRaises(IOErr,
-                          self.state.load_table_model, 'ftbl', fname)
-
-    # TODO: why does this test fail in sherpa.astro.ui - i.e. no
-    #       error is thrown? Have moved out of Base...TestCase for now
-    def test_fail_on_missing_col(self):
-        """Error out if a column is missing."""
-
-        self.assertRaises(IOErr, self.state.load_table_model, 'failed',
-                          self.ascii_twocol, colkeys=['a', 'b'])
+        self.assertRaises(IOErr, ui.load_table_model, 'ftbl', fname)
 
 
 class test_psf_ui(SherpaTestCase):

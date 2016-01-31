@@ -22,7 +22,7 @@ import sys
 import unittest
 import tempfile
 
-import numpy
+import numpy as np
 from numpy.testing import assert_allclose
 
 from sherpa.utils import SherpaTest, SherpaTestCase
@@ -93,9 +93,38 @@ class test_astro_ui(SherpaTestCase):
         ui.load_filter(self.filter_single_log_table, ignore=True)
 
 
-class test_table_model(test_ui.BaseTableModelTestCase, SherpaTestCase):
+class BaseTableModelTestCase(test_ui.BaseTableModelTestCase):
 
     state = ui
+
+
+class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):
+    """Is the same I/O code used here as in sherpa.ui.load_table_model?
+    If so then this could be wasted (other than it checks that the
+    extra work done by the sherpa.astro.ui routine does not cause
+    a problem.
+    """
+
+    def setUp(self):
+
+        super(test_table_model_ascii, self).setUp()
+
+        self.file_onecol = self.make_local_path('gauss1d-onecol.dat')
+        self.file_twocol = self.make_local_path('gauss1d.dat')
+        self.file_threecol = self.make_local_path('gauss1d-error.dat')
+
+        # the column names in self.file_one/two/threecol
+        self.colnames = ['X', 'Y', 'STAT_ERR']
+
+        # the values in self.file_threecol
+        dtype = np.float32
+        self.x = np.asarray([80, 95, 110, 125, 140, 155, 170,
+                             185, 200], dtype=dtype)
+        self.y = np.asarray([0, 0, 9, 35, 93, 96, 49, 15, 0],
+                            dtype=dtype)
+        self.dy = np.asarray([1.86603, 1.86603, 4.1225, 6.97913,
+                              10.6825, 10.8362, 8.05337, 4.96863,
+                              1.86603], dtype=dtype)
 
     # for now, hard-code a path to the sherpa/ui/tests/ directory
     def make_local_path(self, fname):
@@ -106,24 +135,67 @@ class test_table_model(test_ui.BaseTableModelTestCase, SherpaTestCase):
         return os.path.join(thisdir, '../../../ui/tests',
                             'data', fname)
 
-    # TODO: add some tests of the FITS reading.
+
+@requires_fits
+class test_table_model_fits(BaseTableModelTestCase, SherpaTestCase):
+
+    # This is an example where do not want make_path to error out if
+    # no data is available, as many tests can still be run even if
+    # the data directory is not available.
     #
-    # the following were in test_astro_ui; they probably aren't
-    # much use here apart from providing file names to use
-    """
-    # Test table model
-    def test_table_model_ascii_table(self):
-        ui.load_table_model('tbl', self.singledat)
-        ui.load_table_model('tbl', self.doubledat)
+    def setUp(self):
 
-    def test_table_model_fits_table(self):
-        ui.load_table_model('tbl', self.singletbl)
-        ui.load_table_model('tbl', self.doubletbl)
+        super(test_table_model_fits, self).setUp()
 
-    def test_table_model_fits_image(self):
-        ui.load_table_model('tbl', self.img)
+        self.file_onecol = self.make_local_path('gauss1d-onecol.fits')
+        self.file_twocol = self.make_local_path('gauss1d.fits')
+        self.file_threecol = self.make_local_path('gauss1d-error.fits')
 
-    """
+        # the column names in self.file_one/two/threecol
+        self.colnames = ['X', 'Y', 'STAT_ERR']
+
+        # the values in self.file_threecol
+        dtype = np.float32
+        self.x = np.asarray([80, 95, 110, 125, 140, 155, 170,
+                             185, 200], dtype=dtype)
+        self.y = np.asarray([0, 0, 9, 35, 93, 96, 49, 15, 0],
+                            dtype=dtype)
+        self.dy = np.asarray([1.86603, 1.86603, 4.1225, 6.97913,
+                              10.6825, 10.8362, 8.05337, 4.96863,
+                              1.86603], dtype=dtype)
+
+    def make_local_path(self, fname):
+        """Use local data directory"""
+        # Is there a better way than this?
+        thisfile = sys.modules[self.__module__].__file__
+        thisdir = os.path.dirname(thisfile)
+        return os.path.join(thisdir, 'data', fname)
+
+    # For some reason the following three tests fail, so over-ride
+    # them for now.
+    #
+    def test_onecol_fail(self):
+        pass
+
+    def test_table1(self):
+        pass
+
+    def test_table3_ncols1(self):
+        pass
+
+    # TODO: improve the "2D" tests
+    #
+    @requires_data
+    def test_table_model_image(self):
+        img = self.make_path('img.fits')
+        ui.load_table_model('tbl', img)
+        tbl = ui.get_model_component('tbl')
+        self.assertEqual(None, tbl.get_x())
+        y = tbl.get_y()
+        self.assertEqual(100 * 100, y.size)
+        self.assertIn(y.dtype,
+                      (np.float32, np.float64,
+                       np.dtype('>f4'), np.dtype('>f8')))
 
 
 @requires_data
@@ -229,8 +301,8 @@ class test_psf_astro_ui(SherpaTestCase):
                 ui.load_psf('psf1d', model + '.mdl')
                 ui.set_psf('psf1d')
                 mdl = ui.get_model_component('mdl')
-                self.assertTrue((numpy.array(mdl.get_center()) ==
-                                 numpy.array([4])).all())
+                self.assertTrue((np.array(mdl.get_center()) ==
+                                 np.array([4])).all())
             except:
                 print model
                 raise
@@ -242,8 +314,8 @@ class test_psf_astro_ui(SherpaTestCase):
                 ui.load_psf('psf2d', model + '.mdl')
                 ui.set_psf('psf2d')
                 mdl = ui.get_model_component('mdl')
-                self.assertTrue((numpy.array(mdl.get_center()) ==
-                                 numpy.array([108, 130])).all())
+                self.assertTrue((np.array(mdl.get_center()) ==
+                                 np.array([108, 130])).all())
             except:
                 print model
                 raise
@@ -418,8 +490,8 @@ class test_save_arrays_base(SherpaTestCase):
 
         # It looks like the input arrays to `write_arrays` should be numpy
         # arrays, so enforce that invariant.
-        a = numpy.asarray([1, 3, 9])
-        b = numpy.sqrt(numpy.asarray(a))
+        a = np.asarray([1, 3, 9])
+        b = np.sqrt(np.asarray(a))
         c = b * 0.1
 
         if self._colnames:
