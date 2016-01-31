@@ -187,6 +187,9 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
         # self.assertEqual('tablemodel.tbl', mdl.name)
         # self.assertEqual('tbl', mdl.name)
 
+        # The x/y values are checked in later tests, so do not
+        # include that here.
+
         pars = mdl.pars
         self.assertEqual(1, len(pars), msg='One parameter')
 
@@ -202,303 +205,139 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
     #     self.assertRaises(IOErr, self.state.load_table_model, 'failed',
     #                       self.ascii_twocol, colkeys=['a', 'b'])
 
-    def _test_table1(self, tname):
-        """Tests for a one-column file"""
+    def _checkcol(self, expvals, gotvals):
+        """Check a column"""
 
-        mdl = self.state.get_model_component(tname)
-        x = mdl.get_x()
-        y = mdl.get_y()
+        if expvals is None:
+            self.assertEqual(None, gotvals)
+            return
 
-        self.assertEqual(None, x, msg='No X axis for table')
-
-        y = mdl.get_y()
-        self.assertEqual(9, y.size,
-                         msg='Correct #rows for table')
-
-        # I do not think we guarantee the type of the column, so
-        # support both 32 and 64 bit data types
-        self.assertIn(y.dtype, (np.float32, np.float64))
-
-    def _test_table2(self, tname):
-        """Tests for a two-column file"""
-        mdl = self.state.get_model_component(tname)
-
-        x = mdl.get_x()
-        y = mdl.get_y()
-
-        self.assertEqual(9, x.size,
-                         msg='Correct #rows for table (X)')
-        self.assertEqual(9, y.size,
-                         msg='Correct #rows for table (Y)')
-
-        # I do not think we guarantee the type of the column, so
-        # support both 32 and 64 bit data types. I would expect
-        # both columns to have the same data type, but there
-        # could be a reason that this is not true, so do not
-        # enforce it here.
-        self.assertIn(x.dtype, (np.float32, np.float64))
-        self.assertIn(y.dtype, (np.float32, np.float64))
-
-    def _test_table3(self, tname):
-        """Tests for a three-column file: col1 col2"""
-        mdl = self.state.get_model_component(tname)
-
-        x = mdl.get_x()
-        y = mdl.get_y()
-
-        self.assertEqual(9, x.size,
-                         msg='Correct #rows for table (X)')
-        self.assertEqual(9, y.size,
-                         msg='Correct #rows for table (Y)')
-
-        # I do not think we guarantee the type of the column, so
-        # support both 32 and 64 bit data types. I would expect
-        # both columns to have the same data type, but there
-        # could be a reason that this is not true, so do not
-        # enforce it here.
-        self.assertIn(x.dtype, (np.float32, np.float64))
-        self.assertIn(y.dtype, (np.float32, np.float64))
+        # There is no promise about the data types of the columns,
+        # so just check that it is a real, floating-point value.
+        self.assertIn(gotvals.dtype, (np.float32, np.float64))
+        assert_allclose(expvals, gotvals)
 
     def test_ascii_table1(self):
         """Read in a one-column ASCII file"""
-        self.state.load_table_model('tbl1', self.ascii_onecol)
-        self._test_table1('tbl1')
 
-        m = self.state.get_model_component('tbl1')
-        y = m.get_y()
-        assert_allclose(self.y, y)
+        self.state.load_table_model('tbl1', self.ascii_onecol)
+        mdl = self.state.get_model_component('tbl1')
+        self._checkcol(None, mdl.get_x())
+        self._checkcol(self.y, mdl.get_y())
 
     def test_ascii_table2(self):
         """Read in a two-column ASCII file"""
         self.state.load_table_model('tbl2', self.ascii_twocol)
-        self._test_table2('tbl2')
-
-        m = self.state.get_model_component('tbl2')
-        x = m.get_x()
-        y = m.get_y()
-        assert_allclose(self.x, x)
-        assert_allclose(self.y, y)
+        mdl = self.state.get_model_component('tbl2')
+        self._checkcol(self.x, mdl.get_x())
+        self._checkcol(self.y, mdl.get_y())
 
     def test_ascii_table3_col12(self):
         """Read in a three-column ASCII file: col1 col2"""
         self.state.load_table_model('tbl3', self.ascii_threecol)
-        self._test_table2('tbl3')
-
-        m = self.state.get_model_component('tbl3')
-        x = m.get_x()
-        y = m.get_y()
-        assert_allclose(self.x, x)
-        assert_allclose(self.y, y)
+        mdl = self.state.get_model_component('tbl3')
+        self._checkcol(self.x, mdl.get_x())
+        self._checkcol(self.y, mdl.get_y())
 
     def test_ascii_table3_col13(self):
         """Read in a three-column ASCII file: col1 col3"""
         self.state.load_table_model('tbl3', self.ascii_threecol,
                                     colkeys=['X', 'STAT_ERR'])
-        self._test_table2('tbl3')
-
-        m = self.state.get_model_component('tbl3')
-        x = m.get_x()
-        y = m.get_y()
-        assert_allclose(self.x, x)
-        assert_allclose(self.dy, y)
+        mdl = self.state.get_model_component('tbl3')
+        self._checkcol(self.x, mdl.get_x())
+        self._checkcol(self.dy, mdl.get_y())
 
     def test_ascii_table3_col23(self):
         """Read in a three-column ASCII file: col2 col3"""
         self.state.load_table_model('tbl3', self.ascii_threecol,
                                     colkeys=['Y', 'STAT_ERR'])
-        self._test_table2('tbl3')
-
-        # Note: the values are sorted on read
-        m = self.state.get_model_component('tbl3')
-        x = m.get_x()
-        y = m.get_y()
-
+        mdl = self.state.get_model_component('tbl3')
         idx = np.argsort(self.y)
-        assert_allclose(self.y[idx], x)
-        assert_allclose(self.dy[idx], y)
+        self._checkcol(self.y[idx], mdl.get_x())
+        self._checkcol(self.dy[idx], mdl.get_y())
 
     def test_ascii_table3_ncols1(self):
         """Read in a three-column ASCII file: ncols=1"""
         self.state.load_table_model('tbl1', self.ascii_threecol, ncols=1)
-        self._test_table1('tbl1')
-
-        m = self.state.get_model_component('tbl1')
-        y = m.get_y()
-        assert_allclose(self.x, y)
+        mdl = self.state.get_model_component('tbl1')
+        self._checkcol(None, mdl.get_x())
+        self._checkcol(self.x, mdl.get_y())
 
     def test_ascii_table3_ncols2(self):
         """Read in a three-column ASCII file: ncols=2"""
         self.state.load_table_model('tbl3', self.ascii_threecol, ncols=2)
-        self._test_table2('tbl3')
+        mdl = self.state.get_model_component('tbl3')
+        self._checkcol(self.x, mdl.get_x())
+        self._checkcol(self.y, mdl.get_y())
 
-        m = self.state.get_model_component('tbl3')
-        x = m.get_x()
-        y = m.get_y()
-        assert_allclose(self.x, x)
-        assert_allclose(self.y, y)
+    # Since the previous tests have checked that the data has
+    # been read in, the evaluation tests do not have to cover
+    # all these cases, just some basic ones:
+    #   - 2 column with and with-out filtering
+    #   - integrated (probably not really needed)
+    #
+    def test_ascii_eval(self):
+        """Basic test of evaluating the table model"""
 
-    def test_eval_basic1_fail(self):
+        norm = 2.1e6
+        self.state.set_stat('leastsq')
+
+        for interp in self.interp1d:
+            self.state.load_table_model('tbl', self.ascii_twocol,
+                                        method=interp)
+            mdl = self.state.get_model_component('tbl')
+            mdl.ampl = norm
+
+            self.state.load_arrays(1, self.x, self.y * norm,
+                                   self.state.Data1D)
+            self.state.set_source(mdl)
+
+            res = self.state.get_stat_info()[0]
+            self.assertAlmostEqual(0.0, res.statval)
+            self.assertEqual(9, res.numpoints)
+
+            self.state.ignore_id(1, None, self.x[1])
+            self.state.ignore_id(1, self.x[3], self.x[4])
+
+            res = self.state.get_stat_info()[0]
+            self.assertAlmostEqual(0.0, res.statval)
+            self.assertEqual(5, res.numpoints)
+
+    def test_ascii_eval_interp(self):
+        """Basic test of evaluating the table model: interpolation"""
+
+        norm = 2.1e6
+        self.state.set_stat('leastsq')
+
+        for interp in self.interp1d:
+            self.state.load_table_model('tbl', self.ascii_twocol,
+                                        method=interp)
+            mdl = self.state.get_model_component('tbl')
+            mdl.ampl = norm
+
+            self.state.load_arrays(1, self.x[:-1], self.x[1:],
+                                   self.y[:-1] * norm,
+                                   self.state.Data1DInt)
+            self.state.set_source(mdl)
+
+            res = self.state.get_stat_info()[0]
+            self.assertAlmostEqual(0.0, res.statval)
+            self.assertEqual(8, res.numpoints)
+
+            self.state.ignore_id(1, None, self.x[1])
+            self.state.ignore_id(1, self.x[3], self.x[4])
+
+            res = self.state.get_stat_info()[0]
+            self.assertAlmostEqual(0.0, res.statval)
+            self.assertEqual(3, res.numpoints)
+
+    def test_ascii_onecol_fail(self):
         """Model evaluation fails if #rows does not match."""
 
         self.state.load_table_model('fmodel', self.ascii_onecol)
         self.state.load_arrays(99, self.x[1:], self.y[1:])
         self.state.set_source(99, 'fmodel')
         self.assertRaises(ModelErr, self.state.calc_stat, 99)
-
-    def test_eval_basic1(self):
-        """Check the one-column file evaluates sensibly."""
-
-        self.state.set_stat('leastsq')
-        nval = 2.1e6
-        for interp in self.interp1d:
-            self.state.load_table_model('tbl1', self.ascii_onecol,
-                                        method=interp)
-            m = self.state.get_model_component('tbl1')
-            self.state.load_arrays('tbl', self.x, self.y * nval,
-                                   self.state.Data1D)
-            self.state.set_source('tbl', 'tbl1')
-            m.ampl = nval
-
-            sval = self.state.calc_stat('tbl')
-            self.assertAlmostEqual(0.0, sval)
-
-    def test_eval_basic2(self):
-        """Check the two-column file evaluates sensibly.
-
-        Here the X axis values match the model, so
-        theoretically no interpolation is needed. Try out
-        the interpolation models.
-        """
-
-        self.state.set_stat('leastsq')
-        nval = 2.1e6
-        for interp in self.interp1d:
-            self.state.load_table_model('tbl2', self.ascii_twocol,
-                                        method=interp)
-            m = self.state.get_model_component('tbl2')
-            self.state.load_arrays('tbl', self.x, self.y * nval,
-                                   self.state.Data1D)
-            self.state.set_source('tbl', 'tbl2')
-            m.ampl = nval
-
-            sval = self.state.calc_stat('tbl')
-            self.assertAlmostEqual(0.0, sval)
-
-    def test_eval_interp2(self):
-        """Check the two-column file evaluates sensibly.
-
-        Differences to test_eval_basic2 include:
-
-        * it uses different X-axis values
-        * model evaluation is explicit, rather than
-          implicit
-        * uses hard-coded values for the expected values
-        """
-
-        # Pick some values outside the data range; the expected values
-        # are based on a visual check of the interpolation results,
-        # and so are a regression test. The first/last points of
-        # nevile are exclued from the final comparison, since the
-        # tolerance on the comparison on these values is not really
-        # well defined.
-        #
-        xvals = [75, 100, 130, 150, 190, 210]
-        yexp = {}
-        yexp[linear_interp] = [0, 3, 54.3, 95, 10, -10]
-        yexp[nearest_interp] = [0, 0, 35, 96, 15, 0]
-        yexp[neville] = [165.55, 9.5, 55.3, 103.6, 5.3, 199.6]
-
-        for interp in self.interp1d:
-            self.state.load_table_model('tbl2', self.ascii_twocol,
-                                        method=interp)
-            m = self.state.get_model_component('tbl2')
-            yint = m(xvals)
-
-            ydiff = yint - yexp[interp]
-            if interp == neville:
-                ydiff = ydiff[1:-1]
-
-            ymax = np.abs(ydiff).max()
-            self.assertLess(ymax, 0.1)
-
-    def test_eval_filter2(self):
-        """Can we filter the data?
-
-        Based on test_eval_interp2:
-
-        * uses Sherpa data set
-
-        * adds in a filter
-
-        """
-
-        # 120 and 140 will be filtered out
-        xvals = [75, 100, 120, 130, 140, 150, 190, 210]
-        yexp = {}
-        yexp[linear_interp] = [0, 3, -99, 54.3, -99, 95, 10, -10]
-        yexp[nearest_interp] = [0, 0, -99, 35, -99, 96, 15, 0]
-        yexp[neville] = [165.55, 9.5, -99, 55.3, -99, 103.6, 5.3, 199.6]
-
-        # These tolerances have been chosen to allow the tests to pass
-        # on a single machine; they may need to be adjusted for other
-        # machines.
-        smax = {linear_interp: 0.1, nearest_interp: 0.01, neville: 1.0}
-        self.state.set_stat('leastsq')
-        for interp in self.interp1d:
-            self.state.load_arrays('filt', xvals, yexp[interp])
-
-            self.state.load_table_model('filt2', self.ascii_twocol,
-                                        method=interp)
-            self.state.set_source('filt', 'filt2')
-
-            self.state.ignore_id('filt', 110, 125)
-            self.state.ignore_id('filt', 135, 149)
-
-            # Use calc_stat_info in order to check dof
-            svals = self.state.get_stat_info()
-            sval = svals[0]
-            self.assertEqual(5, sval.dof)
-            self.assertLess(sval.statval, smax[interp])
-
-    def test_eval_integrated(self):
-        """Test handling with integrated data sets.
-
-        This is just to check that the current documentation,
-        which says that the table x-axis is the left edge of
-        the bin.
-        """
-
-        # make sure the grid is not evenly spaced, since this
-        # should show up any issues with trying to integrate
-        # the model over the grid.
-        #
-        xgrid = np.asarray([10, 17, 20, 22, 31, 35, 40])
-        xlo = xgrid[:-1]
-        xhi = xgrid[1:]
-
-        ytbl = np.asarray([-10, 10, 15, 20, 20, 10])
-        ymdl = ytbl / 2.0
-
-        # Use low-level routines to create the table model,
-        # to avoid having a new data set. This side-steps any
-        # of the code to handle filtering, but that is not
-        # relevant here.
-        #
-        def make_tm(method):
-            tmdl = TableModel('tmp')
-            tmdl.filename = 'tmp'
-            tmdl.method = method
-            tmdl.load(xlo, ytbl)
-            return tmdl
-
-        for interp in self.interp1d:
-            # Just to be sure that there is no cache issues,
-            # re-create the table each iteration
-            tmdl = make_tm(interp)
-
-            tmdl.ampl = 0.5
-            ycalc = tmdl(xlo, xhi)
-            assert_allclose(ymdl, ycalc)
 
 
 class test_table_model(BaseTableModelTestCase, SherpaTestCase):
@@ -541,8 +380,8 @@ class test_psf_ui(SherpaTestCase):
     # def setUp(self):
     #     pass
 
-    # def tearDown(self):
-    #     pass
+    def tearDown(self):
+        ui.clean()
 
     def test_psf_model1d(self):
         ui.dataspace1d(1, 10)

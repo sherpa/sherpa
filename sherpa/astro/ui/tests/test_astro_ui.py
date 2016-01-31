@@ -71,20 +71,6 @@ class test_astro_ui(SherpaTestCase):
         ui.load_table(1, self.fits, 4, ('R', "SUR_BRI", 'SUR_BRI_ERR'),
                       ui.Data1DInt)
 
-    # TODO: moving teste to test_table_model
-    """
-    # Test table model
-    def test_table_model_ascii_table(self):
-        ui.load_table_model('tbl', self.singledat)
-        ui.load_table_model('tbl', self.doubledat)
-
-    def test_table_model_fits_table(self):
-        ui.load_table_model('tbl', self.singletbl)
-        ui.load_table_model('tbl', self.doubletbl)
-
-    def test_table_model_fits_image(self):
-        ui.load_table_model('tbl', self.img)
-
     # Test user model
     def test_user_model_ascii_table(self):
         ui.load_user_model(self.func, 'mdl', self.singledat)
@@ -93,8 +79,6 @@ class test_astro_ui(SherpaTestCase):
     def test_user_model_fits_table(self):
         ui.load_user_model(self.func, 'mdl', self.singletbl)
         ui.load_user_model(self.func, 'mdl', self.doubletbl)
-
-    """
 
     def test_filter_ascii(self):
         ui.load_filter(self.filter_single_int_ascii)
@@ -122,7 +106,24 @@ class test_table_model(test_ui.BaseTableModelTestCase, SherpaTestCase):
         return os.path.join(thisdir, '../../../ui/tests',
                             'data', fname)
 
-    # TODO: add some tests!
+    # TODO: add some tests of the FITS reading.
+    #
+    # the following were in test_astro_ui; they probably aren't
+    # much use here apart from providing file names to use
+    """
+    # Test table model
+    def test_table_model_ascii_table(self):
+        ui.load_table_model('tbl', self.singledat)
+        ui.load_table_model('tbl', self.doubledat)
+
+    def test_table_model_fits_table(self):
+        ui.load_table_model('tbl', self.singletbl)
+        ui.load_table_model('tbl', self.doubletbl)
+
+    def test_table_model_fits_image(self):
+        ui.load_table_model('tbl', self.img)
+
+    """
 
 
 @requires_data
