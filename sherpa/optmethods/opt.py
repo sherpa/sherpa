@@ -79,7 +79,7 @@ class Opt( object ):
         xmin = numpy.asarray( xmin, numpy.float_ )  # Make a copy
         xmax = numpy.asarray( xmax, numpy.float_  ) # Make a copy
         if ( x.shape != xmin.shape ) or ( x.shape != xmax.shape ):
-            raise InputError( x, xmin, xmax )
+            raise InputErr( x, xmin, xmax )
         if _outside_limits( x, xmin, xmax ):
             raise OutOfBoundErr( x, xmin, xmax )
         return x, xmin, xmax
