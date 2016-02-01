@@ -19,7 +19,7 @@
 
 
 from numpy.distutils.core import Command
-from extensions import build_ext, build_lib_arrays
+from .extensions import build_ext, build_lib_arrays
 
 def clean(xs):
     "Remove all '' entries from xs, returning the new list."

@@ -19,7 +19,7 @@
 
 
 from distutils.command.clean import clean as _clean
-from deps import clean_deps
+from .deps import clean_deps
 
 class clean(_clean):
     def run(self):

@@ -21,7 +21,7 @@
 from numpy.distutils.command.install import install as _install
 import os
 
-from deps import build_deps
+from .deps import build_deps
 
 class install(_install):
     def run(self):
