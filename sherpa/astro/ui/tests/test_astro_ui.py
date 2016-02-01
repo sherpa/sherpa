@@ -135,6 +135,14 @@ class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):
         return os.path.join(thisdir, '../../../ui/tests',
                             'data', fname)
 
+    # TODO: why does this test fail (by not raising an error)?
+    #       Is it because it falls through to some other code path:
+    #       e.g. XSPEC table models?
+    #
+    @unittest.expectedFailure
+    def test_fail_on_missing_col(self):
+        super(test_table_model_ascii, self).test_fail_on_missing_col()
+
 
 @requires_fits
 class test_table_model_fits(BaseTableModelTestCase, SherpaTestCase):
@@ -171,17 +179,27 @@ class test_table_model_fits(BaseTableModelTestCase, SherpaTestCase):
         thisdir = os.path.dirname(thisfile)
         return os.path.join(thisdir, 'data', fname)
 
-    # For some reason the following three tests fail, so over-ride
-    # them for now.
+    # TODO: I think these tests should pass; is it because the keywords
+    #       are not being passed through correctly?
     #
+    @unittest.expectedFailure
     def test_onecol_fail(self):
-        pass
+        super(test_table_model_fits, self).test_onecol_fail()
 
+    @unittest.expectedFailure
     def test_table1(self):
-        pass
+        super(test_table_model_fits, self).test_table1()
 
+    @unittest.expectedFailure
     def test_table3_ncols1(self):
-        pass
+        super(test_table_model_fits, self).test_table3_ncols1()
+
+    # TODO: IOErr is raised here but not because the columns are
+    #       missing, but because the file does not appear to be ASCII
+    #       This needs to be looked at
+    #
+    # def test_fail_on_missing_col(self):
+    #     super(test_table_model_fits, self).test_fail_on_missing_col()
 
     # TODO: improve the "2D" tests
     #

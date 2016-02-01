@@ -352,6 +352,11 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
         self.state.set_source(99, 'fmodel')
         self.assertRaises(ModelErr, self.state.calc_stat, 99)
 
+    def test_fail_on_missing_col(self):
+        """Error out if a column is missing."""
+        self.assertRaises(IOErr, self.state.load_table_model, 'failed',
+                          self.file_twocol, colkeys=['a', 'b'])
+
 
 class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):
 
@@ -384,15 +389,6 @@ class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):
         thisfile = sys.modules[self.__module__].__file__
         thisdir = os.path.dirname(thisfile)
         return os.path.join(thisdir, 'data', fname)
-
-    # TODO: why does this test fail in sherpa.astro.ui - i.e. no
-    #       error is thrown? Have moved out of Base...TestCase for now
-    #       Need to look at the code, but it is probably the
-    #       fall-over-to-XSPEC-table-model case
-    def test_fail_on_missing_col(self):
-        """Error out if a column is missing."""
-        self.assertRaises(IOErr, self.state.load_table_model, 'failed',
-                          self.file_twocol, colkeys=['a', 'b'])
 
 
 @requires_data
