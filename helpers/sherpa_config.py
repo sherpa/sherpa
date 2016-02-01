@@ -18,8 +18,8 @@
 #
 
 
-from extensions import build_ext, build_lib_arrays
-from deps import build_deps
+from .extensions import build_ext, build_lib_arrays
+from .deps import build_deps
 
 from numpy.distutils.core import Command
 import os
