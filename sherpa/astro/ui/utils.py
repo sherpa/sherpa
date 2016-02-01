@@ -7803,7 +7803,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        Unlike X-Spec [1]_, Sherpa does not automatically subtract
+        Unlike XSPEC [1]_, Sherpa does not automatically subtract
         the background estimate from the data.
 
         Background subtraction can only be performed when data and
@@ -8849,7 +8849,8 @@ class Session(sherpa.ui.utils.Session):
                 x = data.get_x()
                 y = data.get_y()
 
-            # we have to check for the case of a *single* column in a fits table
+            # we have to check for the case of a *single* column in a fits
+            # table
             # extract the single array from the read and bypass the dataset
             except TypeError:
                 y = sherpa.astro.io.backend.get_table_data(filename, *args,
@@ -8866,32 +8867,45 @@ class Session(sherpa.ui.utils.Session):
         return (x, y)
 
     # also in sherpa.utils
-    # DOC-NOTE: can filename be a crate/hdulist?
-    # DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
-    def load_table_model(self, modelname, filename, method=sherpa.utils.linear_interp, *args, **kwargs):
+    # DOC-NOTE: can filename be a crate/hdulist? PROBABLY NOT, since the
+    #    code calls sherpa.utils.is_binary_file on filename, BUT then
+    #    there's what happens after that, which is messy.
+    #
+    # DOC-TODO: how to describe the supported args/kwargs
+    #           (not just for this function)?
+    # DOC-TODO: update with information from sherpa.ui.load_table_model
+    #
+    def load_table_model(self, modelname, filename,
+                         method=sherpa.utils.linear_interp,
+                         *args, **kwargs):
         """Load tabular or image data and use it as a model component.
 
         A table model is defined on a grid of points which is
         interpolated onto the independent axis of the data set.  The
         model will have at least one parameter (the amplitude, or
         scaling factor to multiply the data by), but may have more
-        (if X-Spec table models are used).
+        (if XSPEC table models are used).
 
         Parameters
         ----------
         modelname : str
            The identifier for this table model.
         filename : str
-           The name of the file containing the data, which should
-           contain two columns, which are the x and y values for
-           the data, or be an image.
+           The name of the file containing the data, in FITS or ASCII
+           format. The file can be an XSPEC table model [1]_, or
+           a table with one or two columns (see the ``kwargs`` argument
+           for information on how to select the columns to read in), or
+           if an image then just the image data is read in.
         method : func
            The interpolation method to use to map the input data onto
            the coordinate grid of the data set. Linear,
            nearest-neighbor, and polynomial schemes are provided in
-           the sherpa.utils module.
+           the sherpa.utils module. This is not used if the file is an
+           XSPEC table model.
         *args, **kwargs
-           Arguments for reading in the data.
+           Arguments for reading in the data. These include ``ncols``,
+           ``colkeys``, ``sep``, ``comment`, and ``dstype``, with the
+           choice depending on the format of the file.
 
         See Also
         --------
@@ -8903,20 +8917,46 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        X-Spec style additive (atable, [1]_) and multiplicative
-        (mtable, [2]_) table models are supported. These models may
-        have multiple model parameters.
+        XSPEC style additive (atable, [2]_) and multiplicative
+        (mtable, [3]_) table models are supported. These models may
+        have multiple model parameters. They can be used with non-PHA
+        data sets, including non-integrated ones, as long as care is
+        taken to make sure that the independent axis has matching
+        units to the model.
 
         Examples of interpolation schemes provided by `sherpa.utils`
         are: `linear_interp`, `nearest_interp`, `neville`, and
         `neville2d`.
 
+        If the input file is not an XSPEC table model then the data
+        from the file is read in by one of the ``unpack_ascii``,
+        ``unpack_table``, or ``unpack_image`` routines.
+
+        When reading in two columns, the data will be re-ordered
+        so that the first column read in (the independent axis)
+        is numerically increasing.
+
+        If ``ncols=1``, only the model values (dependent axis) are
+        read in. In this case, the data set to which the model
+        is applied - via ``set_source`` - must have the same number
+        of data points as the model. This is also the case for
+        image files (since in this case only the image pixels
+        are read in, not the coordinate information).
+
+        When used with an integrated data set (for example
+        `DataPHA` or `Data1DInt`), then the first column of the table -
+        the independent axis - should be the left-edge of the bin,
+        and the second column is the integrated value for that
+        bin.
+
         References
         ----------
 
-        .. [1] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+        .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
 
-        .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+        .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+
+        .. [3] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
 
         Examples
         --------
@@ -8929,6 +8969,16 @@ class Session(sherpa.ui.utils.Session):
         >>> load_table_model('filt', 'filt.fits')
         >>> set_source(filt * (powlaw1d.pl + gauss1d.gline))
         >>> set_par(filt.ampl, 1e3, min=1, max=1e6)
+
+        Load in an XSPEC table model and use it in a source expression:
+
+        >>> load_table_model('xat', 'xspec-table.mod')
+        >>> set_source(xsphabs.gal * xat)
+
+        Use the columns R and SUR_PROF from the file profile.fits:
+
+        >>> load_table_model('m1', 'profile.fits',
+                             colkeys=['R', 'SUR_PROF'])
 
         Load in an image ("broad.img") and use the pixel values as a
         model component for data set "img":
@@ -11634,7 +11684,7 @@ class Session(sherpa.ui.utils.Session):
            The flux from the source model integrated over the given
            band. This represents the flux from the model without any
            instrument response (i.e. the intrinsic flux of the
-           source). For X-Spec style models the units will be
+           source). For XSPEC style models the units will be
            photon/cm^2/s. If ``hi`` is ``None`` but ``lo`` is set then the
            flux density is returned at that point: photon/cm^2/s/keV
            or photon/cm^2/s/Angstrom depending on the analysis
@@ -11731,7 +11781,7 @@ class Session(sherpa.ui.utils.Session):
            The flux from the source model integrated over the given
            band. This represents the flux from the model without any
            instrument response (i.e. the intrinsic flux of the
-           source). For X-Spec style models the units will be
+           source). For XSPEC style models the units will be
            erg/cm^2/s. If ``hi`` is ``None`` but ``lo`` is set then the flux
            density is returned at that point: erg/cm^2/s/keV or
            erg/cm^2/s/Angstrom depending on the analysis setting.
@@ -12186,7 +12236,7 @@ class Session(sherpa.ui.utils.Session):
         signal : number
            The source model summed up over the given band. This does
            *not* include the bin width when using histogram-style
-           ('integrated' data spaces), such as used with X-Spec
+           ('integrated' data spaces), such as used with XSPEC
            emission - also known as additive - models.
 
         See Also
@@ -12331,7 +12381,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Calculate the K correction for an X-Spec apec model, with a
+        Calculate the K correction for an XSPEC apec model, with a
         source temperature of 6 keV and abundance of 0.3 solar, for
         the energy band of 0.5 to 2 keV:
 
