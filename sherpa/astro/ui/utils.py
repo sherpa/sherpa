@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,8 @@ from itertools import izip
 import sherpa.ui.utils
 from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
-from sherpa.utils.err import *
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
+    IdentifierErr, IOErr, ModelErr
 from sherpa.data import Data1D
 import sherpa.astro.all
 import sherpa.astro.plot
@@ -640,8 +641,8 @@ class Session(sherpa.ui.utils.Session):
         if dstype is sherpa.astro.data.DataPHA:
             channel = numpy.arange(1, len(xlo) + 1, dtype=float)
             args = [channel, y]
-            #kwargs['bin_lo'] = xlo
-            #kwargs['bin_hi'] = xhi
+            # kwargs['bin_lo'] = xlo
+            # kwargs['bin_hi'] = xhi
         elif dstype is not sherpa.data.Data1DInt:
             args = [xlo, y]
 
@@ -5149,9 +5150,9 @@ class Session(sherpa.ui.utils.Session):
 
         """
 # if type(filenames) not in (list, tuple):
-##             raise ArgumentError('Filenames must be contained in a list')
+#             raise ArgumentError('Filenames must be contained in a list')
 # if type(resp_ids) not in (list, tuple):
-##             raise ArgumentError('Response IDs must be contained in a list')
+#             raise ArgumentError('Response IDs must be contained in a list')
 
         if resp_ids is None:
             id, filenames, resp_ids = resp_ids, id, filenames
@@ -5583,9 +5584,9 @@ class Session(sherpa.ui.utils.Session):
 
         """
 # if type(filenames) not in (list, tuple):
-##             raise ArgumentError('Filenames must be contained in a list')
+#             raise ArgumentError('Filenames must be contained in a list')
 # if type(resp_ids) not in (list, tuple):
-##             raise ArgumentError('Response IDs must be contained in a list')
+#             raise ArgumentError('Response IDs must be contained in a list')
 
         if resp_ids is None:
             id, filenames, resp_ids = resp_ids, id, filenames
@@ -7474,7 +7475,7 @@ class Session(sherpa.ui.utils.Session):
         data.group_counts(num, maxLength, tabStops)
 
     # DOC-TODO: check the Poisson stats claim; I'm guessing it means
-    ###           gaussian (i.e. sqrt(n))
+    #           gaussian (i.e. sqrt(n))
     def group_snr(self, id, snr=None, bkg_id=None,
                   maxLength=None, tabStops=None, errorCol=None):
         """Group into a minimum signal-to-noise ratio.
@@ -8858,7 +8859,7 @@ class Session(sherpa.ui.utils.Session):
                     # unpack_data doesn't include a call to try
                     # getting data from image, so try that here.
                     data = self.unpack_image(filename, *args, **kwargs)
-                    #x = data.get_x()
+                    # x = data.get_x()
                     y = data.get_y()
                 except:
                     raise
@@ -8990,7 +8991,7 @@ class Session(sherpa.ui.utils.Session):
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
-    ### also in sherpa.utils
+    # also in sherpa.utils
     # DOC-TODO: how to describe *args/**kwargs
     # DOC-TODO: how is the _y value used if set
     def load_user_model(self, func, modelname, filename=None, *args, **kwargs):
@@ -9164,7 +9165,7 @@ class Session(sherpa.ui.utils.Session):
         fit_to_ids, datasets, models = self._prepare_bkg_fit(id, otherids)
 
         # Do not add backgrounds to backgrounds.
-        #self._add_extra_data_and_models(fit_to_ids, datasets, models)
+        # self._add_extra_data_and_models(fit_to_ids, datasets, models)
 
         fit_to_ids = tuple(fit_to_ids)
 
@@ -10120,7 +10121,7 @@ class Session(sherpa.ui.utils.Session):
                 # Using _get_fit becomes very complicated using simulfit
                 # models and datasets
                 #
-                #ids, f = self._get_fit(id)
+                # ids, f = self._get_fit(id)
                 plotobj.prepare(self.get_data(id), self.get_model(id),
                                 self.get_stat())
 
