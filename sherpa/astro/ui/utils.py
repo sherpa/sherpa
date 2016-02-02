@@ -8866,6 +8866,100 @@ class Session(sherpa.ui.utils.Session):
                     raise
         return (x, y)
 
+    # QUS: are etable models supported; I would imagine so
+    def _load_xspec_table_model(self, filename, modelname):
+        """Read in an XSPEC table model.
+
+        An exception is raised if the file does not contain a
+        XSPEC table model.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the XSPEC additive (atable) or multiplicative
+            (mtable) model.
+        modelname : str
+            The name for the model instance.
+
+        Returns
+        -------
+        mdl
+            The instance of the model
+        """
+
+        # TODO: Is this check needed?
+        if not sherpa.utils.is_binary_file(filename):
+            raise IOErr("badfile", filename, "a FITS binary-format file")
+
+        blkname = 'PRIMARY'
+        hdrkeys = ['HDUCLAS1', 'REDSHIFT', 'ADDMODEL']
+
+        read_hdr = sherpa.astro.io.backend.get_header_data
+        hdr = read_hdr(filename, blockname=blkname, hdrkeys=hdrkeys)
+
+        addmodel = sherpa.utils.bool_cast(hdr[hdrkeys[2]])
+        addredshift = sherpa.utils.bool_cast(hdr[hdrkeys[1]])
+
+        if str(hdr[hdrkeys[0]]).upper() != 'XSPEC TABLE MODEL':
+            raise Exception("Not an XSPEC table model")
+
+        blkname = 'PARAMETERS'
+        colkeys = ['NAME', 'INITIAL', 'DELTA', 'BOTTOM', 'TOP',
+                   'MINIMUM', 'MAXIMUM']
+        hdrkeys = ['NINTPARM', 'NADDPARM']
+
+        read_tbl = sherpa.astro.io.backend.get_table_data
+        tbldata = read_tbl(filename, colkeys=colkeys, hdrkeys=hdrkeys,
+                           blockname=blkname, fix_type=False)
+        cols = tbldata[1]
+        hdr = tbldata[3]
+        nint = int(hdr[hdrkeys[0]])
+        XSTableModel = sherpa.astro.xspec.XSTableModel
+        return XSTableModel(filename, modelname, *cols,
+                            nint=nint, addmodel=addmodel,
+                            addredshift=addredshift)
+
+    def _load_table_model(self, filename, modelname, method,
+                          *args, **kwargs):
+        """Load a table model from a file.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file.
+        modelname : str
+            The name for the model instance.
+        method
+            The interpolation method: it has a signature like
+            sherpa.utils.linear_interp.
+        *args, **kwargs
+            Passed through to the file I/O routines.
+
+        Returns
+        -------
+        mdl
+            The instance of the model
+        """
+
+        tablemodel = sherpa.models.TableModel(modelname)
+        tablemodel.method = method
+        tablemodel.filename = filename
+
+        try:
+            x, y = self._read_user_model(filename, *args, **kwargs)
+        except:
+            # Fall back to reading plain ASCII, if no other
+            # more sophisticated I/O backend loaded (such as
+            # pyfits or crates) SMD 05/29/13
+            #
+            # TODO: this does not use *args or **kwargs; is this intentional?
+            data = sherpa.io.read_data(filename, ncols=2)
+            x = data.x
+            y = data.y
+
+        tablemodel.load(x, y)
+        return tablemodel
+
     # also in sherpa.utils
     # DOC-NOTE: can filename be a crate/hdulist? PROBABLY NOT, since the
     #    code calls sherpa.utils.is_binary_file on filename, BUT then
@@ -8987,56 +9081,12 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source('img', emap * gauss2d)
 
         """
-        tablemodel = sherpa.models.TableModel(modelname)
-        # interpolation method
-        tablemodel.method = method
-        tablemodel.filename = filename
 
         try:
-            if not sherpa.utils.is_binary_file(filename):
-                raise Exception("Not a FITS file")
-
-            read_tbl = sherpa.astro.io.backend.get_table_data
-            read_hdr = sherpa.astro.io.backend.get_header_data
-
-            blkname = 'PRIMARY'
-            hdrkeys = ['HDUCLAS1', 'REDSHIFT', 'ADDMODEL']
-            hdr = read_hdr(filename, blockname=blkname, hdrkeys=hdrkeys)
-
-            addmodel = sherpa.utils.bool_cast(hdr[hdrkeys[2]])
-            addredshift = sherpa.utils.bool_cast(hdr[hdrkeys[1]])
-
-            if str(hdr[hdrkeys[0]]).upper() != 'XSPEC TABLE MODEL':
-                raise Exception("Not an XSPEC table model")
-
-            XSTableModel = sherpa.astro.xspec.XSTableModel
-
-            blkname = 'PARAMETERS'
-            colkeys = ['NAME', 'INITIAL', 'DELTA', 'BOTTOM', 'TOP',
-                       'MINIMUM', 'MAXIMUM']
-            hdrkeys = ['NINTPARM', 'NADDPARM']
-
-            (colnames, cols,
-             name, hdr) = read_tbl(filename, colkeys=colkeys, hdrkeys=hdrkeys,
-                                   blockname=blkname, fix_type=False)
-            nint = int(hdr[hdrkeys[0]])
-            tablemodel = XSTableModel(filename, modelname, *cols,
-                                      nint=nint, addmodel=addmodel,
-                                      addredshift=addredshift)
-
+            tablemodel = self._load_xspec_table_model(filename, modelname)
         except Exception:
-            x = None
-            y = None
-            try:
-                x, y = self._read_user_model(filename, *args, **kwargs)
-            except:
-                # Fall back to reading plain ASCII, if no other
-                # more sophisticated I/O backend loaded (such as
-                # pyfits or crates) SMD 05/29/13
-                data = sherpa.io.read_data(filename, ncols=2)
-                x = data.x
-                y = data.y
-            tablemodel.load(x, y)
+            tablemodel = self._load_table_model(filename, modelname, method,
+                                                *args, **kwargs)
 
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
