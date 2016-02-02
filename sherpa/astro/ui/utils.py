@@ -8961,13 +8961,10 @@ class Session(sherpa.ui.utils.Session):
         return tablemodel
 
     # also in sherpa.utils
-    # DOC-NOTE: can filename be a crate/hdulist? PROBABLY NOT, since the
-    #    code calls sherpa.utils.is_binary_file on filename, BUT then
-    #    there's what happens after that, which is messy.
     #
-    # DOC-TODO: how to describe the supported args/kwargs
-    #           (not just for this function)?
-    # DOC-TODO: update with information from sherpa.ui.load_table_model
+    # TODO: DougBurke believes that the XSPEC support should be
+    #       removed from this function, and moved into its own,
+    #       as it is really a separate thing.
     #
     def load_table_model(self, modelname, filename,
                          method=sherpa.utils.linear_interp,
@@ -8994,12 +8991,13 @@ class Session(sherpa.ui.utils.Session):
            The interpolation method to use to map the input data onto
            the coordinate grid of the data set. Linear,
            nearest-neighbor, and polynomial schemes are provided in
-           the sherpa.utils module. This is not used if the file is an
-           XSPEC table model.
+           the sherpa.utils module. This is not used by the XSPEC
+           table model.
         *args, **kwargs
            Arguments for reading in the data. These include ``ncols``,
            ``colkeys``, ``sep``, ``comment`, and ``dstype``, with the
-           choice depending on the format of the file.
+           choice depending on the format of the file. They are not used
+           when reading in XSPEC table models.
 
         See Also
         --------

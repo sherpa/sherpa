@@ -149,7 +149,13 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
     # What interpolation functions should be used. Note that
     # the code is somewhat hard-coded to these values (e.g. for
     # selecting tolerances), so perhaps more, or less, abstraction
-    # is needed.
+    # is needed. Note that technically these methods are tested
+    # in the model tests of the TableModel class, so all that
+    # really needs to be tested here is that the interpolation
+    # method can be changed from the default (linear_interp).
+    # However, keep all three in for now in case it is useful to
+    # check how they work with the state-handling of the ui
+    # modules.
     #
     interp1d = [linear_interp, nearest_interp, neville]
 
@@ -301,6 +307,8 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
             mdl = self.state.get_model_component('tbl')
             mdl.ampl = norm
 
+            self.assertEqual(interp, mdl.method)
+
             self.state.load_arrays(1, self.x, self.y * norm,
                                    self.state.Data1D)
             self.state.set_source(mdl)
@@ -354,8 +362,16 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
 
     def test_fail_on_missing_col(self):
         """Error out if a column is missing."""
-        self.assertRaises(IOErr, self.state.load_table_model, 'failed',
-                          self.file_twocol, colkeys=['a', 'b'])
+
+        # Check the error message since there are plenty of reasons
+        # why an IO error could be raised. For now an explicit
+        # check of the message is made, but it could be relaxed
+        # if necessary.
+        cs = " ".join(["'{}'".format(c) for c in self.colnames[:-1]])
+        regexp = "Required column 'a' not found in \[{}\]".format(cs)
+        with self.assertRaisesRegexp(IOErr, regexp):
+            self.state.load_table_model('failed', self.file_twocol,
+                                        colkeys=['a', 'b'])
 
 
 class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):

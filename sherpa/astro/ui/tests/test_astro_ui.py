@@ -100,9 +100,9 @@ class BaseTableModelTestCase(test_ui.BaseTableModelTestCase):
 
 class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):
     """Is the same I/O code used here as in sherpa.ui.load_table_model?
-    If so then this could be wasted (other than it checks that the
+    If so then this is this class needed (other than it checks that the
     extra work done by the sherpa.astro.ui routine does not cause
-    a problem.
+    a problem)?
     """
 
     def setUp(self):
@@ -194,12 +194,9 @@ class test_table_model_fits(BaseTableModelTestCase, SherpaTestCase):
     def test_table3_ncols1(self):
         super(test_table_model_fits, self).test_table3_ncols1()
 
-    # TODO: IOErr is raised here but not because the columns are
-    #       missing, but because the file does not appear to be ASCII
-    #       This needs to be looked at
-    #
-    # def test_fail_on_missing_col(self):
-    #     super(test_table_model_fits, self).test_fail_on_missing_col()
+    @unittest.expectedFailure
+    def test_fail_on_missing_col(self):
+        super(test_table_model_fits, self).test_fail_on_missing_col()
 
     # TODO: improve the "2D" tests
     #
