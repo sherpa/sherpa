@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,8 +26,12 @@ from sherpa.optmethods.optfcts import *
 
 warning = logging.getLogger(__name__).warning
 
-
-__all__ = ('GridSearch', 'OptMethod', 'LevMar', 'MonCar', 'NelderMead')
+try:
+    from scipy.optimize import *
+    __all__ = ('GridSearch', 'OptMethod', 'LevMar', 'MonCar', 'NelderMead',
+               'ScipyMin')
+except ImportError:
+    __all__ = ('GridSearch', 'OptMethod', 'LevMar', 'MonCar', 'NelderMead')
 
 
 class OptMethod(NoNewAttributesAfterInit):
@@ -663,6 +667,10 @@ class NelderMead(OptMethod):
     def __init__(self, name='simplex'):
         OptMethod.__init__(self, name, neldermead)
 
+
+class ScipyMin(OptMethod):
+    def __init__(self, name='scipymin'):
+        OptMethod.__init__(self, name, scipymin)
 
 ###############################################################################
 
