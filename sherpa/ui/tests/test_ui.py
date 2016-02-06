@@ -213,12 +213,6 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
 
         self.assertAlmostEqual(1.0, par.val)
 
-    # def test_fail_on_missing_col(self):
-    #     """Error out if a column is missing."""
-    #
-    #     self.assertRaises(IOErr, self.state.load_table_model, 'failed',
-    #                       self.ascii_twocol, colkeys=['a', 'b'])
-
     def _checkcol(self, expvals, gotvals):
         """Check a column"""
 
@@ -360,15 +354,20 @@ class BaseTableModelTestCase:   # important not to derive from (SherpaTestCase):
         self.state.set_source(99, 'fmodel')
         self.assertRaises(ModelErr, self.state.calc_stat, 99)
 
+    def _missing_col_regexp(self, colname):
+        """Allow the regexp used to be overloaded"""
+
+        cs = " ".join(["'{}'".format(c) for c in self.colnames[:-1]])
+        return "Required column 'a' not found in \[{}\]".format(cs)
+
     def test_fail_on_missing_col(self):
         """Error out if a column is missing."""
 
         # Check the error message since there are plenty of reasons
-        # why an IO error could be raised. For now an explicit
-        # check of the message is made, but it could be relaxed
-        # if necessary.
-        cs = " ".join(["'{}'".format(c) for c in self.colnames[:-1]])
-        regexp = "Required column 'a' not found in \[{}\]".format(cs)
+        # why an IO error could be raised, and we want to be sure
+        # that we have the expected error.
+        #
+        regexp = self._missing_col_regexp('a')
         with self.assertRaisesRegexp(IOErr, regexp):
             self.state.load_table_model('failed', self.file_twocol,
                                         colkeys=['a', 'b'])

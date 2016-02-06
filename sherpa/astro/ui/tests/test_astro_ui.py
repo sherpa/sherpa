@@ -97,6 +97,14 @@ class BaseTableModelTestCase(test_ui.BaseTableModelTestCase):
 
     state = ui
 
+    def _missing_col_regexp(self, colname):
+        # Ideally we would want a meaningful message, but that may be hard
+        # to synthesize given the code structure. Something like the
+        # following should be possible, but at present the message
+        # is the potentially-confusing "file is not ASCII"
+        # return 'unable to read data from *'
+        return "file '.*' does not appear to be ASCII"
+
 
 class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):
     """Is the same I/O code used here as in sherpa.ui.load_table_model?
@@ -182,21 +190,21 @@ class test_table_model_fits(BaseTableModelTestCase, SherpaTestCase):
     # TODO: I think these tests should pass; is it because the keywords
     #       are not being passed through correctly?
     #
-    @unittest.expectedFailure
-    def test_onecol_fail(self):
-        super(test_table_model_fits, self).test_onecol_fail()
+    # @unittest.expectedFailure
+    # def test_onecol_fail(self):
+    #     super(test_table_model_fits, self).test_onecol_fail()
 
-    @unittest.expectedFailure
-    def test_table1(self):
-        super(test_table_model_fits, self).test_table1()
+    # @unittest.expectedFailure
+    # def test_table1(self):
+    #     super(test_table_model_fits, self).test_table1()
 
     @unittest.expectedFailure
     def test_table3_ncols1(self):
         super(test_table_model_fits, self).test_table3_ncols1()
 
-    @unittest.expectedFailure
-    def test_fail_on_missing_col(self):
-        super(test_table_model_fits, self).test_fail_on_missing_col()
+    # @unittest.expectedFailure
+    # def test_fail_on_missing_col(self):
+    #     super(test_table_model_fits, self).test_fail_on_missing_col()
 
     # TODO: improve the "2D" tests
     #
