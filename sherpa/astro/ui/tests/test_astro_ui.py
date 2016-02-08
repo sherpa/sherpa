@@ -97,14 +97,6 @@ class BaseTableModelTestCase(test_ui.BaseTableModelTestCase):
 
     state = ui
 
-    def _missing_col_regexp(self, colname):
-        # Ideally we would want a meaningful message, but that may be hard
-        # to synthesize given the code structure. Something like the
-        # following should be possible, but at present the message
-        # is the potentially-confusing "file is not ASCII"
-        # return 'unable to read data from *'
-        return "file '.*' does not appear to be ASCII"
-
 
 class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):
     """Is the same I/O code used here as in sherpa.ui.load_table_model?
@@ -143,14 +135,6 @@ class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):
         return os.path.join(thisdir, '../../../ui/tests',
                             'data', fname)
 
-    # TODO: why does this test fail (by not raising an error)?
-    #       Is it because it falls through to some other code path:
-    #       e.g. XSPEC table models?
-    #
-    @unittest.expectedFailure
-    def test_fail_on_missing_col(self):
-        super(test_table_model_ascii, self).test_fail_on_missing_col()
-
 
 @requires_fits
 class test_table_model_fits(BaseTableModelTestCase, SherpaTestCase):
@@ -179,6 +163,14 @@ class test_table_model_fits(BaseTableModelTestCase, SherpaTestCase):
         self.dy = np.asarray([1.86603, 1.86603, 4.1225, 6.97913,
                               10.6825, 10.8362, 8.05337, 4.96863,
                               1.86603], dtype=dtype)
+
+    def _missing_col_regexp(self, colname):
+        # Ideally we would want a meaningful message, but that may be hard
+        # to synthesize given the code structure. Something like the
+        # following should be possible, but at present the message
+        # is the potentially-confusing "file is not ASCII"
+        # return 'unable to read data from *'
+        return "file '.*' does not appear to be ASCII"
 
     def make_local_path(self, fname):
         """Use local data directory"""

@@ -8953,7 +8953,14 @@ class Session(sherpa.ui.utils.Session):
             # pyfits or crates) SMD 05/29/13
             #
             # TODO: this does not use *args or **kwargs; is this intentional?
-            data = sherpa.io.read_data(filename, ncols=2)
+            #  => so, let's pass them through AND drop forcing ncols=2
+            #     BUT this requires > 1 column SO for now ncols=2 is
+            #     required
+            #     REALLY should drop this implicit requirement of going
+            #     through a sherpa Data object
+            #
+            # data = sherpa.io.read_data(filename, ncols=2)
+            data = sherpa.io.read_data(filename, ncols=2, *args, **kwargs)
             x = data.x
             y = data.y
 
