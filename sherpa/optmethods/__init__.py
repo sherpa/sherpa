@@ -669,6 +669,92 @@ class NelderMead(OptMethod):
 
 
 class ScipyMin(OptMethod):
+    """
+    The following doc was taken from:
+    http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize
+
+    Minimization of scalar function of one or more variables.
+
+    In general, the optimization problems are of the form:
+
+    minimize f(x)
+
+    subject to:
+
+        ``g_i(x) >= 0``, i = 1,...,m
+        ``h_j(x)  = 0``, j = 1,...,p
+
+    Where x is a vector of one or more variables.
+    ``g_i(x)`` are the inequality constraints.
+    ``h_j(x)`` are the equality constrains.
+
+    Optionally, the lower and upper bounds for each element in x can also be specified
+    using the `bounds` argument.
+    Parameters
+    ----------
+    fun : callable
+        Objective function.
+    x0 : ndarray
+        Initial guess.
+    args : tuple, optional
+        Extra arguments passed to the objective function and its
+        derivatives (Jacobian, Hessian).
+    method : str or callable, optional
+        Type of solver.  Should be one of
+            - 'Nelder-Mead'
+            - 'Powell'
+            - 'CG'
+            - 'BFGS'
+            - 'Newton-CG'
+            - 'L-BFGS-B'
+            - 'TNC'
+            - 'COBYLA'
+            - 'SLSQP'
+            - 'dogleg'
+            - 'trust-ncg'
+            - custom - a callable object (added in version 0.14.0),
+              see below for description.
+        If not given, chosen to be one of ``BFGS``, ``L-BFGS-B``, ``SLSQP``,
+        depending if the problem has constraints or bounds.
+    jac : bool or callable, optional
+        Jacobian (gradient) of objective function. Only for CG, BFGS,
+        Newton-CG, L-BFGS-B, TNC, SLSQP, dogleg, trust-ncg.
+        If `jac` is a Boolean and is True, `fun` is assumed to return the
+        gradient along with the objective function. If False, the
+        gradient will be estimated numerically.
+        `jac` can also be a callable returning the gradient of the
+        objective. In this case, it must accept the same arguments as `fun`.
+    hess, hessp : callable, optional
+        Hessian (matrix of second-order derivatives) of objective function or
+        Hessian of objective function times an arbitrary vector p.  Only for
+        Newton-CG, dogleg, trust-ncg.
+        Only one of `hessp` or `hess` needs to be given.  If `hess` is
+        provided, then `hessp` will be ignored.  If neither `hess` nor
+        `hessp` is provided, then the Hessian product will be approximated
+        using finite differences on `jac`. `hessp` must compute the Hessian
+        times an arbitrary vector.
+    bounds : sequence, optional
+        Bounds for variables (only for L-BFGS-B, TNC and SLSQP).
+        ``(min, max)`` pairs for each element in ``x``, defining
+        the bounds on that parameter. Use None for one of ``min`` or
+        ``max`` when there is no bound in that direction.
+    constraints : dict or sequence of dict, optional
+        Constraints definition (only for COBYLA and SLSQP).
+        Each constraint is defined in a dictionary with fields:
+            type : str
+                Constraint type: 'eq' for equality, 'ineq' for inequality.
+            fun : callable
+                The function defining the constraint.
+            jac : callable, optional
+                The Jacobian of `fun` (only for SLSQP).
+            args : sequence, optional
+                Extra arguments to be passed to the function and Jacobian.
+        Equality constraint means that the constraint function result is to
+        be zero whereas inequality means that it is to be non-negative.
+        Note that COBYLA only supports inequality constraints.
+    tol : float, optional
+        Tolerance for termination. For detailed controler and lower bounds.
+    """
     def __init__(self, name='scipymin'):
         OptMethod.__init__(self, name, scipymin)
 
