@@ -34,6 +34,24 @@ def _is_subclass(t1, t2):
 
 
 def _check_args(size, dstype):
+    """Ensure that the number of arguments matches the data type.
+
+    Raises an error if the number of arguments does not match that
+    needed by the data object.
+
+    Parameters
+    ----------
+    size: int
+        The number of arguments to check.
+    dstype: Sherpa Data object
+        The data type to use with the arguments.
+
+    Raises
+    ------
+    TypeError
+        This is raised if the number of arguments is less than the
+        required number. There is no check for too many arguments.
+    """
     # Find the number of required args minus self, filename
     req_args = (get_num_args(dstype.__init__)[1] - 2)
 
@@ -44,6 +62,73 @@ def _check_args(size, dstype):
 
 
 def read_file_data(filename, sep=' ', comment='#', require_floats=True):
+    """Read in columns from an ASCII file.
+
+    Parameters
+    ----------
+    filename : str
+       The name of the ASCII file to read in.
+    sep : str, optional
+       The separator character. The default is ``' '``.
+    comment : str, optional
+       The comment character. The default is ``'#'``.
+    require_floats : bool, optional
+       If ``True`` (the default), non-numeric data values will
+       raise a `ValueError`.
+
+    Returns
+    -------
+    (colnames, coldata)
+       The column names read in, the data for the columns
+       as an array, with each element being the data for the column
+       (the order matches ``colnames``), and the name of the file.
+
+    Raises
+    ------
+    sherpa.utils.err.IOErr
+       Raised if the file appears to be a binary file.
+    ValueError
+       If a column value can not be converted into a numeric value
+       and the ``require_floats`` parameter is True.
+
+    See Also
+    --------
+    get_ascii_data
+
+    Notes
+    -----
+
+    The file is processed by reading in each line, stripping out any
+    unsupported characters (replacing them by the ``sep`` argument),
+    skipping empty lines, and then identifying comment and data lines.
+
+    The list of unsupported characters are: ``\t``, ``\n``,
+    ``\r``, comma, semi-colon, colon, space, and ``|``.
+
+    The last comment line before the data is used to define the
+    column names, splitting the line by the ``sep`` argument.
+    If there are no comment lines (or the column names are invalid),
+    then the columns are named starting at ``col1``, ``col2``, up to the
+    number of columns.
+
+    Data lines are separated into columns - splitting by the
+    ``sep`` comment - and then converted to NumPy arrays.
+    If the ``require_floats`` argument is ``True`` then the
+    column will be converted to the `sherpa.utils.SherpaFloat`
+    type, with an error raised if this fails.
+
+    An error is raised if the number of columns per row
+    is not constant.
+
+    Examples
+    --------
+
+    Read in the columns from the file 'src.dat':
+
+    >>> (colnames, coldata) = read_file_data('src.dat')
+
+    """
+
     bad_chars = '\t\n\r,;: |'
     fp = open(filename, 'r')
     raw_names = []
@@ -101,8 +186,43 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
 
 
 def get_column_data(*args):
-    """
-    get_column_data( *NumPy_args )
+    """Convert arguments into a list of 1D NumPy arrays.
+
+    Parameters
+    ----------
+    *args: NumPy array, list, tuple, or None
+        One or more arguments. The dimensions of the arguments do not
+        need to match.
+
+    Returns
+    -------
+    out
+        List of 1D NumPy arrays - or ``None`` - in the order of the
+        input arguments. Multi-dimensional arguments are converted
+        to a series of 1D arrays before being added to the list,
+        so the return value can have more elements than input
+        arguments.
+
+    Raises
+    ------
+    sherpa.utils.err.IOErr
+        If there are no arguments or an argument is of the wrong type.
+
+    Examples
+    --------
+    >>> a = get_column_data([1, 2, 3], [4, 5])
+    >>> print(len(a))
+    2
+
+    >>> ivals = np.arange(12).reshape(6, 2)
+    >>> a = get_column_data(ivals, ["x", "y"])
+    >>> print(a[0])
+    [ 0 2 4 6 8 10]
+    >>> print(a[1])
+    [ 1 3 5 7 9 11]
+    >>> print(a[2])
+    ['x' 'y']
+
     """
     if len(args) == 0:
         raise IOErr('noarrays')
@@ -157,7 +277,7 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
 
     Raises
     ------
-    sherpa.utils.IOErr
+    sherpa.utils.err.IOErr
        Raised if a requested column is missing or the file appears
        to be a binary file.
     ValueError
@@ -281,7 +401,7 @@ def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
 
     Raises
     ------
-    sherpa.utils.IOErr
+    sherpa.utils.err.IOErr
        Raised if a requested column is missing or the file appears
        to be a binary file.
     ValueError
@@ -346,7 +466,7 @@ def read_arrays(*args):
 
     Raises
     ------
-    sherpa.utils.IOErr
+    sherpa.utils.err.IOErr
        Raised if no arrays are sent in.
 
     See Also
