@@ -33,6 +33,14 @@ from sherpa.astro.data import DataPHA
 
 from sherpa.ui.tests import test_ui
 
+# TODO: what is the best way to do this? Should perhaps use
+# sherpa.utils._has_package_from_list()?
+try:
+    import sherpa.astro.io
+    _has_sherpa_astro_io = True
+except ImportError:
+    _has_sherpa_astro_io = False
+
 import logging
 logger = logging.getLogger("sherpa")
 
@@ -135,6 +143,16 @@ class test_table_model_ascii(BaseTableModelTestCase, SherpaTestCase):
         return os.path.join(thisdir, '../../../ui/tests',
                             'data', fname)
 
+    def _missing_col_regexp(self, colname):
+        # the error message here depends on what backends are
+        # available; this is not good!
+        if _has_sherpa_astro_io:
+            # NOTE: no regexp needed here!
+            regexp = "No input array\(s\) found"
+        else:
+            regexp = "Required column 'a' not found in \['X' 'Y'\]"
+        return regexp
+
 
 @requires_fits
 class test_table_model_fits(BaseTableModelTestCase, SherpaTestCase):
@@ -170,7 +188,8 @@ class test_table_model_fits(BaseTableModelTestCase, SherpaTestCase):
         # following should be possible, but at present the message
         # is the potentially-confusing "file is not ASCII"
         # return 'unable to read data from *'
-        return "file '.*' does not appear to be ASCII"
+        # return "file '.*' does not appear to be ASCII"
+        return "No input array\(s\) found"  # NOTE: no regexp needed here!
 
     def make_local_path(self, fname):
         """Use local data directory"""

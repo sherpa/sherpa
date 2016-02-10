@@ -93,7 +93,7 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
 
     See Also
     --------
-    get_ascii_data
+    get_ascii_data, get_file_data
 
     Notes
     -----
@@ -244,6 +244,140 @@ def get_column_data(*args):
     return cols
 
 
+def _validate_cols(names, args, ncols=1, colkeys=None):
+    """Ensure that the column data matches the requirements.
+
+    Parameters
+    ----------
+    names: array_like of str
+        The names of the columns.
+    args: array_like
+        The column data
+    ncols : int, optional
+       The number of columns to read in (the first ``ncols`` columns
+       in the file). This is ignored if ``colkeys`` is given.
+    colkeys : array of str, optional
+       An array of the column name to read in. The default is
+       ``None``.
+
+    Returns
+    -------
+    colnames, coldata
+        The column names and data read from the file, after applying
+        the filter from ncols and colkeys.
+
+    Raises
+    ------
+    sherpa.utils.err.IOErr
+        Raised if too many columns are read in or a requested column is
+        missing.
+
+    Notes
+    -----
+    It is unclear what the expected semantics of this routine are if
+    names and args are different lengths (in particular, if there are less
+    names than arguments).
+    """
+
+    if colkeys is None:
+        # Ensure we copy the inputs
+        outnames = names[:ncols][:]
+        outcols = args[:ncols][:]
+        return (outnames, outcols)
+
+    colkeys = list(colkeys)
+
+    if len(names) > len(args):
+        raise IOErr('toomanycols')
+
+    assert(len(names) <= len(args))
+
+    # Do not really need outnames here, as could return colkeys
+    outnames = []
+    outcols = []
+    for key in colkeys:
+        outnames.append(key)
+        try:
+            outcols.append(args[names.index(key)])
+        except ValueError:
+            # TODO: why not call str on each element of names?
+            raise IOErr('reqcol', key, numpy.asarray(names, numpy.string_))
+
+    return (outnames, outcols)
+
+
+def get_file_data(filename, ncols=2, colkeys=None,
+                  sep=' ', comment='#', require_floats=True):
+    """Read in the requested columns from an ASCII file.
+
+    Read in the data and then ensure that the required columns
+    exist.
+
+    Parameters
+    ----------
+    filename: str
+       The name of the ASCII file to read in.
+    ncols: int, optional
+       The number of columns to read in (the first ``ncols`` columns
+       in the file). This is ignored if ``colkeys`` is given.
+    colkeys: array of str, optional
+       An array of the column name to read in. The default is
+       ``None``.
+    sep: str, optional
+       The separator character. The default is ``' '``.
+    comment: str, optional
+       The comment character. The default is ``'#'``.
+    require_floats: bool, optional
+       If ``True`` (the default), non-numeric data values will
+       raise a `ValueError`.
+
+    Returns
+    -------
+    (colnames, coldata)
+       The column names read in, the data for the columns
+       as an array, with each element being the data for the column
+       (the order matches ``colnames``), and the name of the file.
+
+    Raises
+    ------
+    sherpa.utils.err.IOErr
+       Raised if the file appears to be a binary file or a requested
+       column is missing.
+    ValueError
+       If a column value can not be converted into a numeric value
+       and the ``require_floats`` parameter is True.
+
+    See Also
+    --------
+    get_ascii_data, read_file_data
+
+    Notes
+    -----
+    The file-format support is described in `read_file_data`.
+
+    Examples
+    --------
+
+    Read in the first column from the file 'src.dat':
+
+    >>> (colnames, coldata) = get_file_data('src.dat')
+
+    Read in the first two columns from the file 'src.dat':
+
+    >>> (colnames, coldata) = get_file_data('src.dat', ncols=2)
+
+    Read in columns 'X', 'Y', and 'YERR' from the file:
+
+    >>> names = ['X', 'Y', 'YERR']
+    >>> (colnames, coldata) = get_file_data('src.dat', colkeys=names)
+
+    """
+
+    (names, args) = read_file_data(filename, sep=sep, comment=comment,
+                                   require_floats=require_floats)
+    return _validate_cols(names, args, ncols=ncols, colkeys=colkeys)
+
+
 def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
                    comment='#', require_floats=True):
     """Read in columns from an ASCII file.
@@ -261,7 +395,8 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     sep : str, optional
        The separator character. The default is ``' '``.
     dstype : data class to use, optional
-       Used to check that the data file contains enough columns.
+       Used to check that the data file contains enough columns. This is
+       only used when multiple columns are read in.
     comment : str, optional
        The comment character. The default is ``'#'``.
     require_floats : bool, optional
@@ -343,30 +478,16 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     if is_binary_file(filename):
         raise IOErr('notascii', filename)
 
-    names, args = read_file_data(filename, sep, comment, require_floats)
+    colnames, coldata = get_file_data(filename, ncols=ncols, colkeys=colkeys,
+                                      sep=sep, comment=comment,
+                                      require_floats=require_floats)
 
-    if colkeys is None:
-        kwargs = []
-        if ncols != 1:
-            _check_args(ncols, dstype)
-        kwargs.extend(args[:ncols])
-        return (names, kwargs, filename)
+    # Only validate if multiple columns are read in
+    n = len(colnames)
+    if n != 1:
+        _check_args(n, dstype)
 
-    kwargs = []
-    colkeys = list(colkeys)
-
-    if len(names) > len(args):
-        raise IOErr('toomanycols')
-
-    assert(len(names) <= len(args))
-
-    for key in colkeys:
-        if key not in names:
-            raise IOErr('reqcol', key, numpy.asarray(names, numpy.string_))
-        kwargs.append(args[names.index(key)])
-
-    _check_args(len(kwargs), dstype)
-    return (colkeys, kwargs, filename)
+    return (colnames, coldata, filename)
 
 
 def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,

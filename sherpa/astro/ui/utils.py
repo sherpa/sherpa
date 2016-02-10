@@ -32,6 +32,18 @@ import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
 
+# TODO: what is the best way to determine whether we have sherpa.astro.io
+#       support?
+#
+# The following assumes that the check for sherpa.astro.io has already been
+# done, so that no warning needs to be raised if it can not be imported.
+#
+try:
+    import sherpa.astro.io
+    _has_sherpa_astro_io = True
+except ImportError:
+    _has_sherpa_astro_io = False
+
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
@@ -8948,21 +8960,43 @@ class Session(sherpa.ui.utils.Session):
         try:
             x, y = self._read_user_model(filename, *args, **kwargs)
         except:
+            # Try to provide a useful error message when sherpa.astro.io
+            # support is available. Except that it turns out it isn't
+            # that useful (no guarantee that the last routine used is
+            # a sensible one for this file type).
+            #
+            # I am beginning to suspect that the comment below: namely,
+            # fall back if no I/O is loaded, is not quite correct. Perhaps
+            # the code needs this fall back even if crates or astropy is
+            # loaded?
+            if _has_sherpa_astro_io:
+                raise IOErr('noarrs')  # NOT VERY USEFUL
+
             # Fall back to reading plain ASCII, if no other
             # more sophisticated I/O backend loaded (such as
             # pyfits or crates) SMD 05/29/13
             #
-            # TODO: this does not use *args or **kwargs; is this intentional?
-            #  => so, let's pass them through AND drop forcing ncols=2
-            #     BUT this requires > 1 column SO for now ncols=2 is
-            #     required
-            #     REALLY should drop this implicit requirement of going
-            #     through a sherpa Data object
-            #
-            # data = sherpa.io.read_data(filename, ncols=2)
-            data = sherpa.io.read_data(filename, ncols=2, *args, **kwargs)
-            x = data.x
-            y = data.y
+            # ncols = kwargs.get('ncols', 2)
+            # colkeys = kwargs.get('colkeys', None)
+            # sep = kwargs.get('sep', ' ')
+            # comment = kwargs.get('comment', '#')
+            # rf = kwargs.get('require_floats', True)
+            (colnames, coldata) = sherpa.io.get_file_data(filename, *args,
+                                                          **kwargs)
+
+            # Just use the first two columns, if set
+            ncols = len(colnames)
+            if ncols == 1:
+                x = None
+                y = coldata[0]
+            elif ncols > 1:
+                x = coldata[0]
+                y = coldata[1]
+            else:
+                # does not appear to be an exact match to missing columns,
+                # but this case should not be reached as get_file_data
+                # should have already failed
+                raise IOErr('noarrs')
 
         tablemodel.load(x, y)
         return tablemodel
