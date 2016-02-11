@@ -87,6 +87,7 @@ before_install:
      then git submodule deinit -f .;
     fi
   - if [ -n "${NOSETUPTOOLS}" ]; then conda remove --yes setuptools; fi
+  - conda install 'numpy < 1.10.4'  # TEMPORARY work around #177
 
 
 install:
