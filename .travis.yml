@@ -21,7 +21,11 @@ addons:
 matrix:
   fast_finish: true
   include:
-    - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
+    - env: XSPECVER="12.8.2q" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
+      python: "2.7"
+      sudo: required
+      dist: trusty
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
       python: "2.7"
       sudo: required
       dist: trusty
@@ -59,7 +63,7 @@ before_install:
      then pip install ./sherpa-test-data;
      git submodule deinit -f .;
     fi
-  - if [ -n "${XSPEC}" ];
+  - if [ -n "${XSPECVER}" ];
      then DS9_SITE=http://ds9.si.edu/download/linux64/;
      XPA_SITE=http://ds9.si.edu/download/linux64_5/;
      DS9_TAR=ds9.linux64.7.3.2.tar.gz;
@@ -71,9 +75,9 @@ before_install:
      export DISPLAY=:99;
      /sbin/start-stop-daemon --start --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16;
     fi
-  - if [ -n "${XSPEC}" ];
+  - if [ -n "${XSPECVER}" ];
      then sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
-     conda install --yes -c https://conda.anaconda.org/cxc/channel/dev xspec-modelsonly;
+     conda install --yes -c https://conda.anaconda.org/cxc/channel/dev xspec-modelsonly=${XSPECVER};
      export HEADAS=$MINICONDA/Xspec/spectral;
      export LD_LIBRARY_PATH=$MINICONDA/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
      sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
