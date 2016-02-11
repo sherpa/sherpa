@@ -56,7 +56,7 @@ before_install:
   - if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
   - if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
   - echo ${MATPLOTLIB} ${NUMPY} ${FITS}
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY}
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} nomkl
   - conda config --add channels ${SHERPA_CHANNEL}
   - pip install -r test_requirements.txt
   - if [ ${TEST} == package ];
