@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -1114,17 +1114,21 @@ static PyMethodDef UtilsFcts[] = {
   //neville
   { (char*) "neville",(PyCFunction)(neville<SherpaFloatArray, SherpaFloat>), METH_VARARGS, 
     (char*) "neville(xout, xin, yin)\n\n"
-            "Polynomial interpolation using Neville's method [1]_.\n"
+            "Polynomial one-dimensional interpolation using Neville's method [1]_.\n"
             PARAMETERSDOC
-            "xout : sequence of numbers\n"
-            "   The X values to interpolate the `xin`, `yin` values onto.\n"
-            "xin : sequence of numbers\n"
-            "   The X values to be interpolated.\n"
-            "yin : sequence of numbers\n"
-            "   The Y values to be interpolated (must be the same size as `xin`).\n"
+            "xout : array_like\n"
+            "   The positions at which to interpolate.\n"
+            "xin : array_like\n"
+            "   The x values of the data to be interpolated. This must be\n"
+            "   sorted so that it is monotonically increasing.\n"
+            "yin : array_like\n"
+            "   The y values of the data to interpolate (must be the same\n"
+            "   size as ``xin``).\n"
             RETURNSDOC
             "yout : NumPy array of numbers\n"
-            "   The interpolated Y values (same size as `xout`).\n"
+            "   The interpolated y values (same size as ``xout``).\n"
+            SEEALSODOC
+            "interpolate, linear_interp, nearest_interp\n"
             REFERENCESDOC "\n"
             ".. [1] http://en.wikipedia.org/wiki/Neville%27s_algorithm\n"
             EXAMPLESDOC "\n"
