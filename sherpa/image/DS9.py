@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2006-2010  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2006-2010, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -264,7 +264,8 @@ def xpaget(cmd, template=_DefTemplate, doRaise = True):
     Raises RuntimeError or issues a warning (depending on doRaise)
     if anything is written to stderr.
     """
-    fullCmd = 'xpaget %s %s' % (template, cmd,)
+    # Would be better to make a sequence rather than have to quote arguments
+    fullCmd = 'xpaget %s "%s"' % (template, cmd,)
 
     p = _Popen(
             args = fullCmd,
@@ -312,10 +313,11 @@ def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate, doRaise = True)
     Raises RuntimeError or issues a warning (depending on doRaise)
     if anything is written to stdout or stderr.
     """
+    # Would be better to make a sequence rather than have to quote arguments
     if data or dataFunc:
-        fullCmd = 'xpaset %s %s' % (template, cmd)
+        fullCmd = 'xpaset %s "%s"' % (template, cmd)
     else:
-        fullCmd = 'xpaset -p %s %s' % (template, cmd)
+        fullCmd = 'xpaset -p %s "%s"' % (template, cmd)
 
     p = _Popen(
             args = fullCmd,
@@ -402,7 +404,7 @@ def _splitDict(inDict, keys):
     for key in keys:
         if inDict.has_key(key):
             outDict[key] = inDict.pop(key)
-    return outDict	
+    return outDict
 
 
 class DS9Win:
@@ -439,7 +441,7 @@ class DS9Win:
 
         _Popen(
                 args = ('ds9', '-title', self.template, '-port', "0"),
-                cwd = None, 
+                cwd = None,
         )
 
         startTime = time.time()
@@ -550,7 +552,7 @@ class DS9Win:
 # (apparently due to a bug in ds9) and because it wasn't very useful
 #	def showBinFile(self, fname, **kargs):
 #		"""Display a binary file in ds9.
-#		
+#
 #		The following keyword arguments are used to specify the array:
 #		- xdim		# of points along x
 #		- ydim		# of points along y
@@ -558,7 +560,7 @@ class DS9Win:
 #		- zdim		# of points along z
 #		- bitpix	number of bits/pixel; negative if floating
 #		- arch	one of bigendian or littleendian (intel)
-#		
+#
 #		The remaining keywords are extras treated as described
 #		in the module comment.
 #
@@ -573,7 +575,7 @@ class DS9Win:
 #		filePathPlusInfo = _expandPath(fname, arrInfo)
 #
 #		self.xpaset(cmd='file array "%s"' % (filePathPlusInfo,))
-#		
+#
 #		for keyValue in kargs.iteritems():
 #			self.xpaset(cmd=' '.join(keyValue))
 
