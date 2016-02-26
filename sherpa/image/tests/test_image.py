@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,6 +19,8 @@
 
 import unittest
 import numpy
+# from numpy.testing import assert_allclose
+
 import os
 import sherpa
 from sherpa.image import *
@@ -50,6 +52,11 @@ def get_arr_from_imager(im):
     data_out = numpy.float_(data_out)
     return data_out
 
+# TODO: use numpy.testing.assert_allclose (or related) so that a
+#       per-pixel check can be done, rather than an aggregated one.
+#       Hmmm, apparently the test is doing something different than
+#       I think it is, as the values aren't an exact match. So what
+#       exactly is get_arr_from_imager returning?
 
 @requires_ds9
 class test_image(SherpaTestCase):
@@ -102,3 +109,34 @@ class test_image(SherpaTestCase):
         data_out = get_arr_from_imager(im)
         im.xpaset("quit")
         self.assertEqualWithinTol(data_out.sum(), 0.0, 1e-4)
+
+    def test_connection_with_x_file(self):
+        """Check that the connection works even if there is a
+        file called x (this checks that the xpaset call is properly
+        escaped).
+
+        """
+
+        ofile = 'x'
+        already_exists = os.path.exists(ofile)
+        if not already_exists:
+            try:
+                open(ofile, 'w').write('')
+            except IOError:
+                # assume it's a permission-denied error
+                unittest.skip('Unable to write to the current directory')
+                return
+
+        try:
+            im = Image()
+            im.image(data.y)
+            data_out = get_arr_from_imager(im)
+
+        finally:
+            if not already_exists:
+                os.unlink('x')
+
+        im.xpaset("quit")
+
+        # assert_allclose(data.y, data_out, atol=0.0, rtol=1e-6)
+        self.assertEqualWithinTol((data.y - data_out).sum(), 0.0, 1e-4)
