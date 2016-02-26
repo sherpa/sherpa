@@ -21,6 +21,8 @@ import unittest
 import numpy
 # from numpy.testing import assert_allclose
 
+import tempfile
+
 import os
 import sherpa
 from sherpa.image import *
@@ -117,24 +119,22 @@ class test_image(SherpaTestCase):
 
         """
 
-        ofile = 'x'
-        already_exists = os.path.exists(ofile)
-        if not already_exists:
-            try:
-                open(ofile, 'w').write('')
-            except IOError:
-                # assume it's a permission-denied error
-                unittest.skip('Unable to write to the current directory')
-                return
-
+        origdir = os.getcwd()
+        dname = tempfile.mkdtemp()
         try:
+            os.chdir(dname)
+
+            ofile = 'x'
+            open(ofile, 'w').write('')
+
             im = Image()
             im.image(data.y)
             data_out = get_arr_from_imager(im)
 
         finally:
-            if not already_exists:
-                os.unlink('x')
+            os.unlink(ofile)
+            os.chdir(origdir)
+            os.rmdir(dname)
 
         im.xpaset("quit")
 
