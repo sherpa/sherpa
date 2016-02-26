@@ -134,17 +134,17 @@ History:
 2008-05-28 Stephen Doe  Always raise exception on error (doRaise=True always)
 2008-11-25 Stephen Doe  Search PATH for access to application, rather than shell out to use 'which' -- PATH sometimes not correctly inherited by shell via Popen, for csh on some Mac, Solaris machines.
 """
-__all__ = ["setup", "xpaget", "xpaset", "DS9Win"]
 
-import numpy as num
+import numpy as np
 import os
 import sys
-import platform
-import socket
 import time
 import warnings
 import subprocess
 from sherpa.utils.err import RuntimeErr, TypeErr
+
+__all__ = ["setup", "xpaget", "xpaset", "DS9Win"]
+
 
 def _addToPATH(newPath):
     """Add newPath to the PATH environment variable.
@@ -161,6 +161,7 @@ def _addToPATH(newPath):
         pathStr = newPath
     os.environ["PATH"] = pathStr
 
+
 def _findUnixApp(appName):
     """Search PATH to find first directory that has the application.
     Return the path if found.
@@ -169,18 +170,18 @@ def _findUnixApp(appName):
     try:
         appPath = ''
         for path in os.environ['PATH'].split(':'):
-            if (os.access(path + '/' + appName, os.X_OK) == True):
+            if os.access(path + '/' + appName, os.X_OK):
                 appPath = path
                 break
 
-        if (appPath == '' or
-            not appPath.startswith("/")):
+        if appPath == '' or not appPath.startswith("/"):
             raise RuntimeErr('notonpath', appName)
 
     except:
         raise
 
     return appPath
+
 
 def _findDS9AndXPA():
     """Locate ds9 and xpa, and add to PATH if not already there.
@@ -245,10 +246,11 @@ if errStr:
 _ArrayKeys = ("dim", "dims", "xdim", "ydim", "zdim", "bitpix", "skip", "arch")
 _DefTemplate = "sherpa"
 
-_OpenCheckInterval = 0.2 # seconds
-_MaxOpenTime = 60.0 # seconds
+_OpenCheckInterval = 0.2  # seconds
+_MaxOpenTime = 60.0  # seconds
 
-def xpaget(cmd, template=_DefTemplate, doRaise = True):
+
+def xpaget(cmd, template=_DefTemplate, doRaise=True):
     """Executes a simple xpaget command:
             xpaset -p <template> <cmd>
     returning the reply.
@@ -268,11 +270,11 @@ def xpaget(cmd, template=_DefTemplate, doRaise = True):
     fullCmd = 'xpaget %s "%s"' % (template, cmd,)
 
     p = _Popen(
-            args = fullCmd,
-            shell = True,
-            stdin = subprocess.PIPE,
-            stdout = subprocess.PIPE,
-            stderr = subprocess.PIPE,
+        args=fullCmd,
+        shell=True,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     try:
         p.stdin.close()
@@ -289,7 +291,8 @@ def xpaget(cmd, template=_DefTemplate, doRaise = True):
         p.stderr.close()
 
 
-def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate, doRaise = True):
+def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate,
+           doRaise=True):
     """Executes a simple xpaset command:
             xpaset -p <template> <cmd>
     or else feeds data to:
@@ -320,11 +323,11 @@ def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate, doRaise = True)
         fullCmd = 'xpaset -p %s "%s"' % (template, cmd)
 
     p = _Popen(
-            args = fullCmd,
-            shell = True,
-            stdin = subprocess.PIPE,
-            stdout = subprocess.PIPE,
-            stderr = subprocess.STDOUT,
+        args=fullCmd,
+        shell=True,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
     )
     try:
         if dataFunc:
@@ -343,7 +346,7 @@ def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate, doRaise = True)
             else:
                 warnings.warn(fullErrMsg)
     finally:
-        p.stdin.close() # redundant
+        p.stdin.close()  # redundant
         p.stdout.close()
 
 
@@ -355,20 +358,22 @@ def _computeCnvDict():
     """
 
     cnvDict = {
-            num.int8: num.int16,
-            num.uint16: num.int32,
-            num.uint32: num.float32,	# ds9 can't handle 64 bit integer data
-            num.int64: num.float64,
+        np.int8: np.int16,
+        np.uint16: np.int32,
+        np.uint32: np.float32,  # ds9 can't handle 64 bit integer data
+        np.int64: np.float64,
     }
 
-    if hasattr(num, "uint64="):
-        cnvDict[num.uint64] = num.float64
+    # TODO: should this check for 'uint64' since 'uint64=' is not a
+    #       valid attribute name
+    if hasattr(np, "uint64="):
+        cnvDict[np.uint64] = np.float64
 
     return cnvDict
 
 _CnvDict = _computeCnvDict()
-_FloatTypes = (num.float32, num.float64)
-_ComplexTypes = (num.complex64, num.complex128)
+_FloatTypes = (np.float32, np.float64)
+_ComplexTypes = (np.complex64, np.complex128)
 
 
 def _expandPath(fname, extraArgs=""):
@@ -402,7 +407,7 @@ def _splitDict(inDict, keys):
     """
     outDict = {}
     for key in keys:
-        if inDict.has_key(key):
+        if key in inDict:
             outDict[key] = inDict.pop(key)
     return outDict
 
@@ -421,10 +426,9 @@ class DS9Win:
                     Note: doOpen always raises RuntimeError on failure!
     """
     def __init__(self,
-            template=_DefTemplate,
-            doOpen = True,
-            doRaise = True
-    ):
+                 template=_DefTemplate,
+                 doOpen=True,
+                 doRaise=True):
         self.template = str(template)
         self.doRaise = bool(doRaise)
         self.alreadyOpen = self.isOpen()
@@ -440,8 +444,8 @@ class DS9Win:
             return
 
         _Popen(
-                args = ('ds9', '-title', self.template, '-port', "0"),
-                cwd = None,
+            args=('ds9', '-title', self.template, '-port', "0"),
+            cwd=None,
         )
 
         startTime = time.time()
@@ -485,20 +489,21 @@ class DS9Win:
         Raises RuntimeError if ds9 is not running or returns an error message.
         """
         if not hasattr(arr, "dtype") or not hasattr(arr, "astype"):
-            arr = num.array(arr)
+            arr = np.array(arr)
 
-        if num.iscomplexobj(arr):
+        if np.iscomplexobj(arr):
             raise TypeErr('nocomplex')
 
         ndim = arr.ndim
         if ndim not in (2, 3):
             raise RuntimeErr('only2d3d')
-        dimNames = ["z", "y", "x"][3-ndim:]
+
+        dimNames = ["z", "y", "x"][3 - ndim:]
 
         # if necessary, convert array type
         cnvType = _CnvDict.get(arr.dtype.type)
         if cnvType:
-#			print "converting array from %s to %s" % (arr.type(), cnvType)
+            # print "converting array from %s to %s" % (arr.type(), cnvType)
             arr = arr.astype(cnvType)
 
         # determine byte order of array
@@ -519,7 +524,7 @@ class DS9Win:
         # compute bits/pix; ds9 uses negative values for floating values
         bitsPerPix = arr.itemsize * 8
 
-        #if num.issubclass_(arr.dtype.type, float):
+        # if np.issubclass_(arr.dtype.type, float):
         if arr.dtype.type in _FloatTypes:
             # array is float; use negative value
             bitsPerPix = -bitsPerPix
@@ -535,14 +540,14 @@ class DS9Win:
             arryDict["%sdim" % axis] = size
 
         arryDict["bitpix"] = bitsPerPix
-        if (isBigendian):
+        if isBigendian:
             arryDict["arch"] = 'bigendian'
         else:
             arryDict["arch"] = 'littleendian'
 
         self.xpaset(
-                cmd = 'array [%s]' % (_formatOptions(arryDict),),
-                dataFunc = arr.tofile,
+            cmd='array [%s]' % (_formatOptions(arryDict),),
+            dataFunc=arr.tofile,
         )
 
         for keyValue in kargs.iteritems():
@@ -611,11 +616,10 @@ class DS9Win:
         Raises RuntimeError if anything is written to stderr.
         """
         return xpaget(
-                cmd = cmd,
-                template = self.template,
-                doRaise = self.doRaise,
+            cmd=cmd,
+            template=self.template,
+            doRaise=self.doRaise,
         )
-
 
     def xpaset(self, cmd, data=None, dataFunc=None):
         """Executes a simple xpaset command:
@@ -634,11 +638,11 @@ class DS9Win:
         Raises RuntimeError if anything is written to stdout or stderr.
         """
         return xpaset(
-                cmd = cmd,
-                data = data,
-                dataFunc = dataFunc,
-                template = self.template,
-                doRaise = self.doRaise,
+            cmd=cmd,
+            data=data,
+            dataFunc=dataFunc,
+            template=self.template,
+            doRaise=self.doRaise,
         )
 
 if __name__ == "__main__":
