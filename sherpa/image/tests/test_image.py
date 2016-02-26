@@ -30,12 +30,17 @@ from sherpa.image import Image, DataImage, ModelImage, RatioImage, \
 from sherpa.utils import SherpaTestCase, requires_ds9
 
 
-# Create a 10x10 array for the tests.
+# Create a rectangular array for the tests just to ensure that
+# there are no issues with Fortran/C order.
+#
+_ny = 10
+_nx = 13
+
+
 class Data(object):
     def __init__(self):
         self.name = None
-        self.y = np.arange(0, (10 * 10) / 2, 0.5)
-        self.y = self.y.reshape(10, 10)
+        self.y = np.arange(0, _ny * _nx).reshape(_ny, _nx) / 2.0
         self.eqpos = None
         self.sky = None
 
