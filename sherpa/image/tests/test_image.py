@@ -17,7 +17,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
 import numpy
 # from numpy.testing import assert_allclose
 
@@ -25,19 +24,22 @@ import tempfile
 
 import os
 import sherpa
-from sherpa.image import *
+from sherpa.image import Image, DataImage, ModelImage, RatioImage, \
+    ResidImage
+
 from sherpa.utils import SherpaTestCase, requires_ds9
+
 
 # Create a 10x10 array for the tests.
 class Data(object):
     def __init__(self):
         self.name = None
-        self.y = numpy.arange(0,(10*10)/2,0.5)
-        self.y = self.y.reshape(10,10)
+        self.y = numpy.arange(0, (10 * 10) / 2, 0.5)
+        self.y = self.y.reshape(10, 10)
         self.eqpos = None
         self.sky = None
 
-    def get_img(self,model=None):
+    def get_img(self, model=None):
         if model is not None:
             return (self.y, self.y)
         else:
@@ -45,25 +47,29 @@ class Data(object):
 
 data = Data()
 
+
 def get_arr_from_imager(im):
     # DS9 returns data as unordered string
     # Turn it into a 10x10 array
     data_out = im.xpaget("data image 1 1 10 10 yes")
     data_out = data_out.split()
-    data_out = numpy.array(data_out).reshape(10,10)
+    data_out = numpy.array(data_out).reshape(10, 10)
     data_out = numpy.float_(data_out)
     return data_out
+
 
 # TODO: use numpy.testing.assert_allclose (or related) so that a
 #       per-pixel check can be done, rather than an aggregated one.
 #       Hmmm, apparently the test is doing something different than
 #       I think it is, as the values aren't an exact match. So what
-#       exactly is get_arr_from_imager returning?
+#       exactly is get_arr_from_imager returning? Is it just a
+#       Fortran/C axis difference?
 
 @requires_ds9
 class test_image(SherpaTestCase):
     def test_ds9(self):
-        im = sherpa.image.ds9_backend.DS9.DS9Win(sherpa.image.ds9_backend.DS9._DefTemplate, False)
+        ctor = sherpa.image.ds9_backend.DS9.DS9Win
+        im = ctor(sherpa.image.ds9_backend.DS9._DefTemplate, False)
         im.doOpen()
         im.showArray(data.y)
         data_out = get_arr_from_imager(im)
