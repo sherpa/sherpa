@@ -17,8 +17,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
-# from numpy.testing import assert_allclose
+import numpy as np
+from numpy.testing import assert_allclose
 
 import tempfile
 
@@ -34,7 +34,7 @@ from sherpa.utils import SherpaTestCase, requires_ds9
 class Data(object):
     def __init__(self):
         self.name = None
-        self.y = numpy.arange(0, (10 * 10) / 2, 0.5)
+        self.y = np.arange(0, (10 * 10) / 2, 0.5)
         self.y = self.y.reshape(10, 10)
         self.eqpos = None
         self.sky = None
@@ -48,22 +48,53 @@ class Data(object):
 data = Data()
 
 
-def get_arr_from_imager(im):
-    # DS9 returns data as unordered string
-    # Turn it into a 10x10 array
-    data_out = im.xpaget("data image 1 1 10 10 yes")
-    data_out = data_out.split()
-    data_out = numpy.array(data_out).reshape(10, 10)
-    data_out = numpy.float_(data_out)
-    return data_out
+# The order returned by the xpaget call below is neither C or Fortran
+# style. For instance,
+#
+# >>> y = np.asarray([1,2,3,10,20,30]).reshape(2,3)
+# >>> im = Image()
+# >>> im.image(y)
+# >>> got = im.xpaget("data image 1 1 3 2 yes")
+# >>> got
+# '3\n20\n30\n1\n2\n10\n'
+# >>> im.xpaget("data image 1 1 3 2 no")
+# '3,1 = 3\n2,2 = 20\n3,2 = 30\n1,1 = 1\n2,1 = 2\n1,2 = 10\n'
+#
+def get_arr_from_imager(im, yexp):
+    """Return data from image object, using the yexp value for shape/type"""
+
+    assert yexp.ndim == 2
+
+    (ny, nx) = yexp.shape
+    dtype = yexp.dtype.type
+
+    def proc(s):
+        """Convert 'i,j = z' to a tuple (i, j, z)"""
+        # no error checking
+        toks = s.split('=')
+        z = dtype(toks[1])
+        toks = toks[0].split(',')
+        i = int(toks[0])
+        j = int(toks[1])
+        return (i, j, z)
+
+    # There is almost-certainly a better way to do this, but for
+    # now be explicit (the array sizes are not expected to be large,
+    # so it doesn't need to be efficient).
+    out = np.zeros((ny, nx), dtype=dtype)
+    d = im.xpaget("data image 1 1 {} {} no".format(nx, ny))
+    for l in d.split('\n'):
+        if l.strip() == '':
+            continue
+        i, j, z = proc(l)
+        out[j - 1, i - 1] = z
+
+    return out
 
 
-# TODO: use numpy.testing.assert_allclose (or related) so that a
-#       per-pixel check can be done, rather than an aggregated one.
-#       Hmmm, apparently the test is doing something different than
-#       I think it is, as the values aren't an exact match. So what
-#       exactly is get_arr_from_imager returning? Is it just a
-#       Fortran/C axis difference?
+_atol = 0.0
+_rtol = 1.0e-6
+
 
 @requires_ds9
 class test_image(SherpaTestCase):
@@ -72,57 +103,60 @@ class test_image(SherpaTestCase):
         im = ctor(sherpa.image.ds9_backend.DS9._DefTemplate, False)
         im.doOpen()
         im.showArray(data.y)
-        data_out = get_arr_from_imager(im)
+        data_out = get_arr_from_imager(im, data.y)
         im.xpaset("quit")
-        self.assertEqualWithinTol((data.y - data_out).sum(), 0.0, 1e-4)
+        assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
     def test_image(self):
         im = Image()
         im.image(data.y)
-        data_out = get_arr_from_imager(im)
+        data_out = get_arr_from_imager(im, data.y)
         im.xpaset("quit")
-        self.assertEqualWithinTol((data.y - data_out).sum(), 0.0, 1e-4)
+        assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
     def test_data_image(self):
         im = DataImage()
         im.prepare_image(data)
         im.image()
-        data_out = get_arr_from_imager(im)
+        data_out = get_arr_from_imager(im, data.y)
         im.xpaset("quit")
-        self.assertEqualWithinTol((data.y - data_out).sum(), 0.0, 1e-4)
+        assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
     def test_model_image(self):
         im = ModelImage()
         im.prepare_image(data, 1)
         im.image()
-        data_out = get_arr_from_imager(im)
+        data_out = get_arr_from_imager(im, data.y)
         im.xpaset("quit")
-        self.assertEqualWithinTol((data.y - data_out).sum(), 0.0, 1e-4)
+        assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
     def test_ratio_image(self):
         im = RatioImage()
         im.prepare_image(data, 1)
         im.image()
-        data_out = get_arr_from_imager(im)
+        data_out = get_arr_from_imager(im, data.y)
         im.xpaset("quit")
-        # The sum is 99, because the first model pixel
-        # will be zero, and therefore the ratio function
+        # All values but the first will be 1, because the first
+        # model pixel will be zero, and therefore the ratio function
         # reassigns the ratio there to be one.
-        self.assertEqualWithinTol(data_out.sum(), 99.0, 1e-4)
+        expval = np.ones(data.y.shape)
+        expval[0, 0] = 0
+        assert_allclose(expval, data_out, atol=_atol, rtol=_rtol)
 
     def test_resid_image(self):
         im = ResidImage()
         im.prepare_image(data, 1)
         im.image()
-        data_out = get_arr_from_imager(im)
+        data_out = get_arr_from_imager(im, data.y)
         im.xpaset("quit")
-        self.assertEqualWithinTol(data_out.sum(), 0.0, 1e-4)
+        # Return value is all zeros
+        assert_allclose(data.y * 0, data_out, atol=_atol, rtol=_rtol)
 
     def test_connection_with_x_file(self):
         """Check that the connection works even if there is a
         file called x (this checks that the xpaset call is properly
-        escaped).
-
+        escaped when 'xpaset sherpa [BITPIX=..,x=..,y=..,]' is
+        called.
         """
 
         origdir = os.getcwd()
@@ -135,7 +169,7 @@ class test_image(SherpaTestCase):
 
             im = Image()
             im.image(data.y)
-            data_out = get_arr_from_imager(im)
+            data_out = get_arr_from_imager(im, data.y)
 
         finally:
             os.unlink(ofile)
@@ -144,5 +178,4 @@ class test_image(SherpaTestCase):
 
         im.xpaset("quit")
 
-        # assert_allclose(data.y, data_out, atol=0.0, rtol=1e-6)
-        self.assertEqualWithinTol((data.y - data_out).sum(), 0.0, 1e-4)
+        assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
