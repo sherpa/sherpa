@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #
 #  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
@@ -38,6 +39,9 @@ from sherpa.utils._utils import calc_ftest, calc_mlr, igamc, igam, \
 from sherpa.utils._psf import extract_kernel, normalize, set_origin, \
     pad_bounding_box
 from functools import wraps
+
+import warnings
+from . import test
 
 from sherpa import get_config
 from ConfigParser import ConfigParser, NoSectionError
@@ -95,7 +99,11 @@ __all__ = ('NoNewAttributesAfterInit',
            'parse_expr', 'poisson_noise', 'print_fields', 'rebin',
            'sao_arange', 'sao_fcmp', 'set_origin', 'sum_intervals', 'zeroin',
            'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile',
-           'get_valid_args')
+           'get_valid_args',
+           # re-export from sherpa.utils.test for backwards compatibility
+           'SherpaTest', 'SherpaTestCase',
+           'requires_data', 'requires_fits', 'requires_package'
+           )
 
 _guess_ampl_scale = 1.e+3
 
@@ -2600,3 +2608,44 @@ def get_valid_args(func):
     kwargs_length = len(func.func_defaults) if func.func_defaults else 0 # number of keyword arguments
     valid_kwargs = valid_args[-kwargs_length:] if kwargs_length else []  # because kwargs are last
     return valid_kwargs
+
+
+# Testing routines: these are deprecated and the routines in
+# sherpa.utils.test should be used instead. Should this use
+# a decorator so that the original doc string can be retained?
+#
+class SherpaTest(test.SherpaTest):
+    """Deprecated: use sherpa.utils.test.SherpaTest"""
+    def __init__(self, *args, **kwargs):
+        m = 'SherpaTest is deprecated: use sherpa.utils.test.SherpaTest'
+        warnings.warn(m, DeprecationWarning, stacklevel=2)
+        test.SherpaTest.__init__(self, *args, **kwargs)
+
+
+class SherpaTestCase(test.SherpaTestCase):
+    """Deprecated: use sherpa.utils.test.SherpaTestCase"""
+    def __init__(self, *args, **kwargs):
+        m = 'SherpaTestCase is deprecated: use sherpa.utils.test.SherpaTestCase'
+        warnings.warn(m, DeprecationWarning, stacklevel=2)
+        test.SherpaTestCase.__init__(self, *args, **kwargs)
+
+
+def requires_data(*args, **kwargs):
+    """Deprecated: use sherpa.utils.test.requires_data"""
+    m = 'requires_data is deprecated: use sherpa.utils.test.requires_data'
+    warnings.warn(m, DeprecationWarning, stacklevel=2)
+    test.requires_data(*args, **kwargs)
+
+
+def requires_fits(*args, **kwargs):
+    """Deprecated: use sherpa.utils.test.requires_fits"""
+    m = 'requires_fits is deprecated: use sherpa.utils.test.requires_fits'
+    warnings.warn(m, DeprecationWarning, stacklevel=2)
+    test.requires_fits(*args, **kwargs)
+
+
+def requires_package(*args, **kwargs):
+    """Deprecated: use sherpa.utils.test.requires_package"""
+    m = 'requires_package is deprecated: use sherpa.utils.test.requires_package'
+    warnings.warn(m, DeprecationWarning, stacklevel=2)
+    test.requires_package(*args, **kwargs)
