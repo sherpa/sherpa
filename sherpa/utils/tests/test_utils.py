@@ -20,8 +20,8 @@
 import numpy
 from sherpa.utils import SherpaFloat
 from sherpa.utils.test import SherpaTest, SherpaTestCase
-
 from sherpa import utils
+import warnings
 
 
 class test_utils(SherpaTestCase):
@@ -215,6 +215,42 @@ class test_utils(SherpaTestCase):
 
         self.assert_((result == numpy.asarray(pararesult)).all())
         self.assert_((result == numpy.asarray(poolresult)).all())
+
+    def test_members(self):
+        """Make sure members moved to sherpa.utils.test are still accessible through sherpa.utils"""
+
+        from sherpa.utils import SherpaTestCase
+        from sherpa.utils import SherpaTest
+        from sherpa.utils import requires_data, requires_fits, requires_package
+        # from sherpa.utils import requires_ds9, requires_xspec, requires_pylab
+
+        # Make sure deprecation warnings are issued
+        class FakeClass(SherpaTestCase):
+            def runTest(self):
+                pass
+
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # Trigger a warning.
+            FakeClass()
+            # Verify some things
+            assert len(w) == 1
+            assert issubclass(w[-1].category, DeprecationWarning)
+            assert "SherpaTestCase is deprecated: use sherpa.utils.test.SherpaTestCase" in str(w[-1].message)
+
+            SherpaTest()
+            # Verify some things
+            assert len(w) == 2
+            assert issubclass(w[-1].category, DeprecationWarning)
+            assert "SherpaTest is deprecated: use sherpa.utils.test.SherpaTest" in str(w[-1].message)
+
+            requires_data(FakeClass)
+            # Verify some things
+            assert len(w) == 3
+            assert issubclass(w[-1].category, DeprecationWarning)
+            assert "requires_data is deprecated: use sherpa.utils.test.requires_data" in str(w[-1].message)
+
 
 
 if __name__ == '__main__':
