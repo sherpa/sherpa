@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -50,7 +50,14 @@ if io_opt.startswith('pycrates') or io_opt.startswith('crates'):
 elif io_opt.startswith('pyfits'):
     io_opt = 'pyfits_backend'
 
-backend = __import__(io_opt, globals(), locals(), [])
+try:
+    backend = __import__(io_opt, globals(), locals(), [])
+except ImportError:
+    raise ImportError("""Cannot import selected FITS I/O backend {}.
+    If you are using CIAO, this is most likely an error and you should contact the CIAO helpdesk.
+    If you are using Standalone Sherpa, please install astropy (pyfits should also work, but it's deprecated)."""
+                      .format(io_opt))
+
 warning = logging.getLogger(__name__).warning
 info    = logging.getLogger(__name__).info
 
