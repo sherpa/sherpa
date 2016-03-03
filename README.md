@@ -273,6 +273,18 @@ tests require optional packages to be installed alongside
 Sherpa. These warnings may be ignored, as long as the test ends with
 an `OK` message.
 
+You can also test the build by using the standard python command:
+
+    $ python setup.py test
+
+The `test` command is a wrapper that calls `pytest` under the hood.
+
+You can pass additional arguments to `pytest` with `-a` or `--pytest-args`.
+For instance,
+you can run a single test, i.e. a single test method, with:
+
+    $ python setup.py test -a sherpa/astro/datastack/tests/test_datastack.py::test_load::test_case3
+
 Custom source build
 ===================
 

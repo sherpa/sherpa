@@ -18,6 +18,7 @@ requirements:
   - python 2.7.*
   - numpy >1.8
   - setuptools
+  - pytest
 
 about:
  home: http://cxc.cfa.harvard.edu/sherpa/
