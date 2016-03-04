@@ -45,6 +45,7 @@ matrix:
 env:  FITS="astropy" INSTALL_TYPE=install TEST=smoke MATPLOTLIBVER=1.5
 
 before_install:
+  - export MKL="nomkl"
   - export SHERPA_CHANNEL=https://conda.anaconda.org/sherpa
   - export MINICONDA=/home/travis/miniconda
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -52,11 +53,11 @@ before_install:
   - ./miniconda.sh -b -p $MINICONDA
   - export PATH=$MINICONDA/bin:$PATH
   - conda update --yes conda
-  - if [ -n "${FITS}" ]; then conda install --yes -c ${SHERPA_CHANNEL} ${FITS}; fi
+  - if [ -n "${FITS}" ]; then conda install --yes -c ${SHERPA_CHANNEL} ${FITS} $MKL; fi
   - if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
   - if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
   - echo ${MATPLOTLIB} ${NUMPY} ${FITS}
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} nomkl
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} $MKL
   - conda config --add channels ${SHERPA_CHANNEL}
   - pip install -r test_requirements.txt
   - if [ ${TEST} == package ];
