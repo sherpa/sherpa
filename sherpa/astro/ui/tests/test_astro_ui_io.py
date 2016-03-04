@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,8 +21,6 @@
 # of tests, in part to reduce file size, but also because some of these
 # may be better placed in tests of the sherpa.astro.io module, once that
 # becomes possible
-
-import unittest
 
 from sherpa.utils import SherpaTest, SherpaTestCase
 from sherpa.utils import requires_data, requires_fits
