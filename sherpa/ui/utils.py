@@ -9987,6 +9987,9 @@ class Session(NoNewAttributesAfterInit):
            Other data sets to use in the calculation.
         niter : int, optional
            The number of draws to use. The default is ``1000``.
+        covar_matrix : 2D array, optional
+           The covariance matrix to use. If ``None`` then the
+           result from `get_covar_matrix` is used.
 
         Returns
         -------
