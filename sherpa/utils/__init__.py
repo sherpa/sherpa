@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #
 #  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
@@ -32,7 +33,7 @@ import os
 import importlib
 import numpy
 import numpy.random
-import numpytest
+from . import numpytest
 import numpy.fft
 # Note: _utils.gsl_fcmp is not exported from this module; is this intentional?
 from unittest import skipIf
