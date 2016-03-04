@@ -42,6 +42,10 @@ __all__ = ('clear_window', 'plot', 'histo', 'contour', 'point', 'set_subplot',
            'vline', 'hline', 'get_cdf_plot_defaults', 'get_scatter_plot_defaults',
            'get_latex_for_string')
 
+
+name = 'chips'
+
+
 _initialized = False # Set this True first time begin() is called
 
 def _chips_wrap(func, *args, **kwargs):

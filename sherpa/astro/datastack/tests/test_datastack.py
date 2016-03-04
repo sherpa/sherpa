@@ -17,7 +17,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
 from sherpa.utils import SherpaTestCase
 import os
 import sys
@@ -688,6 +687,14 @@ class test_query(SherpaTestCase):
         f = datastack.query_by_obsid(ds, '7867')
 
         assert f == [4]
+
+
+def test_default_instantiation():
+    datastack.DataStack._default_instantiated = False
+    ds = datastack.DataStack()
+    assert ds._default_instance
+    ds = datastack.DataStack()
+    assert not ds._default_instance
 
 if __name__ == '__main__':
 

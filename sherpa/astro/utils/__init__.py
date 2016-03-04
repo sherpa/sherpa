@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2008  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,13 +18,13 @@
 #
 
 import logging
-warning = logging.getLogger(__name__).warning
 import numpy
 from _utils import *
 from _pileup import *
-from itertools import izip
+
 from sherpa.utils import SherpaFloat, get_position, filter_bins
 from sherpa.utils.err import IOErr, DataErr
+
 
 __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
            'eqwidth', 'calc_photon_flux', 'calc_energy_flux',
@@ -32,6 +32,10 @@ __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
            'calc_data_sum2d','calc_model_sum2d', 'filter_resp',
            'calc_source_sum', 'compile_energy_grid',
            'expand_grouped_mask','resp_init', 'is_in', 'get_xspec_position']
+
+
+warning = logging.getLogger(__name__).warning
+
 
 try:
     from _region import *

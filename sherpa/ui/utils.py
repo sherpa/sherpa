@@ -24,6 +24,7 @@ from itertools import izip
 import logging
 import sys
 import os
+import inspect
 import numpy
 import sherpa.all
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, export_method
@@ -87,7 +88,7 @@ def _fix_array(arg, argname, ndims=1):
 
 
 def _is_subclass(t1, t2):
-    return isinstance(t1, type) and issubclass(t1, t2) and (t1 is not t2)
+    return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
 
 def _send_to_pager(all, filename=None, clobber=False):
@@ -5263,6 +5264,10 @@ class Session(NoNewAttributesAfterInit):
            name that can be used to inspect and change the model
            parameters, as well as use it in model expressions.
 
+        Returns
+        -------
+        model : the sherpa.models.Model object created
+
         See Also
         --------
         delete_model_component : Delete a model component.
@@ -5299,22 +5304,19 @@ class Session(NoNewAttributesAfterInit):
         # just return (i.e., create_model_component(const1d.c1)
         # is redundant, so just return)
         if isinstance(typename, sherpa.models.Model) and name is None:
-            return
+            return typename
 
         _check_type(typename, basestring, 'typename', 'a string')
         _check_type(name, basestring, 'name', 'a string')
 
-        if typename is None:
-            raise ArgumentErr('notype')
-        if name is None:
-            raise ArgumentErr('noname')
         typename = typename.lower()
         cls = self._model_types.get(typename)
         if cls is None:
             raise ArgumentErr('badtype', typename)
 
-        self._model_components[name] = cls(name)
-        # self._add_model_component(cls(name))
+        model = cls(name)
+        self._model_components[name] = model
+        return model
 
     def reset(self, model=None, id=None):
         """Reset the model parameters to their default settings.

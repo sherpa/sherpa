@@ -1,5 +1,6 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+from __future__ import absolute_import
+#
+# Copyright (C) 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,5 +17,24 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+import logging
+import sys
 
-# Nothing in here yet
+
+def config_logger(name, level=logging.WARNING, stream=sys.stdout, template=None):
+    if template is None:
+        template = '{}: %(message)s'.format(name)
+
+    logger = logging.getLogger(name)
+    for handler in logger.handlers:
+        logger.removeHandler(handler)
+
+    fmt = logging.Formatter(template, None)
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(fmt)
+
+    logger.addHandler(handler)
+    logger.setLevel(level)
+    logger.propagate = False
+
+    return logger

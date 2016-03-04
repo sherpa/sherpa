@@ -21,7 +21,6 @@
 A visualization interface to Sherpa
 """
 
-
 from __future__ import division
 import numpy
 import logging
@@ -62,6 +61,7 @@ except:
 
 backend.init()
 
+plotter = backend
 
 __all__ = ('Plot', 'Contour', 'Point', 'SplitPlot', 'JointPlot',
            'DataPlot', 'DataContour', 'DelchiPlot', 'ComponentModelPlot',
@@ -69,8 +69,8 @@ __all__ = ('Plot', 'Contour', 'Point', 'SplitPlot', 'JointPlot',
            'ResidPlot', 'ResidContour', 'RatioPlot', 'RatioContour',
            'IntervalProjection', 'IntervalUncertainty', 'ChisqrPlot',
            'RegionProjection', 'RegionUncertainty', 'ComponentSourcePlot',
-           'PSFPlot', 'PSFContour', 'begin', 'end', 'exceptions', 'backend',
-           'SourcePlot', 'SourceContour', 'Histogram')
+           'PSFPlot','PSFContour','begin', 'end', 'exceptions', 'backend',
+           'SourcePlot', 'SourceContour', 'Histogram', 'plotter')
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
 

@@ -32,7 +32,11 @@ __all__ = ('clear_window', 'plot', 'contour', 'point', 'set_subplot',
            'get_histo_defaults', 'get_model_histo_defaults',
            'get_component_plot_defaults', 'get_component_histo_defaults',
            'vline', 'hline', 'get_scatter_plot_defaults', 'get_cdf_plot_defaults',
-           'get_latex_for_string')
+           'get_latex_for_string', 'name')
+
+
+name = 'dummy'
+
 
 def point(*args, **kwargs):
     pass

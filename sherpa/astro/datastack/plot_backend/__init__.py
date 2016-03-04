@@ -1,5 +1,6 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+from __future__ import absolute_import
+#
+# Copyright (C) 2015  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,4 +18,28 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-# Nothing in here yet
+from sherpa.plot import plotter
+from importlib import import_module
+from sherpa.utils.logging import config_logger
+
+logger = config_logger(__name__)
+
+name = plotter.name
+
+backend_map = {
+    'pylab': 'plot_matplotlib',
+    'chips': 'plot_chips',
+    'dummy': 'plot_dummy'
+}
+
+
+def _update_globals(module):
+    globals().update((k, v)
+                     for k, v in module.__dict__.iteritems() if k not in globals())
+
+try:
+    backend_module = import_module("." + backend_map[name], __name__)
+except ImportError:
+    backend_module = import_module(".plot_dummy", __name__)
+
+_update_globals(backend_module)
