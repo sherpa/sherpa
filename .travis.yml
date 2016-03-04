@@ -46,6 +46,7 @@ env:  FITS="astropy" INSTALL_TYPE=install TEST=smoke MATPLOTLIBVER=1.5
 
 before_install:
   - export MKL="nomkl"
+  - export LIBGFORTRANVER="1.0"
   - export SHERPA_CHANNEL=https://conda.anaconda.org/sherpa
   - export MINICONDA=/home/travis/miniconda
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -57,7 +58,7 @@ before_install:
   - if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
   - if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
   - echo ${MATPLOTLIB} ${NUMPY} ${FITS}
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} $MKL
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} $MKL libgfortran=$LIBGFORTRANVER
   - conda config --add channels ${SHERPA_CHANNEL}
   - pip install -r test_requirements.txt
   - if [ ${TEST} == package ];
