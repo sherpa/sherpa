@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -864,16 +864,48 @@ try:
     class MinuitFunction:
         def __init__(self, fcn, params):
             self.fcn = fcn
-            self.func_code = self.init(len(params))
+            npar = len(params)
+            self.func_code = self.init(npar)
+            self.par_names = self.make_parnames(npar)
 
         def __call__(self, *params):
             return self.fcn(numpy.array(params))
+
+        def get_results(self, values):
+            result = []
+            for name in self.par_names:
+                result.append(values[name])
+            return numpy.array(result)
 
         def init(self, npar):
             names = []
             for ii in xrange(npar):
                 names.append('p%d' % ii)
             return iminuit.Struct(co_varnames=names, co_argcount=npar)
+
+        def make_parnames(self, npar):
+            names = []
+            for ii in xrange(npar):
+                names.append('p%d' % ii)
+            return names
+
+        def make_kwargs(self, verbose, errordef, x, xmin, xmax, error):
+            kwargs = {'print_level': verbose, 'errordef': errordef}
+            for name, par in izip(self.par_names, x):
+                kwargs[name] = par
+            for index, name in enumerate(self.par_names):
+                kwargs['limit_' + name] = (xmin[index], xmax[index])
+            if error is None:
+                for index, name in enumerate(self.par_names):
+                    kwargs['error_' + name] = numpy.abs(x[index]) * 0.05
+            else:
+                if hasattr(error, '__iter__') and npar == len(error):
+                    for index, name in enumerate(self.par_names):
+                        kwargs['error_' + name] = x[index]
+                else:
+                    msg = 'error must be an iterable of length %d' % npar
+                    raise NameError(msg)
+            return kwargs
 
     def midnight(fcn, x0, xmin, xmax, ftol=EPSILON, error=None, maxfev=None,
                  errordef=1, verbose=0):
@@ -882,42 +914,20 @@ try:
             return fcn(pars)[0]
 
         x, xmin, xmax = _check_args(x0, xmin, xmax)
-
-#        myfrontend = ['ConsoleFrontend', 'HtmlFrontend']
-#        if frontend not in myfrontend:
-#            raise NameError('frontend must be one of %s' % myfrontend)
-
-        kwargs = {'print_level': verbose, 'errordef': errordef}
-        for index, par in enumerate(x):
-            name = 'p%d' % index
-            kwargs[name] = par
-            kwargs['limit_' + name] = (xmin[index], xmax[index])
-
-        npar = len(x)
-        if error is None:
-            for ii in xrange(npar):
-                kwargs['error_p%d' % ii] = numpy.abs(x[ii]) * 0.05
-        else:
-            if hasattr(error, '__iter__') and len(error) == npar:
-                for index, par in enumerate(x):
-                    kwargs['error_p%d' % ii] = par
-            else:
-                raise NameError('error must be iterable of length %d' % npar)
         if maxfev is None:
-            maxfev = npar * 512
+            maxfev = len(x) * 1024
+
         minuit_func = MinuitFunction(stat_cb0, tuple(x))
+        kwargs = minuit_func.make_kwargs(verbose, errordef, x, xmin, xmax,
+                                         error)
         myminuit = iminuit.Minuit(minuit_func, **kwargs)
         myminuit.migrad(ncall=maxfev, precision=ftol)
+
+        # results
         nfev = myminuit.ncalls
         fval = myminuit.fval
-        pars = []
-        covarerr = []
-        for ii in xrange(npar):
-            name = 'p%d' % ii
-            pars.append(myminuit.values[name])
-            covarerr.append(myminuit.errors[name])
-        x = numpy.array(pars)
-        covarerr = numpy.array(covarerr)
+        x = minuit_func.get_results(myminuit.values)
+        covarerr = minuit_func.get_results(myminuit.errors)
         covar_matrix = numpy.array(myminuit.matrix(correlation=True))
         minuit_status = myminuit.get_fmin()
         if minuit_status.is_valid:
@@ -928,7 +938,6 @@ try:
         rv = (status, x, fval)
         rv += (msg, {'info': info, 'nfev': nfev, 'covarerr': covarerr,
                      'covar': covar_matrix, 'status': minuit_status})
-
         return rv
 
 except ImportError:
