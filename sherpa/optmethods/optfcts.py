@@ -22,7 +22,7 @@ import numpy
 import random
 import sys
 from itertools import izip
-
+import logging
 
 import _minpack
 import _minim
@@ -916,6 +916,10 @@ try:
         x, xmin, xmax = _check_args(x0, xmin, xmax)
         if maxfev is None:
             maxfev = len(x) * 1024
+        warning = logging.getLogger("sherpa").warning
+        if not 0 <= verbose <= 1:
+            warning("verbose must be within [0, 1]")
+            verbose = 1
 
         minuit_func = MinuitFunction(stat_cb0, tuple(x))
         kwargs = minuit_func.make_kwargs(verbose, errordef, x, xmin, xmax,
