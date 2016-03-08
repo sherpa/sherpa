@@ -29,7 +29,7 @@ matrix:
       python: "2.7"
       sudo: required
       dist: trusty
-    - env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
+    - env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.4 # 1.5 does not support numpy 1.8, required by pyfits
       python: "2.7"
     - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5
       python: "2.7"
