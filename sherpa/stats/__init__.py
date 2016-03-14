@@ -45,6 +45,13 @@ if (bool(truncation_flag) is False or truncation_flag == "FALSE" or
     truncation_value = 1.0e-25
 
 
+def get_syserror_weight_extra(dictionary):
+    syserror = dictionary.get('syserror')
+    weight = dictionary.get('weight')
+    extra = dictionary.get('extra_args')
+    return syserror, weight, extra
+
+
 class Stat(NoNewAttributesAfterInit):
 
     def __init__(self, name):
@@ -60,8 +67,7 @@ class Stat(NoNewAttributesAfterInit):
     def calc_staterror(self, data):
         raise NotImplementedError
 
-    def calc_stat(self, data, model, staterror=None, syserror=None,
-                  weight=None, bkg=None):
+    def calc_stat(self, data, model, staterror, *args, **kwargs):
         raise NotImplementedError
 
 
@@ -153,8 +159,8 @@ class Cash(Likelihood):
         Likelihood.__init__(self, name)
 
     @staticmethod
-    def calc_stat(data, model, staterror=None, syserror=None, weight=None,
-                  bkg=None):
+    def calc_stat(data, model, staterror, *args, **kwargs):
+        syserror, weight, extra = get_syserror_weight_extra(kwargs)
         return _statfcts.calc_cash_stat(data, model, staterror, syserror,
                                         weight, truncation_value)
 
@@ -229,8 +235,8 @@ class CStat(Likelihood):
         Likelihood.__init__(self, name)
 
     @staticmethod
-    def calc_stat(data, model, staterror=None, syserror=None, weight=None,
-                  bkg=None):
+    def calc_stat(data, model, staterror, *args, **kwargs):
+        syserror, weight, extra = get_syserror_weight_extra(kwargs)
         return _statfcts.calc_cstat_stat(data, model, staterror, syserror,
                                          weight, truncation_value)
 
@@ -289,8 +295,8 @@ class Chi2(Stat):
         raise StatErr('chi2noerr')
 
     @staticmethod
-    def calc_stat(data, model, staterror, syserror=None, weight=None,
-                  bkg=None):
+    def calc_stat(data, model, staterror, *args, **kwargs):
+        syserror, weight, extra = get_syserror_weight_extra(kwargs)
         return _statfcts.calc_chi2_stat(data, model, staterror,
                                         syserror, weight, truncation_value)
 
@@ -311,8 +317,8 @@ class LeastSq(Chi2):
         return numpy.ones_like(data)
 
     @staticmethod
-    def calc_stat(data, model, staterror, syserror=None, weight=None,
-                  bkg=None):
+    def calc_stat(data, model, staterror, *args, **kwargs):
+        syserror, weight, extra = get_syserror_weight_extra(kwargs)
         return _statfcts.calc_lsq_stat(data, model, staterror,
                                        syserror, weight, truncation_value)
 
@@ -436,8 +442,8 @@ class Chi2ModVar(Chi2):
         return numpy.zeros_like(data)
 
     @staticmethod
-    def calc_stat(data, model, staterror, syserror=None, weight=None,
-                  bkg=None):
+    def calc_stat(data, model, staterror, *args, **kwargs):
+        syserror, weight, extra = get_syserror_weight_extra(kwargs)
         return _statfcts.calc_chi2modvar_stat(data, model, staterror,
                                               syserror, weight,
                                               truncation_value)
@@ -510,16 +516,15 @@ class UserStat(Stat):
             raise StatErr('nostat', self.name, 'calc_staterror()')
         return self.errfunc(data)
 
-    def calc_stat(self, data, model, staterror=None, syserror=None,
-                  weight=None, bkg=None):
+    def calc_stat(self, data, model, staterror, *args, **kwargs):
         if not self._statfuncset:
             raise StatErr('nostat', self.name, 'calc_stat()')
 
-        if bkg is None or bkg['bkg'] is None:
-            return self.statfunc(data, model, staterror, syserror, weight)
-        else:
-            return self.statfunc(data, model, staterror, syserror, weight,
-                                 bkg['bkg'])
+        # if bkg is None or bkg['bkg'] is None:
+        #     return self.statfunc(data, model, staterror, syserror, weight)
+        # else:
+        #     return self.statfunc(data, model, staterror, syserror, weight,
+        #                          bkg['bkg'])
 
 
 class WStat(Likelihood):
@@ -588,14 +593,14 @@ class WStat(Likelihood):
         Likelihood.__init__(self, name)
 
     @staticmethod
-    def calc_stat(data, model, staterror=None, syserror=None,
-                  weight=None, bkg=None):
-        if bkg is None or bkg['bkg'] is None:
+    def calc_stat(data, model, staterror, *args, **kwargs):
+        syserror, weight, extra = get_syserror_weight_extra(kwargs)
+        if extra is None or extra['bkg'] is None:
             raise StatErr('usecstat')
 
         return _statfcts.calc_wstat_stat(data, model,
-                                         bkg['data_size'],
-                                         bkg['exposure_time'],
-                                         bkg['bkg'],
-                                         bkg['backscale_ratio'],
+                                         extra['data_size'],
+                                         extra['exposure_time'],
+                                         extra['bkg'],
+                                         extra['backscale_ratio'],
                                          truncation_value)
