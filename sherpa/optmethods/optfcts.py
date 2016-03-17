@@ -932,16 +932,21 @@ try:
         fval = myminuit.fval
         x = minuit_func.get_results(myminuit.values)
         covarerr = minuit_func.get_results(myminuit.errors)
-        covar_matrix = numpy.array(myminuit.matrix(correlation=True))
         minuit_status = myminuit.get_fmin()
+        if not minuit_status.hesse_failed:
+            covar_matrix = numpy.array(myminuit.matrix(correlation=True))
         if minuit_status.is_valid:
             info = 0
         else:
             info = -1
         status, msg = _get_saofit_msg(maxfev, info)
         rv = (status, x, fval)
-        rv += (msg, {'info': info, 'nfev': nfev, 'covarerr': covarerr,
-                     'covar': covar_matrix, 'status': minuit_status})
+        if not minuit_status.hesse_failed:
+            rv += (msg, {'info': info, 'nfev': nfev, 'covarerr': covarerr,
+                         'covar': covar_matrix, 'status': minuit_status})
+        else:
+            rv += (msg, {'info': info, 'nfev': nfev, 'covarerr': covarerr,
+                         'status': minuit_status})
         return rv
 
 except ImportError:
