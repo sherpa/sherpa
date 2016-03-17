@@ -18,6 +18,7 @@
 #
 
 import os
+import re
 import unittest
 import tempfile
 
@@ -428,7 +429,11 @@ class test_save_arrays_base(SherpaTestCase):
         rtol = 0
         atol = 1e-5
         self.assertIsInstance(out, Data1D)
-        self.assertEqual(out.name, ofh.name, msg="file name")
+
+        # remove potential dm syntax introduced by backend before checking for equality
+        out_name = re.sub("\[.*\]", "", out.name)
+
+        self.assertEqual(out_name, ofh.name, msg="file name")
         assert_allclose(out.x, a, rtol=rtol, atol=atol, err_msg="x column")
         assert_allclose(out.y, b, rtol=rtol, atol=atol, err_msg="y column")
         assert_allclose(out.staterror, c, rtol=rtol, atol=atol,
