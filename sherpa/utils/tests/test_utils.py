@@ -207,9 +207,8 @@ class test_utils(SherpaTestCase):
         ncpus = multiprocessing.cpu_count()
 
         numtasks = 8
-        vals = numpy.array([1, 2, 3])
         f = numpy.sum
-        iterable = [vals] * numtasks
+        iterable = [numpy.arange(1, 2+2*i) for i in range(numtasks)]
 
         result = map(f, iterable)
         result = numpy.asarray(result)
