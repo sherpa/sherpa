@@ -18,6 +18,7 @@
 #
 
 import numpy
+import multiprocessing
 from numpy.testing import assert_allclose, assert_equal
 
 from sherpa import utils
@@ -202,25 +203,12 @@ class test_utils(SherpaTestCase):
                 val = utils.neville2d(xx, yy, x, y, fval)
                 self.assertTrue(utils.Knuth_close(answer, val, tol))
 
-    # TODO: have a skip-if-no-parallel-support?
     def test_parallel_map(self):
+        ncpus = multiprocessing.cpu_count()
 
-        ncpus = 1
-        try:
-            import multiprocessing
-            ncpus = multiprocessing.cpu_count()
-            Pool = multiprocessing.Pool
-        except:
-            return
-
-        # TODO: would it be better to use a test that is both
-        #       deterministic (i.e. does not use random values)
-        #       and not sensitive to numerical noise here?
-        #
         numtasks = 8
-        size = (64, 64)
-        vals = numpy.random.rand(*size)
-        f = numpy.linalg.eigvals
+        vals = numpy.array([1, 2, 3])
+        f = numpy.sum
         iterable = [vals] * numtasks
 
         result = map(f, iterable)
@@ -228,17 +216,7 @@ class test_utils(SherpaTestCase):
 
         pararesult = utils.parallel_map(f, iterable, ncpus)
 
-        pool = Pool(ncpus)
-        poolresult = pool.map(f, iterable)
-
-        # Using conda on Linux, using an equality test worked
-        # with numpy 1.10.2, but with the upgrade to 1.10.4 (which pulled
-        # in mkl) the check was changed to a tolerance.
-        #
-        # assert_equal(result, numpy.asarray(pararesult))
-        # assert_equal(result, numpy.asarray(poolresult))
-        assert_allclose(result, numpy.asarray(pararesult))
-        assert_allclose(result, numpy.asarray(poolresult))
+        assert_equal(result, numpy.asarray(pararesult))
 
 
 if __name__ == '__main__':
