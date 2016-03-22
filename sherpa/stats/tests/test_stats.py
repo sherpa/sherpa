@@ -308,8 +308,7 @@ class test_stats(SherpaTestCase):
         ui.load_arrays(1, xy, xy, Data1D)
         ui.set_stat('chi2datavar')
         err = ui.get_staterror()
-        for index, yyy in enumerate(xy):
-            assert numpy.allclose(err[index], numpy.sqrt(yyy), 1.0e-7, 1.0e-7)
+        numpy.testing.assert_allclose(err, numpy.sqrt(xy), rtol=1e-7, atol=1e-7)
 
 
 def tstme(datadir=None):
