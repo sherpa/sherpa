@@ -20,7 +20,7 @@
 
 from sherpa.models import TableModel, Gauss1D
 from sherpa.models.template import create_template_model
-from sherpa.utils import SherpaTest, SherpaTestCase, requires_data
+from sherpa.utils.test import SherpaTest, SherpaTestCase, requires_data
 from sherpa.utils.err import ModelErr
 from sherpa import ui
 import numpy

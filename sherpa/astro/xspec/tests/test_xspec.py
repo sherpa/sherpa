@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,12 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
 import numpy
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
-from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_data, requires_fits, requires_xspec
+from sherpa.utils.test import SherpaTest, SherpaTestCase, \
+    requires_data, requires_fits, requires_xspec
 
 
 # Conversion between wavelength (Angstrom) and energy (keV)
@@ -513,7 +512,6 @@ if __name__ == '__main__':
     import os
     import sys
     import sherpa.astro.xspec as xs
-    from sherpa.utils import SherpaTest
 
     if len(sys.argv) > 1:
         datadir = sys.argv[1]

@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,15 +20,16 @@
 import logging
 import operator
 import numpy
-from sherpa.utils import SherpaFloat, SherpaTestCase
+from sherpa.utils.test import SherpaTestCase
 from sherpa.utils.err import ModelErr
-from sherpa.models.model import *
+from sherpa.models.model import ArithmeticConstantModel, BinaryOpModel, \
+    UnaryOpModel, FilterModel, NestedModel
 from sherpa.models.basic import Sin, Const1D
 
 
 def my_sin(pars, x):
     return (pars[2].val *
-            numpy.sin(2.0*numpy.pi * (x - pars[1].val) / pars[0].val))
+            numpy.sin(2.0 * numpy.pi * (x - pars[1].val) / pars[0].val))
 
 
 class test_model(SherpaTestCase):
@@ -140,7 +141,7 @@ class test_composite_model(SherpaTestCase):
         cmplx = (3 * self.m + self.m2) / (self.m ** 3.2)
         m = self.m(self.x)
         m2 = self.m2(self.x)
-        self.assertEqual(cmplx(self.x), (3*m + m2) / (m ** 3.2))
+        self.assertEqual(cmplx(self.x), (3 * m + m2) / (m ** 3.2))
 
     def test_filter(self):
         m = self.s[::2]

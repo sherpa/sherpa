@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,11 +18,9 @@
 #
 
 
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.test import SherpaTest, SherpaTestCase, requires_fits
 import os
 import sys
-import unittest
-from sherpa.utils import requires_fits
 from sherpa.astro import ui
 from sherpa.astro import datastack
 from acis_bkg_model import acis_bkg_model
@@ -691,9 +689,6 @@ class test_query(SherpaTestCase):
 
 if __name__ == '__main__':
 
-    from sherpa.utils import SherpaTest
-
-    import sys
     if len(sys.argv) > 1:
         datadir = sys.argv[1]
     else:

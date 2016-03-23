@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2010  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2010, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,11 @@
 #
 
 import numpy
-from sherpa.utils import *
 from sherpa.utils import SherpaFloat
+from sherpa.utils.test import SherpaTest, SherpaTestCase
+from sherpa import utils
+import warnings
+
 
 class test_utils(SherpaTestCase):
 
@@ -33,13 +36,13 @@ class test_utils(SherpaTestCase):
         self.f2 = f2
 
     def test_NoNewAttributesAfterInit(self):
-        class C(NoNewAttributesAfterInit):
+        class C(utils.NoNewAttributesAfterInit):
             def __init__(self):
                 self.x = 1
                 self.y = 2
                 self.z = 3
                 del self.z
-                NoNewAttributesAfterInit.__init__(self)
+                utils.NoNewAttributesAfterInit.__init__(self)
 
         c = C()
         self.assertEqual(c.x, 1)
@@ -71,7 +74,7 @@ class test_utils(SherpaTestCase):
 
         # Basic usage
         for meth in (c.m, c.cm, c.sm):
-            m = export_method(meth)
+            m = utils.export_method(meth)
             self.assertEqual(m.__name__, meth.__name__)
             self.assert_(m.__doc__ is not None)
             self.assertEqual(m.__doc__, meth.__doc__)
@@ -88,105 +91,104 @@ class test_utils(SherpaTestCase):
 
         # Non-method argument
         def f(x):  return 2*x
-        self.assert_(export_method(f) is f)
+        self.assert_(utils.export_method(f) is f)
 
         # Name and module name
-        m = export_method(c.m, 'foo', 'bar')
+        m = utils.export_method(c.m, 'foo', 'bar')
         self.assertEqual(m.__name__, 'foo')
         self.assertEqual(m.__module__, 'bar')
         self.assertEqual(m(3), 6)
         self.assertEqual(m(3, 7), 21)
 
     def test_get_keyword_names(self):
-        self.assertEqual(get_keyword_names(self.f1), [])
+        self.assertEqual(utils.get_keyword_names(self.f1), [])
         l = ['b', 'c', 'd', 'e']
-        self.assertEqual(get_keyword_names(self.f2), l)
-        self.assertEqual(get_keyword_names(self.f2, 2), l[2:])
+        self.assertEqual(utils.get_keyword_names(self.f2), l)
+        self.assertEqual(utils.get_keyword_names(self.f2, 2), l[2:])
 
     def test_get_keyword_defaults(self):
-        self.assertEqual(get_keyword_defaults(self.f1), {})
+        self.assertEqual(utils.get_keyword_defaults(self.f1), {})
         d = {'b':1, 'c':2, 'd':3, 'e':4}
-        self.assertEqual(get_keyword_defaults(self.f2), d)
+        self.assertEqual(utils.get_keyword_defaults(self.f2), d)
         del d['b']
         del d['c']
-        self.assertEqual(get_keyword_defaults(self.f2, 2), d)
+        self.assertEqual(utils.get_keyword_defaults(self.f2, 2), d)
 
     def test_print_fields(self):
         names = ['a', 'bb', 'ccc']
         vals = {'a': 3, 'bb': 'Ham', 'ccc': numpy.array([1.0, 2.0, 3.0])}
-        self.assertEqual(print_fields(names, vals),
+        self.assertEqual(utils.print_fields(names, vals),
                          'a   = 3\nbb  = Ham\nccc = Float64[3]')
 
     def test_calc_total_error(self):
-        stat = numpy.array([1,2])
-        sys = numpy.array([3,4])
-        self.assert_(calc_total_error(None, None) is None)
-        self.assert_(calc_total_error(stat, None) is stat)
-        self.assert_(calc_total_error(None, sys) is sys)
-        self.assert_(numpy.all(calc_total_error(stat, sys) ==
-                               numpy.sqrt(stat*stat + sys*sys)))
+        stat = numpy.array([1, 2])
+        sys = numpy.array([3, 4])
+        self.assert_(utils.calc_total_error(None, None) is None)
+        self.assert_(utils.calc_total_error(stat, None) is stat)
+        self.assert_(utils.calc_total_error(None, sys) is sys)
+        self.assert_(numpy.all(utils.calc_total_error(stat, sys) ==
+                               numpy.sqrt(stat * stat + sys * sys)))
 
     def test_poisson_noise(self):
-        out = poisson_noise(1000)
+        out = utils.poisson_noise(1000)
         self.assert_(type(out) is SherpaFloat)
         self.assert_(out > 0.0)
 
         for x in (-1000, 0):
-            out = poisson_noise(x)
+            out = utils.poisson_noise(x)
             self.assert_(type(out) is SherpaFloat)
             self.assert_(out == 0.0)
 
-        out = poisson_noise([1001, 1002, 0.0, 1003, -1004])
+        out = utils.poisson_noise([1001, 1002, 0.0, 1003, -1004])
         self.assert_(type(out) is numpy.ndarray)
         self.assert_(out.dtype.type is SherpaFloat)
         self.assert_(numpy.all(numpy.flatnonzero(out > 0.0) ==
                                numpy.array([0, 1, 3])))
 
-        self.assertRaises(ValueError, poisson_noise, 'ham')
-        self.assertRaises(TypeError, poisson_noise, [1, 2, 'ham'])
+        self.assertRaises(ValueError, utils.poisson_noise, 'ham')
+        self.assertRaises(TypeError, utils.poisson_noise, [1, 2, 'ham'])
 
-
-    def test_neville( self ):
+    def test_neville(self):
         func = numpy.exp
         tol = 1.0e-6
         num = 10
         x = []
         y = []
-        for ii in xrange( num ):
-            x.append( ii / float( num ) )
-            y.append( func( x[ ii ] ) )
-        xx = numpy.array( x )
-        yy = numpy.array( y )
-        for ii in xrange( num ):
-            tmp = 1.01 * ( ii/ float( num ) )
-            answer = func( tmp )
-            val = neville( tmp, xx, yy )
-            self.assert_( Knuth_close( answer, val, tol ) )
+        for ii in xrange(num):
+            x.append(ii / float(num))
+            y.append(func(x[ii]))
+        xx = numpy.array(x)
+        yy = numpy.array(y)
+        for ii in xrange(num):
+            tmp = 1.01 * (ii / float(num))
+            answer = func(tmp)
+            val = utils.neville(tmp, xx, yy)
+            self.assert_(utils.Knuth_close(answer, val, tol))
 
-    def test_neville2d( self ):
+    def test_neville2d(self):
         funcx = numpy.sin
         funcy = numpy.exp
         nrow = 10
         ncol = 10
         tol = 1.0e-4
-        x = numpy.zeros( (nrow,) )
-        y = numpy.zeros( (ncol,) )
-        fval = numpy.empty( ( nrow, ncol ) )
+        x = numpy.zeros((nrow, ))
+        y = numpy.zeros((ncol, ))
+        fval = numpy.empty((nrow, ncol))
         row_tmp = numpy.pi / nrow
-        col_tmp = 1.0 / float( ncol )
-        for row in xrange( nrow ):
-            x[ row ] = ( row + 1.0 ) * row_tmp
-            for col in xrange( ncol ):
-                y[ col ] = ( col + 1.0 ) / float( ncol )
-                fval[ row ][ col ] = funcx( x[ row ] ) * funcy( y[ col ] )
+        # col_tmp = 1.0 / float(ncol)
+        for row in xrange(nrow):
+            x[row] = (row + 1.0) * row_tmp
+            for col in xrange(ncol):
+                y[col] = (col + 1.0) / float(ncol)
+                fval[row][col] = funcx(x[row]) * funcy(y[col])
 
-        for row in xrange( ncol ):
-            xx = ( -0.1 + ( row + 1.0 ) / float( nrow ) ) * numpy.pi
-            for col in xrange( 4 ):
-                yy = -0.1 +( col + 1.0 )/ float( ncol )
-                answer = funcx( xx ) * funcy( yy )
-                val = neville2d( xx, yy, x, y, fval )
-                self.assert_( Knuth_close( answer, val, tol ) )
+        for row in xrange(ncol):
+            xx = (-0.1 + (row + 1.0) / float(nrow)) * numpy.pi
+            for col in xrange(4):
+                yy = -0.1 + (col + 1.0) / float(ncol)
+                answer = funcx(xx) * funcy(yy)
+                val = utils.neville2d(xx, yy, x, y, fval)
+                self.assert_(utils.Knuth_close(answer, val, tol))
 
     def test_parallel_map(self):
 
@@ -199,24 +201,58 @@ class test_utils(SherpaTestCase):
             return
 
         numtasks = 8
-        size = (64,64)
+        size = (64, 64)
         vals = numpy.random.rand(*size)
         f = numpy.linalg.eigvals
-        iterable = [vals]*numtasks
+        iterable = [vals] * numtasks
 
-        result = map(f, iterable)
+        result = numpy.asarray(map(f, iterable))
 
-        pararesult = parallel_map(f, iterable, ncpus)
+        pararesult = utils.parallel_map(f, iterable, ncpus)
 
         pool = Pool(ncpus)
         poolresult = pool.map(f, iterable)
 
-        self.assert_((numpy.asarray(result) == numpy.asarray(pararesult)).all())
-        self.assert_((numpy.asarray(result) == numpy.asarray(poolresult)).all())
+        self.assert_((result == numpy.asarray(pararesult)).all())
+        self.assert_((result == numpy.asarray(poolresult)).all())
+
+    def test_members(self):
+        """Make sure members moved to sherpa.utils.test are still accessible through sherpa.utils"""
+
+        from sherpa.utils import SherpaTestCase
+        from sherpa.utils import SherpaTest
+        from sherpa.utils import requires_data, requires_fits, requires_package
+        # from sherpa.utils import requires_ds9, requires_xspec, requires_pylab
+
+        # Make sure deprecation warnings are issued
+        class FakeClass(SherpaTestCase):
+            def runTest(self):
+                pass
+
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # Trigger a warning.
+            FakeClass()
+            # Verify some things
+            assert len(w) == 1
+            assert issubclass(w[-1].category, DeprecationWarning)
+            assert "SherpaTestCase is deprecated: use sherpa.utils.test.SherpaTestCase" in str(w[-1].message)
+
+            SherpaTest()
+            # Verify some things
+            assert len(w) == 2
+            assert issubclass(w[-1].category, DeprecationWarning)
+            assert "SherpaTest is deprecated: use sherpa.utils.test.SherpaTest" in str(w[-1].message)
+
+            requires_data(FakeClass)
+            # Verify some things
+            assert len(w) == 3
+            assert issubclass(w[-1].category, DeprecationWarning)
+            assert "requires_data is deprecated: use sherpa.utils.test.requires_data" in str(w[-1].message)
 
 
 
 if __name__ == '__main__':
 
-    import sherpa.utils as utils
     SherpaTest(utils).test()

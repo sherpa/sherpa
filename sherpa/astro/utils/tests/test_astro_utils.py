@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2008  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2008, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,9 @@
 #
 
 
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.test import SherpaTestCase
 from sherpa.astro.utils import is_in
+
 
 class test_utils(SherpaTestCase):
 
@@ -36,7 +37,7 @@ class test_utils(SherpaTestCase):
         self.assert_( is_in(self.long, 100, 200) )
 
         # hi case
-        self.assert_( is_in(self.long, 50, 1024) ) 
+        self.assert_( is_in(self.long, 50, 1024) )
 
         # 'hidden' lo case
         self.assert_( is_in(self.long, 250, 2000) )

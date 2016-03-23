@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,17 +20,16 @@
 import os.path
 
 import numpy
-import unittest
 
-from sherpa.utils import SherpaTest, SherpaTestCase
-from sherpa.utils import requires_data, requires_xspec, requires_fits
+from sherpa.utils.test import SherpaTest, SherpaTestCase, \
+    requires_data, requires_xspec, requires_fits
 
 from sherpa.models import PowLaw1D
 from sherpa.fit import Fit
-from sherpa.stats import Stat, Cash, LeastSq, UserStat, WStat
+from sherpa.stats import Cash, UserStat, WStat
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.utils.err import StatErr
-from sherpa.astro import ui
+
 import logging
 logger = logging.getLogger("sherpa")
 

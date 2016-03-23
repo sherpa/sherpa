@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007,2014,2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2014, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -109,9 +109,7 @@ def test(level=1, verbosity=1, datadir=None):
     (including the discipline-specific ones)
 
     """
-    # import sherpa.all
-    # import sherpa.astro.all
-    from sherpa.utils import SherpaTest
+    from sherpa.utils.test import SherpaTest
     SherpaTest().test(level, verbosity, datadir)
 
 

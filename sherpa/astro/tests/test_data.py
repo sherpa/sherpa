@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,15 +19,16 @@
 
 import numpy
 from sherpa.astro.data import DataPHA
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.test import SherpaTest, SherpaTestCase
 
 import logging
 logger = logging.getLogger('sherpa')
 
+
 class test_filter_energy_grid(SherpaTestCase):
 
     _notice = numpy.ones(46, dtype=bool)
-    _notice[44:46]=False
+    _notice[44:46] = False
 
     _ignore = numpy.zeros(46, dtype=bool)
     _ignore[14:33]=True
@@ -71,7 +72,7 @@ class test_filter_energy_grid(SherpaTestCase):
 
     def test_notice(self):
         #clear mask
-        self.pha.notice()        
+        self.pha.notice()
         self.pha.notice(0.0, 6.0)
         #self.assertEqual(self._notice, self.pha.mask)
         assert (self._notice==numpy.asarray(self.pha.mask)).all()
@@ -244,12 +245,11 @@ class test_filter_wave_grid(SherpaTestCase):
         #clear mask
         self.pha.notice()
         self.pha.ignore(30.01, 225.0)
-        self.pha.ignore(0.1, 6.0)        
+        self.pha.ignore(0.1, 6.0)
         assert (self._ignore==numpy.asarray(self.pha.mask)).all()
 
 
 if __name__ == '__main__':
 
-    from sherpa.utils import SherpaTest
     import sherpa.astro
     SherpaTest(sherpa.astro).test()
