@@ -123,7 +123,8 @@ def clitest():
         except:
             print """Cannot import pip or install packages with it.
             You need pytest, and possibly pytest-cov, in order to run the tests.
-            If you downloaded the source code, please run 'pip install -r test_requirements.txt' first.
+            If you downloaded the source code, please run 'pip install -r test_requirements.txt'
+            from the source directory first.
             """
             raise
 
