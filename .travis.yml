@@ -25,6 +25,10 @@ matrix:
       python: "2.7"
       sudo: required
       dist: trusty
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 MKL=nomkl
+      python: "2.7"
+      sudo: required
+      dist: trusty
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
       python: "2.7"
       sudo: required
@@ -45,7 +49,6 @@ matrix:
 env:  FITS="astropy" INSTALL_TYPE=install TEST=smoke MATPLOTLIBVER=1.5
 
 before_install:
-  - export MKL="nomkl"
   - export LIBGFORTRANVER="1.0"
   - export SHERPA_CHANNEL=https://conda.anaconda.org/sherpa
   - export MINICONDA=/home/travis/miniconda
@@ -54,11 +57,11 @@ before_install:
   - ./miniconda.sh -b -p $MINICONDA
   - export PATH=$MINICONDA/bin:$PATH
   - conda update --yes conda
-  - if [ -n "${FITS}" ]; then conda install --yes -c ${SHERPA_CHANNEL} ${FITS} $MKL; fi
+  - if [ -n "${FITS}" ]; then conda install --yes -c ${SHERPA_CHANNEL} ${FITS} ${MKL}; fi
   - if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
   - if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
   - echo ${MATPLOTLIB} ${NUMPY} ${FITS}
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} $MKL libgfortran=$LIBGFORTRANVER
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER
   - conda config --add channels ${SHERPA_CHANNEL}
   - pip install -r test_requirements.txt
   - if [ ${TEST} == package ];
