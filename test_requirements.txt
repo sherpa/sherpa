@@ -1,2 +1,1 @@
-pytest-cov
-#python-coveralls
+pytest

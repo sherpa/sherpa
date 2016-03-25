@@ -98,7 +98,7 @@ install:
   - python setup.py $INSTALL_TYPE
 
 script:
-  - if [ ${TEST} == submodule ]; then python setup.py test; fi
+  - if [ ${TEST} == submodule ]; then pip install pytest-cov; python setup.py test -a "--cov sherpa --cov-report term"; fi
   - if [ ${TEST} == smoke ];
         then cd /home;
         python -c "import sherpa; sherpa.test()";
