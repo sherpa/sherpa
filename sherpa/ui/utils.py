@@ -9969,11 +9969,10 @@ class Session(NoNewAttributesAfterInit):
 
         The function runs a Markov Chain Monte Carlo (MCMC) algorithm
         designed to carry out Bayesian Low-Count X-ray Spectral
-        (BLoCXS) analysis. Unlike many MCMC algorithms, it is
-        designed to explore the parameter space at the suspected
-        statistic minimum (i.e.  after using `fit`). The return
-        values include the statistic value, parameter values, and a
-        flag indicating whether the row represents a jump from the
+        (BLoCXS) analysis. It explores the model parameter space at
+        the suspected statistic minimum (i.e.  after using `fit`). The return
+        values include the statistic value, parameter values, and an
+        acceptance flag indicating whether the row represents a jump from the
         current location or not. For more information see the
         `sherpa.sim` module and [1]_.
 
@@ -9989,7 +9988,7 @@ class Session(NoNewAttributesAfterInit):
            The number of draws to use. The default is ``1000``.
         covar_matrix : 2D array, optional
            The covariance matrix to use. If ``None`` then the
-           result from `get_covar_matrix` is used.
+           result from `get_covar_results().extra_output` is used.
 
         Returns
         -------
@@ -10017,6 +10016,7 @@ class Session(NoNewAttributesAfterInit):
         plot_trace : Create a trace plot of row number versus value.
         set_prior : Set the prior function to use with a parameter.
         set_sampler : Set the MCMC sampler.
+        get_sampler : Return information about the current MCMC sampler.
 
         Notes
         -----
