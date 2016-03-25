@@ -120,7 +120,6 @@ SherpaFloat = numpy.float_
 
 
 class NoNewAttributesAfterInit(object):
-
     """
 
     Prevents attribute deletion and setting of new attributes after
@@ -184,7 +183,6 @@ def _get_datadir():
 
 
 class SherpaTestCase(numpytest.NumpyTestCase):
-
     "Base class for Sherpa unit tests"
 
     # The location of the Sherpa test data (it is optional)
@@ -361,7 +359,6 @@ def requires_pylab(test_function):
 
 
 class SherpaTest(numpytest.NumpyTest):
-
     "Sherpa test suite manager"
 
     def test(self, level=1, verbosity=1, datadir=None):
@@ -1724,7 +1721,6 @@ class NumDeriv:
 
 
 class NumDerivCentralOrdinary(NumDeriv):
-
     """
     Subtract the following Taylor series expansion::
 
@@ -1805,7 +1801,6 @@ class NumDerivFowardPartial(NumDeriv):
 
 
 class NumDerivCentralPartial(NumDeriv):
-
     """Add the following Taylor series expansion::
 
                                              2
@@ -1896,7 +1891,6 @@ class NoRichardsonExtrapolation:
 
 
 class RichardsonExtrapolation(NoRichardsonExtrapolation):
-
     """From Wikipedia, the free encyclopedia
     In numerical analysis, Richardson extrapolation is a sequence acceleration
     method, used to improve the rate of convergence of a sequence. It is named
@@ -2146,7 +2140,6 @@ class OutOfBoundErr:
 
 
 class QuadEquaRealRoot:
-
     """ solve for the real roots of the quadratic equation:
     a * x^2 + b * x + c = 0"""
 
