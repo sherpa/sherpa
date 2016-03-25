@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -44,7 +44,8 @@ import tempfile
 import numpy
 from numpy.testing import assert_array_equal
 
-from sherpa.utils import SherpaTest, SherpaTestCase, requires_data, requires_xspec, _has_package_from_list
+from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.utils import requires_data, requires_xspec, _has_package_from_list, requires_fits
 from sherpa.astro import ui
 # from sherpa.astro.ui import serialize
 
@@ -1058,6 +1059,7 @@ class test_ui(SherpaTestCase):
 
     @requires_data
     @requires_xspec
+    @requires_fits
     def test_canonical_pha_basic(self):
 
         _, canonical = self._setup_pha_basic()
@@ -1065,6 +1067,7 @@ class test_ui(SherpaTestCase):
 
     @requires_data
     @requires_xspec
+    @requires_fits
     def test_restore_pha_basic(self):
         "Can the state be evaluated?"
 
@@ -1089,6 +1092,7 @@ class test_ui(SherpaTestCase):
 
     @requires_data
     @requires_xspec
+    @requires_fits
     def test_canonical_pha_grouped(self):
 
         _, _, canonical = self._setup_pha_grouped()
@@ -1096,6 +1100,7 @@ class test_ui(SherpaTestCase):
 
     @requires_data
     @requires_xspec
+    @requires_fits
     def test_restore_pha_grouped(self):
         "Can the state be evaluated?"
 
@@ -1128,6 +1133,7 @@ class test_ui(SherpaTestCase):
 
     @requires_data
     @requires_xspec
+    @requires_fits
     def test_canonical_pha_back(self):
 
         _, _, canonical = self._setup_pha_back()
@@ -1135,6 +1141,7 @@ class test_ui(SherpaTestCase):
 
     @requires_data
     @requires_xspec
+    @requires_fits
     def test_restore_pha_back(self):
         "Can the state be evaluated?"
 

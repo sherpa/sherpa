@@ -308,6 +308,7 @@ class test_xspec(SherpaTestCase):
                             err_msg=emsg + "energy to wavelength")
 
     @requires_data
+    @requires_fits
     def test_tablemodel_checks_input_length(self):
 
         # see test_table_model for more information on the table
@@ -326,6 +327,7 @@ class test_xspec(SherpaTestCase):
         self.assertRaises(TypeError, mdl, [0.1, 0.2], [0.2, 0.3, 0.4])
 
     @requires_data
+    @requires_fits
     def test_xspec_tablemodel(self):
         # Just test one table model; use the same scheme as
         # test_xspec_models_noncontiguous().
@@ -364,6 +366,7 @@ class test_xspec(SherpaTestCase):
                         err_msg=emsg + "two args")
 
     @requires_data
+    @requires_fits
     def test_xspec_tablemodel_noncontiguous2(self):
 
         ui.load_table_model('tmod',
