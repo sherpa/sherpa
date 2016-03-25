@@ -41,6 +41,7 @@ class UserModel(ArithmeticModel):
 class test_ui(SherpaTestCase):
 
     def setUp(self):
+        ui.clean()
         self._old_logger_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
 
@@ -55,6 +56,7 @@ class test_ui(SherpaTestCase):
     def tearDown(self):
         if hasattr(self, '_old_logger_level'):
             logger.setLevel(self._old_logger_level)
+        ui.clean()
 
     def test_ascii(self):
         ui.load_data(1, self.ascii)
@@ -102,7 +104,7 @@ class test_ui(SherpaTestCase):
         try:
             ui.plot_source('full')
         except IdentifierErr as e:
-            self.assertEquals("Convolved model\n'p1'\n is set for dataset full. You should use plot_model instead.", str(e))
+            self.assertRegexpMatches(str(e), "Convolved model\n.*\n is set for dataset full. You should use plot_model instead.", str(e))
 
         # Test Case 2
         ui.set_source('full', 'powlaw1d.p2')
