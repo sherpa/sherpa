@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,8 @@ from itertools import izip
 import sherpa.ui.utils
 from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
-from sherpa.utils.err import *
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
+    IdentifierErr, IOErr, ModelErr
 from sherpa.data import Data1D
 import sherpa.astro.all
 import sherpa.astro.plot
