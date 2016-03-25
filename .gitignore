@@ -2,6 +2,7 @@
 
 # C extensions
 *.so
+*.so.dSYM
 
 # Build outputs
 *.o

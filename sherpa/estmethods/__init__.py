@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #
 #  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
@@ -20,10 +21,10 @@
 import numpy
 _ = numpy.seterr(invalid='ignore')
 
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, is_iterable, list_to_open_interval, mysgn, quad_coef, apache_muller, bisection, demuller, zeroin, OutOfBoundErr, func_counter, _multi, _ncpus
+from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, is_iterable, list_to_open_interval, mysgn, quad_coef, demuller, zeroin, OutOfBoundErr, func_counter, _multi, _ncpus
 
 import logging
-import sherpa.estmethods._est_funcs
+from . import _est_funcs
 from itertools import izip
 
 try:
