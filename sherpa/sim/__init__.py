@@ -206,7 +206,6 @@ import numpy
 import logging
 info = logging.getLogger("sherpa").info
 _log = logging.getLogger("sherpa")
-_level = _log.getEffectiveLevel()
 
 _tol = numpy.finfo(numpy.float).eps
 
@@ -670,6 +669,7 @@ class MCMC(NoNewAttributesAfterInit):
             raise ValueError("Fit statistic must be cash, cstat or wstat, not %s" %
                              fit.stat.name)
 
+        _level = _log.getEffectiveLevel()
         mu = fit.model.thawedpars
         dof = len(mu)
 
