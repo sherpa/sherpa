@@ -274,7 +274,15 @@ tests require optional packages to be installed alongside
 Sherpa. These warnings may be ignored, as long as the test ends with
 an `OK` message.
 
-You can also test the build by using the standard python command:
+### 2e. Development mode
+If you plan to edit the Sherpa code, it is more convenient
+to work in development mode rather than using the `install` command.
+
+When in developer mode changes are picked up by `python` without
+having to run `install` after every change.
+
+In developer mode it may also be more convenient to use the `test`
+command rather than the `sherpa_test` script:
 
     $ python setup.py test
 
@@ -285,6 +293,18 @@ For instance,
 you can run a single test, i.e. a single test method, with:
 
     $ python setup.py test -a sherpa/astro/datastack/tests/test_datastack.py::test_load::test_case3
+
+**NOTE:** if you run both `install` and `develop` or `test` in the same
+Python environment you end up with two competing installations of Sherpa
+which result in unexpected behavior. If this happens, simply run
+`pip uninstall sherpa` as many times as necessary, until you get an
+error message as no more Sherpa installations are available
+and then install Sherpa again.
+
+Also note that the `test` command executes `develop`.
+
+The same issue may occur if you installed both the Sherpa binaries
+and build Sherpa from sources in the same environment.
 
 Custom source build
 ===================
