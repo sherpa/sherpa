@@ -5,6 +5,7 @@
 *.so.dSYM
 
 # Build outputs
+extern/confdefs.h
 *.o
 *.lo
 *.la
