@@ -274,6 +274,9 @@ tests require optional packages to be installed alongside
 Sherpa. These warnings may be ignored, as long as the test ends with
 an `OK` message.
 
+**NOTE:** the `sherpa_test` command requires `pytest` to run. If `pytest`
+is not installed `sherpa_test` will try to install it.
+
 ### 2e. Development mode
 If you plan to edit the Sherpa code, it is more convenient
 to work in development mode rather than using the `install` command.
@@ -305,6 +308,31 @@ Also note that the `test` command executes `develop`.
 
 The same issue may occur if you installed both the Sherpa binaries
 and build Sherpa from sources in the same environment.
+
+### 2f. Download Test Data
+The `sherpa_test` and `python setup.py test` commands only execute
+a small number of tests to ensure that your installation of Sherpa
+is functional. The full test suite requires data files that are
+not included in the Sherpa distribution by default.
+
+If you want you can download such data files and run the whole test suite.
+
+Since this is mostly useful when developing for Sherpa, the instructions
+below assume that you are using `git` and that you are located in the
+top directory:
+
+    $ git submodule init
+    $ git submodule update
+
+This will install the data files under `sherpa-test-data`.
+
+The data will be picked up automatically by `python setup.py test`.
+
+The data files are included in a standard Python package with its
+own [`git` repository](https://github.com/sherpa/sherpa-test-data).
+
+You can download and install the `sherpatest` package as usual
+if you are not using `git`.
 
 Custom source build
 ===================
