@@ -13,12 +13,14 @@ requirements:
   - python 2.7.*
   - numpy 1.8.*
   - setuptools
+  - libgfortran 3.* # [linux]
 
  run:
   - python 2.7.*
   - numpy >1.8
   - setuptools
   - pytest
+  - libgfortran 3.* # [linux]
 
 about:
  home: http://cxc.cfa.harvard.edu/sherpa/
