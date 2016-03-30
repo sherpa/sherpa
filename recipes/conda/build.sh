@@ -5,7 +5,7 @@ sed -i.orig "s|#install_dir=build|install_dir=$PREFIX|" setup.cfg
 
 case $OSTYPE in
     darwin*)
-        export CFLAGS="-isysroot /Developer/SDKs/MacOSX10.5.sdk"
+#        export CFLAGS="-isysroot /Developer/SDKs/MacOSX10.5.sdk"
 
 	# On Linux there is a libgfortran available in the environment, and statically linking it would require
 	# rebuilding gcc from sources with PIC enabled. On OSX, no libgfortran is available, but statically
