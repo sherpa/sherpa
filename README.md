@@ -248,7 +248,7 @@ You can clone the Sherpa repository with:
     $ git clone https://github.com/sherpa/sherpa
     $ cd sherpa
 
-The most stable code is available in the `stable` branch. The main development
+The most stable code is available through the 4.8.1 tag. The main development
 code, which is unstable, is available in the `master` branch. New features
 and bug fixes or other, even less
 stable versions of the code may be available in other branches.
@@ -267,8 +267,9 @@ To test that your installation of Sherpa is working, type:
 
 which will run a small test suite (the script may not be in your path,
 depending on where the installation step chose to install Sherpa).
-Note that the test may report several `WARNING` lines and failed
-attempts to load modules. These messages are expected - as some of the
+
+Note that the test may report several `SKIPPED` lines.
+These messages are expected - as some of the
 tests require optional packages to be installed alongside
 Sherpa. These warnings may be ignored, as long as the test ends with
 an `OK` message.
