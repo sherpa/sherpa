@@ -132,7 +132,7 @@ def clitest():
         try:
             import pytest
         except ImportError:
-            install('pytest-cov')
+            install('pytest')
 
     install_deps()
     import pytest
