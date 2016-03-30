@@ -9964,16 +9964,15 @@ class Session(NoNewAttributesAfterInit):
         return self._pyblocxs.list_samplers()
 
     # DOC-TODO: add pointers on what to do with the return values
-    def get_draws(self, id=None, otherids=(), niter=1000):
+    def get_draws(self, id=None, otherids=(), niter=1000, covar_matrix=None):
         """Run the pyBLoCXS MCMC algorithm.
 
         The function runs a Markov Chain Monte Carlo (MCMC) algorithm
         designed to carry out Bayesian Low-Count X-ray Spectral
-        (BLoCXS) analysis. Unlike many MCMC algorithms, it is
-        designed to explore the parameter space at the suspected
-        statistic minimum (i.e.  after using `fit`). The return
-        values include the statistic value, parameter values, and a
-        flag indicating whether the row represents a jump from the
+        (BLoCXS) analysis. It explores the model parameter space at
+        the suspected statistic minimum (i.e.  after using `fit`). The return
+        values include the statistic value, parameter values, and an
+        acceptance flag indicating whether the row represents a jump from the
         current location or not. For more information see the
         `sherpa.sim` module and [1]_.
 
@@ -9987,6 +9986,9 @@ class Session(NoNewAttributesAfterInit):
            Other data sets to use in the calculation.
         niter : int, optional
            The number of draws to use. The default is ``1000``.
+        covar_matrix : 2D array, optional
+           The covariance matrix to use. If ``None`` then the
+           result from `get_covar_results().extra_output` is used.
 
         Returns
         -------
@@ -10014,6 +10016,7 @@ class Session(NoNewAttributesAfterInit):
         plot_trace : Create a trace plot of row number versus value.
         set_prior : Set the prior function to use with a parameter.
         set_sampler : Set the MCMC sampler.
+        get_sampler : Return information about the current MCMC sampler.
 
         Notes
         -----
@@ -10069,11 +10072,12 @@ class Session(NoNewAttributesAfterInit):
         # if fit_results is None:
         #    raise TypeError("Fit has not been run")
 
-        covar_results = self.get_covar_results()
-        if covar_results is None:
-            raise TypeError("Covariance has not been calculated")
+        if covar_matrix is None:
+            covar_results = self.get_covar_results()
+            if covar_results is None:
+                raise TypeError("Covariance has not been calculated")
 
-        covar_matrix = covar_results.extra_output
+            covar_matrix = covar_results.extra_output
 
         stats, accept, params = self._pyblocxs.get_draws(
             fit, covar_matrix, niter=niter)
