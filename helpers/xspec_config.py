@@ -71,7 +71,7 @@ class xspec_config(Command):
             if package not in dist_packages:
                 dist_packages.append(package)
 
-            if not dist_data.has_key(package):
+            if package not in dist_data:
                 dist_data[package] = ['tests/test_*.py']
 
             ld1, inc1, l1 = build_lib_arrays(self, 'xspec')
@@ -89,5 +89,5 @@ class xspec_config(Command):
         else:
             if package in dist_packages:
                 dist_packages.remove(package)
-            if dist_data.has_key(package):
+            if package in dist_data:
                 del dist_data[package]
