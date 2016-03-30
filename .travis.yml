@@ -19,6 +19,8 @@ addons:
 
 # We use matrix include so that xspec builds (which are more complicated and long) are started first
 matrix:
+  allow_failures:
+      - python: "3.5"
   fast_finish: true
   include:
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=install TEST=smoke MATPLOTLIBVER=1.5
@@ -31,6 +33,10 @@ matrix:
       dist: trusty
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 MKL=nomkl
       python: "2.7"
+      sudo: required
+      dist: trusty
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
+      python: "3.5"
       sudo: required
       dist: trusty
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
