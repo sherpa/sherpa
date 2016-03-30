@@ -108,6 +108,21 @@ To test that your installation works, just type:
 
     $ sherpa_test
 
+Note that by default `sherpa_test` only runs a small number of tests.
+
+Starting with release 4.8.1 we are also releasing the test data files
+that are required to run the entire Sherpa test suite. Given the relatively
+large footprint of these datafiles we distribute `sherpatest`
+as a separate `conda` package.
+
+In order to install `sherpatest` just run:
+
+    $ conda install sherpatest
+    
+Then run `sherpa_test` as usual.
+
+Some tests may also be skipped if you don't have `astropy` installed.
+
 To update Sherpa:
 
     $ conda update sherpa
