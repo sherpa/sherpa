@@ -45,6 +45,9 @@ except:
         "Could not import setuptools.\n"
         "This might lead to an incomplete installation\n"
     )
+
+import platform
+
 from numpy.distutils.core import setup
 
 from helpers.extensions import static_ext_modules
@@ -129,5 +132,12 @@ meta = dict(name='sherpa',
                 'Topic :: Scientific/Engineering :: Physics'
                 ],
             )
+
+if platform.system() == 'Darwin':
+       from numpy.distutils.fcompiler.g95 import G95FCompiler
+       G95FCompiler.executables['linker_so'] = ["gcc","-undefined dynamic_lookup -bundle"]
+       G95FCompiler.get_libraries = lambda s: ['f95',]
+       G95FCompiler.get_library_dirs = lambda s : ['/opt/local/lib',]
+
 
 setup(**meta)
