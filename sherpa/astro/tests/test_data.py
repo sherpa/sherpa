@@ -19,7 +19,8 @@
 
 import numpy
 from sherpa.astro.data import DataPHA
-from sherpa.utils import SherpaTestCase
+from sherpa.utils import SherpaTestCase, requires_data, requires_fits
+from sherpa.astro.io import read_pha
 
 import logging
 logger = logging.getLogger('sherpa')
@@ -208,6 +209,84 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         self.pha.ignore(10.3, 13.8)
         self.pha.ignore(4.6, 6.2)
         assert (self._ignore==numpy.asarray(self.pha.mask)).all()
+
+class test_grouping(SherpaTestCase):
+
+    def setUp(self):
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
+        self.pha3c273 = self.make_path('3c273.pi')
+        self.specfit_dataset = self.make_path('acisf00308_000N001_r0044_pha3.fits')
+
+    def tearDown(self):
+        if hasattr(self, 'loggingLevel'):
+            logger.setLevel(self.loggingLevel)
+
+    # issue 149
+    def test_grouping_simple(self):
+
+        x = numpy.arange(start=1, stop=161, step=1)
+        y = numpy.ones(x.size)
+        dataset = DataPHA("dataset", x, y)
+        dataset.group_counts(16)
+
+        # control arrays
+        newx = numpy.arange(start=1, stop=161, step=16)
+        newy = numpy.zeros(newx.size)+16
+
+        # test that the data is grouped correctly
+        numpy.testing.assert_array_equal(dataset.get_dep(filter=True), newy)
+
+    # issue 149
+    # test for when the last bin after grouping is less than the number
+    # specified for group_counts()
+    @requires_data
+    @requires_fits
+    def test_group_counts_issue149(self):
+
+        # load a real dataset to test
+        data = read_pha(self.pha3c273)
+        data.ungroup()
+        data.group_counts(16)
+
+        # control array. We expect the last bin to have less than 16 counts.
+        new_y = [17.0, 16.0, 17.0, 16.0, 18.0, 21.0, 17.0, 23.0, 18.0, 21.0,
+                22.0, 21.0, 19.0, 21.0, 17.0, 17.0, 17.0, 17.0, 21.0, 17.0,
+                20.0, 17.0, 18.0, 17.0, 18.0, 17.0, 16.0, 16.0, 17.0, 17.0,
+                17.0, 16.0, 16.0, 17.0, 17.0, 16.0, 17.0, 16.0, 17.0, 16.0,
+                16.0, 9.0]
+
+        # The last bin is less than 16, and so should have group quality = 2
+        quality = numpy.zeros(1024)
+        quality[957:] = 2
+        numpy.testing.assert_array_equal(data.quality, quality)
+
+        # before ignoring the bad data
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
+        # ignore bad data (with group quality=2) should remove the last bin
+        # with value 9
+        data.ignore_bad()
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y[:-1])
+
+    def test_group_bins_simple(self):
+
+        # make a straight line from x=1 to x=101
+        x = numpy.arange(start=1, stop=101, step=1)
+        y = numpy.ones(100)
+        data = DataPHA("dataset", x, y)
+
+        # group into 10 bins
+        data.group_bins(10)
+
+        # control x and y arrays
+        new_x = numpy.arange(start=1, stop=101, step=10)
+        new_y = numpy.ones(10) * 10
+
+        # there should be 10 bins with y=10
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+        # TODO: uncomment when I figure out how to get the x data
+        # numpy.testing.assert_array_equal(data.get_indep(filter=True), new_x)
 
 
 class test_filter_wave_grid(SherpaTestCase):
