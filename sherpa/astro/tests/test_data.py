@@ -21,6 +21,7 @@ import numpy
 from sherpa.astro.data import DataPHA
 from sherpa.utils import SherpaTestCase, requires_data, requires_fits
 from sherpa.astro.io import read_pha
+import unittest
 
 import logging
 logger = logging.getLogger('sherpa')
@@ -223,7 +224,7 @@ class test_grouping(SherpaTestCase):
             logger.setLevel(self.loggingLevel)
 
     # issue 149
-    def test_grouping_simple(self):
+    def test_group_counts_simple(self):
 
         x = numpy.arange(start=1, stop=161, step=1)
         y = numpy.ones(x.size)
@@ -237,12 +238,11 @@ class test_grouping(SherpaTestCase):
         # test that the data is grouped correctly
         numpy.testing.assert_array_equal(dataset.get_dep(filter=True), newy)
 
-    # issue 149
     # test for when the last bin after grouping is less than the number
     # specified for group_counts()
     @requires_data
     @requires_fits
-    def test_group_counts_issue149(self):
+    def test_group_counts_ignore_bad1(self):
 
         # load a real dataset to test
         data = read_pha(self.pha3c273)
@@ -268,6 +268,25 @@ class test_grouping(SherpaTestCase):
         # with value 9
         data.ignore_bad()
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y[:-1])
+
+    # issue 149
+    # set a filter to the data before grouping it using data from bug 149
+    # NOTE: we expect this test to fail until issue #149 is resolved.
+    @requires_fits
+    @requires_data
+    def test_group_counts_issue149(self):
+        data = read_pha(self.specfit_dataset, use_errors=True)
+
+        #filter and group data
+        data.notice(0.5, 7.0)
+        data.group_counts(16)
+
+        # the expected grouped counts after filtering
+        new_y = [19, 18, 16, 21, 18, 19, 16, 17, 19, 16, 16, 17, 16, 17,
+                 16, 17, 16, 16, 16, 17, 16, 16, 16, 16, 16, 16, 16]
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
 
     def test_group_bins_simple(self):
 
