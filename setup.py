@@ -116,6 +116,7 @@ meta = dict(name='sherpa',
             entry_points={
                 'console_scripts': [
                     'sherpa_test = sherpa:clitest',
+                    'sherpa_smoke = sherpa:_smoke_cli',
                 ]
             },
             classifiers=[

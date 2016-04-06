@@ -101,7 +101,7 @@ script:
   - if [ ${TEST} == submodule ]; then pip install pytest-cov; python setup.py test -a "--cov sherpa --cov-report term"; fi
   - if [ ${TEST} == smoke ];
         then cd /home;
-        python -c "import sherpa; sherpa.test()";
+        python -c "import sherpa; sherpa.smoke(verbosity=3)";
     fi
   - if [ ${TEST} == package ];
         then cd $HOME;

@@ -102,17 +102,41 @@ def get_config():
     return os.path.join(os.path.dirname(__file__), filename)
 
 
-def test(level=1, verbosity=1, datadir=None):
+def smoke(verbosity=0, require_failure=False):
     """
+    Run Sherpa's "smoke" test. The smoke test is a simple test that
+        ensures the Sherpa installation is functioning. It is not a complete
+        test suite, but it fails if obvious issues are found.
 
-    Run the Sherpa test suite, testing all available subpackages
-    (including the discipline-specific ones)
+    Parameters
+    ----------
+    require_failure : boolean
+        For debugging purposes, the smoke test may be required to always fail. Defaults to False.
+    verbosity : int
+        The level of verbosity of this test
 
+    Returns
+    -------
+    The method raises the SystemExit if errors are found during the smoke test
     """
-    # import sherpa.all
-    # import sherpa.astro.all
-    from sherpa.utils import SherpaTest
-    SherpaTest().test(level, verbosity, datadir)
+    from sherpa.astro.utils import smoke
+    smoke.run(verbosity=verbosity, require_failure=require_failure)
+
+
+def _smoke_cli(verbosity=0, require_failure=False):
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option("-v", "--verbosity", dest="verbosity",
+                      help="verbosity level")
+    parser.add_option("-0", "--require-failure", dest="require_failure", action="store_true",
+                      help="require smoke test to fail (for debugging)")
+
+    options, _ = parser.parse_args()
+
+    verbosity = options.verbosity or verbosity
+    require_failure = options.require_failure or require_failure
+
+    smoke(verbosity=verbosity, require_failure=require_failure)
 
 
 def clitest():
