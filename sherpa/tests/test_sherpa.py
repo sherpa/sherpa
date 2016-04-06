@@ -19,7 +19,7 @@
 
 import os.path
 import sherpa
-from sherpa.utils import SherpaTest, SherpaTestCase, requires_data
+from sherpa.utils import SherpaTestCase, requires_data
 from sherpa import ui
 
 
@@ -46,15 +46,3 @@ class test_sherpa(SherpaTestCase):
 
     def test_require_float(self):
         self.assertRaises(ValueError, ui.load_data, self.agn2)
-
-if __name__ == '__main__':
-
-    import sys
-    if len(sys.argv) > 1:
-        datadir = sys.argv[1]
-    else:
-        datadir = None
-
-    # This is probably not what you want, since it also runs
-    # all the tests in sub-modules
-    SherpaTest(sherpa).test(datadir=datadir)

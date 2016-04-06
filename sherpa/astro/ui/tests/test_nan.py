@@ -18,7 +18,7 @@
 #
 
 import unittest
-from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_fits
 from sherpa.astro import ui
 import logging
@@ -54,13 +54,3 @@ class test_more_ui(SherpaTestCase):
     def test_filter_nan(self):
         self.run_thread('filternan')
         self.assertFalse(numpy.isnan(ui.get_fit_results().statval))
-
-if __name__ == '__main__':
-
-    import sys
-    if len(sys.argv) > 1:
-        datadir = sys.argv[1]
-    else:
-        datadir = None
-
-    SherpaTest(ui).test(datadir=datadir)

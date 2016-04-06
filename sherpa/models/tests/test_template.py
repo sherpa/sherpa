@@ -20,7 +20,7 @@
 
 from sherpa.models import TableModel, Gauss1D
 from sherpa.models.template import create_template_model
-from sherpa.utils import SherpaTest, SherpaTestCase, requires_data
+from sherpa.utils import SherpaTestCase, requires_data
 from sherpa.utils.err import ModelErr
 from sherpa import ui
 import numpy
@@ -150,16 +150,3 @@ class test_template(SherpaTestCase):
 #
 #    def test_template_query(self):
 #        result = self.model.query([0,1,0,1])
-
-
-if __name__ == '__main__':
-
-    from sherpa import models
-
-    import sys
-    if len(sys.argv) > 1:
-        datadir = sys.argv[1]
-    else:
-        datadir = None
-
-    SherpaTest(models).test(datadir=datadir)

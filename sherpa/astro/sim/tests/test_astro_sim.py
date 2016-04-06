@@ -19,7 +19,7 @@
 
 import unittest
 import logging
-from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_fits, requires_xspec
 from sherpa.astro import sim
 
@@ -120,14 +120,3 @@ class test_sim(SherpaTestCase):
         #     print 'covar: ', str(covar_results.parmaxes)
         #     print 'param: ', str(params.std(1))
         #     raise
-
-
-if __name__ == '__main__':
-
-    import sys
-    if len(sys.argv) > 1:
-        datadir = sys.argv[1]
-    else:
-        datadir = None
-
-    SherpaTest(sim).test(datadir=datadir)
