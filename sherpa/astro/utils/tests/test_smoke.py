@@ -19,6 +19,7 @@
 
 from sherpa import smoke
 import pytest
+import mock
 
 
 def test_success():
@@ -33,3 +34,19 @@ def test_failure():
         smoke(require_failure=True)
 
     assert "Test failures were detected" == str(cm.value)
+
+
+@mock.patch.dict('sys.modules', astropy=None)
+def test_fits_failure():
+    with pytest.raises(SystemExit) as cm:
+        smoke(fits="astropy")
+
+    assert "Requested fits as astropy but module not found" == str(cm.value)
+
+
+@mock.patch.dict('sys.modules', values={"sherpa.astro.xspec": None})
+def test_xspec_failure():
+    with pytest.raises(SystemExit) as cm:
+        smoke(xspec=True)
+
+    assert "Requested xspec as xspec but module not found" == str(cm.value)

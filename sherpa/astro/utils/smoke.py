@@ -18,15 +18,31 @@
 #
 
 import unittest
+from tempfile import NamedTemporaryFile
+
+from sherpa.utils import requires_fits, requires_xspec
 from sherpa.astro import ui
 from numpy.testing import assert_almost_equal
 import logging
 import sys
+import os
 
 logger = logging.getLogger("sherpa")
 
 
-def run(verbosity, require_failure):
+def run(verbosity=0, require_failure=False, fits=None, xspec=False):
+    if fits:
+        try:
+            __import__(fits, globals(), locals())
+        except ImportError:
+            _import_error("fits", fits)
+
+    if xspec:
+        try:
+            import sherpa.astro.xspec
+        except ImportError:
+            _import_error("xspec", "xspec")
+
     test_suite = SmokeTestSuite(require_failure=require_failure)
     runner = unittest.TextTestRunner(verbosity=verbosity)
     result = runner.run(test_suite)
@@ -39,12 +55,19 @@ class SmokeTest(unittest.TestCase):
         self._old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
 
+        from sherpa.astro import datastack
+        folder = os.path.dirname(datastack.__file__)
+        self.fits = os.path.join(folder, "tests", "data", "acisf07867_000N001_r0002_pha3.fits")
+
+        self.x = [1, 2, 3]
+        self.y = [1, 2, 3]
+
     def tearDown(self):
         if hasattr(self, "old_level"):
             logger.setLevel(self._old_level)
 
     def test_fit(self):
-        ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
+        ui.load_arrays(1, self.x, self.y)
         ui.set_source("polynom1d.p")
         ui.thaw("p.c1")
         ui.set_method("levmar")
@@ -52,6 +75,24 @@ class SmokeTest(unittest.TestCase):
         model = ui.get_model_component("p")
         expected = [0, 1]
         observed = [model.c0.val, model.c1.val]
+        assert_almost_equal(observed, expected)
+
+    @requires_fits
+    def test_fits_io(self):
+        ui.load_pha(self.fits)
+        with NamedTemporaryFile() as f:
+            ui.save_pha(f.name, ascii=False, clobber=True)
+
+    @requires_xspec
+    def test_xspec(self):
+        ui.load_arrays(1, self.x, self.y)
+        ui.set_source("xspowerlaw.p")
+        ui.set_method("moncar")
+        ui.set_stat("chi2xspecvar")
+        ui.fit()
+        model = ui.get_model_component("p")
+        expected = [-1.3686404, 0.5687635]
+        observed = [model.PhoIndex.val, model.norm.val]
         assert_almost_equal(observed, expected)
 
     def test_failure(self):
@@ -77,3 +118,7 @@ class SmokeTestSuite(unittest.TestSuite):
                 for test in case:
                     if test.id().split(".")[-1] in self.failure_methods:
                         setattr(test, 'setUp', lambda: test.skipTest('Smoke Test not required to fail, skipping'))
+
+
+def _import_error(module, name):
+    sys.exit("Requested {} as {} but module not found".format(module, name))
