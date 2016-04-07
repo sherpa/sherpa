@@ -21,6 +21,10 @@ addons:
 matrix:
   fast_finish: true
   include:
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=install TEST=smoke MATPLOTLIBVER=1.5
+      python: "2.7"
+      sudo: required
+      dist: trusty
     - env: XSPECVER="12.8.2q" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
       python: "2.7"
       sudo: required
@@ -37,8 +41,6 @@ matrix:
       python: "2.7"
     - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5
       python: "2.7"
-    - env: INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true" MATPLOTLIBVER=1.5
-      python: "2.7"
     - env: FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
       python: "2.7"
     - env: FITS="astropy" INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.4 NUMPYVER=1.9
@@ -46,7 +48,7 @@ matrix:
     - env: FITS="astropy" INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5 NUMPYVER=1.10
       python: "2.7"
 
-env:  FITS="astropy" INSTALL_TYPE=install TEST=smoke MATPLOTLIBVER=1.5
+env:  INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true" MATPLOTLIBVER=1.5
 
 before_install:
   - export LIBGFORTRANVER="1.0"
@@ -98,10 +100,13 @@ install:
   - python setup.py $INSTALL_TYPE
 
 script:
+  - if [ -n "${XSPECVER}" ]; then XSPECTEST="-x"; fi
+  - if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
+  - SMOKEVARS="${XSPECTEST} ${FITSTEST} -v 3"
   - if [ ${TEST} == submodule ]; then pip install pytest-cov; python setup.py test -a "--cov sherpa --cov-report term"; fi
   - if [ ${TEST} == smoke ];
         then cd /home;
-        python -c "import sherpa; sherpa.smoke(verbosity=3)";
+        sherpa_smoke ${SMOKEVARS};
     fi
   - if [ ${TEST} == package ];
         then cd $HOME;
