@@ -6,7 +6,7 @@
 
 - [Sherpa](#sherpa)
 - [How To Install Sherpa](#how-to-install-sherpa)
-  - [Binary installation using Anaconda](#binary-installation)
+  - [Binary installation using Anaconda](#binary-installation-using-anaconda)
     - [1a. Anaconda](#1a-anaconda)
     - [1b. Starting from scratch](#1b-starting-from-scratch)
     - [1c. Other packages](#1c-other-packages)
@@ -16,7 +16,7 @@
     - [2c. Build Sherpa](#2c-build-sherpa)
     - [2d. Testing the build](#2d-testing-the-build)
     - [2e. Development mode](#2e-development-mode)
-  - [Testing Sherpa](#test)
+  - [Testing Sherpa](#testing-sherpa)
     - [3a. Binary installation](#3a-binary-installation)
     - [3b. Built from source](#3b-built-from-source)
 - [Custom source build](#custom-source-build)
