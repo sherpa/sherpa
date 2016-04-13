@@ -26,12 +26,14 @@
 Sherpa
 ======
 
-Sherpa is a modeling and fitting application for Python. It contains a powerful language for combining simple models
-into complex expressions that can be fit to the data using a variety of statistics and optimization methods.
-It is easily extensible to include user models, statistics, and optimization methods.
-It provides a high-level User Interface for interactive data-analysis work,
-such as within an IPython notebook, and it can also be used as a library
-component, providing fitting and modeling capabilities to an application.
+Sherpa is a modeling and fitting application for Python. It contains a
+powerful language for combining simple models into complex expressions
+that can be fit to the data using a variety of statistics and
+optimization methods.  It is easily extensible to include user models,
+statistics, and optimization methods.  It provides a high-level User
+Interface for interactive data-analysis work, such as within an
+IPython notebook, and it can also be used as a library component,
+providing fitting and modeling capabilities to an application.
 
 What can you do with Sherpa?
 
@@ -54,11 +56,12 @@ How To Install Sherpa
 
 Sherpa can be installed from a binary distribution or built from sources.
 
-The binary distribution is suited for people wanting to have Sherpa up and
-running as soon as possible in its standard form.
+The binary distribution is suited for people wanting to have Sherpa up
+and running as soon as possible in its standard form.
 
-Source installation is available for platforms incompatible with the binary
-builds, or for users wanting to customize the way Sherpa is built and installed.
+Source installation is available for platforms incompatible with the
+binary builds, or for users wanting to customize the way Sherpa is
+built and installed.
 
 If you are in doubt about which installation to perform, you should try
 with the Conda installation (sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch)).
@@ -95,8 +98,8 @@ Anaconda-powered environment, not the full Anaconda distribution.
 
 ### 1a. Anaconda
 
-If you have Anaconda already installed on your system you can use it to seamlessly
-install Sherpa.
+If you have Anaconda already installed on your system you can use it
+to seamlessly install Sherpa.
 
 First you need to add the Sherpa channel to your configuration,
 and then install Sherpa:
@@ -111,9 +114,9 @@ To test that your installation works, just type:
 Note that by default `sherpa_test` only runs a small number of tests.
 
 Starting with release 4.8.1 we are also releasing the test data files
-that are required to run the entire Sherpa test suite. Given the relatively
-large footprint of these datafiles we distribute `sherpatest`
-as a separate `conda` package.
+that are required to run the entire Sherpa test suite. Given the
+relatively large footprint of these datafiles we distribute
+`sherpatest` as a separate `conda` package.
 
 In order to install `sherpatest` just run:
 
@@ -293,6 +296,7 @@ an `OK` message.
 is not installed `sherpa_test` will try to install it.
 
 ### 2e. Development mode
+
 If you plan to edit the Sherpa code, it is more convenient
 to work in development mode rather than using the `install` command.
 
@@ -325,6 +329,7 @@ The same issue may occur if you installed both the Sherpa binaries
 and build Sherpa from sources in the same environment.
 
 ### 2f. Download Test Data
+
 The `sherpa_test` and `python setup.py test` commands only execute
 a small number of tests to ensure that your installation of Sherpa
 is functional. The full test suite requires data files that are
