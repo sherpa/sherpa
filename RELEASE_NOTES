@@ -9,6 +9,7 @@ for newer versions of the dependency, along with some feature enhancements,
 bug fixes and additional, more accurate tests.
 
 The newly supported dependencies:
+
   - matplotlib v1.5
   - numpy 1.10 (with and without mkl support)
   - xspec v12.9.0i (when building from source)
@@ -20,7 +21,7 @@ Mode details below (infrastructure changes are not shown):
 #102: fix issues when writing out FITS files using the `save_pha` and
 `save_table` commands when using the `astropy`/`pyfits` backend (bug #46).
 Fix for when the notice2d_id, notice2d_image, and the ignore version functions
-are called with an invalid identifier (i.e. an identifier that i snot an integer
+are called with an invalid identifier (i.e. an identifier that is not an integer
 or string value). The error is now an ArgumentTypeErr with the message "'ids'
 must be an identifier or list of identifiers". It was a NameError with the
 message "global name '_argument_type_error' is not defined".
@@ -52,6 +53,7 @@ changed were, when the new symbols are availble, to:
 #137: upgrade CIAO region library to v4.8
 
 #138: improve and fix issues in `save_all` function.
+
  - added a new argument to `save_all`: if `outfile` is `None` then the `outfh`
    argument is used 
    to define the output handle (the argument can be any file-like argument, such
