@@ -275,17 +275,43 @@ class test_grouping(SherpaTestCase):
     @requires_fits
     @requires_data
     def test_group_counts_issue149(self):
+
         data = read_pha(self.specfit_dataset, use_errors=True)
 
-        #filter and group data
+        # set the data quality arrays
+        # use OGIP standards (0=good, 1=bad from data redux pipeline, 2=bad from
+        # software, 5=bad from user)
+        quality = numpy.zeros(len(data.channel))
+        quality[:30] = 5
+        quality[301:350] = 5
+        quality[350:] = 1
+
+        data.quality = quality
+
+        # filter data
         data.notice(0.5, 7.0)
+
+        # ignore bad data points
+        data.ignore_bad()
+
+        # group_counts() removes the filter before rebinning
+        # but re-applies the filter afterwards
         data.group_counts(16)
 
-        # the expected grouped counts after filtering
-        new_y = [19, 18, 16, 21, 18, 19, 16, 17, 19, 16, 16, 17, 16, 17,
-                 16, 17, 16, 16, 16, 17, 16, 16, 16, 16, 16, 16, 16]
+        # the expected grouped counts
+        # note that the last element in the array is an unfilled group that
+        # should have a bad group quality value
+        grouped = [19, 18, 16, 21, 18, 19, 16, 17, 17, 19, 16, 16, 17, 16,
+                   17, 16, 17, 16, 16, 16, 17, 16, 16, 16, 16, 3]
 
-        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), grouped)
+
+        # ignore any bad groups
+        data.ignore_bad()
+
+        # the last element in the grouped array should be masked
+        numpy.testing.assert_array_equal(data.get_dep(filter=True),
+                                         grouped[:-1])
 
 
     def test_group_bins_simple(self):
