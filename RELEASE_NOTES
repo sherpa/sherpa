@@ -1,5 +1,170 @@
 Release Notes
+
+Sherpa 4.8.1
+============
+
+Sherpa 4.8.1 is the standalone counterpart to the 4.8.0 release, which was
+focused on supporting CIAO 4.8. In particular, this version introduces support
+for newer versions of the dependency, along with some feature enhancements,
+bug fixes and additional, more accurate tests.
+
+The newly supported dependencies:
+  - matplotlib v1.5
+  - numpy 1.10 (with and without mkl support)
+  - xspec v12.9.0i (when building from source)
+  - astropy v1.1.2
+  - region library v4.8 (from CIAO 4.8)
+
+Mode details below (infrastructure changes are not shown):
+
+#102: fix issues when writing out FITS files using the `save_pha` and
+`save_table` commands when using the `astropy`/`pyfits` backend (bug #46).
+Fix for when the notice2d_id, notice2d_image, and the ignore version functions
+are called with an invalid identifier (i.e. an identifier that i snot an integer
+or string value). The error is now an ArgumentTypeErr with the message "'ids'
+must be an identifier or list of identifiers". It was a NameError with the
+message "global name '_argument_type_error' is not defined".
+
+#107: Normalize plot labels. There are two main changes for plots of PHA data
+sets (and related quantities, such as the source, model, and ARF):
+
+- plots with matplotlib now use the LaTeX support - so that 'cm^2' is
+  now displayed as a superscript; previously they were displayed
+  directly. This does not change the display with the ChIPS backend.
+
+- plots created with `plot_source` used a different format to other
+  plots when analysis=wavelength, in that LaTeX symbols were used for
+  Angstrom and lambda (in other plots the string 'Angstrom' is used
+  instead). The source plots now match the other plots.
+
+#109: fix #103 and #113 in order to support `matplotlib` v1.5.
+
+#116: fix bug #27. The `astropy.io.fits`/`pyfits` interface used deprecated
+functionality. The code was updated to use the replacement classes/methods when
+available, falling back to the original code if not. The interfaces that were
+changed were, when the new symbols are availble, to:
+
+ - use `astropy.io.fits.BinTableHDU.from_columns` rather than
+   `astropy.io.fits.new_table`
+
+ - use `astropy.io.fits.Header` rather than `astropy.io.CardList`
+
+#137: upgrade CIAO region library to v4.8
+
+#138: improve and fix issues in `save_all` function.
+ - added a new argument to `save_all`: if `outfile` is `None` then the `outfh`
+   argument is used 
+   to define the output handle (the argument can be any file-like argument, such
+   as a file
+   handle like `sys.stdout` or the output of `open`, or a `StringIO` object)
+ - setting the `clobber` argument to `save_all` now means that the output file
+   (the `outfile`
+   argument, if not `None`) is deleted if it already exists; prior to this, the
+   file would be
+   appended to instead
+ - the source expression is now saved correctly for most cases (e.g. when not
+   using `set_full_model`); this is bug #97 but also affects non-PHA data sets
+ - the background model expression was not always written out correctly when
+   using PHA
+   data sets
+ - quality and grouping arrays of PHA data sets are now stored as 16-byte
+   integers rather
+   than a floating-point value (this has no affect on the results, but matches
+   the OGIP standard)
+ - fixed up saving the grouping and quality arrays of background PHA data sets
+   (this would only
+   be an issue if the background is being fit, rather than subtracted)
+ - basic data sets created with the `load_arrays` function are now written out by
+   `save_all`
+   as part of the script; this is intended for small datasets and may have
+   problems with
+   precision if used with floating-point arrays
+ - calls to `load_psf` are now correctly restored (they may not have been written
+   out correctly
+   if multiple data sets were loaded)
+ - user models are now written out to disk; this consists of two parts:
+ - writing out the function that defines the model, which may or may not be
+   possible (if
+   not, a place-holder function is added to the output and a warning
+   displayed).
+ - the necessary calls to `load_user_model` and `add_user_pars` are now
+   included in the output
+ - the Python code created by `save` all has undergone several minor changes:
+ - it now explicitly imports the `sherpa.astro.ui` module, so that it can be
+   run from the
+   IPython prompt using the `%run <filename>` command, or directly as `python <filename>`
+ - it uses the `create_model_component` function rather than `eval` to create
+   model
+   components (this is CXC bug 12146)
+ - many optional arguments to functions are now given as `name=value` rather
+   than
+   being a positional argument, to make it clearer what the script is doing.
+ - calls to `load_data` have been replaced by more-specific versions - e.g.
+   `load_pha`
+   and `load_image` - if appropriate
+ - there have seen several minor syntactic clean ups to better follow the
+   suggestions from PEP8 
+
+When writing out code that defines a user-model, there is no attempt to make
+sure that
+modules used by the function are available. These will need to be added, either
+directly
+or imported, manually to the output.
+
+#151: Ensure AstroPy and Crates behave the same with gzipped files. Change the
+behaviour of the AstroPy back end so that it matches that of Crates when given a
+file name which does not exist, but a compressed version, with the suffix `.gz`
+does. The Crates behavior is to read the file. This extends to PHA files whose
+ancillary files - e.g. those stored in the `BACKFILE`, `ANCRFILE`, and
+`RESPFILE` keywords - are given as unzipped names, but only the gzipped names
+exist on disk.
+
+As an example: if `pha.fits.gz` exists but `pha.fits` does not, then
+
+    load_pha('pha.fits')
+
+will now load the file with either back end. If the response files are set to
+`arf.fits` and `rmf.fits` (via the `ANCRFILE` and `RESPFILE` keywords), but only
+the `.gz` versions exist, then they will now also be loaded by the AstroPy back
+end.
+
+#153: Make comparison test in `calc_chi2datavar_errors` less stringent, so to
+include the case where `sqrt(x)=0`.
+
+#155: The `get_draws` function now accepts a user-provided covariance matrix. If
+no covariance matrix is provided, the covariance matrix computed by the default
+implementation is used. Note that `covar()` must be invoked before invoking
+`get_draws` if no covariance matrix is provided, otherwise `get_draws` will exit
+with an error.
+
+#158: Fix bug that prevented region ascii files to be read in standalone
+Sherpa.
+
+#165: Remove usage of deprecated numpy API.
+
+#185: Fix the problem where if the working directory contained a file called
+`x` or `y` then the `sherpa.astro.ui.image_data()` function would fail with the message
+
+     DS9Err: Could not display image
+
+#187: Fix #92: a more meaningful message is given to the user when
+`sherpa.astro.io` is imported directly and no fits backends are available.
+
+#188: Fix #93. The `sherpa_test` script now tries to install the test
+dependencies before running the tests (but not the `sherpatest` package, which
+should be installed by the user if necessary, due to its footprint). If this is
+not possible, and the necessary dependencies (`pytest`) are not found, then a
+meaningful message is given to the user with instructions on how to install the
+dependencies. Also, the dependency on `pytest-cov` has been removed. Users can
+enable coverage reports from the command line if necessary.
+
+#190: Fix #22 - The datastack package can now be used even if there is no
+available plotting backend. In this case, plotting functions will not be
+available, but the rest of the datastack functionality will. 
+
+
 Sherpa 4.8.0
+============
 
 This version of Sherpa  introduces 'wstat' statistics which is an extension
 of 'cstat' with Poisson background data. It also provides the ability to include

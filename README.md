@@ -108,6 +108,21 @@ To test that your installation works, just type:
 
     $ sherpa_test
 
+Note that by default `sherpa_test` only runs a small number of tests.
+
+Starting with release 4.8.1 we are also releasing the test data files
+that are required to run the entire Sherpa test suite. Given the relatively
+large footprint of these datafiles we distribute `sherpatest`
+as a separate `conda` package.
+
+In order to install `sherpatest` just run:
+
+    $ conda install sherpatest
+    
+Then run `sherpa_test` as usual.
+
+Some tests may also be skipped if you don't have `astropy` installed.
+
 To update Sherpa:
 
     $ conda update sherpa
@@ -248,7 +263,7 @@ You can clone the Sherpa repository with:
     $ git clone https://github.com/sherpa/sherpa
     $ cd sherpa
 
-The most stable code is available in the `stable` branch. The main development
+The most stable code is available through the 4.8.1 tag. The main development
 code, which is unstable, is available in the `master` branch. New features
 and bug fixes or other, even less
 stable versions of the code may be available in other branches.
@@ -267,13 +282,25 @@ To test that your installation of Sherpa is working, type:
 
 which will run a small test suite (the script may not be in your path,
 depending on where the installation step chose to install Sherpa).
-Note that the test may report several `WARNING` lines and failed
-attempts to load modules. These messages are expected - as some of the
+
+Note that the test may report several `SKIPPED` lines.
+These messages are expected - as some of the
 tests require optional packages to be installed alongside
 Sherpa. These warnings may be ignored, as long as the test ends with
 an `OK` message.
 
-You can also test the build by using the standard python command:
+**NOTE:** the `sherpa_test` command requires `pytest` to run. If `pytest`
+is not installed `sherpa_test` will try to install it.
+
+### 2e. Development mode
+If you plan to edit the Sherpa code, it is more convenient
+to work in development mode rather than using the `install` command.
+
+When in developer mode changes are picked up by `python` without
+having to run `install` after every change.
+
+In developer mode it may also be more convenient to use the `test`
+command rather than the `sherpa_test` script:
 
     $ python setup.py test
 
@@ -284,6 +311,43 @@ For instance,
 you can run a single test, i.e. a single test method, with:
 
     $ python setup.py test -a sherpa/astro/datastack/tests/test_datastack.py::test_load::test_case3
+
+**NOTE:** if you run both `install` and `develop` or `test` in the same
+Python environment you end up with two competing installations of Sherpa
+which result in unexpected behavior. If this happens, simply run
+`pip uninstall sherpa` as many times as necessary, until you get an
+error message as no more Sherpa installations are available
+and then install Sherpa again.
+
+Also note that the `test` command executes `develop`.
+
+The same issue may occur if you installed both the Sherpa binaries
+and build Sherpa from sources in the same environment.
+
+### 2f. Download Test Data
+The `sherpa_test` and `python setup.py test` commands only execute
+a small number of tests to ensure that your installation of Sherpa
+is functional. The full test suite requires data files that are
+not included in the Sherpa distribution by default.
+
+If you want you can download such data files and run the whole test suite.
+
+Since this is mostly useful when developing for Sherpa, the instructions
+below assume that you are using `git` and that you are located in the
+top directory:
+
+    $ git submodule init
+    $ git submodule update
+
+This will install the data files under `sherpa-test-data`.
+
+The data will be picked up automatically by `python setup.py test`.
+
+The data files are included in a standard Python package with its
+own [`git` repository](https://github.com/sherpa/sherpa-test-data).
+
+You can download and install the `sherpatest` package as usual
+if you are not using `git`.
 
 Custom source build
 ===================
