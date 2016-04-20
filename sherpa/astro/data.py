@@ -1019,7 +1019,7 @@ class DataPHA(Data1DInt):
         """Group into a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        of at least `snr`. The binning scheme is applied to all the
+        which exceeds `snr`. The binning scheme is applied to all the
         channels, but any existing filter - created by the `ignore` or
         `notice` set of functions - is re-applied after the data has
         been grouped.  The background is *not* included in this
@@ -1131,7 +1131,7 @@ class DataPHA(Data1DInt):
         """Adaptively group to a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        of at least `minimum`. The difference to `group_snr` is that
+        which exceeds `minimum`. The difference to `group_snr` is that
         this algorithm starts with the bins with the largest signal,
         in order to avoid over-grouping bright features, rather than
         at the first channel of the data. The adaptive nature means
