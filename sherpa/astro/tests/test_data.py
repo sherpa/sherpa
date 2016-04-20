@@ -250,16 +250,19 @@ class test_grouping(SherpaTestCase):
         data.group_counts(16)
 
         # control array. We expect the last bin to have less than 16 counts.
+        # TODO: is this true? Or should unfilled groups be removed from the
+        # grouped array?
         new_y = [17.0, 16.0, 17.0, 16.0, 18.0, 21.0, 17.0, 23.0, 18.0, 21.0,
                 22.0, 21.0, 19.0, 21.0, 17.0, 17.0, 17.0, 17.0, 21.0, 17.0,
                 20.0, 17.0, 18.0, 17.0, 18.0, 17.0, 16.0, 16.0, 17.0, 17.0,
                 17.0, 16.0, 16.0, 17.0, 17.0, 16.0, 17.0, 16.0, 17.0, 16.0,
                 16.0, 9.0]
 
-        # The last bin is less than 16, and so should have group quality = 2
-        quality = numpy.zeros(1024)
-        quality[957:] = 2
-        numpy.testing.assert_array_equal(data.quality, quality)
+        # The last bin is less than 16, and so should have a bad group quality
+        group_quality = numpy.zeros(1024)
+        group_quality[957] = 2
+        # TODO: decide how we will store bad group qualities, or if we will
+        # store them at all. See TODO above.
 
         # before ignoring the bad data
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
@@ -301,6 +304,8 @@ class test_grouping(SherpaTestCase):
         # the expected grouped counts
         # note that the last element in the array is an unfilled group that
         # should have a bad group quality value
+        # TODO: is this true? Or should unfilled groups be removed from the
+        # grouped array?
         grouped = [19, 18, 16, 21, 18, 19, 16, 17, 17, 19, 16, 16, 17, 16,
                    17, 16, 17, 16, 16, 16, 17, 16, 16, 16, 16, 3]
 
@@ -312,7 +317,6 @@ class test_grouping(SherpaTestCase):
         # the last element in the grouped array should be masked
         numpy.testing.assert_array_equal(data.get_dep(filter=True),
                                          grouped[:-1])
-
 
     def test_group_bins_simple(self):
 
