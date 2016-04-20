@@ -218,6 +218,7 @@ class test_grouping(SherpaTestCase):
         logger.setLevel(logging.ERROR)
         self.pha3c273 = self.make_path('3c273.pi')
         self.specfit_dataset = self.make_path('acisf00308_000N001_r0044_pha3.fits')
+        self.adapt_dataset = self.make_path('dmgroup_pha1.fits')
 
     def tearDown(self):
         if hasattr(self, 'loggingLevel'):
@@ -320,7 +321,7 @@ class test_grouping(SherpaTestCase):
 
     def test_group_bins_simple(self):
 
-        # make a straight line from x=1 to x=101
+        # make a straight line from x=1 to x=100
         x = numpy.arange(start=1, stop=101, step=1)
         y = numpy.ones(100)
         data = DataPHA("dataset", x, y)
@@ -336,6 +337,82 @@ class test_grouping(SherpaTestCase):
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
         # TODO: uncomment when I figure out how to get the x data
         # numpy.testing.assert_array_equal(data.get_indep(filter=True), new_x)
+
+    def test_group_width_simple(self):
+        # bin so each group has 'num' channels
+
+        # make a straight line from x=1 to x=1024
+        x = numpy.arange(start=1, stop=1025, step=1)
+        y = numpy.ones(x.size)
+        data = DataPHA("dataset", x, y)
+
+        # group so each bin is 16 channels wide
+        data.group_width(16)
+
+        # control x and y arrays. There should be 64 groups
+        new_x = numpy.arange(start=1, stop=1025, step=16)
+        new_y = numpy.ones(64) * 16
+
+        # there should be 10 bins with y=10
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+        # TODO: uncomment when I figure out how to get the x data
+        # numpy.testing.assert_array_equal(data.get_indep(filter=True), new_x)
+
+    def test_group_snr_simple(self):
+        # bin so each group has an SNR of at least 'num'
+
+        # make a straight line from x=1 to x=100
+        x = numpy.arange(start=1, stop=101, step=1)
+        y = numpy.ones(x.size)
+        data = DataPHA("dataset", x, y)
+
+        # errCol array to pass in to group_snr()
+        errs = numpy.ones(x.size)*0.5
+
+        # group so each bin has SNR of at least 5
+        data.group_snr(5, errorCol=errs)
+
+        # control x and y arrays.
+        new_x = numpy.arange(start=1, stop=101, step=7)
+        new_y = numpy.ones(new_x.size) * 7
+        new_y[new_y.size-1] = 2 # 2 bins left over after grouping
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+        # TODO: uncomment when I figure out how to get the x data
+        # numpy.testing.assert_array_equal(data.get_indep(filter=True), new_x)
+
+        # now test using the Poisson statistics (no errCol input)
+        data.ungroup()
+        data.group_snr(5)
+
+        new_y = [26, 26, 26, 22]
+
+        # there should be 10 bins with y=10
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
+    def test_group_adapt_snr_simple(self):
+        # bin so low signal regions are grouped to at least 'num' snr, and
+        # adaptively ignore bright features
+
+        data = read_pha(self.adapt_dataset)
+        data.group_adapt_snr(17)
+
+        # expected grouped array
+        new_y = [169.0, 365.0, 579.0, 819.0, 457.0, 359.0, 15.0]
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
+    def test_group_adapt(self):
+        # bin so low signal regions are grouped to at least 'num' counts, and
+        # adaptively ignore bright features
+
+        data = read_pha(self.adapt_dataset)
+        data.group_adapt(700)
+
+        # expected grouped array
+        new_y = [315.0, 798.0, 819.0, 816.0, 15.0]
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
 
 
 class test_filter_wave_grid(SherpaTestCase):
