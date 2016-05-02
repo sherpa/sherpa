@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2015, 2016 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1029,7 +1029,7 @@ class DataPHA(Data1DInt):
         Parameters
         ----------
         snr : number
-           The minimum signal-to-noise ratio that must be reached
+           The minimum signal-to-noise ratio that must be exceeded
            to form a group of channels.
         maxLength : int, optional
            The maximum number of channels that can be combined into a
@@ -1144,7 +1144,7 @@ class DataPHA(Data1DInt):
         Parameters
         ----------
         minimum : number
-           The minimum signal-to-noise ratio that must be reached
+           The minimum signal-to-noise ratio that must be exceeded
            to form a group of channels.
         maxLength : int, optional
            The maximum number of channels that can be combined into a
