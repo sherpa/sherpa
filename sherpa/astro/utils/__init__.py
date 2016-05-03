@@ -19,8 +19,9 @@
 
 import logging
 import numpy
-from _utils import *
-from _pileup import *
+from _utils import arf_fold, do_group, expand_grouped_mask, \
+    filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
+from _pileup import apply_pileup
 
 from sherpa.utils import SherpaFloat, get_position, filter_bins
 from sherpa.utils.err import IOErr, DataErr
@@ -40,7 +41,7 @@ warning = logging.getLogger(__name__).warning
 
 
 try:
-    from _region import *
+    from _region import Region, region_mask
     __all__.append('region_mask')
     __all__.append('Region')
 
