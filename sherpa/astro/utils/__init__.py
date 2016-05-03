@@ -211,9 +211,9 @@ def calc_energy_flux(data, src, lo=None, hi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
-    src :
+    src
        The source expression: this should not include any instrument
        responses.
     lo : number, optional
@@ -221,15 +221,15 @@ def calc_energy_flux(data, src, lo=None, hi=None):
        to use the low value of the data set.
     hi : number, optional
        The maximum limit of the band, which must be larger than
-       `lo`. Use `None`, the default, to use the upper value of
+       `lo`. Use ``None``, the default, to use the upper value of
        the data set.
 
     Returns
     -------
-    flux :
+    flux
        The flux from the source model integrated over the given
        band. For X-Spec style models the units will be erg/cm^2/s. If
-       `hi` is `None` but `lo` is set then the flux density is
+       `hi` is ``None`` but `lo` is set then the flux density is
        returned at that point: erg/cm^2/s/keV or erg/cm^2/s/Angstrom
        depending on the analysis setting.
 
@@ -237,7 +237,7 @@ def calc_energy_flux(data, src, lo=None, hi=None):
     --------
     calc_data_sum : Sum up the data values over a pass band.
     calc_model_sum : Sum up the fitted model over a pass band.
-    calc_source_sum: Sum up the source model over a pass band.
+    calc_source_sum : Sum up the source model over a pass band.
     calc_photon_flux : Integrate the source model over a pass band.
 
     Notes
@@ -285,9 +285,9 @@ def calc_photon_flux(data, src, lo=None, hi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
-    src :
+    src
        The source expression: this should not include any instrument
        responses.
     lo : number, optional
@@ -295,15 +295,15 @@ def calc_photon_flux(data, src, lo=None, hi=None):
        to use the low value of the data set.
     hi : number, optional
        The maximum limit of the band, which must be larger than
-       `lo`. Use `None`, the default, to use the upper value of
+       `lo`. Use ``None``, the default, to use the upper value of
        the data set.
 
     Returns
     -------
-    flux :
+    flux
        The flux from the source model integrated over the given
        band. For X-Spec style models the units will be
-       photon/cm^2/s. If `hi` is `None` but `lo` is set then the flux
+       photon/cm^2/s. If `hi` is ``None`` but `lo` is set then the flux
        density is returned at that point: photon/cm^2/s/keV or
        photon/cm^2/s/Angstrom depending on the analysis setting.
 
@@ -312,7 +312,7 @@ def calc_photon_flux(data, src, lo=None, hi=None):
     calc_data_sum : Sum up the data values over a pass band.
     calc_model_sum : Sum up the fitted model over a pass band.
     calc_energy_flux : Integrate the source model over a pass band.
-    calc_source_sum: Sum up the source model over a pass band.
+    calc_source_sum : Sum up the source model over a pass band.
 
     Notes
     -----
@@ -364,16 +364,16 @@ def calc_source_sum(data, src, lo=None, hi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
-    src :
+    src
        The source expression.
     lo : number, optional
-       The minimum limit of the band. Use `None`, the default, to use
+       The minimum limit of the band. Use ``None``, the default, to use
        the low value of the data set.
     hi : number, optional
        The maximum limit of the band, which must be larger than
-       `lo`. Use `None`, the default, to use the upper value of the
+       `lo`. Use ``None``, the default, to use the upper value of the
        data set.
 
     Returns
@@ -381,7 +381,7 @@ def calc_source_sum(data, src, lo=None, hi=None):
     signal : number
        The source model summed up over the given band. This does
        *not* include the bin width when using histogram-style
-       ('integrated' data spaces), such as used with X-Spec
+       (integrated) data spaces, such as used with X-Spec
        emission - also known as additive - models.
 
     See Also
@@ -423,21 +423,21 @@ def calc_data_sum(data, lo=None, hi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
     lo : number, optional
-       The minimum limit of the band. Use `None`, the default, to use
+       The minimum limit of the band. Use ``None``, the default, to use
        the low value of the data set.
     hi : number, optional
        The maximum limit of the band, which must be larger than
-       `lo`. Use `None`, the default, to use the upper value of the
+       `lo`. Use ``None``, the default, to use the upper value of the
        data set.
 
     Returns
     -------
     dsum : number
        The sum of the data values that lie within the given limits.
-       If `hi` is `None` but `lo` is set then the data value of the
+       If `hi` is ``None`` but `lo` is set then the data value of the
        bin containing the `lo` value are returned.  If a background
        estimate has been subtracted from the data set then the
        calculation will use the background-subtracted values.
@@ -448,7 +448,7 @@ def calc_data_sum(data, lo=None, hi=None):
     calc_model_sum : Sum up the fitted model over a pass band.
     calc_energy_flux : Integrate the source model over a pass band.
     calc_photon_flux : Integrate the source model over a pass band.
-    calc_source_sum: Sum up the source model over a pass band.
+    calc_source_sum : Sum up the source model over a pass band.
     set_model : Set the source model expression for a data set.
 
     Notes
@@ -491,7 +491,7 @@ def calc_data_sum2d(data, reg=None):
     data : sherpa.astro.data.DataIMG instance
        The data object to use.
     reg : str, optional
-       The spatial filter to use. The default, `None`, is to use the
+       The spatial filter to use. The default, ``None``, is to use the
        whole data set.
 
     Returns
@@ -526,17 +526,17 @@ def calc_model_sum(data, model, lo=None, hi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
-    src :
+    src
        The source expression, which should not include the
        instrumental responses.
     lo : number, optional
-       The minimum limit of the band. Use `None`, the default, to use
+       The minimum limit of the band. Use ``None``, the default, to use
        the low value of the data set.
     hi : number, optional
        The maximum limit of the band, which must be larger than
-       `lo`. Use `None`, the default, to use the upper value of the
+       `lo`. Use ``None``, the default, to use the upper value of the
        data set.
 
     Returns
@@ -549,7 +549,7 @@ def calc_model_sum(data, model, lo=None, hi=None):
     calc_data_sum : Sum up the observed counts over a pass band.
     calc_energy_flux : Integrate the source model over a pass band.
     calc_photon_flux : Integrate the source model over a pass band.
-    calc_source_sum: Sum up the source model over a pass band.
+    calc_source_sum : Sum up the source model over a pass band.
 
     Notes
     -----
@@ -578,10 +578,10 @@ def calc_model_sum2d(data, model, reg=None):
     ----------
     data : sherpa.astro.data.DataIMG instance
        The data object to use.
-    model :
+    model
        The source expression, which should not include the PSF model.
     reg : str, optional
-       The spatial filter to use. The default, `None`, is to use the
+       The spatial filter to use. The default, ``None``, is to use the
        whole data set.
 
     Returns
@@ -658,9 +658,9 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
-    model :
+    model
        The source expression: this should not include any instrument
        responses.
     z : number or array, >= 0
@@ -670,12 +670,12 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
     obshi : number
        The maximum energy of the observed band, which must
        be larger than `obslo`.
-    restlo : number or `None`
-       The minimum energy of the rest-frame band. If `None` then
+    restlo : number or ``None``
+       The minimum energy of the rest-frame band. If ``None`` then
        use `obslo`.
-    restlo : number or `None`
+    restlo : number or ``None``
        The maximum energy of the rest-frame band. It must be
-       larger than `restlo`. If `None` then use `obshi`.
+       larger than `restlo`. If ``None`` then use `obshi`.
 
     Returns
     -------
@@ -686,7 +686,7 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
     This is only defined when the analysis is in 'energy' units.
 
     If the model contains a redshift parameter then it should
-    be set to `0`, rather than the source redshift.
+    be set to ``0``, rather than the source redshift.
 
     If the source model is at zero redshift, the observed energy
     band is olo to ohi, and the rest frame band is rlo to rhi
