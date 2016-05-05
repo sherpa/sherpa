@@ -217,7 +217,10 @@ class test_grouping(SherpaTestCase):
         self._old_logger_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
         self.pha3c273 = self.make_path('3c273.pi')
-        self.specfit_dataset = self.make_path('acisf00308_000N001_r0044_pha3.fits')
+        self.specfit_dataset1 = self.make_path(
+            'acisf00308_000N001_r0044_pha3.fits')
+        self.specfit_dataset2 =  self.make_path(
+            'acisf01878_000N001_r0100_pha3.fits')
         self.adapt_dataset = self.make_path('dmgroup_pha1.fits')
 
     def tearDown(self):
@@ -243,7 +246,7 @@ class test_grouping(SherpaTestCase):
     # specified for group_counts()
     @requires_data
     @requires_fits
-    def test_group_counts_ignore_bad1(self):
+    def test_group_counts_ignore_bad(self):
 
         # load a real dataset to test
         data = read_pha(self.pha3c273)
@@ -274,13 +277,33 @@ class test_grouping(SherpaTestCase):
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y[:-1])
 
     # issue 149
-    # set a filter to the data before grouping it using data from bug 149
+    # set a filter to the data before grouping it.
     # NOTE: we expect this test to fail until issue #149 is resolved.
     @requires_fits
     @requires_data
     def test_group_counts_issue149(self):
 
-        data = read_pha(self.specfit_dataset, use_errors=True)
+        data = read_pha(self.specfit_dataset2, use_errors=True)
+        data.notice(0.5, 7.0)
+        mask = data.mask
+        invmask = mask == False
+        data.group_counts(16, tabStops=invmask)
+
+        # the expected grouped counts
+        grouped = [18., 16., 17., 24., 16., 19., 23., 22., 17., 17., 19., 16.,
+                   17., 16., 19., 17., 16., 19., 16., 16., 16., 17., 16., 16.,
+                   16., 16., 16.]
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), grouped)
+
+    # set quality flags and a filter to the data before grouping it.
+    # NOTE: we expect this test to fail until we fix properly handle grouping
+    # and quality flags, and until issue #149 is resolved.
+    @requires_fits
+    @requires_data
+    def test_grouping_with_previous_quality_flags(self):
+
+        data = read_pha(self.specfit_dataset1, use_errors=True)
 
         # set the data quality arrays
         # use OGIP standards (0=good, 1=bad from data redux pipeline, 2=bad from
