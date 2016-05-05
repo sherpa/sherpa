@@ -1,1 +1,3 @@
 pytest
+mock
+#python-coveralls
