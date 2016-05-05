@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2015, 2016 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1019,7 +1019,7 @@ class DataPHA(Data1DInt):
         """Group into a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        of at least `snr`. The binning scheme is applied to all the
+        which exceeds `snr`. The binning scheme is applied to all the
         channels, but any existing filter - created by the `ignore` or
         `notice` set of functions - is re-applied after the data has
         been grouped.  The background is *not* included in this
@@ -1029,7 +1029,7 @@ class DataPHA(Data1DInt):
         Parameters
         ----------
         snr : number
-           The minimum signal-to-noise ratio that must be reached
+           The minimum signal-to-noise ratio that must be exceeded
            to form a group of channels.
         maxLength : int, optional
            The maximum number of channels that can be combined into a
@@ -1131,7 +1131,7 @@ class DataPHA(Data1DInt):
         """Adaptively group to a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        of at least `minimum`. The difference to `group_snr` is that
+        which exceeds `minimum`. The difference to `group_snr` is that
         this algorithm starts with the bins with the largest signal,
         in order to avoid over-grouping bright features, rather than
         at the first channel of the data. The adaptive nature means
@@ -1144,7 +1144,7 @@ class DataPHA(Data1DInt):
         Parameters
         ----------
         minimum : number
-           The minimum signal-to-noise ratio that must be reached
+           The minimum signal-to-noise ratio that must be exceeded
            to form a group of channels.
         maxLength : int, optional
            The maximum number of channels that can be combined into a
