@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,10 +29,10 @@ logger = logging.getLogger('sherpa')
 class test_filter_energy_grid(SherpaTestCase):
 
     _notice = numpy.ones(46, dtype=bool)
-    _notice[44:46]=False
+    _notice[44:46] = False
 
     _ignore = numpy.zeros(46, dtype=bool)
-    _ignore[14:33]=True
+    _ignore[14:33] = True
 
     _emin = numpy.array([
         1.46000006e-03,   2.48199999e-01,   3.06600004e-01,   4.67200011e-01,
@@ -65,7 +65,7 @@ class test_filter_energy_grid(SherpaTestCase):
         logger.setLevel(logging.ERROR)
         self.pha = DataPHA('', numpy.arange(46, dtype=float)+1.,
                            numpy.zeros(46),
-                           bin_lo = self._emin, bin_hi = self._emax )
+                           bin_lo=self._emin, bin_hi=self._emax )
         self.pha.units="energy"
 
     def tearDown(self):
@@ -76,7 +76,7 @@ class test_filter_energy_grid(SherpaTestCase):
         self.pha.notice()        
         self.pha.notice(0.0, 6.0)
         #self.assertEqual(self._notice, self.pha.mask)
-        assert (self._notice==numpy.asarray(self.pha.mask)).all()
+        assert (self._notice == numpy.asarray(self.pha.mask)).all()
 
 
     def test_ignore(self):
@@ -85,18 +85,18 @@ class test_filter_energy_grid(SherpaTestCase):
         self.pha.ignore(0.0, 1.0)
         self.pha.ignore(3.0, 15.0)
         #self.assertEqual(self._ignore, self.pha.mask)
-        assert (self._ignore==numpy.asarray(self.pha.mask)).all()
+        assert (self._ignore == numpy.asarray(self.pha.mask)).all()
 
 
 
 class test_filter_energy_grid_reversed(SherpaTestCase):
 
     _notice = numpy.zeros(204, dtype=bool)
-    _notice[0:42]=True
+    _notice[0:42] = True
 
     _ignore = numpy.ones(204, dtype=bool)
-    _ignore[66:70]=False
-    _ignore[0:17]=False
+    _ignore[66:70] = False
+    _ignore[0:17] = False
 
     _emin = numpy.array([
         2.39196181,  2.35973215,  2.34076023,  2.30973101,  2.2884388 ,
@@ -190,7 +190,7 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         #logger.setLevel(logging.ERROR)
         self.pha = DataPHA('', numpy.arange(204, dtype=float)+1.,
                            numpy.zeros(204),
-                           bin_lo = self._emin, bin_hi = self._emax )
+                           bin_lo=self._emin, bin_hi=self._emax)
         self.pha.units="energy"
 
     def tearDown(self):
@@ -201,7 +201,7 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         #clear mask
         self.pha.notice()
         self.pha.notice(4., 8.3)
-        assert (self._notice==numpy.asarray(self.pha.mask)).all()
+        assert (self._notice == numpy.asarray(self.pha.mask)).all()
 
 
     def test_ignore(self):
@@ -209,7 +209,7 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         self.pha.notice()
         self.pha.ignore(10.3, 13.8)
         self.pha.ignore(4.6, 6.2)
-        assert (self._ignore==numpy.asarray(self.pha.mask)).all()
+        assert (self._ignore == numpy.asarray(self.pha.mask)).all()
 
 class test_grouping(SherpaTestCase):
 
@@ -219,7 +219,7 @@ class test_grouping(SherpaTestCase):
         self.pha3c273 = self.make_path('3c273.pi')
         self.specfit_dataset1 = self.make_path(
             'acisf00308_000N001_r0044_pha3.fits')
-        self.specfit_dataset2 =  self.make_path(
+        self.specfit_dataset2 = self.make_path(
             'acisf01878_000N001_r0100_pha3.fits')
         self.adapt_dataset = self.make_path('dmgroup_pha1.fits')
 
@@ -227,7 +227,6 @@ class test_grouping(SherpaTestCase):
         if hasattr(self, 'loggingLevel'):
             logger.setLevel(self.loggingLevel)
 
-    # issue 149
     def test_group_counts_simple(self):
 
         x = numpy.arange(start=1, stop=161, step=1)
@@ -441,10 +440,10 @@ class test_grouping(SherpaTestCase):
 class test_filter_wave_grid(SherpaTestCase):
 
     _notice = numpy.ones(16384, dtype=bool)
-    _notice[8465:16384]=False
+    _notice[8465:16384] = False
 
     _ignore = numpy.zeros(16384, dtype=bool)
-    _ignore[14064:15984]=True
+    _ignore[14064:15984] = True
 
     _emin = numpy.arange(205.7875, 0.9875, -0.0125)
 
@@ -455,7 +454,7 @@ class test_filter_wave_grid(SherpaTestCase):
         logger.setLevel(logging.ERROR)
         self.pha = DataPHA('', numpy.arange(16384, dtype=float)+1,
                            numpy.zeros(16384),
-                           bin_lo = self._emin, bin_hi = self._emax )
+                           bin_lo=self._emin, bin_hi=self._emax )
 
     def tearDown(self):
         logger.setLevel(self.old_level)
@@ -465,15 +464,17 @@ class test_filter_wave_grid(SherpaTestCase):
         #clear mask
         self.pha.notice()
         self.pha.notice(100.0, 225.0)
-        assert (self._notice==numpy.asarray(self.pha.mask)).all()
+        numpy.testing.assert_array_equal(self._notice, numpy.asarray(
+            self.pha.mask))
 
     def test_ignore(self):
         self.pha.units = 'wavelength'
         #clear mask
         self.pha.notice()
         self.pha.ignore(30.01, 225.0)
-        self.pha.ignore(0.1, 6.0)        
-        assert (self._ignore==numpy.asarray(self.pha.mask)).all()
+        self.pha.ignore(0.1, 6.0)
+        numpy.testing.assert_array_equal(self._ignore, numpy.asarray(
+            self.pha.mask))
 
 
 if __name__ == '__main__':
