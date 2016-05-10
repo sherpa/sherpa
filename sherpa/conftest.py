@@ -21,7 +21,8 @@ import pytest
 
 # Whilelist of known warnings. One can associate different warning messages to the same warning class
 known_warnings = {
-    DeprecationWarning: ['unorderable dtypes; returning scalar but in the future this will be an error',]
+    DeprecationWarning: ['unorderable dtypes; returning scalar but in the future this will be an error',
+                         "Non-string object detected for the array ordering. Please pass in 'C', 'F', 'A', or 'K' instead"]
 }
 
 
@@ -29,11 +30,11 @@ known_warnings = {
 def capture_all_warnings(request, recwarn):
     """
     This fixture will run automatically before and after every test function is executed.
-    It used pytest's infrastructure to get all recorded warnings and match them against the while list. If an
-    unknown warning is not found, then the fixture finalizer will fail the specific test function.
+    It uses pytest's infrastructure to get all recorded warnings and match them against the while list. If an
+    unknown warning is found, then the fixture finalizer will fail the specific test function.
 
     In the verbose pytest report the test function will show twice if an unknown warning is captured: one with the
-    actual result and one with an ERROR. The warning will be shown as part of the stderr stream.
+    actual result of the test and one with an ERROR. The warning will be shown as part of the stderr stream.
 
     Parameters
     ----------
