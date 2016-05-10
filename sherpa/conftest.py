@@ -16,3 +16,36 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import pytest
+
+# Whilelist of known warnings. One can associate different warning messages to the same warning class
+known_warnings = {
+    DeprecationWarning: ['unorderable dtypes; returning scalar but in the future this will be an error',]
+}
+
+
+@pytest.fixture(scope="function", autouse=True)
+def capture_all_warnings(request, recwarn):
+    """
+    This fixture will run automatically before and after every test function is executed.
+    It used pytest's infrastructure to get all recorded warnings and match them against the while list. If an
+    unknown warning is not found, then the fixture finalizer will fail the specific test function.
+
+    In the verbose pytest report the test function will show twice if an unknown warning is captured: one with the
+    actual result and one with an ERROR. The warning will be shown as part of the stderr stream.
+
+    Parameters
+    ----------
+    request standard injected service for pytest fixtures
+    recwarn injected pytest service for accessing recorded warnings
+
+    """
+    def fin():
+        warnings = [w for w in recwarn.list
+                    if type(w.message) not in known_warnings
+                    or str(w.message) not in known_warnings[type(w.message)]]
+
+        assert 0 == len(warnings)
+
+    request.addfinalizer(fin)

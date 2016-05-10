@@ -84,7 +84,7 @@ class test_get_draws(SherpaTestCase):
             try:
                 ui.get_draws()
             except ValueError as ve:
-                self.assertEqual(self.wrong_stat_msg.format(stat), ve.message)
+                self.assertEqual(self.wrong_stat_msg.format(stat), str(ve))
                 continue
             fail = True
             break
@@ -98,7 +98,7 @@ class test_get_draws(SherpaTestCase):
         try:
             ui.get_draws()
         except StatErr as ve:
-            self.assertEqual(self.wstat_err_msg, ve.message)
+            self.assertEqual(self.wstat_err_msg, str(ve))
             return
         self.fail(self.fail_msg)
 
@@ -109,7 +109,7 @@ class test_get_draws(SherpaTestCase):
             try:
                 ui.get_draws()
             except SessionErr as ve:
-                self.assertEqual(self.no_covar_msg, ve.message)
+                self.assertEqual(self.no_covar_msg, str(ve))
                 return
         self.fail(self.fail_msg)
 

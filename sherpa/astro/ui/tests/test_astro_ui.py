@@ -188,7 +188,7 @@ class test_image_12578(SherpaTestCase):
         except DataErr as e:
             okmsg = "unknown coordinates: 'sky'\nValid options: " + \
                     "logical, image, physical, world, wcs"
-            self.assertEqual(okmsg, e.message)
+            self.assertEqual(okmsg, str(e))
             caught = True
         if not caught:
             self.fail("Test Case #2: DataErr Exception not caught")
