@@ -21,8 +21,12 @@ import pytest
 
 # Whilelist of known warnings. One can associate different warning messages to the same warning class
 known_warnings = {
-    DeprecationWarning: ['unorderable dtypes; returning scalar but in the future this will be an error',
-                         "Non-string object detected for the array ordering. Please pass in 'C', 'F', 'A', or 'K' instead"]
+    DeprecationWarning:
+        ["unorderable dtypes; returning scalar but in the future this will be an error",
+         "Non-string object detected for the array ordering. Please pass in 'C', 'F', 'A', or 'K' instead",
+         "using a non-integer number instead of an integer will result in an error in the future", ],
+    UserWarning:
+        ["does not have write permission.  Changing to read-only mode.", ],
 }
 
 
