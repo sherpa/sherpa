@@ -18,6 +18,15 @@
 #
 
 import pytest
+from sherpa.utils import SherpaTestCase
+
+TEST_DATA_OPTION = "--test-data"
+
+
+def pytest_addoption(parser):
+    parser.addoption("-D", TEST_DATA_OPTION, action="store",
+        help="Alternative location of test data files")
+
 
 # Whilelist of known warnings. One can associate different warning messages to the same warning class
 known_warnings = {
@@ -56,3 +65,20 @@ def capture_all_warnings(request, recwarn):
         assert 0 == len(warnings)
 
     request.addfinalizer(fin)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def override_test_data(request):
+    """
+    This fixture overrides the default mechanism for test data self-discovery, if the --test-data command line
+    option is provided
+
+    Parameters
+    ----------
+    request standard service injected by pytest
+    """
+    try:
+        path = request.config.getoption(TEST_DATA_OPTION)
+        SherpaTestCase.datadir = path
+    except ValueError:  # option not defined from command line, no-op
+        pass
