@@ -31,21 +31,27 @@ logger = logging.getLogger("sherpa")
 
 
 def run(verbosity=0, require_failure=False, fits=None, xspec=False):
+    test_suite = SmokeTestSuite(require_failure=require_failure)
+    runner = unittest.TextTestRunner(verbosity=verbosity)
+    result = runner.run(test_suite)
+
+    missing_requirements = []
+
     if fits:
         try:
             __import__(fits, globals(), locals())
         except ImportError:
-            _import_error("fits", fits)
+            missing_requirements.append(_import_error(fits, "fits"))
 
     if xspec:
         try:
             import sherpa.astro.xspec
         except ImportError:
-            _import_error("xspec", "xspec")
+            missing_requirements.append(_import_error("xspec", "xspec"))
 
-    test_suite = SmokeTestSuite(require_failure=require_failure)
-    runner = unittest.TextTestRunner(verbosity=verbosity)
-    result = runner.run(test_suite)
+    for missing in missing_requirements:
+        result.addFailure(None, missing)
+
     if result is None or result.failures or result.errors or result.unexpectedSuccesses:
         sys.exit("Test failures were detected")
 
@@ -121,4 +127,4 @@ class SmokeTestSuite(unittest.TestSuite):
 
 
 def _import_error(module, name):
-    sys.exit("Requested {} as {} but module not found".format(module, name))
+    sys.exit("ERROR: Requested {} as {} but module not found".format(module, name))

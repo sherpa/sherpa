@@ -41,7 +41,7 @@ def test_fits_failure():
     with pytest.raises(SystemExit) as cm:
         smoke(fits="astropy")
 
-    assert "Requested fits as astropy but module not found" == str(cm.value)
+    assert "ERROR: Requested astropy as fits but module not found" == str(cm.value)
 
 
 @mock.patch.dict('sys.modules', values={"sherpa.astro.xspec": None})
@@ -49,4 +49,4 @@ def test_xspec_failure():
     with pytest.raises(SystemExit) as cm:
         smoke(xspec=True)
 
-    assert "Requested xspec as xspec but module not found" == str(cm.value)
+    assert "ERROR: Requested xspec as xspec but module not found" == str(cm.value)
