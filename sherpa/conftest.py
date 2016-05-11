@@ -27,6 +27,8 @@ known_warnings = {
          "using a non-integer number instead of an integer will result in an error in the future", ],
     UserWarning:
         ["does not have write permission.  Changing to read-only mode.", ],
+    RuntimeWarning:
+        ["invalid value encountered in sqrt", ],
 }
 
 
