@@ -25,7 +25,7 @@ TEST_DATA_OPTION = "--test-data"
 
 def pytest_addoption(parser):
     parser.addoption("-D", TEST_DATA_OPTION, action="store",
-        help="Alternative location of test data files")
+                     help="Alternative location of test data files")
 
 
 # Whilelist of known warnings. One can associate different warning messages to the same warning class
@@ -35,7 +35,10 @@ known_warnings = {
          "Non-string object detected for the array ordering. Please pass in 'C', 'F', 'A', or 'K' instead",
          "using a non-integer number instead of an integer will result in an error in the future", ],
     UserWarning:
-        ["does not have write permission.  Changing to read-only mode.", ],
+        [
+            "File '/data/regression_test/master/in/sherpa/aref_sample.fits' does not have write permission.  Changing to read-only mode.",
+            "File '/data/regression_test/master/in/sherpa/aref_Cedge.fits' does not have write permission.  Changing to read-only mode."
+        ],
     RuntimeWarning:
         ["invalid value encountered in sqrt", ],
 }
@@ -57,6 +60,7 @@ def capture_all_warnings(request, recwarn):
     recwarn injected pytest service for accessing recorded warnings
 
     """
+
     def fin():
         warnings = [w for w in recwarn.list
                     if type(w.message) not in known_warnings
@@ -67,18 +71,17 @@ def capture_all_warnings(request, recwarn):
     request.addfinalizer(fin)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def override_test_data(request):
+def pytest_configure(config):
     """
-    This fixture overrides the default mechanism for test data self-discovery, if the --test-data command line
+    This configuration hook overrides the default mechanism for test data self-discovery, if the --test-data command line
     option is provided
 
     Parameters
     ----------
-    request standard service injected by pytest
+    config standard service injected by pytest
     """
     try:
-        path = request.config.getoption(TEST_DATA_OPTION)
+        path = config.getoption(TEST_DATA_OPTION)
         SherpaTestCase.datadir = path
     except ValueError:  # option not defined from command line, no-op
         pass
