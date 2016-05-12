@@ -170,6 +170,10 @@ def clitest():
             import pytest
         except ImportError:
             install('pytest')
+        try:
+            import mock
+        except ImportError:
+            install('mock')
 
     install_deps()
     import pytest
