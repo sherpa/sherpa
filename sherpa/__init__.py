@@ -40,7 +40,7 @@ import os.path
 import sys
 
 
-__all__ = ('get_include')
+__all__ = ('get_include',)
 
 from ._version import get_versions
 __version__ = get_versions()['version']
