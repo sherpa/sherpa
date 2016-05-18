@@ -296,8 +296,8 @@ which result in unexpected behavior. If this happens, simply run
 error message that no more Sherpa installations are available. At this
 point you can re-install Sherpa.
 
-The same issue may occur if you installed both the Sherpa binaries and
-build Sherpa from sources in the same environment.
+The same issue may occur if you install the Sherpa binary release and
+then try to build Sherpa from source in the same environment.
 
 
 Testing Sherpa
@@ -330,7 +330,7 @@ tests.
 
 At the top level of the Sherpa distribution, used to [build
 Sherpa](#2c-build-sherpa), use the following commands to add the test
-data set inti the `sherpa-test-data/` directory (this assumes that the
+data set into the `sherpa-test-data/` directory (this assumes that the
 source code was installed with `git` and not unpacked from a tarball):
 
     $ git submodule init
