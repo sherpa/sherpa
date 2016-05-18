@@ -29,7 +29,7 @@ from sherpa.optmethods import NelderMead, LevMar
 from sherpa.estmethods import Covariance
 from sherpa.sim import *
 
-from sherpa.utils import SherpaTestCase, SherpaTest
+from sherpa.utils import SherpaTestCase
 
 
 _max  = numpy.finfo(numpy.float32).max
@@ -239,9 +239,3 @@ class test_sim(SherpaTestCase):
 
     def tearDown(self):
         pass
-
-
-if __name__ == '__main__':
-
-    import sherpa.sim as sim
-    SherpaTest(sim).test()

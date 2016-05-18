@@ -22,7 +22,7 @@
 # may be better placed in tests of the sherpa.astro.io module, once that
 # becomes possible
 
-from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_fits
 from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
@@ -110,13 +110,3 @@ class test_load_pha3_gzip(SherpaTestCase):
         pha = ui.get_data(idval)
         bpha = ui.get_bkg(idval, bkg_id=1)
         self.assertEqual(pha.name, bpha.name)
-
-if __name__ == '__main__':
-
-    import sys
-    if len(sys.argv) > 1:
-        datadir = sys.argv[1]
-    else:
-        datadir = None
-
-    SherpaTest(ui).test(datadir=datadir)

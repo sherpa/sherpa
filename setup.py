@@ -67,7 +67,7 @@ meta = dict(name='sherpa',
             long_description=open('README.md', 'rt').read(),
             platforms='Linux, Mac OS X',
             install_requires=['numpy', ],
-            tests_require=['pytest', ],
+            tests_require=['pytest', 'mock'],
             packages=['sherpa',
                       'sherpa.estmethods',
                       'sherpa.image',
@@ -116,6 +116,7 @@ meta = dict(name='sherpa',
             entry_points={
                 'console_scripts': [
                     'sherpa_test = sherpa:clitest',
+                    'sherpa_smoke = sherpa:_smoke_cli',
                 ]
             },
             classifiers=[

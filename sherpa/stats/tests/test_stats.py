@@ -22,7 +22,7 @@ import os.path
 import numpy
 
 from sherpa.utils import requires_data, requires_xspec, requires_fits
-from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.utils import SherpaTestCase
 from sherpa.data import Data1D
 
 from sherpa.models import PowLaw1D
@@ -309,18 +309,3 @@ class test_stats(SherpaTestCase):
         ui.set_stat('chi2datavar')
         err = ui.get_staterror()
         numpy.testing.assert_allclose(err, numpy.sqrt(xy), rtol=1e-7, atol=1e-7)
-
-
-def tstme(datadir=None):
-    import sherpa.stats as stats
-    SherpaTest(stats).test(datadir=datadir)
-
-if __name__ == '__main__':
-    import sys
-    if len(sys.argv) > 1:
-        datadir = sys.argv[1]
-    else:
-        datadir = '/data/scialg/testdata'
-    if not os.path.exists(datadir):
-        datadir = None
-    tstme(datadir)

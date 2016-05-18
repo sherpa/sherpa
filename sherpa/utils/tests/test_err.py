@@ -38,23 +38,23 @@ class test_err(SherpaTestCase):
         # Test 1: verify that a correct call of the new constructor has the same result of the old one
         err = SherpaErr(dict, 'simple')
         old_err = OldSherpaErr(dict, 'simple')
-        self.assertEqual(err.message, old_err.message)
+        self.assertEqual(str(err), str(old_err))
 
         # Test 2: same as before, but with string placeholders
         err = SherpaErr(dict, 'arg', 'foo')
-        self.assertEqual('argument: foo', err.message)
+        self.assertEqual('argument: foo', str(err))
 
         # Test #3: verify that a call without a key results in a generic message being produced
         err = SherpaErr(dict)
-        self.assertEqual('Generic Error', err.message)
+        self.assertEqual('Generic Error', str(err))
 
         # Test #4: verify the user's expected behavior, i.e. a string is provided as error message
         err = SherpaErr(dict, 'My Error')
-        self.assertEqual('My Error', err.message)
+        self.assertEqual('My Error', str(err))
 
         # Test #5: verify the user provided example, which exercises a derived class
         err = ModelErr("Unable to frobnicate model %s" % 'modelname') 
-        self.assertEqual('Unable to frobnicate model modelname', err.message)
+        self.assertEqual('Unable to frobnicate model modelname', str(err))
 
 
 if __name__ == '__main__':

@@ -40,7 +40,7 @@ import os.path
 import sys
 
 
-__all__ = ('get_include', 'test')
+__all__ = ('get_include',)
 
 from ._version import get_versions
 __version__ = get_versions()['version']
@@ -102,17 +102,54 @@ def get_config():
     return os.path.join(os.path.dirname(__file__), filename)
 
 
-def test(level=1, verbosity=1, datadir=None):
+def smoke(verbosity=0, require_failure=False, fits=None, xspec=False):
     """
+    Run Sherpa's "smoke" test. The smoke test is a simple test that
+        ensures the Sherpa installation is functioning. It is not a complete
+        test suite, but it fails if obvious issues are found.
 
-    Run the Sherpa test suite, testing all available subpackages
-    (including the discipline-specific ones)
+    Parameters
+    ----------
+    xspec : boolean
+        Require xspec module when running tests. Tests requiring xspec may still run if the xspec module is present.
+    fits : basestring
+        Require a fits module with this name to be present before running the smoke test.
+        This option makes sure that when the smoke test is run the required modules are present.
+        Note that tests requiring fits may still run if any fits backend is available, and they might
+        still fail on their own.
+    require_failure : boolean
+        For debugging purposes, the smoke test may be required to always fail. Defaults to False.
+    verbosity : int
+        The level of verbosity of this test
 
+    Returns
+    -------
+    The method raises the SystemExit if errors are found during the smoke test
     """
-    # import sherpa.all
-    # import sherpa.astro.all
-    from sherpa.utils import SherpaTest
-    SherpaTest().test(level, verbosity, datadir)
+    from sherpa.astro.utils import smoke
+    smoke.run(verbosity=verbosity, require_failure=require_failure, fits=fits, xspec=xspec)
+
+
+def _smoke_cli(verbosity=0, require_failure=False, fits=None, xspec=False):
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option("-v", "--verbosity", dest="verbosity",
+                      help="verbosity level")
+    parser.add_option("-0", "--require-failure", dest="require_failure", action="store_true",
+                      help="require smoke test to fail (for debugging)")
+    parser.add_option("-f", "--fits-module", dest="fits", action="store",
+                      help="require a specific fits module to be present")
+    parser.add_option("-x", "--require-xspec", dest="xspec", action="store_true",
+                      help="require xspec module")
+
+    options, _ = parser.parse_args()
+
+    xspec = options.xspec or xspec
+    verbosity = options.verbosity or verbosity
+    require_failure = options.require_failure or require_failure
+    fits = options.fits or fits
+
+    smoke(verbosity=verbosity, require_failure=require_failure, fits=fits, xspec=xspec)
 
 
 def clitest():
@@ -133,6 +170,10 @@ def clitest():
             import pytest
         except ImportError:
             install('pytest')
+        try:
+            import mock
+        except ImportError:
+            install('mock')
 
     install_deps()
     import pytest

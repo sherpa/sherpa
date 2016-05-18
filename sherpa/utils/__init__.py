@@ -81,7 +81,7 @@ except Exception, e:
 del _ncpu_val, config, get_config, ConfigParser, NoSectionError
 
 
-__all__ = ('NoNewAttributesAfterInit', 'SherpaTest', 'SherpaTestCase',
+__all__ = ('NoNewAttributesAfterInit', 'SherpaTestCase',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'dataspace1d', 'dataspace2d', 'demuller',
@@ -356,21 +356,6 @@ def requires_pylab(test_function):
                 )
     msg = "matplotlib backend required"
     return requires_package(msg, *packages)(test_function)
-
-
-class SherpaTest(numpytest.NumpyTest):
-    "Sherpa test suite manager"
-
-    def test(self, level=1, verbosity=1, datadir=None):
-        old_datadir = SherpaTestCase.datadir
-        SherpaTestCase.datadir = datadir
-
-        try:
-            result = numpytest.NumpyTest.test(self, level, verbosity)
-            if result is None or result.failures or result.errors or result.unexpectedSuccesses:
-                raise Exception("Test failures were detected")
-        finally:
-            SherpaTestCase.datadir = old_datadir
 
 
 ###############################################################################

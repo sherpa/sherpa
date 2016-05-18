@@ -44,7 +44,7 @@ import tempfile
 import numpy
 from numpy.testing import assert_array_equal
 
-from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_xspec, _has_package_from_list, requires_fits
 from sherpa.astro import ui
 # from sherpa.astro.ui import serialize
@@ -1240,13 +1240,3 @@ class test_ui(SherpaTestCase):
         self.assertEqual(mymodel.m.units, "")
 
         self.assertEqual(ui.calc_stat(3), statval)
-
-if __name__ == '__main__':
-
-    import sys
-    if len(sys.argv) > 1:
-        datadir = sys.argv[1]
-    else:
-        datadir = None
-
-    SherpaTest(ui).test(datadir=datadir)

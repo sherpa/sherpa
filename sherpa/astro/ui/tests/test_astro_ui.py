@@ -25,7 +25,7 @@ import tempfile
 import numpy
 from numpy.testing import assert_allclose
 
-from sherpa.utils import SherpaTest, SherpaTestCase
+from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_fits
 from sherpa.astro import ui
 from sherpa.data import Data1D
@@ -188,7 +188,7 @@ class test_image_12578(SherpaTestCase):
         except DataErr as e:
             okmsg = "unknown coordinates: 'sky'\nValid options: " + \
                     "logical, image, physical, world, wcs"
-            self.assertEqual(okmsg, e.message)
+            self.assertEqual(okmsg, str(e))
             caught = True
         if not caught:
             self.fail("Test Case #2: DataErr Exception not caught")
@@ -549,13 +549,3 @@ class test_basic_io(SherpaTestCase):
         data = ui.get_data(1)
         self.assertEqualWithinTol(data.x, [1, 2, 3])
         self.assertEqualWithinTol(data.y, [4, 5, 6])
-
-if __name__ == '__main__':
-
-    import sys
-    if len(sys.argv) > 1:
-        datadir = sys.argv[1]
-    else:
-        datadir = None
-
-    SherpaTest(ui).test(datadir=datadir)

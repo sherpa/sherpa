@@ -22,7 +22,7 @@ import multiprocessing
 from numpy.testing import assert_allclose, assert_equal
 
 from sherpa import utils
-from sherpa.utils import SherpaTest, SherpaTestCase, SherpaFloat, \
+from sherpa.utils import SherpaTestCase, SherpaFloat, \
     NoNewAttributesAfterInit
 
 
@@ -216,8 +216,3 @@ class test_utils(SherpaTestCase):
         pararesult = utils.parallel_map(f, iterable, ncpus)
 
         assert_equal(result, numpy.asarray(pararesult))
-
-
-if __name__ == '__main__':
-
-    SherpaTest(utils).test()
