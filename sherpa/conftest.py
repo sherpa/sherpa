@@ -82,7 +82,7 @@ def pytest_configure(config):
     """
     try:
         path = config.getoption(TEST_DATA_OPTION)
-        if (path):
+        if path:
             SherpaTestCase.datadir = path
     except ValueError:  # option not defined from command line, no-op
         pass
