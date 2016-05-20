@@ -1382,11 +1382,11 @@ class Gauss2D(ArithmeticModel):
     -----
     The functional form of the model for points is::
 
-        f(x0,x1) = ampl * exp(-4 * log(2) * r(x0,x1)^2 / fwhm^2)
+        f(x0,x1) = ampl * exp(-4 * log(2) * r(x0,x1)^2)
 
         r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
                      -------------------------------------------
-                                     (1-ellip)^2
+                                fwhm^2 * (1-ellip)^2
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
@@ -1470,14 +1470,12 @@ class SigmaGauss2D(Gauss2D):
         f(x0,x1) = ampl * exp(-r(x0,x1)^2 / 2)
 
         r(x0,x1)^2 = xoff(x0,x1)^2 + yoff(x0,x1)^2
+                     -------------   -------------
+                       sigma_a^2       sigma_b^2
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
-                      ---------------------------------------------------
-                                            sigma_a
 
         yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
-                      ---------------------------------------------------
-                                            sigma_b
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
@@ -1543,13 +1541,13 @@ class NormGauss2D(ArithmeticModel):
     -----
     The functional form of the model for points is::
 
-        f(x0,x1) = 4 * log(2) * ampl * exp(-4 * log(2) * r(x0,x1)^2 / fwhm^2)
-                   ----------------------------------------------------------
-                           pi * fwhm * fwhm * sqrt(1 - ellip * ellip)
+        f(x0,x1) = 4 * log(2) * ampl * exp(-4 * log(2) * r(x0,x1)^2)
+                   -------------------------------------------------
+                       pi * fwhm * fwhm * sqrt(1 - ellip * ellip)
 
         r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
                      -------------------------------------------
-                                     (1-ellip)^2
+                                 fwhm^2 * (1-ellip)^2
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
