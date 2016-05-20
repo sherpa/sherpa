@@ -17,6 +17,20 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""
+Optical models intended for SED Analysis
+
+The models match those used by the SpecView application [1]_,
+and are intended for un-binned one-dimensional data sets defined
+on a wavelength grid, with units of Angstroms.
+
+References
+----------
+
+.. [1] http://www.stsci.edu/institute/software_hardware/specview/
+
+"""
+
 from six.moves import xrange
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
@@ -73,6 +87,33 @@ def _extinct_interp(xtable, etable, x):
 # This model sets in edge (in Angstroms) beyond which absorption
 # is a significant feature to the spectrum or SED.
 class AbsorptionEdge(ArithmeticModel):
+    """Optical model of an absorption edge.
+
+    This model is intended to be used to modify another model (e.g.
+    by multiplying the two together). It is for use when the
+    independent axis is in wavelength units (e.g. Angstrom).
+
+    Attributes
+    ----------
+    egdew
+        The location of the edge. Above this value the model is
+        set to 1.
+    tau
+        The optical depth of the edge.
+    index
+        The exponent used for the relative distance from the edge.
+        It is a hidden parameter, with a value fixed at 3.
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = exp(-tau * (x / index)^3)   for x <= edgew
+
+             = 1                           otherwise
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='absorptionedge'):
         self.edgew = Parameter(name, 'edgew', 5000., tinyval, frozen=True, units='angstroms')
@@ -100,6 +141,29 @@ class AbsorptionEdge(ArithmeticModel):
 
 # This model is an accretion disk continuum function.
 class AccretionDisk(ArithmeticModel):
+    """A model of emission due to an accretion disk.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    ref
+        The reference wavelength, in Angstroms.
+    beta
+    ampl
+        The amplitude of the disk.
+    norm
+        The normalization value for the position. It is a hidden
+        parameter, with a value fixed at 20000.
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (x / norm)^(-beta) * exp(-ref / x)
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='accretiondisk'):
 
