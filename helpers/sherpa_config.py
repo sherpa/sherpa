@@ -105,14 +105,14 @@ class sherpa_config(Command):
         if self.fftw != 'local':
             configure.append('--enable-fftw')
 
-        self.distribution.ext_modules.append(build_ext('psf', *build_lib_arrays(self, 'fftw')))
-        self.distribution.ext_modules.append(build_ext('wcs', *build_lib_arrays(self, 'wcs')))
+#        self.distribution.ext_modules.append(build_ext('psf', *build_lib_arrays(self, 'fftw')))
+#        self.distribution.ext_modules.append(build_ext('wcs', *build_lib_arrays(self, 'wcs')))
         ld1, inc1, l1 = build_lib_arrays(self, 'wcs')
         if self.region != 'local':
             configure.append('--enable-region')
         ld2, inc2, l2 = build_lib_arrays(self, 'region')
         ld, inc, l = (ld1+ld2, inc1+inc2, l1+l2)
-        self.distribution.ext_modules.append(build_ext('region', ld, inc, l))
+#        self.distribution.ext_modules.append(build_ext('region', ld, inc, l))
 
         if self.extra_fortran_link_flags:
             flags = self.extra_fortran_link_flags.split(' ')

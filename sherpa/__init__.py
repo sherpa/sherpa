@@ -1,4 +1,5 @@
-# 
+from __future__ import print_function
+#
 #  Copyright (C) 2007,2014,2015,2016  Smithsonian Astrophysical Observatory
 #
 #
@@ -158,11 +159,11 @@ def clitest():
             import pip
             pip.main(['install', package_name])
         except:
-            print """Cannot import pip or install packages with it.
+            print("""Cannot import pip or install packages with it.
             You need pytest, and possibly pytest-cov, in order to run the tests.
             If you downloaded the source code, please run 'pip install -r test_requirements.txt'
             from the source directory first.
-            """
+            """)
             raise
 
     def install_deps():
