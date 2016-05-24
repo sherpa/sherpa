@@ -25,7 +25,7 @@ Objects and utilities used by multiple Sherpa subpackages
 
 import operator
 import inspect
-import six.moves.zip as izip
+from six.moves import zip as izip
 from types import FunctionType as function
 from types import MethodType as instancemethod
 import string
@@ -46,7 +46,7 @@ from sherpa.utils._psf import extract_kernel, normalize, set_origin, \
 from functools import wraps
 
 from sherpa import get_config
-from ConfigParser import ConfigParser, NoSectionError
+from six.moves.configparser import ConfigParser, NoSectionError
 
 import logging
 warning = logging.getLogger("sherpa").warning

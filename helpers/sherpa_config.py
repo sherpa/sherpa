@@ -106,7 +106,7 @@ class sherpa_config(Command):
         if self.fftw != 'local':
             configure.append('--enable-fftw')
 
-#        self.distribution.ext_modules.append(build_ext('psf', *build_lib_arrays(self, 'fftw')))
+        self.distribution.ext_modules.append(build_ext('psf', *build_lib_arrays(self, 'fftw')))
 #        self.distribution.ext_modules.append(build_ext('wcs', *build_lib_arrays(self, 'wcs')))
         ld1, inc1, l1 = build_lib_arrays(self, 'wcs')
         if self.region != 'local':

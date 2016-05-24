@@ -476,8 +476,8 @@ static PyMethodDef tcdPyData_methods[] = {
 
 // New datatype initialization
 static PyTypeObject tcdPyData_Type = {
-  PyObject_HEAD_INIT(NULL)
-  0,                                // ob_size
+  PyVarObject_HEAD_INIT(NULL, 0)
+//  0,                                // ob_size
   (char*)"tcdData",                 // tp_name
   sizeof(tcdPyData),                // tp_basicsize
   0, 		                    // tp_itemsize
@@ -1036,21 +1036,48 @@ static PyMethodDef PsfFcts[] = {
 };
 
 
-// Initialize the module
-PyMODINIT_FUNC init_psf(void) {
+//// Initialize the module
+//PyMODINIT_FUNC init_psf(void) {
+//
+//  PyObject* m;
+//
+//  if( PyType_Ready(&tcdPyData_Type) < 0 )
+//    return;
+//
+//  import_array();  // Must be present for NumPy.
+//
+//  m = Py_InitModule3( (char*)"_psf", PsfFcts, NULL);
+//
+//  if( m == NULL )
+//    return;
+//
+//  Py_INCREF(&tcdPyData_Type);
+//  PyModule_AddObject(m, (char*)"tcdData", (PyObject*)&tcdPyData_Type);
+//}
 
-  PyObject* m;
+static struct PyModuleDef psf = {
+    PyModuleDef_HEAD_INIT,
+    "_psf",
+    NULL,
+    -1,
+    PsfFcts
+};
 
+PyMODINIT_FUNC PyInit__psf(void) {
   if( PyType_Ready(&tcdPyData_Type) < 0 )
-    return;
-  
-  import_array();  // Must be present for NumPy.
-  
-  m = Py_InitModule3( (char*)"_psf", PsfFcts, NULL);
+    return NULL;
+
+   import_array();
+
+   PyObject* m;
+   m = PyModule_Create(&psf);
 
   if( m == NULL )
-    return;
+    return NULL;
 
   Py_INCREF(&tcdPyData_Type);
+
   PyModule_AddObject(m, (char*)"tcdData", (PyObject*)&tcdPyData_Type);
+
+  return m;
 }
