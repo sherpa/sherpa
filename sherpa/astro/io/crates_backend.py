@@ -451,7 +451,7 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
         tbl = None
         try:
             tbl = open_crate(arg)
-        except Exception, e:
+        except Exception as e:
             raise e
 
         close_dataset = True

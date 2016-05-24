@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2011  Smithsonian Astrophysical Observatory
 #
@@ -18,10 +19,10 @@
 #
 
 
-from parameter import Parameter, tinyval
-from model import ArithmeticModel, modelCacher1d, CompositeModel, \
+from .parameter import Parameter, tinyval
+from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
     ArithmeticFunctionModel
-from basic import TableModel
+from .basic import TableModel
 import numpy, operator
 from sherpa.utils.err import ModelErr
 
@@ -66,7 +67,7 @@ def create_template_model(modelname, names, parvals, templates, template_interpo
     # Create the templates table from input
     tm = TemplateModel(modelname, pars, parvals, templates)
     if template_interpolator_name is not None:
-        if interpolators.has_key(template_interpolator_name):
+        if template_interpolator_name in interpolators:
             interp = interpolators[template_interpolator_name]
             args = interp[1]
             args['template_model'] = tm

@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #
@@ -24,9 +26,9 @@ import sys
 from itertools import izip
 
 
-import _minpack
-import _minim
-import _saoopt
+from . import _minpack
+from . import _minim
+from . import _saoopt
 
 from sherpa.utils import parallel_map
 from sherpa.utils._utils import sao_fcmp
@@ -89,40 +91,40 @@ def _narrow_limits( myrange, xxx, debug ):
     def double_check_limits( myx, myxmin, myxmax ):
         for my_l,my_x,my_h in izip( myxmin, myx, myxmax ):
             if my_x < my_l:
-                print 'x = ', my_x, ' is < lower limit = ', my_l
+                print('x = ', my_x, ' is < lower limit = ', my_l)
             if my_x > my_h:
-                print 'x = ', my_x, ' is > upper limit = ', my_h
+                print('x = ', my_x, ' is > upper limit = ', my_h)
 
     def raise_min_limit( range, xmin, x, debug=False ):
         myxmin = numpy.asarray( map( lambda xx: xx - range * numpy.abs(xx),
                                      x ), numpy.float_ )
         if False != debug:
-            print
-            print 'raise_min_limit: myxmin=%s' % myxmin    
-            print 'raise_min_limit: x=%s' % x
+            print()
+            print('raise_min_limit: myxmin=%s' % myxmin)    
+            print('raise_min_limit: x=%s' % x)
         below = numpy.flatnonzero(myxmin < xmin)
         if below.size > 0:
             myxmin[below] = xmin[below]
         if False != debug:
-            print 'raise_min_limit: myxmin=%s' % myxmin    
-            print 'raise_min_limit: x=%s' % x
-            print
+            print('raise_min_limit: myxmin=%s' % myxmin)    
+            print('raise_min_limit: x=%s' % x)
+            print()
         return myxmin
 
     def lower_max_limit( range, x, xmax, debug=False ):
         myxmax = numpy.asarray( map( lambda xx: xx + range * numpy.abs(xx),
                                      x ), numpy.float_ )
         if False != debug:
-            print
-            print 'lower_max_limit: x=%s' % x
-            print 'lower_max_limit: myxmax=%s' % myxmax    
+            print()
+            print('lower_max_limit: x=%s' % x)
+            print('lower_max_limit: myxmax=%s' % myxmax)    
         above = numpy.flatnonzero(myxmax > xmax)
         if above.size > 0:
             myxmax[above] = xmax[above]
         if False != debug:
-            print 'lower_max_limit: x=%s' % x
-            print 'lower_max_limit: myxmax=%s' % myxmax    
-            print
+            print('lower_max_limit: x=%s' % x)
+            print('lower_max_limit: myxmax=%s' % myxmax)    
+            print()
         return myxmax
 
     x = xxx[ 0 ]
@@ -130,17 +132,17 @@ def _narrow_limits( myrange, xxx, debug ):
     xmax = xxx[ 2 ]
 
     if False != debug:
-        print 'narrow_limits: xmin=%s' % xmin
-        print 'narrow_limits: x=%s' % x        
-        print 'narrow_limits: xmax=%s' % xmax
+        print('narrow_limits: xmin=%s' % xmin)
+        print('narrow_limits: x=%s' % x)        
+        print('narrow_limits: xmax=%s' % xmax)
     myxmin = raise_min_limit( myrange, xmin, x, debug=False )
     myxmax = lower_max_limit( myrange, x, xmax, debug=False )
 
     if False != debug:
-        print 'range = %d' % myrange
-        print 'narrow_limits: myxmin=%s' % myxmin
-        print 'narrow_limits: x=%s' % x        
-        print 'narrow_limits: myxmax=%s\n' % myxmax
+        print('range = %d' % myrange)
+        print('narrow_limits: myxmin=%s' % myxmin)
+        print('narrow_limits: x=%s' % x)        
+        print('narrow_limits: myxmax=%s\n' % myxmax)
 
     double_check_limits( x, myxmin, myxmax )
 
@@ -198,7 +200,7 @@ def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     ierr = de[ 3 ]
 
     if verbose:
-        print 'difevo: f%s=%e in %d nfev' % ( x, fval, nfev )
+        print('difevo: f%s=%e in %d nfev' % ( x, fval, nfev ))
 
     status, msg = _get_saofit_msg( maxfev, ierr )
     rv = (status, x, fval)
@@ -270,7 +272,7 @@ def difevo_nm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     ierr = de[ 3 ]
 
     if verbose:
-        print 'difevo_nm: f%s=%e in %d nfev' % ( x, fval, nfev )
+        print('difevo_nm: f%s=%e in %d nfev' % ( x, fval, nfev ))
 
     status, msg = _get_saofit_msg( maxfev, ierr )
     rv = (status, x, fval)
@@ -288,7 +290,7 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
     def func( pars ):
         aaa = fcn( pars )[ 0 ]
         if verbose:
-            print 'f%s=%g' % ( pars, aaa )
+            print('f%s=%g' % ( pars, aaa ))
         return aaa
 
     def make_sequence( ranges, N ):
@@ -537,7 +539,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
     random.seed( seed  )
     if seed is None:
-        seed = random.randint(0, 2147483648L) # pow(2,31) == 2147483648L
+        seed = random.randint(0, 2147483648) # pow(2,31) == 2147483648L
     if population_size is None:
         population_size = max( population_size, 12 * x.size )
 
@@ -570,7 +572,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         nfval = result[2]
         nfev = result[4].get( 'nfev' )
         if verbose or False != debug:
-            print 'f_nm%s=%.14e in %d nfev' % ( x, nfval, nfev )
+            print('f_nm%s=%.14e in %d nfev' % ( x, nfval, nfev ))
         ############################# NelderMead #############################
 
         ############################## nmDifEvo ##############################
@@ -583,8 +585,8 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         x = numpy.asarray( result[1], numpy.float_ )
         nfval = result[2]
         if verbose or False != debug:
-            print 'f_de_nm%s=%.14e in %d nfev' % ( x, result[2],
-                                                   result[4].get('nfev'))
+            print('f_de_nm%s=%.14e in %d nfev' % ( x, result[2],
+                                                   result[4].get('nfev')))
         ############################## nmDifEvo ##############################
 
         ofval = FUNC_MAX        
@@ -604,13 +606,13 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                 nfval = result[2]
                 x = numpy.asarray( result[1], numpy.float_ )
             if verbose or False != debug:
-                print 'f_de_nm%s=%.14e in %d nfev' % \
-                      ( x, result[2], result[4].get('nfev'))
+                print('f_de_nm%s=%.14e in %d nfev' % \
+                      ( x, result[2], result[4].get('nfev')))
             ############################ nmDifEvo #############################
 
 
             if False != debug:
-                print 'ofval=%.14e\tnfval=%.14e\n' % (ofval, nfval)
+                print('ofval=%.14e\tnfval=%.14e\n' % (ofval, nfval))
 
             if sao_fcmp( ofval, nfval, ftol ) <= 0:
                 return x, nfval, nfev
@@ -724,7 +726,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         maxfev = 1024 * len( x )
 
     if debug:
-        print 'opfcts.py neldermead() finalsimplex=%s\tisscalar=%s\titerable=%d' % (finalsimplex,numpy.isscalar(finalsimplex), numpy.iterable(finalsimplex))
+        print('opfcts.py neldermead() finalsimplex=%s\tisscalar=%s\titerable=%d' % (finalsimplex,numpy.isscalar(finalsimplex), numpy.iterable(finalsimplex)))
 
     def simplex( verbose, maxfev, init, final, tol, step, xmin, xmax, x,
                  myfcn, debug, ofval=FUNC_MAX ):
@@ -737,7 +739,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                                           step, xmin, xmax, x, myfcn )
 
         if debug:
-            print 'finalsimplex=%s, nfev=%d:\tf%s=%.20e' % (tmpfinal,nf,xx,ff)
+            print('finalsimplex=%s, nfev=%d:\tf%s=%.20e' % (tmpfinal,nf,xx,ff))
 
         if len( final ) >= 3 and ff < 0.995 * ofval and nf < maxfev:
             myfinal = [final[-1]]
@@ -752,7 +754,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     x, fval, nfev, ier = simplex( verbose, maxfev, initsimplex, finalsimplex,
                                   ftol, step, xmin, xmax, x, stat_cb0, debug )
     if debug:
-        print 'f%s=%f in %d nfev' % ( x, fval, nfev )
+        print('f%s=%f in %d nfev' % ( x, fval, nfev ))
 
     info=1
     covarerr=None
@@ -768,7 +770,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             x = nelmea_x
             fval = minim_fval
         if debug:
-            print 'minim: f%s=%e %d nfev, info=%d' % (x,fval,nelmea_nfev,info)
+            print('minim: f%s=%e %d nfev, info=%d' % (x,fval,nelmea_nfev,info))
 
     if nfev >= maxfev:
         ier = 3

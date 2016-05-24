@@ -81,12 +81,12 @@ def get_config():
 
     # If NOSHERPARC is set, read in system config file
     # ignore any user config file
-    if (os.environ.has_key('NOSHERPARC') == True):
+    if (('NOSHERPARC' in os.environ) == True):
         return os.path.join(os.path.dirname(__file__), filename)
 
     # If SHERPARC is set, read in config file from there,
     # and ignore default location
-    if (os.environ.has_key('SHERPARC') == True):
+    if (('SHERPARC' in os.environ) == True):
         config = os.environ.get('SHERPARC')
         if os.path.isfile(config):
             return config

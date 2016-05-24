@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 #  Copyright (C) 2015  Smithsonian Astrophysical Observatory
 #

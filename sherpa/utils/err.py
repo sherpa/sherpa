@@ -36,7 +36,7 @@ class SherpaErr(Exception):
             errmsg = "Generic Error"
         else:
             key = args[0]
-            if dict.has_key(key):
+            if key in dict:
                 errmsg = dict[key] % args[1:]
             else:
                 errmsg = key

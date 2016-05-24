@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #
@@ -26,15 +27,15 @@ warning = logging.getLogger(__name__).warning
 backend = None
 
 try:
-    import ds9_backend as backend
+    from . import ds9_backend as backend
 
-except Exception, e:
+except Exception as e:
     # if DS9 is not found for some reason, like inside gdb
     # give a useful warning and fall back on dummy_backend of noops
     warning("imaging routines will not be available, \n" +
             "failed to import sherpa.image.ds9_backend due to \n'%s: %s'" %
             (type(e).__name__, str(e)))
-    import dummy_backend as backend
+    from . import dummy_backend as backend
 
 
 __all__ = ('Image', 'DataImage', 'ModelImage', 'RatioImage',

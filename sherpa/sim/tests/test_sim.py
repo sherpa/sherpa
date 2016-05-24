@@ -1,3 +1,4 @@
+from __future__ import print_function
 # 
 #  Copyright (C) 2011  Smithsonian Astrophysical Observatory
 #
@@ -111,9 +112,9 @@ class test_sim(SherpaTestCase):
                                       getattr(results, key),
                                       1.e-4, 1.e-4)
             except AssertionError:
-                print 'parvals bench: ', self._fit_results_bench[key]
-                print 'parvals fit:   ', getattr(results, key)
-                print 'results', results
+                print('parvals bench: ', self._fit_results_bench[key])
+                print('parvals fit:   ', getattr(results, key))
+                print('results', results)
                 raise
 
         covresults = self.fit.est_errors()

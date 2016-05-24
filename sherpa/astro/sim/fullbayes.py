@@ -40,12 +40,12 @@ class FullBayes(PragBayes):
         # nsubiters is missing from init() to indicate that nubiters=1 for 
         # full bayes
 
-        if isinstance(simarf, (PCA1DAdd,)):
+        if isinstance(simarf, PCA1DAdd):
             self.simarf = simarf
         else:
             self.simarf = ARFSIMFactory()(simarf)
 
-        if not isinstance(self.simarf, (PCA1DAdd,)):
+        if not isinstance(self.simarf, PCA1DAdd):
             raise TypeError("Simulation ARF must be PCA for FullBayes" + 
                             " not %s" % type(self.simarf).__name__)
 

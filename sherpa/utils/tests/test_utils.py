@@ -85,7 +85,7 @@ class test_utils(SherpaTestCase):
             e = None
             try:
                 m()
-            except TypeError, e:
+            except TypeError as e:
                 pass
             self.assertEqual(str(e),
                              '%s() takes at least 1 argument (0 given)' %

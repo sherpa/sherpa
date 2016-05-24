@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2010  Smithsonian Astrophysical Observatory
 #
@@ -18,12 +19,12 @@
 #
 
 import numpy
-from parameter import Parameter, tinyval
-from model import ArithmeticModel, modelCacher1d, CompositeModel, \
+from .parameter import Parameter, tinyval
+from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
     ArithmeticFunctionModel
 from sherpa.utils.err import ModelErr
 from sherpa.utils import *
-import _modelfcts
+from . import _modelfcts
 
 import logging
 warning = logging.getLogger(__name__).warning

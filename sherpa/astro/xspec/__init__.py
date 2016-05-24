@@ -142,11 +142,11 @@ def get_xsstate():
 
 def set_xsstate(state):
     if (type(state) == dict and
-        state.has_key('abund') and
-        state.has_key('chatter') and
-        state.has_key('cosmo') and
-        state.has_key('xsect') and
-        state.has_key('modelstrings')):
+        'abund' in state and
+        'chatter' in state and
+        'cosmo' in state and
+        'xsect' in state and
+        'modelstrings' in state):
         set_xsabund(state["abund"])
         set_xschatter(state["chatter"])
         set_xscosmo(state["cosmo"][0], state["cosmo"][1], state["cosmo"][2])

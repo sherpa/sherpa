@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 #  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 #
@@ -542,7 +543,7 @@ class IterFit(NoNewAttributesAfterInit):
         # support Sherpa use with SAMP
         try:
             signal.signal(signal.SIGINT, self._sig_handler)
-        except ValueError, e:
+        except ValueError as e:
             warning(e)
 
         self._dep, self._staterror, self._syserror = self.data.to_fit(
@@ -559,7 +560,7 @@ class IterFit(NoNewAttributesAfterInit):
             names = ['# nfev statistic']
             names.extend(['%s' % par.fullname for par in self.model.pars
                           if not par.frozen])
-            print >> self._file, ' '.join(names)
+            print(' '.join(names), file=self._file)
 
         def cb(pars):
             # We need to store the new parameter values in order to support
@@ -586,7 +587,7 @@ class IterFit(NoNewAttributesAfterInit):
             if self._file is not None:
                 vals = ['%5e %5e' % (self._nfev, stat[0])]
                 vals.extend(['%5e' % val for val in self.model.thawedpars])
-                print >> self._file, ' '.join(vals)
+                print(' '.join(vals), file=self._file)
 
             self._nfev += 1
             return stat
@@ -701,7 +702,7 @@ class IterFit(NoNewAttributesAfterInit):
                 model_iterator = iter(self.model())
                 for d in self.data.datasets:
                     d.staterror = self.stat.calc_staterror(
-                        d.eval_model(model_iterator.next()))
+                        d.eval_model(next(model_iterator)))
 
             # Final number of function evaluations is the sum
             # of the numbers of function evaluations from all calls
@@ -821,7 +822,7 @@ class IterFit(NoNewAttributesAfterInit):
                     # (data - model) / staterror
                     # over filtered data space
                     residuals = (d.get_dep(True) - d.eval_model_to_fit(
-                        model_iterator.next())) / d.get_staterror(True, self.stat.calc_staterror)
+                        next(model_iterator))) / d.get_staterror(True, self.stat.calc_staterror)
 
                     # For each modeled value that exceeds
                     # sigma thresholds, set the corresponding
@@ -1133,7 +1134,7 @@ class Fit(NoNewAttributesAfterInit):
         if self._iterfit._file is not None:
             vals = ['%5e %5e' % (self._iterfit._nfev, tmp[2])]
             vals.extend(['%5e' % val for val in self.model.thawedpars])
-            print >> self._iterfit._file, ' '.join(vals)
+            print(' '.join(vals), file=self._iterfit._file)
             self._iterfit._file.close()
             self._iterfit._file = None
 
@@ -1330,7 +1331,7 @@ class Fit(NoNewAttributesAfterInit):
                                             parnums,
                                             freeze_par, thaw_par,
                                             report_progress, get_par_name)
-        except EstNewMin, e:
+        except EstNewMin as e:
             # If maximum number of refits has occurred, don't
             # try to reminimize again.
             if (hasattr(self.estmethod, "maxfits") and

@@ -22,6 +22,7 @@ A visualization interface to Sherpa
 """
 
 from __future__ import division
+from __future__ import absolute_import
 import numpy
 import logging
 
@@ -56,7 +57,7 @@ except:
     # give a useful warning and fall back on dummy_backend of noops
     warning('failed to import sherpa.plot.%s;' % plot_opt +
             ' plotting routines will not be available')
-    import dummy_backend as backend
+    from . import dummy_backend as backend
     plot_opt = 'dummy_backend'
 
 backend.init()

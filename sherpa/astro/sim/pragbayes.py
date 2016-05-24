@@ -49,7 +49,7 @@ class ARFSIMFactory(object):
 
         emethod = None
         for key in hdr.keys():
-            if hdr[key].has_key('EMETHOD'):
+            if 'EMETHOD' in hdr[key]:
                 emethod = hdr[key]['EMETHOD'].strip().upper()
 
         if emethod is not None and emethod.startswith('PCA1DADD'):

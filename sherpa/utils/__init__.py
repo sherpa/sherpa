@@ -1,3 +1,4 @@
+from __future__ import print_function
 from __future__ import absolute_import
 #
 #  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
@@ -72,7 +73,7 @@ try:
 
     if _ncpus is None:
         _ncpus = multiprocessing.cpu_count()
-except Exception, e:
+except Exception as e:
     warning("parallel processing is unavailable,\n" +
             "multiprocessing module failed with \n'%s'" % str(e))
     _ncpus = 1
@@ -451,26 +452,26 @@ def export_method(meth, name=None, modname=None):
         return meth
 
     if name is None:
-        if meth.func_name == 'log_decorator':
-            name = meth._original.func_name
+        if meth.__name__ == 'log_decorator':
+            name = meth._original.__name__
         else:
-            name = meth.func_name
+            name = meth.__name__
 
-    if name == meth.func_name:
+    if name == meth.__name__:
         old_name = '_old_' + name
     else:
-        old_name = meth.func_name
+        old_name = meth.__name__
 
     # Make an argument list string, removing 'self'
-    if meth.func_name == 'log_decorator':
+    if meth.__name__ == 'log_decorator':
         # This is needed for making loggable decorator work (Omar)
         argspec = inspect.getargspec(meth._original)
-        defaults = meth._original.func_defaults
-        doc = meth._original.func_doc
+        defaults = meth._original.__defaults__
+        doc = meth._original.__doc__
     else:
         argspec = inspect.getargspec(meth)
-        defaults = meth.func_defaults
-        doc = meth.func_doc
+        defaults = meth.__defaults__
+        doc = meth.__doc__
     argspec[0].pop(0)
     argspec = inspect.formatargspec(argspec[0], argspec[1], argspec[2])
 
@@ -479,16 +480,16 @@ def export_method(meth, name=None, modname=None):
     if modname is not None:
         g['__name__'] = modname
     fdef = 'def %s%s:  return %s%s' % (name, argspec, old_name, argspec)
-    exec fdef in g
+    exec(fdef, g)
 
     # Create another new function from the one we just made, this time
     # adding the default arguments and doc string from the original method
     new_meth = g[name]
 
-    new_meth = function(new_meth.func_code, new_meth.func_globals,
-                        new_meth.func_name, defaults,
-                        new_meth.func_closure)
-    new_meth.func_doc = doc
+    new_meth = function(new_meth.__code__, new_meth.__globals__,
+                        new_meth.__name__, defaults,
+                        new_meth.__closure__)
+    new_meth.__doc__ = doc
 
     return new_meth
 
@@ -1587,7 +1588,7 @@ def worker(f, ii, chunk, out_q, err_q, lock):
 
     try:
         vals = map(f, chunk)
-    except Exception, e:
+    except Exception as e:
         err_q.put(e)
         return
 
@@ -1607,7 +1608,7 @@ def run_tasks(procs, err_q, out_q, num):
         for proc in procs:
             proc.join()
 
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         # kill all slave processes on ctrl-C
         die(procs)
         raise e
@@ -1942,10 +1943,10 @@ def hessian(func, par, extrapolation, algorithm, maxiter, h, tol, t):
 def print_low_triangle(matrix, num):
     # print matrix
     for ii in xrange(num):
-        print matrix[ii, 0],
+        print(matrix[ii, 0], end=' ')
         for jj in xrange(1, ii + 1):
-            print matrix[ii, jj],
-        print
+            print(matrix[ii, jj], end=' ')
+        print()
 
 
 def symmetric_to_low_triangle(matrix, num):
@@ -2803,9 +2804,9 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
 
 def get_valid_args(func):
-    valid_args = func.func_code.co_varnames[:func.func_code.co_argcount]
+    valid_args = func.__code__.co_varnames[:func.__code__.co_argcount]
     # number of keyword arguments
-    kwargs_length = len(func.func_defaults) if func.func_defaults else 0
+    kwargs_length = len(func.__defaults__) if func.__defaults__ else 0
     # because kwargs are last
     valid_kwargs = valid_args[-kwargs_length:] if kwargs_length else []
     return valid_kwargs

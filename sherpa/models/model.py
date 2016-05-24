@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2010  Smithsonian Astrophysical Observatory
 #
@@ -25,7 +26,7 @@ import hashlib
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.err import ModelErr
 
-from parameter import Parameter
+from .parameter import Parameter
 
 warning = logging.getLogger(__name__).warning
 
@@ -388,16 +389,16 @@ class ArithmeticModel(Model):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('_use_caching'):
+        if '_use_caching' not in state:
             self.__dict__['_use_caching'] = False
 
-        if not state.has_key('_queue'):
+        if '_queue' not in state:
             self.__dict__['_queue'] = ['']
 
-        if not state.has_key('_cache'):
+        if '_cache' not in state:
             self.__dict__['_cache'] = {}
 
-        if not state.has_key('cache'):
+        if 'cache' not in state:
             self.__dict__['cache'] = 5
 
 

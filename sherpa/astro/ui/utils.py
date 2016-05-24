@@ -6731,7 +6731,7 @@ class Session(sherpa.ui.utils.Session):
             for bid in data.background_ids:
                 try:
                     self.group(id, bid)
-                except DataErr, e:
+                except DataErr as e:
                     info(str(e))
 
             # Now check if data is already grouped, and send error message
@@ -7117,7 +7117,7 @@ class Session(sherpa.ui.utils.Session):
             for bid in data.background_ids:
                 try:
                     self.ungroup(id, bid)
-                except DataErr, e:
+                except DataErr as e:
                     info(str(e))
 
             # Now check if data is already ungrouped, and send error message

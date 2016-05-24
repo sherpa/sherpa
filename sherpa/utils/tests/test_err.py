@@ -27,7 +27,7 @@ class test_err(SherpaTestCase):
         class OldSherpaErr( Exception ): 
             "Old class for all Sherpa exceptions" 
             def __init__( self, dict, key, *args ): 
-                if dict.has_key( key ): 
+                if key in dict: 
                     errmsg = dict[ key ] % args 
                 else: 
                     errmsg = "unknown key '%s'" % key 

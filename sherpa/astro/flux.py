@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 #  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 #
@@ -97,8 +98,8 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
     def print_sample_result(title, arg):
 
-        print '%s = %g, + %g, - %g' % (title, arg[0], arg[1] - arg[0],
-                                       arg[0] - arg[2])
+        print('%s = %g, + %g, - %g' % (title, arg[0], arg[1] - arg[0],
+                                       arg[0] - arg[2]))
     #
     # For later restoration
     #

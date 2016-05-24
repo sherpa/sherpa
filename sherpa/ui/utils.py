@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 #  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
 #
@@ -109,7 +110,7 @@ def _send_to_pager(all, filename=None, clobber=False):
         # check if filename is StringIO obj
         elif hasattr(filename, 'write'):
             pager = filename
-            print >> pager, all
+            print(all, file=pager)
             return
 
         else:
@@ -117,7 +118,7 @@ def _send_to_pager(all, filename=None, clobber=False):
             if os.path.isfile(filename) and not clobber:
                 raise IOErr('filefound', filename)
             pager = file(filename, 'w')
-        print >> pager, all
+        print(all, file=pager)
     except:
         if (pager is not None):
             pager.close()
@@ -5621,7 +5622,7 @@ class Session(NoNewAttributesAfterInit):
                         if count == 0:
                             try:
                                 val = float(input)
-                            except Exception, e:
+                            except Exception as e:
                                 info("Please provide a float value; " + str(e))
                                 continue
 
@@ -5632,7 +5633,7 @@ class Session(NoNewAttributesAfterInit):
                                     val = float(str_val)
                                 if str_min != "":
                                     min = float(str_min)
-                            except Exception, e:
+                            except Exception as e:
                                 info("Please provide a float value; " + str(e))
                                 continue
 
@@ -5646,7 +5647,7 @@ class Session(NoNewAttributesAfterInit):
                                     min = float(str_min)
                                 if str_max != "":
                                     max = float(str_max)
-                            except Exception, e:
+                            except Exception as e:
                                 info("Please provide a float value; " + str(e))
                                 continue
                         else:
@@ -5657,7 +5658,7 @@ class Session(NoNewAttributesAfterInit):
                         try:
                             self.set_par(par, val, min, max)
                             break
-                        except Exception, e:
+                        except Exception as e:
                             info(str(e))
                             continue
                     else:

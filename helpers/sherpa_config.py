@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
 #
@@ -116,7 +117,7 @@ class sherpa_config(Command):
 
         if self.extra_fortran_link_flags:
             flags = self.extra_fortran_link_flags.split(' ')
-            from extensions import fortran_exts
+            from .extensions import fortran_exts
             for ext in fortran_exts:
                 ext.extra_link_args.extend(flags)
 

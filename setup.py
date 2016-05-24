@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 # Copyright (C) 2014  Smithsonian Astrophysical Observatory
 #
@@ -28,11 +29,11 @@ try:
 except ImportError:
     import sys
 
-    print >> sys.stderr, (
+    print((
         "You need to install NUMPY in order to build Sherpa\n"
         "Other dependencies will be automatically installed\n"
         "Please install NUMPY (e.g. pip install numpy) and try again."
-    )
+    ), file=sys.stderr)
     sys.exit(2)
 
 try:
@@ -40,11 +41,11 @@ try:
 except:
     import sys
 
-    print >> sys.stderr, (
+    print((
         "WARNING\n"
         "Could not import setuptools.\n"
         "This might lead to an incomplete installation\n"
-    )
+    ), file=sys.stderr)
 from numpy.distutils.core import setup
 
 from helpers.extensions import static_ext_modules

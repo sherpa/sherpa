@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Copyright (c) 2005, NumPy Developers
 #
 # All rights reserved.
@@ -71,7 +72,7 @@ def set_package_path(level=1):
     if not os.path.isdir(d1):
         d1 = os.path.dirname(d)
     if DEBUG:
-        print 'Inserting %r to sys.path for test_file %r' % (d1, testfile)
+        print('Inserting %r to sys.path for test_file %r' % (d1, testfile))
     sys.path.insert(0,d1)
     return
 
@@ -93,7 +94,7 @@ def set_local_path(reldir='', level=1):
         testfile = f.f_locals['__file__']
     local_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(testfile)),reldir))
     if DEBUG:
-        print 'Inserting %r to sys.path' % (local_path)
+        print('Inserting %r to sys.path' % (local_path))
     sys.path.insert(0,local_path)
     return
 
@@ -102,7 +103,7 @@ def restore_path():
     #              "update your code", DeprecationWarning, stacklevel=2)
 
     if DEBUG:
-        print 'Removing %r from sys.path' % (sys.path[0])
+        print('Removing %r from sys.path' % (sys.path[0]))
     del sys.path[0]
     return
 
@@ -114,8 +115,8 @@ def output_exception(printstream = sys.stdout):
         #this is more verbose
         #traceback.print_exc()
         filename, lineno, function, text = info[-1] # last line only
-        print>>printstream, "%s:%d: %s: %s (in %s)" %\
-                            (filename, lineno, type.__name__, str(value), function)
+        print("%s:%d: %s: %s (in %s)" %\
+                            (filename, lineno, type.__name__, str(value), function), file=printstream)
     finally:
         type = value = tb = None # clean up
     return
@@ -156,7 +157,7 @@ class NumpyTestCase (unittest.TestCase):
         elapsed = jiffies()
         while i<times:
             i += 1
-            exec code in globs,locs
+            exec(code, globs,locs)
         elapsed = jiffies() - elapsed
         return 0.01*elapsed
 
@@ -195,10 +196,10 @@ class NumpyTestCase (unittest.TestCase):
 
     def warn(self, message):
         from numpy.distutils.misc_util import yellow_text
-        print>>sys.stderr,yellow_text('Warning: %s' % (message))
+        print(yellow_text('Warning: %s' % (message)), file=sys.stderr)
         sys.stderr.flush()
     def info(self, message):
-        print>>sys.stdout, message
+        print(message, file=sys.stdout)
         sys.stdout.flush()
 
     def rundocs(self, filename=None):
@@ -349,7 +350,7 @@ class NumpyTest:
             mth = getattr(clsobj, mthname)
             if type(mth) is not types.MethodType:
                 continue
-            d = mth.im_func.func_defaults
+            d = mth.__func__.__defaults__
             if d is not None:
                 mthlevel = d[0]
             else:
@@ -535,8 +536,8 @@ class NumpyTest:
                         fo = open(f)
                         test_module = imp.load_module(n, fo, f,
                                                       ('.py', 'U', 1))
-                    except Exception, msg:
-                        print 'Failed importing %s: %s' % (f,msg)
+                    except Exception as msg:
+                        print('Failed importing %s: %s' % (f,msg))
                         continue
                 finally:
                     if fo:
@@ -595,7 +596,7 @@ class NumpyTest:
             return
 
         if isinstance(self.package, str):
-            exec 'import %s as this_package' % (self.package)
+            exec('import %s as this_package' % (self.package))
         else:
             this_package = self.package
 
@@ -691,10 +692,10 @@ class NumpyTest:
 
     def warn(self, message):
         from numpy.distutils.misc_util import yellow_text
-        print>>sys.stderr,yellow_text('Warning: %s' % (message))
+        print(yellow_text('Warning: %s' % (message)), file=sys.stderr)
         sys.stderr.flush()
     def info(self, message):
-        print>>sys.stdout, message
+        print(message, file=sys.stdout)
         sys.stdout.flush()
 
 def importall(package):
@@ -714,9 +715,9 @@ def importall(package):
             continue
         name = package_name+'.'+subpackage_name
         try:
-            exec 'import %s as m' % (name)
-        except Exception, msg:
-            print 'Failed importing %s: %s' %(name, msg)
+            exec('import %s as m' % (name))
+        except Exception as msg:
+            print('Failed importing %s: %s' %(name, msg))
             continue
         importall(m)
     return

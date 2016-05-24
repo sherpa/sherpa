@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 #  Copyright (C) 2012, 2015  Smithsonian Astrophysical Observatory
 #
@@ -247,7 +248,7 @@ class test_psf_ui(SherpaTestCase):
                 self.assertTrue((numpy.array(mdl.get_center()) ==
                                  numpy.array([4])).all())
             except:
-                print model
+                print(model)
                 raise
 
     def test_psf_model2d(self):
@@ -260,5 +261,5 @@ class test_psf_ui(SherpaTestCase):
                 self.assertTrue((numpy.array(mdl.get_center()) ==
                                  numpy.array([108, 130])).all())
             except:
-                print model
+                print(model)
                 raise

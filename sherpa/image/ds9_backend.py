@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #
@@ -20,7 +21,7 @@
 from itertools import izip
 import numpy
 import time
-import DS9
+from . import DS9
 from os import access, R_OK
 from sherpa.utils import get_keyword_defaults
 from sherpa.utils.err import DS9Err

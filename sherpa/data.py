@@ -84,7 +84,7 @@ class BaseData(NoNewAttributesAfterInit):
             raise NotImplementedErr('noinstanceallowed', 'BaseData')
 
         frame = sys._getframe().f_back
-        cond = (frame.f_code is self.__init__.im_func.func_code)
+        cond = (frame.f_code is self.__init__.__func__.__code__)
         assert cond, (('%s constructor must call BaseData constructor ' +
                        'directly') % type(self).__name__)
         args = inspect.getargvalues(frame)
