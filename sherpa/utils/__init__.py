@@ -25,7 +25,7 @@ Objects and utilities used by multiple Sherpa subpackages
 
 import operator
 import inspect
-from itertools import izip
+import six.moves.zip as izip
 from types import FunctionType as function
 from types import MethodType as instancemethod
 import string

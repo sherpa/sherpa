@@ -284,7 +284,7 @@ fortran_exts = [minpack, minim]
 static_ext_modules = [
                    # # group,
                    # estmethods,
-                   # utils,
+                   utils,
                    # modelfcts,
                    # saoopt,
                    # tstoptfct,
