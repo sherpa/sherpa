@@ -22,12 +22,23 @@ Optical models intended for SED Analysis
 
 The models match those used by the SpecView application [1]_,
 and are intended for un-binned one-dimensional data sets defined
-on a wavelength grid, with units of Angstroms.
+on a wavelength grid, with units of Angstroms. When used with
+a binned data set the lower-edge of each bin is used to evaluate
+the model. This module does not contain all the spectral
+components from SpecView ([2]_).
+
+Notes
+-----
+Although designed for optical data sets, where the independent axis
+is in Angstroms, some of the simpler models can be used with any wavelength
+unit, since they are defined using a relative value (e.g. x / refer).
 
 References
 ----------
 
 .. [1] http://www.stsci.edu/institute/software_hardware/specview/
+
+.. [2] http://specview.stsci.edu/javahelp/Components.html
 
 """
 
@@ -150,6 +161,7 @@ class AccretionDisk(ArithmeticModel):
     ref
         The reference wavelength, in Angstroms.
     beta
+        The index of the power-law component.
     ampl
         The amplitude of the disk.
     norm
@@ -415,7 +427,33 @@ class AbsorptionVoigt(ArithmeticModel):
 
 # This model computes continuum emission as a blackbody function.
 class BlackBody(ArithmeticModel):
-    """Blackbody model."""
+    """Emission from a black body.
+
+    Attributes
+    ----------
+    refer
+        The reference point, in Angstroms.
+    ampl
+        The amplitude of the emission; it is defined at the reference
+        point but its numerical value there also depends on the
+        temperature.
+    temperature
+        The temperature in Kelvin.
+
+    See Also
+    --------
+    Bremstrahlung
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * g(refer) / g(x)
+
+        g(x) = x^5 * (exp(1.438786E8 / temperature / x) - 1)
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='blackbody'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -460,7 +498,31 @@ class BlackBody(ArithmeticModel):
 
 # This model computes continuum emission with the bremsstrahlung function.
 class Bremsstrahlung(ArithmeticModel):
-    """Bremsstrahlung model."""
+    """Bremsstrahlung emission.
+
+    Attributes
+    ----------
+    refer
+        The reference point, in Angstroms.
+    ampl
+        The amplitude of the emission; it is defined at the reference
+        point but its numerical value there also depends on the
+        temperature.
+    temperature
+        The temperature in Kelvin.
+
+    See Also
+    --------
+    Blackbody
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (refer/x)^2 * exp(-1.438779E8 / temperature / x)
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='bremsstrahlung'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -482,7 +544,34 @@ class Bremsstrahlung(ArithmeticModel):
 # that is, the power-law index changes after a break at a particular
 # wavelength.
 class BrokenPowerlaw(ArithmeticModel):
-    """Broken power-law model."""
+    """Broken power-law model.
+
+    Attributes
+    ----------
+    refer
+        The reference point at which the amplitude is defined, with
+        units of Angstroms.
+    ampl
+        The amplitude at the reference point.
+    index1
+        The index for the power law below the reference point.
+    index2
+        The index for the power law above the reference point.
+
+    See Also
+    --------
+    Polynomial, Powerlaw
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (x / refer)^index1      x < refer
+
+             = ampl * (x / refer)^index2      x >= refer
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='brokenpowerlaw'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -507,7 +596,29 @@ class BrokenPowerlaw(ArithmeticModel):
 # Cardelli, Clayton, and Mathis
 # (ApJ, 1989, vol 345, pp 245)
 class CCM(ArithmeticModel):
-    """Cardelli, Clayton, and Mathis extinction curve."""
+    """The Cardelli, Clayton, and Mathis extinction curve.
+
+    The extinction is calculated using the formula from [1]_.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+    r
+        R_v
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Cardelli, Clayton, & Mathis, 1989, ApJ, 345, 245-256.
+           http://adsabs.harvard.edu/abs/1989ApJ...345..245C
+
+    """
 
     def __init__(self, name='ccm'):
         self.ebv = Parameter(name, 'ebv', 0.5)
@@ -666,7 +777,38 @@ class LogEmission(ArithmeticModel):
 # This model computes continuum emission as a polynomial,
 # y = c0 + c1 * (x - offset) + c2 * (x - offset)^2 + c3 * (x - offset)^3 + c4 * (x - offset)^4 + c5 * (x - offset)^5
 class Polynomial(ArithmeticModel):
-    """Polynomial model."""
+    """Polynomial model of order 5.
+
+    Attributes
+    ----------
+    c0
+        The constant term.
+    c1
+        The amplitude of the (x-offset) term.
+    c2
+        The amplitude of the (x-offset)^2 term.
+    c3
+        The amplitude of the (x-offset)^3 term.
+    c4
+        The amplitude of the (x-offset)^4 term.
+    c5
+        The amplitude of the (x-offset)^5 term.
+    offset
+        There is a degeneracy between ``c0`` and ``offset``, so it
+        is recommended that at least one of these remains frozen.
+
+    See Also
+    --------
+    Powerlaw
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = sum_(i=0)^(i=8) c_i * (x - offset)^i
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='polynomial'):
         pars = []
@@ -695,7 +837,30 @@ class Polynomial(ArithmeticModel):
 
 # This model computes continuum emission using a power-law.
 class Powerlaw(ArithmeticModel):
-    """Power-law model."""
+    """Power-law model.
+
+    Attributes
+    ----------
+    refer
+        The reference point at which the amplitude is defined, with
+        units of Angstroms.
+    ampl
+        The amplitude at the reference point.
+    index
+        The index for the power law.
+
+    See Also
+    --------
+    BrokenPowerlaw, Polynomial
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (x / refer)^index
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='powerlaw'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -719,7 +884,39 @@ class Powerlaw(ArithmeticModel):
 # This model computes the continuum with an optically thin
 # recombination function.
 class Recombination(ArithmeticModel):
-    """Optically thin recombination model."""
+    """Optically-thin recombination continuum model.
+
+    Attributes
+    ----------
+    refer
+        The reference point, in Angstroms.
+    ampl
+        The amplitude of the emission; it is defined at the reference
+        point but its numerical value there also depends on the
+        temperature.
+    temperature
+        The temperature in Kelvin.
+    fwhm
+        The fwhm in km/s.
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (refer / x)^2 *
+               exp(-1.440E8 * (1 / x - 1 / refer) / temperature)
+
+               if x < refer
+
+             = ampl * exp(-0.5 * (x - refer)^2 / g(fwhm, refer)^2)
+
+               otherwise
+
+        g(fwhm, refer) = refer * fwhm / (2.354820044 * c)
+
+    where c is the speed of light in km/s. For integrated data
+    sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='recombination'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
