@@ -730,7 +730,7 @@ class Poisson(ArithmeticModel):
 
 
 class Polynom1D(ArithmeticModel):
-    """One-dimensional polynomial function.
+    """One-dimensional polynomial function of order 8.
 
     The maximum order of the polynomial is 8. The default setting has
     all parameters frozen except for ``c0``, which means that the
