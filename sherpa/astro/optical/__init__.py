@@ -596,9 +596,10 @@ class BrokenPowerlaw(ArithmeticModel):
 # Cardelli, Clayton, and Mathis
 # (ApJ, 1989, vol 345, pp 245)
 class CCM(ArithmeticModel):
-    """The Cardelli, Clayton, and Mathis extinction curve.
+    """Galactic extinction: the Cardelli, Clayton, and Mathis model.
 
-    The extinction is calculated using the formula from [1]_.
+    The interstellar extinction is calculated using the formula
+    from [1]_.
 
     Attributes
     ----------
@@ -606,6 +607,10 @@ class CCM(ArithmeticModel):
         E(B-V)
     r
         R_v
+
+    See Also
+    --------
+    FM, LMC, Seaton, SM, SMC, XGAL
 
     Notes
     -----
@@ -999,7 +1004,43 @@ class XGal(ArithmeticModel):
 # See Fitzpatrick and Massa (ApJ, 1988, vol. 328, p. 734)
 
 class FM(ArithmeticModel):
-    """Extinction curve for UV spectra below 3200 A (Fitzpatrick and Massa 1988)"""
+    """UV extinction curve: Fitzpatrick and Massa 1988.
+
+    The UV extinction is calculated using [1]_.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+    x0
+        Position of the Drude bump.
+    width
+        Width of the Drude bump.
+    c1
+        The intercept of the linear term.
+    c2
+        The slope of the linear term.
+    c3
+        Normalization of the Drude bump.
+    c4
+        Normalization of the FUV curvature.
+
+    See Also
+    --------
+    CCM, LMC, Seaton, SM, SMC, XGAL
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Fitzpatrick and Massa 1988
+           http://adsabs.harvard.edu/abs/1988ApJ...328..734F
+
+    """
 
     def __init__(self, name='fm'):
         self.ebv = Parameter(name, 'ebv', 0.5)  # E(B-V)
@@ -1068,7 +1109,33 @@ class LMC(ArithmeticModel):
 # This model computes the galactic interstellar extinction function
 # from Savage & Mathis (1979, ARA&A, 17, 73-111)
 class SM(ArithmeticModel):
-    """Galactic interstellar extinction function from Savage & Mathis (1979, ARA&A, 17, 73-111)"""
+    """Galactic extinction: the Savage & Mathis model.
+
+    The interstellar extinction is calculated using the formula
+    from [1]_.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+
+    See Also
+    --------
+    CCM, FM, LMC, Seaton, SMC, XGAL
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Savage & Mathis,1979, ARA&A, 17, 73-111
+           http://adsabs.harvard.edu/abs/1979ARA%26A..17...73S
+
+    """
+
     def __init__(self, name='sm'):
         self.ebv = Parameter(name, 'ebv', 0.5)
 
@@ -1153,7 +1220,55 @@ class SMC(ArithmeticModel):
 # 10000 < lambda		    extrapolate linearly in 1/lambda
 
 class Seaton(ArithmeticModel):
-    """Seaton's interstellar extinction function (1979 MNRAS)"""
+    """Galactic extinction: the Seaton model from Synphot.
+
+    The interstellar extinction is calculated using the formula
+    from [1]_ as implemented in STSCI's Synphot program [2]_.
+    The supported wavelength range is 1000 to 10000 Angstroms, and
+    the Notes section describes the changes from [1]_.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+
+    See Also
+    --------
+    CCM, FM, LMC, SM, SMC, XGAL
+
+    Notes
+    -----
+    The formulae are based on an adopted value of R=3.20.
+
+    For wavelengths above 3704 Angstrom, the function interpolates
+    linearly in 1/lambda in table 3 [1]_. For wavelengths below this,
+    the formulae from table 2 [1]_ are used (see also [3]_, corrected
+    to R=3.2).  The formulae match at the endpoints of their
+    respective intervals. There is a mismatch of 0.009 mag/ebmv at
+    nu=2.7 (lambda=3704 Angstrom). Seaton's tabulated value of 1.44
+    mag at 1/lambda = 1.1 may be in error; 1.64 seems more consistent
+    with his other values.
+
+    For wavelengths below 1000 Angstrom, a constant value equal to
+    the value at 1000 Angstrom is used. For wavelengths above 10000
+    Angstroms a linear extrapolation (in 1/lambda) is used.
+
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Seaton, M. J. 1979, MNRAS, 187, 73
+           http://adsabs.harvard.edu/abs/1979MNRAS.187P..73S
+
+    .. [2] http://www.stsci.edu/institute/software_hardware/stsdas/synphot
+
+    .. [3] Nandy et al., 1975, A&A, 44, 195-203.
+           http://adsabs.harvard.edu/abs/1975A%26A....44..195N
+
+    """
+
     def __init__(self, name='seaton'):
         self.ebv = Parameter(name, 'ebv', 0.5)
 
