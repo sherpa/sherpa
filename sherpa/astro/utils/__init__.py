@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,8 +19,9 @@
 
 import logging
 import numpy
-from _utils import *
-from _pileup import *
+from _utils import arf_fold, do_group, expand_grouped_mask, \
+    filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
+from _pileup import apply_pileup
 
 from sherpa.utils import SherpaFloat, get_position, filter_bins
 from sherpa.utils.err import IOErr, DataErr
@@ -29,16 +30,18 @@ from sherpa.utils.err import IOErr, DataErr
 __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
            'eqwidth', 'calc_photon_flux', 'calc_energy_flux',
            'calc_data_sum', 'calc_model_sum', 'shrink_effarea',
-           'calc_data_sum2d','calc_model_sum2d', 'filter_resp',
+           'calc_data_sum2d', 'calc_model_sum2d', 'filter_resp',
            'calc_source_sum', 'compile_energy_grid',
-           'expand_grouped_mask','resp_init', 'is_in', 'get_xspec_position']
+           'calc_kcorr',
+           'expand_grouped_mask', 'resp_init', 'is_in',
+           'get_xspec_position']
 
 
 warning = logging.getLogger(__name__).warning
 
 
 try:
-    from _region import *
+    from _region import Region, region_mask
     __all__.append('region_mask')
     __all__.append('Region')
 
@@ -48,12 +51,13 @@ except ImportError:
 
 _hc = 12.39841874  # nist.gov in [keV-Angstrom]
 
+
 def get_xspec_position(y, x, xhi=None):
     if xhi is not None:
         if x[0] > x[-1] and xhi[0] > xhi[-1]:
             lo = _hc / xhi
             hi = _hc / x
-            x = lo; xhi = hi
+            x, xhi = lo, hi
     else:
         if x[0] > x[-1]:
             x = _hc / x
@@ -64,12 +68,12 @@ def compile_energy_grid(arglist):
     elo = numpy.unique(numpy.concatenate([indep[0] for indep in arglist]))
     ehi = numpy.unique(numpy.concatenate([indep[1] for indep in arglist]))
 
-    in_elo = numpy.setdiff1d(elo,ehi)
-    in_ehi = numpy.setdiff1d(ehi,elo)
+    in_elo = numpy.setdiff1d(elo, ehi)
+    in_ehi = numpy.setdiff1d(ehi, elo)
     if len(in_elo) > 1:
-        ehi = numpy.concatenate((ehi, in_elo[-(len(in_elo)-1):]))
+        ehi = numpy.concatenate((ehi, in_elo[-(len(in_elo) - 1):]))
     if len(in_ehi) > 1:
-        elo = numpy.concatenate((elo, in_ehi[0:len(in_ehi)-1]))
+        elo = numpy.concatenate((elo, in_ehi[0:len(in_ehi) - 1]))
 
     # FIXME since numpy.unique calls sort() underneath, may not need to
     # sort again here...
@@ -85,6 +89,7 @@ def compile_energy_grid(arglist):
 
     return [elo, ehi, htable]
 
+
 def bounds_check(lo, hi):
     if lo is not None and hi is not None and lo > hi:
         raise IOErr('boundscheck', lo, hi)
@@ -98,9 +103,10 @@ def bounds_check(lo, hi):
     return (lo, hi)
 
 
-_charge_e = 1.60217653e-09 #elementary charge [ergs] 1 keV, nist.gov
+_charge_e = 1.60217653e-09  # elementary charge [ergs] 1 keV, nist.gov
 
-def _flux( data, lo, hi, src, eflux=False, srcflux=False):
+
+def _flux(data, lo, hi, src, eflux=False, srcflux=False):
     lo, hi = bounds_check(lo, hi)
 
     axislist = None
@@ -112,7 +118,7 @@ def _flux( data, lo, hi, src, eflux=False, srcflux=False):
     y = src(*axislist)
 
     if srcflux and len(axislist) > 1:
-        y /= numpy.asarray(axislist[1]-axislist[0])
+        y /= numpy.asarray(axislist[1] - axislist[0])
 
     dim = numpy.asarray(axislist).squeeze().ndim
     if eflux:
@@ -121,25 +127,25 @@ def _flux( data, lo, hi, src, eflux=False, srcflux=False):
         for axis in axislist:
             grid = axis
             if hasattr(data, 'units') and data.units == 'wavelength':
-                grid = data._hc/grid
+                grid = data._hc / grid
             energ.append(grid)
 
         if dim == 1:
             y = numpy.asarray(0.5 * y * energ[0], SherpaFloat)
         elif dim == 2:
-            y = numpy.asarray(0.5 * y * (energ[0]+energ[1]),
-                            SherpaFloat)
+            y = numpy.asarray(0.5 * y * (energ[0] + energ[1]),
+                              SherpaFloat)
         else:
             raise IOErr('>axes', "2")
 
-    mask = filter_bins( (lo,), (hi,), (axislist[0],) )
+    mask = filter_bins((lo,), (hi,), (axislist[0],))
 
     val = y.sum()
     if mask is not None:
         flux = y[mask]
         # flux density at a single bin -> divide by bin width.
         if dim == 2 and len(flux) == 1:
-            flux /= numpy.abs(axislist[1][mask]-axislist[0][mask])
+            flux /= numpy.abs(axislist[1][mask] - axislist[0][mask])
         val = flux.sum()
 
     if eflux:
@@ -148,14 +154,14 @@ def _flux( data, lo, hi, src, eflux=False, srcflux=False):
     return val
 
 
-def _counts( data, lo, hi, func, *args):
+def _counts(data, lo, hi, func, *args):
     lo, hi = bounds_check(lo, hi)
     old_filter = data.filter
     old_mask = data.mask
     old_quality_filter = getattr(data, 'quality_filter', None)
     try:
         data.notice()  # save and clear filter
-        data.filter=None
+        data.filter = None
         # filter_rsp = getattr(data, 'notice_response', None)
         # if filter_rsp is not None:
         #     filter_rsp(False)
@@ -170,6 +176,7 @@ def _counts( data, lo, hi, func, *args):
             data.quality_filter = old_quality_filter
 
     return counts
+
 
 def _counts2d(data, reg, func, *args):
     old_filter = data.filter
@@ -194,7 +201,8 @@ def _counts2d(data, reg, func, *args):
 
     return counts
 
-def calc_energy_flux( data, src, lo=None, hi=None):
+
+def calc_energy_flux(data, src, lo=None, hi=None):
     """Integrate the source model over a pass band.
 
     Calculate the integral of E * S(E) over a pass band, where E is
@@ -203,9 +211,9 @@ def calc_energy_flux( data, src, lo=None, hi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
-    src :
+    src
        The source expression: this should not include any instrument
        responses.
     lo : number, optional
@@ -213,15 +221,15 @@ def calc_energy_flux( data, src, lo=None, hi=None):
        to use the low value of the data set.
     hi : number, optional
        The maximum limit of the band, which must be larger than
-       `lo`. Use `None`, the default, to use the upper value of
+       `lo`. Use ``None``, the default, to use the upper value of
        the data set.
 
     Returns
     -------
-    flux :
+    flux
        The flux from the source model integrated over the given
        band. For X-Spec style models the units will be erg/cm^2/s. If
-       `hi` is `None` but `lo` is set then the flux density is
+       `hi` is ``None`` but `lo` is set then the flux density is
        returned at that point: erg/cm^2/s/keV or erg/cm^2/s/Angstrom
        depending on the analysis setting.
 
@@ -229,7 +237,7 @@ def calc_energy_flux( data, src, lo=None, hi=None):
     --------
     calc_data_sum : Sum up the data values over a pass band.
     calc_model_sum : Sum up the fitted model over a pass band.
-    calc_source_sum: Sum up the source model over a pass band.
+    calc_source_sum : Sum up the source model over a pass band.
     calc_photon_flux : Integrate the source model over a pass band.
 
     Notes
@@ -268,7 +276,8 @@ def calc_energy_flux( data, src, lo=None, hi=None):
     """
     return _flux(data, lo, hi, src, eflux=True)
 
-def calc_photon_flux( data, src, lo=None, hi=None):
+
+def calc_photon_flux(data, src, lo=None, hi=None):
     """Integrate the source model over a pass band.
 
     Calculate the integral of S(E) over a pass band, where S(E) is the
@@ -276,9 +285,9 @@ def calc_photon_flux( data, src, lo=None, hi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
-    src :
+    src
        The source expression: this should not include any instrument
        responses.
     lo : number, optional
@@ -286,15 +295,15 @@ def calc_photon_flux( data, src, lo=None, hi=None):
        to use the low value of the data set.
     hi : number, optional
        The maximum limit of the band, which must be larger than
-       `lo`. Use `None`, the default, to use the upper value of
+       `lo`. Use ``None``, the default, to use the upper value of
        the data set.
 
     Returns
     -------
-    flux :
+    flux
        The flux from the source model integrated over the given
        band. For X-Spec style models the units will be
-       photon/cm^2/s. If `hi` is `None` but `lo` is set then the flux
+       photon/cm^2/s. If `hi` is ``None`` but `lo` is set then the flux
        density is returned at that point: photon/cm^2/s/keV or
        photon/cm^2/s/Angstrom depending on the analysis setting.
 
@@ -303,7 +312,7 @@ def calc_photon_flux( data, src, lo=None, hi=None):
     calc_data_sum : Sum up the data values over a pass band.
     calc_model_sum : Sum up the fitted model over a pass band.
     calc_energy_flux : Integrate the source model over a pass band.
-    calc_source_sum: Sum up the source model over a pass band.
+    calc_source_sum : Sum up the source model over a pass band.
 
     Notes
     -----
@@ -345,8 +354,9 @@ def calc_photon_flux( data, src, lo=None, hi=None):
     """
     return _flux(data, lo, hi, src)
 
-### DOC-TODO: compare to calc_photon_flux ?
-def calc_source_sum( data, src, lo=None, hi=None):
+
+# ## DOC-TODO: compare to calc_photon_flux ?
+def calc_source_sum(data, src, lo=None, hi=None):
     """Sum up the source model over a pass band.
 
     Sum up S(E) over a pass band, where S(E) is the spectral model
@@ -354,16 +364,16 @@ def calc_source_sum( data, src, lo=None, hi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
-    src :
+    src
        The source expression.
     lo : number, optional
-       The minimum limit of the band. Use `None`, the default, to use
+       The minimum limit of the band. Use ``None``, the default, to use
        the low value of the data set.
     hi : number, optional
        The maximum limit of the band, which must be larger than
-       `lo`. Use `None`, the default, to use the upper value of the
+       `lo`. Use ``None``, the default, to use the upper value of the
        data set.
 
     Returns
@@ -371,7 +381,7 @@ def calc_source_sum( data, src, lo=None, hi=None):
     signal : number
        The source model summed up over the given band. This does
        *not* include the bin width when using histogram-style
-       ('integrated' data spaces), such as used with X-Spec
+       (integrated) data spaces, such as used with X-Spec
        emission - also known as additive - models.
 
     See Also
@@ -404,29 +414,30 @@ def calc_source_sum( data, src, lo=None, hi=None):
     """
     return _flux(data, lo, hi, src, srcflux=True)
 
-#def calc_source_sum2d( data, src, reg=None):
-#    return _counts2d(data, reg, data.eval_model_to_fit, src)
+
+# def calc_source_sum2d( data, src, reg=None):
+#     return _counts2d(data, reg, data.eval_model_to_fit, src)
 
 def calc_data_sum(data, lo=None, hi=None):
     """Sum up the data values over a pass band.
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
     lo : number, optional
-       The minimum limit of the band. Use `None`, the default, to use
+       The minimum limit of the band. Use ``None``, the default, to use
        the low value of the data set.
     hi : number, optional
        The maximum limit of the band, which must be larger than
-       `lo`. Use `None`, the default, to use the upper value of the
+       `lo`. Use ``None``, the default, to use the upper value of the
        data set.
 
     Returns
     -------
     dsum : number
        The sum of the data values that lie within the given limits.
-       If `hi` is `None` but `lo` is set then the data value of the
+       If `hi` is ``None`` but `lo` is set then the data value of the
        bin containing the `lo` value are returned.  If a background
        estimate has been subtracted from the data set then the
        calculation will use the background-subtracted values.
@@ -437,7 +448,7 @@ def calc_data_sum(data, lo=None, hi=None):
     calc_model_sum : Sum up the fitted model over a pass band.
     calc_energy_flux : Integrate the source model over a pass band.
     calc_photon_flux : Integrate the source model over a pass band.
-    calc_source_sum: Sum up the source model over a pass band.
+    calc_source_sum : Sum up the source model over a pass band.
     set_model : Set the source model expression for a data set.
 
     Notes
@@ -469,7 +480,8 @@ def calc_data_sum(data, lo=None, hi=None):
     730.9179738207356
 
     """
-    return _counts( data, lo, hi, data.apply_filter, data.get_dep() )
+    return _counts(data, lo, hi, data.apply_filter, data.get_dep())
+
 
 def calc_data_sum2d(data, reg=None):
     """Sum up the data values of a 2D data set.
@@ -479,7 +491,7 @@ def calc_data_sum2d(data, reg=None):
     data : sherpa.astro.data.DataIMG instance
        The data object to use.
     reg : str, optional
-       The spatial filter to use. The default, `None`, is to use the
+       The spatial filter to use. The default, ``None``, is to use the
        whole data set.
 
     Returns
@@ -503,8 +515,9 @@ def calc_data_sum2d(data, reg=None):
     """
     return _counts2d(data, reg, data.apply_filter, data.get_dep() )
 
-### DOC-TODO: better comparison of calc_source_sum and calc_model_sum
-###           needed (e.g. integration or results in PHA case?)
+
+# ## DOC-TODO: better comparison of calc_source_sum and calc_model_sum
+# ##           needed (e.g. integration or results in PHA case?)
 def calc_model_sum(data, model, lo=None, hi=None):
     """Sum up the fitted model over a pass band.
 
@@ -513,17 +526,17 @@ def calc_model_sum(data, model, lo=None, hi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
-    src :
+    src
        The source expression, which should not include the
        instrumental responses.
     lo : number, optional
-       The minimum limit of the band. Use `None`, the default, to use
+       The minimum limit of the band. Use ``None``, the default, to use
        the low value of the data set.
     hi : number, optional
        The maximum limit of the band, which must be larger than
-       `lo`. Use `None`, the default, to use the upper value of the
+       `lo`. Use ``None``, the default, to use the upper value of the
        data set.
 
     Returns
@@ -536,7 +549,7 @@ def calc_model_sum(data, model, lo=None, hi=None):
     calc_data_sum : Sum up the observed counts over a pass band.
     calc_energy_flux : Integrate the source model over a pass band.
     calc_photon_flux : Integrate the source model over a pass band.
-    calc_source_sum: Sum up the source model over a pass band.
+    calc_source_sum : Sum up the source model over a pass band.
 
     Notes
     -----
@@ -553,10 +566,11 @@ def calc_model_sum(data, model, lo=None, hi=None):
     """
     return _counts(data, lo, hi, data.eval_model_to_fit, model)
 
-### DOC-TODO: clean up whether the calc_model_* versions should or
-###           should not contain the instrument response/PSF components.
-###           Note: there is no calc_source_sum2d in this module, so
-###           this needs looking at to see if the text is correct
+
+# ## DOC-TODO: clean up whether the calc_model_* versions should or
+# ##           should not contain the instrument response/PSF components.
+# ##           Note: there is no calc_source_sum2d in this module, so
+# ##           this needs looking at to see if the text is correct
 def calc_model_sum2d(data, model, reg=None):
     """Sum up the fitted model for a 2D data set.
 
@@ -564,10 +578,10 @@ def calc_model_sum2d(data, model, reg=None):
     ----------
     data : sherpa.astro.data.DataIMG instance
        The data object to use.
-    model :
+    model
        The source expression, which should not include the PSF model.
     reg : str, optional
-       The spatial filter to use. The default, `None`, is to use the
+       The spatial filter to use. The default, ``None``, is to use the
        whole data set.
 
     Returns
@@ -592,6 +606,7 @@ def calc_model_sum2d(data, model, reg=None):
     """
     return _counts2d(data, reg, data.eval_model_to_fit, model)
 
+
 def eqwidth(data, model, combo, lo=None, hi=None):
 
     lo, hi = bounds_check(lo, hi)
@@ -604,16 +619,16 @@ def eqwidth(data, model, combo, lo=None, hi=None):
     eqw = 0.0
     if hasattr(data, 'get_response'):
         xlo, xhi = data._get_indep(filter=False)
-        my = model(xlo,xhi)
-        cy = combo(xlo,xhi)
+        my = model(xlo, xhi)
+        cy = combo(xlo, xhi)
         num = len(xlo)
     else:
-        my = data.eval_model_to_fit( model )
-        cy = data.eval_model_to_fit( combo )
+        my = data.eval_model_to_fit(model)
+        cy = data.eval_model_to_fit(combo)
         xlo = data.get_indep(filter=True)[0]
         num = len(xlo)
 
-    mask = filter_bins( (lo,), (hi,), (xlo,) )
+    mask = filter_bins((lo,), (hi,), (xlo,))
     if mask is not None:
         my = my[mask]
         cy = cy[mask]
@@ -621,12 +636,12 @@ def eqwidth(data, model, combo, lo=None, hi=None):
         num = len(xlo)
 
     for ebin, val in enumerate(xlo):
-        if ebin < (num-1):
-            eave = numpy.abs(xlo[ebin+1] - xlo[ebin])
+        if ebin < (num - 1):
+            eave = numpy.abs(xlo[ebin + 1] - xlo[ebin])
         else:
-            eave = numpy.abs(xlo[ebin-1] - xlo[ebin])
+            eave = numpy.abs(xlo[ebin - 1] - xlo[ebin])
         if my[ebin] != 0.0:
-            eqw += eave*(cy[ebin]-my[ebin])/my[ebin]
+            eqw += eave * (cy[ebin] - my[ebin]) / my[ebin]
 
     return eqw
 
@@ -643,9 +658,9 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
 
     Parameters
     ----------
-    data :
+    data
        The data object to use.
-    model :
+    model
        The source expression: this should not include any instrument
        responses.
     z : number or array, >= 0
@@ -655,12 +670,12 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
     obshi : number
        The maximum energy of the observed band, which must
        be larger than `obslo`.
-    restlo : number or `None`
-       The minimum energy of the rest-frame band. If `None` then
+    restlo : number or ``None``
+       The minimum energy of the rest-frame band. If ``None`` then
        use `obslo`.
-    restlo : number or `None`
+    restlo : number or ``None``
        The maximum energy of the rest-frame band. It must be
-       larger than `restlo`. If `None` then use `obshi`.
+       larger than `restlo`. If ``None`` then use `obshi`.
 
     Returns
     -------
@@ -671,7 +686,7 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
     This is only defined when the analysis is in 'energy' units.
 
     If the model contains a redshift parameter then it should
-    be set to `0`, rather than the source redshift.
+    be set to ``0``, rather than the source redshift.
 
     If the source model is at zero redshift, the observed energy
     band is olo to ohi, and the rest frame band is rlo to rhi
@@ -718,10 +733,10 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
     else:
         z = numpy.asarray(z)
 
-    if( 0 != sum(z[z<0]) ):
+    if 0 != sum(z[z < 0]):
         raise IOErr('z<=0')
 
-    if( obslo <= 0 or restlo <=0 or obshi <= obslo or resthi <= restlo ):
+    if obslo <= 0 or restlo <= 0 or obshi <= obslo or resthi <= restlo:
         raise IOErr('erange')
 
     if hasattr(data, 'get_response'):
@@ -735,7 +750,7 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
             elo = rmf.energ_lo
             ehi = rmf.energ_hi
     else:
-        elo,ehi = data.get_indep()
+        elo, ehi = data.get_indep()
 
     if elo is None or ehi is None:
         raise DataErr('noenergybins', data.name)
@@ -743,21 +758,21 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
     emin = elo[0]
     emax = ehi[-1]
 
-    if( restlo < emin or resthi > emax ):
+    if restlo < emin or resthi > emax:
         raise IOErr('energoverlap', emin, emax, 'rest-frame',
                     restlo, resthi, '')
 
-    if( obslo*(1.0+z.min()) < emin ):
+    if obslo * (1.0 + z.min()) < emin:
         raise IOErr('energoverlap', emin, emax, 'observed-frame',
                     restlo, resthi, "at a redshift of %f" % z.min())
 
-    if( obshi*(1.0+z.max()) > emax ):
+    if obshi * (1.0 + z.max()) > emax:
         raise IOErr('energoverlap', emin, emax, 'rest-frame',
                     restlo, resthi, "at a redshift of %f" % z.min())
 
     zplus1 = z + 1.0
-    flux_rest = _flux( data, restlo, resthi, model, eflux=True)
-    obs = numpy.asarray([_flux(data, obslo*zz, obshi*zz, model, eflux=True)
+    flux_rest = _flux(data, restlo, resthi, model, eflux=True)
+    obs = numpy.asarray([_flux(data, obslo * zz, obshi * zz, model, eflux=True)
                          for zz in zplus1], dtype=float)
     kcorr = flux_rest / obs
 
