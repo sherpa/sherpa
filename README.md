@@ -5,6 +5,7 @@
 **Table of Contents**
 
 - [Sherpa](#sherpa)
+- [License](#license)
 - [How To Install Sherpa](#how-to-install-sherpa)
   - [Binary installation using Anaconda](#binary-installation-using-anaconda)
     - [1a. Anaconda](#1a-anaconda)
@@ -24,7 +25,8 @@
   - [XSPEC](#xspec)
   - [Other customization options](#other-customization-options)
 - [History](#history)
-
+  - [Previous releases](#previous-releases)
+  
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
@@ -55,6 +57,16 @@ What can you do with Sherpa?
 
 A [Quick Start Tutorial](http://nbviewer.ipython.org/github/sherpa/sherpa/tree/master/docs/SherpaQuickStart.ipynb)
 is included in the `docs` folder and can be opened with an `ipython notebook`.
+
+License
+=======
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. A copy of the GNU General Public License can be found in the
+`LICENSE` file provided with the source code, or from the
+[Free Software Foundation](http://www.gnu.org/licenses/).
 
 How To Install Sherpa
 =====================
@@ -503,11 +515,14 @@ about these options.
 History
 =======
 
-Sherpa is developed by the
-[Chandra X-ray Observatory](http://chandra.harvard.edu/) to provide
-fitting and modelling capabilities to the
-[CIAO](http://cxc.harvard.edu/ciao/) analysis package. It has been
-released onto
-[GitHub](https://github.com/sherpa/sherpa) under the
-GNU General Public Licence, version 3 for users to extend (whether
-to other areas of Astronomy or in other domains).
+Sherpa is developed by the [Chandra X-ray
+Observatory](http://chandra.harvard.edu/) to provide fitting and modelling
+capabilities to the [CIAO](http://cxc.harvard.edu/ciao/) analysis package. It
+has been released onto [GitHub](https://github.com/sherpa/sherpa) for users to
+extend (whether to other areas of Astronomy or in other domains).
+
+Previous releases
+-----------------
+
+4.8.0: 27 January 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.45243.svg)](http://dx.doi.org/10.5281/zenodo.45243)
+
