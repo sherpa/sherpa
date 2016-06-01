@@ -27,12 +27,6 @@ a binned data set the lower-edge of each bin is used to evaluate
 the model. This module does not contain all the spectral
 components from SpecView ([2]_).
 
-Notes
------
-Although designed for optical data sets, where the independent axis
-is in Angstroms, some of the simpler models can be used with any wavelength
-unit, since they are defined using a relative value (e.g. x / refer).
-
 References
 ----------
 
@@ -115,13 +109,18 @@ class AbsorptionEdge(ArithmeticModel):
         The exponent used for the relative distance from the edge.
         It is a hidden parameter, with a value fixed at 3.
 
+    See Also
+    --------
+    AbsorptionGaussian, AbsorptionLorentz, AbsorptionVoigt,
+    OpticalGaussian
+
     Notes
     -----
     The functional form of the model for points is::
 
-        f(x) = exp(-tau * (x / index)^3)   for x <= edgew
+        f(x) = exp(-tau * (x / edgew)^index)   for x <= edgew
 
-             = 1                           otherwise
+             = 1                               otherwise
 
     and for integrated data sets the low-edge of the grid is used.
     """
@@ -206,7 +205,48 @@ class AccretionDisk(ArithmeticModel):
 # This model calculates a Gaussian function expressed in
 # equivalent width, and models absorption due to this Gaussian.
 class AbsorptionGaussian(ArithmeticModel):
-    """Absorption Gaussian function expressed in equivalent width."""
+    """Gaussian function for modeling absorption (equivalent width).
+
+    This model is intended to be used to modify another model (e.g.
+    by multiplying the two together). It is for use when the
+    independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the gaussian, in Angstroms.
+    ewidth
+        The equivalent width of the model.
+    limit
+        The model is only evaluated for points that lie within
+        limit sigma of pos. It is a hidden parameter, with a
+        value fixed at 4.
+
+    See Also
+    --------
+    AbsorptionEdge, AbsorptionLorentz, AbsorptionVoigt,
+    EmissionGaussian, OpticalGaussian
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = 1 - ampl * exp(-0.5 * ((x - pos)/sigma)^2)
+
+        ampl = ewidth / sigma / 2.50662828
+
+        sigma = pos * fwhm / (2.354820044 * c)
+
+    and for integrated data sets the low-edge of the grid is used.
+    The calculation is only done for those points that line in the
+    range::
+
+        |x - pos| < limit * sigma
+
+    Outside this range the model is set to 1.
+    """
 
     def __init__(self, name='absorptiongaussian'):
 
@@ -245,7 +285,41 @@ class AbsorptionGaussian(ArithmeticModel):
 # This model calculates a Lorentzian function expressed in
 # equivalent width, and models absorption due to this Lorentzian.
 class AbsorptionLorentz(ArithmeticModel):
-    """Absorption Lorentz function expressed in equivalent width."""
+    """Lorentz function for modeling absorption (equivalent width).
+
+    This model is intended to be used to modify another model (e.g.
+    by multiplying the two together). It is for use when the
+    independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the lorentzian, in Angstroms.
+    ewidth
+        The equivalent width of the model.
+
+    See Also
+    --------
+    AbsorptionEdge, AbsorptionGaussian, AbsorptionVoigt,
+    EmissionLorentz, OpticalGaussian
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = 1 - ewidth * c / (1.571 * fwhm * pos * l(x))
+
+        l(x) = 1 + 4 * ((1 / x - 1 / pos) * pos * c / fwhm)^2
+
+        c = speed of light in km/s
+
+    and for integrated data sets the low-edge of the grid is used.
+
+    The speed of light can be found by inspecting the module
+    variable ``sherpa.astro.optical.c_km``.
+    """
 
     def __init__(self, name='absorptionlorentz'):
 
@@ -276,7 +350,42 @@ class AbsorptionLorentz(ArithmeticModel):
 
 # This model computes a Lorentzian profile for emission features.
 class EmissionLorentz(ArithmeticModel):
-    """Emission Lorentz function expressed in equivalent width."""
+    """Lorentz function for modeling emission.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the lorentzian, in Angstroms.
+    flux
+        The normalisation of the lorentzian.
+    kurt
+        The kurtosis of the lorentzian.
+
+    See Also
+    --------
+    AbsorptionLorentz, EmissionGaussian, EmissionVoigt
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = flux * 2 * pi * s / l(x)
+
+        l(x) = abs(x - pos)^kurt + (0.5 * s)^2
+
+        s = pos * fwhm / c
+
+        c = speed of light in km/s
+
+    and for integrated data sets the low-edge of the grid is used.
+
+    The speed of light can be found by inspecting the module
+    variable ``sherpa.astro.optical.c_km``.
+    """
 
     def __init__(self, name='emissionlorentz'):
 
@@ -311,7 +420,48 @@ class EmissionLorentz(ArithmeticModel):
 # This model computes an absorption Gaussian feature expressed in
 # optical depth.
 class OpticalGaussian(ArithmeticModel):
-    """Absorption Gaussian function expressed in optical depth."""
+    """Gaussian function for modeling absorption (optical depth).
+
+    This model is intended to be used to modify another model (e.g.
+    by multiplying the two together). It is for use when the
+    independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the gaussian, in Angstroms.
+    tau
+        The optical depth of the model.
+    limit
+        The model is only evaluated for points that lie within
+        limit sigma of pos. It is a hidden parameter, with a
+        value fixed at 4.
+
+    See Also
+    --------
+    AbsorptionEdge, AbsorptionGaussian, AbsorptionLorentz,
+    AbsorptionVoigt, EmissionGaussian
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = exp(-tau * g(x))
+
+        g(x) = exp(-0.5 * ((x - pos) / sigma)^2)
+
+        sigma = pos * fwhm / (2.9979e5 * 2.354820044)
+
+    and for integrated data sets the low-edge of the grid is used.
+    The calculation is only done for those points that line in the
+    range::
+
+        |x - pos| < limit * sigma
+
+    Outside this range the model is set to 1.
+    """
 
     def __init__(self, name='opticalgaussian'):
 
@@ -348,7 +498,58 @@ class OpticalGaussian(ArithmeticModel):
 
 # This model computes a Gaussian profile for emission features.
 class EmissionGaussian(ArithmeticModel):
-    """Emission Gaussian function."""
+    """Gaussian function for modeling emission.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the gaussian, in Angstroms.
+    flux
+        The normalisation of the gaussian.
+    skew
+        The skew of the gaussian.
+    limit
+        The model is only evaluated for points that lie within
+        limit sigma of pos. It is a hidden parameter, with a
+        value fixed at 4.
+
+    See Also
+    --------
+    AbsorptionGaussian, EmissionLorentz, EmissionVoigt, LogEmission
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = flux * exp(-0.5 * d(x)^2) / s2   if skew = 1
+
+             = 2 * flux * exp(-0.5 * d2(x)^2) / (s2 * (1 + skew))
+
+                                                otherwise
+
+        d(x) = (x - pos) / s
+
+        d2(x) = d(x)                  if x <= pos
+
+              = d(x) / s              otherwise
+
+        s2 = 2.50662828 * s
+
+        s = pos * fwhm / (2.9979e5 * 2.354820044)
+
+    and for integrated data sets the low-edge of the grid is used.
+
+    The calculation is only done for those points that line in the
+    range::
+
+        |x - pos| < limit * sigma
+
+    Outside this range the model is set to 0.
+    """
 
     def __init__(self, name='emissiongaussian'):
 
@@ -401,7 +602,52 @@ class EmissionGaussian(ArithmeticModel):
 # This model computes absorption as a Voigt function -- i.e., with
 # a Gaussian core and Lorentzian wings.
 class AbsorptionVoigt(ArithmeticModel):
-    """Absorption Voigt function expressed in equivalent width."""
+    """Voigt function for modeling absorption (equivalent width).
+
+    This model uses an ``AbsorptionGaussian`` component to model the
+    core of the profile and an ``AbsorptionLorentz`` component to
+    model the wings of the absorption feature. This model is intended
+    to be used to modify another model (e.g. by multiplying the two
+    together). It is for use when the independent axis is in
+    Angstroms.
+
+    Attributes
+    ----------
+    center
+        The center of the profile, in Angstroms.
+    ew
+        The equivalent width of the profile. The ewidth parameter
+        of the Gaussian and Lorentz sub-components is set to
+        half this value.
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    lg
+        The fwhm parameters of the Gaussian and Lorentz components
+        are set based on the ``fwhm`` and ``lg`` values: the
+        Gaussian component has its fwhm parameter set equal to
+        ``fwhm``, and the Lorentz component has its fwhm parameter
+        set to ``lg * fwhm``.
+
+    See Also
+    --------
+    AbsorptionEdge, AbsorptionGaussian, AbsorptionVoigt,
+    EmissionLorentz, OpticalGaussian
+
+    Notes
+    -----
+    The Voigt function is approximated by the sum of a Gaussian and
+    a Lorentzian profile ([1]_), which works best when the ratio
+    between the FWHM of the Gaussian and Lorentzian sub-components is
+    near unity. The flux value is always kept evenly divided in
+    between each sub-component. The FWHM of each sub-component is
+    related to that of the other sub-component via the lg parameter.
+
+    References
+    ----------
+
+    .. [1] K. R. Lang, Astrophysical Formulae, 1980, 2nd ed., page 220
+
+    """
 
     def __init__(self, name='absorptionvoigt'):
         self.center = Parameter(name, 'center', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -428,6 +674,8 @@ class AbsorptionVoigt(ArithmeticModel):
 # This model computes continuum emission as a blackbody function.
 class BlackBody(ArithmeticModel):
     """Emission from a black body.
+
+    It is for use when the independent axis is in Angstroms.
 
     Attributes
     ----------
@@ -500,6 +748,8 @@ class BlackBody(ArithmeticModel):
 class Bremsstrahlung(ArithmeticModel):
     """Bremsstrahlung emission.
 
+    It is for use when the independent axis is in Angstroms.
+
     Attributes
     ----------
     refer
@@ -545,6 +795,8 @@ class Bremsstrahlung(ArithmeticModel):
 # wavelength.
 class BrokenPowerlaw(ArithmeticModel):
     """Broken power-law model.
+
+    It is for use when the independent axis is in Angstroms.
 
     Attributes
     ----------
@@ -599,7 +851,9 @@ class CCM(ArithmeticModel):
     """Galactic extinction: the Cardelli, Clayton, and Mathis model.
 
     The interstellar extinction is calculated using the formula
-    from [1]_.
+    from [1]_. This model is intended to be used to modify another
+    model (e.g. by multiplying the two together). It is for use when
+    the independent axis is in Angstrom.
 
     Attributes
     ----------
@@ -696,7 +950,40 @@ class CCM(ArithmeticModel):
 # This model computes absorption using a Gaussian function expressed
 # in optical depth, and using the log of the FWHM.
 class LogAbsorption(ArithmeticModel):
-    """Log of absorption Gaussian function expressed in optical depth."""
+    """Gaussian function for modeling absorption (log of fwhm).
+
+    This model is intended to be used to modify another model (e.g.
+    by multiplying the two together). It is for use when the
+    independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the feature in km/s.
+    pos
+        The center of the feature, in Angstroms.
+    tau
+        The optical depth of the feature.
+
+    See Also
+    --------
+    AbsorptionEdge, AbsorptionGaussian, AbsorptionLorentz,
+    AbsorptionVoigt, EmissionGaussian, LogEmission, OpticalGaussian
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = exp(-tau * (x / pos)^(term * alpha))
+
+        term = -1     if x >= pos
+
+             = 1      otherwise
+
+        alpha = log(2) / log(1 + 0.5 * fwhm / c)
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='logabsorption'):
 
@@ -732,8 +1019,60 @@ class LogAbsorption(ArithmeticModel):
 
 # This model computes emission using a Gaussian function expressed
 # in optical depth, and using the log of the FWHM.
+#
+# DOC NOTE: the specview docs and ahelp file claim that fmax
+#           requires c but the code uses the pos parameter.
+#           WHAT IS CORRECT? See
+#           https://github.com/sherpa/sherpa/issues/220
+#
 class LogEmission(ArithmeticModel):
-    """Log of the emission Gaussian function."""
+    """Gaussian function for modeling emission (log of fwhm).
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the gaussian, in Angstroms.
+    flux
+        The normalisation of the gaussian.
+    skew
+        The skew of the gaussian.
+    limit
+        This is a hidden parameter and is unused by the model.
+
+    See Also
+    --------
+    EmissionGaussian, EmissionLorentz, EmissionVoigt, LogAbsorption
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = fmax * (x / pos)^arg                    if x <= pos
+
+               fmax * (x / pos)^(-alpha)               otherwise
+
+        arg = log(2) / log(1 + 0.5 * fwhm / c)
+
+        arg1 = log(2) / log(1 + 0.5 * skew * fwhm / c)
+
+        alpha = arg                                    if skew == 1
+
+              = arg1                                   otherwise
+
+        fmax = (arg - 1) * flux / (2 * pos)            if skew == 1
+
+             = (arg - 1) * flux / (pos * (1 + (arg - 1) / (arg1 - 1)))
+
+                                                       otherwise
+
+        c = 2.9979e5
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='logemission'):
 
@@ -783,6 +1122,9 @@ class LogEmission(ArithmeticModel):
 # y = c0 + c1 * (x - offset) + c2 * (x - offset)^2 + c3 * (x - offset)^3 + c4 * (x - offset)^4 + c5 * (x - offset)^5
 class Polynomial(ArithmeticModel):
     """Polynomial model of order 5.
+
+    This model can be used with any one-dimensional data set since
+    there are no units on the parameters.
 
     Attributes
     ----------
@@ -844,6 +1186,8 @@ class Polynomial(ArithmeticModel):
 class Powerlaw(ArithmeticModel):
     """Power-law model.
 
+    It is for use when the independent axis is in Angstroms.
+
     Attributes
     ----------
     refer
@@ -891,6 +1235,8 @@ class Powerlaw(ArithmeticModel):
 class Recombination(ArithmeticModel):
     """Optically-thin recombination continuum model.
 
+    It is for use when the independent axis is in Angstroms.
+
     Attributes
     ----------
     refer
@@ -902,7 +1248,7 @@ class Recombination(ArithmeticModel):
     temperature
         The temperature in Kelvin.
     fwhm
-        The fwhm in km/s.
+        The full-width half-maximum of the model in km/s.
 
     Notes
     -----
@@ -946,7 +1292,48 @@ class Recombination(ArithmeticModel):
 # This model computes emission as a Voigt function -- i.e., with
 # a Gaussian core and Lorentzian wings.
 class EmissionVoigt(ArithmeticModel):
-    """Emission Voigt function."""
+    """Voigt function for modeling emission.
+
+    This model uses an ``EmissionGaussian`` component to model the
+    core of the profile and an ``EmissionLorentz`` component to
+    model the wings of the emission feature. It is for use when the
+    independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    center
+        The center of the profile, in Angstroms.
+    flux
+        The flux the profile. This is the value used for
+        each of the Gaussian and Lorentz sub-components.
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    lg
+        The fwhm parameters of the Gaussian and Lorentz components
+        are set based on the ``fwhm`` and ``lg`` values: the
+        Gaussian component has its fwhm parameter set equal to
+        ``fwhm``, and the Lorentz component has its fwhm parameter
+        set to ``lg * fwhm``.
+
+    See Also
+    --------
+    AbsorptionVoigt, EmissionGaussian, EmissionLorentz
+
+    Notes
+    -----
+    The Voigt function is approximated by the sum of a Gaussian and
+    a Lorentzian profile ([1]_), which works best when the ratio
+    between the FWHM of the Gaussian and Lorentzian sub-components is
+    near unity. The flux value is always kept evenly divided in
+    between each sub-component. The FWHM of each sub-component is
+    related to that of the other sub-component via the lg parameter.
+
+    References
+    ----------
+
+    .. [1] K. R. Lang, Astrophysical Formulae, 1980, 2nd ed., page 220
+
+    """
 
     def __init__(self, name='emissionvoigt'):
         self.center = Parameter(name, 'center', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -1006,7 +1393,10 @@ class XGal(ArithmeticModel):
 class FM(ArithmeticModel):
     """UV extinction curve: Fitzpatrick and Massa 1988.
 
-    The UV extinction is calculated using [1]_.
+    The UV extinction is calculated using [1]_. This model is
+    intended to be used to modify another model (e.g. by multiplying
+    the two together). It is for use when the independent axis is in
+    Angstrom.
 
     Attributes
     ----------
@@ -1112,7 +1502,9 @@ class SM(ArithmeticModel):
     """Galactic extinction: the Savage & Mathis model.
 
     The interstellar extinction is calculated using the formula
-    from [1]_.
+    from [1]_. This model is intended to be used to modify another
+    model (e.g. by multiplying the two together). It is for use when
+    the independent axis is in Angstrom.
 
     Attributes
     ----------
@@ -1225,7 +1617,10 @@ class Seaton(ArithmeticModel):
     The interstellar extinction is calculated using the formula
     from [1]_ as implemented in STSCI's Synphot program [2]_.
     The supported wavelength range is 1000 to 10000 Angstroms, and
-    the Notes section describes the changes from [1]_.
+    the Notes section describes the changes from [1]_. This model is
+    intended to be used to modify another model (e.g. by multiplying
+    the two together). It is for use when the independent axis is in
+    Angstrom.
 
     Attributes
     ----------
