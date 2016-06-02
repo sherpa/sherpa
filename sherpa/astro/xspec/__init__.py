@@ -139,6 +139,22 @@ def set_xsxset(name, value):
 # http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Control.html
 # http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Setting.html
 def get_xsstate():
+    """Return the state of the XSPEC module.
+
+    Returns
+    -------
+    state : dict
+        The current settings for the XSPEC module, including but not
+        limited to: the abundance and cross-section settings, parameters
+        for the cosmological model, and any XSET parameters that have
+        been set.
+
+    See Also
+    --------
+    get_xsabund, get_xschatter, get_xscosmo, get_xsxsect, get_xsxset,
+    set_xsstate
+    """
+
     return {"abund": get_xsabund(),
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
@@ -146,6 +162,26 @@ def get_xsstate():
             "modelstrings": modelstrings}
 
 def set_xsstate(state):
+    """Restore the state of the XSPEC module.
+
+    Parameters
+    ----------
+    state : dict
+        The current settings for the XSPEC module. This is expected to
+        match the return value of ``get_xsstate``, and so requires the
+        keys: 'abund', 'chatter', 'cosmo', 'xsect', and 'modelstrings'.
+
+    See Also
+    --------
+    get_xsstate, set_xsabund, set_xschatter, set_xscosmo, set_xsxsect,
+    set_xsxset
+
+    Notes
+    -----
+    The state of the XSPEC module will only be changed if all
+    the required keys in the dictionary are present.
+    """
+
     if (type(state) == dict and
         'abund' in state and
         'chatter' in state and
@@ -167,6 +203,32 @@ __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
 
 
 class XSModel(ArithmeticModel):
+    """The base class for XSPEC models.
+
+    It is expected that sub-classes are used to represent the
+    five different types of XSPEC model (additive, multiplicative,
+    convolution, pile up, mixing, and tables), although not all are
+    currently supported in Sherpa.
+
+    Notes
+    -----
+    The XSPEC models are evaluated on a one-dimensional, integrated,
+    contiguous grid. When the ``calc`` method is called with both
+    low and high bin values, the arrays are converted into a single
+    array matching the XSPEC calling convention - that is elo_0,
+    elo_1, ..., elo_n for n bins (so the last value is the upper edge
+    of the last bin) - adding in any bins to account for a non-contiguous
+    input. This array is used to evaluate the model, and then the
+    return value is created by removing any extra bins that had to be
+    added to account for non-contiguous input values.
+
+    If used on an unbinned dataset, so only one array is sent to
+    ``calc``, then the input values are taken to match the XSPEC
+    calling convention - i.e. a contiguous grid where the last element
+    represents the upper edge of the last bin. This means that for
+    an input grid of ``n`` points, the returned array will contain
+    ``n`` values, but the last element will be zero.
+    """
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
@@ -194,6 +256,54 @@ class XSModel(ArithmeticModel):
 
 
 class XSTableModel(XSModel):
+    """Interface to XSPEC table models.
+
+    XSPEC supports loading in user-supplied data files for use
+    as a table model [1]_. This class provides a low-level
+    way to access this functionality. A simpler interface is provided
+    by the ``load_table_model`` routine provided by the
+    ``sherpa.astro.ui`` module
+
+    Parameters
+    ----------
+    filename : str
+        The name of the FITS file containing the data for the XSPEC
+        table model; the format is described in [2]_.
+    name : str
+        The name to use for the instance of the table model.
+    parnames : sequence
+        The parameter names. This corresponds to the "NAME" column from
+        the "PARAMETER" block of the input file. Any invalid characters
+        in each name will be replaced by the '_' character.
+    initvals : sequence
+        The initial values for each parameter. This corresponds to the
+        "INITIAL" column from the "PARAMETER" block of the input file.
+    delta : sequence
+        The delta value for each parameter. This corresponds to the
+        "DELTA" column from the "PARAMETER" block of the input file.
+    mins, maxes, hardmins, hardmaxes : sequence
+        The valid range of each parameter. These correspond to the
+        "BOTTOM", "TOP", "MINIMUM", and "MAXIMUM" columns from the
+        "PARAMETER" block of the input file.
+    nint : int
+        The first ``nint`` parameters are marked as thawed by default,
+        the remaining default to frozen.
+    addmodel : bool
+        Is this an additive model (``True``) or multiplicative model
+        (``False``)? It should be set to the value of the "ADDMODEL"
+        keyword of the primary header of the input file.
+    addredshift : bool
+        If ``True`` then a redshift parameter is added to the parameters.
+        It should be set to the value of the "REDSHIFT" keyword of the
+        primary header of the input file.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
+    .. [2] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+
+    """
 
     def __init__(self, filename, name='xstbl', parnames=(),
                  initvals=(), delta=(), mins=(), maxes=(), hardmins=(),
@@ -250,6 +360,16 @@ class XSTableModel(XSModel):
 
 
 class XSAdditiveModel(XSModel):
+    """The base class for XSPEC additive models.
+
+    The XSPEC additive models are listed at [1]_.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/Additive.html
+
+    """
 
     def guess(self, dep, *args, **kwargs):
         if hasattr(self, 'norm'):
@@ -258,10 +378,54 @@ class XSAdditiveModel(XSModel):
 
 
 class XSMultiplicativeModel(XSModel):
+    """The base class for XSPEC multiplicative models.
+
+    The XSPEC multiplicative models are listed at [1]_.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/Multiplicative.html
+
+    """
+
     pass
 
 
 class XSapec(XSAdditiveModel):
+    """The XSPEC apec model.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keywords "APECROOT", "APECTHERMAL", "APECVELOCITY",
+    and "APEC_TRACE_ABUND".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
+        keyword.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        for the units.
+
+    See Also
+    --------
+    XSvapec, XSvvapec, XSbapec, XSbvapec, XSbvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelApec.html
+
+    """
 
     _calc =  _xspec.xsaped
 
@@ -1478,6 +1642,33 @@ class XSstep(XSAdditiveModel):
 
 
 class XSvapec(XSAdditiveModel):
+    """The XSPEC vapec model.
+
+    The model is described at [1]_, with ``XSapec`` describing how
+    it is implemented in Sherpa.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        for the units.
+
+    See Also
+    --------
+    XSapec, XSvvapec, XSbapec, XSbvapec, XSbvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelApec.html
+
+    """
 
     _calc =  _xspec.xsvape
 
@@ -2826,6 +3017,34 @@ class XSbvvapec(XSAdditiveModel):
 
 
 class XSvvapec(XSAdditiveModel):
+    """The XSPEC vvapec model.
+
+    The model is described at [1]_, with ``XSapec`` describing how
+    it is implemented in Sherpa.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        for the units.
+
+    See Also
+    --------
+    XSapec, XSvapec, XSbapec, XSbvapec, XSbvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelApec.html
+
+    """
 
     _calc = _xspec.xsvvap
 
