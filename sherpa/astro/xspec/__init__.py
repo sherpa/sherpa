@@ -548,7 +548,57 @@ class XSbbodyrad(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.norm))
 
 
+# DOC-NOTE: the XSPEC documentation has a different parameter order to
+#           the code.
 class XSbexrav(XSAdditiveModel):
+    """The XSPEC bexrav model: reflected e-folded broken power law, neutral medium
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Gamma1
+        The power-law index of the first power-law component.
+    breakE
+        The break energy, in keV.
+    Gamma2
+        The power-law index of the second power-law component.
+    foldE
+        The e-folding energy (Ec) in keV. If zero there is no cut off.
+    rel_refl
+        The reflection scaling parameter (a value of 1 for an
+        isotropic source above the disk).
+    cosIncl
+        The cosine of the inclination angle.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbexriv
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the BEXRAV_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBexrav.html
+
+    """
 
     _calc =  _xspec.C_xsbexrav
 
@@ -572,6 +622,58 @@ class XSbexrav(XSAdditiveModel):
 
 
 class XSbexriv(XSAdditiveModel):
+    """The XSPEC bexriv model: reflected e-folded broken power law, ionized medium
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Gamma1
+        The power-law index of the first power-law component.
+    breakE
+        The break energy, in keV.
+    Gamma2
+        The power-law index of the second power-law component.
+    foldE
+        The e-folding energy (Ec) in keV. If zero there is no cut off.
+    rel_refl
+        The reflection scaling parameter (a value of 1 for an
+        isotropic source above the disk).
+    redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    cosIncl
+        The cosine of the inclination angle.
+    T_disk
+        The disk temperature in K.
+    xi
+        The disk inoization parameter: see [1]_ for an explanation.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbexrav
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the BEXRIV_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBexriv.html
+
+    """
 
     _calc =  _xspec.C_xsbexriv
 
