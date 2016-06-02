@@ -485,6 +485,28 @@ class XSbapec(XSAdditiveModel):
 
 
 class XSbbody(XSAdditiveModel):
+    """The XSPEC bbody model: blackbody spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the object, in keV.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbbodyrad, XSzbbody
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBbody.html
+
+    """
 
     _calc =  _xspec.xsblbd
 
@@ -495,6 +517,28 @@ class XSbbody(XSAdditiveModel):
 
 
 class XSbbodyrad(XSAdditiveModel):
+    """The XSPEC bbodyrad model: blackbody spectrum, area normalized.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the object, in keV.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbbody, XSzbbody
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBbodyrad.html
+
+    """
 
     _calc =  _xspec.xsbbrd
 
@@ -2260,6 +2304,30 @@ class XSvvsedov(XSAdditiveModel):
 
 
 class XSzbbody(XSAdditiveModel):
+    """The XSPEC zbbody model: blackbody spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the object, in keV.
+    redshift
+        The redshift of the object.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbbody, XSbbodyrad
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBbody.html
+
+    """
 
     _calc =  _xspec.xszbod
 
