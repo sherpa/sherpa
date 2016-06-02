@@ -1360,7 +1360,34 @@ class EmissionVoigt(ArithmeticModel):
 # This model computes the extragalactic extinction function of
 # Calzetti, Kinney and Storchi-Bergmann, 1994, ApJ, 429, 582
 class XGal(ArithmeticModel):
-    """Extragalactic extinction function of Calzetti, Kinney and Storchi-Bergmann"""
+    """Extragalactic extinction: Calzetti, Kinney and Storchi-Bergmann
+
+    The extragalactic extinction is calculated using the formula
+    from [1]_. This model is intended to be used to modify another
+    model (e.g. by multiplying the two together). It is for use when
+    the independent axis is in Angstrom.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+
+    See Also
+    --------
+    CCM, FM, LMC, Seaton, SM, SMC
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Calzetti, Kinney, Storchi-Bergmann, 1994, ApJ, 429, 582
+           http://adsabs.harvard.edu/abs/1994ApJ...429..582C
+
+    """
 
     def __init__(self, name='xgal'):
         self.ebv = Parameter(name, 'ebv', 0.5)
@@ -1462,7 +1489,34 @@ class FM(ArithmeticModel):
 # This model computes the extinction curve using the
 #  LMC extinction curve from Howarth 1983 MNRAS, 203, 301
 class LMC(ArithmeticModel):
-    """Howarth's LMC extinction curve (Howarth 1983 MNRAS, 203, 301)"""
+    """LMC extinction: the Howarth model.
+
+    The interstellar extinction is calculated using the formula
+    from [1]_. This model is intended to be used to modify another
+    model (e.g. by multiplying the two together). It is for use when
+    the independent axis is in Angstrom.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+
+    See Also
+    --------
+    CCM, FM, Seaton, SM, SMC, XGAL
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Howarth 1983 MNRAS, 203, 301
+           http://adsabs.harvard.edu/abs/1983MNRAS.203..301H
+
+    """
 
     def __init__(self, name='lmc'):
         self.ebv = Parameter(name, 'ebv', 0.5)
@@ -1523,7 +1577,7 @@ class SM(ArithmeticModel):
     References
     ----------
 
-    .. [1] Savage & Mathis,1979, ARA&A, 17, 73-111
+    .. [1] Savage & Mathis, 1979, ARA&A, 17, 73-111
            http://adsabs.harvard.edu/abs/1979ARA%26A..17...73S
 
     """
@@ -1557,7 +1611,35 @@ class SM(ArithmeticModel):
 # This model computes the SMC extinction function of
 # Prevot et al. 1984, A&A, 132, 389-392
 class SMC(ArithmeticModel):
-    """Prevot et.al. 1984 extinction curve for the SMC"""
+    """SMC extinction: the Prevot et al. 1984 model.
+
+    The interstellar extinction is calculated using the formula
+    from [1]_. This model is intended to be used to modify another
+    model (e.g. by multiplying the two together). It is for use when
+    the independent axis is in Angstrom.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+
+    See Also
+    --------
+    CCM, FM, LMC, Seaton, SM, XGAL
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Prevot et al. 1984, A&A, 132, 389-392
+           http://adsabs.harvard.edu/abs/1984A%26A...132..389P
+
+    """
+
     def __init__(self, name='smc'):
         self.ebv = Parameter(name, 'ebv', 0.5)
 
