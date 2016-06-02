@@ -1050,6 +1050,29 @@ class XSezdiskbb(XSAdditiveModel):
 
 
 class XSgaussian(XSAdditiveModel):
+    """The XSPEC gaussian model: gaussian line profile.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Sigma
+        The line width, in keV. A value of zero means a delta function.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSagauss, XSzagauss, XSzgauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGaussian.html
+
+    """
 
     _calc =  _xspec.xsgaul
 
@@ -2259,6 +2282,31 @@ class XSzbremss(XSAdditiveModel):
 
 
 class XSzgauss(XSAdditiveModel):
+    """The XSPEC gaussian model: gaussian line profile.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Sigma
+        The line width, in keV. A value of zero means a delta function.
+    redshift
+        The redshift of the line.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSagauss, XSgaussian, XSzagauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGaussian.html
+
+    """
 
     _calc =  _xspec.C_xszgau
 
@@ -3316,6 +3364,29 @@ class XSpexmon(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.foldE, self.rel_refl, self.redshift, self.abund, self.Fe_abund, self.Incl, self.norm))
 
 class XSagauss(XSAdditiveModel):
+    """The XSPEC agauss model: gaussian line profile in wavelength space.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line wavelength, in Angstrom.
+    Sigma
+        The line width, in Angstrom. A value of zero means a delta function.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSgaussian, XSzagauss, XSzgauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAgauss.html
+
+    """
 
     _calc =  _xspec.C_agauss
 
@@ -3326,6 +3397,31 @@ class XSagauss(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.LineE, self.Sigma, self.norm))
 
 class XSzagauss(XSAdditiveModel):
+    """The XSPEC zagauss model: gaussian line profile in wavelength space.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line wavelength, in Angstrom.
+    Sigma
+        The line width, in Angstrom. A value of zero means a delta function.
+    Redshift
+        The redshift of the line.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSagauss, XSgaussian, XSzgauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAgauss.html
+
+    """
 
     _calc =  _xspec.C_zagauss
 
