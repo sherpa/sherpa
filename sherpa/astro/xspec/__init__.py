@@ -393,7 +393,7 @@ class XSMultiplicativeModel(XSModel):
 
 
 class XSapec(XSAdditiveModel):
-    """The XSPEC apec model.
+    """The XSPEC apec model: APEC emission spectrum.
 
     The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
     functions change and return the current settings for the relative
@@ -414,11 +414,11 @@ class XSapec(XSAdditiveModel):
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
-        for the units.
+        of the units.
 
     See Also
     --------
-    XSvapec, XSvvapec, XSbapec, XSbvapec, XSbvvapec
+    XSbapec, XSbvapec, XSbvvapec, XSvapec, XSvvapec
 
     References
     ----------
@@ -438,6 +438,40 @@ class XSapec(XSAdditiveModel):
 
 
 class XSbapec(XSAdditiveModel):
+    """The XSPEC bapec model: velocity broadened APEC thermal plasma model.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keywords "APECROOT" and "APEC_TRACE_ABUND".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
+        keyword.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbvapec, XSbvvapec, XSvapec, XSvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBapec.html
+
+    """
 
     _calc =  _xspec.xsbape
 
@@ -578,6 +612,35 @@ class XSbremss(XSAdditiveModel):
 
 
 class XSbvapec(XSAdditiveModel):
+    """The XSPEC bvapec model: velocity broadened APEC thermal plasma model.
+
+    The model is described at [1]_, with ``XSbapec`` describing how
+    it is implemented in Sherpa.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbapec, XSbvvapec, XSvapec, XSvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBapec.html
+
+    """
 
     _calc =  _xspec.xsbvpe
 
@@ -1642,7 +1705,7 @@ class XSstep(XSAdditiveModel):
 
 
 class XSvapec(XSAdditiveModel):
-    """The XSPEC vapec model.
+    """The XSPEC vapec model: APEC emission spectrum.
 
     The model is described at [1]_, with ``XSapec`` describing how
     it is implemented in Sherpa.
@@ -1657,11 +1720,11 @@ class XSvapec(XSAdditiveModel):
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
-        for the units.
+        of the units.
 
     See Also
     --------
-    XSapec, XSvvapec, XSbapec, XSbvapec, XSbvvapec
+    XSapec, XSbapec, XSbvapec, XSbvvapec, XSvvapec
 
     References
     ----------
@@ -2975,6 +3038,36 @@ class XScompth(XSAdditiveModel):
 
 
 class XSbvvapec(XSAdditiveModel):
+    """The XSPEC bvvapec model: velocity broadened APEC thermal plasma model.
+
+    The model is described at [1]_, with ``XSbapec`` describing how
+    it is implemented in Sherpa.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbapec, XSbvapec, XSvapec, XSvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBapec.html
+
+    """
 
     _calc = _xspec.xsbvvp
 
@@ -3017,7 +3110,7 @@ class XSbvvapec(XSAdditiveModel):
 
 
 class XSvvapec(XSAdditiveModel):
-    """The XSPEC vvapec model.
+    """The XSPEC vvapec model: APEC emission spectrum.
 
     The model is described at [1]_, with ``XSapec`` describing how
     it is implemented in Sherpa.
@@ -3033,11 +3126,11 @@ class XSvvapec(XSAdditiveModel):
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
-        for the units.
+        of the units.
 
     See Also
     --------
-    XSapec, XSvapec, XSbapec, XSbvapec, XSbvvapec
+    XSapec, XSbapec, XSbvapec, XSbvvapec, XSvapec
 
     References
     ----------
