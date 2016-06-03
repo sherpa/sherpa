@@ -1302,6 +1302,32 @@ class XScflow(XSAdditiveModel):
 
 
 class XScompbb(XSAdditiveModel):
+    """The XSPEC compbb model: Comptonization, black body.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The blackbody temperature, in keV.
+    kTe
+        The electron temperature of the hot plasma, in keV.
+    tau
+        The optical depth of the plasma.
+    norm
+        The model normalization: it is the same definition as
+        used for the ``XSbbodyrad`` model.
+
+    See Also
+    --------
+    XSbbodyrad
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCompbb.html
+
+    """
 
     _calc =  _xspec.compbb
 
@@ -1314,6 +1340,25 @@ class XScompbb(XSAdditiveModel):
 
 
 class XScompLS(XSAdditiveModel):
+    """The XSPEC compLS model: Comptonization, Lamb & Sanford.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The blackbody temperature, in keV.
+    tau
+        The optical depth of the plasma.
+    norm
+        The model normalization.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCompls.html
+
+    """
 
     _calc =  _xspec.compls
 
@@ -1324,7 +1369,73 @@ class XScompLS(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.tau, self.norm))
 
 
+# DOC-NOTE: The XSPEC documentation for a number of parameters suggest
+#           that they can be negative, but the model.dat limits suggest
+#           otherwise (e.g. ktbb and tau_y).
+#
 class XScompPS(XSAdditiveModel):
+    """The XSPEC compPS model: Comptonization, Poutanen & Svenson.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kTe
+        The electron temperature in keV.
+    EleIndex
+        The electron power-law index.
+    Gmin
+        The minimum Lorentz factor gamma.
+    GMax
+        The maximum Lorentz factor gamma: see [1]_ for more details.
+    kTbb
+        The temperature of the soft photons, in keV.
+    tauy
+        The vertical optical depth of the corona: see [1]_ for more
+        details.
+    geom
+        The geometry to use; see [1]_ for more details.
+    HRcyl
+        The value of H/R, when a cylinder geometry is used (|geom| = 2).
+    cosIncl
+        The cosine of the inclination angle.
+    cov_frac
+        The covering fraction of the cold clouds (only used when
+        |geom| < 4).
+    rel_refl
+        The amount of reflection (Omega / (2 pi))
+    Fe_ab_re
+        The iron abundance, in units of solar.
+    Me_ab
+        The abundance of heavy elements, in units of solar.
+    xi
+        The disk ionization parameter.
+    Tdisk
+        The disk temperature for reflection, in K.
+    Betor10
+        The reflection emissivity law: see [1]_ for more details.1
+    Rin
+        The inner radius of the disk in Schwarzschild units.
+    Rout
+        The outer radius of the disk in Schwarzschild units.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model.
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the COMPPS_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCompps.html
+
+    """
 
     _calc =  _xspec.C_xscompps
 
@@ -1353,6 +1464,25 @@ class XScompPS(XSAdditiveModel):
 
 
 class XScompST(XSAdditiveModel):
+    """The XSPEC compST model: Comptonization, Sunyaev & Titarchuk.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature, in keV.
+    tau
+        The optical depth of the plasma.
+    norm
+        The model normalization: see [1]_ for more details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCompst.html
+
+    """
 
     _calc =  _xspec.compst
 
@@ -1363,7 +1493,37 @@ class XScompST(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.tau, self.norm))
 
 
+# DOC NOTE: the approx parameter is described in XSPEC as being allowed
+#           to be negative, but the limits do not permit this.
+#
 class XScompTT(XSAdditiveModel):
+    """The XSPEC compTT model: Comptonization, Titarchuk.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    redshift
+        The redshift of the source.
+    T0
+        The input soft photon (Wien) temperature in keV.
+    kT
+        The plasma temperature, in keV.
+    taup
+        The plasma optical depth.
+    approx
+        The geometry setting: a value less than or equal to 1 is a
+        disk, above 1 it is a sphere. See [1]_ for more details on
+        how this parameter affects the model. It must remain frozen.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelComptt.html
+
+    """
 
     _calc =  _xspec.xstitg
 
@@ -4030,6 +4190,44 @@ class XSzagauss(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.LineE, self.Sigma, self.Redshift, self.norm))
 
 class XScompmag(XSAdditiveModel):
+    """The XSPEC compmag model: Thermal and bulk Comptonization for cylindrical accretion onto the polar cap of a magnetized neutron star.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kTbb
+        The seed blackbody temperature, in keV.
+    kTe
+        The electron temperature of the accretion column, in keV.
+    tau
+        The vertical optical depth of the accretion column, with
+        electron cross-section equal to 10^-3 of the Thomson cross-section.
+    eta
+        The index of the velocity profile when the accretion velocity
+        increases towards the neutron star (valid when betaflag is 1).
+    beta0
+        The terminal velocity of the accreting matter at the neutron star
+        surface (valid when betaflag is 1).
+    r0
+        The radius of the accretion column in units of the neutron star
+        Schwarzschild radius.
+    A
+        The albedo at the surface of the neutron star.
+    betaflag
+        A flag for setting the velocity profile of the accretion
+        column, described at [1]_. It has values of 1 or 2 and can
+        not be thawed.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCompmag.html
+
+    """
 
     _calc =  _xspec.xscompmag
 
@@ -4046,6 +4244,39 @@ class XScompmag(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kTbb, self.kTe, self.tau, self.eta, self.beta0, self.r0, self.A, self.betaflag, self.norm))
 
 class XScomptb(XSAdditiveModel):
+    """The XSPEC comptb model: Thermal and bulk Comptonization of a seed blackbody-like spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kTs
+        The temperature of the seed photons, in keV.
+    gamma
+        The index of the seed photon spectrum.
+    alpha
+        The energy index of the Comptonization spectrum.
+    delta
+        The bulk parameter, efficiency of bulk over thermal
+        Comptonization.
+    kTe
+        The temperature of the electrons, in keV.
+    log_A
+        The log of the illuminating factor parameter (A).
+    norm
+        The normalization of the seed photon spectrum: it is the
+        same definition as used for the ``XSbbody`` model.
+
+    See Also
+    --------
+    XSbbody
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelComptb.html
+
+    """
 
     _calc =  _xspec.xscomptb
 
