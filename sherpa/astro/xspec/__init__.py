@@ -4019,6 +4019,85 @@ class XScplinear(XSAdditiveModel):
 
 
 class XSeqpair(XSAdditiveModel):
+    """The XSPEC eqpair model: Paolo Coppi's hybrid (thermal/non-thermal) hot plasma emission models.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    l_hl_s
+        The ratio of the hard to soft compactness, l_h / l_s.
+    l_bb
+        The soft photon compactness.
+    kT_bb
+        The temperature of the blackbody if greater than 0.
+        When less than zero then the absolute value is used as
+        the T_max parameter of the ``XSdispkpn`` model. The units
+        are in eV.
+    l_ntl_h
+        The fraction of power supplied to energetic particles which
+        goes into accelerating non-thermal particles, l_nt / l_h.
+    tau_p
+        The Thomson scattering depth.
+    radius
+        The size of the scattering region in cm.
+    g_min
+        The minimum Lorentz factor of the pairs.
+    g_max
+        The maximum Lorentz factor of the pairs.
+    G_inj
+        If less than zero then the non-thermal spectrum is assumed
+        mono-energetic at g_max, otherwise a power law is used from
+        g_min to g_max.
+    pairinj
+        If zero then accelerated particles are electrons from thermal
+        pool. If one then accelerated particles are electrons and
+        positrons.
+    cosIncl
+        The cosine of the inclination angle of the reflecting material
+        to the line of sight.
+    Refl
+        The fraction of the scattering region's emission intercepted
+        by reflecting material.
+    Fe_abund
+        The iron abundance with respect to solar.
+    AbHe
+        The abundance of the other metals with respect to solar.
+    T_disk
+        The temperature of the reflecting disk, in K.
+    xi
+        The ionization parameter of the reflector.
+    Beta
+        The power-law index with radius of disk reflection
+        emissivity.
+    Rin
+        The inner radius of the reflecting material, in units of
+        GM/c^2.
+    Rout
+        The outer radius of the reflecting material, in units of
+        GM/c^2.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the mode: see [1]_ for more details.
+
+    See Also
+    --------
+    XScompth, XSeqtherm
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the EQPAIR_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEqpair.html
+
+    """
 
     _calc = _xspec.C_xseqpair
 
@@ -4048,6 +4127,85 @@ class XSeqpair(XSAdditiveModel):
 
 
 class XSeqtherm(XSAdditiveModel):
+    """The XSPEC eqtherm model: Paolo Coppi's hybrid (thermal/non-thermal) hot plasma emission models.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    l_hl_s
+        The ratio of the hard to soft compactness, l_h / l_s.
+    l_bb
+        The soft photon compactness.
+    kT_bb
+        The temperature of the blackbody if greater than 0.
+        When less than zero then the absolute value is used as
+        the T_max parameter of the ``XSdispkpn`` model. The units
+        are in eV.
+    l_ntl_h
+        The fraction of power supplied to energetic particles which
+        goes into accelerating non-thermal particles, l_nt / l_h.
+    tau_p
+        The Thomson scattering depth.
+    radius
+        The size of the scattering region in cm.
+    g_min
+        The minimum Lorentz factor of the pairs.
+    g_max
+        The maximum Lorentz factor of the pairs.
+    G_inj
+        If less than zero then the non-thermal spectrum is assumed
+        mono-energetic at g_max, otherwise a power law is used from
+        g_min to g_max.
+    pairinj
+        If zero then accelerated particles are electrons from thermal
+        pool. If one then accelerated particles are electrons and
+        positrons.
+    cosIncl
+        The cosine of the inclination angle of the reflecting material
+        to the line of sight.
+    Refl
+        The fraction of the scattering region's emission intercepted
+        by reflecting material.
+    Fe_abund
+        The iron abundance with respect to solar.
+    AbHe
+        The abundance of the other metals with respect to solar.
+    T_disk
+        The temperature of the reflecting disk, in K.
+    xi
+        The ionization parameter of the reflector.
+    Beta
+        The power-law index with radius of disk reflection
+        emissivity.
+    Rin
+        The inner radius of the reflecting material, in units of
+        GM/c^2.
+    Rout
+        The outer radius of the reflecting material, in units of
+        GM/c^2.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the mode: see [1]_ for more details.
+
+    See Also
+    --------
+    XScompth, XSeqpair
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the EQPAIR_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEqpair.html
+
+    """
 
     _calc = _xspec.C_xseqth
 
@@ -4077,6 +4235,85 @@ class XSeqtherm(XSAdditiveModel):
 
 
 class XScompth(XSAdditiveModel):
+    """The XSPEC compth model: Paolo Coppi's hybrid (thermal/non-thermal) hot plasma emission models.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    l_hl_s
+        The ratio of the hard to soft compactness, l_h / l_s.
+    l_bb
+        The soft photon compactness.
+    kT_bb
+        The temperature of the blackbody if greater than 0.
+        When less than zero then the absolute value is used as
+        the T_max parameter of the ``XSdispkpn`` model. The units
+        are in eV.
+    l_ntl_h
+        The fraction of power supplied to energetic particles which
+        goes into accelerating non-thermal particles, l_nt / l_h.
+    tau_p
+        The Thomson scattering depth.
+    radius
+        The size of the scattering region in cm.
+    g_min
+        The minimum Lorentz factor of the pairs.
+    g_max
+        The maximum Lorentz factor of the pairs.
+    G_inj
+        If less than zero then the non-thermal spectrum is assumed
+        mono-energetic at g_max, otherwise a power law is used from
+        g_min to g_max.
+    pairinj
+        If zero then accelerated particles are electrons from thermal
+        pool. If one then accelerated particles are electrons and
+        positrons.
+    cosIncl
+        The cosine of the inclination angle of the reflecting material
+        to the line of sight.
+    Refl
+        The fraction of the scattering region's emission intercepted
+        by reflecting material.
+    Fe_abund
+        The iron abundance with respect to solar.
+    AbHe
+        The abundance of the other metals with respect to solar.
+    T_disk
+        The temperature of the reflecting disk, in K.
+    xi
+        The ionization parameter of the reflector.
+    Beta
+        The power-law index with radius of disk reflection
+        emissivity.
+    Rin
+        The inner radius of the reflecting material, in units of
+        GM/c^2.
+    Rout
+        The outer radius of the reflecting material, in units of
+        GM/c^2.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the mode: see [1]_ for more details.
+
+    See Also
+    --------
+    XSeqpair, XSeqtherm
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the EQPAIR_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEqpair.html
+
+    """
 
     _calc = _xspec.C_xscompth
 
@@ -4304,6 +4541,29 @@ class XSvgadem(XSAdditiveModel):
 
 
 class XSeplogpar(XSAdditiveModel):
+    """The XSPEC eplogpar model: log-parabolic blazar model with nu-Fnu normalization.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Ep
+        The peak energy, in keV, of the nu-Fnu curve.
+    beta
+        The curvature term.
+    norm
+        The flux in nu-Fnu units at the energy Ep.
+
+    See Also
+    --------
+    XSlogpar
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEplogpar.html
+
+    """
 
     _calc = _xspec.eplogpar
 
@@ -4315,6 +4575,31 @@ class XSeplogpar(XSAdditiveModel):
 
 
 class XSlogpar(XSAdditiveModel):
+    """The XSPEC logpar model: log-parabolic blazar model.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The slope at the pivot energy.
+    beta
+        The curvature term.
+    pivotE
+        The pivot energy, in keV.
+    norm
+        The normalization of the mode: see [1]_ for more details.
+
+    See Also
+    --------
+    XSeplogpar
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLogpar.html
+
+    """
 
     _calc = _xspec.logpar
 
