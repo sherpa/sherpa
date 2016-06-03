@@ -699,6 +699,33 @@ class XSbexriv(XSAdditiveModel):
 
 
 class XSbknpower(XSAdditiveModel):
+    """The XSPEC bknpower model: broken power law.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndx1
+        The power law photon index for energies less than BreakE.
+    BreakE
+        The break energy, in keV.
+    PhoIndx2
+        The power law photon index for energies greater than BreakE.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbkn2pow, XSpowerlaw, XSzpowerlw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBknpower.html
+
+    """
 
     _calc =  _xspec.C_brokenPowerLaw
 
@@ -716,6 +743,38 @@ class XSbknpower(XSAdditiveModel):
 
 
 class XSbkn2pow(XSAdditiveModel):
+    """The XSPEC bkn2pow model: broken power law with two breaks.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndx1
+        The power law photon index for energies less than BreakE1.
+    BreakE1
+        The first break energy, in keV.
+    PhoIndx2
+        The power law photon index for energies greater than BreakE1
+        but less than BreakE2.
+    BreakE2
+        The second break energy, in keV.
+    PhoIndx3
+        The power law photon index for energies greater than BreakE2.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbknpower, XSpowerlaw, XSzpowerlw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBkn2pow.html
+
+    """
 
     _calc =  _xspec.C_broken2PowerLaw
 
@@ -1721,6 +1780,29 @@ class XSplcabs(XSAdditiveModel):
 
 
 class XSpowerlaw(XSAdditiveModel):
+    """The XSPEC powerlaw model: power law photon spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndx
+        The power law photon index.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbknpower, XSbkn2pow, XSzpowerlw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPowerlaw.html
+
+    """
 
     _calc =  _xspec.C_powerLaw
 
@@ -2494,6 +2576,31 @@ class XSzgauss(XSAdditiveModel):
 
 
 class XSzpowerlw(XSAdditiveModel):
+    """The XSPEC zpowerlw model: redshifted power law photon spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndx
+        The power law photon index.
+    redshift
+        The redshift.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbknpower, XSbkn2pow, XSpowerlaw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPowerlaw.html
+
+    """
 
     _calc =  _xspec.C_zpowerLaw
 
