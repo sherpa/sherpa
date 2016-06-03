@@ -2078,6 +2078,42 @@ class XSgnei(XSAdditiveModel):
 
 
 class XSgrad(XSAdditiveModel):
+    """The XSPEC grad model: accretion disk, Schwarzschild black hole.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    D
+        The distance to the source in kpc.
+    i
+        The disk inclination angle, in degrees. A face-on disk has
+        i=0.
+    Mass
+        The mass of the central object, in solar masses.
+    Mdot
+        The mass accretion rate in units of 10^18 g/s.
+    TclTef
+        The spectral hardening factor, Tcol/Teff. See [1]_ for more
+        details.
+    refflag
+        A flag to control the relativistic effects: if positive then
+        a relativistic calculation is used; if zero or negative then
+        a Newtonian calculation is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model. It should be fixed to 1.
+
+    See Also
+    --------
+    XSkerbb
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGrad.html
+
+    """
 
     _calc =  _xspec.grad
 
@@ -2093,6 +2129,27 @@ class XSgrad(XSAdditiveModel):
 
 
 class XSgrbm(XSAdditiveModel):
+    """The XSPEC grbm model: gamma-ray burst continuum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The first powerlaw index.
+    beta
+        The second powerlaw index.
+    temp
+        The characteristic energy, in keV.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGrbm.html
+
+    """
 
     _calc =  _xspec.xsgrbm
 
@@ -2105,6 +2162,55 @@ class XSgrbm(XSAdditiveModel):
 
 
 class XSkerrbb(XSAdditiveModel):
+    """The XSPEC kerrbb model: multi-temperature blackbody model for thin accretion disk around a Kerr black hole.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    eta
+        The ratio of the disk power produced by a torque at the disk
+        inner boundary to the disk power arising from accretion. See
+        [1]_ for more details.
+    a
+        The specific angular momentum of the black hole in units of the
+        black hole mass M (when G=c=1). It should be in the range [0, 1).
+    i
+        The disk inclination angle, in degrees. A face-on disk has
+        i=0. It must be less than or equal to 85 degrees.
+    Mbh
+        The mass of the black hole, in solar masses.
+    Mdd
+        The "effective" mass accretion rate in units of 10^18 g/s.
+        See [1]_ for more details.
+    Dbh
+        The distance from the observer to the black hole, in units of kpc.
+    hd
+        The spectral hardening factor, Tcol/Teff. See [1]_ for more
+        details.
+    rflag
+        A flag to switch on or off the effect of self irradiation:
+        when greater than zero the self irradition is included,
+        otherwise it is not. This parameter can not be thawed.
+    lflag
+        A flag to switch on or off the effect of limb darkening:
+        when greater than zero the disk emission is assumed to be
+        limb darkened, otherwise it is isotropic.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model. It should be fixed to 1
+        if the inclination, mass, and distance are frozen.
+
+    See Also
+    --------
+    XSgrad
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKerrbb.html
+
+    """
 
     _calc =  _xspec.C_kerrbb
 
@@ -2123,6 +2229,42 @@ class XSkerrbb(XSAdditiveModel):
 
 
 class XSkerrd(XSAdditiveModel):
+    """The XSPEC kerrd model: optically thick accretion disk around a Kerr black hole.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    distance
+        The distance, in units of kpc.
+    TcollTeff
+        The spectral hardening factor, Tcol/Teff. See [1]_ for more
+        details.
+    M
+        The mass of the central object, in solar masses.
+    Mdot
+        The mass accretion rate in units of 10^18 g/s.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+    Rin
+        The inner radius, in units of GM/c^2. The last stable orbit
+        is 1.235.
+    Rout
+        The outer radius, in units of GM/c^2.
+    norm
+        The normalization of the model. It should be fixed to 1.
+
+    See Also
+    --------
+    XSlaor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKerrd.html
+
+    """
 
     _calc =  _xspec.C_kerrdisk
 
@@ -2139,6 +2281,47 @@ class XSkerrd(XSAdditiveModel):
 
 
 class XSkerrdisk(XSAdditiveModel):
+    """The XSPEC kerrdisk model: accretion disk line emission with BH spin as free parameter.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    lineE
+        The rest-frame line energy, in keV.
+    Index1
+        The emissivity index for the inner disk.
+    Index2
+        The emissivity index for the outer disk.
+    r_brg
+        The break radius separating the inner and outer portions of the
+        disk, in gravitational radii.
+    a
+        The dimensionless black hole spin.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+    Rinms
+        The inner radius of the disk, in units of the radius of
+        marginal stability.
+    Routms
+        The outer radius of the disk, in units of the radius of
+        marginal stability.
+    z
+        The redshift of the source.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSdiskline, XSlaor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKerrdisk.html
+
+    """
 
     _calc =  _xspec.spin
 
@@ -2162,6 +2345,36 @@ class XSkerrdisk(XSAdditiveModel):
 
 
 class XSlaor(XSAdditiveModel):
+    """The XSPEC laor model: accretion disk, black hole emission line.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    lineE
+        The rest-frame line energy, in keV.
+    Index
+        The power law dependence of emissivity (scales as R^-Index).
+    RinG
+        The inner radius, in units of GM/c^2.
+    RoutG
+        The outer radius, in units of GM/c^2.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSlaor2
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLaor.html
+
+    """
 
     _calc =  _xspec.C_xslaor
 
@@ -2181,6 +2394,40 @@ class XSlaor(XSAdditiveModel):
 
 
 class XSlaor2(XSAdditiveModel):
+    """The XSPEC laor2 model: accretion disk with broken-power law emissivity profile, black hole emission line.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    lineE
+        The rest-frame line energy, in keV.
+    Index
+        The power law dependence of emissivity (scales as R^-Index).
+    RinG
+        The inner radius, in units of GM/c^2.
+    RoutG
+        The outer radius, in units of GM/c^2.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+    Rbreak
+        The radius at which the emissivity power-law index changes.
+    Index1
+        The emissivity power-law index for r>Rbreak.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSlaor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLaor2.html
+
+    """
 
     _calc =  _xspec.C_laor2
 
