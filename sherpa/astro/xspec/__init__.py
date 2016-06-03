@@ -795,6 +795,28 @@ class XSbkn2pow(XSAdditiveModel):
 
 
 class XSbmc(XSAdditiveModel):
+    """The XSPEC bmc model: Comptonization by relativistic matter.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the thermal photon source in keV.
+    alpha
+        The energy spectral index.
+    logA
+        The log of the A parameter: see [1]_ for more details.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBmc.html
+
+    """
 
     _calc =  _xspec.xsbmc
 
@@ -807,6 +829,28 @@ class XSbmc(XSAdditiveModel):
 
 
 class XSbremss(XSAdditiveModel):
+    """The XSPEC bremss model: thermal bremsstrahlung.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The plasma temperature in keV.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSvbremss, XSzbremss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBremss.html
+
+    """
 
     _calc =  _xspec.xsbrms
 
@@ -871,6 +915,38 @@ class XSbvapec(XSAdditiveModel):
 
 
 class XSc6mekl(XSAdditiveModel):
+    """The XSPEC c6mekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSc6pmekl, XSc6pvmkl, XSc6vmekl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelC6mekl.html
+
+    """
 
     _calc =  _xspec.c6mekl
 
@@ -890,6 +966,39 @@ class XSc6mekl(XSAdditiveModel):
 
 
 class XSc6pmekl(XSAdditiveModel):
+    """The XSPEC c6pmekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
+
+    The model is described at [1]_. It differs from ``XSc6mekl`` by
+    by using the exponential of the 6th order Chebyshev polynomial.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSc6mekl, XSc6pvmkl, XSc6vmekl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelC6mekl.html
+
+    """
 
     _calc =  _xspec.c6pmekl
 
@@ -909,6 +1018,39 @@ class XSc6pmekl(XSAdditiveModel):
 
 
 class XSc6pvmkl(XSAdditiveModel):
+    """The XSPEC c6pvmkl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
+
+    The model is described at [1]_. It differs from ``XSc6vmekl`` by
+    by using the exponential of the 6th order Chebyshev polynomial.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSc6mekl, XSc6pmekl, XSc6vmekl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelC6mekl.html
+
+    """
 
     _calc =  _xspec.c6pvmkl
 
@@ -941,6 +1083,38 @@ class XSc6pvmkl(XSAdditiveModel):
 
 
 class XSc6vmekl(XSAdditiveModel):
+    """The XSPEC c6vmekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSc6mekl, XSc6pmekl, XSc6pvmkl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelC6mekl.html
+
+    """
 
     _calc =  _xspec.c6vmekl
 
@@ -973,6 +1147,40 @@ class XSc6vmekl(XSAdditiveModel):
 
 
 class XScemekl(XSAdditiveModel):
+    """The XSPEC cemekl model: plasma emission, multi-temperature using mekal.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The power-law index of the emissivity function.
+    Tmax
+        The maxmimum temperature, in keV.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XScevmkl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCemekl.html
+
+    """
 
     _calc =  _xspec.cemekl
 
@@ -988,6 +1196,40 @@ class XScemekl(XSAdditiveModel):
 
 
 class XScevmkl(XSAdditiveModel):
+    """The XSPEC cevmkl model: plasma emission, multi-temperature using mekal.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The power-law index of the emissivity function.
+    Tmax
+        The maxmimum temperature, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XScemekl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCemekl.html
+
+    """
 
     _calc =  _xspec.C_cemVMekal
 
@@ -1016,6 +1258,36 @@ class XScevmkl(XSAdditiveModel):
 
 
 class XScflow(XSAdditiveModel):
+    """The XSPEC cflow model: cooling flow.
+
+    The model is described at [1]_. The results of this model depend
+    on the cosmology settings set with ``set_xscosmo``.
+
+    Attributes
+    ----------
+    slope
+        The power-law index of the emissivity function.
+    lowT
+        The minimum temperature, in keV.
+    highT
+        The maxmimum temperature, in keV.
+    Abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    redshift
+        The redshift of the plasma.
+    norm
+        The mass accretion rate (solar mass per year).
+
+    See Also
+    --------
+    XScevmkl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCflow.html
+
+    """
 
     _calc =  _xspec.C_xscflw
 
@@ -2007,6 +2279,30 @@ class XSvapec(XSAdditiveModel):
 
 
 class XSvbremss(XSAdditiveModel):
+    """The XSPEC vbremss model: thermal bremsstrahlung.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The plasma temperature in keV.
+    HeH
+        The ratio n(He) / n(H).
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbremss, XSzbremss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBremss.html
+
+    """
 
     _calc =  _xspec.xsbrmv
 
@@ -2523,6 +2819,30 @@ class XSzbbody(XSAdditiveModel):
 
 
 class XSzbremss(XSAdditiveModel):
+    """The XSPEC zbremss model: thermal bremsstrahlung.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The plasma temperature in keV.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbremss, XSvbremss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBremss.html
+
+    """
 
     _calc =  _xspec.xszbrm
 
