@@ -1280,7 +1280,7 @@ class XScflow(XSAdditiveModel):
 
     See Also
     --------
-    XScevmkl
+    XScevmkl, XSmkcflow
 
     References
     ----------
@@ -2007,7 +2007,7 @@ class XSgaussian(XSAdditiveModel):
 
     See Also
     --------
-    XSagauss, XSzagauss, XSzgauss
+    XSagauss, XSlorentz, XSzagauss, XSzgauss
 
     References
     ----------
@@ -2449,6 +2449,29 @@ class XSlaor2(XSAdditiveModel):
 
 
 class XSlorentz(XSAdditiveModel):
+    """The XSPEC lorentz model: lorentz line profile.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Width
+        The FWHM of the line, in keV.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSgaussian
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLorentz.html
+
+    """
 
     _calc =  _xspec.xslorz
 
@@ -2465,6 +2488,35 @@ class XSlorentz(XSAdditiveModel):
 
 
 class XSmeka(XSAdditiveModel):
+    """The XSPEC meka model: emission, hot diffuse gas (Mewe-Gronenschild).
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    nH
+        H density, in cm^-3.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSvmeka
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMeka.html
+
+    """
 
     _calc =  _xspec.xsmeka
 
@@ -2478,6 +2530,40 @@ class XSmeka(XSAdditiveModel):
 
 
 class XSmekal(XSAdditiveModel):
+    """The XSPEC mekal model: emission, hot diffuse gas (Mewe-Kaastra-Liedahl).
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    nH
+        H density, in cm^-3.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSvmekal
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMekal.html
+
+    """
 
     _calc =  _xspec.xsmekl
 
@@ -2492,6 +2578,39 @@ class XSmekal(XSAdditiveModel):
 
 
 class XSmkcflow(XSAdditiveModel):
+    """The XSPEC mkcflow model: cooling flow, mekal.
+
+    The model is described at [1]_. The results of this model depend
+    on the cosmology settings set with ``set_xscosmo``.
+
+    Attributes
+    ----------
+    lowT
+        The minimum temperature, in keV.
+    highT
+        The maxmimum temperature, in keV.
+    Abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The mass accretion rate (solar mass per year).
+
+    See Also
+    --------
+    XSapec, XScflow, XScevmkl, XSvmcflow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMkcflow.html
+
+    """
 
     _calc =  _xspec.C_xsmkcf
 
@@ -3280,6 +3399,34 @@ class XSvvgnei(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Tau, self.kT_ave, self.redshift, self.norm))
 
 class XSvmeka(XSAdditiveModel):
+    """The XSPEC vmeka model: emission, hot diffuse gas (Mewe-Gronenschild).
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSmeka
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMeka.html
+
+    """
 
     _calc =  _xspec.xsvmek
 
@@ -3306,6 +3453,39 @@ class XSvmeka(XSAdditiveModel):
 
 
 class XSvmekal(XSAdditiveModel):
+    """The XSPEC vmekal model: emission, hot diffuse gas (Mewe-Kaastra-Liedahl).
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSvmekal
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMekal.html
+
+    """
 
     _calc =  _xspec.xsvmkl
 
@@ -3333,6 +3513,39 @@ class XSvmekal(XSAdditiveModel):
 
 
 class XSvmcflow(XSAdditiveModel):
+    """The XSPEC vmcflow model: cooling flow, mekal.
+
+    The model is described at [1]_. The results of this model depend
+    on the cosmology settings set with ``set_xscosmo``.
+
+    Attributes
+    ----------
+    lowT
+        The minimum temperature, in keV.
+    highT
+        The maxmimum temperature, in keV.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The mass accretion rate (solar mass per year).
+
+    See Also
+    --------
+    XSapec, XScflow, XScevmkl, XSmkcflow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMkcflow.html
+
+    """
 
     _calc =  _xspec.C_xsvmcf
 
