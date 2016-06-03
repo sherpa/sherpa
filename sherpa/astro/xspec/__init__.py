@@ -1897,6 +1897,35 @@ class XSdiskpn(XSAdditiveModel):
 
 
 class XSequil(XSAdditiveModel):
+    """The XSPEC equil model: collisional plasma, ionization equilibrium.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSnei, XSgnei, XSvequil
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEquil.html
+
+    """
 
     _calc =  _xspec.C_equil
 
@@ -1909,6 +1938,23 @@ class XSequil(XSAdditiveModel):
 
 
 class XSexpdec(XSAdditiveModel):
+    """The XSPEC expdec model: exponential decay.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    factor
+        The exponential factor.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelExpdec.html
+
+    """
 
     _calc =  _xspec.xsxpdec
 
@@ -1919,6 +1965,23 @@ class XSexpdec(XSAdditiveModel):
 
 
 class XSezdiskbb(XSAdditiveModel):
+    """The XSPEC ezdiskbb model: multiple blackbody disk model with zero-torque inner boundary.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    T_max
+        The maximum temperature in the disk, in keV.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEzdiskbb.html
+
+    """
 
     _calc =  _xspec.ezdiskbb
 
@@ -1968,6 +2031,39 @@ class XSgaussian(XSAdditiveModel):
 
 
 class XSgnei(XSAdditiveModel):
+    """The XSPEC gnei model: collisional plasma, non-equilibrium, temperature evolution.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau
+        The inoization timescale in units of s/cm^3.
+    kT_ave
+        The ionization timescale averaged plasma temperature in keV.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSnei, XSvgnei, XSvvgnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGnei.html
+
+    """
 
     _calc =  _xspec.C_gnei
 
@@ -2163,6 +2259,37 @@ class XSmkcflow(XSAdditiveModel):
 
 
 class XSnei(XSAdditiveModel):
+    """The XSPEC nei model: collisional plasma, non-equilibrium, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau
+        The inoization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSgnei, XSvnei, XSvvnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNei.html
+
+    """
 
     _calc =  _xspec.C_nei
 
@@ -2716,6 +2843,34 @@ class XSvbremss(XSAdditiveModel):
 
 
 class XSvequil(XSAdditiveModel):
+    """The XSPEC vequil model: collisional plasma, ionization equilibrium.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEquil.html
+
+    """
 
     _calc =  _xspec.C_vequil
 
@@ -2739,6 +2894,41 @@ class XSvequil(XSAdditiveModel):
 
 
 class XSvgnei(XSAdditiveModel):
+    """The XSPEC gnei model: collisional plasma, non-equilibrium, temperature evolution.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau
+        The inoization timescale in units of s/cm^3.
+    kT_ave
+        The ionization timescale averaged plasma temperature in keV.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSgnei, XSvnei, XSvvgnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGnei.html
+
+    """
 
     _calc =  _xspec.C_vgnei
 
@@ -2765,6 +2955,42 @@ class XSvgnei(XSAdditiveModel):
 
 
 class XSvvgnei(XSAdditiveModel):
+    """The XSPEC gnei model: collisional plasma, non-equilibrium, temperature evolution.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau
+        The inoization timescale in units of s/cm^3.
+    kT_ave
+        The ionization timescale averaged plasma temperature in keV.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSgnei, XSvgnei, XSvvnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGnei.html
+
+    """
 
     _calc =  _xspec.C_vvgnei
 
@@ -2887,6 +3113,39 @@ class XSvmcflow(XSAdditiveModel):
 
 
 class XSvnei(XSAdditiveModel):
+    """The XSPEC vnei model: collisional plasma, non-equilibrium, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau
+        The inoization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSgnei, XSnei, XSvvnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNei.html
+
+    """
 
     _calc =  _xspec.C_vnei
 
@@ -2912,6 +3171,40 @@ class XSvnei(XSAdditiveModel):
 
 
 class XSvvnei(XSAdditiveModel):
+    """The XSPEC vvnei model: collisional plasma, non-equilibrium, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau
+        The inoization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSgnei, XSnei, XSvnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNei.html
+
+    """
 
     _calc =  _xspec.C_vvnei
 
@@ -4498,6 +4791,46 @@ class XSzigm(XSMultiplicativeModel):
 
 
 class XSgadem(XSAdditiveModel):
+    """The XSPEC gadem model: plasma emission, multi-temperature with gaussian distribution of emission measure.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. See the ``XSapec`` documentation for settings
+    relevant to the APEC model (i.e. when ``switch=2``).
+
+    Attributes
+    ----------
+    Tmean
+        The mean temperature for the gaussian emission measure
+        distribution, in keV.
+    Tsigma
+        The sigma of the temperature distribution for the gaussian
+        emission measure, in keV.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSapec, XSvgadem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGadem.html
+
+    """
 
     _calc = _xspec.C_gaussDem
 
@@ -4513,6 +4846,45 @@ class XSgadem(XSAdditiveModel):
 
 
 class XSvgadem(XSAdditiveModel):
+    """The XSPEC gadem model: plasma emission, multi-temperature with gaussian distribution of emission measure.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. See the ``XSapec`` documentation for settings
+    relevant to the APEC model (i.e. when ``switch=2``).
+
+    Attributes
+    ----------
+    Tmean
+        The mean temperature for the gaussian emission measure
+        distribution, in keV.
+    Tsigma
+        The sigma of the temperature distribution for the gaussian
+        emission measure, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSapec, XSgadem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGadem.html
+
+    """
 
     _calc = _xspec.C_vgaussDem
 
