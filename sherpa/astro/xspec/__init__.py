@@ -718,7 +718,7 @@ class XSbknpower(XSAdditiveModel):
 
     See Also
     --------
-    XSbkn2pow, XSpowerlaw, XSzpowerlw
+    XSbkn2pow, XScutoffpl, XSpowerlaw, XSzpowerlw
 
     References
     ----------
@@ -767,7 +767,7 @@ class XSbkn2pow(XSAdditiveModel):
 
     See Also
     --------
-    XSbknpower, XSpowerlaw, XSzpowerlw
+    XSbknpower, XScutoffpl, XSpowerlaw, XSzpowerlw
 
     References
     ----------
@@ -1413,7 +1413,7 @@ class XScompPS(XSAdditiveModel):
     Tdisk
         The disk temperature for reflection, in K.
     Betor10
-        The reflection emissivity law: see [1]_ for more details.1
+        The reflection emissivity law: see [1]_ for more details.
     Rin
         The inner radius of the disk in Schwarzschild units.
     Rout
@@ -1493,7 +1493,7 @@ class XScompST(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.tau, self.norm))
 
 
-# DOC NOTE: the approx parameter is described in XSPEC as being allowed
+# DOC-NOTE: the approx parameter is described in XSPEC as being allowed
 #           to be negative, but the limits do not permit this.
 #
 class XScompTT(XSAdditiveModel):
@@ -1538,6 +1538,31 @@ class XScompTT(XSAdditiveModel):
 
 
 class XScutoffpl(XSAdditiveModel):
+    """The XSPEC cutoffpl model: power law, high energy exponential cutoff.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndx
+        The power law photon index.
+    HighECut
+        The e-folding energy of the exponential rolloff, in keV.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbknpower, XSbkn2pow, XSpowerlaw, XSzpowerlw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCutoffpl.html
+
+    """
 
     _calc =  _xspec.C_cutoffPowerLaw
 
@@ -1549,6 +1574,32 @@ class XScutoffpl(XSAdditiveModel):
 
 
 class XSdisk(XSAdditiveModel):
+    """The XSPEC disk model: accretion disk, black body.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    accrate
+        The accretion rate, in Eddington luminosities.
+    NSmass
+        The central mass, in solar mass units.
+    Rinn
+        The inner disk radius in gravitational units (three
+        Schwarzschild radii).
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdiskbb, XSdiskm, XSdisko
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDisk.html
+
+    """
 
     _calc =  _xspec.disk
 
@@ -1561,6 +1612,49 @@ class XSdisk(XSAdditiveModel):
 
 
 class XSdiskir(XSAdditiveModel):
+    """The XSPEC diskir model: Irradiated inner and outer disk.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT_disk
+        The temperature of the innermost part of the unilluminated
+        disk, in keV.
+    Gamma
+        The asymptotic power-law photon index.
+    kT_e
+        The electron temperature (high-energy rollover) in keV.
+    LcLd
+        The ratio of the luminosity in the Compton tail to that of
+        the unilluminated disk.
+    fin
+        The fraction of luminosity in the Compton tail which is
+        thermalized in the inner disk. Generally fix at 0.1 as
+        appropriate for an albedo of 0.3 and solid angle of 0.3.
+    rirr
+        The radius of the Compton illuminated disk in terms of the
+        inner disk radius.
+    fout
+        The fraction of bolometric flux which is thermalized in the
+        outer disk.
+    logrout
+        The log (base 10) of the outer disk radius in terms of the
+        inner disk radius.
+    norm
+        The model normalization: it is the same definition as
+        used for the ``XSdiskbb`` model.
+
+    See Also
+    --------
+    XSdiskbb
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskir.html
+
+    """
 
     _calc =  _xspec.diskir
 
@@ -1578,6 +1672,27 @@ class XSdiskir(XSAdditiveModel):
 
 
 class XSdiskbb(XSAdditiveModel):
+    """The XSPEC disk model: accretion disk, multi-black body components.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tin
+        The temperature at the inner disk radius, in keV.
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdiskpbb, XSdiskpn
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskbb.html
+
+    """
 
     _calc =  _xspec.xsdskb
 
@@ -1588,6 +1703,31 @@ class XSdiskbb(XSAdditiveModel):
 
 
 class XSdiskline(XSAdditiveModel):
+    """The XSPEC diskline model: accretion disk line emission, relativistic.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy in keV.
+    Betor10
+        The power law dependence of emissivity: see [1]_ for more details.
+    RinM
+        The inner radius, in units of GM^2/c.
+    RoutM
+        The outer radius, in units of GM^2/c.
+    Incl
+        The inclination, in degrees.
+    norm
+        The model normalization in photon/cm^2/s.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskline.html
+
+    """
 
     _calc =  _xspec.xsdili
 
@@ -1607,6 +1747,34 @@ class XSdiskline(XSAdditiveModel):
 
 
 class XSdiskm(XSAdditiveModel):
+    """The XSPEC diskm model: accretion disk with gas pressure viscosity.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    NSmass
+        The accretion rate, in Eddington luminosities.
+    NSmass
+        The central mass, in solar mass units.
+    Rinn
+        The inner disk radius in gravitational units (three
+        Schwarzschild radii).
+    alpha
+        The viscosity.
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdisk, XSdisko
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskm.html
+
+    """
 
     _calc =  _xspec.diskm
 
@@ -1620,6 +1788,34 @@ class XSdiskm(XSAdditiveModel):
 
 
 class XSdisko(XSAdditiveModel):
+    """The XSPEC disko model: accretion disk, inner, radiation pressure viscosity.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    NSmass
+        The accretion rate, in Eddington luminosities.
+    NSmass
+        The central mass, in solar mass units.
+    Rinn
+        The inner disk radius in gravitational units (three
+        Schwarzschild radii).
+    alpha
+        The viscosity.
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdisk, XSdiskm
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDisko.html
+
+    """
 
     _calc =  _xspec.disko
 
@@ -1633,6 +1829,29 @@ class XSdisko(XSAdditiveModel):
 
 
 class XSdiskpbb(XSAdditiveModel):
+    """The XSPEC diskpbb model: accretion disk, power-law dependence for T(r).
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tin
+        The temperature at the inner disk radius, in keV.
+    p
+        The exponent of the radial dependence of the disk temperature.
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdiskbb, XSdiskpn
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskpbb.html
+
+    """
 
     _calc =  _xspec.diskpbb
 
@@ -1644,6 +1863,29 @@ class XSdiskpbb(XSAdditiveModel):
 
 
 class XSdiskpn(XSAdditiveModel):
+    """The XSPEC diskpn model: accretion disk, black hole, black body.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    T_max
+        The maximum temperature in the disk, in keV.
+    R_in
+        The inner disk radius, in units of Rg (GM/c^2).
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdiskbb, XSdiskpbb
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskpn.html
+
+    """
 
     _calc =  _xspec.xsdiskpn
 
@@ -2227,7 +2469,7 @@ class XSpowerlaw(XSAdditiveModel):
 
     See Also
     --------
-    XSbknpower, XSbkn2pow, XSzpowerlw
+    XSbknpower, XSbkn2pow, XScutoffpl, XSzpowerlw
 
     References
     ----------
@@ -3073,7 +3315,7 @@ class XSzpowerlw(XSAdditiveModel):
 
     See Also
     --------
-    XSbknpower, XSbkn2pow, XSpowerlaw
+    XSbknpower, XSbkn2pow, XScutoffpl, XSpowerlaw
 
     References
     ----------
@@ -3727,6 +3969,27 @@ class XSzwndabs(XSMultiplicativeModel):
 
 
 class XScplinear(XSAdditiveModel):
+    """The XSPEC cplinear model: a non-physical piecewise-linear model for low count background spectra.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    energy00, energy01, energy02, energy03, energy04, energy05,
+    energy06, energy07, energy08, energy09
+        Energy in keV.
+    log_rate01, log_rate02, log_rate03, log_rate04, log_rate05,
+    log_rate06, log_rate07, log_rate08, log_rate09
+        Log of the rate.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCplinear.html
+
+    """
 
     _calc = _xspec.C_cplinear
 
