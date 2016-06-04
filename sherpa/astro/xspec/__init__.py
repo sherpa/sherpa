@@ -2804,6 +2804,35 @@ class XSnpshock(XSAdditiveModel):
 
 
 class XSnsa(XSAdditiveModel):
+    """The XSPEC nsa model: neutron star atmosphere.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LogT_eff
+        The log of Teff, the unredshifted effective temperature.
+    M_ns
+        The neutron star gravitational mass, in units of the solar mass.
+    R_ns
+        The neutron star radius, in km.
+    MagField
+        The neutron star magnetic field strength, in Gauss. It must be
+        fixed at one of 0, 1e12, or 1e13 G.
+    norm
+        The normalization is 1/D^2, where D is the distance to the
+        neutron star in pc.
+
+    See Also
+    --------
+    XSnsagrav
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsa.html
+
+    """
 
     _calc =  _xspec.nsa
 
@@ -2817,6 +2846,32 @@ class XSnsa(XSAdditiveModel):
 
 
 class XSnsagrav(XSAdditiveModel):
+    """The XSPEC nsagrav model: NS H atmosphere model for different g.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LogT_eff
+        The log of Teff, the unredshifted effective temperature.
+    NSmass
+        The neutron star gravitational mass, in units of the solar mass.
+    NSrad
+        The "true" neutron star radius, in km.
+    norm
+        The normalization is 1/D^2, where D is the distance to the
+        neutron star in pc.
+
+    See Also
+    --------
+    XSnsa
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsagrav.html
+
+    """
 
     _calc =  _xspec.nsagrav
 
@@ -2829,6 +2884,29 @@ class XSnsagrav(XSAdditiveModel):
 
 
 class XSnsatmos(XSAdditiveModel):
+    """The XSPEC nsatmos model: NS Hydrogen Atmosphere model with electron conduction and self-irradiation.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LogT_eff
+        The log of Teff, the unredshifted effective temperature.
+    M_ns
+        The neutron star gravitational mass, in units of the solar mass.
+    R_ns
+        The "true" neutron star radius, in km.
+    dist
+        The distance to the neutron star, in kpc.
+    norm
+        The fraction of the neutron star surface emitting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsatmos.html
+
+    """
 
     _calc =  _xspec.nsatmos
 
@@ -2842,6 +2920,32 @@ class XSnsatmos(XSAdditiveModel):
 
 
 class XSnsmax(XSAdditiveModel):
+    """The XSPEC nsmax model: Neutron Star Magnetic Atmosphere.
+
+    The model is described at [1]_. It has been superceeded by
+    ``XSnsmaxg``.
+
+    Attributes
+    ----------
+    LogTeff
+        The log of Teff, the unredshifted surface effective temperature.
+    redshift
+        This is 1 + zg, the gravitational redshift.
+    specfile
+        Which model to use: see [1]_ for more details.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    See Also
+    --------
+    XSnsmaxg
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsmax.html
+
+    """
 
     _calc =  _xspec.nsmax
 
@@ -2854,6 +2958,35 @@ class XSnsmax(XSAdditiveModel):
 
 
 class XSnsmaxg(XSAdditiveModel):
+    """The XSPEC nsmaxg model: neutron star with a magnetic atmosphere.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LogTeff
+        The log of Teff, the unredshifted surface effective temperature.
+    M_ns
+        The neutron star gravitational mass, in units of the solar mass.
+    R_ns
+        The neutron star radius, in km.
+    dist
+        The distance to the neutron star, in kpc.
+    specfile
+        Which model to use: see [1]_ for more details.
+    norm
+        The normalization: see [1]_ for more details.
+
+    See Also
+    --------
+    XSnsmax, XSnsx
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsmaxg.html
+
+    """
 
     _calc =  _xspec.nsmaxg
 
@@ -2868,6 +3001,35 @@ class XSnsmaxg(XSAdditiveModel):
 
 
 class XSnsx(XSAdditiveModel):
+    """The XSPEC nsx model: neutron star with a non-magnetic atmosphere.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LogTeff
+        The log of Teff, the unredshifted surface effective temperature.
+    M_ns
+        The neutron star gravitational mass, in units of the solar mass.
+    R_ns
+        The neutron star radius, in km.
+    dist
+        The distance to the neutron star, in kpc.
+    specfile
+        Which model to use: see [1]_ for more details.
+    norm
+        The normalization: see [1]_ for more details.
+
+    See Also
+    --------
+    XSnsmaxg
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsx.html
+
+    """
 
     _calc =  _xspec.nsx
 
