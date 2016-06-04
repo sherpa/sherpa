@@ -3043,6 +3043,62 @@ class XSnsx(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self.specfile, self.norm))
 
 class XSnteea(XSAdditiveModel):
+    """The XSPEC nteea model: non-thermal pair plasma.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    l_nth
+        The nonthermal electron compactness.
+    l_bb
+        The blackbody compactness.
+    f_refl
+        The scaling factor for reflection. This is 1 for an isotropic
+        source above the disk.
+    kT_bb
+        The blackbody temperature in eV.
+    g_max
+        The maximum Lorentz factor.
+    l_th
+        The thermal compactness. Set to 0 for a pure nonthermal plasma.
+    tau_p
+        The Thomson optical depth of ionization electrons.
+    G_inj
+        The electron injection index (0 for monoenergetic injection).
+    g_min
+        The minimum Lorentz factor of the power law injection (not used
+        for monoenergetic injection).
+    g_0
+        The minimum Lorentz factor for nonthermal reprocessing, in the
+        range (1, g_min].
+    radius
+        The radius in cm (for Coulomb/bremsstrahlung only).
+    pair_esc
+        The pair escape rate in c.
+    cosIncl
+        The cosine of the inclination angle.
+    Fe_abund
+        The iron abundance relative to that set by the ``set_xsabund``
+        function.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the NTEEA_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNteea.html
+
+    """
 
     _calc =  _xspec.C_xsnteea
 
@@ -3067,6 +3123,32 @@ class XSnteea(XSAdditiveModel):
 
 
 class XSnthComp(XSAdditiveModel):
+    """The XSPEC nthComp model: Thermally comptonized continuum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Gamma
+        The asymptotic power-law photon index.
+    kT_e
+        The electron temperature (high-energy rollover) in keV.
+    kT_bb
+        The seed photon temperature (low-energy rollover) in keV.
+    inp_type
+        The seed photon source: when 0 use a blackbody, when 1 use
+        a disk-blackbody.
+    redshift
+        The redshift.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNthcomp.html
+
+    """
 
     _calc =  _xspec.C_nthcomp
 
@@ -3081,6 +3163,33 @@ class XSnthComp(XSAdditiveModel):
 
 
 class XSpegpwrlw(XSAdditiveModel):
+    """The XSPEC pegpwrlw model: power law, pegged normalization.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndx
+        The power law photon index.
+    eMin
+        The lower peg for the normalization, in keV.
+    eMax
+        The upper peg for the normalization, in keV.
+    norm
+        The flux, in units of 10^-12 erg/cm^2/s, over the range
+        eMin to eMax. If eMin=eMax then it is the flux in
+        micro-Jy at eMin.
+
+    See Also
+    --------
+    XSbknpower, XSbkn2pow, XScutoffpl, XSpowerlaw, XSzpowerlw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPegpwrlw.html
+
+    """
 
     _calc =  _xspec.xspegp
 
@@ -3161,7 +3270,7 @@ class XSpowerlaw(XSAdditiveModel):
 
     See Also
     --------
-    XSbknpower, XSbkn2pow, XScutoffpl, XSzpowerlw
+    XSbknpower, XSbkn2pow, XScutoffpl, XSpegpwrlw, XSzpowerlw
 
     References
     ----------
@@ -5110,7 +5219,7 @@ class XSeqpair(XSAdditiveModel):
     redshift
         The redshift of the source.
     norm
-        The normalization of the mode: see [1]_ for more details.
+        The normalization of the model: see [1]_ for more details.
 
     See Also
     --------
@@ -5218,7 +5327,7 @@ class XSeqtherm(XSAdditiveModel):
     redshift
         The redshift of the source.
     norm
-        The normalization of the mode: see [1]_ for more details.
+        The normalization of the model: see [1]_ for more details.
 
     See Also
     --------
@@ -5326,7 +5435,7 @@ class XScompth(XSAdditiveModel):
     redshift
         The redshift of the source.
     norm
-        The normalization of the mode: see [1]_ for more details.
+        The normalization of the model: see [1]_ for more details.
 
     See Also
     --------
@@ -5698,7 +5807,7 @@ class XSlogpar(XSAdditiveModel):
     pivotE
         The pivot energy, in keV.
     norm
-        The normalization of the mode: see [1]_ for more details.
+        The normalization of the model: see [1]_ for more details.
 
     See Also
     --------
@@ -5722,6 +5831,59 @@ class XSlogpar(XSAdditiveModel):
 
 
 class XSoptxagn(XSAdditiveModel):
+    """The XSPEC optxagn model: Colour temperature corrected disc and energetically coupled Comptonisation model for AGN.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    mass
+        The black hole mass in solar masses.
+    dist
+        The comoving (proper) distance in Mpc.
+    logLLEdd
+        The Eddington ratio.
+    astar
+        The dimensionless black hole spin.
+    rcor
+        The coronal radius in Rg=GM/c^2. See [1]_ for more details.
+    logrout
+        The log of the outer radius of the disk in units of Rg. See
+        [1]_ for more details.
+    kT_e
+        The electron temperature for the soft Comptonisation component
+        (soft excess), in keV.
+    tau
+        The optical depth of the soft Comptonisation component. If this
+        parameter is negative then only the soft Compton component is used.
+    Gamma
+        The spectral index of the hard Comptonisation component
+        ('power law') which has temperature fixed to 100 keV.
+    fpl
+        The fraction of the power below rcor which is emitted in the hard
+        comptonisation component. If this parameter is negative then only
+        the hard Compton component is used.
+    fcol
+        The colour temperature correction to apply to the disc blackbody
+        emission for radii below rcor with effective temperature > tscat.
+    tscat
+        The effective temperature limit, in K, used in the colour
+        temperature correction.
+    Redshift
+        The redshift.
+    norm
+        The normalization of the model. It must be frozen.
+
+    See Also
+    --------
+    XSOptxagnf
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelOptxagn.html
+
+    """
 
     _calc = _xspec.optxagn
 
@@ -5744,6 +5906,53 @@ class XSoptxagn(XSAdditiveModel):
 
 
 class XSoptxagnf(XSAdditiveModel):
+    """The XSPEC optxagn model: Colour temperature corrected disc and energetically coupled Comptonisation model for AGN.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    mass
+        The black hole mass in solar masses.
+    dist
+        The comoving (proper) distance in Mpc.
+    logLLEdd
+        The Eddington ratio.
+    astar
+        The dimensionless black hole spin.
+    rcor
+        The coronal radius in Rg=GM/c^2. See [1]_ for more details.
+    logrout
+        The log of the outer radius of the disk in units of Rg. See
+        [1]_ for more details.
+    kT_e
+        The electron temperature for the soft Comptonisation component
+        (soft excess), in keV.
+    tau
+        The optical depth of the soft Comptonisation component. If this
+        parameter is negative then only the soft Compton component is used.
+    Gamma
+        The spectral index of the hard Comptonisation component
+        ('power law') which has temperature fixed to 100 keV.
+    fpl
+        The fraction of the power below rcor which is emitted in the hard
+        comptonisation component. If this parameter is negative then only
+        the hard Compton component is used.
+    Redshift
+        The redshift.
+    norm
+        The normalization of the model. It must be frozen.
+
+    See Also
+    --------
+    XSOptxagn
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelOptxagn.html
+
+    """
 
     _calc = _xspec.optxagnf
 
