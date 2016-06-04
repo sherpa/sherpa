@@ -2752,6 +2752,43 @@ class XSvvrnei(XSAdditiveModel):
 
 
 class XSnpshock(XSAdditiveModel):
+    """The XSPEC npshock model: shocked plasma, plane parallel, separate ion, electron temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    Abundanc
+        The metal abundance, as defined by the
+        ``set_xsabund`` function.
+    Tau_l
+        The lower limit on the ionization timescale in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale in s/cm^3.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSvnpshock, XSvvnpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNpshock.html
+
+    """
 
     _calc =  _xspec.C_npshock
 
@@ -3707,6 +3744,45 @@ class XSvvnei(XSAdditiveModel):
 
 
 class XSvnpshock(XSAdditiveModel):
+    """The XSPEC vnpshock model: shocked plasma, plane parallel, separate ion, electron temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau_l
+        The lower limit on the ionization timescale in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale in s/cm^3.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSnpshock, XSvvnpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNpshock.html
+
+    """
 
     _calc =  _xspec.C_vnpshock
 
@@ -3734,6 +3810,46 @@ class XSvnpshock(XSAdditiveModel):
 
 
 class XSvvnpshock(XSAdditiveModel):
+    """The XSPEC vvnpshock model: shocked plasma, plane parallel, separate ion, electron temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau_l
+        The lower limit on the ionization timescale in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale in s/cm^3.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSnpshock, XSvnpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNpshock.html
+
+    """
 
     _calc =  _xspec.C_vvnpshock
 
