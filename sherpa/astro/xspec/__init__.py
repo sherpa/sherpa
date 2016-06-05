@@ -1396,12 +1396,13 @@ class XScompPS(XSAdditiveModel):
     geom
         The geometry to use; see [1]_ for more details.
     HRcyl
-        The value of H/R, when a cylinder geometry is used (|geom| = 2).
+        The value of H/R, when a cylinder geometry is used
+        (abs(geom) = 2).
     cosIncl
         The cosine of the inclination angle.
     cov_frac
         The covering fraction of the cold clouds (only used when
-        |geom| < 4).
+        abs(geom) < 4).
     rel_refl
         The amount of reflection (Omega / (2 pi))
     Fe_ab_re
