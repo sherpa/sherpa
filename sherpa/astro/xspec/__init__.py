@@ -3492,6 +3492,33 @@ class XSpshock(XSAdditiveModel):
 
 
 class XSraymond(XSAdditiveModel):
+    """The XSPEC raymond model: emission, hot diffuse gas, Raymond-Smith.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSvraymond
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRaymond.html
+
+    """
 
     _calc =  _xspec.xsrays
 
@@ -3504,6 +3531,25 @@ class XSraymond(XSAdditiveModel):
 
 
 class XSredge(XSAdditiveModel):
+    """The XSPEC redge model: emission, recombination edge.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    edge
+        The threshold energy, in keV.
+    kT
+        The plasma temperature, in keV.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRedge.html
+
+    """
 
     _calc =  _xspec.xredge
 
@@ -4486,6 +4532,32 @@ class XSvvpshock(XSAdditiveModel):
 
 
 class XSvraymond(XSAdditiveModel):
+    """The XSPEC vraymond model: emission, hot diffuse gas, Raymond-Smith.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSraymond
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRaymond.html
+
+    """
 
     _calc =  _xspec.xsvrys
 
