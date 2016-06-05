@@ -652,7 +652,7 @@ class XSbexriv(XSAdditiveModel):
     T_disk
         The disk temperature in K.
     xi
-        The disk inoization parameter: see [1]_ for an explanation.
+        The disk ionization parameter: see [1]_ for an explanation.
     norm
         The normalization of the model: see [1]_ for an explanation
         of the units.
@@ -2046,7 +2046,7 @@ class XSgnei(XSAdditiveModel):
         The metal abundance of the plasma, as defined by the
         ``set_xsabund`` function.
     Tau
-        The inoization timescale in units of s/cm^3.
+        The ionization timescale in units of s/cm^3.
     kT_ave
         The ionization timescale averaged plasma temperature in keV.
     redshift
@@ -2640,7 +2640,7 @@ class XSnei(XSAdditiveModel):
         The metal abundance of the plasma, as defined by the
         ``set_xsabund`` function.
     Tau
-        The inoization timescale in units of s/cm^3.
+        The ionization timescale in units of s/cm^3.
     redshift
         The redshift of the plasma.
     norm
@@ -2670,6 +2670,39 @@ class XSnei(XSAdditiveModel):
 
 
 class XSrnei(XSAdditiveModel):
+    """The XSPEC rnei model: non-equilibrium recombining collisional plasma.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    kT_init
+        The initial temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSnei, XSgnei, XSvrnei, XSvvrnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRnei.html
+
+    """
 
     _calc =  _xspec.C_rnei
 
@@ -2684,6 +2717,41 @@ class XSrnei(XSAdditiveModel):
 
 
 class XSvrnei(XSAdditiveModel):
+    """The XSPEC vrnei model: non-equilibrium recombining collisional plasma.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    kT_init
+        The initial temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSrnei, XSvvrnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRnei.html
+
+    """
 
     _calc =  _xspec.C_vrnei
 
@@ -2710,6 +2778,42 @@ class XSvrnei(XSAdditiveModel):
 
 
 class XSvvrnei(XSAdditiveModel):
+    """The XSPEC vvrnei model: non-equilibrium recombining collisional plasma.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    kT_init
+        The initial temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSrnei, XSvrnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRnei.html
+
+    """
 
     _calc =  _xspec.C_vvrnei
 
@@ -2782,7 +2886,7 @@ class XSnpshock(XSAdditiveModel):
 
     See Also
     --------
-    XSequil, XSvnpshock, XSvvnpshock
+    XSequil, XSsedov, XSvnpshock, XSvvnpshock
 
     References
     ----------
@@ -3264,7 +3368,7 @@ class XSpexrav(XSAdditiveModel):
 
 
 class XSpexriv(XSAdditiveModel):
-    """The XSPEC pexrav model: reflected powerlaw, neutral medium.
+    """The XSPEC pexriv model: reflected powerlaw, neutral medium.
 
     The model is described at [1]_.
 
@@ -3566,6 +3670,56 @@ class XSredge(XSAdditiveModel):
 
 
 class XSrefsch(XSAdditiveModel):
+    """The XSPEC refsch model: reflected power law from ionized accretion disk.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The power-law photon index.
+    foldE
+        The cut-off energy (E_c) in keV. Set to 0 for no cut off.
+    rel_refl
+        The reflection scaling parameter (a value between 0 and 1
+        for an isotropic source above the disk, less than 0 for no
+        direct component).
+    redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    Incl
+        The inclination angle in degrees.
+    T_disk
+        The disk temperature in K.
+    xi
+        The disk ionization parameter: see [1]_ for more details.
+    Betor10
+        The power law dependence of emissivity: see [1]_ for more details.
+    Rin
+        The inner radius, in units of GM^2/c.
+    Rout
+        The outer radius, in units of GM^2/c.
+    accuracy
+        The internal model accuracy: points of spectrum per energy decade.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSdiskline, XSpexriv
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRefsch.html
+
+    """
 
     _calc =  _xspec.xsrefsch
 
@@ -3588,6 +3742,41 @@ class XSrefsch(XSAdditiveModel):
 
 
 class XSsedov(XSAdditiveModel):
+    """The XSPEC sedov model: sedov model, separate ion/electron temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSpshock, XSvsedov, XSvvsedov
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSedov.html
+
+    """
 
     _calc =  _xspec.C_sedov
 
@@ -3811,7 +4000,7 @@ class XSvgnei(XSAdditiveModel):
     He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
         The abundance of the element, with respect to Solar.
     Tau
-        The inoization timescale in units of s/cm^3.
+        The ionization timescale in units of s/cm^3.
     kT_ave
         The ionization timescale averaged plasma temperature in keV.
     redshift
@@ -3873,7 +4062,7 @@ class XSvvgnei(XSAdditiveModel):
     K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
         The abundance of the element, with respect to Solar.
     Tau
-        The inoization timescale in units of s/cm^3.
+        The ionization timescale in units of s/cm^3.
     kT_ave
         The ionization timescale averaged plasma temperature in keV.
     redshift
@@ -4124,7 +4313,7 @@ class XSvnei(XSAdditiveModel):
     He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
         The abundance of the element, with respect to Solar.
     Tau
-        The inoization timescale in units of s/cm^3.
+        The ionization timescale in units of s/cm^3.
     redshift
         The redshift of the plasma.
     norm
@@ -4183,7 +4372,7 @@ class XSvvnei(XSAdditiveModel):
     K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
         The abundance of the element, with respect to Solar.
     Tau
-        The inoization timescale in units of s/cm^3.
+        The ionization timescale in units of s/cm^3.
     redshift
         The redshift of the plasma.
     norm
@@ -4581,6 +4770,43 @@ class XSvraymond(XSAdditiveModel):
 
 
 class XSvsedov(XSAdditiveModel):
+    """The XSPEC vsedov model: sedov model, separate ion/electron temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSsedov, XSvvsedov
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSedov.html
+
+    """
 
     _calc =  _xspec.C_vsedov
 
@@ -4607,6 +4833,44 @@ class XSvsedov(XSAdditiveModel):
 
 
 class XSvvsedov(XSAdditiveModel):
+    """The XSPEC vvsedov model: sedov model, separate ion/electron temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSsedov, XSvsedov
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSedov.html
+
+    """
 
     _calc =  _xspec.C_vvsedov
 
