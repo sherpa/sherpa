@@ -1545,7 +1545,7 @@ class XScutoffpl(XSAdditiveModel):
 
     Attributes
     ----------
-    PhoIndx
+    PhoIndex
         The power law photon index.
     HighECut
         The e-folding energy of the exponential rolloff, in keV.
@@ -1919,7 +1919,7 @@ class XSequil(XSAdditiveModel):
 
     See Also
     --------
-    XSnei, XSgnei, XSvequil
+    XSnei, XSgnei, XSpshock, XSvequil
 
     References
     ----------
@@ -3170,7 +3170,7 @@ class XSpegpwrlw(XSAdditiveModel):
 
     Attributes
     ----------
-    PhoIndx
+    PhoIndex
         The power law photon index.
     eMin
         The lower peg for the normalization, in keV.
@@ -3331,6 +3331,44 @@ class XSpexriv(XSAdditiveModel):
 
 
 class XSplcabs(XSAdditiveModel):
+    """The XSPEC plcabs model: powerlaw observed through dense, cold matter.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The column density, in units of 10^22 cm^-2.
+    nMax
+        The maximum number of scatterings. This parameter can not be
+        thawed.
+    FeAbun
+        The iron abundance.
+    FeKedge
+        The energy of the Fe K edge, in keV.
+    PhoIndex
+        The power law photon index.
+    HighECut
+        The high-energy cut-off threshold energy, in keV.
+    foldE
+        The high-energy cut-off e-folding energy, in keV.
+    acrit
+        The critical albedo for switching to elastic scattering. See
+        [1]_ for more details.
+    FAST
+        If set to a value above 1, use a mean energy shift instead of
+        integration. This parameter can not be thawed.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPlcabs.html
+
+    """
 
     _calc =  _xspec.xsp1tr
 
@@ -3356,7 +3394,7 @@ class XSpowerlaw(XSAdditiveModel):
 
     Attributes
     ----------
-    PhoIndx
+    PhoIndex
         The power law photon index.
     norm
         The normalization of the model. See [1]_ for details, as its
@@ -3383,6 +3421,21 @@ class XSpowerlaw(XSAdditiveModel):
 
 
 class XSposm(XSAdditiveModel):
+    """The XSPEC posm model: positronium continuum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPosm.html
+
+    """
 
     _calc =  _xspec.xsposm
 
@@ -3392,6 +3445,39 @@ class XSposm(XSAdditiveModel):
 
 
 class XSpshock(XSAdditiveModel):
+    """The XSPEC pshock model: plane-parallel shocked plasma, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau_l
+        The lower limit on the ionization timescale, in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale, in s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSvpshock, XSvvpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPshock.html
+
+    """
 
     _calc =  _xspec.C_pshock
 
@@ -4260,6 +4346,41 @@ class XSvvnpshock(XSAdditiveModel):
 
 
 class XSvpshock(XSAdditiveModel):
+    """The XSPEC vpshock model: plane-parallel shocked plasma, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Tau_l
+        The lower limit on the ionization timescale, in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale, in s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSpshock, XSvvpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPshock.html
+
+    """
 
     _calc =  _xspec.C_vpshock
 
@@ -4286,6 +4407,42 @@ class XSvpshock(XSAdditiveModel):
 
 
 class XSvvpshock(XSAdditiveModel):
+    """The XSPEC vvpshock model: plane-parallel shocked plasma, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau_l
+        The lower limit on the ionization timescale, in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale, in s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSpshock, XSvpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPshock.html
+
+    """
 
     _calc =  _xspec.C_vvpshock
 
@@ -4539,7 +4696,7 @@ class XSzpowerlw(XSAdditiveModel):
 
     Attributes
     ----------
-    PhoIndx
+    PhoIndex
         The power law photon index.
     redshift
         The redshift.
