@@ -1000,6 +1000,7 @@ static PyMethodDef XSpecMethods[] = {
 
   { (char*)"get_xsxsect", (PyCFunction)get_cross, METH_NOARGS,
     (char*) "get_xsxsect()\n\n"
+            "Return the cross sections used by X-Spec models.\n\n"
             "Return the name of the X-Spec photoelectric absorption "
             "cross-sections setting.\n"
             RETURNSDOC
@@ -1012,6 +1013,7 @@ static PyMethodDef XSpecMethods[] = {
             ">>> get_xsxsect()\n'bcmc'\n\n"},
   { (char*)"set_xsxsect", (PyCFunction)set_cross, METH_VARARGS,
     (char*) "set_xsxsect(name)\n\n"
+            "Set the cross sections used by X-Spec models.\n\n"
             "Set the X-Spec photoelectric absorption cross-sections\n"
             "setting, which changes the cross-sections used by all\n"
             "X-Spec absorption models *except* for `XSwabs`. It is\n"
