@@ -551,7 +551,7 @@ class XSbbodyrad(XSAdditiveModel):
 # DOC-NOTE: the XSPEC documentation has a different parameter order to
 #           the code.
 class XSbexrav(XSAdditiveModel):
-    """The XSPEC bexrav model: reflected e-folded broken power law, neutral medium
+    """The XSPEC bexrav model: reflected e-folded broken power law, neutral medium.
 
     The model is described at [1]_.
 
@@ -622,7 +622,7 @@ class XSbexrav(XSAdditiveModel):
 
 
 class XSbexriv(XSAdditiveModel):
-    """The XSPEC bexriv model: reflected e-folded broken power law, ionized medium
+    """The XSPEC bexriv model: reflected e-folded broken power law, ionized medium.
 
     The model is described at [1]_.
 
@@ -3202,6 +3202,51 @@ class XSpegpwrlw(XSAdditiveModel):
 
 
 class XSpexrav(XSAdditiveModel):
+    """The XSPEC pexrav model: reflected powerlaw, neutral medium.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The first power-law photon index.
+    foldE
+        The cut-off energy (E_c) in keV. Set to 0 for no cut off.
+    rel_refl
+        The reflection scaling parameter (a value between 0 and 1
+        for an isotropic source above the disk, less than 0 for no
+        reflected component).
+    redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    cosIncl
+        The cosine of the inclination angle in degrees.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSpexriv, XSpexmon
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the PEXRAV_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPexrav.html
+
+    """
 
     _calc =  _xspec.C_xspexrav
 
@@ -3218,6 +3263,55 @@ class XSpexrav(XSAdditiveModel):
 
 
 class XSpexriv(XSAdditiveModel):
+    """The XSPEC pexrav model: reflected powerlaw, neutral medium.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The first power-law photon index.
+    foldE
+        The cut-off energy (E_c) in keV. Set to 0 for no cut off.
+    rel_refl
+        The reflection scaling parameter (a value between 0 and 1
+        for an isotropic source above the disk, less than 0 for no
+        reflected component).
+    redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    cosIncl
+        The cosine of the inclination angle in degrees.
+    T_disk
+        The disk temperature in K.
+    xi
+        The disk ionization parameter: see [1]_ for more details.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSpexrav, XSpexmon
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the PEXRIV_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPexriv.html
+
+    """
 
     _calc =  _xspec.C_xspexriv
 
@@ -5972,7 +6066,49 @@ class XSoptxagnf(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.mass, self.dist, self.logLLEdd, self.astar, self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma, self.fpl, self.Redshift, self.norm))
 
 
+# DOC-NOTE: the parameter order in the XSPEC documentation is very different
+#           to the model.dat file. Or, rel_refl is actually labelled as scale
+#           and foldE as Ec.
+#
 class XSpexmon(XSAdditiveModel):
+    """The XSPEC pexmon model: neutral Compton reflection with self-consistent Fe and Ni lines.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The power-law photon index.
+    foldE
+        The cut-off energy (E_c) in keV. Set to 0 for no cut off.
+    rel_refl
+        The reflection scaling parameter (a value of 1 for an
+        isotropic source above the disk, less than 0 for no direct
+        component).
+    redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    Incl
+        The inclination angle in degrees.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSpexrav, XSpexriv
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPexmon.html
+
+    """
 
     _calc = _xspec.pexmon
 
