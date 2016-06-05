@@ -3790,6 +3790,43 @@ class XSsedov(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT_a, self.kT_b, self.Abundanc, self.Tau, self.redshift, self.norm))
 
 class XSsirf(XSAdditiveModel):
+    """The XSPEC sirf model: self-irradiated funnel.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    tin
+        The inner temperature (at the inner, inside-the-funnel
+        photosphere), in keV.
+    rin
+        The inner (inner, inside-the-fulle photosphere) radius in
+        "spherisation radius" units (see [1]_ for details).
+    rout
+        The outer photosphere radius in "spherisation radius" units
+    theta
+        The half-opening angle of the cone, in degrees.
+    incl
+        The inclination angle of the funnel, in degrees. Affects mainly
+        self-occultation and relativistic boost effects.
+    valpha
+        The velocity law exponent.
+    gamma
+        The adiabatic index. It affects the inner, hotter parts of the
+        flow, therefore we set is to 4/3 by default.
+    mdot
+        The mass ejection rate in Eddington (critical) units.
+    irrad
+        The number of iterations for irradiation.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSirf.html
+
+    """
 
     _calc =  _xspec.C_sirf
 
@@ -3809,6 +3846,30 @@ class XSsirf(XSAdditiveModel):
                                               self.irrad, self.norm))
 
 class XSsrcut(XSAdditiveModel):
+    """The XSPEC srcut model: synchrotron spectrum, cutoff power law.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The radio spectral index.
+    breakfreq
+        The break frequency: approximately the frequency at which the
+        flux has dropped by a factor of 10 from a straight power law.
+    norm
+        The 1 Ghz flux in Jy.
+
+    See Also
+    --------
+    XSsresc
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSrcut.html
+
+    """
 
     _calc =  _xspec.srcut
 
@@ -3820,6 +3881,31 @@ class XSsrcut(XSAdditiveModel):
 
 
 class XSsresc(XSAdditiveModel):
+    """The XSPEC sresc model: synchrotron spectrum, cut off by particle escape.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The radio spectral index.
+    breakfreq
+        The break frequency: approximately the frequency at which the
+        flux has dropped by a factor of 6 from a straight power law.
+        See [1]_ for more details.
+    norm
+        The 1 Ghz flux in Jy.
+
+    See Also
+    --------
+    XSsrcut
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSresc.html
+
+    """
 
     _calc =  _xspec.sresc
 
@@ -3831,6 +3917,29 @@ class XSsresc(XSAdditiveModel):
 
 
 class XSstep(XSAdditiveModel):
+    """The XSPEC step model: step function convolved with gaussian.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Energy
+        The start energy, in keV.
+    Sigma
+        The gaussian sigma, in keV.
+    norm
+        The step amplitude.
+
+    See Also
+    --------
+    XSgaussian
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelStep.html
+
+    """
 
     _calc =  _xspec.xsstep
 
