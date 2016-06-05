@@ -5742,6 +5742,10 @@ class XSredden(XSMultiplicativeModel):
     EBV
         The value of E(B-v) for the line of sight to the source.
 
+    See Also
+    --------
+    XSzredden
+
     References
     ----------
 
@@ -5905,7 +5909,6 @@ class XSswind1(XSMultiplicativeModel):
     .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSwind1.html
 
     """
-
 
     _calc =  _xspec.swind1
 
@@ -6279,6 +6282,45 @@ class XSwndabs(XSMultiplicativeModel):
 
 
 class XSxion(XSMultiplicativeModel):
+    """The XSPEC xion model: reflected spectrum of photo-ionized accretion disk/ring.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    height
+        The height of the source above the disk (in Schwarzschild radii).
+    lxld
+        The ratio of the X-ray source luminosity to that of the disk.
+    rate
+        The accretion rate (in Eddington units).
+    cosAng
+        The cosine of the inclination angle (1 is face on).
+    inner
+        The inner radius of the disk (in Schwarzschild radii).
+    outer
+        The er radius of the disk (in Schwarzschild radii).
+    index
+        The photon index of the source.
+    redshift
+        The redshift of the absorber.
+    Feabun
+        The Fe abundance relative to Solar: see [1]_ for more details.
+    E_cut
+        The exponential high energy cut-off energy for the source.
+    Ref_type
+        See [1]_ for details.
+    Ref_smear
+        See [1]_ for details.
+    Geometry
+        See [1]_ for details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelXion.html
+
+    """
 
     _calc =  _xspec.xsxirf
 
@@ -6300,6 +6342,28 @@ class XSxion(XSMultiplicativeModel):
 
 
 class XSzdust(XSMultiplicativeModel):
+    """The XSPEC zdust model: extinction by dust grains.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    method
+        The model to use: 1 is Milky Way, 2 is LMC, 3 is SMC.
+        This parameter can not be thawed.
+    EBV
+        The color excess, E(B-V).
+    Rv
+        The ratio of total to selective extinction.
+    redshift
+        The redshift of the absorber.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZdust.html
+
+    """
 
     _calc =  _xspec.mszdst
 
@@ -6455,6 +6519,27 @@ class XSzphabs(XSMultiplicativeModel):
 
 
 class XSzxipcf(XSMultiplicativeModel):
+    """The XSPEC zxipcf model: partial covering absorption by partially ionized material.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The column density, in units of 10^22 cm^2.
+    logxi
+        The log of xi: see [1]_ for more details.
+    CvrFract
+        The covering fraction.
+    redshift
+        The redshift of the source.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZxipcf.html
+
+    """
 
     _calc =  _xspec.zxipcf
 
@@ -6467,6 +6552,27 @@ class XSzxipcf(XSMultiplicativeModel):
 
 
 class XSzredden(XSMultiplicativeModel):
+    """The XSPEC zredden model: redshifted version of redden.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    EBV
+        The value of E(B-v) for the line of sight to the source.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSredden
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZredden.html
+
+    """
 
     _calc =  _xspec.xszcrd
 
@@ -6477,6 +6583,27 @@ class XSzredden(XSMultiplicativeModel):
 
 
 class XSzsmdust(XSMultiplicativeModel):
+    """The XSPEC zsmdust model: extinction by dust grains in starburst galaxies.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    EBV
+        The value of E(B-v) for the line of sight to the source.
+    ExtIndex
+        The spectral index of the extinction curve.
+    Rv
+        The ratio of total to selective extinction.
+    redshift
+        The redshift of the absorber.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZsmdust.html
+
+    """
 
     _calc =  _xspec.msldst
 
@@ -6579,6 +6706,29 @@ class XSzvarabs(XSMultiplicativeModel):
 
 
 class XSzvfeabs(XSMultiplicativeModel):
+    """The XSPEC zvfeabs model: photoelectric absorption with free Fe edge energy.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    metals
+        The abundance relative to solar.
+    FEabun
+        The iron abundance relative to solar.
+    FEKedge
+        The Fe K edge energy, in keV.
+    redshift
+        The redshift of the absorber.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZvfeabs.html
+
+    """
 
     _calc =  _xspec.xszvfe
 
@@ -7231,6 +7381,28 @@ class XSvvapec(XSAdditiveModel):
 
 
 class XSzigm(XSMultiplicativeModel):
+    """The XSPEC zigm model: UV/Optical attenuation by the intergalactic medium.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    redshift
+        The redshift of the absorber.
+        This parameter can not be thawed.
+    model
+        The model to use: 0 is Madau, 1 is Meiksin.
+        This parameter can not be thawed.
+    lyman_limit
+        Should photoelectric absorption be included (1), or not (0).
+        This parameter can not be thawed.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZigm.html
+
+    """
 
     _calc = _xspec.zigm
 
@@ -7877,6 +8049,27 @@ class XSlyman(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.nHeI, self.b, self.redshift, self.ZA))
 
 class XSzbabs(XSMultiplicativeModel):
+    """The XSPEC lyman model: Voigt absorption profiles for H I or He II Lyman series.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The H column density, in 10^22 atoms/cm^2.
+    nHeI
+        The He I column density, in 10^22 atoms/cm^2.
+    nHeI
+        The He II column density, in 10^22 atoms/cm^2.
+    redshift
+        The redshift of the absorber.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZbabs.html
+
+    """
 
     _calc =  _xspec.xszbabs
 
