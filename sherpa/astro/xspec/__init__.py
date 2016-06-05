@@ -5171,6 +5171,32 @@ class XSzpowerlw(XSAdditiveModel):
 
 
 class XSabsori(XSMultiplicativeModel):
+    """The XSPEC absori model: ionized absorber.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The power-law photon index.
+    nH
+        The Hydrogen column, in units of 10^22 cm^-2.
+    Temp_abs
+        The absorber temperature, in K.
+    xi
+        The absorber ionization state. See [1]_ for more details.
+    redshift
+        The redshift of the absorber.
+    Fe_abund
+        The iron abundance with respect to solar, as set by the
+        ``set_xsabund`` function.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAbsori.html
+
+    """
 
     _calc =  _xspec.C_xsabsori
 
@@ -5185,6 +5211,34 @@ class XSabsori(XSMultiplicativeModel):
 
 
 class XSacisabs(XSMultiplicativeModel):
+    """The XSPEC acisabs model: Chandra ACIS q.e. decay.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tdays
+        Days between Chandra launch and ACIS observation.
+    norm
+    tauinf
+        Slope of linear quantum efficiency decay.
+    tefold
+        Offset of linear quantum efficiency decay.
+    nC
+        Number of carbon atoms in hydrocarbon.
+    nH
+        Number of hydrogen atoms in hydrocarbon.
+    nO
+        Number of oxygen atoms in hydrocarbon.
+    nN
+        Number of nitrogen atoms in hydrocarbon.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAcisabs.html
+
+    """
 
     _calc =  _xspec.acisabs
 
@@ -5201,6 +5255,21 @@ class XSacisabs(XSMultiplicativeModel):
 
 
 class XSconstant(XSMultiplicativeModel):
+    """The XSPEC constant model: energy-independent factor.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    factor
+        The value of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelConstant.html
+
+    """
 
     _calc =  _xspec.xscnst
 
@@ -5210,6 +5279,21 @@ class XSconstant(XSMultiplicativeModel):
 
 
 class XScabs(XSMultiplicativeModel):
+    """The XSPEC cabs model: Optically-thin Compton scattering.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The Hydrogen column, in units of 10^22 cm^-2.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCabs.html
+
+    """
 
     _calc =  _xspec.xscabs
 
@@ -5219,6 +5303,29 @@ class XScabs(XSMultiplicativeModel):
 
 
 class XScyclabs(XSMultiplicativeModel):
+    """The XSPEC cyclabs model: absorption line, cyclotron.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Depth0
+        The depth of the fundamental.
+    E0
+        The cyclotron energy, in keV.
+    Width0
+        The width of the fundamental, in keV.
+    Depth2
+        The depth of the second harmonic.
+    Width2
+        The width of the second harmonic, in keV.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCyclabs.html
+
+    """
 
     _calc =  _xspec.xscycl
 
@@ -5232,6 +5339,23 @@ class XScyclabs(XSMultiplicativeModel):
 
 
 class XSdust(XSMultiplicativeModel):
+    """The XSPEC dust model: dust scattering.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Frac
+        The scattering fraction at 1 keV.
+    Halosz
+        The size of the halo at 1 keV in units of the detector beamsize.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDust.html
+
+    """
 
     _calc =  _xspec.xsdust
 
@@ -5242,6 +5366,27 @@ class XSdust(XSMultiplicativeModel):
 
 
 class XSedge(XSMultiplicativeModel):
+    """The XSPEC edge model: absorption edge.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    edgeE
+        The threshold edge, in keV.
+    MaxTau
+        The absorption depth at the threshold.
+
+    See Also
+    --------
+    XSzedge
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEdge.html
+
+    """
 
     _calc =  _xspec.xsedge
 
@@ -5252,6 +5397,21 @@ class XSedge(XSMultiplicativeModel):
 
 
 class XSexpabs(XSMultiplicativeModel):
+    """The XSPEC expabs model: exponential roll-off at low E.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LowECut
+        The e-folding energy for the absorption, in keV.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelExpabs.html
+
+    """
 
     _calc =  _xspec.xsabsc
 
@@ -5261,6 +5421,25 @@ class XSexpabs(XSMultiplicativeModel):
 
 
 class XSexpfac(XSMultiplicativeModel):
+    """The XSPEC expfac model: exponential modification.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Ampl
+        The amplitude of the effect.
+    Factor
+        The exponential factor.
+    StartE
+        The start energy of the modification, in keV.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelExpfac.html
+
+    """
 
     _calc =  _xspec.xsexp
 
@@ -5272,6 +5451,26 @@ class XSexpfac(XSMultiplicativeModel):
 
 
 class XSgabs(XSMultiplicativeModel):
+    """The XSPEC gabs model: gaussian absorption line.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Sigma
+        The line width (sigma), in keV.
+    Tau
+        The line depth. The optical depth at the line center is
+        Tau / (sqrt(2 pi) * Sigma).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGabs.html
+
+    """
 
     _calc =  _xspec.C_gaussianAbsorptionLine
 
@@ -5287,6 +5486,27 @@ class XSgabs(XSMultiplicativeModel):
 
 
 class XShighecut(XSMultiplicativeModel):
+    """The XSPEC highecut model: high-energy cutoff.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    cutoffE
+        The cut-off energy, in keV.
+    foldE
+        The e-folding energy, in keV.
+
+    See Also
+    --------
+    XSzhighect
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelHighecut.html
+
+    """
 
     _calc =  _xspec.xshecu
 
@@ -5301,6 +5521,40 @@ class XShighecut(XSMultiplicativeModel):
 
 
 class XShrefl(XSMultiplicativeModel):
+    """The XSPEC hrefl model: reflection model.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    thetamin
+        The minimum angle, in degrees, between source photons incident
+        on the slab and the slab normal.
+    thetamax
+        The maximum angle, in degrees, between source photons incident
+        on the slab and the slab normal.
+    thetamobs
+        The angle, in degrees, between the observer's line of sight and
+        the slab normal.
+    Feabun
+        The iron abundance relative to solar.
+    FeKedge
+        The iron K edge energy, in keV.
+    Escfrac
+        The fraction of the direct flux seen by the observer: see [1]_
+        for more details.
+    covfac
+        The normalization of the reflected continuum: see [1]_ for more
+        details.
+    redshift
+        The redshift.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelHrefl.html
+
+    """
 
     _calc =  _xspec.xshrfl
 
@@ -5624,6 +5878,29 @@ class XSzdust(XSMultiplicativeModel):
 
 
 class XSzedge(XSMultiplicativeModel):
+    """The XSPEC edge model: absorption edge.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    edgeE
+        The threshold edge, in keV.
+    MaxTau
+        The absorption depth at the threshold.
+    redshift
+        The redshift of the edge.
+
+    See Also
+    --------
+    XSedge
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEdge.html
+
+    """
 
     _calc =  _xspec.xszedg
 
@@ -5635,6 +5912,29 @@ class XSzedge(XSMultiplicativeModel):
 
 
 class XSzhighect(XSMultiplicativeModel):
+    """The XSPEC highecut model: high-energy cutoff.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    cutoffE
+        The cut-off energy, in keV.
+    foldE
+        The e-folding energy, in keV.
+    redshift
+        The redshift.
+
+    See Also
+    --------
+    XShighecut
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelHighecut.html
+
+    """
 
     _calc =  _xspec.xszhcu
 
@@ -6898,6 +7198,29 @@ class XScomptb(XSAdditiveModel):
 
 
 class XSheilin(XSMultiplicativeModel):
+    """The XSPEC heilin model: Voigt absorption profiles for He I series.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nHeI
+        The He I column density, in 10^22 atoms/cm^2.
+    b
+        The b value, in km/s.
+    redshidt
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSlyman
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelHeilin.html
+
+    """
 
     _calc =  _xspec.xsphei
 
@@ -6908,6 +7231,31 @@ class XSheilin(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.nHei, self.b, self.redshift))
 
 class XSlyman(XSMultiplicativeModel):
+    """The XSPEC lyman model: Voigt absorption profiles for H I or He II Lyman series.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nHeI
+        The H I or He II column density, in 10^22 atoms/cm^2.
+    b
+        The b value, in km/s.
+    redshift
+        The redshift of the absorber.
+    ZA
+        The atomic number of the species being calculated.
+
+    See Also
+    --------
+    XSheilin
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLyman.html
+
+    """
 
     _calc =  _xspec.xslyman
 
