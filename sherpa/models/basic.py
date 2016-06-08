@@ -153,8 +153,11 @@ class Cos(ArithmeticModel):
     Attributes
     ----------
     period
+        The period of the cosine, in units of the independent axis.
     offset
+        The offset (related to the phase) of the cosine.
     ampl
+        The amplitude of the cosine.
 
     See Also
     --------
@@ -249,8 +252,11 @@ class Erf(ArithmeticModel):
     Attributes
     ----------
     ampl
+        The amplitude of the model.
     offset
+        The offset of the model.
     sigma
+        The scaling factor.
 
     See Also
     --------
@@ -297,8 +303,11 @@ class Erfc(ArithmeticModel):
     Attributes
     ----------
     ampl
+        The amplitude of the model.
     offset
+        The offset of the model.
     sigma
+        The scaling factor.
 
     See Also
     --------
@@ -345,8 +354,11 @@ class Exp(ArithmeticModel):
     Attributes
     ----------
     offset
+        The offset of the model.
     coeff
+        The scaling factor.
     ampl
+        The amplitude of the model.
 
     See Also
     --------
@@ -381,8 +393,11 @@ class Exp10(ArithmeticModel):
     Attributes
     ----------
     offset
+        The offset of the model.
     coeff
+        The scaling factor.
     ampl
+        The amplitude of the model.
 
     See Also
     --------
@@ -420,6 +435,7 @@ class Gauss1D(ArithmeticModel):
         The Full-Width Half Maximum of the gaussian. It is related to
         the sigma value by: FWHM = sqrt(8 * log(2)) * sigma.
     pos
+        The center of the gaussian.
     ampl
         The amplitude refers to the maximum peak of the model.
 
@@ -503,8 +519,11 @@ class Log(ArithmeticModel):
     Attributes
     ----------
     offset
+        The offset of the model.
     coeff
+        The scaling factor.
     ampl
+        The amplitude of the model.
 
     See Also
     --------
@@ -539,8 +558,11 @@ class Log10(ArithmeticModel):
     Attributes
     ----------
     offset
+        The offset of the model.
     coeff
+        The scaling factor.
     ampl
+        The amplitude of the model.
 
     See Also
     --------
@@ -581,6 +603,7 @@ class LogParabola(ArithmeticModel):
     c2
         The curvature of the parabola (beta).
     ampl
+        The amplitude of the model.
 
     See Also
     --------
@@ -629,6 +652,7 @@ class NormGauss1D(ArithmeticModel):
         The Full-Width Half Maximum of the gaussian. It is related to
         the sigma value by: FWHM = sqrt(8 * log(2)) * sigma.
     pos
+        The center of the gaussian.
     ampl
         The amplitude refers to the integral of the model over the
         range -infinity to infinity.
@@ -692,7 +716,9 @@ class Poisson(ArithmeticModel):
     Attributes
     ----------
     mean
+        The mean of the first distribution.
     ampl
+        The amplitude of the model.
 
     Notes
     -----
@@ -849,14 +875,18 @@ class Polynom1D(ArithmeticModel):
 class PowLaw1D(ArithmeticModel):
     """One-dimensional power-law function.
 
+    It is assumed that the independent axis is positive at all points.
+
     Attributes
     ----------
     gamma
+        The photon index of the power law.
     ref
         As the reference point is degenerate with the amplitude, the
         ``alwaysfrozen`` attribute of the reference point is set so
         that it can not be varied during a fit.
     ampl
+        The amplitude of the model.
 
     See Also
     --------
@@ -942,8 +972,11 @@ class Sin(ArithmeticModel):
     Attributes
     ----------
     period
+        The period of the sine, in units of the independent axis.
     offset
+        The offset (related to the phase) of the sine.
     ampl
+        The amplitude of the sine.
 
     See Also
     --------
@@ -982,7 +1015,9 @@ class Sqrt(ArithmeticModel):
     Attributes
     ----------
     offset
+        The offset of the model.
     ampl
+        The amplitude of the model.
 
     See Also
     --------
@@ -1115,8 +1150,11 @@ class Tan(ArithmeticModel):
     Attributes
     ----------
     period
+        The period of the tangent, in units of the independent axis.
     offset
+        The offset (related to the phase) of the tangent.
     ampl
+        The amplitude of the tangent.
 
     See Also
     --------
@@ -1616,14 +1654,23 @@ class Polynom2D(ArithmeticModel):
     Attributes
     ----------
     c
+        The constant term.
     cy1
+        The coefficient for the x1 term.
     cy2
+        The coefficient for the x1^2 term.
     cx1
+        The coefficient for the x0 term.
     cx1y1
+        The coefficient for the x0 x1 term.
     cx1y2
+        The coefficient for the x0 x1^2 term.
     cx2
+        The coefficient for the x0^2 term.
     cx2y1
+        The coefficient for the x0^2 x1 term.
     cx2y2
+        The coefficient for the x0^2 x1^2 term.
 
     See Also
     --------

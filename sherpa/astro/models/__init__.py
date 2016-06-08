@@ -540,6 +540,9 @@ class LineBroad(ArithmeticModel):
         return _modelfcts.linebroad(*args, **kwargs)
 
 
+# DOC-NOTE: for some reason the division in the equation in the notes
+#           section confuses sphinx (it thinks it is a section title).
+#
 class Lorentz1D(ArithmeticModel):
     """One-dimensional normalized Lorentz model function.
 

@@ -690,7 +690,7 @@ class BlackBody(ArithmeticModel):
 
     See Also
     --------
-    Bremstrahlung
+    Bremsstrahlung
 
     Notes
     -----
@@ -763,7 +763,7 @@ class Bremsstrahlung(ArithmeticModel):
 
     See Also
     --------
-    Blackbody
+    BlackBody
 
     Notes
     -----
