@@ -32,19 +32,26 @@ logger = logging.getLogger("sherpa")
 
 def run(verbosity=0, require_failure=False, fits=None, xspec=False):
     """
-    Run the smoke tests, i.e. a small set of tests designed to verify that the installation does not have
+    Run the smoke tests.
+
+    A smoke test is a small set of tests designed to verify that the installation does not have
     any obvious issues.
 
     Parameters
     ----------
-    verbosity non-negative int. Set verbosity level: the higher the level, the more verbose the test. This
-    parameter is passed to the unittest TextTestRunner class.
-    require_failure boolean. For debugging purposes, the test may be required to always fail.
-    fits basesting. The string representing the FITS backend module to require. If the module cannot be imported,
-    the smoke test will fail. However, the other tests will keep running, although they may be skipped if they
-    require the FITS backend.
-    xspec boolean. Whether the xspec module is required. If the xspec module cannot be imported, the smoke test will
-    fail. However, the other tests will keep running, although they may be skipped if they require xspec.
+    verbosity : non-negative int
+        Set verbosity level: the higher the level, the more verbose the test. This
+        parameter is passed to the unittest TextTestRunner class.
+        require_failure boolean. For debugging purposes, the test may be required to always fail.
+
+    fits : basestring
+        The string representing the FITS backend module to require. If the module cannot be imported,
+        the smoke test will fail. However, the other tests will keep running, although they may be skipped if they
+        require the FITS backend.
+
+    xspec : boolean
+        Whether the xspec module is required. If the xspec module cannot be imported, the smoke test will
+        fail. However, the other tests will keep running, although they may be skipped if they require xspec.
 
     Returns
     -------
@@ -77,6 +84,8 @@ def run(verbosity=0, require_failure=False, fits=None, xspec=False):
 
 class SmokeTest(unittest.TestCase):
     """
+    Smoke test test case.
+
     Historically, CIAO software has been accompanied by "smoke tests", tests that are shipped with the
     main code distribution and that can be run to assess whether the software was properly installed.
 
@@ -126,7 +135,9 @@ class SmokeTest(unittest.TestCase):
     @requires_fits
     def test_fits_io(self):
         """
-        Test that basic FITS I/O functions work, which means that the FITS backend can be used to perform basic
+        Test that basic FITS I/O functions work.
+
+        This test ensures that the FITS backend can be used to perform basic
         I/O functions.
         """
         ui.load_pha(self.fits)
@@ -136,7 +147,10 @@ class SmokeTest(unittest.TestCase):
     @requires_xspec
     def test_xspec(self):
         """
-        Perform a very simple fit with an xspec model, and check that the results make sense.
+        Perform a very simple fit with an xspec model.
+
+        Also check that the results make sense.
+
         This test proves that the xspec extension properly works, and that there are no obvious building, linking, or
         environment issues that would prevent the xspec model from running.
         """
@@ -152,7 +166,9 @@ class SmokeTest(unittest.TestCase):
 
     def test_failure(self):
         """
-        This is a debug test that always fails. It may be used to check that error conditions upstream are correctly
+        This is a debug test that always fails.
+
+        It may be used to check that error conditions upstream are correctly
         handled by scripts calling the Smoke Test. Whether or not this test is run depends on the option passed to the
         run function in this module.
         """
@@ -161,6 +177,8 @@ class SmokeTest(unittest.TestCase):
 
 class SmokeTestSuite(unittest.TestSuite):
     """
+    Smoke test suite.
+
     At this point the Smoke Test is comprised of a single unittest test case. However, it may be extended in the future,
     so we set up a test suite.
 
