@@ -453,10 +453,7 @@ def export_method(meth, name=None, modname=None):
         return meth
 
     if name is None:
-        if meth.__name__ == 'log_decorator':
-            name = meth._original.__name__
-        else:
-            name = meth.__name__
+        name = meth.__name__
 
     if name == meth.__name__:
         old_name = '_old_' + name
