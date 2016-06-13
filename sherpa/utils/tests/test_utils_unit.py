@@ -110,8 +110,96 @@ def test_calc_hist2d():
     assert_array_equal(expected, _utils.hist2d(xin, yin, x, x))
 
 
-def test_igam():
+@pytest.mark.parametrize("a, x, expected", [
+    (2, 1.5, 0.4421745996),
+    ([1, 2, 3], [1.0, 1.5, 2.0], [0.6321205588, 0.4421745996, 0.323323583]),
+])
+def test_igam(a, x, expected):
     """
     used scipy.special.gamminc as oracle
     """
-    assert_almost_equal(0.4421745996, _utils.igam(2, 1.5))
+    assert_almost_equal(expected, _utils.igam(a, x))
+
+
+@pytest.mark.parametrize("a, x, expected", [
+    (2, 1.5, 0.557825400),
+    ([1, 2, 3], [1.0, 1.5, 2.0], [0.36787944, 0.5578254, 0.67667642]),
+])
+def test_igamc(a, x, expected):
+    """
+    used scipy.special.gammincc as oracle
+    """
+    assert_almost_equal(expected, _utils.igamc(a, x))
+
+
+@pytest.mark.parametrize("a, b, x, expected", [
+    (2, 3.5, 0.5, 0.756932043),
+    ([1, 2, 3], [1.0, 1.5, 2.0], [0.3, 0.5, 0.75], [0.3, 0.38128157, 0.73828125]),
+])
+def test_incbet(a, b, x, expected):
+    """
+    used scipy.special.betainc as oracle
+    """
+    assert_almost_equal(expected, _utils.incbet(a, b, x))
+
+
+@pytest.mark.parametrize("z, expected", [
+    (30, 71.25703896),
+    ([1.0, 1.5, 25.7, 132.3], [0, -0.1207822376, 57.0337539076, 512.4720673873])
+])
+def test_lgam(z, expected):
+    """
+    used scipy.special.gammaln as oracle
+    """
+    assert_almost_equal(expected, _utils.lgam(z))
+
+
+@pytest.mark.parametrize("x, expected", [
+    (0.1, -1.2815515655446004),
+    ([0.1, 0.4, 0.95], [-1.28155157, -0.2533471, 1.64485363])
+])
+def test_ndtri(x, expected):
+    """
+    used scipy.stats.norm.ppf as oracle.
+
+    py3-todo: this function is missing docs in python
+    """
+    assert_almost_equal(expected, _utils.ndtri(x))
+
+
+def test_neville():
+    """
+    used sherpa (python2) as oracle.
+    """
+    x = [1.2, 3.4, 4.5, 5.2]
+    y = [12.2, 14.4, 16.8, 15.5]
+    xgrid = numpy.linspace(2, 5, 5)
+    expected = [10.7775023, 12.24227718, 14.7319838, 16.60004786, 16.19989505]
+    assert_almost_equal(expected, _utils.neville(xgrid, x, y))
+
+
+def test_rebin():
+    """
+    used sherpa (python2) as oracle
+    """
+    y0 = [1, 3, 4, 10, 0]
+    x0lo = [0, 2, 4, 6,  8]
+    x0hi = [2, 4, 6, 8, 10]
+    x1lo = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    x1hi = [1,  2,  3,  4,  5,  6,  7,  8,  9, 10]
+
+    expected = [0.5,  0.5,  1.5,  1.5,  2.,  2.,  5.,  5.,  0.,  0.]
+
+    assert_array_equal(expected, _utils.rebin(y0, x0lo, x0hi, x1lo, x1hi))
+
+
+def test_sao_arange():
+    """
+    used sherpa (python2) as oracle
+
+    py3-todo: this function has no python docs
+    """
+    assert_array_equal([  0.,   1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.], _utils.sao_arange(0, 10, 1))
+
+
+# py3-todo: skipping test for sum_intervals, not enough info to make a quick test.
