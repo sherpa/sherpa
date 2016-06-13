@@ -64,8 +64,7 @@ def test_calc_gsl_fcmp(tolerance, expected):
     """
     this test was created using sherpa 4.8.1 (2507414) as an oracle for the python 3 migration
     """
-    arrays = ([0.12345, 0.54321], [0.12346, 0.54320])
-    assert_array_equal(expected, _utils.gsl_fcmp(*arrays, tolerance))
+    assert_array_equal(expected, _utils.gsl_fcmp([0.12345, 0.54321], [0.12346, 0.54320], tolerance))
 
 
 @pytest.mark.parametrize("tolerance, expected", [
@@ -79,8 +78,7 @@ def test_calc_sao_fcmp(tolerance, expected):
 
     py3-todo: what is the difference between sao_fcmp and gsl_fcmp?
     """
-    arrays = ([0.12345, 0.54321], [0.12346, 0.54320])
-    assert_array_equal(expected, _utils.sao_fcmp(*arrays, tolerance))
+    assert_array_equal(expected, _utils.sao_fcmp([0.12345, 0.54321], [0.12346, 0.54320], tolerance))
 
 
 def test_calc_hist1d():

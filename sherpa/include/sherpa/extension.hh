@@ -38,14 +38,7 @@ typedef int (*converter)( PyObject*, void* );
 
 #define CONVERTME(arg) ((converter) sherpa::convert_to_contig_array<arg>)
 
-//#define SHERPAMOD(name, fctlist) \
-//PyMODINIT_FUNC init##name(void);\
-//PyMODINIT_FUNC \
-//init##name(void) \
-//{ \
-//  import_array(); \
-//  Py_InitModule( (char*)#name, fctlist ); \
-//}
+#if PY_MAJOR_VERSION >= 3
 
 #define SHERPAMOD(name, fctlist) \
 static struct PyModuleDef module##name = {\
@@ -60,6 +53,19 @@ PyMODINIT_FUNC PyInit_##name(void) { \
   import_array(); \
   return PyModule_Create(&module##name); \
 }
+
+#else
+
+#define SHERPAMOD(name, fctlist) \
+PyMODINIT_FUNC init##name(void);\
+PyMODINIT_FUNC \
+init##name(void) \
+{ \
+  import_array(); \
+  Py_InitModule( (char*)#name, fctlist ); \
+}
+
+#endif
 
 
 #define FCTSPEC(name, func) \
