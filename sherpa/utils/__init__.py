@@ -32,9 +32,9 @@ import string
 import sys
 import os
 import importlib
+import unittest
 import numpy
 import numpy.random
-from . import numpytest
 import numpy.fft
 # Note: _utils.gsl_fcmp is not exported from this module; is this intentional?
 from unittest import skipIf
@@ -43,7 +43,6 @@ from sherpa.utils._utils import calc_ftest, calc_mlr, igamc, igam, \
     hist1d, hist2d, sum_intervals, neville, sao_arange
 from sherpa.utils._psf import extract_kernel, normalize, set_origin, \
     pad_bounding_box
-from functools import wraps
 
 from sherpa import get_config
 from six.moves.configparser import ConfigParser, NoSectionError
@@ -184,7 +183,7 @@ def _get_datadir():
     return datadir
 
 
-class SherpaTestCase(numpytest.NumpyTestCase):
+class SherpaTestCase(unittest.TestCase):
     "Base class for Sherpa unit tests"
 
     # The location of the Sherpa test data (it is optional)
