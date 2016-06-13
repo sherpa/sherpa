@@ -213,7 +213,6 @@ class test_root( SherpaTestCase ):
         for solve_func in methods:
             # demuller2 cannot solve prob30 & pinhead so may as well skip them
             if fct.__name__ == 'prob30' or fct.__name__ == 'pinhead':
-                self.assert_( 0 == 0 )
                 return
             result = solve_func( fct, a, b, tol=tol )
             [ root, froot ] = result[ 0 ]
@@ -223,7 +222,7 @@ class test_root( SherpaTestCase ):
                 nfev = result[ -1 ]
                 msg = '%s:\t%s(%e) = %e in %d nfevs\n' % ( solve_name, fct_name, root, froot, nfev )
                 sys.stdout.write( msg )
-            self.assert_( abs( froot ) <= tol )
+            self.assertTrue( abs( froot ) <= tol )
 
     def test_prob1( self ):
         a = 0.0

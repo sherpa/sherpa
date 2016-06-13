@@ -25,6 +25,8 @@ from sherpa import utils
 from sherpa.utils import SherpaTestCase, SherpaFloat, \
     NoNewAttributesAfterInit
 
+from six.moves import xrange
+
 
 class test_utils(SherpaTestCase):
 
@@ -49,7 +51,7 @@ class test_utils(SherpaTestCase):
         c = C()
         self.assertEqual(c.x, 1)
         self.assertEqual(c.y, 2)
-        self.assert_(not hasattr(c, 'z'))
+        self.assertFalse(hasattr(c, 'z'))
         self.assertRaises(AttributeError, delattr, c, 'x')
         self.assertRaises(AttributeError, delattr, c, 'z')
         self.assertRaises(AttributeError, setattr, c, 'z', 5)
@@ -86,10 +88,12 @@ class test_utils(SherpaTestCase):
             try:
                 m()
             except TypeError as e:
-                pass
-            self.assertEqual(str(e),
-                             '%s() takes at least 1 argument (0 given)' %
-                             meth.__name__)
+                try:
+                    self.assertEqual(str(e),
+                                     '%s() takes at least 1 argument (0 given)' % meth.__name__)
+                except:
+                    self.assertEqual(str(e),
+                                     "%s() missing 1 required positional argument: 'x'" % meth.__name__)
 
         # Non-method argument
         def f(x):
@@ -210,7 +214,7 @@ class test_utils(SherpaTestCase):
         f = numpy.sum
         iterable = [numpy.arange(1, 2+2*i) for i in range(numtasks)]
 
-        result = map(f, iterable)
+        result = list(map(f, iterable))
         result = numpy.asarray(result)
 
         pararesult = utils.parallel_map(f, iterable, ncpus)

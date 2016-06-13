@@ -33,7 +33,8 @@ known_warnings = {
     DeprecationWarning:
         ["unorderable dtypes; returning scalar but in the future this will be an error",
          "Non-string object detected for the array ordering. Please pass in 'C', 'F', 'A', or 'K' instead",
-         "using a non-integer number instead of an integer will result in an error in the future", ],
+         "using a non-integer number instead of an integer will result in an error in the future",
+         "inspect.getargspec() is deprecated, use inspect.signature() instead"],
     UserWarning:
         [
             "File '/data/regression_test/master/in/sherpa/aref_sample.fits' does not have write permission.  Changing to read-only mode.",

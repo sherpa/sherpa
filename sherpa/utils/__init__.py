@@ -47,6 +47,7 @@ from functools import wraps
 
 from sherpa import get_config
 from six.moves.configparser import ConfigParser, NoSectionError
+from six.moves import xrange
 
 import logging
 warning = logging.getLogger("sherpa").warning
@@ -463,15 +464,9 @@ def export_method(meth, name=None, modname=None):
         old_name = meth.__name__
 
     # Make an argument list string, removing 'self'
-    if meth.__name__ == 'log_decorator':
-        # This is needed for making loggable decorator work (Omar)
-        argspec = inspect.getargspec(meth._original)
-        defaults = meth._original.__defaults__
-        doc = meth._original.__doc__
-    else:
-        argspec = inspect.getargspec(meth)
-        defaults = meth.__defaults__
-        doc = meth.__doc__
+    argspec = inspect.getargspec(meth)
+    defaults = meth.__defaults__
+    doc = meth.__doc__
     argspec[0].pop(0)
     argspec = inspect.formatargspec(argspec[0], argspec[1], argspec[2])
 
