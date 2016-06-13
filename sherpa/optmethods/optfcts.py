@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import numpy
 import random
 import sys
-from itertools import izip
+from six.moves import zip as izip
 
 
 from . import _minpack
@@ -80,7 +80,7 @@ def _move_within_limits(x, xmin, xmax):
         x[above] = xmax[above]
 
 def _my_is_nan( x ):
-    fubar = filter( lambda xx: xx != xx or xx is numpy.nan or numpy.isnan(xx) and numpy.isfinite(xx), x )
+    fubar = list(filter(lambda xx: xx != xx or xx is numpy.nan or numpy.isnan(xx) and numpy.isfinite(xx), x))
     if len( fubar ) > 0:
         return True
     else:
@@ -95,33 +95,31 @@ def _narrow_limits( myrange, xxx, debug ):
             if my_x > my_h:
                 print('x = ', my_x, ' is > upper limit = ', my_h)
 
-    def raise_min_limit( range, xmin, x, debug=False ):
-        myxmin = numpy.asarray( map( lambda xx: xx - range * numpy.abs(xx),
-                                     x ), numpy.float_ )
-        if False != debug:
+    def raise_min_limit(range, xmin, x, debug=False):
+        myxmin = numpy.asarray(list(map(lambda xx: xx - range * numpy.abs(xx), x)), numpy.float_)
+        if debug:
             print()
             print('raise_min_limit: myxmin=%s' % myxmin)    
             print('raise_min_limit: x=%s' % x)
         below = numpy.flatnonzero(myxmin < xmin)
         if below.size > 0:
             myxmin[below] = xmin[below]
-        if False != debug:
+        if debug:
             print('raise_min_limit: myxmin=%s' % myxmin)    
             print('raise_min_limit: x=%s' % x)
             print()
         return myxmin
 
-    def lower_max_limit( range, x, xmax, debug=False ):
-        myxmax = numpy.asarray( map( lambda xx: xx + range * numpy.abs(xx),
-                                     x ), numpy.float_ )
-        if False != debug:
+    def lower_max_limit(range, x, xmax, debug=False):
+        myxmax = numpy.asarray(list(map(lambda xx: xx + range * numpy.abs(xx), x)), numpy.float_)
+        if debug:
             print()
             print('lower_max_limit: x=%s' % x)
             print('lower_max_limit: myxmax=%s' % myxmax)    
         above = numpy.flatnonzero(myxmax > xmax)
         if above.size > 0:
             myxmax[above] = xmax[above]
-        if False != debug:
+        if debug:
             print('lower_max_limit: x=%s' % x)
             print('lower_max_limit: myxmax=%s' % myxmax)    
             print()
@@ -541,7 +539,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     if seed is None:
         seed = random.randint(0, 2147483648) # pow(2,31) == 2147483648L
     if population_size is None:
-        population_size = max( population_size, 12 * x.size )
+        population_size = 12 * x.size
 
     if maxfev is None:
         maxfev = 8192 * population_size
@@ -563,9 +561,9 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         ############################# NelderMead #############################
         mymaxfev = min( maxfev_per_iter, maxfev )
         if all( x == 0.0 ):
-            mystep = map( lambda fubar: 1.2 + fubar, x )
+            mystep = list(map(lambda fubar: 1.2 + fubar, x))
         else: 
-            mystep = map( lambda fubar: 1.2 * fubar, x )
+            mystep = list(map(lambda fubar: 1.2 * fubar, x))
         result = neldermead( myfcn, x, xmin, xmax, maxfev=mymaxfev, ftol=ftol,
                              finalsimplex=9, step=mystep )
         x = numpy.asarray( result[ 1 ], numpy.float_ )
@@ -628,12 +626,12 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     covarerr = None
     if nfev < maxfev:
         if all( x == 0.0 ):
-            mystep = map( lambda fubar: 1.2 + fubar, x )
+            mystep = list(map(lambda fubar: 1.2 + fubar, x))
         else: 
-            mystep = map( lambda fubar: 1.2 * fubar, x )
-        result = neldermead( fcn, x, xmin, xmax,
-                             maxfev=min( 512*len(x), maxfev - nfev ),
-                             ftol=ftol, finalsimplex=9, step=mystep )
+            mystep = list(map(lambda fubar: 1.2 * fubar, x))
+        result = neldermead(fcn, x, xmin, xmax,
+                            maxfev=min(512*len(x), maxfev - nfev),
+                            ftol=ftol, finalsimplex=9, step=mystep)
         covarerr = result[4].get( 'covarerr' )
 
         x = numpy.asarray( result[ 1 ], numpy.float_ )
