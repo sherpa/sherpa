@@ -150,7 +150,7 @@ class BaseData(NoNewAttributesAfterInit):
             else:
                 # use default filtering
                 mask = filter_bins(mins, maxes, axislist)
-        except AssertionError:
+        except AttributeError:
             # isn't a PHA dataset. Use default filtering
             mask = filter_bins(mins, maxes, axislist)
 
