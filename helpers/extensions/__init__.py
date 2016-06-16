@@ -249,7 +249,7 @@ minim =  Extension('sherpa.optmethods._minim',
 fortran_exts = [minpack, minim]
 
 static_ext_modules = [
-                   # estmethods,
+                   estmethods,
                    utils,
                    # modelfcts,
                    saoopt,

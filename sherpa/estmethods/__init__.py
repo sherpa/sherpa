@@ -18,14 +18,17 @@ from __future__ import absolute_import
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six.moves import map
+from six.moves import range
+from six.moves import zip as izip
+
 import numpy
 _ = numpy.seterr(invalid='ignore')
 
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, is_iterable, list_to_open_interval, mysgn, quad_coef, demuller, zeroin, OutOfBoundErr, func_counter, _multi, _ncpus
+from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, is_iterable, list_to_open_interval, mysgn, quad_coef, apache_muller, bisection, demuller, zeroin, OutOfBoundErr, func_counter, _multi, _ncpus
 
 import logging
-from . import _est_funcs
-from itertools import izip
+import sherpa.estmethods._est_funcs
 
 try:
     import multiprocessing
@@ -132,7 +135,7 @@ class EstMethod(NoNewAttributesAfterInit):
 
     def __str__(self):
         # Put name first always
-        keylist = self.config.keys()
+        keylist = list(self.config.keys())
         keylist = ['name'] + keylist
         full_config = {'name': self.name}
         full_config.update(self.config)
@@ -273,6 +276,9 @@ class Projection(EstMethod):
                 parhardmaxes, limit_parnums, freeze_par, thaw_par,
                 report_progress, get_par_name,
                 statargs=(), statkwargs={}):
+
+        if fitfunc is None:
+            raise TypeError("fitfunc should not be none")
 
         def stat_cb(pars):
             return statfunc(pars)[0]
@@ -452,8 +458,6 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
             # parameter values to the exception obj.  These modified
             # parvals determine the new lower statistic.
             raise EstNewMin(pars)
-        except:
-            raise
 
         if lock is not None:
             lock.acquire()
@@ -711,7 +715,7 @@ class ConfRootNone(object):
     """The base class for the root of the confidence interval"""
 
     def __init__(self, root=None):
-        """If self.root == None, then 
+        """If self.root == None, then
         1) points up to the hard limits were tried and it was not possible
         to bracketed the solution.
         2) a parameter beyond the soft limit has been tried and the new stat
@@ -904,7 +908,7 @@ def trace_fcn(fcn, bloginfo):
         '''compact but more details then debugger'''
         name = fcn.__name__
         str = '%s%s(%s)' % (bloginfo.prefix, fcn.__name__, ", ".join(
-            map(repr, chain(args, kwargs.values()))))
+            list(map(repr, chain(args, list(kwargs.values()))))))
         bloginfo.blogger.info(str)
         return fcn(*args, **kwargs)
 
@@ -914,7 +918,7 @@ def trace_fcn(fcn, bloginfo):
             str += args[0].__str__()
         for arg in args[1:]:
             str = '%s, %s' % (str, arg)
-        for key in kwargs.iterkeys():
+        for key in kwargs.keys():
             value = kwargs[key]
             str = '%s, %s=%s' % (str, key, value)
         val = fcn(*args, **kwargs)

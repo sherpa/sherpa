@@ -208,7 +208,7 @@ static void _raise_python_error(const char* base_message,
     est_exception = PyErr_NewException((char*)"sherpa.estmethods.EstHardMin",
 				       est_hardmin,
 				       NULL);
-    par_number = PyInt_FromLong(status.par_number);
+    par_number = PyLong_FromLong(status.par_number);
     if (NULL == est_hardmin || NULL == est_exception || NULL == par_number)
       ;
     else {
@@ -221,7 +221,7 @@ static void _raise_python_error(const char* base_message,
     est_exception = PyErr_NewException((char*)"sherpa.estmethods.EstHardMax",
 				       est_hardmax,
 				       NULL);
-    par_number = PyInt_FromLong(status.par_number);
+    par_number = PyLong_FromLong(status.par_number);
     if (NULL == est_hardmax || NULL == est_exception || NULL == par_number)
       ;
     else {
