@@ -37,8 +37,6 @@ matrix:
       python: "2.7"
       sudo: required
       dist: trusty
-    - env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.4 # 1.5 does not support numpy 1.8, required by pyfits
-      python: "2.7"
     - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5
       python: "2.7"
     - env: FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
@@ -50,7 +48,7 @@ matrix:
   allow_failures:
     - env: XSPECVER="12.8.2q" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
 
-env:  INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true" MATPLOTLIBVER=1.5
+env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.4 # 1.5 does not support numpy 1.8, required by pyfits
 
 before_install:
   - export LIBGFORTRANVER="1.0"
