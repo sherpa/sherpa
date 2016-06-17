@@ -255,6 +255,7 @@ static_ext_modules = [
                    saoopt,
                    tstoptfct,
                    # statfcts,
+                   integration,
                    # astro_modelfcts,
                    # pileup,
                    # astro_utils,
