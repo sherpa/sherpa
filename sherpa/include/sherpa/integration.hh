@@ -20,6 +20,7 @@
 #ifndef __sherpa_integration_hh__
 #define __sherpa_integration_hh__
 
+#include <capsulethunk.h>
 #include <sstream>
 
 extern "C" {
@@ -103,7 +104,7 @@ import_integration(void)
     goto error;
 
   if ( NULL ==
-       ( Integration_API = (void**)PyCObject_AsVoidPtr( api_cobject ) ) )
+       ( Integration_API = (void**)PyCapsule_GetPointer( api_cobject, NULL ) ) )
     goto error;
 
   rv = 0;
