@@ -21,6 +21,7 @@ import numpy
 from sherpa.astro.data import DataPHA
 from sherpa.utils import SherpaTestCase, requires_data, requires_fits
 from sherpa.astro.io import read_pha
+import unittest
 
 import logging
 logger = logging.getLogger('sherpa')
@@ -293,6 +294,52 @@ class test_grouping(SherpaTestCase):
                    16., 16., 16.]
 
         numpy.testing.assert_array_equal(data.get_dep(filter=True), grouped)
+
+    # set quality flags and a filter to the data before grouping it.
+    # NOTE: we expect this test to fail until we fix properly handle grouping
+    # and quality flags, and until issue #149 is resolved.
+    @requires_fits
+    @requires_data
+    def test_grouping_with_previous_quality_flags(self):
+
+        data = read_pha(self.specfit_dataset1, use_errors=True)
+
+        # set the data quality arrays
+        # use OGIP standards (0=good, 1=bad from data redux pipeline, 2=bad from
+        # software, 5=bad from user)
+        quality = numpy.zeros(len(data.channel))
+        quality[:30] = 5
+        quality[301:350] = 5
+        quality[350:] = 1
+
+        data.quality = quality
+
+        # filter data
+        data.notice(0.5, 7.0)
+
+        # ignore bad data points
+        data.ignore_bad()
+
+        # group_counts() removes the filter before rebinning
+        # but re-applies the filter afterwards
+        data.group_counts(16)
+
+        # the expected grouped counts
+        # note that the last element in the array is an unfilled group that
+        # should have a bad group quality value
+        # TODO: is this true? Or should unfilled groups be removed from the
+        # grouped array?
+        grouped = [19, 18, 16, 21, 18, 19, 16, 17, 17, 19, 16, 16, 17, 16,
+                   17, 16, 17, 16, 16, 16, 17, 16, 16, 16, 16, 3]
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), grouped)
+
+        # ignore any bad groups
+        data.ignore_bad()
+
+        # the last element in the grouped array should be masked
+        numpy.testing.assert_array_equal(data.get_dep(filter=True),
+                                         grouped[:-1])
 
     def test_group_bins_simple(self):
 
