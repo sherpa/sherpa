@@ -375,7 +375,7 @@ class test_grouping(SherpaTestCase):
         new_x = numpy.arange(start=1, stop=1025, step=16)
         new_y = numpy.ones(64) * 16
 
-        # there should be 10 bins with y=10
+        # there should be 64 bins with y=16
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
         # TODO: uncomment when I figure out how to get the x data
         # numpy.testing.assert_array_equal(data.get_indep(filter=True), new_x)
@@ -433,6 +433,41 @@ class test_grouping(SherpaTestCase):
 
         # expected grouped array
         new_y = [315.0, 798.0, 819.0, 816.0, 15.0]
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
+    def test_group_filter_keep_good_bins(self):
+        # if a filter is set to the data, make sure all the grouped data inside
+        # the filter is still shown when calling "get_dep(filter=True)"
+
+        # make a straight line from x=1 to x=1024
+        x = numpy.arange(start=1, stop=1025, step=1)
+        y = numpy.ones(x.size)
+        data = DataPHA("dataset", x, y)
+
+        # group so each bin is 16 channels wide
+        data.group_width(16)
+
+        # set a filter to include 16 - 1008
+        data.notice(15, 1008)
+
+        # control x and y arrays. There should be 62 groups
+        new_x = numpy.arange(start=16, stop=1008, step=16)
+        new_y = numpy.ones(new_x.size) * 16
+
+        # there should be 64 bins with y=16
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
+        # cleanup
+        data.ungroup()
+
+        # set a filter to include the whole dataset *before* grouping
+        data.notice(0, 2000)
+        data.group_width(16)
+
+        # control x and y arrays. There should be 64 groups
+        new_x = numpy.arange(start=1, stop=1025, step=16)
+        new_y = numpy.ones(64) * 16
 
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
 
