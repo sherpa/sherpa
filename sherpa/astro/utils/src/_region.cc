@@ -25,7 +25,6 @@
 extern "C" {
 #include "cxcregion.h"
 #include <string>
-  void init_region();
 }
 
 typedef struct {
@@ -35,36 +34,30 @@ typedef struct {
   regRegion *region;
 } PyRegion;
 
+
+static PyObject* pyRegion_build(PyTypeObject *type, regRegion *reg) {
+  PyRegion *ret = NULL;
+  ret = (PyRegion*)type->tp_alloc( type, 0 );
+  if( ret )
+  ret->region = reg;
+
+  return (PyObject*)ret;
+}
+
 static PyObject* pyRegion_new(PyTypeObject *type, PyObject *args,
 			      PyObject *kwds)
 {
-  PyRegion *self = NULL;
-  PyObject *cobj = NULL;
   regRegion *reg = NULL;
+  char *objS = NULL;
 
-  if ( !PyArg_ParseTuple( args, "|O", &cobj ) )
+  if ( !PyArg_ParseTuple( args, "|s", &objS ) ) {
+    PyErr_SetString( PyExc_TypeError, "Region argument is not a string" );
     return NULL;
-
-  // In order to pass in regRegion* as a Python argument, use void* trick
-  if(cobj) {
-    if( PyString_Check( cobj ) ) {
-      reg = regParse( PyString_AS_STRING( cobj ) );
-//       if ( !reg ) {
-// 	PyErr_SetString( PyExc_TypeError,
-// 			 (char*)"unable to parse region string successfully" );
-// 	return NULL;
-//       }
-    }
-    else if( PyCObject_Check( cobj ) )
-      reg = (regRegion*) PyCObject_AsVoidPtr( cobj );
   }
 
-  self = (PyRegion*)type->tp_alloc( type, 0 );
+  reg = regParse( objS );
 
-  if(self)
-    self->region = reg;
-
-  return (PyObject*)self;
+  return pyRegion_build( type, reg );
 }
 
 // New datatype dealloc method
@@ -80,11 +73,13 @@ static void pyRegion_dealloc(PyRegion* reg) {
 
 static PyObject* pyRegion_str(PyRegion* reg) {
   regRegion *region = reg->region;
+  const char *ret = "";
 
-  if( !region )
-    return PyString_FromString((char*)"");
+  if ( region ) {
+    ret = regAllocComposeRegion( region );
+  }
 
-  return PyString_FromString((char*) regAllocComposeRegion( region ));
+  return Py_BuildValue("s", ret);
 }
 
 
@@ -105,8 +100,7 @@ static regRegion* parse_string( char* str, int fileflag ) {
 static PyTypeObject pyRegion_Type = {
   // Note that there is no semicolon after the PyObject_HEAD_INIT macro;
   // one is included in the macro definition.
-  PyObject_HEAD_INIT(NULL)
-  0,                             // ob_size
+  PyVarObject_HEAD_INIT(NULL, 0)    // ob_size
   (char*)"PyRegion",             // tp_name
   sizeof(PyRegion),              // tp_basicsize
   0, 		                 // tp_itemsize
@@ -155,7 +149,6 @@ static PyObject* region_mask( PyObject* self, PyObject* args )
   DoubleArray xpos, ypos;
 
   PyObject *reg_obj = NULL;
-  PyObject *cobj = NULL;
   PyRegion *region = NULL;
   regRegion *reg = NULL;
 
@@ -218,12 +211,7 @@ static PyObject* region_mask( PyObject* self, PyObject* args )
     if( tmp ) regFree( tmp );
   }
 
-  // In order to pass in regRegion* as a Python argument, use void* trick
-  cobj = PyCObject_FromVoidPtr((void*)reg, NULL);
-
-  region = (PyRegion*) pyRegion_new( &pyRegion_Type,
-				     Py_BuildValue((char*)"(O)", cobj ),
-				     NULL );
+  region = (PyRegion*) pyRegion_build( &pyRegion_Type, reg );
 
   Py_XINCREF(region);
 
@@ -283,24 +271,52 @@ static PyMethodDef RegionFcts[] = {
 #ifndef PyMODINIT_FUNC	// declarations for DLL import/export
 #define PyMODINIT_FUNC void
 #endif
+
+#ifdef PY3
+static struct PyModuleDef module_region = {
+PyModuleDef_HEAD_INIT,
+"_region",
+NULL,
+-1,
+RegionFcts
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit__region(void)
+
+#else
+#define INITERROR return
+
 PyMODINIT_FUNC
 init_region(void)
+#endif
+
 {
 
   PyObject *m;
 
   if (PyType_Ready(&pyRegion_Type) < 0)
-    return;
+    INITERROR;
 
   import_array();
 
+#ifdef PY3
+  m = PyModule_Create(&module_region);
+#else
   m = Py_InitModule3((char*)"_region", RegionFcts, NULL);
+#endif
 
-  if (m == NULL)
-    return;
+if (m == NULL)
+    INITERROR;
 
   Py_INCREF(&pyRegion_Type);
 
   PyModule_AddObject(m, (char*)"Region", (PyObject *)&pyRegion_Type);
+
+#ifdef PY3
+  return m;
+#endif
 
 }

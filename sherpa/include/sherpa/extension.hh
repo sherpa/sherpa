@@ -39,6 +39,10 @@ typedef int (*converter)( PyObject*, void* );
 #define CONVERTME(arg) ((converter) sherpa::convert_to_contig_array<arg>)
 
 #if PY_MAJOR_VERSION >= 3
+#define PY3
+#endif
+
+#ifdef PY3
 
 #define SHERPAMOD(name, fctlist) \
 static struct PyModuleDef module##name = {\
