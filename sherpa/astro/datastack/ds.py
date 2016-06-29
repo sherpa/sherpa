@@ -18,7 +18,6 @@ from __future__ import print_function
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import stk
 import numpy
 from sherpa.utils.logging import config_logger
 from sherpa.astro import ui
@@ -28,6 +27,10 @@ from . import plot_backend as backend
 
 logger = config_logger(__name__)
 
+try:
+    import stk
+except:
+    logger.warning("could not import stk library. CIAO stack files and syntax will be disabled")
 
 # Global list of dataset ids in use
 _all_dataset_ids = {}

@@ -20,7 +20,6 @@ from __future__ import absolute_import
 from sherpa.utils import public
 from sherpa.utils.logging import config_logger
 import sherpa
-import stk
 import re
 
 from . import plot_backend as backend
@@ -28,6 +27,11 @@ from . import plot_backend as backend
 logger = config_logger(__name__)
 
 ID_STR = '__ID'
+
+try:
+    import stk
+except:
+    logger.warning("could not import stk library. CIAO stack files and syntax will be disabled")
 
 
 @public

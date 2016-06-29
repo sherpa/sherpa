@@ -19,9 +19,7 @@
 
 from sherpa.utils import SherpaTestCase
 import os
-import sys
-import unittest
-from sherpa.utils import requires_fits
+from sherpa.utils import requires_fits, requires_stk
 from sherpa.astro import ui
 from sherpa.astro import datastack
 from acis_bkg_model import acis_bkg_model
@@ -49,6 +47,7 @@ class test_design(SherpaTestCase):
         logger.setLevel(self.loggingLevel)
 
     @requires_fits
+    @requires_stk
     def test_case_1(self):
         datadir = '/'.join((self._this_dir, 'data'))
         ls = '@'+'/'.join((datadir, '3c273.lis'))
@@ -275,6 +274,7 @@ class test_load(SherpaTestCase):
         logger.setLevel(self.loggingLevel)
 
     @requires_fits
+    @requires_stk
     def test_case_3(self):
         datastack.load_ascii("@{}".format(self.lisname))
         assert len(ui._session._data) == 2
@@ -595,6 +595,7 @@ class test_pha(SherpaTestCase):
         logger.setLevel(self.loggingLevel)
 
     @requires_fits
+    @requires_stk
     def test_case_6(self):
         datadir = '/'.join((self._this_dir, 'data'))
         ls = '@'+'/'.join((datadir, 'pha.lis'))
@@ -665,6 +666,7 @@ class test_query(SherpaTestCase):
         logger.setLevel(self.loggingLevel)
 
     @requires_fits
+    @requires_stk
     def test_case_7(self):
         datastack.load_pha('@'+'/'.join((self._this_dir, 'data', 'pha.lis')))
 

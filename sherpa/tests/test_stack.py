@@ -18,15 +18,17 @@
 #
 
 
-from sherpa.utils import SherpaTestCase
-import stk
+from sherpa.utils import SherpaTestCase, requires_stk
 
 import os
 _this_dir = os.path.dirname(__file__)
 
+
+@requires_stk
 class test_stack(SherpaTestCase):
 
     def test_build_stack(self):
+        import stk
         def get_name(name):
             return '/'.join((_this_dir, name))
 

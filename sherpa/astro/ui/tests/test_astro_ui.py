@@ -27,7 +27,7 @@ import numpy
 from numpy.testing import assert_allclose
 
 from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_data, requires_fits
+from sherpa.utils import requires_data, requires_fits, requires_group
 from sherpa.astro import ui
 from sherpa.data import Data1D
 from sherpa.astro.data import DataPHA
@@ -143,6 +143,7 @@ class test_more_ui(SherpaTestCase):
         self.assertTrue(isinstance(m, RMFModelPHA))
 
     #bug #38
+    @requires_group
     def test_bug38(self):
         ui.load_pha('3c273', self.pha3c273)
         ui.notice_id('3c273', 0.3, 2)

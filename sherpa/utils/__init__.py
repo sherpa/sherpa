@@ -335,6 +335,16 @@ def requires_ds9(test_function):
     return requires_package('ds9 required', 'sherpa.image.ds9_backend')(test_function)
 
 
+def requires_stk(test_function):
+    """Decorator for test functions requiring stk library"""
+    return requires_package("stk library required", 'stk')(test_function)
+
+
+def requires_group(test_function):
+    """Decorator for test functions requiring group library"""
+    return requires_package("group library required", 'group')(test_function)
+
+
 def requires_fits(test_function):
     """
     Returns True if there is an importable backend for FITS I/O.
