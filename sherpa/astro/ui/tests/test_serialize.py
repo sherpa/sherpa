@@ -45,7 +45,7 @@ import numpy
 from numpy.testing import assert_array_equal
 
 from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_data, requires_xspec, _has_package_from_list, requires_fits
+from sherpa.utils import requires_data, requires_xspec, _has_package_from_list, requires_fits, requires_group
 from sherpa.astro import ui
 # from sherpa.astro.ui import serialize
 
@@ -1093,6 +1093,7 @@ class test_ui(SherpaTestCase):
     @requires_data
     @requires_xspec
     @requires_fits
+    @requires_group
     def test_canonical_pha_grouped(self):
 
         _, _, canonical = self._setup_pha_grouped()
@@ -1101,6 +1102,7 @@ class test_ui(SherpaTestCase):
     @requires_data
     @requires_xspec
     @requires_fits
+    @requires_group
     def test_restore_pha_grouped(self):
         "Can the state be evaluated?"
 
@@ -1134,6 +1136,7 @@ class test_ui(SherpaTestCase):
     @requires_data
     @requires_xspec
     @requires_fits
+    @requires_group
     def test_canonical_pha_back(self):
 
         _, _, canonical = self._setup_pha_back()
@@ -1142,6 +1145,7 @@ class test_ui(SherpaTestCase):
     @requires_data
     @requires_xspec
     @requires_fits
+    @requires_group
     def test_restore_pha_back(self):
         "Can the state be evaluated?"
 
