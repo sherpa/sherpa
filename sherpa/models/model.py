@@ -19,7 +19,7 @@ from __future__ import absolute_import
 #
 
 
-from itertools import izip
+from six.moves import zip as izip
 import logging
 import numpy
 import hashlib

@@ -33,7 +33,7 @@ from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
 from sherpa import get_config
-from ConfigParser import ConfigParser
+from six.moves.configparser import ConfigParser
 
 warning = logging.getLogger(__name__).warning
 

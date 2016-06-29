@@ -23,7 +23,7 @@ from sherpa.utils.err import StatErr
 import sherpa.stats._statfcts
 
 from sherpa import get_config
-from ConfigParser import ConfigParser
+from six.moves.configparser import ConfigParser
 
 
 __all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',

@@ -21,10 +21,9 @@
 Tools for creating, storing, inspecting, and manipulating data sets
 """
 
-
+from six.moves import zip as izip
 import sys
 import inspect
-from itertools import izip
 import numpy
 from sherpa.utils.err import DataErr, NotImplementedErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \

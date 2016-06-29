@@ -36,11 +36,11 @@ class test_parameter(SherpaTestCase):
         self.assertEqual(self.p.fullname, 'model.name')
 
     def test_alwaysfrozen(self):
-        self.assert_(self.afp.frozen)
+        self.assertTrue(self.afp.frozen)
         self.afp.frozen = True
-        self.assert_(self.afp.frozen)
+        self.assertTrue(self.afp.frozen)
         self.afp.freeze()
-        self.assert_(self.afp.frozen)
+        self.assertTrue(self.afp.frozen)
         self.assertRaises(ParameterErr, self.afp.thaw)
         self.assertRaises(ParameterErr, setattr, self.afp, 'frozen', 0)
 
@@ -55,7 +55,7 @@ class test_parameter(SherpaTestCase):
     def test_val(self):
         self.p.val = -7
         self.assertEqual(self.p.val, -7)
-        self.assert_(type(self.p.val) is SherpaFloat)
+        self.assertTrue(type(self.p.val) is SherpaFloat)
         self.assertRaises(ValueError, setattr, self.p, 'val', 'ham')
         self.assertRaises(ParameterErr, setattr, self.p, 'val', -101)
         self.assertRaises(ParameterErr, setattr, self.p, 'val', 101)
@@ -65,34 +65,34 @@ class test_parameter(SherpaTestCase):
             setattr(self.p, attr, sign*99)
             val = getattr(self.p, attr)
             self.assertEqual(val, sign*99)
-            self.assert_(type(val) is SherpaFloat)
+            self.assertTrue(type(val) is SherpaFloat)
             self.assertRaises(ValueError, setattr, self.p, attr, 'ham')
             self.assertRaises(ParameterErr, setattr, self.p, attr, -101)
             self.assertRaises(ParameterErr, setattr, self.p, attr, 101)
 
     def test_frozen(self):
         self.p.frozen = 1.0
-        self.assert_(self.p.frozen is True)
+        self.assertTrue(self.p.frozen is True)
         self.p.frozen = []
-        self.assert_(self.p.frozen is False)
+        self.assertTrue(self.p.frozen is False)
         self.assertRaises(TypeError, setattr, self.p.frozen, arange(10))
         self.p.link = self.afp
-        self.assert_(self.p.frozen is True)
+        self.assertTrue(self.p.frozen is True)
         self.p.link = None
         self.p.freeze()
-        self.assert_(self.p.frozen is True)
+        self.assertTrue(self.p.frozen is True)
         self.p.thaw()
-        self.assert_(self.p.frozen is False)
+        self.assertTrue(self.p.frozen is False)
 
     def test_link(self):
         self.p.link = None
-        self.assert_(self.p.link is None)
+        self.assertTrue(self.p.link is None)
         self.assertNotEqual(self.p.val, 17.3)
         self.afp.val = 17.3
         self.p.link = self.afp
         self.assertEqual(self.p.val, 17.3)
         self.p.unlink()
-        self.assert_(self.p.link is None)
+        self.assertTrue(self.p.link is None)
         self.assertRaises(ParameterErr, setattr, self.afp, 'link', self.p)
         self.assertRaises(ParameterErr, setattr, self.p, 'link', 3)
         self.assertRaises(ParameterErr, setattr, self.p, 'link',
@@ -100,7 +100,7 @@ class test_parameter(SherpaTestCase):
 
     def test_iter(self):
         for part in self.p:
-            self.assert_(part is self.p)
+            self.assertTrue(part is self.p)
 
 
 class test_composite_parameter(SherpaTestCase):
@@ -112,7 +112,7 @@ class test_composite_parameter(SherpaTestCase):
     def test_unop(self):
         for op in (abs, operator.neg):
             p = op(self.p)
-            self.assert_(isinstance(p, UnaryOpParameter))
+            self.assertTrue(isinstance(p, UnaryOpParameter))
             self.assertEqual(p.val, op(self.p.val))
 
     def test_binop(self):
@@ -121,16 +121,16 @@ class test_composite_parameter(SherpaTestCase):
                    operator.pow):
             for p in (op(self.p, self.p2.val), op(self.p.val, self.p2),
                       op(self.p, self.p2)):
-                self.assert_(isinstance(p, BinaryOpParameter))
+                self.assertTrue(isinstance(p, BinaryOpParameter))
                 self.assertEqual(p.val, op(self.p.val, self.p2.val))
 
     def test_iter(self):
         p = 3 * self.p + self.p2
         parts = list(p)
-        self.assert_(type(parts[0]) is BinaryOpParameter)
-        self.assert_(type(parts[1]) is ConstantParameter)
-        self.assert_(parts[2] is self.p)
-        self.assert_(parts[3] is self.p2)
+        self.assertTrue(type(parts[0]) is BinaryOpParameter)
+        self.assertTrue(type(parts[1]) is ConstantParameter)
+        self.assertTrue(parts[2] is self.p)
+        self.assertTrue(parts[3] is self.p2)
 
     def test_complex_expression(self):
         cmplx = (3 * self.p + self.p2) / (self.p ** 3.2)

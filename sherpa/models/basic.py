@@ -18,6 +18,7 @@ from __future__ import absolute_import
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six.moves import xrange
 import numpy
 from .parameter import Parameter, tinyval
 from .model import ArithmeticModel, modelCacher1d, CompositeModel, \

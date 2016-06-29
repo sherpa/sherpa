@@ -18,7 +18,7 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from itertools import izip
+from six.moves import zip as izip
 import logging
 import os
 import signal

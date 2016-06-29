@@ -17,11 +17,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
+from six.moves import xrange
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
-from sherpa.models.model import ArithmeticModel, modelCacher1d
-from sherpa.utils.err import ModelErr
+from sherpa.models.model import ArithmeticModel
 from sherpa.utils import SherpaFloat, sao_fcmp
 
 _tol = numpy.finfo(numpy.float32).eps
