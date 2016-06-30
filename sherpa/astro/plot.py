@@ -21,6 +21,7 @@
 Classes for plotting, analysis of astronomical data sets
 """
 
+from six.moves import zip as izip
 from sherpa.astro.data import DataPHA
 from sherpa.plot import DataPlot, ModelPlot, FitPlot, DelchiPlot, ResidPlot, \
     RatioPlot, ChisqrPlot, HistogramPlot, backend, Histogram
@@ -29,7 +30,6 @@ from sherpa.astro.utils import bounds_check
 from sherpa.utils.err import PlotErr, IOErr
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins
 from numpy import iterable, array2string, asarray
-from itertools import izip
 import logging
 
 warning = logging.getLogger(__name__).warning

@@ -17,11 +17,11 @@ from __future__ import print_function
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
+from six.moves import copyreg as copy_reg
+from six.moves import cPickle as pickle
+from six.moves import zip as izip
+from six.moves.configparser import ConfigParser
 import copy
-import copy_reg
-import cPickle as pickle
-from itertools import izip
 import logging
 import sys
 import os
@@ -36,7 +36,6 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
 # to the Python AttributeError class, as Sherpa has no AttributeErr class.
 
 from sherpa import get_config
-from ConfigParser import ConfigParser
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -50,10 +49,13 @@ config.read(get_config())
 sys.tracebacklimit = int(config.get('verbosity', 'level'))
 numpy.set_printoptions(threshold=int(config.get('verbosity', 'arraylength')))
 
-
-_builtin_symbols_ = sys.modules["__builtin__"].__dict__.keys()
-
 __all__ = ('ModelWrapper', 'Session')
+
+try:  # Python2
+    BUILTINS = sys.modules["__builtin__"]
+except KeyError:  # Python3
+    BUILTINS = sys.modules["builtins"]
+_builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 
 
 ###############################################################################
@@ -199,7 +201,7 @@ class ModelWrapper(NoNewAttributesAfterInit):
 
 def _assign_obj_to_main(name, obj):
     sys.modules["__main__"].__dict__[name] = obj
-    sys.modules["__builtin__"].__dict__[name] = obj
+    BUILTINS.__dict__[name] = obj
 
 
 def _assign_model_to_main(name, model):
@@ -5429,7 +5431,7 @@ class Session(NoNewAttributesAfterInit):
                     return
 
             del sys.modules["__main__"].__dict__[name]
-            del sys.modules["__builtin__"].__dict__[name]
+            del BUILTINS.__dict__[name]
         else:
             raise IdentifierErr('nomodelcmpt', name)
 

@@ -23,7 +23,6 @@ import numpy
 import numpy.random
 import logging
 from sherpa.astro.utils import calc_energy_flux
-from itertools import izip
 from sherpa.utils import parallel_map
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     NormalParameterSampleFromScaleVector

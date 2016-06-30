@@ -47,7 +47,7 @@ class test_models(SherpaTestCase):
             except ValueError:
                 self.fail("evaluation of model '%s' failed" % cls)
 
-            self.assert_(out.dtype.type is SherpaFloat)
+            self.assertTrue(out.dtype.type is SherpaFloat)
             self.assertEqual(out.shape, x.shape)
 
         self.assertEqual(count, 24)

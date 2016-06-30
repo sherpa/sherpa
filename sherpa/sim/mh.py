@@ -56,13 +56,12 @@ http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
 
 # The pyBLoCXS code base is cleanly separable from Sherpa!
 
+from six.moves import zip as izip
+
 import numpy as np
 import logging
-import sys
 import math
-import time
 import inspect
-from itertools import izip
 
 try:
     # try lgamma in >= Python 2.7

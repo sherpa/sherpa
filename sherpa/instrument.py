@@ -19,8 +19,7 @@
 
 from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import *
-from sherpa.utils import bool_cast, NoNewAttributesAfterInit, SherpaFloat
-from itertools import izip
+from sherpa.utils import bool_cast, NoNewAttributesAfterInit
 from sherpa.utils.err import PSFErr
 from sherpa.utils._psf import *
 import numpy

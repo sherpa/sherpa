@@ -21,7 +21,6 @@ import numpy
 from sherpa.utils import SherpaFloat, get_num_args, is_binary_file
 from sherpa.utils.err import IOErr
 from sherpa.data import Data1D, BaseData
-from exceptions import ValueError
 import os
 
 

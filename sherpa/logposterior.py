@@ -18,12 +18,10 @@
 #
 
 
-from sherpa.stats import Likelihood, truncation_value, Stat
+from sherpa.stats import Likelihood
 from sherpa.models import Parameter
 from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.utils.err import StatErr
-from itertools import izip
-import numpy
 
 
 class Prior(Likelihood):

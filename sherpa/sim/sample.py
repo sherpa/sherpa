@@ -17,10 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
+from six.moves import zip as izip
 import numpy
 import numpy.random
-from itertools import izip
 
 from sherpa.estmethods import Covariance, Confidence
 from sherpa.utils.err import EstErr

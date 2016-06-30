@@ -16,12 +16,11 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
+from six.moves import zip as izip
 import os
 import sys
 import logging
 import numpy
-from itertools import izip
 import sherpa.ui.utils
 from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange

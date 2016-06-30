@@ -16,7 +16,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
+from six.moves import zip as izip
 import numpy
 import sherpa
 from sherpa.utils.err import InstrumentErr, DataErr, PSFErr, ArgumentTypeErr
@@ -35,7 +35,6 @@ from sherpa.astro.data import DataARF, DataRMF, DataPHA, _notice_resp, \
     DataIMG
 from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
-from itertools import izip
 
 _tol = numpy.finfo(numpy.float32).eps
 
