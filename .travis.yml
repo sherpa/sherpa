@@ -93,8 +93,6 @@ before_install:
   - if [ ${TEST} == smoke ];
      then git submodule deinit -f .;
     fi
-  - if [ -n "${NOSETUPTOOLS}" ]; then conda remove --yes setuptools; fi
-
 
 install:
   - python setup.py $INSTALL_TYPE
