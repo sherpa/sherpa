@@ -12437,8 +12437,8 @@ class Session(sherpa.ui.utils.Session):
 
         Write the contents to a StringIO object:
 
-        >>> import StringIO
-        >>> store = StringIO.StringIO()
+        >>> from six import StringIO
+        >>> store = StringIO()
         >>> save_all(store)
 
         """

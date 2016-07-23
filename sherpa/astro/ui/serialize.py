@@ -1158,8 +1158,8 @@ def save_all(state, fh=None):
 
     Save the session to a StringIO handle:
 
-    >>> import StringIO
-    >>> store = StringIO.StringIO()
+    >>> from six import StringIO
+    >>> store = StringIO()
     >>> save_all(store)
 
     """

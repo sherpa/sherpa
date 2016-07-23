@@ -38,7 +38,7 @@ corresponding functions in sherpa.astro.ui.utils.
 #
 
 import re
-import StringIO
+from six import StringIO
 import tempfile
 
 import numpy
@@ -871,7 +871,7 @@ class test_ui(SherpaTestCase):
         """Run save_all and check the output (saved to a
         StringIO object) to the string value expected.
         """
-        output = StringIO.StringIO()
+        output = StringIO()
         ui.save_all(output)
         output = output.getvalue()
 
@@ -889,7 +889,7 @@ class test_ui(SherpaTestCase):
         executing the save file.
         """
 
-        output = StringIO.StringIO()
+        output = StringIO()
         ui.save_all(output)
         output = output.getvalue()
         ui.clean()
