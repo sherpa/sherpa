@@ -87,13 +87,13 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("verbose", 0)
+set_method_opt("epsfcn", 1.19209289551e-07)
 set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)
 set_method_opt("gtol", 1.19209289551e-07)
 set_method_opt("maxfev", None)
+set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-set_method_opt("epsfcn", 1.19209289551e-07)
-set_method_opt("ftol", 1.19209289551e-07)
 
 
 ######### Set Model Components and Parameters
@@ -121,13 +121,13 @@ set_stat("leastsq")
 
 set_method("neldermead")
 
-set_method_opt("iquad", 1)
-set_method_opt("initsimplex", 0)
-set_method_opt("verbose", 1)
-set_method_opt("step", None)
 set_method_opt("finalsimplex", 9)
-set_method_opt("maxfev", 5000)
 set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("initsimplex", 0)
+set_method_opt("iquad", 1)
+set_method_opt("maxfev", 5000)
+set_method_opt("step", None)
+set_method_opt("verbose", 1)
 
 
 ######### Set Model Components and Parameters
@@ -192,13 +192,13 @@ set_stat("chi2datavar")
 
 set_method("levmar")
 
-set_method_opt("verbose", 0)
+set_method_opt("epsfcn", 1.19209289551e-07)
 set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)
 set_method_opt("gtol", 1.19209289551e-07)
 set_method_opt("maxfev", None)
+set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-set_method_opt("epsfcn", 1.19209289551e-07)
-set_method_opt("ftol", 1.19209289551e-07)
 
 
 ######### Set Model Components and Parameters
@@ -361,13 +361,13 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("verbose", 0)
+set_method_opt("epsfcn", 1.19209289551e-07)
 set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)
 set_method_opt("gtol", 1.19209289551e-07)
 set_method_opt("maxfev", None)
+set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-set_method_opt("epsfcn", 1.19209289551e-07)
-set_method_opt("ftol", 1.19209289551e-07)
 
 
 ######### Set Model Components and Parameters
@@ -482,13 +482,13 @@ set_stat("chi2xspecvar")
 
 set_method("levmar")
 
-set_method_opt("verbose", 0)
+set_method_opt("epsfcn", 1.19209289551e-07)
 set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)
 set_method_opt("gtol", 1.19209289551e-07)
 set_method_opt("maxfev", None)
+set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-set_method_opt("epsfcn", 1.19209289551e-07)
-set_method_opt("ftol", 1.19209289551e-07)
 
 
 ######### Set Model Components and Parameters
@@ -709,28 +709,19 @@ set_stat("cash")
 
 set_method("neldermead")
 
-set_method_opt("iquad", 1)
-set_method_opt("initsimplex", 0)
-set_method_opt("verbose", 0)
-set_method_opt("step", None)
 set_method_opt("finalsimplex", 9)
-set_method_opt("maxfev", None)
 set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("initsimplex", 0)
+set_method_opt("iquad", 1)
+set_method_opt("maxfev", None)
+set_method_opt("step", None)
+set_method_opt("verbose", 0)
 
 
 ######### Set Model Components and Parameters
 
 create_model_component("sin", "sin_model")
 sin_model.integrate = True
-
-sin_model.ampl.default_val = 1.0
-sin_model.ampl.default_min = 1.0000000000000001e-05
-sin_model.ampl.default_max = 3.4028234663852886e+38
-sin_model.ampl.val     = 1.0
-sin_model.ampl.min     = 1.0000000000000001e-05
-sin_model.ampl.max     = 3.4028234663852886e+38
-sin_model.ampl.units   = ""
-sin_model.ampl.frozen  = False
 
 sin_model.period.default_val = 1.0
 sin_model.period.default_min = 1e-10
@@ -749,6 +740,15 @@ sin_model.offset.min     = 0.0
 sin_model.offset.max     = 3.4028234663852886e+38
 sin_model.offset.units   = ""
 sin_model.offset.frozen  = False
+
+sin_model.ampl.default_val = 1.0
+sin_model.ampl.default_min = 1.0000000000000001e-05
+sin_model.ampl.default_max = 3.4028234663852886e+38
+sin_model.ampl.val     = 1.0
+sin_model.ampl.min     = 1.0000000000000001e-05
+sin_model.ampl.max     = 3.4028234663852886e+38
+sin_model.ampl.units   = ""
+sin_model.ampl.frozen  = False
 
 print("Found user model 'mymodel'; please check it is saved correctly.")
 def mymodel_func(pars, x, xhi=None):

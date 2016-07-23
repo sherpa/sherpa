@@ -589,7 +589,11 @@ def _save_fit_method(state, fh=None):
     _output("", fh)
 
     mdict = state.get_method_opt()
-    for key in mdict:
+    # Fix the ordering of the keys so that the output can be
+    # easily tested.
+    keys = list(mdict.keys())  # TODO3: can this just be list(mdict)?
+    keys.sort()
+    for key in keys:
         val = mdict.get(key)
         cmd = 'set_method_opt("%s", %s)' % (key, val)
         _output(cmd, fh)
@@ -644,6 +648,7 @@ def _reindent(code):
             out.append(line)
 
     return "\n".join(out)
+
 
 # for user models, try to access the function definition via
 # the inspect module and then re-create it in the script.
@@ -803,12 +808,15 @@ def _save_model_components(state, fh=None):
             _output(cmd, fh)
             _output("", fh)
 
-        from sherpa.models import Parameter
-        for par in mod.__dict__.values():
-            if isinstance(par, Parameter):
-                par_attributes, par_linkstr = _print_par(par)
-                _output(par_attributes, fh)
-                linkstr = linkstr + par_linkstr
+        # Write out the parameters in the order they are stored in
+        # the model. The original version of the code iterated
+        # through mod.__dict__.values() and picked out Parameter
+        # values.
+        #
+        for par in mod.pars:
+            par_attributes, par_linkstr = _print_par(par)
+            _output(par_attributes, fh)
+            linkstr = linkstr + par_linkstr
 
         # If the model is a PSFModel, could have special
         # attributes "size" and "center" -- if so, record them.

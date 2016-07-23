@@ -1486,7 +1486,9 @@ class Session(NoNewAttributesAfterInit):
         ['gridsearch', 'levmar', 'moncar', 'neldermead', 'simplex']
 
         """
-        keys = self._methods.keys()[:]
+        # TODO3: I have left the explicit copy in (the "[:]" suffix)
+        # when converting to Python 3, but it is probably unnescessary
+        keys = list(self._methods.keys())[:]
         keys.sort()
         return keys
 
@@ -1827,7 +1829,9 @@ class Session(NoNewAttributesAfterInit):
         ['none', 'primini', 'sigmarej']
 
         """
-        keys = self._itermethods.keys()[:]
+        # TODO3: I have left the explicit copy in (the "[:]" suffix)
+        # when converting to Python 3, but it is probably unnescessary
+        keys = list(self._itermethods.keys())[:]
         keys.sort()
         return keys
 
@@ -2033,7 +2037,9 @@ class Session(NoNewAttributesAfterInit):
          'wstat']
 
         """
-        keys = self._stats.keys()[:]
+        # TODO3: I have left the explicit copy in (the "[:]" suffix)
+        # when converting to Python 3, but it is probably unnescessary
+        keys = list(self._stats.keys())[:]
         keys.sort()
         return keys
 
@@ -2242,7 +2248,9 @@ class Session(NoNewAttributesAfterInit):
         ['nucleus', 'jet']
 
         """
-        keys = self._data.keys()[:]
+        # TODO3: I have left the explicit copy in (the "[:]" suffix)
+        # when converting to Python 3, but it is probably unnescessary
+        keys = list(self._data.keys())[:]
         keys.sort()
         return keys
 
@@ -5082,7 +5090,9 @@ class Session(NoNewAttributesAfterInit):
          'accretiondisk']
 
         """
-        keys = self._model_types.keys()[:]
+        # TODO3: I have left the explicit copy in (the "[:]" suffix)
+        # when converting to Python 3, but it is probably unnescessary
+        keys = list(self._model_types.keys())[:]
         keys.sort()
 
         show = show.strip().lower()
@@ -5150,7 +5160,9 @@ class Session(NoNewAttributesAfterInit):
         True
 
         """
-        keys = self._model_components.keys()[:]
+        # TODO3: I have left the explicit copy in (the "[:]" suffix)
+        # when converting to Python 3, but it is probably unnescessary
+        keys = list(self._model_components.keys())[:]
         keys.sort()
         return keys
 
@@ -5465,8 +5477,10 @@ class Session(NoNewAttributesAfterInit):
         set_model : Set the source model expression for a data set.
 
         """
-        keys = self._models.keys()[:]
-        keys.extend(self._sources.keys()[:])
+        # TODO3: I have left the explicit copy in (the "[:]" suffix)
+        # when converting to Python 3, but it is probably unnescessary
+        keys = list(self._models.keys())[:]
+        keys.extend(list(self._sources.keys())[:])
         keys = list(set(keys))
         keys.sort()
         return keys
