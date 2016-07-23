@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -193,6 +193,8 @@ parameter::
     pval, plo, phi = sherpa.utils.get_error_estimates(par1[nburn:])
 
 """
+
+from six import string_types
 
 from sherpa.sim.simulate import *
 from sherpa.sim.sample import *
@@ -481,7 +483,7 @@ class MCMC(NoNewAttributesAfterInit):
         >>> set_sampler('metropolismh')
 
         """
-        if isinstance(sampler, basestring):
+        if isinstance(sampler, string_types):
 
             # case insensitive
             sampler = str(sampler).lower()

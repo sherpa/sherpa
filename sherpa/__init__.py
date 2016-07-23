@@ -113,7 +113,7 @@ def smoke(verbosity=0, require_failure=False, fits=None, xspec=False):
     ----------
     xspec : boolean
         Require xspec module when running tests. Tests requiring xspec may still run if the xspec module is present.
-    fits : basestring
+    fits : str
         Require a fits module with this name to be present before running the smoke test.
         This option makes sure that when the smoke test is run the required modules are present.
         Note that tests requiring fits may still run if any fits backend is available, and they might

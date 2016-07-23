@@ -24,6 +24,8 @@ intended for public use. The API and semantics of the
 routines in this module are subject to change.
 """
 
+from six import string_types
+
 import inspect
 import logging
 import sys
@@ -81,7 +83,7 @@ def _id_to_str(id):
        in the Python serialization.
     """
 
-    if isinstance(id, basestring):
+    if isinstance(id, string_types):
         return '"{}"'.format(id)
     else:
         return str(id)
@@ -530,7 +532,7 @@ def _print_par(par):
             par.fullname, par.link.fullname)
 
     unitstr = ""
-    if isinstance(par.units, basestring):
+    if isinstance(par.units, string_types):
         unitstr = '"%s"' % par.units
 
     return ((('%s.default_val = %s\n' +
