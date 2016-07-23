@@ -17,6 +17,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six.moves import xrange
+
 import numpy
 from sherpa.utils import SherpaFloat, get_num_args, is_binary_file
 from sherpa.utils.err import IOErr

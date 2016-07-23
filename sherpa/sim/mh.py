@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -57,6 +57,7 @@ http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
 # The pyBLoCXS code base is cleanly separable from Sherpa!
 
 from six.moves import zip as izip
+from six.moves import xrange
 
 import numpy as np
 import logging
@@ -309,11 +310,11 @@ class Sampler(object):
         raise NotImplementedError
 
     def tear_down(self):
-        raise NotImplementedError                    
+        raise NotImplementedError
 
 
 class MH(Sampler):
-    """ The Metropolis Hastings Sampler """ 
+    """ The Metropolis Hastings Sampler """
 
     def __init__(self, fcn, sigma, mu, dof, *args):
         self.fcn = fcn
@@ -536,7 +537,7 @@ class MH(Sampler):
 
 
 class MetropolisMH(MH):
-    """ The Metropolis Metropolis-Hastings Sampler """ 
+    """ The Metropolis Metropolis-Hastings Sampler """
 
     def __init__(self, fcn, sigma, mu, dof, *args):
         MH.__init__(self, fcn, sigma, mu, dof, *args)
@@ -585,7 +586,7 @@ class MetropolisMH(MH):
         """ Metropolis Jumping Rule """
 
         # Metropolis with MH jumps from the current accepted parameter
-        # proposal at each iteration       
+        # proposal at each iteration
         proposal = rmvt(current, self.sigma_m*self.scale, self._dof)
         return proposal
 
