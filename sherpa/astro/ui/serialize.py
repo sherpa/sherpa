@@ -89,6 +89,37 @@ def _id_to_str(id):
         return str(id)
 
 
+def _save_entries(store, tostatement, fh=None):
+    """Iterate through entries in the store and serialize them.
+
+    Write out the key, value pairs in store in lexical order,
+    rather than rely on the ordering of the container (e.g.
+    whatever hash is used). The idea is to come up with a
+    repeatable ordering, primarily to make testing easier.
+
+    Parameters
+    ----------
+    store
+       A container with keys. The elements of the container are
+       passed to tocommand to create the string that is then
+       written to fh.
+    tostatement : func
+       A function which accepts two arguments, the key and value
+       from store, and returns a string. The reason for the name
+       is that it is expected that the returned string will be
+       a Python statement to restore this setting.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
+    """
+
+    keys = list(store)
+    keys.sort()
+    for key in keys:
+        cmd = tostatement(key, store[key])
+        _output(cmd, fh)
+
+
 def _save_intro(fh=None):
     """The set-up for the serialized file (imports).
 
@@ -588,16 +619,14 @@ def _save_fit_method(state, fh=None):
     _output(cmd, fh)
     _output("", fh)
 
-    mdict = state.get_method_opt()
-    # Fix the ordering of the keys so that the output can be
-    # easily tested.
-    keys = list(mdict.keys())  # TODO3: can this just be list(mdict)?
-    keys.sort()
-    for key in keys:
-        val = mdict.get(key)
-        cmd = 'set_method_opt("%s", %s)' % (key, val)
-        _output(cmd, fh)
+    def tostatement(key, val):
+        # TODO: Using .format() returns more decimal places, which
+        # is probably what we want but is a change, so leave
+        # for now.
+        # return 'set_method_opt("{}", {})'.format(key, val)
+        return 'set_method_opt("%s", %s)' % (key, val)
 
+    _save_entries(state.get_method_opt(), tostatement, fh)
     _output("", fh)
 
 
@@ -620,12 +649,14 @@ def _save_iter_method(state, fh=None):
     _output(cmd, fh)
     _output("", fh)
 
-    mdict = state.get_iter_method_opt()
-    for key in mdict:
-        val = mdict.get(key)
-        cmd = 'set_iter_method_opt("%s", %s)' % (key, val)
-        _output(cmd, fh)
+    def tostatement(key, val):
+        # TODO: Using .format() returns more decimal places, which
+        # is probably what we want but is a change, so leave
+        # for now.
+        # return 'set_iter_method_opt("{}", {})'.format(key, val)
+        return 'set_iter_method_opt("%s", %s)'.format(key, val)
 
+    _save_entries(state.get_iter_method_opt(), tostatement, fh)
     _output("", fh)
 
 
@@ -988,10 +1019,11 @@ def _save_xspec(fh=None):
     _output(cmd, fh)
     cmd = 'set_xsxsect("%s")' % xspec_state["xsect"]
     _output(cmd, fh)
-    for name in xspec_state["modelstrings"].keys():
-        mstring = xspec_state["modelstrings"][name]
-        cmd = 'set_xsxset("%s", "%s")' % (name, mstring)
-        _output(cmd, fh)
+
+    def tostatement(key, val):
+        return 'set_xsxset("{}", "{}")'.format(key, val)
+
+    _save_entries(xspec_state["modelstrings"], tostatement, fh)
 
 
 def _save_dataset(state, id):
