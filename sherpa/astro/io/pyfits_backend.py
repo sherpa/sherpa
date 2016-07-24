@@ -45,7 +45,9 @@ except ImportError:
 from numpy.compat import basestring
 
 import os
-from itertools import izip
+
+from six.moves import zip as izip
+
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
 import sherpa.utils
