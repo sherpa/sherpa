@@ -279,12 +279,14 @@ class SherpaTestCase(unittest.TestCase):
 
         """
 
+        scriptname = name + "-" + scriptname
         self.locals = {}
         cwd = os.getcwd()
         os.chdir(self.datadir)
-        scriptname = name + "-" + scriptname
         try:
-            execfile(scriptname, {}, self.locals)
+            with open(scriptname, "rb") as fh:
+                cts = fh.read()
+            exec(compile(cts, scriptname, 'exec'), {}, self.locals)
         finally:
             os.chdir(cwd)
 
