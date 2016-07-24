@@ -45,7 +45,8 @@ import numpy
 from numpy.testing import assert_array_equal
 
 from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_data, requires_xspec, _has_package_from_list, requires_fits, requires_group
+from sherpa.utils import requires_data, requires_xspec, \
+    _has_package_from_list, requires_fits, requires_group
 from sherpa.astro import ui
 # from sherpa.astro.ui import serialize
 
@@ -206,14 +207,14 @@ set_method_opt("xtol", 1.19209289551e-07)
 create_model_component("xsapec", "src")
 src.integrate = True
 
-src.redshift.default_val = 0.0
-src.redshift.default_min = -0.999
-src.redshift.default_max = 10.0
-src.redshift.val     = 0.0
-src.redshift.min     = -0.999
-src.redshift.max     = 10.0
-src.redshift.units   = ""
-src.redshift.frozen  = True
+src.kT.default_val = 1.0
+src.kT.default_min = 0.0080000000000000002
+src.kT.default_max = 64.0
+src.kT.val     = 1.0
+src.kT.min     = 0.0080000000000000002
+src.kT.max     = 64.0
+src.kT.units   = "keV"
+src.kT.frozen  = False
 
 src.Abundanc.default_val = 1.0
 src.Abundanc.default_min = 0.0
@@ -224,14 +225,14 @@ src.Abundanc.max     = 5.0
 src.Abundanc.units   = ""
 src.Abundanc.frozen  = True
 
-src.kT.default_val = 1.0
-src.kT.default_min = 0.0080000000000000002
-src.kT.default_max = 64.0
-src.kT.val     = 1.0
-src.kT.min     = 0.0080000000000000002
-src.kT.max     = 64.0
-src.kT.units   = "keV"
-src.kT.frozen  = False
+src.redshift.default_val = 0.0
+src.redshift.default_min = -0.999
+src.redshift.default_max = 10.0
+src.redshift.val     = 0.0
+src.redshift.min     = -0.999
+src.redshift.max     = 10.0
+src.redshift.units   = ""
+src.redshift.frozen  = True
 
 src.norm.default_val = 1.0
 src.norm.default_min = 0.0
@@ -245,14 +246,14 @@ src.norm.frozen  = False
 create_model_component("powlaw1d", "pl")
 pl.integrate = True
 
-pl.ampl.default_val = 1.0
-pl.ampl.default_min = 0.0
-pl.ampl.default_max = 3.4028234663852886e+38
-pl.ampl.val     = 1.0
-pl.ampl.min     = 0.0
-pl.ampl.max     = 3.4028234663852886e+38
-pl.ampl.units   = ""
-pl.ampl.frozen  = False
+pl.gamma.default_val = 1.0
+pl.gamma.default_min = -10.0
+pl.gamma.default_max = 10.0
+pl.gamma.val     = 1.0
+pl.gamma.min     = -10.0
+pl.gamma.max     = 10.0
+pl.gamma.units   = ""
+pl.gamma.frozen  = False
 
 pl.ref.default_val = 1.0
 pl.ref.default_min = -3.4028234663852886e+38
@@ -263,14 +264,14 @@ pl.ref.max     = 3.4028234663852886e+38
 pl.ref.units   = ""
 pl.ref.frozen  = True
 
-pl.gamma.default_val = 1.0
-pl.gamma.default_min = -10.0
-pl.gamma.default_max = 10.0
-pl.gamma.val     = 1.0
-pl.gamma.min     = -10.0
-pl.gamma.max     = 10.0
-pl.gamma.units   = ""
-pl.gamma.frozen  = False
+pl.ampl.default_val = 1.0
+pl.ampl.default_min = 0.0
+pl.ampl.default_max = 3.4028234663852886e+38
+pl.ampl.val     = 1.0
+pl.ampl.min     = 0.0
+pl.ampl.max     = 3.4028234663852886e+38
+pl.ampl.units   = ""
+pl.ampl.frozen  = False
 
 create_model_component("xsphabs", "gal")
 gal.integrate = True
@@ -375,14 +376,14 @@ set_method_opt("xtol", 1.19209289551e-07)
 create_model_component("powlaw1d", "gpl")
 gpl.integrate = True
 
-gpl.ampl.default_val = 1.0
-gpl.ampl.default_min = 0.0
-gpl.ampl.default_max = 3.4028234663852886e+38
-gpl.ampl.val     = 1.0
-gpl.ampl.min     = 0.0
-gpl.ampl.max     = 3.4028234663852886e+38
-gpl.ampl.units   = ""
-gpl.ampl.frozen  = False
+gpl.gamma.default_val = 1.0
+gpl.gamma.default_min = -10.0
+gpl.gamma.default_max = 10.0
+gpl.gamma.val     = 1.0
+gpl.gamma.min     = -10.0
+gpl.gamma.max     = 5.0
+gpl.gamma.units   = ""
+gpl.gamma.frozen  = False
 
 gpl.ref.default_val = 1.0
 gpl.ref.default_min = -3.4028234663852886e+38
@@ -393,14 +394,14 @@ gpl.ref.max     = 3.4028234663852886e+38
 gpl.ref.units   = ""
 gpl.ref.frozen  = True
 
-gpl.gamma.default_val = 1.0
-gpl.gamma.default_min = -10.0
-gpl.gamma.default_max = 10.0
-gpl.gamma.val     = 1.0
-gpl.gamma.min     = -10.0
-gpl.gamma.max     = 5.0
-gpl.gamma.units   = ""
-gpl.gamma.frozen  = False
+gpl.ampl.default_val = 1.0
+gpl.ampl.default_min = 0.0
+gpl.ampl.default_max = 3.4028234663852886e+38
+gpl.ampl.val     = 1.0
+gpl.ampl.min     = 0.0
+gpl.ampl.max     = 3.4028234663852886e+38
+gpl.ampl.units   = ""
+gpl.ampl.frozen  = False
 
 create_model_component("xsphabs", "ggal")
 ggal.integrate = True
@@ -496,14 +497,14 @@ set_method_opt("xtol", 1.19209289551e-07)
 create_model_component("powlaw1d", "gpl")
 gpl.integrate = True
 
-gpl.ampl.default_val = 1.0
-gpl.ampl.default_min = 0.0
-gpl.ampl.default_max = 3.4028234663852886e+38
-gpl.ampl.val     = 1.0
-gpl.ampl.min     = 0.0
-gpl.ampl.max     = 3.4028234663852886e+38
-gpl.ampl.units   = ""
-gpl.ampl.frozen  = False
+gpl.gamma.default_val = 1.0
+gpl.gamma.default_min = -10.0
+gpl.gamma.default_max = 10.0
+gpl.gamma.val     = 1.0
+gpl.gamma.min     = -5.0
+gpl.gamma.max     = 10.0
+gpl.gamma.units   = ""
+gpl.gamma.frozen  = False
 
 gpl.ref.default_val = 1.0
 gpl.ref.default_min = -3.4028234663852886e+38
@@ -514,14 +515,14 @@ gpl.ref.max     = 3.4028234663852886e+38
 gpl.ref.units   = ""
 gpl.ref.frozen  = True
 
-gpl.gamma.default_val = 1.0
-gpl.gamma.default_min = -10.0
-gpl.gamma.default_max = 10.0
-gpl.gamma.val     = 1.0
-gpl.gamma.min     = -5.0
-gpl.gamma.max     = 10.0
-gpl.gamma.units   = ""
-gpl.gamma.frozen  = False
+gpl.ampl.default_val = 1.0
+gpl.ampl.default_min = 0.0
+gpl.ampl.default_max = 3.4028234663852886e+38
+gpl.ampl.val     = 1.0
+gpl.ampl.min     = 0.0
+gpl.ampl.max     = 3.4028234663852886e+38
+gpl.ampl.units   = ""
+gpl.ampl.frozen  = False
 
 create_model_component("xsphabs", "ggal")
 ggal.integrate = True
@@ -538,15 +539,6 @@ ggal.nH.frozen  = True
 create_model_component("steplo1d", "bstep")
 bstep.integrate = True
 
-bstep.ampl.default_val = 1.0
-bstep.ampl.default_min = 0.0
-bstep.ampl.default_max = 3.4028234663852886e+38
-bstep.ampl.val     = 1.0
-bstep.ampl.min     = 0.0
-bstep.ampl.max     = 3.4028234663852886e+38
-bstep.ampl.units   = ""
-bstep.ampl.frozen  = False
-
 bstep.xcut.default_val = 0.0
 bstep.xcut.default_min = -3.4028234663852886e+38
 bstep.xcut.default_max = 3.4028234663852886e+38
@@ -556,8 +548,89 @@ bstep.xcut.max     = 3.4028234663852886e+38
 bstep.xcut.units   = ""
 bstep.xcut.frozen  = False
 
+bstep.ampl.default_val = 1.0
+bstep.ampl.default_min = 0.0
+bstep.ampl.default_max = 3.4028234663852886e+38
+bstep.ampl.val     = 1.0
+bstep.ampl.min     = 0.0
+bstep.ampl.max     = 3.4028234663852886e+38
+bstep.ampl.units   = ""
+bstep.ampl.frozen  = False
+
 create_model_component("polynom1d", "bpoly")
 bpoly.integrate = True
+
+bpoly.c0.default_val = 1.0
+bpoly.c0.default_min = -3.4028234663852886e+38
+bpoly.c0.default_max = 3.4028234663852886e+38
+bpoly.c0.val     = 1.0
+bpoly.c0.min     = -3.4028234663852886e+38
+bpoly.c0.max     = 3.4028234663852886e+38
+bpoly.c0.units   = ""
+bpoly.c0.frozen  = True
+
+bpoly.c1.default_val = 0.0
+bpoly.c1.default_min = -3.4028234663852886e+38
+bpoly.c1.default_max = 3.4028234663852886e+38
+bpoly.c1.val     = 0.0
+bpoly.c1.min     = -3.4028234663852886e+38
+bpoly.c1.max     = 3.4028234663852886e+38
+bpoly.c1.units   = ""
+bpoly.c1.frozen  = True
+
+bpoly.c2.default_val = 0.0
+bpoly.c2.default_min = -3.4028234663852886e+38
+bpoly.c2.default_max = 3.4028234663852886e+38
+bpoly.c2.val     = 0.0
+bpoly.c2.min     = -3.4028234663852886e+38
+bpoly.c2.max     = 3.4028234663852886e+38
+bpoly.c2.units   = ""
+bpoly.c2.frozen  = True
+
+bpoly.c3.default_val = 0.0
+bpoly.c3.default_min = -3.4028234663852886e+38
+bpoly.c3.default_max = 3.4028234663852886e+38
+bpoly.c3.val     = 0.0
+bpoly.c3.min     = -3.4028234663852886e+38
+bpoly.c3.max     = 3.4028234663852886e+38
+bpoly.c3.units   = ""
+bpoly.c3.frozen  = True
+
+bpoly.c4.default_val = 0.0
+bpoly.c4.default_min = -3.4028234663852886e+38
+bpoly.c4.default_max = 3.4028234663852886e+38
+bpoly.c4.val     = 0.0
+bpoly.c4.min     = -3.4028234663852886e+38
+bpoly.c4.max     = 3.4028234663852886e+38
+bpoly.c4.units   = ""
+bpoly.c4.frozen  = True
+
+bpoly.c5.default_val = 0.0
+bpoly.c5.default_min = -3.4028234663852886e+38
+bpoly.c5.default_max = 3.4028234663852886e+38
+bpoly.c5.val     = 0.0
+bpoly.c5.min     = -3.4028234663852886e+38
+bpoly.c5.max     = 3.4028234663852886e+38
+bpoly.c5.units   = ""
+bpoly.c5.frozen  = True
+
+bpoly.c6.default_val = 0.0
+bpoly.c6.default_min = -3.4028234663852886e+38
+bpoly.c6.default_max = 3.4028234663852886e+38
+bpoly.c6.val     = 0.0
+bpoly.c6.min     = -3.4028234663852886e+38
+bpoly.c6.max     = 3.4028234663852886e+38
+bpoly.c6.units   = ""
+bpoly.c6.frozen  = True
+
+bpoly.c7.default_val = 0.0
+bpoly.c7.default_min = -3.4028234663852886e+38
+bpoly.c7.default_max = 3.4028234663852886e+38
+bpoly.c7.val     = 0.0
+bpoly.c7.min     = -3.4028234663852886e+38
+bpoly.c7.max     = 3.4028234663852886e+38
+bpoly.c7.units   = ""
+bpoly.c7.frozen  = True
 
 bpoly.c8.default_val = 0.0
 bpoly.c8.default_min = -3.4028234663852886e+38
@@ -576,78 +649,6 @@ bpoly.offset.min     = -3.4028234663852886e+38
 bpoly.offset.max     = 3.4028234663852886e+38
 bpoly.offset.units   = ""
 bpoly.offset.frozen  = True
-
-bpoly.c3.default_val = 0.0
-bpoly.c3.default_min = -3.4028234663852886e+38
-bpoly.c3.default_max = 3.4028234663852886e+38
-bpoly.c3.val     = 0.0
-bpoly.c3.min     = -3.4028234663852886e+38
-bpoly.c3.max     = 3.4028234663852886e+38
-bpoly.c3.units   = ""
-bpoly.c3.frozen  = True
-
-bpoly.c2.default_val = 0.0
-bpoly.c2.default_min = -3.4028234663852886e+38
-bpoly.c2.default_max = 3.4028234663852886e+38
-bpoly.c2.val     = 0.0
-bpoly.c2.min     = -3.4028234663852886e+38
-bpoly.c2.max     = 3.4028234663852886e+38
-bpoly.c2.units   = ""
-bpoly.c2.frozen  = True
-
-bpoly.c1.default_val = 0.0
-bpoly.c1.default_min = -3.4028234663852886e+38
-bpoly.c1.default_max = 3.4028234663852886e+38
-bpoly.c1.val     = 0.0
-bpoly.c1.min     = -3.4028234663852886e+38
-bpoly.c1.max     = 3.4028234663852886e+38
-bpoly.c1.units   = ""
-bpoly.c1.frozen  = True
-
-bpoly.c0.default_val = 1.0
-bpoly.c0.default_min = -3.4028234663852886e+38
-bpoly.c0.default_max = 3.4028234663852886e+38
-bpoly.c0.val     = 1.0
-bpoly.c0.min     = -3.4028234663852886e+38
-bpoly.c0.max     = 3.4028234663852886e+38
-bpoly.c0.units   = ""
-bpoly.c0.frozen  = True
-
-bpoly.c7.default_val = 0.0
-bpoly.c7.default_min = -3.4028234663852886e+38
-bpoly.c7.default_max = 3.4028234663852886e+38
-bpoly.c7.val     = 0.0
-bpoly.c7.min     = -3.4028234663852886e+38
-bpoly.c7.max     = 3.4028234663852886e+38
-bpoly.c7.units   = ""
-bpoly.c7.frozen  = True
-
-bpoly.c6.default_val = 0.0
-bpoly.c6.default_min = -3.4028234663852886e+38
-bpoly.c6.default_max = 3.4028234663852886e+38
-bpoly.c6.val     = 0.0
-bpoly.c6.min     = -3.4028234663852886e+38
-bpoly.c6.max     = 3.4028234663852886e+38
-bpoly.c6.units   = ""
-bpoly.c6.frozen  = True
-
-bpoly.c5.default_val = 0.0
-bpoly.c5.default_min = -3.4028234663852886e+38
-bpoly.c5.default_max = 3.4028234663852886e+38
-bpoly.c5.val     = 0.0
-bpoly.c5.min     = -3.4028234663852886e+38
-bpoly.c5.max     = 3.4028234663852886e+38
-bpoly.c5.units   = ""
-bpoly.c5.frozen  = True
-
-bpoly.c4.default_val = 0.0
-bpoly.c4.default_min = -3.4028234663852886e+38
-bpoly.c4.default_max = 3.4028234663852886e+38
-bpoly.c4.val     = 0.0
-bpoly.c4.min     = -3.4028234663852886e+38
-bpoly.c4.max     = 3.4028234663852886e+38
-bpoly.c4.units   = ""
-bpoly.c4.frozen  = True
 
 
 
