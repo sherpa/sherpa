@@ -492,54 +492,141 @@ def export_method(meth, name=None, modname=None):
 
 
 def get_keyword_names(func, skip=0):
+    """Return the names of the keyword arguments.
+
+    Parameters
+    ----------
+    func
+        The function to query.
+    skip : int, optional
+        The number of keyword arguments to skip.
+
+    Returns
+    -------
+    names : list of str
+        The names of the keyword arguments. It can be empty.
+
+    See Also
+    --------
+    get_keyword_defaults, get_num_args
+
     """
 
-    Return a list containing the names of func's keyword arguments,
-    skipping the first skip keywords.
+    try:
+        # Python 3+: (it appears that getargspec is not being
+        # removed in Python 3.6, but this should stop the warnings
+        # from earlier versions)
+        sig = inspect.signature(func)
+    except AttributeError:
+        # Python 2.7
+        argspec = inspect.getargspec(func)
+        if argspec[3] is None:
+            return []
+        first = len(argspec[0]) - len(argspec[3])
+        return argspec[0][first + skip:]
 
-    """
+    kwargs = [p.name
+              for p in sig.parameters.values()
+              if p.kind == p.POSITIONAL_OR_KEYWORD and
+              p.default != p.empty]
 
-    argspec = inspect.getargspec(func)
-    if argspec[3] is None:
-        return []
-    first = len(argspec[0]) - len(argspec[3])
-    return argspec[0][first + skip:]
+    return kwargs[skip:]
 
 
 def get_keyword_defaults(func, skip=0):
+    """Return the keyword arguments and their default values.
+
+    Parameters
+    ----------
+    func
+        The function to query.
+    skip : int, optional
+        The number of keyword arguments to skip.
+
+    Returns
+    -------
+    vals : dict
+        The keys are names of the keyword arguments, the values are
+        the default value for that parameter. It can be empty.
+
+    See Also
+    --------
+    get_keyword_names, get_num_args
+
     """
 
-    Return a dictionary containing the default values of func's keyword
-    arguments, skipping the first skip keywords.
+    try:
+        # Python 3+: (it appears that getargspec is not being
+        # removed in Python 3.6, but this should stop the warnings
+        # from earlier versions)
+        sig = inspect.signature(func)
+    except AttributeError:
+        # Python 2.7
+        argspec = inspect.getargspec(func)
+        if argspec[3] is None:
+            return {}
+        first = len(argspec[0]) - len(argspec[3])
+        return dict(izip(argspec[0][first + skip:], argspec[3][skip:]))
 
-    """
+    kwargs = [(p.name, p.default)
+              for p in sig.parameters.values()
+              if p.kind == p.POSITIONAL_OR_KEYWORD and
+              p.default != p.empty]
 
-    argspec = inspect.getargspec(func)
-    if argspec[3] is None:
-        return {}
-    first = len(argspec[0]) - len(argspec[3])
-    return dict(izip(argspec[0][first + skip:], argspec[3][skip:]))
+    return dict(kwargs[skip:])
 
 
 def get_num_args(func):
+    """Return the number of arguments for a function.
+
+    Parameters
+    ----------
+    func
+        The function to query.
+
+    Returns
+    -------
+    ntotal, npos, nkeyword : int, int, int
+        The total number of arguments, the number of positional
+        arguments, and the number of keyword arguments.
+
+    See Also
+    --------
+    get_keyword_defaults, get_keyword_names
+
     """
 
-    Return a tuple of the number of arguments.
-    ( total number of args, number of non-keyword args, number of keyword args)
+    try:
+        # Python 3+: (it appears that getargspec is not being
+        # removed in Python 3.6, but this should stop the warnings
+        # from earlier versions)
+        sig = inspect.signature(func)
+    except AttributeError:
+        # Python 2.7
+        argspec = inspect.getargspec(func)
+        num_args = 0
+        num_kargs = 0
 
-    """
+        if len(argspec[0]) != 0:
+            num_args = len(argspec[0])
 
-    argspec = inspect.getargspec(func)
-    num_args = 0
-    num_kargs = 0
+        if argspec[3] is not None:
+            num_kargs = len(argspec[3])
 
-    if len(argspec[0]) != 0:
-        num_args = len(argspec[0])
+        return (num_args, (num_args - num_kargs), num_kargs)
 
-    if argspec[3] is not None:
-        num_kargs = len(argspec[3])
+    posargs = [True
+               for p in sig.parameters.values()
+               if p.kind == p.POSITIONAL_OR_KEYWORD and
+               p.default == p.empty]
+    kwargs = [True
+              for p in sig.parameters.values()
+              if p.kind == p.POSITIONAL_OR_KEYWORD and
+              p.default != p.empty]
 
-    return (num_args, (num_args - num_kargs), num_kargs)
+    npos = len(posargs)
+    nkw = len(kwargs)
+    return (npos + nkw, npos, nkw)
 
 
 def print_fields(names, vals, converters={}):

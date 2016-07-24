@@ -39,6 +39,10 @@ class test_utils(SherpaTestCase):
             pass
         self.f2 = f2
 
+        def f3(a=None, b=1, c=2, d=3, e=4):
+            pass
+        self.f3 = f3
+
     def test_NoNewAttributesAfterInit(self):
         class C(NoNewAttributesAfterInit):
             def __init__(self):
@@ -107,11 +111,21 @@ class test_utils(SherpaTestCase):
         self.assertEqual(m(3), 6)
         self.assertEqual(m(3, 7), 21)
 
+    def test_get_num_args(self):
+        self.assertEqual(utils.get_num_args(self.f1), (3, 3, 0))
+        self.assertEqual(utils.get_num_args(self.f2), (5, 1, 4))
+        self.assertEqual(utils.get_num_args(self.f3), (5, 0, 5))
+
     def test_get_keyword_names(self):
         self.assertEqual(utils.get_keyword_names(self.f1), [])
         l = ['b', 'c', 'd', 'e']
         self.assertEqual(utils.get_keyword_names(self.f2), l)
         self.assertEqual(utils.get_keyword_names(self.f2, 2), l[2:])
+        self.assertEqual(utils.get_keyword_names(self.f2, 7), [])
+        l = ['a', 'b', 'c', 'd', 'e']
+        self.assertEqual(utils.get_keyword_names(self.f3), l)
+        self.assertEqual(utils.get_keyword_names(self.f3, 1), l[1:])
+        self.assertEqual(utils.get_keyword_names(self.f3, 7), [])
 
     def test_get_keyword_defaults(self):
         self.assertEqual(utils.get_keyword_defaults(self.f1), {})
@@ -120,6 +134,12 @@ class test_utils(SherpaTestCase):
         del d['b']
         del d['c']
         self.assertEqual(utils.get_keyword_defaults(self.f2, 2), d)
+        self.assertEqual(utils.get_keyword_defaults(self.f2, 7), {})
+        d = {'a': None, 'b': 1, 'c': 2, 'd': 3, 'e': 4}
+        self.assertEqual(utils.get_keyword_defaults(self.f3), d)
+        del d['a']
+        self.assertEqual(utils.get_keyword_defaults(self.f3, 1), d)
+        self.assertEqual(utils.get_keyword_defaults(self.f3, 7), {})
 
     def test_print_fields(self):
         names = ['a', 'bb', 'ccc']
