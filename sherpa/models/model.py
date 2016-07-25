@@ -46,12 +46,12 @@ def modelCacher1d(func):
         digest = ''
         if use_caching:
 
-            data = [ numpy.array(pars).tostring(), str(kwargs.get('integrate',0)), 
+            data = [ numpy.array(pars).tostring(), kwargs.get('integrate', b'0'),
                      numpy.asarray(xlo).tostring() ]
             if args:
                 data.append( numpy.asarray(args[0]).tostring() )
 
-            token = ''.join(data)
+            token = b''.join(data)
             digest = hashlib.sha256(token).digest()
             if digest in cache:
                 return cache[digest]
