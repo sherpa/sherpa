@@ -161,7 +161,7 @@ class AbsorptionGaussian(ArithmeticModel):
         delta = numpy.abs((x - p[1]) / sigma)
         ampl  = p[2] / sigma / 2.50662828  # document this constant
 
-        idx = (delta < self.limit)
+        idx = (delta < self.limit.val)
         y[idx] = 1.0 - ampl * numpy.exp(- delta[idx] * delta[idx] / 2.0)
 
         return y
@@ -265,7 +265,7 @@ class OpticalGaussian(ArithmeticModel):
         sigma = p[1] * p[0] / 705951.5     # = 2.9979e5 / 2.354820044 ?
         delta = numpy.abs((x - p[1]) / sigma)
 
-        idx = (delta < self.limit)
+        idx = (delta < self.limit.val)
         y[idx] = numpy.exp(-p[2] * numpy.exp(- delta[idx] * delta[idx] / 2.0))
 
         return y
@@ -307,7 +307,7 @@ class EmissionGaussian(ArithmeticModel):
         y = numpy.zeros_like(x)
         sigma = p[1] * p[0] / 705951.5     # = 2.9979e5 / 2.354820044
         delta = numpy.abs((x - p[1]) / sigma)
-        idx = (delta < self.limit)
+        idx = (delta < self.limit.val)
 
         arg = - delta * delta / 2.0
         if sao_fcmp(p[3], 1.0, _tol) == 0:
