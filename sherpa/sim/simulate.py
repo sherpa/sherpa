@@ -129,6 +129,19 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
         return s
 
 
+class LikelihoodRatioTestWorker(object):
+    """
+    Worker class for LikelihoodRatioTest
+    """
+    def __init__(self, null_fit, alt_fit, null_vals, alt_vals):
+        self.null_fit = null_fit
+        self.alt_fit = alt_fit
+        self.null_vals = null_vals
+        self.alt_vals = alt_vals
+
+    def __call__(self, proposal):
+        return LikelihoodRatioTest.calculate(self.null_fit, self.alt_fit, proposal, self.null_vals, self.alt_vals)
+
 
 class LikelihoodRatioTest(NoNewAttributesAfterInit):
     """Likelihood Ratio Test.
@@ -261,14 +274,13 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
 
         LR = -(alt_stat - null_stat)
 
-        def worker(proposal, *args, **kwargs):
-            return LikelihoodRatioTest.calculate(nullfit, altfit, proposal,
-                                                 null_vals, alt_vals)
-
         olddep = data.get_dep(filter=False)
         try:
-            #statistics = map(worker, samples)
-            statistics = parallel_map(worker, samples, numcores)
+            statistics = parallel_map(
+                LikelihoodRatioTestWorker(nullfit, altfit, null_vals, alt_vals),
+                samples,
+                numcores
+            )
         finally:
             data.set_dep(olddep)
             alt.thawedpars = list(oldaltvals)
