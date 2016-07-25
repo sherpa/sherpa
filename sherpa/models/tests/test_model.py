@@ -128,9 +128,14 @@ class test_composite_model(SherpaTestCase):
             self.assertEqual(m(self.x), op(self.m(self.x)))
 
     def test_binop(self):
-        for op in (operator.add, operator.sub, operator.mul, operator.div,
-                   operator.floordiv, operator.truediv, operator.mod,
-                   operator.pow):
+        ops = [operator.add, operator.sub, operator.mul,
+               operator.floordiv, operator.truediv, operator.mod,
+               operator.pow]
+
+        if hasattr(operator, 'div'): # Python 2
+            ops.append(operator.div)
+
+        for op in ops:
             for m in (op(self.m, self.m2.c0.val), op(self.m.c0.val, self.m2),
                       op(self.m, self.m2)):
                 self.assertTrue(isinstance(m, BinaryOpModel))
