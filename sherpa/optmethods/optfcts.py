@@ -326,7 +326,7 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 
 
     answer = eval_stat_func( x )
-    sequence_results = parallel_map( eval_stat_func, sequence, numcores )
+    sequence_results = list(parallel_map( eval_stat_func, sequence, numcores ))
     for xresult in sequence_results[ 1: ]:
         if xresult[ 0 ] < answer[ 0 ]:
             answer = xresult

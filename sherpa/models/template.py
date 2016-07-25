@@ -18,10 +18,10 @@ from __future__ import absolute_import
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six import iteritems
 
-from .parameter import Parameter, tinyval
-from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
-    ArithmeticFunctionModel
+from .parameter import Parameter
+from .model import ArithmeticModel, modelCacher1d
 from .basic import TableModel
 import numpy, operator
 from sherpa.utils.err import ModelErr
@@ -108,7 +108,7 @@ class KNNInterpolator(InterpolatingTemplateModel):
         self._distances = {}
         for i, t_point in enumerate(self.template_model.parvals):
             self._distances[i] = numpy.linalg.norm(point - t_point, self.order)
-        self._distances = sorted(self._distances.iteritems(), key=operator.itemgetter(1))
+        self._distances = sorted(iteritems(self._distances), key=operator.itemgetter(1))
 
     def interpolate(self, point, x_out):
         self._calc_distances(point)
