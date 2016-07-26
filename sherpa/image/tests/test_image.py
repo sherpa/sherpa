@@ -170,7 +170,8 @@ class test_image(SherpaTestCase):
             os.chdir(dname)
 
             ofile = 'x'
-            open(ofile, 'w').write('')
+            with open(ofile, 'w') as fh:
+                fh.write('')
 
             im = Image()
             im.image(data.y)

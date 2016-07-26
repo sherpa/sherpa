@@ -1,6 +1,6 @@
 from __future__ import absolute_import
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,12 +18,9 @@ from __future__ import absolute_import
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from itertools import izip
-import numpy
 import time
 from . import DS9
 from os import access, R_OK
-from sherpa.utils import get_keyword_defaults
 from sherpa.utils.err import DS9Err
 
 imager = DS9.DS9Win(DS9._DefTemplate, False)
@@ -32,6 +29,7 @@ imager = DS9.DS9Win(DS9._DefTemplate, False)
 def close():
     if imager.isOpen():
         imager.xpaset("quit")
+
 
 def delete_frames():
     if not imager.isOpen():
@@ -42,36 +40,40 @@ def delete_frames():
     except:
         raise DS9Err('delframe')
 
+
 def get_region(coord):
     if not imager.isOpen():
         raise DS9Err('open')
     try:
         regionstr = "regions -format saoimage -strip yes"
-        if (coord != ''):
-            if (coord != 'image'):
-                regionstr = "regions -format ciao -strip yes -system " + str(coord)
+        if coord != '':
+            if coord != 'image':
+                regionfmt = 'ciao'
             else:
-                regionstr = "regions -format saoimage -strip yes -system image"
+                regionfmt = 'saoimage'
+
+            regionstr = "regions -format {} ".format(regionfmt) + \
+                        "-strip yes -system {}".format(coord)
 
         regionstr = imager.xpaget(regionstr)
         return regionstr
     except:
         raise DS9Err('retreg')
 
+
 def image(arr, newframe=False, tile=False):
     if not imager.isOpen():
         imager.doOpen()
     # Create a new frame if the user requested it, *or* if
     # there happen to be no DS9 frames.
-    if (newframe is True or
-        imager.xpaget("frame all") == "\n"):
+    if newframe or imager.xpaget("frame all") == "\n":
         try:
             imager.xpaset("frame new")
             imager.xpaset("frame last")
         except:
             raise DS9Err('newframe')
     try:
-        if tile is True:
+        if tile:
             imager.xpaset("tile yes")
         else:
             imager.xpaset("tile no")
@@ -82,6 +84,7 @@ def image(arr, newframe=False, tile=False):
         imager.showArray(arr)
     except:
         raise DS9Err('noimage')
+
 
 def _set_wcs(keys):
     eqpos, sky, name = keys
@@ -128,14 +131,15 @@ def _set_wcs(keys):
                                'CDELT2  = %.14E' % wcdelt[1]])
 
     # join the wcs and physical with '\n' between them and at the end
-    return ('\n'.join([wcs,phys]) + '\n')
+    return ('\n'.join([wcs, phys]) + '\n')
+
 
 def wcs(keys):
 
     if not imager.isOpen():
         raise DS9Err('open')
 
-    info = _set_wcs( keys )
+    info = _set_wcs(keys)
 
     try:
         # use stdin to pass the WCS info
@@ -147,29 +151,35 @@ def wcs(keys):
 def open():
     imager.doOpen()
 
+
 def set_region(reg, coord):
     if not imager.isOpen():
         raise DS9Err('open')
     try:
         # Assume a region file defines everything correctly
-        if (access(reg, R_OK) is True):
+        if access(reg, R_OK):
             imager.xpaset("regions load " + "'" + reg + "'")
         else:
             # Assume region string has to be in CIAO format
             regions = reg.split(";")
             for region in regions:
-                if (region != ''):
-                    if (coord != ''):
-                        imager.xpaset("regions", data=str(coord) + ";" + region)
+                if region != '':
+                    if coord != '':
+                        data = str(coord) + ";" + region
                     else:
-                        imager.xpaset("regions", data=region)
+                        data = region
+
+                    imager.xpaset("regions", data=data)
+
     except:
         raise DS9Err('badreg', str(reg))
+
 
 def xpaget(arg):
     if not imager.isOpen():
         raise DS9Err('open')
     return imager.xpaget(arg)
+
 
 def xpaset(arg, data=None):
     if not imager.isOpen():

@@ -136,6 +136,8 @@ History:
 """
 from __future__ import print_function
 
+import six
+
 import numpy as np
 import os
 import sys
@@ -395,7 +397,7 @@ def _formatOptions(kargs):
     """Returns a string: "key1=val1,key2=val2,..."
     (where keyx and valx are string representations)
     """
-    arglist = ["%s=%s" % keyVal for keyVal in kargs.iteritems()]
+    arglist = ["%s=%s" % keyVal for keyVal in six.iteritems(kargs)]
     return '%s' % (','.join(arglist))
 
 
@@ -551,7 +553,7 @@ class DS9Win:
             dataFunc=arr.tofile,
         )
 
-        for keyValue in kargs.iteritems():
+        for keyValue in six.iteritems(kargs):
             self.xpaset(cmd=' '.join(keyValue))
 
 # showBinFile is commented out because it is broken with ds9 3.0.3
@@ -602,7 +604,7 @@ class DS9Win:
         if arrKeys:
             raise RuntimeErr('badarr', arrKeys.keys())
 
-        for keyValue in kargs.iteritems():
+        for keyValue in six.iteritems(kargs):
             self.xpaset(cmd=' '.join(keyValue))
 
     def xpaget(self, cmd):

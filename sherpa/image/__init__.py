@@ -1,6 +1,6 @@
 from __future__ import absolute_import
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,6 @@ from __future__ import absolute_import
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import os
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit, bool_cast
 
@@ -92,7 +91,7 @@ class Image(NoNewAttributesAfterInit):
     open = staticmethod(open)
 
     def set_wcs(self, keys):
-        backend.wcs( keys )
+        backend.wcs(keys)
 
     def set_region(reg, coord):
         """Set the region to display in the image viewer.
@@ -143,6 +142,7 @@ class Image(NoNewAttributesAfterInit):
         return backend.xpaset(arg, data=None)
     xpaset = staticmethod(xpaset)
 
+
 class DataImage(Image):
     """Image data.
 
@@ -168,10 +168,11 @@ class DataImage(Image):
     def __str__(self):
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4, suppress_small=False)
-        return (('name   = %s\n' % self.name)+
-                ('y      = %s\n' % y)+
-                ('eqpos  = %s\n' % self.eqpos)+
+            y = numpy.array2string(self.y, separator=',', precision=4,
+                                   suppress_small=False)
+        return (('name   = %s\n' % self.name) +
+                ('y      = %s\n' % y) +
+                ('eqpos  = %s\n' % self.eqpos) +
                 ('sky    = %s\n' % self.sky))
 
     def prepare_image(self, data):
@@ -183,7 +184,6 @@ class DataImage(Image):
             obj = header.get('OBJECT')
             if obj is not None:
                 self.name = str(obj).replace(" ", "_")
-
 
     def image(self, shape=None, newframe=False, tile=False):
         Image.image(self, self.y, shape, newframe, tile)
@@ -202,10 +202,11 @@ class ModelImage(Image):
     def __str__(self):
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4, suppress_small=False)
-        return (('name   = %s\n' % self.name)+
-                ('y      = %s\n' % y)+
-                ('eqpos  = %s\n' % self.eqpos)+
+            y = numpy.array2string(self.y, separator=',', precision=4,
+                                   suppress_small=False)
+        return (('name   = %s\n' % self.name) +
+                ('y      = %s\n' % y) +
+                ('eqpos  = %s\n' % self.eqpos) +
                 ('sky    = %s\n' % self.sky))
 
     def prepare_image(self, data, model):
@@ -225,8 +226,8 @@ class SourceImage(ModelImage):
         self.name = 'Source'
 
     def prepare_image(self, data, model):
-        #self.y = data.get_img(model)
-        #self.y = self.y[1]
+        # self.y = data.get_img(model)
+        # self.y = self.y[1]
 
         self.y = data.eval_model(model)
         data._check_shape()
@@ -248,10 +249,11 @@ class RatioImage(Image):
     def __str__(self):
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4, suppress_small=False)
-        return (('name   = %s\n' % self.name)+
-                ('y      = %s\n' % y)+
-                ('eqpos  = %s\n' % self.eqpos)+
+            y = numpy.array2string(self.y, separator=',', precision=4,
+                                   suppress_small=False)
+        return (('name   = %s\n' % self.name) +
+                ('y      = %s\n' % y) +
+                ('eqpos  = %s\n' % self.eqpos) +
                 ('sky    = %s\n' % self.sky))
 
     def _calc_ratio(self, ylist):
@@ -272,6 +274,7 @@ class RatioImage(Image):
         Image.image(self, self.y, shape, newframe, tile)
         Image.set_wcs(self, (self.eqpos, self.sky, self.name))
 
+
 class ResidImage(Image):
 
     def __init__(self):
@@ -284,10 +287,11 @@ class ResidImage(Image):
     def __str__(self):
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4, suppress_small=False)
-        return (('name   = %s\n' % self.name)+
-                ('y      = %s\n' % y)+
-                ('eqpos  = %s\n' % self.eqpos)+
+            y = numpy.array2string(self.y, separator=',', precision=4,
+                                   suppress_small=False)
+        return (('name   = %s\n' % self.name) +
+                ('y      = %s\n' % y) +
+                ('eqpos  = %s\n' % self.eqpos) +
                 ('sky    = %s\n' % self.sky))
 
     def _calc_resid(self, ylist):
@@ -324,12 +328,13 @@ class ComponentSourceImage(ModelImage):
 
     def prepare_image(self, data, model):
         ModelImage.prepare_image(self, data, model)
-        #self.name = "Source component '%s'" % model.name
+        # self.name = "Source component '%s'" % model.name
         self.name = "Source_component"
+
 
 class ComponentModelImage(ModelImage):
 
     def prepare_image(self, data, model):
         ModelImage.prepare_image(self, data, model)
-        #self.name = "Model component '%s'" % model.name
+        # self.name = "Model component '%s'" % model.name
         self.name = "Model_component"
