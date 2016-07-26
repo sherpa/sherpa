@@ -455,7 +455,7 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
 
     args = numpy.column_stack(numpy.asarray(args))
 
-    f = file(filename, 'w')
+    f = open(filename, 'w')
 
     if fields is not None:
         f.write(comment + sep.join(fields) + linebreak)
