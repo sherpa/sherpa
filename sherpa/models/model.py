@@ -36,6 +36,12 @@ __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
            'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 
+
+def boolean_to_byte(boolean_value):
+    bmap = {True: b'1', False: b'0'}
+    return bmap.get(boolean_value, b'0')
+
+
 def modelCacher1d(func):
 
     def cache_model(cls, pars, xlo, *args, **kwargs):
@@ -46,10 +52,10 @@ def modelCacher1d(func):
         digest = ''
         if use_caching:
 
-            data = [ numpy.array(pars).tostring(), kwargs.get('integrate', b'0'),
-                     numpy.asarray(xlo).tostring() ]
+            data = [numpy.array(pars).tostring(), boolean_to_byte(kwargs.get('integrate', False)),
+                    numpy.asarray(xlo).tostring()]
             if args:
-                data.append( numpy.asarray(args[0]).tostring() )
+                data.append(numpy.asarray(args[0]).tostring())
 
             token = b''.join(data)
             digest = hashlib.sha256(token).digest()

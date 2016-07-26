@@ -16,11 +16,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+import pytest
 
 from numpy import arange
 import sherpa.astro.models as models
 from sherpa.utils import SherpaFloat, SherpaTestCase
-from sherpa.models.model import ArithmeticModel
+from sherpa.models.model import ArithmeticModel, boolean_to_byte
 
 
 class test_models(SherpaTestCase):
@@ -63,3 +64,13 @@ class test_models(SherpaTestCase):
                 self.assertEqual(out.shape, x.shape)
 
         self.assertEqual(count, 18)
+
+
+@pytest.mark.parametrize("test_input, expected", [
+    (True, b'1'),
+    (False, b'0'),
+    (None, b'0'),
+    ("foo", b'0')
+])
+def test_boolean_to_byte(test_input, expected):
+    assert boolean_to_byte(test_input) == expected
