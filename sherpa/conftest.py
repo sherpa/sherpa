@@ -18,6 +18,7 @@
 #
 
 import pytest
+import os
 from sherpa.utils import SherpaTestCase
 
 TEST_DATA_OPTION = "--test-data"
@@ -87,3 +88,21 @@ def pytest_configure(config):
             SherpaTestCase.datadir = path
     except ValueError:  # option not defined from command line, no-op
         pass
+
+
+@pytest.fixture(scope="session")
+def make_data_path():
+    """
+    Fixture for tests requiring the test data dir. It returns a function that can be used to make paths by using
+    path elements relative to the test data folder (which is flat, so in principle only the first element is required)
+
+    Returns
+    -------
+    make_data_path : func A function that accepts a list of path elements to be joined with the base data dir path
+    """
+    path = SherpaTestCase.datadir
+
+    def wrapped(arg):
+        return os.path.join(path, arg)
+
+    return wrapped

@@ -19,7 +19,7 @@
 import pytest
 import numpy
 
-from sherpa.utils import _utils
+from sherpa.utils import _utils, requires_data, is_binary_file
 from numpy.testing import assert_almost_equal, assert_array_equal
 
 
@@ -201,3 +201,11 @@ def test_sao_arange():
 
 
 # py3-todo: skipping test for sum_intervals, not enough info to make a quick test.
+
+@requires_data
+def test_is_binary_file(make_data_path):
+    ascii = make_data_path("gauss2d.dat")
+    pha = make_data_path("3c273.pi")
+
+    assert is_binary_file(pha)
+    assert not is_binary_file(ascii)

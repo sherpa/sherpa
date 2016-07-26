@@ -1328,19 +1328,24 @@ def is_binary_file(filename):
     1024 bytes of the file.
     """
     fd = open(filename, 'r')
-    lines = fd.readlines(1024)
-    fd.close()
+    try:  # Python 2
+        lines = fd.readlines(1024)
+        fd.close()
 
-    if len(lines) == 0:
+        if len(lines) == 0:
+            return False
+
+        # If a non-printable character is found in first 1024 --> binary
+        for line in lines:
+            for char in line:
+                if char not in string.printable:
+                    return True
+
         return False
-
-    # If a non-printable character is found in first 1024 --> binary
-    for line in lines:
-        for char in line:
-            if char not in string.printable:
-                return True
-
-    return False
+    except UnicodeDecodeError:  # Python 3
+        return True
+    finally:
+        fd.close()
 
 
 def get_midpoint(a):
