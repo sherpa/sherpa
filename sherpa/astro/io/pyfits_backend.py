@@ -46,7 +46,7 @@ from numpy.compat import basestring
 
 import os
 
-from six.moves import zip as izip
+from six.moves import xrange, zip as izip
 
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat

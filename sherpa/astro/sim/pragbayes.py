@@ -17,12 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six.moves import xrange
 
 import logging
 import numpy as np
-import time
 from sherpa.fit import Fit
-from sherpa.optmethods import NelderMead, LevMar
 from sherpa.estmethods import Covariance
 from sherpa.sim.mh import MetropolisMH, rmvt, CovarError, Walk, LimitError
 read_table_blocks = None
