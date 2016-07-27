@@ -1296,6 +1296,7 @@ static PyMethodDef XSpecMethods[] = {
 
 
 #ifdef PY3
+
 static struct PyModuleDef xspec_module = {
         PyModuleDef_HEAD_INIT,
         "_xspec",
@@ -1303,18 +1304,17 @@ static struct PyModuleDef xspec_module = {
         -1,
         XSpecMethods,
 };
-#endif
 
-PyMODINIT_FUNC
-init_xspec(void)
-{
-
+PyMODINIT_FUNC PyInit__xspec(void) {
   import_array();
-
-#ifdef PY3
   return PyModule_Create(&xspec_module);
-#else
-  Py_InitModule( (char*)"_xspec", XSpecMethods );
-#endif
 }
 
+#else
+
+PyMODINIT_FUNC
+init_xspec(void) {
+  import_array();
+  Py_InitModule( (char*)"_xspec", XSpecMethods );
+}
+#endif
