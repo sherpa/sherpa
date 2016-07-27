@@ -204,13 +204,13 @@ class test_ui(SherpaTestCase):
         try:
             ui.get_source('full')
         except IdentifierErr as e:
-            self.assertRegexpMatches(str(e),
+            self.assertRegex(str(e),
                                      "Convolved model\n.*\n is set for dataset full. You should use get_model instead.",
                                      str(e))
         try:
             ui.plot_source('full')
         except IdentifierErr as e:
-            self.assertRegexpMatches(str(e),
+            self.assertRegex(str(e),
                                      "Convolved model\n.*\n is set for dataset full. You should use plot_model instead.",
                                      str(e))
 
@@ -223,7 +223,7 @@ class test_ui(SherpaTestCase):
         try:
             ui.get_source('not_full')
         except IdentifierErr as e:
-            self.assertEquals('source not_full has not been set, consider using set_source() or set_model()', str(e))
+            self.assertEqual('source not_full has not been set, consider using set_source() or set_model()', str(e))
 
 
 class test_psf_ui(SherpaTestCase):
