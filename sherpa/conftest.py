@@ -19,6 +19,8 @@
 
 import pytest
 import os
+import sys
+import re
 from sherpa.utils import SherpaTestCase
 
 TEST_DATA_OPTION = "--test-data"
@@ -32,18 +34,35 @@ def pytest_addoption(parser):
 # Whilelist of known warnings. One can associate different warning messages to the same warning class
 known_warnings = {
     DeprecationWarning:
-        ["unorderable dtypes; returning scalar but in the future this will be an error",
-         "Non-string object detected for the array ordering. Please pass in 'C', 'F', 'A', or 'K' instead",
-         "using a non-integer number instead of an integer will result in an error in the future",
-         "inspect.getargspec() is deprecated, use inspect.signature() instead"],
+        [
+            r"unorderable dtypes.*",
+            r"Non-string object detected for the array ordering.*",
+            r"using a non-integer number instead of an integer will result in an error in the future",
+            r"inspect.getargspec\(\) is deprecated"
+        ],
     UserWarning:
         [
-            "File '/data/regression_test/master/in/sherpa/aref_sample.fits' does not have write permission.  Changing to read-only mode.",
-            "File '/data/regression_test/master/in/sherpa/aref_Cedge.fits' does not have write permission.  Changing to read-only mode."
+            r"File '/data/regression_test/master/in/sherpa/aref_sample.fits' does not have write permission.  Changing to read-only mode.",
+            r"File '/data/regression_test/master/in/sherpa/aref_Cedge.fits' does not have write permission.  Changing to read-only mode."
         ],
     RuntimeWarning:
-        ["invalid value encountered in sqrt", ],
+        [r"invalid value encountered in sqrt", ],
 }
+
+if sys.version_info >= (3, 2):
+    python3_warnings = {
+        ResourceWarning:
+            [
+                r"unclosed file .*king_kernel.txt.* closefd=True>",
+                r"unclosed file .*phas.dat.* closefd=True>",
+                r"unclosed file .*data.txt.* closefd=True>",
+                r"unclosed file .*cstat.dat.* closefd=True>",
+                r"unclosed file .*data1.dat.* closefd=True>",
+                r"unclosed file .*aref_Cedge.fits.* closefd=True>",
+                r"unclosed file .*aref_sample.fits.* closefd=True>",
+            ]
+    }
+    known_warnings.update(python3_warnings)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -62,11 +81,20 @@ def capture_all_warnings(request, recwarn):
     recwarn injected pytest service for accessing recorded warnings
 
     """
+    def known(warning):
+        message = warning.message
+        print("message: ", message)
+        for known_warning in known_warnings[type(message)]:
+            print("known: ", known_warning)
+            pattern = re.compile(known_warning)
+            if pattern.match(str(message)):
+                print("known!")
+                return True
+        return False
 
     def fin():
         warnings = [w for w in recwarn.list
-                    if type(w.message) not in known_warnings
-                    or str(w.message) not in known_warnings[type(w.message)]]
+                    if type(w.message) not in known_warnings or not known(w)]
 
         assert 0 == len(warnings)
 
