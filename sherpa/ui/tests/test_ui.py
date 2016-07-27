@@ -18,6 +18,8 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import six
+
 from sherpa.utils import SherpaTestCase, requires_data
 from sherpa.models import ArithmeticModel, Parameter
 from sherpa.models.basic import PowLaw1D
@@ -204,13 +206,13 @@ class test_ui(SherpaTestCase):
         try:
             ui.get_source('full')
         except IdentifierErr as e:
-            self.assertRegex(str(e),
+            six.assertRegex(self, str(e),
                                      "Convolved model\n.*\n is set for dataset full. You should use get_model instead.",
                                      str(e))
         try:
             ui.plot_source('full')
         except IdentifierErr as e:
-            self.assertRegex(str(e),
+            six.assertRegex(self, str(e),
                                      "Convolved model\n.*\n is set for dataset full. You should use plot_model instead.",
                                      str(e))
 
