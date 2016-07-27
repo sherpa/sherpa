@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,15 +17,18 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils import SherpaTestCase
 import os
+import sys
+import tempfile
+import logging
+
+import numpy as np
+
+from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_fits, requires_stk
 from sherpa.astro import ui
 from sherpa.astro import datastack
 from acis_bkg_model import acis_bkg_model
-import numpy as np
-import tempfile
-import logging
 
 logger = logging.getLogger('sherpa')
 
@@ -50,7 +53,7 @@ class test_design(SherpaTestCase):
     @requires_stk
     def test_case_1(self):
         datadir = '/'.join((self._this_dir, 'data'))
-        ls = '@'+'/'.join((datadir, '3c273.lis'))
+        ls = '@' + '/'.join((datadir, '3c273.lis'))
         datastack.load_pha(ls, use_errors=True)
 
         assert 2 == len(datastack.DATASTACK.datasets)
@@ -86,16 +89,16 @@ class test_design(SherpaTestCase):
         assert 3 == len(ds.datasets)
 
         dids = datastack.DATASTACK.get_stack_ids()
-        assert dids == [1,2,3,4]
+        assert dids == [1, 2, 3, 4]
 
         sids = ui._session._data.keys()
-        assert sids == [1,2,3,4,5,6,7, "myid"]
+        assert sids == [1, 2, 3, 4, 5, 6, 7, "myid"]
 
-        datastack.set_source([1,2], "powlaw1d.pID")
-        datastack.set_source([3,4], "brokenpowerlaw.bpID")
+        datastack.set_source([1, 2], "powlaw1d.pID")
+        datastack.set_source([3, 4], "brokenpowerlaw.bpID")
 
         dsids = ds.get_stack_ids()
-        assert dsids == [5,6,7]
+        assert dsids == [5, 6, 7]
 
         p1 = ui._session._model_components['p1']
         p2 = ui._session._model_components['p2']
@@ -108,7 +111,7 @@ class test_design(SherpaTestCase):
         assert bp4 is not None
 
         datastack.set_source(1, "polynom1d.poly1")
-        datastack.set_source([2,3,4], "atten.attID")
+        datastack.set_source([2, 3, 4], "atten.attID")
 
         poly1 = ui._session._model_components['poly1']
         a2 = ui._session._model_components['att2']
@@ -143,12 +146,12 @@ class test_global(SherpaTestCase):
         logger.setLevel(self.loggingLevel)
 
     def test_case_2(self):
-        x1 = np.arange(50)+100
-        y1 = 2*(3*x1**2 + x1)
+        x1 = np.arange(50) + 100
+        y1 = 2 * (3 * x1**2 + x1)
         x2 = np.arange(50)
-        y2 = 2*(x2**2 + 3*x2)
-        x3 = np.arange(50)+200
-        y3 = 2*(x3**2+3*x3)
+        y2 = 2 * (x2**2 + 3 * x2)
+        x3 = np.arange(50) + 200
+        y3 = 2 * (x3**2 + 3 * x3)
 
         datastack.load_arrays([[x1, y1], [x2, y2], [x3, y3]])
 
@@ -217,12 +220,12 @@ class test_global(SherpaTestCase):
 
         datastack.clear_stack()
 
-        x1 = np.arange(50)+100
-        y1 = 7*(3*x1**2 + x1)
+        x1 = np.arange(50) + 100
+        y1 = 7 * (3 * x1**2 + x1)
         x2 = np.arange(50)
-        y2 = 2*(x2**2 + 3*x2)
-        x3 = np.arange(50)+200
-        y3 = 2*(x3**2+3*x3)
+        y2 = 2 * (x2**2 + 3 * x2)
+        x3 = np.arange(50) + 200
+        y3 = 2 * (x3**2 + 3 * x3)
 
         datastack.load_arrays([[x1, y1], [x2, y2], [x3, y3]])
 
@@ -230,11 +233,12 @@ class test_global(SherpaTestCase):
 
         datastack.set_source([], 'const1d.constfoo * polynom1d.polyfoo')
 
+        # const1 is not used, so should it be removed?
         const1 = ui._session._get_model_component('const1')
         const2 = ui._session._get_model_component('const2')
         const3 = ui._session._get_model_component('const3')
 
-        datastack.link([2,3], 'const.c0')
+        datastack.link([2, 3], 'const.c0')
 
         datastack.set_par([2], 'const.c0', 3)
         datastack.set_par([1], 'const.c0', 7)
@@ -284,7 +288,8 @@ class test_load(SherpaTestCase):
         assert len(ui._session._data) == 4
         assert len(datastack.DATASTACK.datasets) == 4
 
-        datastack.load_data("@"+"/".join((self._this_dir, 'data', 'pha.lis')))
+        datastack.load_data("@" +
+                            "/".join((self._this_dir, 'data', 'pha.lis')))
         assert len(ui._session._data) == 6
         assert len(datastack.DATASTACK.datasets) == 6
 
@@ -298,10 +303,10 @@ class test_load(SherpaTestCase):
         ascii2 = open(self.name2, 'w')
         lis = open(self.lisname, 'w')
 
-        x1 = np.arange(50)+100
-        y1 = 2*(3*x1**2 + x1)
+        x1 = np.arange(50) + 100
+        y1 = 2 * (3 * x1**2 + x1)
         x2 = np.arange(50)
-        y2 = 2*(x2**2 + 3*x2)
+        y2 = 2 * (x2**2 + 3 * x2)
 
         for x, y in zip(x1, y1):
             ascii1.write("{} {}\n".format(x, y))
@@ -337,12 +342,12 @@ class test_partial_oo(SherpaTestCase):
         logger.setLevel(self.loggingLevel)
 
     def test_case_4(self):
-        x1 = np.arange(50)+100
-        y1 = 2*(3*x1**2 + x1)
+        x1 = np.arange(50) + 100
+        y1 = 2 * (3 * x1**2 + x1)
         x2 = np.arange(50)
-        y2 = 2*(x2**2 + 3*x2)
-        x3 = np.arange(50)+200
-        y3 = 2*(x3**2+3*x3)
+        y2 = 2 * (x2**2 + 3 * x2)
+        x3 = np.arange(50) + 200
+        y3 = 2 * (x3**2 + 3 * x3)
 
         ds = self.ds
 
@@ -413,12 +418,12 @@ class test_partial_oo(SherpaTestCase):
 
         ds.clear_stack()
 
-        x1 = np.arange(50)+100
-        y1 = 7*(3*x1**2 + x1)
+        x1 = np.arange(50) + 100
+        y1 = 7 * (3 * x1**2 + x1)
         x2 = np.arange(50)
-        y2 = 2*(x2**2 + 3*x2)
-        x3 = np.arange(50)+200
-        y3 = 2*(x3**2+3*x3)
+        y2 = 2 * (x2**2 + 3 * x2)
+        x3 = np.arange(50) + 200
+        y3 = 2 * (x3**2 + 3 * x3)
 
         datastack.load_arrays(ds, [[x1, y1], [x2, y2], [x3, y3]])
 
@@ -430,7 +435,7 @@ class test_partial_oo(SherpaTestCase):
         const2 = ui._session._get_model_component('const2')
         const3 = ui._session._get_model_component('const3')
 
-        datastack.link(ds[2,3], 'const.c0')
+        datastack.link(ds[2, 3], 'const.c0')
 
         datastack.set_par(ds[2], 'const.c0', 3)
         datastack.set_par(ds[1], 'const.c0', 7)
@@ -467,12 +472,12 @@ class test_oo(SherpaTestCase):
         logger.setLevel(self.loggingLevel)
 
     def test_case_5(self):
-        x1 = np.arange(50)+100
-        y1 = 2*(3*x1**2 + x1)
+        x1 = np.arange(50) + 100
+        y1 = 2 * (3 * x1**2 + x1)
         x2 = np.arange(50)
-        y2 = 2*(x2**2 + 3*x2)
-        x3 = np.arange(50)+200
-        y3 = 2*(x3**2+3*x3)
+        y2 = 2 * (x2**2 + 3 * x2)
+        x3 = np.arange(50) + 200
+        y3 = 2 * (x3**2 + 3 * x3)
 
         ds = self.ds
 
@@ -543,12 +548,12 @@ class test_oo(SherpaTestCase):
 
         ds.clear_stack()
 
-        x1 = np.arange(50)+100
-        y1 = 7*(3*x1**2 + x1)
+        x1 = np.arange(50) + 100
+        y1 = 7 * (3 * x1**2 + x1)
         x2 = np.arange(50)
-        y2 = 2*(x2**2 + 3*x2)
-        x3 = np.arange(50)+200
-        y3 = 2*(x3**2+3*x3)
+        y2 = 2 * (x2**2 + 3 * x2)
+        x3 = np.arange(50) + 200
+        y3 = 2 * (x3**2 + 3 * x3)
 
         ds.load_arrays([[x1, y1], [x2, y2], [x3, y3]])
 
@@ -560,7 +565,7 @@ class test_oo(SherpaTestCase):
         const2 = ui._session._get_model_component('const2')
         const3 = ui._session._get_model_component('const3')
 
-        ds[2,3].link('const.c0')
+        ds[2, 3].link('const.c0')
 
         ds[2].set_par('const.c0', 3)
         ds[1].set_par('const.c0', 7)
@@ -598,7 +603,7 @@ class test_pha(SherpaTestCase):
     @requires_stk
     def test_case_6(self):
         datadir = '/'.join((self._this_dir, 'data'))
-        ls = '@'+'/'.join((datadir, 'pha.lis'))
+        ls = '@' + '/'.join((datadir, 'pha.lis'))
         rmf1 = '/'.join((datadir, "acisf04938_000N002_r0043_rmf3.fits"))
         rmf2 = '/'.join((datadir, "acisf07867_000N001_r0002_rmf3.fits"))
         arf1 = '/'.join((datadir, "acisf04938_000N002_r0043_arf3.fits"))
@@ -668,11 +673,12 @@ class test_query(SherpaTestCase):
     @requires_fits
     @requires_stk
     def test_case_7(self):
-        datastack.load_pha('@'+'/'.join((self._this_dir, 'data', 'pha.lis')))
+        datastack.load_pha('@' +
+                           '/'.join((self._this_dir, 'data', 'pha.lis')))
 
         f = datastack.query_by_header_keyword('INSTRUME', 'ACIS')
 
-        assert f == [1,2]
+        assert f == [1, 2]
 
         f = datastack.query_by_obsid('7867')
 
@@ -680,7 +686,7 @@ class test_query(SherpaTestCase):
 
         ds = datastack.DataStack()
 
-        ds.load_pha('@'+'/'.join((self._this_dir, 'data', 'pha.lis')))
+        ds.load_pha('@' + '/'.join((self._this_dir, 'data', 'pha.lis')))
 
         f = ds.query_by_obsid('4938')
 
@@ -702,7 +708,6 @@ if __name__ == '__main__':
 
     from sherpa.utils import SherpaTest
 
-    import sys
     if len(sys.argv) > 1:
         datadir = sys.argv[1]
     else:
