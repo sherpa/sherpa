@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-# import numpy
+from six.moves import xrange
 
 import string
 from sherpa.models import Parameter, ArithmeticModel, modelCacher1d
@@ -28,6 +28,11 @@ from sherpa.astro.utils import get_xspec_position
 from sherpa.astro.xspec._xspec import get_xschatter, get_xsabund, get_xscosmo, \
      get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, set_xsxsect, \
      get_xsversion
+
+try:
+    maketrans = string.maketrans  # Python 2
+except AttributeError:
+    maketrans = str.maketrans  # Python 3
 
 # Wrap the XSET function in Python, so that we can keep a record of
 # the strings the user sent as specific XSPEC model strings (if any) during
@@ -196,7 +201,7 @@ class XSTableModel(XSModel):
 
         # make translation table to turn reserved characters into '_'
         bad = string.punctuation+string.whitespace
-        tbl = string.maketrans(bad, '_'*len(bad))
+        tbl = maketrans(bad, '_'*len(bad))
 
         pars = []
         for ii in xrange(len(parnames)):
