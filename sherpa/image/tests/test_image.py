@@ -76,9 +76,9 @@ def get_arr_from_imager(im, yexp):
     def proc(s):
         """Convert 'i,j = z' to a tuple (i, j, z)"""
         # no error checking
-        toks = s.split('=')
+        toks = s.split(b'=')
         z = dtype(toks[1])
-        toks = toks[0].split(',')
+        toks = toks[0].split(b',')
         i = int(toks[0])
         j = int(toks[1])
         return (i, j, z)
@@ -88,8 +88,8 @@ def get_arr_from_imager(im, yexp):
     # so it doesn't need to be efficient).
     out = np.zeros((ny, nx), dtype=dtype)
     d = im.xpaget("data image 1 1 {} {} no".format(nx, ny))
-    for l in d.split('\n'):
-        if l.strip() == '':
+    for l in d.split(b'\n'):
+        if l.strip() == b'':
             continue
         i, j, z = proc(l)
         out[j - 1, i - 1] = z

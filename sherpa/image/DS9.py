@@ -333,12 +333,12 @@ def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate,
         stderr=subprocess.STDOUT,
     )
     try:
-        if dataFunc:
-            dataFunc(p.stdin)
-        elif data:
+        if isinstance(data, six.string_types):
+            data = bytearray(data, "UTF-8")
+        if data:
             p.stdin.write(data)
-            if data[-1] != '\n':
-                p.stdin.write('\n')
+            if data[-1] != b'\n':
+                p.stdin.write(b'\n')
         p.stdin.close()
         reply = p.stdout.read()
         if reply:
@@ -550,7 +550,7 @@ class DS9Win:
 
         self.xpaset(
             cmd='array [%s]' % (_formatOptions(arryDict),),
-            dataFunc=arr.tofile,
+            data=arr.tobytes(),
         )
 
         for keyValue in six.iteritems(kargs):
