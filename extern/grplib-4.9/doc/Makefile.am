@@ -1,3 +1,4 @@
+docdir = ${datarootdir}/doc/xml
 
 XMLS =  group.xml \
         grpadaptive.xml \

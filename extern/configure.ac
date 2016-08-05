@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.63])
 
-AC_INIT(sherpa-dependencies, 4.8, cxchelp@head.cfa.harvard.edu)
+AC_INIT(sherpa-dependencies, 4.9, cxchelp@head.cfa.harvard.edu)
 AM_INIT_AUTOMAKE([foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -33,8 +33,8 @@ AC_ARG_ENABLE([group],
   AS_HELP_STRING([--enable-group], [Build group module shipped with Sherpa]))
 
 AS_IF([test "x$enable_group" = "xyes"], [
-  AC_CONFIG_SUBDIRS([grplib-4.7])
-  AC_SUBST(grplib, grplib-4.7)
+  AC_CONFIG_SUBDIRS([grplib-4.9])
+  AC_SUBST(grplib, grplib-4.9)
 ])
 
 AC_ARG_ENABLE([wcssubs],
@@ -49,8 +49,8 @@ AC_ARG_ENABLE([stk],
   AS_HELP_STRING([--enable-stk], [Build stack library shipped with Sherpa]))
 
 AS_IF([test "x$enable_stk" = "xyes"], [
-  AC_CONFIG_SUBDIRS([stklib-4.6])
-  AC_SUBST(stklib, stklib-4.6)
+  AC_CONFIG_SUBDIRS([stklib-4.9])
+  AC_SUBST(stklib, stklib-4.9)
 ])
 
 

@@ -1,5 +1,23 @@
-/*_C_INSERT_SAO_COPYRIGHT_HERE_(2007)_*/
-/*_C_INSERT_GPL_LICENSE_HERE_*/
+/*                                                                
+**  Copyright (C) 2007  Smithsonian Astrophysical Observatory 
+*/                                                                
+
+/*                                                                          */
+/*  This program is free software; you can redistribute it and/or modify    */
+/*  it under the terms of the GNU General Public License as published by    */
+/*  the Free Software Foundation; either version 3 of the License, or       */
+/*  (at your option) any later version.                                     */
+/*                                                                          */
+/*  This program is distributed in the hope that it will be useful,         */
+/*  but WITHOUT ANY WARRANTY; without even the implied warranty of          */
+/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           */
+/*  GNU General Public License for more details.                            */
+/*                                                                          */
+/*  You should have received a copy of the GNU General Public License along */
+/*  with this program; if not, write to the Free Software Foundation, Inc., */
+/*  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.             */
+/*                                                                          */
+
 
 /* H*****************************************************************
  *
@@ -18,6 +36,9 @@
    ----------       -----
    0.1              April2007 	File Created
 H***************************************************************** */
+/* Tool has been cleaned to Numpy API version 1.7 */
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
 #include "Python.h"
 #include "numpy/arrayobject.h"  /* Used by NumPy */
 
@@ -28,9 +49,9 @@ H***************************************************************** */
 /*
  * Macro to cast NumPy array data to a 1-d double array.
  */
-#define IDATA(p) ((int *) (((PyArrayObject *)p)->data))
-#define SDATA(p) ((short *) (((PyArrayObject *)p)->data))
-#define DDATA(p) ((double *) (((PyArrayObject *)p)->data))
+#define IDATA(p) ((int *) ( PyArray_DATA(((PyArrayObject *)p)) ))
+#define SDATA(p) ((short *) ( PyArray_DATA(((PyArrayObject *)p)) ))
+#define DDATA(p) ((double *) ( PyArray_DATA(((PyArrayObject *)p)) ))
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * *

@@ -21,8 +21,6 @@
 
 #include <Python.h>
 
-
 static PyObject *_stk_build(PyObject *self,      /*i: Used by Python */
                           PyObject *args        /*i: Python tuple of the arguments */
                           );
-

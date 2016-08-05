@@ -275,10 +275,9 @@ EOD`
 	#
 	AC_MSG_CHECKING(python extra linking flags)
 	if test -z "$PYTHON_EXTRA_LDFLAGS"; then
-		PYTHON_EXTRA_LDFLAGS=`$PYTHON-config --ldflags`
-	#	PYTHON_EXTRA_LDFLAGS=`$PYTHON -c "import distutils.sysconfig; \
-	#		conf = distutils.sysconfig.get_config_var; \
-	#		print (conf('LINKFORSHARED'))"`
+		PYTHON_EXTRA_LDFLAGS=`$PYTHON -c "import distutils.sysconfig; \
+			conf = distutils.sysconfig.get_config_var; \
+			print (conf('LINKFORSHARED'))"`
 	fi
 	AC_MSG_RESULT([$PYTHON_EXTRA_LDFLAGS])
 	AC_SUBST(PYTHON_EXTRA_LDFLAGS)
@@ -286,38 +285,38 @@ EOD`
 	#
 	# final check to see if everything compiles alright
 	#
-	AC_MSG_CHECKING([consistency of all components of python development environment])
-	# save current global flags
-	ac_save_LIBS="$LIBS"
-	ac_save_CPPFLAGS="$CPPFLAGS"
-	LIBS="$ac_save_LIBS $PYTHON_LDFLAGS $PYTHON_EXTRA_LDFLAGS $PYTHON_EXTRA_LIBS"
-	CPPFLAGS="$ac_save_CPPFLAGS $PYTHON_CPPFLAGS"
-	AC_LANG_PUSH([C])
-	AC_LINK_IFELSE([
-		AC_LANG_PROGRAM([[#include <Python.h>]],
-				[[Py_Initialize();]])
-		],[pythonexists=yes],[pythonexists=no])
-	AC_LANG_POP([C])
-	# turn back to default flags
-	CPPFLAGS="$ac_save_CPPFLAGS"
-	LIBS="$ac_save_LIBS"
-
-	AC_MSG_RESULT([$pythonexists])
-
-        if test ! "x$pythonexists" = "xyes"; then
-	   AC_MSG_FAILURE([
-  Could not link test program to Python. Maybe the main Python library has been
-  installed in some non-standard library path. If so, pass it to configure,
-  via the LDFLAGS environment variable.
-  Example: ./configure LDFLAGS="-L/usr/non-standard-path/python/lib"
-  ============================================================================
-   ERROR!
-   You probably have to install the development version of the Python package
-   for your distribution.  The exact name of this package varies among them.
-  ============================================================================
-	   ])
-	  PYTHON_VERSION=""
-	fi
+#	AC_MSG_CHECKING([consistency of all components of python development environment])
+#	# save current global flags
+#	ac_save_LIBS="$LIBS"
+#	ac_save_CPPFLAGS="$CPPFLAGS"
+#	LIBS="$ac_save_LIBS $PYTHON_LDFLAGS $PYTHON_EXTRA_LDFLAGS $PYTHON_EXTRA_LIBS"
+#	CPPFLAGS="$ac_save_CPPFLAGS $PYTHON_CPPFLAGS"
+#	AC_LANG_PUSH([C])
+#	AC_LINK_IFELSE([
+#		AC_LANG_PROGRAM([[#include <Python.h>]],
+#				[[Py_Initialize();]])
+#		],[pythonexists=yes],[pythonexists=no])
+#	AC_LANG_POP([C])
+#	# turn back to default flags
+#	CPPFLAGS="$ac_save_CPPFLAGS"
+#	LIBS="$ac_save_LIBS"
+#
+#	AC_MSG_RESULT([$pythonexists])
+#
+#        if test ! "x$pythonexists" = "xyes"; then
+#	   AC_MSG_FAILURE([
+#  Could not link test program to Python. Maybe the main Python library has been
+#  installed in some non-standard library path. If so, pass it to configure,
+#  via the LDFLAGS environment variable.
+#  Example: ./configure LDFLAGS="-L/usr/non-standard-path/python/lib"
+#  ============================================================================
+#   ERROR!
+#   You probably have to install the development version of the Python package
+#   for your distribution.  The exact name of this package varies among them.
+#  ============================================================================
+#	   ])
+#	  PYTHON_VERSION=""
+#	fi
 
 	#
 	# all done!

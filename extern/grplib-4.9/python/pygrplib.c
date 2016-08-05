@@ -1,8 +1,25 @@
-/*_C_INSERT_SAO_COPYRIGHT_HERE_(2007-20012)_*/
-/*_C_INSERT_GPL_LICENSE_HERE_*/
+/*                                                                
+**  Copyright (C) 2007-20012,2015,2016  Smithsonian Astrophysical Observatory 
+*/                                                                
 
-/* H*****************************************************************
- *
+/*                                                                          */
+/*  This program is free software; you can redistribute it and/or modify    */
+/*  it under the terms of the GNU General Public License as published by    */
+/*  the Free Software Foundation; either version 3 of the License, or       */
+/*  (at your option) any later version.                                     */
+/*                                                                          */
+/*  This program is distributed in the hope that it will be useful,         */
+/*  but WITHOUT ANY WARRANTY; without even the implied warranty of          */
+/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           */
+/*  GNU General Public License for more details.                            */
+/*                                                                          */
+/*  You should have received a copy of the GNU General Public License along */
+/*  with this program; if not, write to the Free Software Foundation, Inc., */
+/*  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.             */
+/*                                                                          */
+
+
+/* *****************************************************************
  * FILE NAME:  pygrplib.c
  *
  * DEVELOPMENT: tools
@@ -15,13 +32,42 @@
  * REVISION HISTORY:
  *
  * Ref. No.         Date
- ----------       -----
- 0.1              April2007 	File Created
- H***************************************************************** */
-
+ * ----------       -----
+ * 0.1              April2007 	File Created
+ *                  July 2016   Python3 compatibility
+ ***************************************************************** */
 #include "pygrplib.h"
 #include "grplib.h"
 #include "grp_priv.h"
+
+/** 
+ * For supporting both python 2 and 3, we include macros that abstract out
+ * differences in module initialization and other issues described in:
+ * 
+ * http://python3porting.com/cextensions.html
+ */
+#if PY_MAJOR_VERSION >= 3
+#define MOD_ERROR_VAL NULL
+#define MOD_SUCCESS_VAL(val) val
+#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
+#define MOD_DEF(ob, name, doc, methods) \
+        static struct PyModuleDef moduledef = { \
+          PyModuleDef_HEAD_INIT, name, doc, -1, methods }; \
+        ob = PyModule_Create(&moduledef);
+#define MOD_NEWOBJ(newval, val) newval = PyCapsule_New((void *)val, NULL, NULL);
+
+#define PyString_AsString PyUnicode_AsUTF8
+#define PyString_FromString PyUnicode_FromString
+#define PyString_Check PyUnicode_Check
+
+#else
+#define MOD_ERROR_VAL
+#define MOD_SUCCESS_VAL(val)
+#define MOD_INIT(name) PyMODINIT_FUNC init##name(void)
+#define MOD_DEF(ob, name, doc, methods) \
+        ob = Py_InitModule3(name, methods, doc);
+#define MOD_NEWOBJ(newval, val) newval = PyCObject_FromVoidPtr((void*)val, NULL);
+#endif
 
 /* * * * * * * * * * * * * * * * * * * * * * * *
  * Utilities for Python Interaction
@@ -123,11 +169,37 @@ static PyMethodDef
 /*
  * Initialize the module
  * */
-void initgroup(void);
-void initgroup()
+MOD_INIT(group);
+
+MOD_INIT(group)
 {
-  (void)Py_InitModule("group", groupMethods);
+  PyObject *mod = NULL;
+  MOD_DEF(mod, "group", "group", groupMethods)
+  if ( mod == NULL )
+  {
+    return MOD_ERROR_VAL;
+  }
+
+  // if module created then add version info
+  if (mod)
+  {
+     PyObject *vstr = NULL, *vm = PyImport_ImportModule("ciao_version");
+     if (!vm) 
+     {
+        PyErr_WarnEx(NULL, "Unable to load the ciao_version module to determine version number- defaulting 'group' version to 0.0.0", 0);
+        PyErr_Clear();
+        vstr = Py_BuildValue("s", "0.0.0");
+     }
+     else 
+     {
+        vstr =  PyObject_CallMethod(vm, "get_ciao_version", NULL); 
+     }
+     if (vstr)  PyModule_AddObject(mod, "__version__", vstr);
+  }
+  
   import_array(); /* Must be present for NumPy.  Called first after above line. */
+
+  return MOD_SUCCESS_VAL(mod);
 }
 
 /* Error Message Format Strings */
@@ -202,7 +274,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   else
   {
     /* Make sure the arrays are of correct type */
-    if (PyArray_CanCastSafely(py_countsArray->descr->type_num, NPY_DOUBLE))
+    if (PyArray_CanCastSafely( PyArray_DESCR(py_countsArray)->type_num, NPY_DOUBLE))
     {
       py_countsArray
           = (PyArrayObject *)PyArray_Cast(py_countsArray, NPY_DOUBLE);
@@ -227,7 +299,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   if (py_tabStops != NULL)/* if a tabStop array is present */
   {
-    if ((py_tabStops->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_tabStops)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The tabStops");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -238,7 +310,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     stride_tabStops = PyArray_STRIDE(py_tabStops, 0);
     arr_tabStops = PyArray_BYTES(py_tabStops);
 
-    numTabs = py_tabStops->dimensions[0]; /* the number of tabs is the size of the py_tabStops */
+    numTabs = PyArray_DIM(py_tabStops, 0); /* the number of tabs is the size of the py_tabStops */
     isTabStops = 1; /* set value to true since we have a tabStop array */
 
     c_tabStops = (short *)calloc(numTabs, sizeof(short));
@@ -257,7 +329,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     }
   }/*end if... */
 
-  numChans = py_countsArray->dimensions[0]; /* the number of channels is the size of the py_countsArray */
+  numChans = PyArray_DIM(py_countsArray, 0); /* the number of channels is the size of the py_countsArray */
   if (isTabStops && (numTabs != numChans))
   {
     sprintf(groupmsg, GROUP_DIFF_LENGTH_MSG, funcName,
@@ -400,7 +472,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   else
   {
     /* Make sure the arrays are of correct type */
-    if (PyArray_CanCastSafely(py_countsArray->descr->type_num, NPY_DOUBLE))
+    if (PyArray_CanCastSafely( PyArray_DESCR(py_countsArray)->type_num, NPY_DOUBLE))
     {
       py_countsArray
           = (PyArrayObject *)PyArray_Cast(py_countsArray, NPY_DOUBLE);
@@ -425,7 +497,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   if (py_tabStops != NULL)/* if a tabStop array is present */
   {
-    if ((py_tabStops->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_tabStops)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The tabStops");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -436,7 +508,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     stride_tabStops = PyArray_STRIDE(py_tabStops, 0);
     arr_tabStops = PyArray_BYTES(py_tabStops);
 
-    numTabs = py_tabStops->dimensions[0]; /* the number of tabs is the size of the py_tabStops */
+    numTabs = PyArray_DIM(py_tabStops, 0); /* the number of tabs is the size of the py_tabStops */
     isTabStops = 1; /* set value to true since we have a tabStop array */
 
     c_tabStops = (short *)calloc(numTabs, sizeof(short));
@@ -458,7 +530,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   if (py_errorCol != NULL)
   {
     /* Make sure the arrays are of correct type */
-    if (PyArray_CanCastSafely(py_errorCol->descr->type_num, NPY_DOUBLE))
+    if (PyArray_CanCastSafely( PyArray_DESCR(py_errorCol)->type_num, NPY_DOUBLE))
     {
       py_errorCol = (PyArrayObject *)PyArray_Cast(py_errorCol, NPY_DOUBLE);
       /* Handles case if array is not contiguous in memory */
@@ -473,7 +545,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     }/*end else... */
 
     useErrCols = 1; /* set value to true since we have a errorCol array */
-    numErrs = py_errorCol->dimensions[0]; /* the number of tabs is the size of the py_errorCol */
+    numErrs = PyArray_DIM(py_errorCol, 0); /* the number of tabs is the size of the py_errorCol */
 
     c_errorCol = (double *)calloc(numErrs, sizeof(double));
     if (c_errorCol == NULL)
@@ -490,7 +562,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     }
   }/*end if... */
 
-  numChans = py_countsArray->dimensions[0]; /* the number of channels is the size of the py_countsArray */
+  numChans = PyArray_DIM(py_countsArray, 0); /* the number of channels is the size of the py_countsArray */
   if (isTabStops && (numTabs != numChans))
   {
     sprintf(groupmsg, GROUP_DIFF_LENGTH_MSG, funcName,
@@ -660,16 +732,16 @@ PyObject *kwds /*i: Python tuple of keywords */)
   else
   {
     /* Make sure the arrays are of correct type */
-    if (PyArray_CanCastSafely(py_dataArray->descr->type_num, NPY_DOUBLE)
-        && (PyArray_CanCastSafely(py_binLowArray->descr->type_num, NPY_DOUBLE))
-        && (PyArray_CanCastSafely(py_binHighArray->descr->type_num, NPY_DOUBLE)))
+    if (PyArray_CanCastSafely( PyArray_DESCR(py_dataArray)->type_num, NPY_DOUBLE)
+        && (PyArray_CanCastSafely(PyArray_DESCR(py_binLowArray)->type_num, NPY_DOUBLE))
+        && (PyArray_CanCastSafely(PyArray_DESCR(py_binHighArray)->type_num, NPY_DOUBLE)))
     {
       /* determine if dataArray values are ints or reals before casting*/
       /* NOTE: int value for NPY_FLOAT  = 11
        * 			 int value for NPY_DOUBLE = 12
        * 			 int value for NPY_LONG   = 7 (which corresponds to c-type INT) */
-      if (((py_dataArray->descr->type_num) == NPY_FLOAT)
-          || ((py_dataArray->descr->type_num) == NPY_DOUBLE))
+      if (((PyArray_DESCR(py_dataArray)->type_num) == NPY_FLOAT)
+          || ((PyArray_DESCR(py_dataArray)->type_num) == NPY_DOUBLE))
       {
         colRealFlag = 1;
       }/*end if... */
@@ -701,7 +773,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   if (py_tabStops != NULL)/* if a tabStop array is present */
   {
-    if ((py_tabStops->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_tabStops)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The tabStops");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -712,7 +784,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     stride_tabStops = PyArray_STRIDE(py_tabStops, 0);
     arr_tabStops = PyArray_BYTES(py_tabStops);
 
-    numTabs = py_tabStops->dimensions[0]; /* the number of tabs is the size of the py_tabStops */
+    numTabs = PyArray_DIM(py_tabStops, 0); /* the number of tabs is the size of the py_tabStops */
     isTabStops = 1; /* set value to true since we have a tabStop array */
 
     c_tabStops = (short *)calloc(numTabs, sizeof(short));
@@ -731,10 +803,10 @@ PyObject *kwds /*i: Python tuple of keywords */)
     }
   }/*end if... */
 
-  numChans = py_dataArray->dimensions[0];
-  numBins = py_binLowArray->dimensions[0]; /* the number of channels is the size of the py_binLowArray */
+  numChans = PyArray_DIM(py_dataArray, 0);
+  numBins = PyArray_DIM(py_binLowArray, 0); /* the number of channels is the size of the py_binLowArray */
   /* check to see if binlow has same size as binhigh */
-  if (py_binLowArray->dimensions[0] != py_binHighArray->dimensions[0])
+  if (PyArray_DIM(py_binLowArray, 0) != PyArray_DIM(py_binHighArray, 0))
   {
     sprintf(groupmsg, GROUP_DIFF_LENGTH_MSG, funcName,
             (char*)"binLowArray and binHighArray");
@@ -898,15 +970,15 @@ PyObject *kwds /*i: Python tuple of keywords */)
   else
   {
     /* Make sure the arrays are of correct type */
-    if ((PyArray_CanCastSafely(py_dataArray->descr->type_num, NPY_DOUBLE))
-        && (PyArray_CanCastSafely(py_fDataArray->descr->type_num, NPY_DOUBLE)))
+    if ((PyArray_CanCastSafely(PyArray_DESCR(py_dataArray)->type_num, NPY_DOUBLE))
+        && (PyArray_CanCastSafely(PyArray_DESCR(py_fDataArray)->type_num, NPY_DOUBLE)))
     {
       /* determine if dataArray values are ints or reals before casting */
       /* NOTE: int value for NPY_FLOAT  = 11
        * 			 int value for NPY_DOUBLE = 12
        * 			 int value for NPY_LONG   = 7 (which corresponds to c-type INT) */
-      if (((py_dataArray->descr->type_num) == NPY_FLOAT)
-          || ((py_dataArray->descr->type_num) == NPY_DOUBLE))
+      if (((PyArray_DESCR(py_dataArray)->type_num) == NPY_FLOAT)
+          || ((PyArray_DESCR(py_dataArray)->type_num) == NPY_DOUBLE))
       {
         colRealFlag = 1;
       }/*end if... */
@@ -937,8 +1009,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   }/*end if... */
   else
   {
-    if ((py_fGroupCol->descr->type_num >= 17) || (py_fQualCol->descr->type_num
-        >= 17))
+    if ((PyArray_DESCR(py_fGroupCol)->type_num >= 17) || (PyArray_DESCR(py_fQualCol)->type_num >= 17))
     {/*types 17 and above include strings and other non-numerical values */
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName,
               (char*)"The groupCol or qualCol");
@@ -958,7 +1029,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   if (py_tabStops != NULL)/* if a tabStop array is present */
   {
-    if ((py_tabStops->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_tabStops)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The tabStops");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -970,7 +1041,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     stride_tabStops = PyArray_STRIDE(py_tabStops, 0);
     arr_tabStops = PyArray_BYTES(py_tabStops);
 
-    numTabs = py_tabStops->dimensions[0]; /* the number of tabs is the size of the py_tabStops */
+    numTabs = PyArray_DIM(py_tabStops, 0); /* the number of tabs is the size of the py_tabStops */
     isTabStops = 1; /* set value to true since we have a tabStop array */
 
     c_tabStops = (short *)calloc(numTabs, sizeof(short));
@@ -989,8 +1060,8 @@ PyObject *kwds /*i: Python tuple of keywords */)
     }
   }/*end if... */
 
-  numChans = py_dataArray->dimensions[0];
-  fNumChans = py_fDataArray->dimensions[0]; /* the number of channels is the size of the py_fDataArray */
+  numChans = PyArray_DIM(py_dataArray, 0);
+  fNumChans = PyArray_DIM(py_fDataArray, 0); /* the number of channels is the size of the py_fDataArray */
   if (isTabStops && (numTabs != numChans))
   {
     sprintf(groupmsg, GROUP_DIFF_LENGTH_MSG, funcName,
@@ -1131,7 +1202,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   if (py_tabStops != NULL)/* if a tabStop array is present */
   {
-    if ((py_tabStops->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_tabStops)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The tabStops");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -1143,7 +1214,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     stride_tabStops = PyArray_STRIDE(py_tabStops, 0);
     arr_tabStops = PyArray_BYTES(py_tabStops);
 
-    numTabs = py_tabStops->dimensions[0]; /* the number of tabs is the size of the py_tabStops */
+    numTabs = PyArray_DIM(py_tabStops, 0); /* the number of tabs is the size of the py_tabStops */
     isTabStops = 1; /* set value to true since we have a tabStop array */
 
     c_tabStops = (short *)calloc(numTabs, sizeof(short));
@@ -1267,7 +1338,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   }/*end if... */
   else
   {
-    if (py_groupCol->descr->type_num >= 17)/*types 17 and above include strings and other non-numerical values */
+    if (PyArray_DESCR(py_groupCol)->type_num >= 17)/*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The groupCol");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -1280,7 +1351,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     arr_groupCol = PyArray_BYTES(py_groupCol);
   }/*end else... */
 
-  numChans = py_groupCol->dimensions[0];
+  numChans = PyArray_DIM(py_groupCol, 0);
 
   /* allocate memory for arrays */
   chansPerGrpCol = (long *)calloc(numChans, sizeof(long));
@@ -1383,7 +1454,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   else
   {
     /* Make sure the arrays are of correct type */
-    if (PyArray_CanCastSafely(py_dataArray->descr->type_num, NPY_DOUBLE))
+    if (PyArray_CanCastSafely(PyArray_DESCR(py_dataArray)->type_num, NPY_DOUBLE))
     {
       py_dataArray = (PyArrayObject *)PyArray_Cast(py_dataArray, NPY_DOUBLE);
       stride_dataArray = PyArray_STRIDE(py_dataArray, 0);
@@ -1396,7 +1467,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
       return NULL;
     }/*end else... */
 
-    if (py_groupCol->descr->type_num >= 17)/*types 17 and above include strings and other non-numerical values */
+    if (PyArray_DESCR(py_groupCol)->type_num >= 17)/*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The groupCol");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -1408,7 +1479,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     arr_groupCol = PyArray_BYTES(py_groupCol);
   }/*end else... */
 
-  numChans = py_dataArray->dimensions[0];
+  numChans = PyArray_DIM(py_dataArray, 0);
 
   c_groupCol = (short *)calloc(numChans, sizeof(short));
   c_dataArray = (double *)calloc(numChans, sizeof(double));
@@ -1509,7 +1580,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   }/*end if... */
   else
   {
-    if ((py_groupCol->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_groupCol)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The groupCol");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -1521,7 +1592,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     arr_groupCol = PyArray_BYTES(py_groupCol);
   }/*end else... */
 
-  numChans = py_groupCol->dimensions[0];
+  numChans = PyArray_DIM(py_groupCol, 0);
 
   /* allocate memory for arrays */
   grpNumCol = (long *)calloc(numChans, sizeof(long));
@@ -1637,8 +1708,8 @@ PyObject *kwds /*i: Python tuple of keywords */)
   else
   {
     /* Make sure the arrays are of correct type */
-    if (PyArray_CanCastSafely(py_dataArray->descr->type_num, NPY_DOUBLE)
-        && (PyArray_CanCastSafely(py_binArray->descr->type_num, NPY_DOUBLE)))
+    if (PyArray_CanCastSafely(PyArray_DESCR(py_dataArray)->type_num, NPY_DOUBLE)
+        && (PyArray_CanCastSafely(PyArray_DESCR(py_binArray)->type_num, NPY_DOUBLE)))
     {
       py_dataArray = (PyArrayObject *)PyArray_Cast(py_dataArray, NPY_DOUBLE);
       /* Handles case if array is not contiguous in memory */
@@ -1666,7 +1737,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   if (py_tabStops != NULL)/* if a tabStop array is present */
   {
-    if ((py_tabStops->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_tabStops)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The tabStops");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -1679,7 +1750,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     stride_tabStops = PyArray_STRIDE(py_tabStops, 0);
     arr_tabStops = PyArray_BYTES(py_tabStops);
 
-    numTabs = py_tabStops->dimensions[0]; /* the number of tabs is the size of the py_tabStops */
+    numTabs = PyArray_DIM(py_tabStops, 0); /* the number of tabs is the size of the py_tabStops */
     isTabStops = 1; /* set value to true since we have a tabStop array */
 
     c_tabStops = (short *)calloc(numTabs, sizeof(short));
@@ -1698,8 +1769,8 @@ PyObject *kwds /*i: Python tuple of keywords */)
     }
   }/*end if... */
 
-  numChans = py_dataArray->dimensions[0]; /* the number of channels is the size of the py_dataArray */
-  numBins = py_binArray->dimensions[0]; /* the number of bins is the size of the py_binArray */
+  numChans = PyArray_DIM(py_dataArray, 0); /* the number of channels is the size of the py_dataArray */
+  numBins = PyArray_DIM(py_binArray, 0); /* the number of bins is the size of the py_binArray */
 
   if (numBins != numChans)
   {
@@ -1849,8 +1920,8 @@ PyObject *kwds /*i: Python tuple of keywords */)
   else
   {
     /* Make sure the arrays are of correct type */
-    if (PyArray_CanCastSafely(py_dataArray->descr->type_num, NPY_DOUBLE)
-        && (PyArray_CanCastSafely(py_binArray->descr->type_num, NPY_DOUBLE)))
+    if (PyArray_CanCastSafely(PyArray_DESCR(py_dataArray)->type_num, NPY_DOUBLE)
+        && (PyArray_CanCastSafely(PyArray_DESCR(py_binArray)->type_num, NPY_DOUBLE)))
     {
       py_dataArray = (PyArrayObject *)PyArray_Cast(py_dataArray, NPY_DOUBLE);
       /* Handles case if array is not contiguous in memory */
@@ -1878,7 +1949,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   if (py_tabStops != NULL)/* if a tabStop array is present */
   {
-    if ((py_tabStops->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_tabStops)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The tabStops");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -1891,7 +1962,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     stride_tabStops = PyArray_STRIDE(py_tabStops, 0);
     arr_tabStops = PyArray_BYTES(py_tabStops);
 
-    numTabs = py_tabStops->dimensions[0]; /* the number of tabs is the size of the py_tabStops */
+    numTabs = PyArray_DIM(py_tabStops, 0); /* the number of tabs is the size of the py_tabStops */
     isTabStops = 1; /* set value to true since we have a tabStop array */
 
     c_tabStops = (short *)calloc(numTabs, sizeof(short));
@@ -1910,8 +1981,8 @@ PyObject *kwds /*i: Python tuple of keywords */)
     }
   }/*end if... */
 
-  numChans = py_dataArray->dimensions[0]; /* the number of channels is the size of the py_dataArray */
-  numBins = py_binArray->dimensions[0]; /* the number of bins is the size of the py_binArray */
+  numChans = PyArray_DIM(py_dataArray, 0); /* the number of channels is the size of the py_dataArray */
+  numBins = PyArray_DIM(py_binArray, 0); /* the number of bins is the size of the py_binArray */
 
   if (numBins != numChans)
   {
@@ -2048,7 +2119,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   if (py_tabStops != NULL)/* if a tabStop array is present */
   {
-    if ((py_tabStops->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_tabStops)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The tabStops");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -2060,7 +2131,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     stride_tabStops = PyArray_STRIDE(py_tabStops, 0);
     arr_tabStops = PyArray_BYTES(py_tabStops);
 
-    numTabs = py_tabStops->dimensions[0]; /* the number of tabs is the size of the py_tabStops */
+    numTabs = PyArray_DIM(py_tabStops, 0); /* the number of tabs is the size of the py_tabStops */
     isTabStops = 1; /* set value to true since we have a tabStop array */
 
     c_tabStops = (short *)calloc(numTabs, sizeof(short));
@@ -2198,7 +2269,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   else
   {
     /* Make sure the arrays are of correct type */
-    if (PyArray_CanCastSafely(py_countsArray->descr->type_num, NPY_DOUBLE))
+    if (PyArray_CanCastSafely(PyArray_DESCR(py_countsArray)->type_num, NPY_DOUBLE))
     {
       py_countsArray
           = (PyArrayObject *)PyArray_Cast(py_countsArray, NPY_DOUBLE);
@@ -2225,7 +2296,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   if (py_tabStops != NULL)/* if a tabStop array is present */
   {
-    if ((py_tabStops->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_tabStops)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The tabStops");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -2238,7 +2309,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     stride_tabStops = PyArray_STRIDE(py_tabStops, 0);
     arr_tabStops = PyArray_BYTES(py_tabStops);
 
-    numTabs = py_tabStops->dimensions[0]; /* the number of tabs is the size of the py_tabStops */
+    numTabs = PyArray_DIM(py_tabStops, 0); /* the number of tabs is the size of the py_tabStops */
     isTabStops = 1; /* set value to true since we have a tabStop array */
 
     c_tabStops = (short *)calloc(numTabs, sizeof(short));
@@ -2257,7 +2328,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     }
   }/*end if... */
 
-  numChans = py_countsArray->dimensions[0]; /* the number of channels is the size of the py_countsArray */
+  numChans = PyArray_DIM(py_countsArray, 0); /* the number of channels is the size of the py_countsArray */
   if (isTabStops && (numTabs != numChans))
   {
     sprintf(groupmsg, GROUP_DIFF_LENGTH_MSG, funcName,
@@ -2403,7 +2474,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   else
   {
     /* Make sure the arrays are of correct type */
-    if (PyArray_CanCastSafely(py_countsArray->descr->type_num, NPY_DOUBLE))
+    if (PyArray_CanCastSafely(PyArray_DESCR(py_countsArray)->type_num, NPY_DOUBLE))
     {
       py_countsArray
           = (PyArrayObject *)PyArray_Cast(py_countsArray, NPY_DOUBLE);
@@ -2428,7 +2499,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   if (py_tabStops != NULL)/* if a tabStop array is present */
   {
-    if ((py_tabStops->descr->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
+    if ((PyArray_DESCR(py_tabStops)->type_num) >= 17) /*types 17 and above include strings and other non-numerical values */
     {
       sprintf(groupmsg, GROUP_INCOMP_TYPE_MSG, funcName, (char*)"The tabStops");
       PyErr_SetString(PyExc_TypeError, groupmsg);
@@ -2439,7 +2510,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     stride_tabStops = PyArray_STRIDE(py_tabStops, 0);
     arr_tabStops = PyArray_BYTES(py_tabStops);
 
-    numTabs = py_tabStops->dimensions[0]; /* the number of tabs is the size of the py_tabStops */
+    numTabs = PyArray_DIM(py_tabStops, 0); /* the number of tabs is the size of the py_tabStops */
     isTabStops = 1; /* set value to true since we have a tabStop array */
 
     c_tabStops = (short *)calloc(numTabs, sizeof(short));
@@ -2461,7 +2532,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   if (py_errorCol != NULL)
   {
     /* Make sure the arrays are of correct type */
-    if (PyArray_CanCastSafely(py_errorCol->descr->type_num, NPY_DOUBLE))
+    if (PyArray_CanCastSafely(PyArray_DESCR(py_errorCol)->type_num, NPY_DOUBLE))
     {
       py_errorCol = (PyArrayObject *)PyArray_Cast(py_errorCol, NPY_DOUBLE);
       /* Handles case if array is not contiguous in memory */
@@ -2475,7 +2546,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
       return NULL;
     }/*end else... */
     useErrCols = 1; /* set value to true since we have a errorCol array */
-    numErrs = py_errorCol->dimensions[0]; /* the number of tabs is the size of the py_errorCol */
+    numErrs = PyArray_DIM(py_errorCol, 0); /* the number of tabs is the size of the py_errorCol */
 
     c_errorCol = (double *)calloc(numErrs, sizeof(double));
     if (c_errorCol == NULL)
@@ -2492,7 +2563,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
     }
   }/*end if... */
 
-  numChans = py_countsArray->dimensions[0]; /* the number of channels is the size of the py_countsArray */
+  numChans = PyArray_DIM(py_countsArray, 0); /* the number of channels is the size of the py_countsArray */
   if (isTabStops && (numTabs != numChans))
   {
     sprintf(groupmsg, GROUP_DIFF_LENGTH_MSG, funcName,
