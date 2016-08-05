@@ -333,8 +333,16 @@ def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate,
         stderr=subprocess.STDOUT,
     )
     try:
-        if isinstance(data, six.string_types):
+        # Python 2 vs 3 requires some complexity here.
+        try:  # Python 2 bytes (which are actually strings)
+            unicode(data, "ascii")  # unicode does not exist in Python 3
             data = bytearray(data, "UTF-8")
+        except:
+            try:  # Python 3 with data passed as string.
+                data = bytearray(data, "UTF-8")
+            except:  # data is provided as bytes or is null, so does not need to be converted.
+                pass
+
         if data:
             p.stdin.write(data)
             if data[-1] != b'\n':
