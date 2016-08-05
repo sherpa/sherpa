@@ -340,7 +340,7 @@ def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate,
         except:
             try:  # Python 3 with data passed as string.
                 data = bytearray(data, "UTF-8")
-            except:  # data is provided as bytes or is null, so does not need to be converted.
+            except:  # data is provided as bytes (in Python 3) or is null, so it does not need to be converted.
                 pass
 
         if data:
