@@ -930,7 +930,7 @@ LIBS
 CPPFLAGS
 CPP'
 ac_subdirs_all='fftw-3.3.4
-region-4.8
+region-4.9
 grplib-4.9
 wcssubs
 stklib-4.9'
@@ -11138,9 +11138,9 @@ fi
 
 if test "x$enable_region" = "xyes"; then
 
-  subdirs="$subdirs region-4.8"
+  subdirs="$subdirs region-4.9"
 
-  region=region-4.8
+  region=region-4.9
 
 
 fi

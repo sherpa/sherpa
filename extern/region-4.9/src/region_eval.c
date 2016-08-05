@@ -1,5 +1,23 @@
-/*_C_INSERT_SAO_COPYRIGHT_HERE_(2007)_*/
-/*_C_INSERT_GPL_LICENSE_HERE_*/
+/*                                                                
+**  Copyright (C) 2007  Smithsonian Astrophysical Observatory 
+*/                                                                
+
+/*                                                                          */
+/*  This program is free software; you can redistribute it and/or modify    */
+/*  it under the terms of the GNU General Public License as published by    */
+/*  the Free Software Foundation; either version 3 of the License, or       */
+/*  (at your option) any later version.                                     */
+/*                                                                          */
+/*  This program is distributed in the hope that it will be useful,         */
+/*  but WITHOUT ANY WARRANTY; without even the implied warranty of          */
+/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           */
+/*  GNU General Public License for more details.                            */
+/*                                                                          */
+/*  You should have received a copy of the GNU General Public License along */
+/*  with this program; if not, write to the Free Software Foundation, Inc., */
+/*  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.             */
+/*                                                                          */
+
 #include <math.h>
 #include <float.h>
 
@@ -149,6 +167,22 @@ long regGetNoShapes(const regRegion * region)
     return n;
 }
 
+/**
+ * Return 1 if the regions bounding rectangles overlap. 0 otherwise.
+ */
+int regOverlapRegion(regRegion* region1, regRegion* region2) {
+  
+  // Null regions do not overlap
+  if (!region1 || !region2) {
+    return 0;
+  }
+
+  return reg_rectangle_overlap(
+          region1->xregbounds,
+          region1->yregbounds,
+          region2->xregbounds,
+          region2->yregbounds);
+}
 
 int reg_compare_shape( regShape* Shape1, regShape* Shape2 )
 {

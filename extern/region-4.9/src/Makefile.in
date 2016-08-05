@@ -247,6 +247,7 @@ libregion_la_SOURCES = \
  	regAnnulus.c regField.c regPolygon.c regSector.c regMask.c \
  	regCircle.c regEllipse.c regBox.c regPoint.c regRectangle.c regPie.c
 
+EXTRA_DIST = reglexer.c.tmp reglexer.l regparser.y 
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -525,7 +526,7 @@ maintainer-clean-generic:
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
-clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
+clean-am: clean-generic clean-libLTLIBRARIES clean-libtool clean-local \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -597,7 +598,7 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 .MAKE: all check install install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libtool ctags distclean \
+	clean-libLTLIBRARIES clean-libtool clean-local ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-dvi \
@@ -611,6 +612,12 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 	tags uninstall uninstall-am uninstall-includeHEADERS \
 	uninstall-libLTLIBRARIES
 
+
+#INC_FILES = cxcregion.h
+#PKG_FILES = cxcregion.pc
+
+clean-local:
+	-rm -f regparser.c* reglexer.c* *.o regparser.h regparser.tab.c regparser.tab.h
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

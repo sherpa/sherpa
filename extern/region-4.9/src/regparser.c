@@ -78,8 +78,26 @@
 /* Line 189 of yacc.c  */
 #line 2 "regparser.y"
 
-/*_C_INSERT_SAO_COPYRIGHT_HERE_(2007)_*/
-/*_C_INSERT_GPL_LICENSE_HERE_*/
+/*                                                                
+**  Copyright (C) 2007  Smithsonian Astrophysical Observatory 
+*/                                                                
+
+/*                                                                          */
+/*  This program is free software; you can redistribute it and/or modify    */
+/*  it under the terms of the GNU General Public License as published by    */
+/*  the Free Software Foundation; either version 3 of the License, or       */
+/*  (at your option) any later version.                                     */
+/*                                                                          */
+/*  This program is distributed in the hope that it will be useful,         */
+/*  but WITHOUT ANY WARRANTY; without even the implied warranty of          */
+/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           */
+/*  GNU General Public License for more details.                            */
+/*                                                                          */
+/*  You should have received a copy of the GNU General Public License along */
+/*  with this program; if not, write to the Free Software Foundation, Inc., */
+/*  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.             */
+/*                                                                          */
+
 #include "region_priv.h"
 #include "regpar.h"
 #include <ctype.h>
@@ -94,7 +112,7 @@ int test_link_jcm( void );
 
 
 /* Line 189 of yacc.c  */
-#line 98 "regparser.c"
+#line 116 "regparser.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -181,7 +199,7 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 27 "regparser.y"
+#line 45 "regparser.y"
 
   double dval;
   char str[1024];
@@ -193,7 +211,7 @@ typedef union YYSTYPE
 
 
 /* Line 214 of yacc.c  */
-#line 197 "regparser.c"
+#line 215 "regparser.c"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -205,7 +223,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 209 "regparser.c"
+#line 227 "regparser.c"
 
 #ifdef short
 # undef short
@@ -545,13 +563,13 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,    48,    48,    49,    50,    51,    52,    57,    62,    68,
-      70,    72,    83,    85,    87,    95,   106,   108,   113,   115,
-     117,   119,   124,   126,   128,   130,   132,   134,   136,   143,
-     151,   159,   170,   186,   201,   222,   243,   259,   274,   289,
-     304,   319,   334,   353,   372,   382,   392,   402,   412,   422,
-     432,   443,   453,   468,   484,   496,   510,   519,   528,   537,
-     549,   558,   567,   576,   588,   597
+       0,    66,    66,    67,    68,    69,    70,    75,    80,    86,
+      88,    90,   101,   103,   105,   113,   124,   126,   131,   133,
+     135,   137,   142,   144,   146,   148,   150,   152,   154,   161,
+     169,   177,   188,   204,   219,   240,   261,   277,   292,   307,
+     322,   337,   352,   371,   390,   400,   410,   420,   430,   440,
+     450,   461,   471,   486,   502,   514,   528,   537,   546,   555,
+     567,   576,   585,   594,   606,   615
 };
 #endif
 
@@ -1689,35 +1707,35 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 48 "regparser.y"
+#line 66 "regparser.y"
     { (yyval.my_region) = (yyvsp[(1) - (3)].my_region); regAddShape( (yyvsp[(1) - (3)].my_region), regOR, (yyvsp[(3) - (3)].my_shape) );  }
     break;
 
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 49 "regparser.y"
+#line 67 "regparser.y"
     { (yyval.my_region) = (yyvsp[(1) - (2)].my_region); regAddShape( (yyvsp[(1) - (2)].my_region), regOR, (yyvsp[(2) - (2)].my_shape) );  }
     break;
 
   case 4:
 
 /* Line 1455 of yacc.c  */
-#line 50 "regparser.y"
+#line 68 "regparser.y"
     { (yyval.my_region) = (yyvsp[(1) - (3)].my_region); regAddShape( (yyvsp[(1) - (3)].my_region), regAND, (yyvsp[(3) - (3)].my_shape) ); }
     break;
 
   case 5:
 
 /* Line 1455 of yacc.c  */
-#line 51 "regparser.y"
+#line 69 "regparser.y"
     { (yyval.my_region) = (yyvsp[(1) - (3)].my_region); regNegate( (yyvsp[(3) - (3)].my_shape) ); regAddShape( (yyvsp[(1) - (3)].my_region), regAND, (yyvsp[(3) - (3)].my_shape) ); }
     break;
 
   case 6:
 
 /* Line 1455 of yacc.c  */
-#line 52 "regparser.y"
+#line 70 "regparser.y"
     {
                 (yyval.my_region) = regCreateRegion( NULL, NULL );
                 regAddShape( (yyval.my_region) , regOR, (yyvsp[(2) - (2)].my_shape) ); 
@@ -1728,7 +1746,7 @@ yyreduce:
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 57 "regparser.y"
+#line 75 "regparser.y"
     {
                 (yyval.my_region) = regCreateRegion(NULL, NULL );
                 regAddShape( (yyval.my_region) , regOR, (yyvsp[(1) - (1)].my_shape) ); 
@@ -1739,28 +1757,28 @@ yyreduce:
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 62 "regparser.y"
+#line 80 "regparser.y"
     { yyerrok; }
     break;
 
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 69 "regparser.y"
+#line 87 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (1)].dval); world_coord = RC_UNK; }
     break;
 
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 71 "regparser.y"
+#line 89 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (2)].dval); world_coord = RC_WORLD; }
     break;
 
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 73 "regparser.y"
+#line 91 "regparser.y"
     {
            double ndeg, nmin, nsec, nval;
            ndeg = (yyvsp[(1) - (5)].dval); nmin = (yyvsp[(3) - (5)].dval); nsec = (yyvsp[(5) - (5)].dval);
@@ -1773,21 +1791,21 @@ yyreduce:
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 84 "regparser.y"
+#line 102 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (1)].dval); world_coord = RC_UNK; }
     break;
 
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 86 "regparser.y"
+#line 104 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (2)].dval); world_coord = RC_WORLD; }
     break;
 
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 88 "regparser.y"
+#line 106 "regparser.y"
     {
            double ndeg, nmin, nsec, nval;
            ndeg = (yyvsp[(1) - (5)].dval); nmin = (yyvsp[(3) - (5)].dval); nsec = (yyvsp[(5) - (5)].dval);
@@ -1800,7 +1818,7 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 96 "regparser.y"
+#line 114 "regparser.y"
     {  /* Special care in case of -00:00:01 */
            double ndeg, nmin, nsec, nval;
            ndeg = (yyvsp[(2) - (6)].dval); nmin = (yyvsp[(4) - (6)].dval); nsec = (yyvsp[(6) - (6)].dval);
@@ -1813,98 +1831,98 @@ yyreduce:
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 107 "regparser.y"
+#line 125 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (1)].dval); }
     break;
 
   case 17:
 
 /* Line 1455 of yacc.c  */
-#line 109 "regparser.y"
+#line 127 "regparser.y"
     {  (yyval.dval) = -(yyvsp[(2) - (2)].dval);}
     break;
 
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 114 "regparser.y"
+#line 132 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (1)].dval); }
     break;
 
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 116 "regparser.y"
+#line 134 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (2)].dval) / 60.0; }
     break;
 
   case 20:
 
 /* Line 1455 of yacc.c  */
-#line 118 "regparser.y"
+#line 136 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (2)].dval) / 3600.0; }
     break;
 
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 120 "regparser.y"
+#line 138 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (2)].dval); }
     break;
 
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 125 "regparser.y"
+#line 143 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (1)].dval); world_size = RC_UNK; }
     break;
 
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 127 "regparser.y"
+#line 145 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (2)].dval); world_size = RC_PHYSICAL; }
     break;
 
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 129 "regparser.y"
+#line 147 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (2)].dval); world_size = RC_LOGICAL; }
     break;
 
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 131 "regparser.y"
+#line 149 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (2)].dval); world_size = RC_WORLD; }
     break;
 
   case 26:
 
 /* Line 1455 of yacc.c  */
-#line 133 "regparser.y"
+#line 151 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (2)].dval) / 60.0; world_size = RC_WORLD; }
     break;
 
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 135 "regparser.y"
+#line 153 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (3)].dval) / 3600.0; world_size = RC_WORLD; }
     break;
 
   case 28:
 
 /* Line 1455 of yacc.c  */
-#line 137 "regparser.y"
+#line 155 "regparser.y"
     {  (yyval.dval) = (yyvsp[(1) - (2)].dval) / 3600.0; world_size = RC_WORLD; }
     break;
 
   case 29:
 
 /* Line 1455 of yacc.c  */
-#line 144 "regparser.y"
+#line 162 "regparser.y"
     { 
        (yyval.my_shape) = regCreateNewWorldShape( regFIELD, regInclude, NULL, NULL, 0, NULL, NULL, world_coord, world_size );
        if ( (yyval.my_shape) == NULL ) {
@@ -1917,7 +1935,7 @@ yyreduce:
   case 30:
 
 /* Line 1455 of yacc.c  */
-#line 152 "regparser.y"
+#line 170 "regparser.y"
     { 
        (yyval.my_shape) = regCreateNewWorldShape( regFIELD, regExclude, NULL, NULL, 0, NULL, NULL, world_coord, world_size );
        if ( (yyval.my_shape) == NULL ) {
@@ -1930,7 +1948,7 @@ yyreduce:
   case 31:
 
 /* Line 1455 of yacc.c  */
-#line 160 "regparser.y"
+#line 178 "regparser.y"
     { 
        /* We just ignore the text, treat it as a point */
        double x[1]; double y[1];
@@ -1946,7 +1964,7 @@ yyreduce:
   case 32:
 
 /* Line 1455 of yacc.c  */
-#line 171 "regparser.y"
+#line 189 "regparser.y"
     { 
        double x[1]; double y[1]; double r[1];
        x[0]=(yyvsp[(3) - (8)].dval); y[0]=(yyvsp[(5) - (8)].dval); r[0]=(yyvsp[(7) - (8)].dval);
@@ -1967,7 +1985,7 @@ yyreduce:
   case 33:
 
 /* Line 1455 of yacc.c  */
-#line 187 "regparser.y"
+#line 205 "regparser.y"
     { 
        double x[1]; double y[1]; double r[1];
        x[0]=(yyvsp[(4) - (9)].dval); y[0]=(yyvsp[(6) - (9)].dval); r[0]=(yyvsp[(8) - (9)].dval);
@@ -1987,7 +2005,7 @@ yyreduce:
   case 34:
 
 /* Line 1455 of yacc.c  */
-#line 202 "regparser.y"
+#line 220 "regparser.y"
     {
        double x[1]; double y[1]; double r[2];
        x[0]=(yyvsp[(3) - (10)].dval); y[0]=(yyvsp[(5) - (10)].dval); r[0]=(yyvsp[(7) - (10)].dval); r[1]=(yyvsp[(9) - (10)].dval);
@@ -2013,7 +2031,7 @@ yyreduce:
   case 35:
 
 /* Line 1455 of yacc.c  */
-#line 223 "regparser.y"
+#line 241 "regparser.y"
     {
        double x[1]; double y[1]; double r[2];
        x[0]=(yyvsp[(4) - (11)].dval); y[0]=(yyvsp[(6) - (11)].dval); r[0]=(yyvsp[(8) - (11)].dval); r[1]=(yyvsp[(10) - (11)].dval);
@@ -2039,7 +2057,7 @@ yyreduce:
   case 36:
 
 /* Line 1455 of yacc.c  */
-#line 244 "regparser.y"
+#line 262 "regparser.y"
     {
        double x[1]; double y[1]; double r[2];
        x[0]=(yyvsp[(3) - (10)].dval); y[0]=(yyvsp[(5) - (10)].dval); r[0]=(yyvsp[(7) - (10)].dval); r[1]=(yyvsp[(9) - (10)].dval);
@@ -2060,7 +2078,7 @@ yyreduce:
   case 37:
 
 /* Line 1455 of yacc.c  */
-#line 260 "regparser.y"
+#line 278 "regparser.y"
     {
        double x[1]; double y[1]; double r[2];
        x[0]=(yyvsp[(4) - (11)].dval); y[0]=(yyvsp[(6) - (11)].dval); r[0]=(yyvsp[(8) - (11)].dval); r[1]=(yyvsp[(10) - (11)].dval);
@@ -2080,7 +2098,7 @@ yyreduce:
   case 38:
 
 /* Line 1455 of yacc.c  */
-#line 275 "regparser.y"
+#line 293 "regparser.y"
     {
        double x[1]; double y[1]; double r[2]; double a[1];
        x[0]=(yyvsp[(3) - (12)].dval); y[0]=(yyvsp[(5) - (12)].dval); r[0]=(yyvsp[(7) - (12)].dval); r[1]=(yyvsp[(9) - (12)].dval); a[0]=(yyvsp[(11) - (12)].dval);
@@ -2100,7 +2118,7 @@ yyreduce:
   case 39:
 
 /* Line 1455 of yacc.c  */
-#line 290 "regparser.y"
+#line 308 "regparser.y"
     {
        double x[1]; double y[1]; double r[2]; double a[1];
        x[0]=(yyvsp[(4) - (13)].dval); y[0]=(yyvsp[(6) - (13)].dval); r[0]=(yyvsp[(8) - (13)].dval); r[1]=(yyvsp[(10) - (13)].dval); a[0]=(yyvsp[(12) - (13)].dval);
@@ -2120,7 +2138,7 @@ yyreduce:
   case 40:
 
 /* Line 1455 of yacc.c  */
-#line 305 "regparser.y"
+#line 323 "regparser.y"
     {
        double x[1]; double y[1]; double r[2]; double a[1];
        x[0]=(yyvsp[(3) - (12)].dval); y[0]=(yyvsp[(5) - (12)].dval); r[0]=(yyvsp[(7) - (12)].dval); r[1]=(yyvsp[(9) - (12)].dval); a[0]=(yyvsp[(11) - (12)].dval);
@@ -2140,7 +2158,7 @@ yyreduce:
   case 41:
 
 /* Line 1455 of yacc.c  */
-#line 320 "regparser.y"
+#line 338 "regparser.y"
     {
        double x[1]; double y[1]; double r[2]; double a[1];
        x[0]=(yyvsp[(4) - (13)].dval); y[0]=(yyvsp[(6) - (13)].dval); r[0]=(yyvsp[(8) - (13)].dval); r[1]=(yyvsp[(10) - (13)].dval); a[0]=(yyvsp[(12) - (13)].dval);
@@ -2160,7 +2178,7 @@ yyreduce:
   case 42:
 
 /* Line 1455 of yacc.c  */
-#line 335 "regparser.y"
+#line 353 "regparser.y"
     {
        double x[1]; double y[1]; double a[2]; double r[2];
        x[0]=(yyvsp[(3) - (14)].dval); y[0]=(yyvsp[(5) - (14)].dval); r[0]=(yyvsp[(7) - (14)].dval); r[1]=(yyvsp[(9) - (14)].dval);  a[0]=(yyvsp[(11) - (14)].dval); a[1]=(yyvsp[(13) - (14)].dval);
@@ -2184,7 +2202,7 @@ yyreduce:
   case 43:
 
 /* Line 1455 of yacc.c  */
-#line 354 "regparser.y"
+#line 372 "regparser.y"
     {
        double x[1]; double y[1]; double a[2]; double r[2];
        x[0]=(yyvsp[(4) - (15)].dval); y[0]=(yyvsp[(6) - (15)].dval); r[0] = (yyvsp[(8) - (15)].dval); r[1] = (yyvsp[(10) - (15)].dval); a[0]=(yyvsp[(12) - (15)].dval); a[1]=(yyvsp[(14) - (15)].dval);
@@ -2208,7 +2226,7 @@ yyreduce:
   case 44:
 
 /* Line 1455 of yacc.c  */
-#line 373 "regparser.y"
+#line 391 "regparser.y"
     {
        double x[1]; double y[1]; double a[2];
        x[0]=(yyvsp[(3) - (10)].dval); y[0]=(yyvsp[(5) - (10)].dval); a[0]=(yyvsp[(7) - (10)].dval); a[1]=(yyvsp[(9) - (10)].dval);
@@ -2223,7 +2241,7 @@ yyreduce:
   case 45:
 
 /* Line 1455 of yacc.c  */
-#line 383 "regparser.y"
+#line 401 "regparser.y"
     {
        double x[1]; double y[1]; double a[2];
        x[0]=(yyvsp[(4) - (11)].dval); y[0]=(yyvsp[(6) - (11)].dval); a[0]=(yyvsp[(8) - (11)].dval); a[1]=(yyvsp[(10) - (11)].dval);
@@ -2238,7 +2256,7 @@ yyreduce:
   case 46:
 
 /* Line 1455 of yacc.c  */
-#line 393 "regparser.y"
+#line 411 "regparser.y"
     {
        double x[1]; double y[1];
        x[0]=(yyvsp[(3) - (6)].dval); y[0]=(yyvsp[(5) - (6)].dval);
@@ -2253,7 +2271,7 @@ yyreduce:
   case 47:
 
 /* Line 1455 of yacc.c  */
-#line 403 "regparser.y"
+#line 421 "regparser.y"
     {
        double x[1]; double y[1];
        x[0]=(yyvsp[(4) - (7)].dval); y[0]=(yyvsp[(6) - (7)].dval);
@@ -2268,7 +2286,7 @@ yyreduce:
   case 48:
 
 /* Line 1455 of yacc.c  */
-#line 413 "regparser.y"
+#line 431 "regparser.y"
     {
        double x[2]; double y[2];
        x[0]=(yyvsp[(3) - (10)].dval); x[1]=(yyvsp[(7) - (10)].dval); y[0]=(yyvsp[(5) - (10)].dval);y[1]=(yyvsp[(9) - (10)].dval);
@@ -2283,7 +2301,7 @@ yyreduce:
   case 49:
 
 /* Line 1455 of yacc.c  */
-#line 423 "regparser.y"
+#line 441 "regparser.y"
     {
        double x[2]; double y[2];
        x[0]=(yyvsp[(4) - (11)].dval); x[1]=(yyvsp[(8) - (11)].dval); y[0]=(yyvsp[(6) - (11)].dval); y[1]=(yyvsp[(10) - (11)].dval);
@@ -2298,7 +2316,7 @@ yyreduce:
   case 50:
 
 /* Line 1455 of yacc.c  */
-#line 433 "regparser.y"
+#line 451 "regparser.y"
     {
        /* RegLine doesn't work correctly; need to calculate angle */
        double x[2]; double y[2];
@@ -2314,7 +2332,7 @@ yyreduce:
   case 51:
 
 /* Line 1455 of yacc.c  */
-#line 444 "regparser.y"
+#line 462 "regparser.y"
     {
        double x[2]; double y[2];
        x[0]=(yyvsp[(4) - (11)].dval); x[1]=(yyvsp[(8) - (11)].dval); y[0]=(yyvsp[(6) - (11)].dval); y[1]=(yyvsp[(10) - (11)].dval);
@@ -2329,7 +2347,7 @@ yyreduce:
   case 52:
 
 /* Line 1455 of yacc.c  */
-#line 454 "regparser.y"
+#line 472 "regparser.y"
     {
        double x[1]; double y[1]; double r[2]; double a[1];
        x[0]=(yyvsp[(3) - (12)].dval); y[0]=(yyvsp[(5) - (12)].dval); r[0]=(yyvsp[(7) - (12)].dval); r[1]=(yyvsp[(9) - (12)].dval); a[0]=(yyvsp[(11) - (12)].dval);
@@ -2349,7 +2367,7 @@ yyreduce:
   case 53:
 
 /* Line 1455 of yacc.c  */
-#line 469 "regparser.y"
+#line 487 "regparser.y"
     {
        double x[1]; double y[1]; double r[2]; double a[1];
        x[0]=(yyvsp[(4) - (13)].dval); y[0]=(yyvsp[(6) - (13)].dval); r[0]=(yyvsp[(8) - (13)].dval); r[1]=(yyvsp[(10) - (13)].dval); a[0]=(yyvsp[(12) - (13)].dval);
@@ -2369,7 +2387,7 @@ yyreduce:
   case 54:
 
 /* Line 1455 of yacc.c  */
-#line 485 "regparser.y"
+#line 503 "regparser.y"
     { 
        (yyval.my_shape) = regCreateNewWorldShape( regPOLYGON, regInclude, (yyvsp[(3) - (4)].PolySide).polyX, (yyvsp[(3) - (4)].PolySide).polyY, 
 			    (yyvsp[(3) - (4)].PolySide).polyS, NULL, NULL, world_coord, 0 );
@@ -2386,7 +2404,7 @@ yyreduce:
   case 55:
 
 /* Line 1455 of yacc.c  */
-#line 497 "regparser.y"
+#line 515 "regparser.y"
     { 
        (yyval.my_shape) = regCreateNewWorldShape( regPOLYGON, regExclude, (yyvsp[(4) - (5)].PolySide).polyX, (yyvsp[(4) - (5)].PolySide).polyY, 
 			    (yyvsp[(4) - (5)].PolySide).polyS, NULL, NULL, world_coord, 0 );
@@ -2402,7 +2420,7 @@ yyreduce:
   case 56:
 
 /* Line 1455 of yacc.c  */
-#line 511 "regparser.y"
+#line 529 "regparser.y"
     {
         double x[1]; double y[1]; double r1[2]; double r2[2];
         x[0]=(yyvsp[(3) - (14)].dval); y[0]=(yyvsp[(5) - (14)].dval); r1[0]=(yyvsp[(7) - (14)].dval); r1[1]=(yyvsp[(9) - (14)].dval); r2[0] = (yyvsp[(11) - (14)].dval); r2[1] = (yyvsp[(13) - (14)].dval);
@@ -2416,7 +2434,7 @@ yyreduce:
   case 57:
 
 /* Line 1455 of yacc.c  */
-#line 520 "regparser.y"
+#line 538 "regparser.y"
     {
         double x[1]; double y[1]; double r1[2]; double r2[2];  double a[1];
         x[0]=(yyvsp[(3) - (16)].dval); y[0]=(yyvsp[(5) - (16)].dval); r1[0]=(yyvsp[(7) - (16)].dval); r1[1]=(yyvsp[(9) - (16)].dval); r2[0] = (yyvsp[(11) - (16)].dval); r2[1] = (yyvsp[(13) - (16)].dval); a[0]=(yyvsp[(15) - (16)].dval);
@@ -2430,7 +2448,7 @@ yyreduce:
   case 58:
 
 /* Line 1455 of yacc.c  */
-#line 529 "regparser.y"
+#line 547 "regparser.y"
     {
         double x[1]; double y[1]; double r1[2]; double r2[2];
         x[0]=(yyvsp[(4) - (15)].dval); y[0]=(yyvsp[(6) - (15)].dval); r1[0]=(yyvsp[(8) - (15)].dval); r1[1]=(yyvsp[(10) - (15)].dval); r2[0] = (yyvsp[(12) - (15)].dval); r2[1] = (yyvsp[(14) - (15)].dval);
@@ -2444,7 +2462,7 @@ yyreduce:
   case 59:
 
 /* Line 1455 of yacc.c  */
-#line 538 "regparser.y"
+#line 556 "regparser.y"
     {
         double x[1]; double y[1]; double r1[2]; double r2[2];  double a[1];
         x[0]=(yyvsp[(4) - (17)].dval); y[0]=(yyvsp[(6) - (17)].dval); r1[0]=(yyvsp[(8) - (17)].dval); r1[1]=(yyvsp[(10) - (17)].dval); r2[0] = (yyvsp[(12) - (17)].dval); r2[1] = (yyvsp[(14) - (17)].dval); a[0]=(yyvsp[(16) - (17)].dval);
@@ -2458,7 +2476,7 @@ yyreduce:
   case 60:
 
 /* Line 1455 of yacc.c  */
-#line 550 "regparser.y"
+#line 568 "regparser.y"
     {
         double x[1]; double y[1]; double r[2]; 
         x[0]=(yyvsp[(3) - (10)].dval); y[0]=(yyvsp[(5) - (10)].dval); r[0]=(yyvsp[(7) - (10)].dval); r[1]=(yyvsp[(9) - (10)].dval); 
@@ -2472,7 +2490,7 @@ yyreduce:
   case 61:
 
 /* Line 1455 of yacc.c  */
-#line 559 "regparser.y"
+#line 577 "regparser.y"
     {
         double x[1]; double y[1]; double r[2]; 
         x[0]=(yyvsp[(4) - (11)].dval); y[0]=(yyvsp[(6) - (11)].dval); r[0]=(yyvsp[(8) - (11)].dval); r[1]=(yyvsp[(10) - (11)].dval); 
@@ -2486,7 +2504,7 @@ yyreduce:
   case 62:
 
 /* Line 1455 of yacc.c  */
-#line 568 "regparser.y"
+#line 586 "regparser.y"
     {
         double x[1]; double y[1]; double r[2]; double a[1];
         x[0]=(yyvsp[(3) - (12)].dval); y[0]=(yyvsp[(5) - (12)].dval); r[0]=(yyvsp[(7) - (12)].dval); r[1]=(yyvsp[(9) - (12)].dval); a[0] = (yyvsp[(11) - (12)].dval);
@@ -2500,7 +2518,7 @@ yyreduce:
   case 63:
 
 /* Line 1455 of yacc.c  */
-#line 577 "regparser.y"
+#line 595 "regparser.y"
     {
         double x[1]; double y[1]; double r[2]; double a[1];
         x[0]=(yyvsp[(4) - (13)].dval); y[0]=(yyvsp[(6) - (13)].dval); r[0]=(yyvsp[(8) - (13)].dval); r[1]=(yyvsp[(10) - (13)].dval); a[0] = (yyvsp[(12) - (13)].dval);
@@ -2514,7 +2532,7 @@ yyreduce:
   case 64:
 
 /* Line 1455 of yacc.c  */
-#line 589 "regparser.y"
+#line 607 "regparser.y"
     {
      (yyval.PolySide) = (yyvsp[(1) - (5)].PolySide);
      (yyval.PolySide).polyS += 1;
@@ -2528,7 +2546,7 @@ yyreduce:
   case 65:
 
 /* Line 1455 of yacc.c  */
-#line 597 "regparser.y"
+#line 615 "regparser.y"
     {
      (yyval.PolySide).polyS = 1;
      (yyval.PolySide).polyX = (double*)calloc(1,sizeof(double));
@@ -2541,7 +2559,7 @@ yyreduce:
 
 
 /* Line 1455 of yacc.c  */
-#line 2545 "regparser.c"
+#line 2563 "regparser.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2753,7 +2771,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 605 "regparser.y"
+#line 623 "regparser.y"
 
 
 

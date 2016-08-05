@@ -99,7 +99,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 27 "regparser.y"
+#line 45 "regparser.y"
 
   double dval;
   char str[1024];

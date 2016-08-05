@@ -24,3 +24,10 @@ libregion_la_SOURCES = \
  	regAnnulus.c regField.c regPolygon.c regSector.c regMask.c \
  	regCircle.c regEllipse.c regBox.c regPoint.c regRectangle.c regPie.c
 
+#INC_FILES = cxcregion.h
+#PKG_FILES = cxcregion.pc
+
+clean-local:
+	-rm -f regparser.c* reglexer.c* *.o regparser.h regparser.tab.c regparser.tab.h
+
+EXTRA_DIST =  reglexer.c.tmp reglexer.l regparser.y 

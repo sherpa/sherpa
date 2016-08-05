@@ -3,6 +3,9 @@
 #include <ctype.h>
 
 
+int reg_trim_double(double *, double, double);
+
+
 void reg_corner_bounds(double *xpos, double *ypos, double *xb, double *yb)
 {
     long i;
@@ -322,38 +325,39 @@ long reg_shape_find_npoints(regGeometry type, double *xpos, double *ypos,
 int reg_trim_extent(double *cxpos, double *cypos, double *sxpos, double *sypos,
         int cstart)
 {
-    /* Here we are intersecting, so the ranges get smaller */
-    int retval = 1;
-    int verbose = 0;
-    if (cstart < 0) {
-        cstart = 0;
-        verbose = 1;
-    }
-    if (cstart || sxpos[0] > cxpos[0]) {
+    int outside_field;
+    
+    if (cstart) {
         cxpos[0] = sxpos[0];
-        retval = 0;
-    }
-    if (cstart || sxpos[1] < cxpos[1]) {
         cxpos[1] = sxpos[1];
-        retval = 0;
-    }
-    if (cstart || sypos[0] > cypos[0]) {
         cypos[0] = sypos[0];
-        retval = 0;
-    }
-    if (cstart || sypos[1] < cypos[1]) {
         cypos[1] = sypos[1];
-        retval = 0;
+        return 0;
     }
-    if (!retval) {
-        if (cxpos[0] > cxpos[1])
-            cxpos[0] = cxpos[1];
-        if (cypos[0] > cypos[1])
-            cypos[0] = cypos[1];
-    }
-    return retval;
+
+    outside_field = reg_trim_double(cxpos, sxpos[0], sxpos[1]);
+    outside_field = reg_trim_double(cxpos+1, sxpos[0], sxpos[1]) || outside_field;
+    outside_field = reg_trim_double(cypos, sypos[0], sypos[1]) || outside_field;
+    outside_field = reg_trim_double(cypos+1, sypos[0], sypos[1]) || outside_field;
+    
+    return !outside_field;
 }
 
+/*
+ * Checks if the value at *x is contained by x_1 and x_2, if not it assigns it to 
+ * the closer number. Returns true if x is not contained in (x_1, x_2).
+ */
+int reg_trim_double(double *x, double x_1, double x_2) {
+    if (*x < x_1 && *x < x_2) {
+        *x = x_1;
+        return 1;
+    }
+    if (*x > x_1 && *x > x_2) {
+        *x = x_2;
+        return 1;
+    }
+    return 0;
+}
 
 /*
  *  Reverse the polarity
