@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -28,6 +28,12 @@ warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('GridSearch', 'OptMethod', 'LevMar', 'MonCar', 'NelderMead')
+
+try:
+    import iminuit
+    __all__ = optfcts.add2__all__(__all__, 'Minuit')
+except ImportError:
+    pass
 
 
 class OptMethod(NoNewAttributesAfterInit):
@@ -664,69 +670,13 @@ class NelderMead(OptMethod):
         OptMethod.__init__(self, name, neldermead)
 
 
-###############################################################################
-
-## from sherpa.optmethods.fminpowell import *
-## from sherpa.optmethods.nmpfit import *
-
-## from sherpa.optmethods.odrpack import odrpack
-## from sherpa.optmethods.stogo import stogo
-## from sherpa.optmethods.chokkan import chokkanlbfgs
-## from sherpa.optmethods.odr import odrf77
-
-## def myall( targ, arg ):
-##     fubar = list( targ )
-##     fubar.append( arg )
-##     return tuple( fubar )
-
-## __all__ = myall( __all__, 'Bobyqa' )
-## __all__ = myall( __all__, 'Chokkan' )
-## __all__ = myall( __all__, 'cppLevMar' )
-## __all__ = myall( __all__, 'Dif_Evo' )
-## __all__ = myall( __all__, 'MarLev' )
-## __all__ = myall( __all__, 'MyMinim' )
-## __all__ = myall( __all__, 'Nelder_Mead' )
-## __all__ = myall( __all__, 'NMPFIT' )
-## __all__ = myall( __all__, 'Newuoa' )
-## __all__ = myall( __all__, 'Odr' )
-## __all__ = myall( __all__, 'OdrPack' )
-## __all__ = myall( __all__, 'PortChi' )
-## __all__ = myall( __all__, 'PortFct' )
-## __all__ = myall( __all__, 'ScipyPowell' )
-## __all__ = myall( __all__, 'StoGo' )
-
-## class Chokkan(OptMethod):
-##     def __init__(self, name='chokkan'):
-##         OptMethod.__init__(self, name, chokkanlbfgs)
-
-## class cppLevMar(OptMethod):
-
-##    def __init__(self, name='clevmar'):
-## 	OptMethod.__init__(self, name, optfcts.lmdif_cpp)
-
-## class MyMinim(OptMethod):
-
-##     def __init__(self, name='simplex'):
-## 	OptMethod.__init__(self, name, minim)
-
-## class NMPFIT(OptMethod):
-##     def __init__(self, name='pytools_nmpfit'):
-##         OptMethod.__init__(self, name, nmpfit.pytools_nmpfit)
-
-## class OdrPack(OptMethod):
-##     def __init__(self, name='odrpack'):
-##         OptMethod.__init__(self, name, odrpack)
-
-## class Odr(OptMethod):
-##     def __init__(self, name='odr'):
-##         OptMethod.__init__(self, name, odrf77)
-
-## class ScipyPowell(OptMethod):
-##     def __init__(self, name='scipypowell'):
-##         OptMethod.__init__(self, name, my_fmin_powell)
-
-## class StoGo(OptMethod):
-##     def __init__(self, name='stogo'):
-## 	OptMethod.__init__(self, name, stogo)
-
-###############################################################################
+class Minuit(OptMethod):
+    """
+    The CERN MINUIT optimization library
+    Please consult the following urls for more details:
+       http://iminuit.readthedocs.org/en/latest/
+       http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.158.9157&rep=rep1&type=pdf
+       http://seal.web.cern.ch/seal/documents/minuit/mntutorial.pdf
+    """
+    def __init__(self, name='minuit'):
+        OptMethod.__init__(self, name, midnight)

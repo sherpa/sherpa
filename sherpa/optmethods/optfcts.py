@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@ import numpy
 import random
 import sys
 from itertools import izip
-
+import logging
 
 import _minpack
 import _minim
@@ -98,13 +98,13 @@ def _narrow_limits( myrange, xxx, debug ):
                                      x ), numpy.float_ )
         if False != debug:
             print
-            print 'raise_min_limit: myxmin=%s' % myxmin    
+            print 'raise_min_limit: myxmin=%s' % myxmin
             print 'raise_min_limit: x=%s' % x
         below = numpy.flatnonzero(myxmin < xmin)
         if below.size > 0:
             myxmin[below] = xmin[below]
         if False != debug:
-            print 'raise_min_limit: myxmin=%s' % myxmin    
+            print 'raise_min_limit: myxmin=%s' % myxmin
             print 'raise_min_limit: x=%s' % x
             print
         return myxmin
@@ -115,13 +115,13 @@ def _narrow_limits( myrange, xxx, debug ):
         if False != debug:
             print
             print 'lower_max_limit: x=%s' % x
-            print 'lower_max_limit: myxmax=%s' % myxmax    
+            print 'lower_max_limit: myxmax=%s' % myxmax
         above = numpy.flatnonzero(myxmax > xmax)
         if above.size > 0:
             myxmax[above] = xmax[above]
         if False != debug:
             print 'lower_max_limit: x=%s' % x
-            print 'lower_max_limit: myxmax=%s' % myxmax    
+            print 'lower_max_limit: myxmax=%s' % myxmax
             print
         return myxmax
 
@@ -131,7 +131,7 @@ def _narrow_limits( myrange, xxx, debug ):
 
     if False != debug:
         print 'narrow_limits: xmin=%s' % xmin
-        print 'narrow_limits: x=%s' % x        
+        print 'narrow_limits: x=%s' % x
         print 'narrow_limits: xmax=%s' % xmax
     myxmin = raise_min_limit( myrange, xmin, x, debug=False )
     myxmax = lower_max_limit( myrange, x, xmax, debug=False )
@@ -139,7 +139,7 @@ def _narrow_limits( myrange, xxx, debug ):
     if False != debug:
         print 'range = %d' % myrange
         print 'narrow_limits: myxmin=%s' % myxmin
-        print 'narrow_limits: x=%s' % x        
+        print 'narrow_limits: x=%s' % x
         print 'narrow_limits: myxmax=%s\n' % myxmax
 
     double_check_limits( x, myxmin, myxmax )
@@ -169,7 +169,15 @@ def _set_limits(x, xmin, xmax):
     return 0
 
 
-__all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif', 'minim', 'montecarlo', 'neldermead')
+__all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif', 'minim',
+           'montecarlo', 'neldermead')
+
+
+def add2__all__(targ, arg):
+    fubar = list(targ)
+    fubar.append(arg)
+    return tuple(fubar)
+
 
 def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
            seed=2005815, population_size=None, xprob=0.9,
@@ -468,7 +476,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
 
 #
-# Nelder Mead 
+# Nelder Mead
 #
 def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
           nloop=1, iquad=1, simp=None, verbose=-1):
@@ -487,7 +495,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 
     orig_fcn = stat_cb0
     def stat_cb0(x_new):
-        if _outside_limits(x_new, xmin, xmax) or _my_is_nan(x_new):        
+        if _outside_limits(x_new, xmin, xmax) or _my_is_nan(x_new):
             return FUNC_MAX
         return orig_fcn(x_new)
 
@@ -519,7 +527,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 # Monte Carlo
 #
 def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
-               seed=74815, population_size=None, xprob=0.9, 
+               seed=74815, population_size=None, xprob=0.9,
                weighting_factor=0.8):
 
     def stat_cb0( pars ):
@@ -562,7 +570,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         mymaxfev = min( maxfev_per_iter, maxfev )
         if all( x == 0.0 ):
             mystep = map( lambda fubar: 1.2 + fubar, x )
-        else: 
+        else:
             mystep = map( lambda fubar: 1.2 * fubar, x )
         result = neldermead( myfcn, x, xmin, xmax, maxfev=mymaxfev, ftol=ftol,
                              finalsimplex=9, step=mystep )
@@ -587,7 +595,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                                                    result[4].get('nfev'))
         ############################## nmDifEvo ##############################
 
-        ofval = FUNC_MAX        
+        ofval = FUNC_MAX
         while nfev < maxfev:
 
             xmin, xmax = _narrow_limits( factor, [x,xmin,xmax], debug=False )
@@ -627,7 +635,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     if nfev < maxfev:
         if all( x == 0.0 ):
             mystep = map( lambda fubar: 1.2 + fubar, x )
-        else: 
+        else:
             mystep = map( lambda fubar: 1.2 * fubar, x )
         result = neldermead( fcn, x, xmin, xmax,
                              maxfev=min( 512*len(x), maxfev - nfev ),
@@ -653,7 +661,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
 
 #
-# Nelder Mead 
+# Nelder Mead
 #
 def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                 initsimplex=0, finalsimplex=9, step=None, iquad=1,
@@ -688,7 +696,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             finalsimplex = [ 2 ]
         elif 2 == finalsimplex:
             finalsimplex = [ 0, 0 ]
-        elif 3 == finalsimplex:            
+        elif 3 == finalsimplex:
             finalsimplex = [ 0, 1 ]
         elif 4 == finalsimplex:
             finalsimplex = [ 0, 1, 0 ]
@@ -701,15 +709,15 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         elif 8 == finalsimplex:
             finalsimplex = [ 1, 2, 0 ]
         elif 9 == finalsimplex:
-            finalsimplex = [ 0, 1, 1 ]            
+            finalsimplex = [ 0, 1, 1 ]
         elif 10 == finalsimplex:
-            finalsimplex = [ 0, 2, 1 ]            
+            finalsimplex = [ 0, 2, 1 ]
         elif 11 == finalsimplex:
-            finalsimplex = [ 1, 1, 1 ]                        
+            finalsimplex = [ 1, 1, 1 ]
         elif 12 == finalsimplex:
-            finalsimplex = [ 1, 2, 1 ]            
+            finalsimplex = [ 1, 2, 1 ]
         elif 13 == finalsimplex:
-            finalsimplex = [ 2, 1, 1 ]            
+            finalsimplex = [ 2, 1, 1 ]
         else:
             finalsimplex = [ 2, 2, 2 ]
     elif ( False == numpy.isscalar(finalsimplex) and
@@ -847,3 +855,99 @@ def lmdif_cpp(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     rv = (status, x, fval)
     rv += (msg, {'info': info, 'nfev': nfev, 'covarerr': covarerr })
     return rv
+
+
+try:
+    import iminuit
+    __all__ = add2__all__(__all__, 'midnight')
+
+    class MinuitFunction:
+        def __init__(self, fcn, params):
+            self.fcn = fcn
+            npar = len(params)
+            self.func_code = self.init(npar)
+            self.par_names = self.make_parnames(npar)
+
+        def __call__(self, *params):
+            return self.fcn(numpy.array(params))
+
+        def get_results(self, values):
+            result = []
+            for name in self.par_names:
+                result.append(values[name])
+            return numpy.array(result)
+
+        def init(self, npar):
+            names = []
+            for ii in xrange(npar):
+                names.append('p%d' % ii)
+            return iminuit.Struct(co_varnames=names, co_argcount=npar)
+
+        def make_parnames(self, npar):
+            names = []
+            for ii in xrange(npar):
+                names.append('p%d' % ii)
+            return names
+
+        def make_kwargs(self, verbose, errordef, x, xmin, xmax, error):
+            kwargs = {'print_level': verbose, 'errordef': errordef}
+            for name, par in izip(self.par_names, x):
+                kwargs[name] = par
+            for index, name in enumerate(self.par_names):
+                kwargs['limit_' + name] = (xmin[index], xmax[index])
+            if error is None:
+                for index, name in enumerate(self.par_names):
+                    kwargs['error_' + name] = numpy.abs(x[index]) * 0.05
+            else:
+                if hasattr(error, '__iter__') and npar == len(error):
+                    for index, name in enumerate(self.par_names):
+                        kwargs['error_' + name] = x[index]
+                else:
+                    msg = 'error must be an iterable of length %d' % npar
+                    raise NameError(msg)
+            return kwargs
+
+    def midnight(fcn, x0, xmin, xmax, ftol=EPSILON, error=None, maxfev=None,
+                 errordef=1, verbose=0):
+
+        def stat_cb0(pars):
+            return fcn(pars)[0]
+
+        x, xmin, xmax = _check_args(x0, xmin, xmax)
+        if maxfev is None:
+            maxfev = len(x) * 1024
+        warning = logging.getLogger("sherpa").warning
+        if not 0 <= verbose <= 1:
+            warning("verbose must be within [0, 1]")
+            verbose = 1
+
+        minuit_func = MinuitFunction(stat_cb0, tuple(x))
+        kwargs = minuit_func.make_kwargs(verbose, errordef, x, xmin, xmax,
+                                         error)
+        myminuit = iminuit.Minuit(minuit_func, **kwargs)
+        myminuit.migrad(ncall=maxfev, precision=ftol)
+
+        # results
+        nfev = myminuit.ncalls
+        fval = myminuit.fval
+        x = minuit_func.get_results(myminuit.values)
+        covarerr = minuit_func.get_results(myminuit.errors)
+        minuit_status = myminuit.get_fmin()
+        if not minuit_status.hesse_failed:
+            covar_matrix = numpy.array(myminuit.matrix(correlation=True))
+        if minuit_status.is_valid:
+            info = 0
+        else:
+            info = -1
+        status, msg = _get_saofit_msg(maxfev, info)
+        rv = (status, x, fval)
+        if not minuit_status.hesse_failed:
+            rv += (msg, {'info': info, 'nfev': nfev, 'covarerr': covarerr,
+                         'covar': covar_matrix, 'status': minuit_status})
+        else:
+            rv += (msg, {'info': info, 'nfev': nfev, 'covarerr': covarerr,
+                         'status': minuit_status})
+        return rv
+
+except ImportError:
+    pass
