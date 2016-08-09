@@ -53,7 +53,7 @@ AC_DEFUN([AX_PYTHON_NUMPY],[
 		NUMPY_INCLUDEDIR=`$PYTHON -c '
 try:
 	from numpy import get_include
-	print get_include()
+	print(get_include())
 except:
 	pass
 '`

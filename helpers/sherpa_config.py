@@ -24,6 +24,9 @@ from .deps import build_deps
 
 from numpy.distutils.core import Command
 import os
+import sys
+
+version = '{}.{}'.format(sys.version_info[0], sys.version_info[1])
 
 class sherpa_config(Command):
     description = "Configure Sherpa build options. If in doubt, ignore this command and stick to defaults. See setup.cfg for more information."
@@ -92,10 +95,10 @@ class sherpa_config(Command):
             self.wcs_lib_dirs=self.install_dir+'/lib'
 
         if self.group_location is None:
-            self.group_location=self.install_dir+'/lib/python2.7/site-packages/group.so'
+            self.group_location = '{}/lib/python{}/site-packages/{}'.format(self.install_dir, version, 'group.so')
 
         if self.stk_location is None:
-            self.stk_location=self.install_dir+'/lib/python2.7/site-packages/stk.so'
+            self.stk_location = '{}/lib/python{}/site-packages/{}'.format(self.install_dir, version, 'stk.so')
 
     def build_configure(self):
         configure = ['./configure', '--prefix='+self.install_dir, '--with-pic', '--enable-standalone']
