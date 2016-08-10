@@ -97,9 +97,9 @@ MANIFEST
 # to keep the files generated during the source distribution
 # creation. However, that is more complicated, so we are just
 # going to gitignore these files.
-extern/region-4.7/src/reglexer.c
-extern/region-4.7/src/regparser.c
-extern/region-4.7/src/regparser.h
-extern/region-4.7/src/regparser.tab.h
-extern/region-4.7/src/regparser.tab.c
-extern/region-4.7/src/reglexer.c.tmp
+extern/region-4.9/src/reglexer.c
+extern/region-4.9/src/regparser.c
+extern/region-4.9/src/regparser.h
+extern/region-4.9/src/regparser.tab.h
+extern/region-4.9/src/regparser.tab.c
+extern/region-4.9/src/reglexer.c.tmp
