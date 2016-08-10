@@ -839,7 +839,7 @@ class DataPHA(Data1DInt):
 
     def _dynamic_group(self, group_func, *args, **kwargs):
 
-        keys = kwargs.keys()[:]
+        keys = list(kwargs.keys())[:]
         for key in keys:
             if kwargs[key] is None:
                 kwargs.pop(key)

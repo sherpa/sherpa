@@ -50,7 +50,7 @@ class Meta(NoNewAttributesAfterInit):
         return val
 
     def keys(self):
-        keys = self.__header.keys()[:]
+        keys = list(self.__header.keys())[:]
         keys.sort()
         return keys
 
