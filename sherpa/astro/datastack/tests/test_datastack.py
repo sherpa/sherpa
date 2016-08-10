@@ -91,8 +91,8 @@ class test_design(SherpaTestCase):
         dids = datastack.DATASTACK.get_stack_ids()
         assert dids == [1, 2, 3, 4]
 
-        sids = list(ui._session._data.keys())
-        assert sids == [1, 2, 3, 4, 5, 6, 7, "myid"]
+        sids = set(ui._session._data.keys())
+        assert sids == {1, 2, 3, 4, 5, 6, 7, "myid"}
 
         datastack.set_source([1, 2], "powlaw1d.pID")
         datastack.set_source([3, 4], "brokenpowerlaw.bpID")

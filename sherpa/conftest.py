@@ -60,6 +60,7 @@ if sys.version_info >= (3, 2):
                 r"unclosed file .*data1.dat.* closefd=True>",
                 r"unclosed file .*aref_Cedge.fits.* closefd=True>",
                 r"unclosed file .*aref_sample.fits.* closefd=True>",
+                r"unclosed file .*/tmp.* closefd=True>",
             ]
     }
     known_warnings.update(python3_warnings)
