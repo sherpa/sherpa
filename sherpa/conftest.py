@@ -83,12 +83,9 @@ def capture_all_warnings(request, recwarn):
     """
     def known(warning):
         message = warning.message
-        print("message: ", message)
         for known_warning in known_warnings[type(message)]:
-            print("known: ", known_warning)
             pattern = re.compile(known_warning)
             if pattern.match(str(message)):
-                print("known!")
                 return True
         return False
 
