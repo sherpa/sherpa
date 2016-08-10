@@ -33,5 +33,5 @@ class test_stack(SherpaTestCase):
             return '/'.join((_this_dir, name))
 
         out = stk.build('@+{}/{}'.format(_this_dir, 'a.lis'))
-        self.assertEquals([get_name('a'), get_name('a1'), get_name('a2'),
+        self.assertEqual([get_name('a'), get_name('a1'), get_name('a2'),
                            get_name('b'), get_name('b1'), get_name('b2')], out)
