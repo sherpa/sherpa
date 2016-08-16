@@ -25,6 +25,8 @@ from __future__ import division
 from __future__ import absolute_import
 import numpy
 import logging
+import importlib
+import sys
 
 from sherpa.utils import NoNewAttributesAfterInit, erf, SherpaFloat, \
     bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
@@ -51,7 +53,8 @@ if plot_opt == 'none_backend':
     plot_opt = 'dummy_backend'
 
 try:
-    backend = __import__(plot_opt, globals(), locals(), [])
+    importlib.import_module('.' + plot_opt, package='sherpa.plot')
+    backend = sys.modules['sherpa.plot.' + plot_opt]
 except:
     # if the user inputs a malformed backend or it is not found,
     # give a useful warning and fall back on dummy_backend of noops

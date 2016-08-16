@@ -17,12 +17,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from itertools import izip
+from six.moves import zip as izip
 import numpy
 import pychips as chips
 from sherpa.utils import get_keyword_defaults
 from sherpa import get_config
-from ConfigParser import ConfigParser, NoSectionError
+from six.moves.configparser import ConfigParser, NoSectionError
 
 config = ConfigParser()
 config.read(get_config())
