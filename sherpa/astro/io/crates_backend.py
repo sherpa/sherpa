@@ -138,7 +138,15 @@ def _try_key(crate, name, dtype=str):
     if str(key).find('none') != -1:
         return None
 
-    return dtype(key)
+    # Python3 (and having the type as a parameter) seems to require some complexity here.
+    # If there is a better way I am not aware of it.
+    if dtype == str:
+        try:  # Python 3
+            return dtype(key, "utf-8")
+        except TypeError:  # Python 2
+            return dtype(key)
+    else:
+        return dtype(key)
 
 
 def _get_meta_data(crate):
