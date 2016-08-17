@@ -404,7 +404,7 @@ def read_table_blocks(arg, make_copy=False):
     elif isinstance(arg, pycrates.CrateDataset):
         filename = arg.get_filename()
         dataset = arg
-    elif type(arg) in six.string_types:
+    elif isinstance(arg, six.string_types):
         filename = arg
         dataset = pycrates.CrateDataset(arg)
         close_dataset = True
