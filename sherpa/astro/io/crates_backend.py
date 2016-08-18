@@ -140,7 +140,7 @@ def _try_key(crate, name, dtype=str):
 
     # Python3 (and having the type as a parameter) seems to require some complexity here.
     # If there is a better way I am not aware of it.
-    if dtype == str:
+    if dtype == str and (isinstance(key, six.string_types) or isinstance(key, bytes)):
         try:  # Python 3
             return dtype(key, "utf-8")
         except TypeError:  # Python 2
@@ -934,13 +934,13 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 
     if pha is None:
         pha = phadataset.get_crate(phadataset.get_current_crate())
-        if (pha.get_key('HDUCLAS1').value == 'SPECTRUM' or
-                pha.get_key('HDUCLAS2').value == 'SPECTRUM'):
+        if (pha.get_key('HDUCLAS1').value == b'SPECTRUM' or
+                pha.get_key('HDUCLAS2').value == b'SPECTRUM'):
             pass
         else:
             pha = phadataset.get_crate(1)
-            if (pha.get_key('HDUCLAS1').value == 'SPECTRUM' or
-                    pha.get_key('HDUCLAS2').value == 'SPECTRUM'):
+            if (pha.get_key('HDUCLAS1').value == b'SPECTRUM' or
+                    pha.get_key('HDUCLAS2').value == b'SPECTRUM'):
                 pass
             else:
                 # If background maybe better to go on to next block?
@@ -953,7 +953,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
         for ii in range(phadataset.get_ncrates()):
             block = phadataset.get_crate(ii + 1)
             hduclas2 = block.get_key('HDUCLAS2')
-            if hduclas2 is not None and hduclas2.value == 'BKG':
+            if hduclas2 is not None and hduclas2.value == b'BKG':
                 pha = block
 
     if pha is None or pha.get_colnames() is None:
