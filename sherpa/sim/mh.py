@@ -288,10 +288,23 @@ class Sampler(object):
 
     def __init__(self):
 
-        # get the initial keyword argument defaults
-        argspec = inspect.getargspec(self.init)
-        first = len(argspec[0]) - len(argspec[3])
-        self._opts = dict(izip(argspec[0][first:], argspec[3][0:]))
+        # get the initial keyword argument defaults;
+        # it looks like inspect.getargspec is not being removed
+        # in Python 3.6, but use the signature function if it is
+        # available to avoid possible warnings.
+        try:
+            sig = inspect.signature(self.init)
+            opts = [(p.name, p.default)
+                    for p in sig.parameters.values()
+                    if p.kind == p.POSITIONAL_OR_KEYWORD and
+                    p.default != p.empty]
+
+        except AttributeError:
+            argspec = inspect.getargspec(self.init)
+            first = len(argspec[0]) - len(argspec[3])
+            opts = izip(argspec[0][first:], argspec[3][0:])
+
+        self._opts = dict(opts)
         self.walk = None
 
     def init(self):
