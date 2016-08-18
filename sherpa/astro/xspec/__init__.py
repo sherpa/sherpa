@@ -209,7 +209,11 @@ class XSTableModel(XSModel):
             if nint > 0:
                 isfrozen = False
 
-            parname = parnames[ii].strip().lower().translate(tbl)
+            try:  # Python 3
+                parname = str(parnames[ii], "utf-8")
+            except TypeError:  # Python 2
+                parname = parnames[ii]
+            parname = parname.strip().lower().translate(tbl)
             par = Parameter(name, parname, initvals[ii],
                             mins[ii], maxes[ii],
                             hardmins[ii], hardmaxes[ii], frozen=isfrozen)

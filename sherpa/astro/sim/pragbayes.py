@@ -51,7 +51,7 @@ class ARFSIMFactory(object):
             if 'EMETHOD' in hdr[key]:
                 emethod = hdr[key]['EMETHOD'].strip().upper()
 
-        if emethod is not None and emethod.startswith('PCA1DADD'):
+        if emethod is not None and emethod.startswith(b'PCA1DADD'):
             bias      = cols[2]['BIAS']
             component = cols[3]['COMPONENT']
             fvariance = cols[3]['FVARIANCE']
@@ -59,7 +59,7 @@ class ARFSIMFactory(object):
             eigenvec  = cols[3]['EIGENVEC']
             return PCA1DAdd(bias, component, fvariance, eigenval, eigenvec)
 
-        elif emethod is not None and emethod.startswith('SIM1DADD'):
+        elif emethod is not None and emethod.startswith(b'SIM1DADD'):
             bias      = cols[2]['BIAS']
             component = cols[3]['COMPONENT']
             simcomp   = cols[3]['SIMCOMP'] 
