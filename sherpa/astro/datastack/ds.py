@@ -18,6 +18,8 @@ from __future__ import print_function
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import six
 import numpy
 from sherpa.utils.logging import config_logger
 from sherpa.astro import ui
@@ -384,8 +386,13 @@ class DataStack(object):
         """
         def func(dataset):
             if hasattr(dataset, 'header'):
+                str_value = str(value)
+                try:  # Python 3
+                    header_value = str(dataset.header[keyword], "utf-8")
+                except TypeError:  # Python 2
+                    header_value = dataset.header[keyword]
                 if keyword in dataset.header.keys() and \
-                   dataset.header[keyword] == str(value):
+                   header_value == str_value:
                     return True
             return False
         return self.query(func)

@@ -680,7 +680,7 @@ class test_query(SherpaTestCase):
 
         assert f == [1, 2]
 
-        f = datastack.query_by_obsid('7867')
+        f = datastack.query_by_obsid(7867)
 
         assert f == [2]
 
