@@ -435,7 +435,6 @@ def bool_cast(val):
 
 def export_method(meth, name=None, modname=None):
     """
-
     Given a bound instance method, return a simple function that wraps
     it.  The only difference between the interface of the original
     method and the generated function is that the latter doesn't
@@ -467,12 +466,34 @@ def export_method(meth, name=None, modname=None):
     else:
         old_name = meth.__name__
 
-    # Make an argument list string, removing 'self'
-    argspec = inspect.getargspec(meth)
     defaults = meth.__defaults__
     doc = meth.__doc__
-    argspec[0].pop(0)
-    argspec = inspect.formatargspec(argspec[0], argspec[1], argspec[2])
+
+    # Make an argument list string, removing 'self'
+    #
+    argspec = None
+    try:
+        sig = inspect.signature(meth)
+    except AttributeError:
+        argspec = inspect.getargspec(meth)
+
+    if argspec is None:
+        # is this the best way to emulate the Python 2.7 version?
+        def tostr(p):
+            if p.kind == p.VAR_KEYWORD:
+                return "**{}".format(p.name)
+            elif p.kind == p.VAR_POSITIONAL:
+                return "*{}".format(p.name)
+            else:
+                return p.name
+
+        argspec = ",".join([tostr(p) for p in sig.parameters.values()])
+        argspec = "({})".format(argspec)
+
+    else:
+        argspec = inspect.getargspec(meth)
+        argspec[0].pop(0)
+        argspec = inspect.formatargspec(argspec[0], argspec[1], argspec[2])
 
     # Create a wrapper function with no default arguments
     g = {old_name: meth}
