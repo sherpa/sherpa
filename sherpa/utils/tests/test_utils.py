@@ -68,6 +68,18 @@ class test_utils(SherpaTestCase):
                 'Instance method m()'
                 return x * y
 
+            def margs(self, x, y=2, *args):
+                'Instance method margs() with *args'
+                return x * y + len(args)
+
+            def kwargs(self, x, y=2, **kwargs):
+                'Instance method kwargs() with **kwargs'
+                return x * y + 2 * len(kwargs)
+
+            def bargs(self, x, y=2, *args, **kwargs):
+                'Instance method bargs() with *args and **kwargs'
+                return x * y + len(args) + 2 * len(kwargs)
+
             @classmethod
             def cm(klass, x, y=2):
                 'Class method cm()'
@@ -81,7 +93,7 @@ class test_utils(SherpaTestCase):
         c = C()
 
         # Basic usage
-        for meth in (c.m, c.cm, c.sm):
+        for meth in (c.m, c.margs, c.kwargs, c.bargs, c.cm, c.sm):
             m = utils.export_method(meth)
             self.assertEqual(m.__name__, meth.__name__)
             self.assertTrue(m.__doc__ is not None)
@@ -92,12 +104,36 @@ class test_utils(SherpaTestCase):
             try:
                 m()
             except TypeError as e:
-                try:
-                    self.assertEqual(str(e),
-                                     '%s() takes at least 1 argument (0 given)' % meth.__name__)
-                except:
-                    self.assertEqual(str(e),
-                                     "%s() missing 1 required positional argument: 'x'" % meth.__name__)
+                emsg2 = "{}() ".format(meth.__name__) + \
+                        "takes at least 1 argument (0 given)"
+                emsg3 = "{}() ".format(meth.__name__) + \
+                        "missing 1 required positional argument: 'x'"
+                self.assertIn(str(e), [emsg2, emsg3])
+
+        # Check that *args/**kwargs are handled correctly for methods;
+        # should perhaps be included above to avoid repeated calls
+        # to export_method?
+        #
+        meth = utils.export_method(c.margs)
+        self.assertTrue(meth(3, 7, "a", "b"), 23)
+        try:
+            meth(12, dummy=None)
+        except TypeError as e:
+            emsg = "margs() got an unexpected keyword argument 'dummy'"
+            self.assertEqual(str(e), emsg)
+
+        meth = utils.export_method(c.kwargs)
+        self.assertTrue(meth(3, 7, foo="a", bar="b"), 25)
+        try:
+            meth(12, 14, 15)
+        except TypeError as e:
+            emsg2 = "kwargs() takes at most 2 arguments (3 given)"
+            emsg3 = "kwargs() takes from 1 to 2 positional arguments " + \
+                    "but 3 were given"
+            self.assertIn(str(e), [emsg2, emsg3])
+
+        meth = utils.export_method(c.bargs)
+        self.assertTrue(meth(3, 7, 14, 15, foo=None), 25)
 
         # Non-method argument
         def f(x):
