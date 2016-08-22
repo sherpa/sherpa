@@ -18,7 +18,7 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
+from six.moves import range as xrange
 import numpy
 import numpy.random
 import logging
@@ -28,6 +28,21 @@ from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     NormalParameterSampleFromScaleVector
 
 __all__ = ['calc_flux', 'sample_flux', 'calc_sample_flux']
+
+
+class CalcFluxWorker(object):
+    def __init__(self, fit, method, data, src, lo, hi):
+        self.fit = fit
+        self.method = method
+        self.data = data
+        self.src = src
+        self.lo = lo
+        self.hi = hi
+
+    def __call__(self, sample):
+        self.fit.model.thawedpars = sample
+        flux = self.method(self.data, self.src, self.lo, self.hi)
+        return [flux] + list(sample)
 
 
 def calc_flux(fit, data, src, samples, method=calc_energy_flux,
@@ -40,7 +55,7 @@ def calc_flux(fit, data, src, samples, method=calc_energy_flux,
 
     old_model_vals = fit.model.thawedpars
     try:
-        fluxes = parallel_map(evaluate, samples, numcores)
+        fluxes = parallel_map(CalcFluxWorker(fit, method, data, src, lo, hi), samples, numcores)
     finally:
         fit.model.thawedpars = old_model_vals
 

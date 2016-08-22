@@ -17,11 +17,20 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import six
 import pytest
 import os
 import sys
 import re
 from sherpa.utils import SherpaTestCase
+
+from six.moves import reload_module
+
+try:  # Python 3
+    from unittest import mock
+except ImportError:  # Python 2
+    import mock
+
 
 TEST_DATA_OPTION = "--test-data"
 
@@ -132,3 +141,52 @@ def make_data_path():
         return os.path.join(path, arg)
 
     return wrapped
+
+
+@pytest.fixture
+def mock_chips(monkeypatch, tmpdir):
+    """
+    Fixture for tests mocking chips
+
+    Returns
+    -------
+    The tuple (backend, mock_chips)
+    """
+
+    # First, inject a mock chips module in the backend.
+    chips = mock.MagicMock()
+    monkeypatch.setitem(sys.modules, name="pychips", value=chips)
+
+    # figure out what IO module we can use
+    try:
+        import pycrates
+        io = "crates"
+    except ImportError:
+        io = "pyfits"  # Even if this is not available, config code will fall back to dummy
+
+    # Now, write a fake configuration file to a temporary location
+    config = tmpdir.mkdir("config").join("sherpa.rc")
+    config.write("""
+[options]
+plot_pkg : chips
+io_pkg : {}
+    """.format(io))
+
+    # Then, inject a function that returns the fake file
+    def get_config():
+        return str(config)
+    import sherpa
+    monkeypatch.setattr(sherpa, name="get_config", value=get_config)
+
+    # Force reload of sherpa modules that might have already read the configuration
+    from sherpa import plot
+    from sherpa.astro import plot as astro_plot
+
+    reload_module(plot)
+    reload_module(astro_plot)
+
+    # Force a reload, to make sure we always return a fresh instance, just in case
+    from sherpa.plot import chips_backend
+    reload_module(chips_backend)
+
+    return chips_backend, chips
