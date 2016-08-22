@@ -1,3 +1,4 @@
+from __future__ import division
 #
 #  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
 #
@@ -367,7 +368,7 @@ class OrderPlot(ModelHistogram):
             top_color = '0xffffff'
             bot_color = '0x0000bf'
             num = len(self.orders)
-            jump = (int(top_color, 16) - int(bot_color, 16)) / (num + 1)
+            jump = (int(top_color, 16) - int(bot_color, 16)) // (num + 1)
             for order in self.orders:
                 self.colors.append(top_color)
                 top_color = hex(int(top_color, 16) - jump)
