@@ -144,7 +144,7 @@ def make_data_path():
 
 
 @pytest.fixture
-def mock_chips(monkeypatch, tmpdir):
+def mock_chips(monkeypatch, tmpdir, request):
     """
     Fixture for tests mocking chips
 
@@ -185,8 +185,18 @@ io_pkg : {}
     reload_module(plot)
     reload_module(astro_plot)
 
-    # Force a reload, to make sure we always return a fresh instance, just in case
+    # Force a reload, to make sure we always return a fresh instance, so we track the correct mock object
     from sherpa.plot import chips_backend
     reload_module(chips_backend)
+
+    def fin():
+        monkeypatch.undo()
+        reload_module(sherpa)
+        reload_module(plot)
+        reload_module(astro_plot)
+        reload_module(sherpa.all)
+        reload_module(sherpa.astro.all)  # These are required because otherwise Python will not match imported classes.
+
+    request.addfinalizer(fin)
 
     return chips_backend, chips
