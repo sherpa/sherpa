@@ -430,7 +430,7 @@ def read_table_blocks(arg, make_copy=False):
         hdr[ii] = {}
         names = crate.get_keynames()
         for name in names:
-            hdr[ii][name] = crate.get_key_value(name)
+            hdr[ii][name] = _try_hdr_key(crate, name)
 
         cols[ii] = {}
         # skip over primary
@@ -934,13 +934,13 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 
     if pha is None:
         pha = phadataset.get_crate(phadataset.get_current_crate())
-        if (pha.get_key('HDUCLAS1').value == b'SPECTRUM' or
-                pha.get_key('HDUCLAS2').value == b'SPECTRUM'):
+        if (_try_hdr_key(pha, 'HDUCLAS1') == 'SPECTRUM' or
+                _try_hdr_key(pha, 'HDUCLAS2') == 'SPECTRUM'):
             pass
         else:
             pha = phadataset.get_crate(1)
-            if (pha.get_key('HDUCLAS1').value == b'SPECTRUM' or
-                    pha.get_key('HDUCLAS2').value == b'SPECTRUM'):
+            if (_try_hdr_key(pha, 'HDUCLAS1') == 'SPECTRUM' or
+                    _try_hdr_key(pha, 'HDUCLAS2') == 'SPECTRUM'):
                 pass
             else:
                 # If background maybe better to go on to next block?
@@ -953,7 +953,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
         for ii in range(phadataset.get_ncrates()):
             block = phadataset.get_crate(ii + 1)
             hduclas2 = block.get_key('HDUCLAS2')
-            if hduclas2 is not None and hduclas2.value == b'BKG':
+            if hduclas2 is not None and hduclas2.value == 'BKG':
                 pha = block
 
     if pha is None or pha.get_colnames() is None:
