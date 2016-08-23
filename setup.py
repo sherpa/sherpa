@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-# Copyright (C) 2014  Smithsonian Astrophysical Observatory
+# Copyright (C) 2014, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -46,6 +46,7 @@ except:
         "Could not import setuptools.\n"
         "This might lead to an incomplete installation\n"
     ), file=sys.stderr)
+
 from numpy.distutils.core import setup
 
 from helpers.extensions import static_ext_modules
@@ -126,6 +127,7 @@ meta = dict(name='sherpa',
                 'Programming Language :: C',
                 'Programming Language :: Fortran',
                 'Programming Language :: Python :: 2.7',
+                'Programming Language :: Python :: 3.5',
                 'Programming Language :: Python :: Implementation :: CPython',
                 'Topic :: Scientific/Engineering :: Astronomy',
                 'Topic :: Scientific/Engineering :: Physics'
