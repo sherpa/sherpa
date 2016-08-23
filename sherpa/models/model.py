@@ -87,6 +87,7 @@ class Model(NoNewAttributesAfterInit):
         self.type = self.__class__.__name__.lower()
         self.pars = tuple(pars)
         self.is_discrete = False
+        # Should this set up the _renamedpars attribute if not set?
         NoNewAttributesAfterInit.__init__(self)
 
     def __repr__(self):
@@ -123,14 +124,28 @@ class Model(NoNewAttributesAfterInit):
 
     # Make parameter access case insensitive
     def __getattr__(self, name):
-        par = None
-        for key in self.__dict__.keys():
-            if (type(key) == str):
-                if (name.lower() == key.lower()):
-                    par = self.__dict__.get(key)
-                    break
-        if (par is not None) and isinstance(par, Parameter):
-            return par
+        lname = name.lower()
+
+        for key in self.__dict__:
+            try:
+                kname = key.lower()
+            except AttributeError:
+                continue
+
+            if lname == kname:
+                val = self.__dict__.get(key)
+                if isinstance(val, Parameter):
+                    return val
+
+        # Some of the logic here should be cached - i.e. a mapping
+        # created from the old name to the parameter for the new
+        # name.
+        rpars = self.__dict__.get('_renamedpars')
+        if rpars is not None:
+            for (oname, nname) in rpars:
+                if oname.lower() == lname:
+                    return getattr(self, nname)
+
         # this must be AttributeError for 'getattr' to work
         raise AttributeError("'%s' object has no attribute '%s'" %
                              (type(self).__name__, name))
