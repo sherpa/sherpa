@@ -23,6 +23,8 @@ import numpy
 from sherpa.utils import SherpaFloat, SherpaTestCase
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import *
+from sherpa.models.model import ArithmeticModel
+from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.basic import Sin, Const1D
 
 
@@ -194,3 +196,39 @@ class test_model_renamed(test_model):
         self.assertEqual(self.m.ampl.val, 18.0)
         self.m.ampl = 1
         self.assertEqual(self.m.ampl.val, 1.0)
+
+
+# During testing an XSPEC model was found to refer to one of its
+# parameters with a different case to how it was created, which
+# caused problems. Replicate this problem case here.
+#
+class ParameterCase(ArithmeticModel):
+    """Re-implemenent Sin model so can copy tests"""
+
+    def __init__(self, name='parametercase'):
+
+        self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
+        self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
+        self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0)
+        pars = (self.perioD, self.oFFSEt, self.AMPL)
+        self._renamedpars = [('NORM', 'ampl')]
+
+        self._basemodel = Sin()
+
+        ArithmeticModel.__init__(self, name, pars)
+
+    def calc(self, *args, **kwargs):
+        for par in self.pars:
+            setattr(self._basemodel, par.name, par.val)
+
+        self._basemodel.integrate = self.integrate
+        return self._basemodel.calc(*args, **kwargs)
+
+
+class test_model_parametercase_instance(test_model_renamed):
+
+    def setUp(self):
+        self.m = ParameterCase()
+
+    def test_name(self):
+        self.assertEqual(self.m.name, 'parametercase')
