@@ -126,25 +126,50 @@ class Model(NoNewAttributesAfterInit):
     def __getattr__(self, name):
         lname = name.lower()
 
-        for key in self.__dict__:
-            try:
-                kname = key.lower()
-            except AttributeError:
-                continue
+        # If .pars is set up, use this as it is a micro-optimisation,
+        # otherwise (e.g. during calls to __init__), fall back to
+        # scanning through the dictionary for any code called during
+        # model initialisation (alternatively it could be considered
+        # to be an error to use the wrong capitalisation during the
+        # construction phase, but this would be a policy change so is
+        # not enforced here).
+        #
+        # How much of this should be cached?
+        #
+        pars = self.__dict__.get('pars')
+        if pars is not None:
+            for par in pars:
+                if par.name.lower() == lname:
+                    return par
 
-            if lname == kname:
-                val = self.__dict__.get(key)
-                if isinstance(val, Parameter):
-                    return val
+            rpars = self.__dict__.get('_renamedpars')
+            if rpars is not None:
+                for (oname, nname) in rpars:
+                    if oname.lower() == lname:
+                        for par in pars:
+                            if par.name == nname:
+                                return par
 
-        # Some of the logic here should be cached - i.e. a mapping
-        # created from the old name to the parameter for the new
-        # name.
-        rpars = self.__dict__.get('_renamedpars')
-        if rpars is not None:
-            for (oname, nname) in rpars:
-                if oname.lower() == lname:
-                    return getattr(self, nname)
+        else:
+            for key in self.__dict__:
+                try:
+                    kname = key.lower()
+                except AttributeError:
+                    continue
+
+                if lname == kname:
+                    val = self.__dict__.get(key)
+                    if isinstance(val, Parameter):
+                        return val
+
+            rpars = self.__dict__.get('_renamedpars')
+            if rpars is not None:
+                for (oname, nname) in rpars:
+                    if oname.lower() == lname:
+                        # Easier to call itself with the proper name
+                        # than to loop through __dict__ again. This
+                        # should not be a common case.
+                        return getattr(self, nname)
 
         # this must be AttributeError for 'getattr' to work
         raise AttributeError("'%s' object has no attribute '%s'" %
