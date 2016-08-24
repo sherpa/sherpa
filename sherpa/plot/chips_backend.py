@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -364,7 +364,7 @@ def init():
 def begin():
     global _initialized
 
-    chips.lock()    
+    chips.lock()
     chips.advanced.open_undo_buffer()
     if _initialized is False:
         try:

@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-# Copyright (C) 2015  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
