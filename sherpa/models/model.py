@@ -23,6 +23,8 @@ from six.moves import zip as izip
 import logging
 import numpy
 import hashlib
+import warnings
+
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.err import ModelErr
 
@@ -126,6 +128,12 @@ class Model(NoNewAttributesAfterInit):
     def __getattr__(self, name):
         lname = name.lower()
 
+        def warn(oname, nname):
+            wmsg = 'Parameter name {} is deprecated'.format(oname) + \
+                ' for model {}, '.format(type(self).__name__) + \
+                'use {} instead'.format(nname)
+            warnings.warn(wmsg, DeprecationWarning)
+
         # If .pars is set up, use this as it is a micro-optimisation,
         # otherwise (e.g. during calls to __init__), fall back to
         # scanning through the dictionary for any code called during
@@ -148,6 +156,7 @@ class Model(NoNewAttributesAfterInit):
                     if oname.lower() == lname:
                         for par in pars:
                             if par.name == nname:
+                                warn(oname, nname)
                                 return par
 
         else:
@@ -169,7 +178,9 @@ class Model(NoNewAttributesAfterInit):
                         # Easier to call itself with the proper name
                         # than to loop through __dict__ again. This
                         # should not be a common case.
-                        return getattr(self, nname)
+                        ans = getattr(self, nname)
+                        warn(oname, nname)
+                        return ans
 
         # this must be AttributeError for 'getattr' to work
         raise AttributeError("'%s' object has no attribute '%s'" %

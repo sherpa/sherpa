@@ -57,6 +57,8 @@ known_warnings = {
             #  This does not have to do with Sherpa and is coming from some versions of
             #  jupyter_client
             r"metadata .* was set from the constructor.*",
+            r"Parameter name norm is deprecated for model RenamedPars, use ampl instead",
+            r"Parameter name NORM is deprecated for model ParameterCase, use ampl instead"
         ],
     UserWarning:
         [
