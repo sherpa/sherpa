@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2013  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2013, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,14 +24,14 @@ from sherpa.utils.err import ModelErr
 class test_err(SherpaTestCase):
 
     def test_NewSherpaErr(self):
-        class OldSherpaErr( Exception ): 
-            "Old class for all Sherpa exceptions" 
-            def __init__( self, dict, key, *args ): 
-                if key in dict: 
-                    errmsg = dict[ key ] % args 
-                else: 
-                    errmsg = "unknown key '%s'" % key 
-                Exception.__init__(self, errmsg) 
+        class OldSherpaErr( Exception ):
+            "Old class for all Sherpa exceptions"
+            def __init__( self, dict, key, *args ):
+                if key in dict:
+                    errmsg = dict[ key ] % args
+                else:
+                    errmsg = "unknown key '%s'" % key
+                Exception.__init__(self, errmsg)
 
         dict = {'simple':'simple message', 'arg':'argument: %s'}
 
@@ -53,7 +53,7 @@ class test_err(SherpaTestCase):
         self.assertEqual('My Error', str(err))
 
         # Test #5: verify the user provided example, which exercises a derived class
-        err = ModelErr("Unable to frobnicate model %s" % 'modelname') 
+        err = ModelErr("Unable to frobnicate model %s" % 'modelname')
         self.assertEqual('Unable to frobnicate model modelname', str(err))
 
 

@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -47,7 +47,7 @@ class test_basic(SherpaTestCase):
             if isinstance(m, basic.TableModel):
                 m.load(x,x)
             if isinstance(m, basic.UserModel):
-                m.calc = userfunc 
+                m.calc = userfunc
             self.assertEqual(type(m).__name__.lower(), m.name)
             count += 1
 

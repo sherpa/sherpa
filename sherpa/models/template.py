@@ -1,6 +1,6 @@
 from __future__ import absolute_import
-# 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -37,7 +37,7 @@ def create_template_model(modelname, names, parvals, templates, template_interpo
 
     `modelname`  - name of the template model.
 
-    `names`      - list of strings that define the order of the 
+    `names`      - list of strings that define the order of the
                    named parameters.
 
     `parvals`    - 2-D ndarray of parameter vectors, index corresponds
@@ -53,7 +53,7 @@ def create_template_model(modelname, names, parvals, templates, template_interpo
 
     """
     # Create a list of parameters from input
-    pars = []   
+    pars = []
     for ii, name in enumerate(names):
         minimum = min(parvals[:,ii])
         maximum = max(parvals[:,ii])
@@ -141,7 +141,7 @@ class TemplateModel(ArithmeticModel):
             self.__dict__[par.name] = par
 
         for ii, parval in enumerate(parvals):
-            self.index[tuple(parval)] = templates[ii]        
+            self.index[tuple(parval)] = templates[ii]
 
         ArithmeticModel.__init__(self, name, pars)
         self.is_discrete = True

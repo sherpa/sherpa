@@ -1,6 +1,6 @@
 from __future__ import absolute_import
-# 
-#  Copyright (C) 2010  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2010, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -572,7 +572,7 @@ class NestedModel(CompositeModel, ArithmeticModel):
 
     def calc(self, p, *args, **kwargs):
         nouter = len(self.outer.pars)
-        return self.outer.calc(p[:nouter], 
+        return self.outer.calc(p[:nouter],
                                self.inner.calc(p[nouter:], *args, **kwargs),
                                *self.otherargs, **self.otherkwargs)
 

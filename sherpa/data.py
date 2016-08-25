@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2008, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2008, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -394,7 +394,7 @@ class Data(BaseData):
 
     def get_yerr(self, filter=False, staterrfunc=None):
         "Return errors in dependent axis in N-D view of dependent variable"
-        return self.get_error(filter, staterrfunc) 
+        return self.get_error(filter, staterrfunc)
 
     def get_ylabel(self, yfunc=None):
         "Return label for dependent axis in N-D view of dependent variable"
@@ -473,7 +473,7 @@ class DataSimulFit(Data):
 
         return numpy.concatenate(total_model)
 
-    def to_fit(self, staterrfunc=None):        
+    def to_fit(self, staterrfunc=None):
         total_dep = []
         total_staterror = []
         total_syserror = []
