@@ -46,8 +46,7 @@ known_warnings = {
         [
             r"unorderable dtypes.*",
             r"Non-string object detected for the array ordering.*",
-            r"using a non-integer number instead of an integer will result in an error in the future",
-            r"inspect.getargspec\(\) is deprecated"
+            r"using a non-integer number instead of an integer will result in an error in the future"
         ],
     UserWarning:
         [
