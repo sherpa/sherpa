@@ -523,7 +523,10 @@ class IterFit(NoNewAttributesAfterInit):
                 exposure_time[2 * index + 1] = bkg.exposure
                 ratio = vectorize_backscale_ratio(bkg.backscal,
                                                   mydata.backscal,
-                                                  data_size[index])
+                                                  len(mydata.channel))
+                noticed_channels = array(mydata.get_noticed_channels(),
+                                         dtype=int)  
+                ratio = ratio[noticed_channels-1]
                 backscale_ratio = append(backscale_ratio, ratio)
             else:
                 return result
