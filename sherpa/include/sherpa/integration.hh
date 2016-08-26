@@ -20,7 +20,6 @@
 #ifndef __sherpa_integration_hh__
 #define __sherpa_integration_hh__
 
-#include <capsulethunk.h>
 #include <sstream>
 
 extern "C" {

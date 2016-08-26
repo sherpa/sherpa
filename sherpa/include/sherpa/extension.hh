@@ -22,8 +22,6 @@
 
 #include <sherpa/array.hh>
 
-#include <capsulethunk.h>
-
 typedef unsigned int SherpaUInt;
 typedef sherpa::Array< unsigned int, NPY_UINT > SherpaUIntArray;
 
