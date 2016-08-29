@@ -6893,8 +6893,8 @@ class Session(sherpa.ui.utils.Session):
     def set_quality(self, id, val=None, bkg_id=None):
         """Apply a set of quality flags to a PHA data set.
 
-        A quality value of 1 or greater indicates a good channel,
-        otherwise the channel is considered bad and can be
+        A quality value of 0 indicates a good channel,
+        otherwise (values >=1) the channel is considered bad and can be
         excluded using the `ignore_bad` function, as discussed
         in [1]_.
 
