@@ -238,6 +238,13 @@ There are two ways to download the source code:
 
  - directly from GitHub as a git repository
 
+**NOTE:** it is possible to build Sherpa with `fortran` compilers other than
+`gfortran`. While this is not supported, [PR #202](https://github.com/sherpa/sherpa/pull/202/files)
+shows how this can been accomplished with `g95` on `OS X` in a specific setup.
+Similar changes are probably required for other compilers or setups.
+Since the `fortran` code is compiled by `numpy`'s [`f2py`](http://docs.scipy.org/doc/numpy-dev/f2py/distutils.html)
+you might want to check their documentation for details.
+
 ### 2a. Extract the source tarball
 
 If you donwloaded the Sherpa source tarball, you can extract it by:
