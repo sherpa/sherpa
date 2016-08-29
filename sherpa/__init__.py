@@ -1,4 +1,5 @@
-# 
+from __future__ import print_function
+#
 #  Copyright (C) 2007,2014,2015,2016  Smithsonian Astrophysical Observatory
 #
 #
@@ -80,12 +81,12 @@ def get_config():
 
     # If NOSHERPARC is set, read in system config file
     # ignore any user config file
-    if (os.environ.has_key('NOSHERPARC') == True):
+    if (('NOSHERPARC' in os.environ) == True):
         return os.path.join(os.path.dirname(__file__), filename)
 
     # If SHERPARC is set, read in config file from there,
     # and ignore default location
-    if (os.environ.has_key('SHERPARC') == True):
+    if (('SHERPARC' in os.environ) == True):
         config = os.environ.get('SHERPARC')
         if os.path.isfile(config):
             return config
@@ -112,7 +113,7 @@ def smoke(verbosity=0, require_failure=False, fits=None, xspec=False):
     ----------
     xspec : boolean
         Require xspec module when running tests. Tests requiring xspec may still run if the xspec module is present.
-    fits : basestring
+    fits : str
         Require a fits module with this name to be present before running the smoke test.
         This option makes sure that when the smoke test is run the required modules are present.
         Note that tests requiring fits may still run if any fits backend is available, and they might
@@ -158,11 +159,11 @@ def clitest():
             import pip
             pip.main(['install', package_name])
         except:
-            print """Cannot import pip or install packages with it.
+            print("""Cannot import pip or install packages with it.
             You need pytest, and possibly pytest-cov, in order to run the tests.
             If you downloaded the source code, please run 'pip install -r test_requirements.txt'
             from the source directory first.
-            """
+            """)
             raise
 
     def install_deps():

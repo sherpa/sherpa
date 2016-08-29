@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,12 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six.moves import xrange
 
 import logging
 import numpy as np
-import time
 from sherpa.fit import Fit
-from sherpa.optmethods import NelderMead, LevMar
 from sherpa.estmethods import Covariance
 from sherpa.sim.mh import MetropolisMH, rmvt, CovarError, Walk, LimitError
 read_table_blocks = None
@@ -49,7 +48,7 @@ class ARFSIMFactory(object):
 
         emethod = None
         for key in hdr.keys():
-            if hdr[key].has_key('EMETHOD'):
+            if 'EMETHOD' in hdr[key]:
                 emethod = hdr[key]['EMETHOD'].strip().upper()
 
         if emethod is not None and emethod.startswith('PCA1DADD'):
@@ -63,7 +62,7 @@ class ARFSIMFactory(object):
         elif emethod is not None and emethod.startswith('SIM1DADD'):
             bias      = cols[2]['BIAS']
             component = cols[3]['COMPONENT']
-            simcomp   = cols[3]['SIMCOMP'] 
+            simcomp   = cols[3]['SIMCOMP']
             return SIM1DAdd(bias, component, simcomp)
 
         raise TypeError("Unknown simulation ARF '%s'" % filename)
@@ -224,7 +223,7 @@ class WalkWithSubIters(Walk):
 
                 # Assume proposal is rejected by default
                 proposals[jump] = current_params
-                stats[jump]  = current_stat            
+                stats[jump]  = current_stat
 
                 for jj in xrange(nsubiter):
 
@@ -263,7 +262,7 @@ class WalkWithSubIters(Walk):
                         self._sampler.reject()
                         acceptflag[jump] = False
 
-                        # If acceptance fails do we start back at the last accepted 
+                        # If acceptance fails do we start back at the last accepted
                         # iteration or the last accepted subiteration?
                         current_params = proposals[ii]
                         current_stat   = stats[ii]
@@ -304,7 +303,7 @@ class PragBayes(MetropolisMH):
              simarf=None, nsubiters=10):
 
         # Note that nsubiters is used as a dummy parameter to indicate the default
-        # value.  See the function WalkWithSubIters.__call__() 
+        # value.  See the function WalkWithSubIters.__call__()
 
         if isinstance(simarf, (PCA1DAdd, SIM1DAdd)):
             self.simarf = simarf
@@ -347,7 +346,7 @@ class PragBayes(MetropolisMH):
         """ MH jumping rule """
 
         # The current proposal is ignored here.
-        # MH jumps from the current best-fit parameter values using the 
+        # MH jumps from the current best-fit parameter values using the
         # covariance scale from the sub-iteration fit
 
         # If the ARF is updated then sigma will be None, then

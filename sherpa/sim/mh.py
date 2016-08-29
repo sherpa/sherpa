@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -56,13 +56,13 @@ http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
 
 # The pyBLoCXS code base is cleanly separable from Sherpa!
 
+from six.moves import zip as izip
+from six.moves import xrange
+
 import numpy as np
 import logging
-import sys
 import math
-import time
 import inspect
-from itertools import izip
 
 try:
     # try lgamma in >= Python 2.7
@@ -288,10 +288,23 @@ class Sampler(object):
 
     def __init__(self):
 
-        # get the initial keyword argument defaults
-        argspec = inspect.getargspec(self.init)
-        first = len(argspec[0]) - len(argspec[3])
-        self._opts = dict(izip(argspec[0][first:], argspec[3][0:]))
+        # get the initial keyword argument defaults;
+        # it looks like inspect.getargspec is not being removed
+        # in Python 3.6, but use the signature function if it is
+        # available to avoid possible warnings.
+        try:
+            sig = inspect.signature(self.init)
+            opts = [(p.name, p.default)
+                    for p in sig.parameters.values()
+                    if p.kind == p.POSITIONAL_OR_KEYWORD and
+                    p.default != p.empty]
+
+        except AttributeError:
+            argspec = inspect.getargspec(self.init)
+            first = len(argspec[0]) - len(argspec[3])
+            opts = izip(argspec[0][first:], argspec[3][0:])
+
+        self._opts = dict(opts)
         self.walk = None
 
     def init(self):
@@ -310,11 +323,11 @@ class Sampler(object):
         raise NotImplementedError
 
     def tear_down(self):
-        raise NotImplementedError                    
+        raise NotImplementedError
 
 
 class MH(Sampler):
-    """ The Metropolis Hastings Sampler """ 
+    """ The Metropolis Hastings Sampler """
 
     def __init__(self, fcn, sigma, mu, dof, *args):
         self.fcn = fcn
@@ -537,7 +550,7 @@ class MH(Sampler):
 
 
 class MetropolisMH(MH):
-    """ The Metropolis Metropolis-Hastings Sampler """ 
+    """ The Metropolis Metropolis-Hastings Sampler """
 
     def __init__(self, fcn, sigma, mu, dof, *args):
         MH.__init__(self, fcn, sigma, mu, dof, *args)
@@ -586,7 +599,7 @@ class MetropolisMH(MH):
         """ Metropolis Jumping Rule """
 
         # Metropolis with MH jumps from the current accepted parameter
-        # proposal at each iteration       
+        # proposal at each iteration
         proposal = rmvt(current, self.sigma_m*self.scale, self._dof)
         return proposal
 

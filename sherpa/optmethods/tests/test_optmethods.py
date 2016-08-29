@@ -1,5 +1,6 @@
+from __future__ import print_function
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -33,7 +34,7 @@ class test_optmethods(SherpaTestCase):
         self.verbose = False
 
     def print_result( self, name, f, x, nfev ):
-        print '%s(%s) = %g in %d nfev' % (name, x, f, nfev)
+        print('%s(%s) = %g in %d nfev' % (name, x, f, nfev))
 
     def tst_all( self, name, fct, fmin, x0, xmin, xmax,
                  iprint=False ):
@@ -51,7 +52,7 @@ class test_optmethods(SherpaTestCase):
         status, x, fval, msg, stuff = optmethod( fct, x0, xmin, xmax, maxfev=maxfev*len(x0))
         nfev = stuff.get('nfev')
         if iprint:
-            print 'fmin = %g vs fval = %g' % ( fmin, fval )
+            print('fmin = %g vs fval = %g' % ( fmin, fval ))
         if self.verbose or iprint:
 
             self.print_result( name, fval, x, nfev )

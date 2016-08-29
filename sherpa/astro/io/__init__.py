@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #
 #  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
@@ -25,7 +26,9 @@ FITS support present (i.e. neither the crates or astropy
 back ends are in use).
 """
 
-from itertools import izip
+from six.moves import zip as izip
+from six.moves.configparser import ConfigParser
+
 import logging
 import os
 import os.path
@@ -37,7 +40,8 @@ from sherpa.utils import SherpaFloat
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, DataPHA
 from sherpa import get_config
-from ConfigParser import ConfigParser
+
+import importlib
 
 config = ConfigParser()
 config.read(get_config())
@@ -51,7 +55,8 @@ elif io_opt.startswith('pyfits'):
     io_opt = 'pyfits_backend'
 
 try:
-    backend = __import__(io_opt, globals(), locals(), [])
+    importlib.import_module('.' + io_opt, package='sherpa.astro.io')
+    backend = sys.modules['sherpa.astro.io.' + io_opt]
 except ImportError:
     raise ImportError("""Cannot import selected FITS I/O backend {}.
     If you are using CIAO, this is most likely an error and you should contact the CIAO helpdesk.

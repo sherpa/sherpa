@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -194,6 +194,13 @@ parameter::
 
 """
 
+from six import string_types
+
+# Although all this module needs is the following import
+#   from sherpa.sim.mh import LimitError, MetropolisMH, MH, Sampler, Walk
+# it looks like the following modules are being re-exported by this
+# one, so the 'from blah import *' lines can not easily be removed.
+#
 from sherpa.sim.simulate import *
 from sherpa.sim.sample import *
 from sherpa.sim.mh import *
@@ -213,12 +220,14 @@ _tol = numpy.finfo(numpy.float).eps
 def flat(x):
     return 1.0
 
+
 def inverse(x):
-    prior = 1.0/x
+    prior = 1.0 / x
     return prior
 
+
 def inverse2(x):
-    prior = 1.0/(x*x)
+    prior = 1.0 / (x * x)
     return prior
 
 _samplers = dict(metropolismh=MetropolisMH, mh=MH)
@@ -230,13 +239,13 @@ class MCMC(NoNewAttributesAfterInit):
 
     High-level UI to pyBLoCXS that joins the loop in 'Walk' with the jumping
     rule in 'Sampler'.  Implements a user interface for configuration.  This
-    class implements a calc_stat() function using the Sherpa interface to 'Fit'.
+    class implements a calc_stat() function using the Sherpa interface to
+    'Fit'.
 
     """
     __samplers = _samplers.copy()
 
     __walkers = _walkers.copy()
-
 
     def _get_sampler(self):
         return self._sampler
@@ -244,7 +253,6 @@ class MCMC(NoNewAttributesAfterInit):
     def _set_sampler(self, sampler):
         self._sampler = sampler
         self._sampler_opt = get_keyword_defaults(sampler.init)
-
 
     sampler = property(_get_sampler, _set_sampler)
 
@@ -254,9 +262,7 @@ class MCMC(NoNewAttributesAfterInit):
     def _set_walker(self, walker):
         self._walker = walker
 
-
     walker = property(_get_walker, _set_walker)
-
 
     def _get_sampler_opt(self, opt):
         return self._sampler_opt[opt]
@@ -264,16 +270,14 @@ class MCMC(NoNewAttributesAfterInit):
     def _set_sampler_opt(self, opt, val):
         self._sampler_opt[opt] = val
 
-
     def __init__(self):
         self.priors = {}
         self._walker = Walk
         self._sampler = MetropolisMH
         self._sampler_opt = get_keyword_defaults(MetropolisMH.init)
         self.sample = None
-        self.walk = lambda : None
+        self.walk = lambda: None
         NoNewAttributesAfterInit.__init__(self)
-
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -281,14 +285,12 @@ class MCMC(NoNewAttributesAfterInit):
         del state['sample']
         return state
 
-
     def __setstate__(self, state):
-        self.walk = lambda : None
+        self.walk = lambda: None
         self.sample = None
         self.__dict__.update(state)
 
-
-    ### DOC-TODO: include examples
+    # ## DOC-TODO: include examples
     def list_priors(self):
         """Return the priors set for model parameters, if any.
 
@@ -305,7 +307,6 @@ class MCMC(NoNewAttributesAfterInit):
 
         """
         return self.priors
-
 
     def get_prior(self, par):
         """Return the prior function for a parameter.
@@ -342,8 +343,7 @@ class MCMC(NoNewAttributesAfterInit):
                              par.fullname)
         return prior
 
-
-    ### DOC-TODO: should set_sampler_opt be mentioned here?
+    # ## DOC-TODO: should set_sampler_opt be mentioned here?
     def set_prior(self, par, prior):
         """Set the prior function to use with a parameter.
 
@@ -400,7 +400,6 @@ class MCMC(NoNewAttributesAfterInit):
         """
         self.priors[par.fullname] = prior
 
-
     def list_samplers(self):
         """List the samplers available for MCMC analysis with ``get_draws``.
 
@@ -423,7 +422,6 @@ class MCMC(NoNewAttributesAfterInit):
 
         """
         return self.__samplers.keys()
-
 
     def set_sampler(self, sampler):
         """Set the MCMC sampler.
@@ -481,7 +479,7 @@ class MCMC(NoNewAttributesAfterInit):
         >>> set_sampler('metropolismh')
 
         """
-        if isinstance(sampler, basestring):
+        if isinstance(sampler, string_types):
 
             # case insensitive
             sampler = str(sampler).lower()
@@ -498,7 +496,6 @@ class MCMC(NoNewAttributesAfterInit):
 
         else:
             raise TypeError("Unknown sampler '%s'" % sampler)
-
 
     def get_sampler(self):
         """Return the current MCMC sampler options.
@@ -518,9 +515,7 @@ class MCMC(NoNewAttributesAfterInit):
         set_sampler_opt : Set an option for the current MCMC sampler.
 
         """
-        #return self.sampler
         return self._sampler_opt.copy()
-
 
     def get_sampler_name(self):
         """Return the name of the current MCMC sampler.
@@ -542,7 +537,6 @@ class MCMC(NoNewAttributesAfterInit):
 
         """
         return self.sampler.__name__
-
 
     def get_sampler_opt(self, opt):
         """Return an option of the current MCMC sampler.
@@ -566,7 +560,6 @@ class MCMC(NoNewAttributesAfterInit):
 
         """
         return self._get_sampler_opt(opt)
-
 
     def set_sampler_opt(self, opt, value):
         """Set an option for the current MCMC sampler.
@@ -665,9 +658,9 @@ class MCMC(NoNewAttributesAfterInit):
            the previous row.
 
         """
-        if not isinstance(fit.stat, (Cash, CStat,WStat)):
-            raise ValueError("Fit statistic must be cash, cstat or wstat, not %s" %
-                             fit.stat.name)
+        if not isinstance(fit.stat, (Cash, CStat, WStat)):
+            raise ValueError("Fit statistic must be cash, cstat or " +
+                             "wstat, not %s" % fit.stat.name)
 
         _level = _log.getEffectiveLevel()
         mu = fit.model.thawedpars
@@ -701,7 +694,6 @@ class MCMC(NoNewAttributesAfterInit):
             mins  = sao_fcmp(proposed_params, thawedparmins, _tol)
             maxes = sao_fcmp(thawedparmaxes, proposed_params, _tol)
             if -1 in mins or -1 in maxes:
-                #print'hard limit exception'
                 raise LimitError('Sherpa parameter hard limit exception')
 
             level = _log.getEffectiveLevel()
@@ -715,9 +707,9 @@ class MCMC(NoNewAttributesAfterInit):
                 fit.model.thawedpars = proposed_params
 
                 # Calculate statistic on proposal, use likelihood
-                proposed_stat = -0.5*fit.calc_stat()
+                proposed_stat = -0.5 * fit.calc_stat()
 
-                #_log.setLevel(level)
+                # _log.setLevel(level)
 
             except:
                 # set the model back to original state on exception
@@ -744,6 +736,6 @@ class MCMC(NoNewAttributesAfterInit):
             _log.setLevel(_level)
 
         # Change to Sherpa statistic convention
-        stats = -2.0*stats
+        stats = -2.0 * stats
 
         return (stats, accept, params)

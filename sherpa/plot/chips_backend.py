@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,12 +17,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from itertools import izip
+from six.moves import zip as izip
 import numpy
 import pychips as chips
 from sherpa.utils import get_keyword_defaults
 from sherpa import get_config
-from ConfigParser import ConfigParser, NoSectionError
+from six.moves.configparser import ConfigParser, NoSectionError
 
 config = ConfigParser()
 config.read(get_config())
@@ -364,7 +364,7 @@ def init():
 def begin():
     global _initialized
 
-    chips.lock()    
+    chips.lock()
     chips.advanced.open_undo_buffer()
     if _initialized is False:
         try:

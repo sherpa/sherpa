@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -41,11 +41,11 @@ class test_model(SherpaTestCase):
 
     def test_iter(self):
         for part in self.m:
-            self.assert_(part is self.m)
+            self.assertTrue(part is self.m)
 
     def test_getpar(self):
         for par in (self.m.period, self.m.PerioD, self.m.PERIod):
-            self.assert_(par is self.m.pars[0])
+            self.assertTrue(par is self.m.pars[0])
         self.assertRaises(AttributeError, getattr, self.m, 'perio')
 
     def test_setpar(self):
@@ -116,24 +116,29 @@ class test_composite_model(SherpaTestCase):
     def test_iter(self):
         m = 3 * self.m + self.m2
         parts = list(m)
-        self.assert_(type(parts[0]) is BinaryOpModel)
-        self.assert_(type(parts[1]) is ArithmeticConstantModel)
-        self.assert_(parts[2] is self.m)
-        self.assert_(parts[3] is self.m2)
+        self.assertTrue(type(parts[0]) is BinaryOpModel)
+        self.assertTrue(type(parts[1]) is ArithmeticConstantModel)
+        self.assertTrue(parts[2] is self.m)
+        self.assertTrue(parts[3] is self.m2)
 
     def test_unop(self):
         for op in (abs, operator.neg):
             m = op(self.m)
-            self.assert_(isinstance(m, UnaryOpModel))
+            self.assertTrue(isinstance(m, UnaryOpModel))
             self.assertEqual(m(self.x), op(self.m(self.x)))
 
     def test_binop(self):
-        for op in (operator.add, operator.sub, operator.mul, operator.div,
-                   operator.floordiv, operator.truediv, operator.mod,
-                   operator.pow):
+        ops = [operator.add, operator.sub, operator.mul,
+               operator.floordiv, operator.truediv, operator.mod,
+               operator.pow]
+
+        if hasattr(operator, 'div'): # Python 2
+            ops.append(operator.div)
+
+        for op in ops:
             for m in (op(self.m, self.m2.c0.val), op(self.m.c0.val, self.m2),
                       op(self.m, self.m2)):
-                self.assert_(isinstance(m, BinaryOpModel))
+                self.assertTrue(isinstance(m, BinaryOpModel))
                 self.assertEqual(m(self.x), op(self.m.c0.val, self.m2.c0.val))
 
     def test_complex_expression(self):
@@ -144,11 +149,11 @@ class test_composite_model(SherpaTestCase):
 
     def test_filter(self):
         m = self.s[::2]
-        self.assert_(type(m) is FilterModel)
-        self.assert_(numpy.all(m(self.xx) == self.s(self.xx)[::2]))
+        self.assertTrue(type(m) is FilterModel)
+        self.assertTrue(numpy.all(m(self.xx) == self.s(self.xx)[::2]))
 
     def test_nested(self):
         for func in (numpy.sin, self.s):
             m = self.m.apply(func)
-            self.assert_(type(m) is NestedModel)
+            self.assertTrue(type(m) is NestedModel)
             self.assertEqual(m(self.x), func(self.m(self.x)))

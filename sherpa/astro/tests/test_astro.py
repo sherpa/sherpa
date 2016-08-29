@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,12 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
 import logging
-import os
-import os.path
 from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_data, requires_fits, requires_xspec
+from sherpa.utils import requires_data, requires_fits, requires_xspec, requires_group
 import sherpa.astro.ui as ui
 from sherpa.astro.data import DataPHA
 
@@ -469,6 +466,7 @@ class test_threads(SherpaTestCase):
 
     @requires_fits
     @requires_xspec
+    @requires_group
     def test_setfullmodel(self):
         self.run_thread('setfullmodel')
 

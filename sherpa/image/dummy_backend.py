@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2009,2010  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2009,2010,2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,36 +17,44 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
-
 imager = None
+
 
 def close(*args, **kwargs):
     pass
 
+
 def delete_frames(*args, **kwargs):
     pass
+
 
 def get_region(*args, **kwargs):
     pass
 
+
 def image(*args, **kwargs):
     pass
+
 
 def _set_wcs(*args, **kwargs):
     pass
 
+
 def wcs(*args, **kwargs):
     pass
+
 
 def open(*args, **kwargs):
     pass
 
+
 def set_region(*args, **kwargs):
     pass
 
+
 def xpaget(*args, **kwargs):
     pass
+
 
 def xpaset(*args, **kwargs):
     pass

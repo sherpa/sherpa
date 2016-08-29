@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,11 +16,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+import pytest
 
 from numpy import arange
 import sherpa.astro.models as models
 from sherpa.utils import SherpaFloat, SherpaTestCase
-from sherpa.models.model import ArithmeticModel
+from sherpa.models.model import ArithmeticModel, boolean_to_byte
 
 
 class test_models(SherpaTestCase):
@@ -59,7 +60,17 @@ class test_models(SherpaTestCase):
                 self.fail("evaluation of model '%s' failed" % cls)
 
             for out in (pt_out, int_out):
-                self.assert_(out.dtype.type is SherpaFloat)
+                self.assertTrue(out.dtype.type is SherpaFloat)
                 self.assertEqual(out.shape, x.shape)
 
         self.assertEqual(count, 18)
+
+
+@pytest.mark.parametrize("test_input, expected", [
+    (True, b'1'),
+    (False, b'0'),
+    (None, b'0'),
+    ("foo", b'0')
+])
+def test_boolean_to_byte(test_input, expected):
+    assert boolean_to_byte(test_input) == expected

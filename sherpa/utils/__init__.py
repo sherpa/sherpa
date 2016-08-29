@@ -1,3 +1,4 @@
+from __future__ import print_function
 from __future__ import absolute_import
 #
 #  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
@@ -24,16 +25,16 @@ Objects and utilities used by multiple Sherpa subpackages
 
 import operator
 import inspect
-from itertools import izip
+from six.moves import zip as izip
 from types import FunctionType as function
 from types import MethodType as instancemethod
 import string
 import sys
 import os
 import importlib
+import unittest
 import numpy
 import numpy.random
-from . import numpytest
 import numpy.fft
 # Note: _utils.gsl_fcmp is not exported from this module; is this intentional?
 from unittest import skipIf
@@ -42,10 +43,10 @@ from sherpa.utils._utils import calc_ftest, calc_mlr, igamc, igam, \
     hist1d, hist2d, sum_intervals, neville, sao_arange
 from sherpa.utils._psf import extract_kernel, normalize, set_origin, \
     pad_bounding_box
-from functools import wraps
 
 from sherpa import get_config
-from ConfigParser import ConfigParser, NoSectionError
+from six.moves.configparser import ConfigParser, NoSectionError
+from six.moves import xrange
 
 import logging
 warning = logging.getLogger("sherpa").warning
@@ -72,7 +73,7 @@ try:
 
     if _ncpus is None:
         _ncpus = multiprocessing.cpu_count()
-except Exception, e:
+except Exception as e:
     warning("parallel processing is unavailable,\n" +
             "multiprocessing module failed with \n'%s'" % str(e))
     _ncpus = 1
@@ -85,7 +86,7 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaTestCase',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'dataspace1d', 'dataspace2d', 'demuller',
-           'erf', 'erfinv', 'export_method', 'extract_kernel',
+           'erf', 'export_method', 'extract_kernel',
            'filter_bins', 'gamma', 'get_fwhm',
            'get_keyword_defaults', 'get_keyword_names', 'get_midpoint',
            'get_num_args', 'get_peak', 'get_position', 'get_valley',
@@ -182,7 +183,7 @@ def _get_datadir():
     return datadir
 
 
-class SherpaTestCase(numpytest.NumpyTestCase):
+class SherpaTestCase(unittest.TestCase):
     "Base class for Sherpa unit tests"
 
     # The location of the Sherpa test data (it is optional)
@@ -278,12 +279,14 @@ class SherpaTestCase(numpytest.NumpyTestCase):
 
         """
 
+        scriptname = name + "-" + scriptname
         self.locals = {}
         cwd = os.getcwd()
         os.chdir(self.datadir)
-        scriptname = name + "-" + scriptname
         try:
-            execfile(scriptname, {}, self.locals)
+            with open(scriptname, "rb") as fh:
+                cts = fh.read()
+            exec(compile(cts, scriptname, 'exec'), {}, self.locals)
         finally:
             os.chdir(cwd)
 
@@ -334,6 +337,16 @@ def requires_ds9(test_function):
     return requires_package('ds9 required', 'sherpa.image.ds9_backend')(test_function)
 
 
+def requires_stk(test_function):
+    """Decorator for test functions requiring stk library"""
+    return requires_package("stk library required", 'stk')(test_function)
+
+
+def requires_group(test_function):
+    """Decorator for test functions requiring group library"""
+    return requires_package("group library required", 'group')(test_function)
+
+
 def requires_fits(test_function):
     """
     Returns True if there is an importable backend for FITS I/O.
@@ -367,10 +380,6 @@ def requires_pylab(test_function):
 
 # at what precisions do we assume equality in energy grids?
 eps = numpy.finfo(numpy.float32).eps
-
-
-def erfinv(y):
-    return ndtri((y + 1.0) / 2.0) / numpy.sqrt(2.0)
 
 
 def filter_bins(mins, maxes, axislist):
@@ -426,7 +435,6 @@ def bool_cast(val):
 
 def export_method(meth, name=None, modname=None):
     """
-
     Given a bound instance method, return a simple function that wraps
     it.  The only difference between the interface of the original
     method and the generated function is that the latter doesn't
@@ -451,97 +459,197 @@ def export_method(meth, name=None, modname=None):
         return meth
 
     if name is None:
-        if meth.func_name == 'log_decorator':
-            name = meth._original.func_name
-        else:
-            name = meth.func_name
+        name = meth.__name__
 
-    if name == meth.func_name:
+    if name == meth.__name__:
         old_name = '_old_' + name
     else:
-        old_name = meth.func_name
+        old_name = meth.__name__
+
+    defaults = meth.__defaults__
+    doc = meth.__doc__
 
     # Make an argument list string, removing 'self'
-    if meth.func_name == 'log_decorator':
-        # This is needed for making loggable decorator work (Omar)
-        argspec = inspect.getargspec(meth._original)
-        defaults = meth._original.func_defaults
-        doc = meth._original.func_doc
+    #
+    argspec = None
+    try:
+        sig = inspect.signature(meth)
+    except AttributeError:
+        argspec = inspect.getargspec(meth)
+
+    if argspec is None:
+        # is this the best way to emulate the Python 2.7 version?
+        def tostr(p):
+            if p.kind == p.VAR_KEYWORD:
+                return "**{}".format(p.name)
+            elif p.kind == p.VAR_POSITIONAL:
+                return "*{}".format(p.name)
+            else:
+                return p.name
+
+        argspec = ",".join([tostr(p) for p in sig.parameters.values()])
+        argspec = "({})".format(argspec)
+
     else:
         argspec = inspect.getargspec(meth)
-        defaults = meth.func_defaults
-        doc = meth.func_doc
-    argspec[0].pop(0)
-    argspec = inspect.formatargspec(argspec[0], argspec[1], argspec[2])
+        argspec[0].pop(0)
+        argspec = inspect.formatargspec(argspec[0], argspec[1], argspec[2])
 
     # Create a wrapper function with no default arguments
     g = {old_name: meth}
     if modname is not None:
         g['__name__'] = modname
     fdef = 'def %s%s:  return %s%s' % (name, argspec, old_name, argspec)
-    exec fdef in g
+    exec(fdef, g)
 
     # Create another new function from the one we just made, this time
     # adding the default arguments and doc string from the original method
     new_meth = g[name]
 
-    new_meth = function(new_meth.func_code, new_meth.func_globals,
-                        new_meth.func_name, defaults,
-                        new_meth.func_closure)
-    new_meth.func_doc = doc
+    new_meth = function(new_meth.__code__, new_meth.__globals__,
+                        new_meth.__name__, defaults,
+                        new_meth.__closure__)
+    new_meth.__doc__ = doc
 
     return new_meth
 
 
 def get_keyword_names(func, skip=0):
+    """Return the names of the keyword arguments.
+
+    Parameters
+    ----------
+    func
+        The function to query.
+    skip : int, optional
+        The number of keyword arguments to skip.
+
+    Returns
+    -------
+    names : list of str
+        The names of the keyword arguments. It can be empty.
+
+    See Also
+    --------
+    get_keyword_defaults, get_num_args
+
     """
 
-    Return a list containing the names of func's keyword arguments,
-    skipping the first skip keywords.
+    try:
+        # Python 3+: (it appears that getargspec is not being
+        # removed in Python 3.6, but this should stop the warnings
+        # from earlier versions)
+        sig = inspect.signature(func)
+    except AttributeError:
+        # Python 2.7
+        argspec = inspect.getargspec(func)
+        if argspec[3] is None:
+            return []
+        first = len(argspec[0]) - len(argspec[3])
+        return argspec[0][first + skip:]
 
-    """
+    kwargs = [p.name
+              for p in sig.parameters.values()
+              if p.kind == p.POSITIONAL_OR_KEYWORD and
+              p.default != p.empty]
 
-    argspec = inspect.getargspec(func)
-    if argspec[3] is None:
-        return []
-    first = len(argspec[0]) - len(argspec[3])
-    return argspec[0][first + skip:]
+    return kwargs[skip:]
 
 
 def get_keyword_defaults(func, skip=0):
+    """Return the keyword arguments and their default values.
+
+    Parameters
+    ----------
+    func
+        The function to query.
+    skip : int, optional
+        The number of keyword arguments to skip.
+
+    Returns
+    -------
+    vals : dict
+        The keys are names of the keyword arguments, the values are
+        the default value for that parameter. It can be empty.
+
+    See Also
+    --------
+    get_keyword_names, get_num_args
+
     """
 
-    Return a dictionary containing the default values of func's keyword
-    arguments, skipping the first skip keywords.
+    try:
+        # Python 3+: (it appears that getargspec is not being
+        # removed in Python 3.6, but this should stop the warnings
+        # from earlier versions)
+        sig = inspect.signature(func)
+    except AttributeError:
+        # Python 2.7
+        argspec = inspect.getargspec(func)
+        if argspec[3] is None:
+            return {}
+        first = len(argspec[0]) - len(argspec[3])
+        return dict(izip(argspec[0][first + skip:], argspec[3][skip:]))
 
-    """
+    kwargs = [(p.name, p.default)
+              for p in sig.parameters.values()
+              if p.kind == p.POSITIONAL_OR_KEYWORD and
+              p.default != p.empty]
 
-    argspec = inspect.getargspec(func)
-    if argspec[3] is None:
-        return {}
-    first = len(argspec[0]) - len(argspec[3])
-    return dict(izip(argspec[0][first + skip:], argspec[3][skip:]))
+    return dict(kwargs[skip:])
 
 
 def get_num_args(func):
+    """Return the number of arguments for a function.
+
+    Parameters
+    ----------
+    func
+        The function to query.
+
+    Returns
+    -------
+    ntotal, npos, nkeyword : int, int, int
+        The total number of arguments, the number of positional
+        arguments, and the number of keyword arguments.
+
+    See Also
+    --------
+    get_keyword_defaults, get_keyword_names
+
     """
 
-    Return a tuple of the number of arguments.
-    ( total number of args, number of non-keyword args, number of keyword args)
+    try:
+        # Python 3+: (it appears that getargspec is not being
+        # removed in Python 3.6, but this should stop the warnings
+        # from earlier versions)
+        sig = inspect.signature(func)
+    except AttributeError:
+        # Python 2.7
+        argspec = inspect.getargspec(func)
+        num_args = 0
+        num_kargs = 0
 
-    """
+        if len(argspec[0]) != 0:
+            num_args = len(argspec[0])
 
-    argspec = inspect.getargspec(func)
-    num_args = 0
-    num_kargs = 0
+        if argspec[3] is not None:
+            num_kargs = len(argspec[3])
 
-    if len(argspec[0]) != 0:
-        num_args = len(argspec[0])
+        return (num_args, (num_args - num_kargs), num_kargs)
 
-    if argspec[3] is not None:
-        num_kargs = len(argspec[3])
+    posargs = [True
+               for p in sig.parameters.values()
+               if p.kind == p.POSITIONAL_OR_KEYWORD and
+               p.default == p.empty]
+    kwargs = [True
+              for p in sig.parameters.values()
+              if p.kind == p.POSITIONAL_OR_KEYWORD and
+              p.default != p.empty]
 
-    return (num_args, (num_args - num_kargs), num_kargs)
+    npos = len(posargs)
+    nkw = len(kwargs)
+    return (npos + nkw, npos, nkw)
 
 
 def print_fields(names, vals, converters={}):
@@ -1241,19 +1349,24 @@ def is_binary_file(filename):
     1024 bytes of the file.
     """
     fd = open(filename, 'r')
-    lines = fd.readlines(1024)
-    fd.close()
+    try:  # Python 2
+        lines = fd.readlines(1024)
+        fd.close()
 
-    if len(lines) == 0:
+        if len(lines) == 0:
+            return False
+
+        # If a non-printable character is found in first 1024 --> binary
+        for line in lines:
+            for char in line:
+                if char not in string.printable:
+                    return True
+
         return False
-
-    # If a non-printable character is found in first 1024 --> binary
-    for line in lines:
-        for char in line:
-            if char not in string.printable:
-                return True
-
-    return False
+    except UnicodeDecodeError:  # Python 3
+        return True
+    finally:
+        fd.close()
 
 
 def get_midpoint(a):
@@ -1587,7 +1700,7 @@ def worker(f, ii, chunk, out_q, err_q, lock):
 
     try:
         vals = map(f, chunk)
-    except Exception, e:
+    except Exception as e:
         err_q.put(e)
         return
 
@@ -1607,7 +1720,7 @@ def run_tasks(procs, err_q, out_q, num):
         for proc in procs:
             proc.join()
 
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         # kill all slave processes on ctrl-C
         die(procs)
         raise e
@@ -1942,10 +2055,10 @@ def hessian(func, par, extrapolation, algorithm, maxiter, h, tol, t):
 def print_low_triangle(matrix, num):
     # print matrix
     for ii in xrange(num):
-        print matrix[ii, 0],
+        print(matrix[ii, 0], end=' ')
         for jj in xrange(1, ii + 1):
-            print matrix[ii, jj],
-        print
+            print(matrix[ii, jj], end=' ')
+        print()
 
 
 def symmetric_to_low_triangle(matrix, num):
@@ -2803,9 +2916,9 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
 
 def get_valid_args(func):
-    valid_args = func.func_code.co_varnames[:func.func_code.co_argcount]
+    valid_args = func.__code__.co_varnames[:func.__code__.co_argcount]
     # number of keyword arguments
-    kwargs_length = len(func.func_defaults) if func.func_defaults else 0
+    kwargs_length = len(func.__defaults__) if func.__defaults__ else 0
     # because kwargs are last
     valid_kwargs = valid_args[-kwargs_length:] if kwargs_length else []
     return valid_kwargs

@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2014  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2014, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 
 from distutils.command.sdist import sdist as _sdist
 from numpy.distutils.misc_util import get_data_files
-from deps import clean_deps
+from .deps import clean_deps
 
 class sdist(_sdist):
 

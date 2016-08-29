@@ -1,5 +1,6 @@
-# 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+from __future__ import absolute_import
+#
+#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,11 +18,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six import iteritems
 
-from parameter import Parameter, tinyval
-from model import ArithmeticModel, modelCacher1d, CompositeModel, \
-    ArithmeticFunctionModel
-from basic import TableModel
+from .parameter import Parameter
+from .model import ArithmeticModel, modelCacher1d
+from .basic import TableModel
 import numpy, operator
 from sherpa.utils.err import ModelErr
 
@@ -36,7 +37,7 @@ def create_template_model(modelname, names, parvals, templates, template_interpo
 
     `modelname`  - name of the template model.
 
-    `names`      - list of strings that define the order of the 
+    `names`      - list of strings that define the order of the
                    named parameters.
 
     `parvals`    - 2-D ndarray of parameter vectors, index corresponds
@@ -52,7 +53,7 @@ def create_template_model(modelname, names, parvals, templates, template_interpo
 
     """
     # Create a list of parameters from input
-    pars = []   
+    pars = []
     for ii, name in enumerate(names):
         minimum = min(parvals[:,ii])
         maximum = max(parvals[:,ii])
@@ -66,7 +67,7 @@ def create_template_model(modelname, names, parvals, templates, template_interpo
     # Create the templates table from input
     tm = TemplateModel(modelname, pars, parvals, templates)
     if template_interpolator_name is not None:
-        if interpolators.has_key(template_interpolator_name):
+        if template_interpolator_name in interpolators:
             interp = interpolators[template_interpolator_name]
             args = interp[1]
             args['template_model'] = tm
@@ -107,7 +108,7 @@ class KNNInterpolator(InterpolatingTemplateModel):
         self._distances = {}
         for i, t_point in enumerate(self.template_model.parvals):
             self._distances[i] = numpy.linalg.norm(point - t_point, self.order)
-        self._distances = sorted(self._distances.iteritems(), key=operator.itemgetter(1))
+        self._distances = sorted(iteritems(self._distances), key=operator.itemgetter(1))
 
     def interpolate(self, point, x_out):
         self._calc_distances(point)
@@ -140,7 +141,7 @@ class TemplateModel(ArithmeticModel):
             self.__dict__[par.name] = par
 
         for ii, parval in enumerate(parvals):
-            self.index[tuple(parval)] = templates[ii]        
+            self.index[tuple(parval)] = templates[ii]
 
         ArithmeticModel.__init__(self, name, pars)
         self.is_discrete = True

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@ from sherpa.utils.err import StatErr
 import sherpa.stats._statfcts
 
 from sherpa import get_config
-from ConfigParser import ConfigParser
+from six.moves.configparser import ConfigParser
 
 
 __all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',
@@ -524,14 +524,14 @@ class UserStat(Stat):
 
 class WStat(Likelihood):
     """Maximum likelihood function including background (XSPEC style).
-    
+
     This is equivalent to the XSpec implementation of the
     W statistic for CStat [1]_, and includes the background data in
     the fit statistic. If a model is being fit to the background then
     the CStat statistic should be used.
 
     The following description is taken from [1]_.
-    
+
     Suppose that each bin in the background spectrum is given its own
     parameter so that the background model is b_i = f_i. A standard fit
     for all these parameters would be impractical; however there is an
@@ -539,7 +539,7 @@ class WStat(Likelihood):
     variables which can be derived by using the fact that the derivative
     of the likelihood (L) will be zero at the best fit. Solving for the
     f_i and substituting gives the profile likelihood::
-    
+
       W = 2 sum_(i=1)^N t_s m_i + (t_s + t_b) f_i -
           S_i ln(t_s m_i + t_s f_i) - B_i ln(t_b f_i) -
           S_i (1- ln(S_i)) - B_i (1 - ln(B_i))
@@ -549,7 +549,7 @@ class WStat(Likelihood):
       f_i = (S_i + B_i - (t_s + t_b) m_i + d_i) / (2 (t_s + t_b))
       d_i = sqrt([(t_s + t_b) m_i - S_i - B_i]^2 +
                  4(t_s + t_b) B_i m_i)
-                 
+
     If any bin has S_i and/or B_i zero then its contribution to W (W_i)
     is calculated as a special case. So, if S_i is zero then::
 

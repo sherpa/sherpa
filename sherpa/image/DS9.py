@@ -134,6 +134,9 @@ History:
 2008-05-28 Stephen Doe  Always raise exception on error (doRaise=True always)
 2008-11-25 Stephen Doe  Search PATH for access to application, rather than shell out to use 'which' -- PATH sometimes not correctly inherited by shell via Popen, for csh on some Mac, Solaris machines.
 """
+from __future__ import print_function
+
+import six
 
 import numpy as np
 import os
@@ -218,10 +221,10 @@ def setup(doRaise=True, debug=False):
     try:
         ds9Dir, xpaDir = _findDS9AndXPA()
         if debug:
-            print "ds9Dir=%r\npaDir=%r" % (ds9Dir, xpaDir)
+            print("ds9Dir=%r\npaDir=%r" % (ds9Dir, xpaDir))
     except (SystemExit, KeyboardInterrupt):
         raise
-    except Exception, e:
+    except Exception as e:
         _ex = e
         _SetupError = "DS9Win unusable: %s" % (e,)
         ds9Dir = xpaDir = None
@@ -330,12 +333,20 @@ def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate,
         stderr=subprocess.STDOUT,
     )
     try:
-        if dataFunc:
-            dataFunc(p.stdin)
-        elif data:
+        # Python 2 vs 3 requires some complexity here.
+        try:  # Python 2 bytes (which are actually strings)
+            unicode(data, "ascii")  # unicode does not exist in Python 3
+            data = bytearray(data, "UTF-8")
+        except:
+            try:  # Python 3 with data passed as string.
+                data = bytearray(data, "UTF-8")
+            except:  # data is provided as bytes (in Python 3) or is null, so it does not need to be converted.
+                pass
+
+        if data:
             p.stdin.write(data)
-            if data[-1] != '\n':
-                p.stdin.write('\n')
+            if data[-1] != b'\n':
+                p.stdin.write(b'\n')
         p.stdin.close()
         reply = p.stdout.read()
         if reply:
@@ -394,7 +405,7 @@ def _formatOptions(kargs):
     """Returns a string: "key1=val1,key2=val2,..."
     (where keyx and valx are string representations)
     """
-    arglist = ["%s=%s" % keyVal for keyVal in kargs.iteritems()]
+    arglist = ["%s=%s" % keyVal for keyVal in six.iteritems(kargs)]
     return '%s' % (','.join(arglist))
 
 
@@ -547,10 +558,10 @@ class DS9Win:
 
         self.xpaset(
             cmd='array [%s]' % (_formatOptions(arryDict),),
-            dataFunc=arr.tofile,
+            data=arr.tobytes(),
         )
 
-        for keyValue in kargs.iteritems():
+        for keyValue in six.iteritems(kargs):
             self.xpaset(cmd=' '.join(keyValue))
 
 # showBinFile is commented out because it is broken with ds9 3.0.3
@@ -601,7 +612,7 @@ class DS9Win:
         if arrKeys:
             raise RuntimeErr('badarr', arrKeys.keys())
 
-        for keyValue in kargs.iteritems():
+        for keyValue in six.iteritems(kargs):
             self.xpaset(cmd=' '.join(keyValue))
 
     def xpaget(self, cmd):
@@ -648,6 +659,6 @@ class DS9Win:
 if __name__ == "__main__":
     errStr = setup(doRaise=True, debug=True)
     if errStr:
-        print errStr
+        print(errStr)
     else:
         ds9Win = DS9Win("Test")

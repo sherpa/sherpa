@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,7 @@ class test_sherpa(SherpaTestCase):
 
     def test_include_dir(self):
         incdir = os.path.join(sherpa.get_include(), 'sherpa')
-        self.assert_(os.path.isdir(incdir))
+        self.assertTrue(os.path.isdir(incdir))
 
     def setUp(self):
         self.agn2 = self.make_path('agn2')

@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2008  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2008, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,10 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six import string_types
+
 from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import *
-from sherpa.utils import bool_cast, NoNewAttributesAfterInit, SherpaFloat
-from itertools import izip
+from sherpa.utils import bool_cast, NoNewAttributesAfterInit
 from sherpa.utils.err import PSFErr
 from sherpa.utils._psf import *
 import numpy
@@ -221,7 +222,7 @@ class ConvolutionKernel(Model):
         if isinstance(kernel, Data):
             kernel = numpy.asarray(kernel.get_dep())
 
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             if session is None:
                 model = sherpa.astro.ui._session._eval_model_expression(model)
             else:
@@ -559,7 +560,7 @@ class PSFModel(Model):
         if isinstance(kernel, Data):
             kernel = numpy.asarray(kernel.get_dep())
 
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             if session is None:
                 model = sherpa.astro.ui._session._eval_model_expression(model)
             else:

@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2014, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 from numpy.distutils.command.install import install as _install
 import os
 
-from deps import build_deps
+from .deps import build_deps
 
 class install(_install):
     def run(self):

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-# import numpy
+from six.moves import xrange
 
 import string
 from sherpa.models import Parameter, ArithmeticModel, modelCacher1d
@@ -28,6 +28,11 @@ from sherpa.astro.utils import get_xspec_position
 from sherpa.astro.xspec._xspec import get_xschatter, get_xsabund, get_xscosmo, \
      get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, set_xsxsect, \
      get_xsversion
+
+try:
+    maketrans = string.maketrans  # Python 2
+except AttributeError:
+    maketrans = str.maketrans  # Python 3
 
 # Wrap the XSET function in Python, so that we can keep a record of
 # the strings the user sent as specific XSPEC model strings (if any) during
@@ -142,11 +147,11 @@ def get_xsstate():
 
 def set_xsstate(state):
     if (type(state) == dict and
-        state.has_key('abund') and
-        state.has_key('chatter') and
-        state.has_key('cosmo') and
-        state.has_key('xsect') and
-        state.has_key('modelstrings')):
+        'abund' in state and
+        'chatter' in state and
+        'cosmo' in state and
+        'xsect' in state and
+        'modelstrings' in state):
         set_xsabund(state["abund"])
         set_xschatter(state["chatter"])
         set_xscosmo(state["cosmo"][0], state["cosmo"][1], state["cosmo"][2])
@@ -196,7 +201,7 @@ class XSTableModel(XSModel):
 
         # make translation table to turn reserved characters into '_'
         bad = string.punctuation+string.whitespace
-        tbl = string.maketrans(bad, '_'*len(bad))
+        tbl = maketrans(bad, '_'*len(bad))
 
         pars = []
         for ii in xrange(len(parnames)):
@@ -204,7 +209,11 @@ class XSTableModel(XSModel):
             if nint > 0:
                 isfrozen = False
 
-            parname = parnames[ii].strip().lower().translate(tbl)
+            try:  # Python 3
+                parname = str(parnames[ii], "utf-8")
+            except TypeError:  # Python 2
+                parname = parnames[ii]
+            parname = parname.strip().lower().translate(tbl)
             par = Parameter(name, parname, initvals[ii],
                             mins[ii], maxes[ii],
                             hardmins[ii], hardmaxes[ii], frozen=isfrozen)

@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -164,22 +164,57 @@ namespace sherpa { namespace integration {
     
 }  }  /* namespace integration, namespace sherpa */
 
+#define INIT_INTEGRATION_API static void *Integration_API[3];\
+Integration_API[0] = (void*)sherpa::integration::integrate_1d;\
+Integration_API[1] = (void*)sherpa::integration::integrate_Nd;\
+Integration_API[2] = (void*)sherpa::integration::py_integrate_1d;
+
+
+#if PY_MAJOR_VERSION >=3
+
+static struct PyModuleDef integration = {
+    PyModuleDef_HEAD_INIT,
+    "integration",
+    NULL,
+    -1,
+    NULL
+};
+
+PyMODINIT_FUNC PyInit_integration(void) {
+
+  INIT_INTEGRATION_API
+
+  PyObject *m;
+  PyObject *api_cobject;
+
+  if ( NULL == ( m = PyModule_Create( &integration ) ) )
+    return NULL;
+
+  if ( NULL == ( api_cobject = PyCapsule_New( (void*)Integration_API,
+                              NULL,
+						      NULL) ) )
+    return NULL;
+
+  // Since the actual data is static, we can let PyModule_AddObject()
+  // steal the reference
+  PyModule_AddObject( m, (char*)"_C_API", api_cobject );
+
+  return m;
+}
+
+#else
 
 PyMODINIT_FUNC
 initintegration(void)
 {
 
-  static void *Integration_API[3];
+  INIT_INTEGRATION_API
 
   PyObject *m;
   PyObject *api_cobject;
 
   if ( NULL == ( m = Py_InitModule( (char*)"integration", NULL ) ) )
     return;
-
-  Integration_API[0] = (void*)sherpa::integration::integrate_1d;
-  Integration_API[1] = (void*)sherpa::integration::integrate_Nd;
-  Integration_API[2] = (void*)sherpa::integration::py_integrate_1d;
 
   if ( NULL == ( api_cobject = PyCObject_FromVoidPtr( (void*)Integration_API,
 						      NULL) ) )
@@ -190,3 +225,5 @@ initintegration(void)
   PyModule_AddObject( m, (char*)"_C_API", api_cobject );
 
 }
+
+#endif

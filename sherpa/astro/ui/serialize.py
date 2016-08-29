@@ -24,6 +24,8 @@ intended for public use. The API and semantics of the
 routines in this module are subject to change.
 """
 
+from six import string_types
+
 import inspect
 import logging
 import sys
@@ -81,10 +83,41 @@ def _id_to_str(id):
        in the Python serialization.
     """
 
-    if isinstance(id, basestring):
+    if isinstance(id, string_types):
         return '"{}"'.format(id)
     else:
         return str(id)
+
+
+def _save_entries(store, tostatement, fh=None):
+    """Iterate through entries in the store and serialize them.
+
+    Write out the key, value pairs in store in lexical order,
+    rather than rely on the ordering of the container (e.g.
+    whatever hash is used). The idea is to come up with a
+    repeatable ordering, primarily to make testing easier.
+
+    Parameters
+    ----------
+    store
+       A container with keys. The elements of the container are
+       passed to tocommand to create the string that is then
+       written to fh.
+    tostatement : func
+       A function which accepts two arguments, the key and value
+       from store, and returns a string. The reason for the name
+       is that it is expected that the returned string will be
+       a Python statement to restore this setting.
+    fh : None or file-like
+       If ``None``, the information is printed to standard output,
+       otherwise the information is added to the file handle.
+    """
+
+    keys = list(store)
+    keys.sort()
+    for key in keys:
+        cmd = tostatement(key, store[key])
+        _output(cmd, fh)
 
 
 def _save_intro(fh=None):
@@ -530,7 +563,7 @@ def _print_par(par):
             par.fullname, par.link.fullname)
 
     unitstr = ""
-    if isinstance(par.units, basestring):
+    if isinstance(par.units, string_types):
         unitstr = '"%s"' % par.units
 
     return ((('%s.default_val = %s\n' +
@@ -586,12 +619,14 @@ def _save_fit_method(state, fh=None):
     _output(cmd, fh)
     _output("", fh)
 
-    mdict = state.get_method_opt()
-    for key in mdict:
-        val = mdict.get(key)
-        cmd = 'set_method_opt("%s", %s)' % (key, val)
-        _output(cmd, fh)
+    def tostatement(key, val):
+        # TODO: Using .format() returns more decimal places, which
+        # is probably what we want but is a change, so leave
+        # for now.
+        # return 'set_method_opt("{}", {})'.format(key, val)
+        return 'set_method_opt("%s", %s)' % (key, val)
 
+    _save_entries(state.get_method_opt(), tostatement, fh)
     _output("", fh)
 
 
@@ -614,12 +649,14 @@ def _save_iter_method(state, fh=None):
     _output(cmd, fh)
     _output("", fh)
 
-    mdict = state.get_iter_method_opt()
-    for key in mdict:
-        val = mdict.get(key)
-        cmd = 'set_iter_method_opt("%s", %s)' % (key, val)
-        _output(cmd, fh)
+    def tostatement(key, val):
+        # TODO: Using .format() returns more decimal places, which
+        # is probably what we want but is a change, so leave
+        # for now.
+        # return 'set_iter_method_opt("{}", {})'.format(key, val)
+        return 'set_iter_method_opt("%s", %s)'.format(key, val)
 
+    _save_entries(state.get_iter_method_opt(), tostatement, fh)
     _output("", fh)
 
 
@@ -642,6 +679,7 @@ def _reindent(code):
             out.append(line)
 
     return "\n".join(out)
+
 
 # for user models, try to access the function definition via
 # the inspect module and then re-create it in the script.
@@ -801,12 +839,15 @@ def _save_model_components(state, fh=None):
             _output(cmd, fh)
             _output("", fh)
 
-        from sherpa.models import Parameter
-        for par in mod.__dict__.values():
-            if isinstance(par, Parameter):
-                par_attributes, par_linkstr = _print_par(par)
-                _output(par_attributes, fh)
-                linkstr = linkstr + par_linkstr
+        # Write out the parameters in the order they are stored in
+        # the model. The original version of the code iterated
+        # through mod.__dict__.values() and picked out Parameter
+        # values.
+        #
+        for par in mod.pars:
+            par_attributes, par_linkstr = _print_par(par)
+            _output(par_attributes, fh)
+            linkstr = linkstr + par_linkstr
 
         # If the model is a PSFModel, could have special
         # attributes "size" and "center" -- if so, record them.
@@ -978,10 +1019,11 @@ def _save_xspec(fh=None):
     _output(cmd, fh)
     cmd = 'set_xsxsect("%s")' % xspec_state["xsect"]
     _output(cmd, fh)
-    for name in xspec_state["modelstrings"].keys():
-        mstring = xspec_state["modelstrings"][name]
-        cmd = 'set_xsxset("%s", "%s")' % (name, mstring)
-        _output(cmd, fh)
+
+    def tostatement(key, val):
+        return 'set_xsxset("{}", "{}")'.format(key, val)
+
+    _save_entries(xspec_state["modelstrings"], tostatement, fh)
 
 
 def _save_dataset(state, id):
@@ -1158,8 +1200,8 @@ def save_all(state, fh=None):
 
     Save the session to a StringIO handle:
 
-    >>> import StringIO
-    >>> store = StringIO.StringIO()
+    >>> from six import StringIO
+    >>> store = StringIO()
     >>> save_all(store)
 
     """

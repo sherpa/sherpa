@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-# Copyright (C) 2015  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,6 +18,7 @@ from __future__ import absolute_import
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six import iteritems
 from sherpa.plot import plotter
 from importlib import import_module
 from sherpa.utils.logging import config_logger
@@ -35,7 +36,7 @@ backend_map = {
 
 def _update_globals(module):
     globals().update((k, v)
-                     for k, v in module.__dict__.iteritems() if k not in globals())
+                     for k, v in iteritems(module.__dict__) if k not in globals())
 
 try:
     backend_module = import_module("." + backend_map[name], __name__)

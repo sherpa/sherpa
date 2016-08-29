@@ -1,5 +1,6 @@
-# 
-#  Copyright (C) 2010  Smithsonian Astrophysical Observatory
+from __future__ import absolute_import
+#
+#  Copyright (C) 2010, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,13 +18,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six.moves import xrange
 import numpy
-from parameter import Parameter, tinyval
-from model import ArithmeticModel, modelCacher1d, CompositeModel, \
+from .parameter import Parameter, tinyval
+from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
     ArithmeticFunctionModel
 from sherpa.utils.err import ModelErr
 from sherpa.utils import *
-import _modelfcts
+from . import _modelfcts
 
 import logging
 warning = logging.getLogger(__name__).warning
@@ -32,7 +34,7 @@ warning = logging.getLogger(__name__).warning
 __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
            'Gauss1D', 'Log', 'Log10', 'LogParabola', 'NormGauss1D', 'Poisson',
            'Polynom1D', 'PowLaw1D', 'Scale1D', 'Sin', 'Sqrt', 'StepHi1D',
-           'StepLo1D', 'Tan', 'Box2D', 'Const2D', 'Delta2D', 'Gauss2D', 
+           'StepLo1D', 'Tan', 'Box2D', 'Const2D', 'Delta2D', 'Gauss2D',
            'SigmaGauss2D',
            'NormGauss2D', 'Polynom2D', 'Scale2D', 'UserModel', 'TableModel',
            'Integrate1D')
@@ -422,7 +424,7 @@ class PowLaw1D(ArithmeticModel):
         kwargs['integrate']=bool_cast(self.integrate)
         if kwargs['integrate']:
             # avoid numerical issues with C pow() function close to zero,
-            # 0.0 +- ~1.e-14.  PowLaw1D integrated has multiple calls to 
+            # 0.0 +- ~1.e-14.  PowLaw1D integrated has multiple calls to
             # pow(X, 1.0 - gamma).  So gamma values close to 1.0 +- 1.e-10
             # should be be 1.0 to avoid errors propagating in the calculated
             # model.

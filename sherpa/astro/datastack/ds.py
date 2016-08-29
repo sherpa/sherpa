@@ -1,6 +1,7 @@
 from __future__ import absolute_import
+from __future__ import print_function
 #
-# Copyright (C) 2015  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,7 +18,8 @@ from __future__ import absolute_import
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import stk
+
+import six
 import numpy
 from sherpa.utils.logging import config_logger
 from sherpa.astro import ui
@@ -27,6 +29,10 @@ from . import plot_backend as backend
 
 logger = config_logger(__name__)
 
+try:
+    import stk
+except:
+    logger.warning("could not import stk library. CIAO stack files and syntax will be disabled")
 
 # Global list of dataset ids in use
 _all_dataset_ids = {}
@@ -380,8 +386,13 @@ class DataStack(object):
         """
         def func(dataset):
             if hasattr(dataset, 'header'):
+                str_value = str(value)
+                try:  # Python 3
+                    header_value = str(dataset.header[keyword], "utf-8")
+                except TypeError:  # Python 2
+                    header_value = dataset.header[keyword]
                 if keyword in dataset.header.keys() and \
-                   dataset.header[keyword] == str(value):
+                   header_value == str_value:
                     return True
             return False
         return self.query(func)

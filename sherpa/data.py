@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2008, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2008, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,10 +21,9 @@
 Tools for creating, storing, inspecting, and manipulating data sets
 """
 
-
+from six.moves import zip as izip
 import sys
 import inspect
-from itertools import izip
 import numpy
 from sherpa.utils.err import DataErr, NotImplementedErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
@@ -84,7 +83,7 @@ class BaseData(NoNewAttributesAfterInit):
             raise NotImplementedErr('noinstanceallowed', 'BaseData')
 
         frame = sys._getframe().f_back
-        cond = (frame.f_code is self.__init__.im_func.func_code)
+        cond = (frame.f_code is self.__init__.__func__.__code__)
         assert cond, (('%s constructor must call BaseData constructor ' +
                        'directly') % type(self).__name__)
         args = inspect.getargvalues(frame)
@@ -395,7 +394,7 @@ class Data(BaseData):
 
     def get_yerr(self, filter=False, staterrfunc=None):
         "Return errors in dependent axis in N-D view of dependent variable"
-        return self.get_error(filter, staterrfunc) 
+        return self.get_error(filter, staterrfunc)
 
     def get_ylabel(self, yfunc=None):
         "Return label for dependent axis in N-D view of dependent variable"
@@ -474,7 +473,7 @@ class DataSimulFit(Data):
 
         return numpy.concatenate(total_model)
 
-    def to_fit(self, staterrfunc=None):        
+    def to_fit(self, staterrfunc=None):
         total_dep = []
         total_staterror = []
         total_syserror = []

@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2008  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2008, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -30,22 +30,22 @@ class test_utils(SherpaTestCase):
     def test_response_filter_logic(self):
 
         # outside case
-        self.assert_( is_in(self.long, 50, 2400) )
+        self.assertTrue( is_in(self.long, 50, 2400) )
 
         # lo case
-        self.assert_( is_in(self.long, 100, 200) )
+        self.assertTrue( is_in(self.long, 100, 200) )
 
         # hi case
-        self.assert_( is_in(self.long, 50, 1024) ) 
+        self.assertTrue( is_in(self.long, 50, 1024) )
 
         # 'hidden' lo case
-        self.assert_( is_in(self.long, 250, 2000) )
+        self.assertTrue( is_in(self.long, 250, 2000) )
 
         # 'hidden' hi case
-        self.assert_( is_in(self.long, 50, 250) )
+        self.assertTrue( is_in(self.long, 50, 250) )
 
         # 'hidden' interval case w/ noticed channels inside
-        self.assert_( is_in(self.long, 250, 600) )
+        self.assertTrue( is_in(self.long, 250, 600) )
 
         # 'hidden' interval case w/ *no* noticed channels inside
-        self.assert_( not is_in(self.short, 250, 600) )
+        self.assertTrue( not is_in(self.short, 250, 600) )

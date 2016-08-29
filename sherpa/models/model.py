@@ -1,5 +1,6 @@
-# 
-#  Copyright (C) 2010  Smithsonian Astrophysical Observatory
+from __future__ import absolute_import
+#
+#  Copyright (C) 2010, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,14 +19,14 @@
 #
 
 
-from itertools import izip
+from six.moves import zip as izip
 import logging
 import numpy
 import hashlib
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.err import ModelErr
 
-from parameter import Parameter
+from .parameter import Parameter
 
 warning = logging.getLogger(__name__).warning
 
@@ -34,6 +35,12 @@ __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
            'ArithmeticConstantModel', 'ArithmeticModel',
            'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
+
+
+def boolean_to_byte(boolean_value):
+    bmap = {True: b'1', False: b'0'}
+    return bmap.get(boolean_value, b'0')
+
 
 def modelCacher1d(func):
 
@@ -45,12 +52,12 @@ def modelCacher1d(func):
         digest = ''
         if use_caching:
 
-            data = [ numpy.array(pars).tostring(), str(kwargs.get('integrate',0)), 
-                     numpy.asarray(xlo).tostring() ]
+            data = [numpy.array(pars).tostring(), boolean_to_byte(kwargs.get('integrate', False)),
+                    numpy.asarray(xlo).tostring()]
             if args:
-                data.append( numpy.asarray(args[0]).tostring() )
+                data.append(numpy.asarray(args[0]).tostring())
 
-            token = ''.join(data)
+            token = b''.join(data)
             digest = hashlib.sha256(token).digest()
             if digest in cache:
                 return cache[digest]
@@ -388,16 +395,16 @@ class ArithmeticModel(Model):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('_use_caching'):
+        if '_use_caching' not in state:
             self.__dict__['_use_caching'] = False
 
-        if not state.has_key('_queue'):
+        if '_queue' not in state:
             self.__dict__['_queue'] = ['']
 
-        if not state.has_key('_cache'):
+        if '_cache' not in state:
             self.__dict__['_cache'] = {}
 
-        if not state.has_key('cache'):
+        if 'cache' not in state:
             self.__dict__['cache'] = 5
 
 
@@ -565,7 +572,7 @@ class NestedModel(CompositeModel, ArithmeticModel):
 
     def calc(self, p, *args, **kwargs):
         nouter = len(self.outer.pars)
-        return self.outer.calc(p[:nouter], 
+        return self.outer.calc(p[:nouter],
                                self.inner.calc(p[nouter:], *args, **kwargs),
                                *self.otherargs, **self.otherkwargs)
 

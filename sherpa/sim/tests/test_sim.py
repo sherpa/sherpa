@@ -1,5 +1,6 @@
-# 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+from __future__ import print_function
+#
+#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -48,7 +49,7 @@ class test_sim(SherpaTestCase):
         'nfev': 93,
         'statval': 8483.0287367571564,
         'parnames': ['p1.gamma', 'p1.ampl', 'g1.fwhm',
-                     'g1.pos', 'g1.ampl'], 
+                     'g1.pos', 'g1.ampl'],
         'parvals': numpy.array(
             [1.0701938169914813,
              9.1826254677279469,
@@ -83,7 +84,7 @@ class test_sim(SherpaTestCase):
         p1 = PowLaw1D('p1')
         p1.gamma.set(1.0, -10, 10, frozen=False)
         p1.ampl.set(1.0, 0.0, _max, frozen=False)
-        p1.ref.set(1.0, -_max, _max, frozen=True)      
+        p1.ref.set(1.0, -_max, _max, frozen=True)
         model = p1 + g1
 
         method = LevMar()
@@ -111,9 +112,9 @@ class test_sim(SherpaTestCase):
                                       getattr(results, key),
                                       1.e-4, 1.e-4)
             except AssertionError:
-                print 'parvals bench: ', self._fit_results_bench[key]
-                print 'parvals fit:   ', getattr(results, key)
-                print 'results', results
+                print('parvals bench: ', self._fit_results_bench[key])
+                print('parvals fit:   ', getattr(results, key))
+                print('results', results)
                 raise
 
         covresults = self.fit.est_errors()
@@ -127,7 +128,7 @@ class test_sim(SherpaTestCase):
         multivariate_t(self.mu, self.cov, self.dof, self.num)
 
     def test_cauchy(self):
-        multivariate_cauchy(self.mu, self.cov, self.num)       
+        multivariate_cauchy(self.mu, self.cov, self.num)
 
     def test_parameter_scale_vector(self):
         ps = ParameterScaleVector()

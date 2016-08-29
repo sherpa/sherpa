@@ -1,5 +1,6 @@
+from __future__ import print_function
 #
-#  Copyright (C) 2012, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,6 +17,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import six
 
 from sherpa.utils import SherpaTestCase, requires_data
 from sherpa.models import ArithmeticModel, Parameter
@@ -203,13 +206,13 @@ class test_ui(SherpaTestCase):
         try:
             ui.get_source('full')
         except IdentifierErr as e:
-            self.assertRegexpMatches(str(e),
+            six.assertRegex(self, str(e),
                                      "Convolved model\n.*\n is set for dataset full. You should use get_model instead.",
                                      str(e))
         try:
             ui.plot_source('full')
         except IdentifierErr as e:
-            self.assertRegexpMatches(str(e),
+            six.assertRegex(self, str(e),
                                      "Convolved model\n.*\n is set for dataset full. You should use plot_model instead.",
                                      str(e))
 
@@ -222,7 +225,7 @@ class test_ui(SherpaTestCase):
         try:
             ui.get_source('not_full')
         except IdentifierErr as e:
-            self.assertEquals('source not_full has not been set, consider using set_source() or set_model()', str(e))
+            self.assertEqual('source not_full has not been set, consider using set_source() or set_model()', str(e))
 
 
 class test_psf_ui(SherpaTestCase):
@@ -247,7 +250,7 @@ class test_psf_ui(SherpaTestCase):
                 self.assertTrue((numpy.array(mdl.get_center()) ==
                                  numpy.array([4])).all())
             except:
-                print model
+                print(model)
                 raise
 
     def test_psf_model2d(self):
@@ -260,5 +263,5 @@ class test_psf_ui(SherpaTestCase):
                 self.assertTrue((numpy.array(mdl.get_center()) ==
                                  numpy.array([108, 130])).all())
             except:
-                print model
+                print(model)
                 raise

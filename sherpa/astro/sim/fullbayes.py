@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -37,16 +37,16 @@ class FullBayes(PragBayes):
     def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
              priors=(), originalscale=True, scale=1, sigma_m=False, p_M=.5,
              simarf=None, p_M_arf=.5, sigma_arf=0.1):
-        # nsubiters is missing from init() to indicate that nubiters=1 for 
+        # nsubiters is missing from init() to indicate that nubiters=1 for
         # full bayes
 
-        if isinstance(simarf, (PCA1DAdd,)):
+        if isinstance(simarf, PCA1DAdd):
             self.simarf = simarf
         else:
             self.simarf = ARFSIMFactory()(simarf)
 
-        if not isinstance(self.simarf, (PCA1DAdd,)):
-            raise TypeError("Simulation ARF must be PCA for FullBayes" + 
+        if not isinstance(self.simarf, PCA1DAdd):
+            raise TypeError("Simulation ARF must be PCA for FullBayes" +
                             " not %s" % type(self.simarf).__name__)
 
         self.accept_arfs = [0]
@@ -130,7 +130,7 @@ class FullBayes(PragBayes):
 
 
     def perturb_arf(self, current_params, current_stat):
-        if self.simarf is not None:         
+        if self.simarf is not None:
 
             # add deviations starting with original ARF for each iter
             for specresp, arf, arf_dict in zip(self.backup_arfs, self.arfs, self.arf_dicts):

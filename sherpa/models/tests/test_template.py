@@ -121,7 +121,7 @@ class test_template(SherpaTestCase):
 
         # create a 4-dimensional grid from 0 to 1 inclusive, shape = (16,4)
         grid = numpy.mgrid[[slice(0, 2, 1) for ii in range(self.num)]]
-        grid = numpy.asarray(map(numpy.ravel, grid)).T
+        grid = numpy.asarray(list(map(numpy.ravel, grid))).T
         coords = numpy.linspace(0.01, 6, 100)
         names = ["p%i" % i for i in range(self.num)]
         templates = []

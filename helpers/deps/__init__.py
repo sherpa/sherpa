@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2014  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2014, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -38,7 +38,7 @@ def build_deps(configure):
     if not os.path.exists('extern/built'):
         prefix=os.getcwd()
         os.chdir('extern')
-        os.chmod(configure[0], 0755)
+        os.chmod(configure[0], 0o755)
         env = os.environ.copy()
         env['PYTHON'] = sys.executable
         out = call(configure, env=env)

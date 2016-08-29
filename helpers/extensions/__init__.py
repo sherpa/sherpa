@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2014  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2014, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -69,7 +69,6 @@ def build_psf_ext(library_dirs, include_dirs, libraries):
              sherpa_inc + ['sherpa/utils/src/tcd'] + include_dirs,
              library_dirs=library_dirs,
              libraries=libraries,
-#              extra_link_args = ['-static'],
              depends=(get_deps(['extension', 'utils'])+
                       ['sherpa/utils/src/tcd/tcd.h',]))
 
@@ -79,7 +78,6 @@ def build_wcs_ext(library_dirs, include_dirs, libraries):
                  sherpa_inc + include_dirs,
                  library_dirs=library_dirs,
                  libraries=libraries,
-#                  extra_link_args = ['-static'],
                  depends=get_deps(['extension']))
 
 def build_region_ext(library_dirs, include_dirs, libraries):
@@ -88,7 +86,6 @@ def build_region_ext(library_dirs, include_dirs, libraries):
                  sherpa_inc + include_dirs,
                  library_dirs=library_dirs,
                  libraries=(libraries),
-#                  extra_link_args = ['-static'],
                  depends=get_deps(['extension']))
 
 def build_xspec_ext(library_dirs, include_dirs, libraries):
@@ -97,7 +94,6 @@ def build_xspec_ext(library_dirs, include_dirs, libraries):
                   sherpa_inc + include_dirs,
                   library_dirs=library_dirs,
                   runtime_library_dirs=library_dirs,
-#                  extra_link_args=['-static'],
                   libraries=libraries,
                   depends=(get_deps(['astro/xspec_extension'])))
 
@@ -122,7 +118,6 @@ estmethods = Extension('sherpa.estmethods._est_funcs',
                'sherpa/estmethods/src/projection.cc',
                'sherpa/estmethods/src/estwrappers.cc'],
               (sherpa_inc + ['sherpa/utils/src/gsl']),
-#              libraries=(['sherpa']),
               depends=(get_deps(['extension', 'utils']) +
                        ['sherpa/estmethods/src/estutils.hh',
                         'sherpa/estmethods/src/info_matrix.hh',
@@ -145,7 +140,6 @@ utils = Extension('sherpa.utils._utils',
                'sherpa/utils/src/_utils.cc'],
               sherpa_inc + ['sherpa/utils/src/cephes',
                             'sherpa/utils/src/gsl'],
-#              libraries=(['sherpa']),
               depends=(get_deps(['extension', 'utils'])+
                        ['sherpa/utils/src/gsl/fcmp.h',
                         'sherpa/utils/src/cephes/cephes.h']))
@@ -159,7 +153,6 @@ saoopt = Extension('sherpa.optmethods._saoopt',
               ['sherpa/optmethods/src/_saoopt.cc',
                'sherpa/optmethods/src/Simplex.cc'],
               sherpa_inc + ['sherpa/utils/src/gsl'],
-#              libraries=(['sherpa']),
               depends=(get_deps(['myArray', 'extension']) +
                        ['sherpa/include/sherpa/fcmp.hh',
                         'sherpa/include/sherpa/MersenneTwister.h',
@@ -200,17 +193,6 @@ statfcts = Extension('sherpa.stats._statfcts',
               sherpa_inc,
               depends=get_deps(['stat_extension', 'stats']))
 
-#pykdtree = Extension('sherpa.utils._pykdtree',
-#              ['sherpa/utils/src/_pykdtree.cc'],
-#              sherpa_inc + ['sherpa/utils/src'],
-#              depends=(get_deps([]) +
-#                       ['sherpa/utils/src/kdtree++/allocator.hpp',
-#                        'sherpa/utils/src/kdtree++/function.hpp',
-#                        'sherpa/utils/src/kdtree++/iterator.hpp',
-#                        'sherpa/utils/src/kdtree++/kdtree.hpp',
-#                        'sherpa/utils/src/kdtree++/region.hpp',
-#                        'sherpa/utils/src/kdtree++/node.hpp']))
-
 integration = Extension('sherpa.utils.integration',
               ['sherpa/utils/src/gsl/err.c',
                'sherpa/utils/src/gsl/error.c',
@@ -244,7 +226,6 @@ pileup = Extension('sherpa.astro.utils._pileup',
 astro_utils = Extension('sherpa.astro.utils._utils',
               ['sherpa/astro/utils/src/_utils.cc'],
               (sherpa_inc + ['sherpa/utils/src/gsl']),
-#              libraries=(['sherpa']),
               depends=(get_deps(['extension', 'utils', 'astro/utils'])+
                        ['sherpa/utils/src/gsl/fcmp.h']))
 
@@ -257,39 +238,23 @@ minpack = Extension('sherpa.optmethods._minpack',
                'sherpa/optmethods/src/minpack/lmdif.f',
                'sherpa/optmethods/src/minpack/mylmdif.f',
                ],
-                # extra_link_args=['-static-libgfortran'],
                     )
 
 minim =  Extension('sherpa.optmethods._minim',
               ['sherpa/optmethods/src/_minim.pyf',
                'sherpa/optmethods/src/minim.f',
                'sherpa/optmethods/src/syminv.f'],
-                # extra_link_args=['-static-libgfortran'],
                     )
 
 fortran_exts = [minpack, minim]
 
-####
-### GROUP
-####
-
-# group = Extension('group',
-#               ['extern/grplib-4.6/python/pygrplib.c'],
-#               ['extern/grplib-4.6/src'],
-#               library_dirs=['extern/grplib-4.6/src/.libs/'],
-#               libraries=['grp'],
-#               depends=['extern/grplib-4.6/python/pygrplib.h']
-#              )
-
 static_ext_modules = [
-#                   group,
                    estmethods,
                    utils,
                    modelfcts,
                    saoopt,
                    tstoptfct,
                    statfcts,
-#                   pykdtree,
                    integration,
                    astro_modelfcts,
                    pileup,

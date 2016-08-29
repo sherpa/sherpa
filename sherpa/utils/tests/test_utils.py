@@ -25,6 +25,8 @@ from sherpa import utils
 from sherpa.utils import SherpaTestCase, SherpaFloat, \
     NoNewAttributesAfterInit
 
+from six.moves import xrange
+
 
 class test_utils(SherpaTestCase):
 
@@ -36,6 +38,10 @@ class test_utils(SherpaTestCase):
         def f2(a, b=1, c=2, d=3, e=4):
             pass
         self.f2 = f2
+
+        def f3(a=None, b=1, c=2, d=3, e=4):
+            pass
+        self.f3 = f3
 
     def test_NoNewAttributesAfterInit(self):
         class C(NoNewAttributesAfterInit):
@@ -49,7 +55,7 @@ class test_utils(SherpaTestCase):
         c = C()
         self.assertEqual(c.x, 1)
         self.assertEqual(c.y, 2)
-        self.assert_(not hasattr(c, 'z'))
+        self.assertFalse(hasattr(c, 'z'))
         self.assertRaises(AttributeError, delattr, c, 'x')
         self.assertRaises(AttributeError, delattr, c, 'z')
         self.assertRaises(AttributeError, setattr, c, 'z', 5)
@@ -61,6 +67,18 @@ class test_utils(SherpaTestCase):
             def m(self, x, y=2):
                 'Instance method m()'
                 return x * y
+
+            def margs(self, x, y=2, *args):
+                'Instance method margs() with *args'
+                return x * y + len(args)
+
+            def kwargs(self, x, y=2, **kwargs):
+                'Instance method kwargs() with **kwargs'
+                return x * y + 2 * len(kwargs)
+
+            def bargs(self, x, y=2, *args, **kwargs):
+                'Instance method bargs() with *args and **kwargs'
+                return x * y + len(args) + 2 * len(kwargs)
 
             @classmethod
             def cm(klass, x, y=2):
@@ -75,7 +93,7 @@ class test_utils(SherpaTestCase):
         c = C()
 
         # Basic usage
-        for meth in (c.m, c.cm, c.sm):
+        for meth in (c.m, c.margs, c.kwargs, c.bargs, c.cm, c.sm):
             m = utils.export_method(meth)
             self.assertEqual(m.__name__, meth.__name__)
             self.assertTrue(m.__doc__ is not None)
@@ -85,11 +103,37 @@ class test_utils(SherpaTestCase):
             e = None
             try:
                 m()
-            except TypeError, e:
-                pass
-            self.assertEqual(str(e),
-                             '%s() takes at least 1 argument (0 given)' %
-                             meth.__name__)
+            except TypeError as e:
+                emsg2 = "{}() ".format(meth.__name__) + \
+                        "takes at least 1 argument (0 given)"
+                emsg3 = "{}() ".format(meth.__name__) + \
+                        "missing 1 required positional argument: 'x'"
+                self.assertIn(str(e), [emsg2, emsg3])
+
+        # Check that *args/**kwargs are handled correctly for methods;
+        # should perhaps be included above to avoid repeated calls
+        # to export_method?
+        #
+        meth = utils.export_method(c.margs)
+        self.assertTrue(meth(3, 7, "a", "b"), 23)
+        try:
+            meth(12, dummy=None)
+        except TypeError as e:
+            emsg = "margs() got an unexpected keyword argument 'dummy'"
+            self.assertEqual(str(e), emsg)
+
+        meth = utils.export_method(c.kwargs)
+        self.assertTrue(meth(3, 7, foo="a", bar="b"), 25)
+        try:
+            meth(12, 14, 15)
+        except TypeError as e:
+            emsg2 = "kwargs() takes at most 2 arguments (3 given)"
+            emsg3 = "kwargs() takes from 1 to 2 positional arguments " + \
+                    "but 3 were given"
+            self.assertIn(str(e), [emsg2, emsg3])
+
+        meth = utils.export_method(c.bargs)
+        self.assertTrue(meth(3, 7, 14, 15, foo=None), 25)
 
         # Non-method argument
         def f(x):
@@ -103,11 +147,21 @@ class test_utils(SherpaTestCase):
         self.assertEqual(m(3), 6)
         self.assertEqual(m(3, 7), 21)
 
+    def test_get_num_args(self):
+        self.assertEqual(utils.get_num_args(self.f1), (3, 3, 0))
+        self.assertEqual(utils.get_num_args(self.f2), (5, 1, 4))
+        self.assertEqual(utils.get_num_args(self.f3), (5, 0, 5))
+
     def test_get_keyword_names(self):
         self.assertEqual(utils.get_keyword_names(self.f1), [])
         l = ['b', 'c', 'd', 'e']
         self.assertEqual(utils.get_keyword_names(self.f2), l)
         self.assertEqual(utils.get_keyword_names(self.f2, 2), l[2:])
+        self.assertEqual(utils.get_keyword_names(self.f2, 7), [])
+        l = ['a', 'b', 'c', 'd', 'e']
+        self.assertEqual(utils.get_keyword_names(self.f3), l)
+        self.assertEqual(utils.get_keyword_names(self.f3, 1), l[1:])
+        self.assertEqual(utils.get_keyword_names(self.f3, 7), [])
 
     def test_get_keyword_defaults(self):
         self.assertEqual(utils.get_keyword_defaults(self.f1), {})
@@ -116,6 +170,12 @@ class test_utils(SherpaTestCase):
         del d['b']
         del d['c']
         self.assertEqual(utils.get_keyword_defaults(self.f2, 2), d)
+        self.assertEqual(utils.get_keyword_defaults(self.f2, 7), {})
+        d = {'a': None, 'b': 1, 'c': 2, 'd': 3, 'e': 4}
+        self.assertEqual(utils.get_keyword_defaults(self.f3), d)
+        del d['a']
+        self.assertEqual(utils.get_keyword_defaults(self.f3, 1), d)
+        self.assertEqual(utils.get_keyword_defaults(self.f3, 7), {})
 
     def test_print_fields(self):
         names = ['a', 'bb', 'ccc']
@@ -210,7 +270,7 @@ class test_utils(SherpaTestCase):
         f = numpy.sum
         iterable = [numpy.arange(1, 2+2*i) for i in range(numtasks)]
 
-        result = map(f, iterable)
+        result = list(map(f, iterable))
         result = numpy.asarray(result)
 
         pararesult = utils.parallel_map(f, iterable, ncpus)

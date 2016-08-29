@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,10 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
+from six.moves import zip as izip
 import numpy
 import numpy.random
-from itertools import izip
 
 from sherpa.estmethods import Covariance, Confidence
 from sherpa.utils.err import EstErr
@@ -278,18 +277,27 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
         return multivariate_t(vals, cov, dof, int(num))
 
 
+class Evaluate(object):
+    """
+    Callable class for _sample_stat multiprocessing call
+    This class used to be a nested function, which can't be pickled and results in
+    python3 failing to execute the code.
+    """
+    def __init__(self, fit):
+        self.fit = fit
+
+    def __call__(self, sample):
+        self.fit.model.thawedpars = sample
+        return self.fit.calc_stat()
+
+
 def _sample_stat(fit, samples, numcores=None):
 
     oldvals = fit.model.thawedpars
 
-    def evaluate(sample):
-        fit.model.thawedpars = sample
-        return fit.calc_stat()
-
-    stats = None
     try:
         fit.model.startup()
-        stats = numpy.asarray(parallel_map(evaluate, samples, numcores))
+        stats = numpy.asarray(parallel_map(Evaluate(fit), samples, numcores))
     finally:
         fit.model.teardown()
         fit.model.thawedpars = oldvals

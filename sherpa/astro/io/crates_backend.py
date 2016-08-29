@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,9 @@
 #
 
 
-from itertools import izip
+import six
+from six.moves import zip as izip
+
 import os.path
 import numpy
 from sherpa.utils.err import IOErr
@@ -136,7 +138,15 @@ def _try_key(crate, name, dtype=str):
     if str(key).find('none') != -1:
         return None
 
-    return dtype(key)
+    # Python3 (and having the type as a parameter) seems to require some complexity here.
+    # If there is a better way I am not aware of it.
+    if dtype == str and (isinstance(key, six.string_types) or isinstance(key, bytes)):
+        try:  # Python 3
+            return dtype(key, "utf-8")
+        except TypeError:  # Python 2
+            return dtype(key)
+    else:
+        return dtype(key)
 
 
 def _get_meta_data(crate):
@@ -402,7 +412,7 @@ def read_table_blocks(arg, make_copy=False):
     elif isinstance(arg, pycrates.CrateDataset):
         filename = arg.get_filename()
         dataset = arg
-    elif type(arg) in (str, unicode, numpy.str_):
+    elif isinstance(arg, six.string_types):
         filename = arg
         dataset = pycrates.CrateDataset(arg)
         close_dataset = True
@@ -420,7 +430,7 @@ def read_table_blocks(arg, make_copy=False):
         hdr[ii] = {}
         names = crate.get_keynames()
         for name in names:
-            hdr[ii][name] = crate.get_key_value(name)
+            hdr[ii][name] = _try_hdr_key(crate, name)
 
         cols[ii] = {}
         # skip over primary
@@ -451,7 +461,7 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
         tbl = None
         try:
             tbl = open_crate(arg)
-        except Exception, e:
+        except Exception as e:
             raise e
 
         close_dataset = True
@@ -924,13 +934,13 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 
     if pha is None:
         pha = phadataset.get_crate(phadataset.get_current_crate())
-        if (pha.get_key('HDUCLAS1').value == 'SPECTRUM' or
-                pha.get_key('HDUCLAS2').value == 'SPECTRUM'):
+        if (_try_hdr_key(pha, 'HDUCLAS1') == 'SPECTRUM' or
+                _try_hdr_key(pha, 'HDUCLAS2') == 'SPECTRUM'):
             pass
         else:
             pha = phadataset.get_crate(1)
-            if (pha.get_key('HDUCLAS1').value == 'SPECTRUM' or
-                    pha.get_key('HDUCLAS2').value == 'SPECTRUM'):
+            if (_try_hdr_key(pha, 'HDUCLAS1') == 'SPECTRUM' or
+                    _try_hdr_key(pha, 'HDUCLAS2') == 'SPECTRUM'):
                 pass
             else:
                 # If background maybe better to go on to next block?

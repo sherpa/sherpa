@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,13 +18,13 @@
 #
 
 
-from clean import clean
-from develop import develop
-from install import install
-from sdist import sdist
-from test import PyTest
-from sherpa_config import sherpa_config
-from xspec_config import xspec_config
+from .clean import clean
+from .develop import develop
+from .install import install
+from .sdist import sdist
+from .test import PyTest
+from .sherpa_config import sherpa_config
+from .xspec_config import xspec_config
 
 commands = {
     'clean': clean,

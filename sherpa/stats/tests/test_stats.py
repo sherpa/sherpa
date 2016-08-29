@@ -1,5 +1,6 @@
+from __future__ import print_function
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -222,9 +223,9 @@ class test_stats(SherpaTestCase):
                 assert numpy.allclose(arg1[key], getattr(arg2, key),
                                       1.e-3, 1.e-3)
             except AssertionError:
-                print 'parvals bench: ', arg1[key]
-                print 'parvals fit:   ', getattr(arg2, key)
-                print 'results', arg2
+                print('parvals bench: ', arg1[key])
+                print('parvals fit:   ', getattr(arg2, key))
+                print('results', arg2)
                 raise
 
     def test_cash_stat(self):

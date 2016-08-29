@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -50,7 +50,7 @@ class Meta(NoNewAttributesAfterInit):
         return val
 
     def keys(self):
-        keys = self.__header.keys()[:]
+        keys = list(self.__header.keys())[:]
         keys.sort()
         return keys
 

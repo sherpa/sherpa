@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,6 +16,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+from six.moves import zip as izip
+from six import string_types
 
 import numpy
 import sherpa
@@ -35,7 +37,6 @@ from sherpa.astro.data import DataARF, DataRMF, DataPHA, _notice_resp, \
     DataIMG
 from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
-from itertools import izip
 
 _tol = numpy.finfo(numpy.float32).eps
 
@@ -552,7 +553,7 @@ class ARF1D(NoNewAttributesAfterInit):
         arf = self._arf
         pha = self._pha
 
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             if session is None:
                 model = sherpa.astro.ui._session._eval_model_expression(model)
             else:
@@ -620,7 +621,7 @@ class RMF1D(NoNewAttributesAfterInit):
         rmf = self._rmf
         pha = self._pha
 
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             if session is None:
                 model = sherpa.astro.ui._session._eval_model_expression(model)
             else:
@@ -658,7 +659,7 @@ class Response1D(NoNewAttributesAfterInit):
         pha = self.pha
         arf, rmf = pha.get_response()
 
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             if session is None:
                 model = sherpa.astro.ui._session._eval_model_expression(model)
             else:
@@ -862,7 +863,7 @@ class MultipleResponse1D(Response1D):
     def __call__(self, model, session=None):
         pha = self.pha
 
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             if session is None:
                 model = sherpa.astro.ui._session._eval_model_expression(model)
             else:
@@ -966,7 +967,7 @@ class PileupResponse1D(NoNewAttributesAfterInit):
         # clear out any previous response filter
         pha.notice_response(False)
 
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             if session is None:
                 model = sherpa.astro.ui._session._eval_model_expression(model)
             else:

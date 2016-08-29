@@ -17,11 +17,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from six.moves import xrange
+
 import numpy
 from sherpa.utils import SherpaFloat, get_num_args, is_binary_file
 from sherpa.utils.err import IOErr
 from sherpa.data import Data1D, BaseData
-from exceptions import ValueError
 import os
 
 
@@ -454,7 +455,7 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
 
     args = numpy.column_stack(numpy.asarray(args))
 
-    f = file(filename, 'w')
+    f = open(filename, 'w')
 
     if fields is not None:
         f.write(comment + sep.join(fields) + linebreak)

@@ -16,12 +16,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
+from six.moves import zip as izip
+from six import string_types
 import os
 import sys
 import logging
 import numpy
-from itertools import izip
 import sherpa.ui.utils
 from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
@@ -3346,7 +3346,7 @@ class Session(sherpa.ui.utils.Session):
     def _save_type(self, objtype, id, filename, bkg_id=None, **kwargs):
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -3868,7 +3868,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -3963,7 +3963,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4051,7 +4051,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4146,7 +4146,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4229,7 +4229,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
         d = self._get_pha_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -4309,7 +4309,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
         id = self._fix_id(id)
         d = self._get_pha_data(id)
         if bkg_id is not None:
@@ -4394,7 +4394,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
         id = self._fix_id(id)
         d = self._get_pha_data(id)
         if bkg_id is not None:
@@ -4470,7 +4470,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
 
         sherpa.astro.io.write_image(filename, self.get_data(id),
                                     ascii, clobber)
@@ -4539,7 +4539,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
 
         sherpa.astro.io.write_table(filename, self.get_data(id),
                                     ascii, clobber)
@@ -4619,7 +4619,7 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_type(filename, basestring, 'filename', 'a string')
+        _check_type(filename, string_types, 'filename', 'a string')
         d = self.get_data(id)
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
@@ -5862,8 +5862,8 @@ class Session(sherpa.ui.utils.Session):
         if quantity is None:
             id, quantity = quantity, id
 
-        _check_type(quantity, basestring, 'quantity', 'a string')
-        _check_type(type, basestring, 'type', 'a string')
+        _check_type(quantity, string_types, 'quantity', 'a string')
+        _check_type(type, string_types, 'type', 'a string')
 
         ids = self.list_data_ids()
         if id is not None:
@@ -5977,7 +5977,7 @@ class Session(sherpa.ui.utils.Session):
         if coord is None:
             id, coord = coord, id
 
-        _check_type(coord, basestring, 'coord', 'a string')
+        _check_type(coord, string_types, 'coord', 'a string')
 
         ids = self.list_data_ids()
         if id is not None:
@@ -6731,7 +6731,7 @@ class Session(sherpa.ui.utils.Session):
             for bid in data.background_ids:
                 try:
                     self.group(id, bid)
-                except DataErr, e:
+                except DataErr as e:
                     info(str(e))
 
             # Now check if data is already grouped, and send error message
@@ -7117,7 +7117,7 @@ class Session(sherpa.ui.utils.Session):
             for bid in data.background_ids:
                 try:
                     self.ungroup(id, bid)
-                except DataErr, e:
+                except DataErr as e:
                     info(str(e))
 
             # Now check if data is already ungrouped, and send error message
@@ -8119,7 +8119,7 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
     def load_psf(self, modelname, filename_or_model, *args, **kwargs):
         kernel = filename_or_model
-        if isinstance(filename_or_model, basestring):
+        if isinstance(filename_or_model, string_types):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
             except:
@@ -8441,7 +8441,7 @@ class Session(sherpa.ui.utils.Session):
         """
         if model is None:
             id, model = model, id
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             model = self._eval_model_expression(model)
         self._set_item(id, model, self._pileup_models, sherpa.models.Model,
                        'model', 'a model object or model expression string')
@@ -8643,7 +8643,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
         bkg_id = self._fix_id(bkg_id)
 
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             model = self._eval_model_expression(model)
         _check_type(model, sherpa.models.Model, 'model',
                     'a model object or model expression string')
@@ -8765,7 +8765,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
         bkg_id = self._fix_id(bkg_id)
 
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             model = self._eval_model_expression(model)
         _check_type(model, sherpa.models.Model, 'model',
                     'a model object or model expression string')
@@ -9490,7 +9490,7 @@ class Session(sherpa.ui.utils.Session):
         if model is None:
             id, model = model, id
         self._check_model(model)
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
@@ -9507,7 +9507,7 @@ class Session(sherpa.ui.utils.Session):
         if model is None:
             id, model = model, id
         self._check_model(model)
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
@@ -10230,7 +10230,7 @@ class Session(sherpa.ui.utils.Session):
         if model is None:
             id, model = model, id
         self._check_model(model)
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
         plotobj = self._compsrcplot
@@ -10248,7 +10248,7 @@ class Session(sherpa.ui.utils.Session):
         if model is None:
             id, model = model, id
         self._check_model(model)
-        if isinstance(model, basestring):
+        if isinstance(model, string_types):
             model = self._eval_model_expression(model)
 
         is_source = self._get_model_status(id)[1]
@@ -12438,13 +12438,13 @@ class Session(sherpa.ui.utils.Session):
 
         Write the contents to a StringIO object:
 
-        >>> import StringIO
-        >>> store = StringIO.StringIO()
+        >>> from six import StringIO
+        >>> store = StringIO()
         >>> save_all(store)
 
         """
 
-        if isinstance(outfile, basestring):
+        if isinstance(outfile, string_types):
             if os.path.isfile(outfile):
                 if sherpa.utils.bool_cast(clobber):
                     os.remove(outfile)

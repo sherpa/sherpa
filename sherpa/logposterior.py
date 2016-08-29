@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2009, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,12 +18,10 @@
 #
 
 
-from sherpa.stats import Likelihood, truncation_value, Stat
+from sherpa.stats import Likelihood
 from sherpa.models import Parameter
 from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.utils.err import StatErr
-from itertools import izip
-import numpy
 
 
 class Prior(Likelihood):

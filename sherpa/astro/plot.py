@@ -1,5 +1,6 @@
+from __future__ import division
 #
-#  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,6 +22,7 @@
 Classes for plotting, analysis of astronomical data sets
 """
 
+from six.moves import zip as izip
 from sherpa.astro.data import DataPHA
 from sherpa.plot import DataPlot, ModelPlot, FitPlot, DelchiPlot, ResidPlot, \
     RatioPlot, ChisqrPlot, HistogramPlot, backend, Histogram
@@ -29,7 +31,6 @@ from sherpa.astro.utils import bounds_check
 from sherpa.utils.err import PlotErr, IOErr
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins
 from numpy import iterable, array2string, asarray
-from itertools import izip
 import logging
 
 warning = logging.getLogger(__name__).warning
@@ -367,7 +368,7 @@ class OrderPlot(ModelHistogram):
             top_color = '0xffffff'
             bot_color = '0x0000bf'
             num = len(self.orders)
-            jump = (int(top_color, 16) - int(bot_color, 16)) / (num + 1)
+            jump = (int(top_color, 16) - int(bot_color, 16)) // (num + 1)
             for order in self.orders:
                 self.colors.append(top_color)
                 top_color = hex(int(top_color, 16) - jump)

@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -476,8 +476,8 @@ static PyMethodDef tcdPyData_methods[] = {
 
 // New datatype initialization
 static PyTypeObject tcdPyData_Type = {
-  PyObject_HEAD_INIT(NULL)
-  0,                                // ob_size
+  PyVarObject_HEAD_INIT(NULL, 0)
+//  0,                                // ob_size
   (char*)"tcdData",                 // tp_name
   sizeof(tcdPyData),                // tp_basicsize
   0, 		                    // tp_itemsize
@@ -1036,16 +1036,47 @@ static PyMethodDef PsfFcts[] = {
 };
 
 
-// Initialize the module
+//// Initialize the module
+
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef psf = {
+    PyModuleDef_HEAD_INIT,
+    "_psf",
+    NULL,
+    -1,
+    PsfFcts
+};
+
+PyMODINIT_FUNC PyInit__psf(void) {
+  if( PyType_Ready(&tcdPyData_Type) < 0 )
+    return NULL;
+
+   import_array();
+
+   PyObject* m;
+   m = PyModule_Create(&psf);
+
+  if( m == NULL )
+    return NULL;
+
+  Py_INCREF(&tcdPyData_Type);
+
+  PyModule_AddObject(m, (char*)"tcdData", (PyObject*)&tcdPyData_Type);
+
+  return m;
+}
+
+#else
+
 PyMODINIT_FUNC init_psf(void) {
 
   PyObject* m;
 
   if( PyType_Ready(&tcdPyData_Type) < 0 )
     return;
-  
+
   import_array();  // Must be present for NumPy.
-  
+
   m = Py_InitModule3( (char*)"_psf", PsfFcts, NULL);
 
   if( m == NULL )
@@ -1054,3 +1085,5 @@ PyMODINIT_FUNC init_psf(void) {
   Py_INCREF(&tcdPyData_Type);
   PyModule_AddObject(m, (char*)"tcdData", (PyObject*)&tcdPyData_Type);
 }
+
+#endif

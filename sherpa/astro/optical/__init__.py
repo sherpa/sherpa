@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,11 +17,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
+from six.moves import xrange
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
-from sherpa.models.model import ArithmeticModel, modelCacher1d
-from sherpa.utils.err import ModelErr
+from sherpa.models.model import ArithmeticModel
 from sherpa.utils import SherpaFloat, sao_fcmp
 
 _tol = numpy.finfo(numpy.float32).eps
@@ -135,7 +134,7 @@ class AbsorptionGaussian(ArithmeticModel):
 
     def __init__(self, name='absorptiongaussian'):
 
-        self.fwhm = Parameter(name, 'fwhm', 100., tinyval, hard_min=tinyval, 
+        self.fwhm = Parameter(name, 'fwhm', 100., tinyval, hard_min=tinyval,
                               units="km/s")
         self.pos = Parameter(name, 'pos', 5000., tinyval, frozen=True, units='angstroms')
         self.ewidth = Parameter(name, 'ewidth', 1.)
@@ -162,7 +161,7 @@ class AbsorptionGaussian(ArithmeticModel):
         delta = numpy.abs((x - p[1]) / sigma)
         ampl  = p[2] / sigma / 2.50662828  # document this constant
 
-        idx = (delta < self.limit)
+        idx = (delta < self.limit.val)
         y[idx] = 1.0 - ampl * numpy.exp(- delta[idx] * delta[idx] / 2.0)
 
         return y
@@ -174,7 +173,7 @@ class AbsorptionLorentz(ArithmeticModel):
 
     def __init__(self, name='absorptionlorentz'):
 
-        self.fwhm = Parameter(name, 'fwhm', 100., tinyval, hard_min=tinyval, 
+        self.fwhm = Parameter(name, 'fwhm', 100., tinyval, hard_min=tinyval,
                               units="km/s")
         self.pos = Parameter(name, 'pos', 5000., tinyval, frozen=True, units='angstroms')
         self.ewidth = Parameter(name, 'ewidth', 1.)
@@ -240,7 +239,7 @@ class OpticalGaussian(ArithmeticModel):
 
     def __init__(self, name='opticalgaussian'):
 
-        self.fwhm = Parameter(name, 'fwhm', 100., tinyval, hard_min=tinyval, 
+        self.fwhm = Parameter(name, 'fwhm', 100., tinyval, hard_min=tinyval,
                               units="km/s")
         self.pos = Parameter(name, 'pos', 5000., tinyval, frozen=True, units='angstroms')
         self.tau = Parameter(name, 'tau', 0.5)
@@ -266,7 +265,7 @@ class OpticalGaussian(ArithmeticModel):
         sigma = p[1] * p[0] / 705951.5     # = 2.9979e5 / 2.354820044 ?
         delta = numpy.abs((x - p[1]) / sigma)
 
-        idx = (delta < self.limit)
+        idx = (delta < self.limit.val)
         y[idx] = numpy.exp(-p[2] * numpy.exp(- delta[idx] * delta[idx] / 2.0))
 
         return y
@@ -308,7 +307,7 @@ class EmissionGaussian(ArithmeticModel):
         y = numpy.zeros_like(x)
         sigma = p[1] * p[0] / 705951.5     # = 2.9979e5 / 2.354820044
         delta = numpy.abs((x - p[1]) / sigma)
-        idx = (delta < self.limit)
+        idx = (delta < self.limit.val)
 
         arg = - delta * delta / 2.0
         if sao_fcmp(p[3], 1.0, _tol) == 0:
@@ -364,7 +363,7 @@ class BlackBody(ArithmeticModel):
 
         ArithmeticModel.__init__(self, name, (self.refer, self.ampl, self.temperature))
 
-    #@modelCacher1d 
+    #@modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         c1 = 1.438786e8
@@ -383,7 +382,7 @@ class BlackBody(ArithmeticModel):
             denon = numpy.zeros_like(x)
             denon[x0] = numpy.power(x[x0], 5)
             argmin_slice = numpy.where(arg < self._argmin)[0]
-            if (len(argmin_slice) > 0): 
+            if (len(argmin_slice) > 0):
                 denon[argmin_slice] *= arg[argmin_slice] * (1.0 + 0.5 * arg[argmin_slice])
             arg = numpy.where(arg > self._argmax, self._argmax, arg)
 
@@ -406,7 +405,7 @@ class Bremsstrahlung(ArithmeticModel):
 
         ArithmeticModel.__init__(self, name, (self.refer, self.ampl, self.temperature))
 
-    #@modelCacher1d 
+    #@modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         if 0.0 == p[0]:
@@ -429,7 +428,7 @@ class BrokenPowerlaw(ArithmeticModel):
 
         ArithmeticModel.__init__(self, name, (self.refer, self.ampl, self.index1, self.index2))
 
-    #@modelCacher1d 
+    #@modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         if 0.0 == p[0]:
             raise ValueError('model evaluation failed, ' +
@@ -452,7 +451,7 @@ class CCM(ArithmeticModel):
 
         ArithmeticModel.__init__(self, name, (self.ebv, self.r))
 
-    #@modelCacher1d 
+    #@modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         y = numpy.zeros_like(x)
@@ -521,7 +520,7 @@ class LogAbsorption(ArithmeticModel):
 
     def __init__(self, name='logabsorption'):
 
-        self.fwhm = Parameter(name, 'fwhm', 100., tinyval, hard_min=tinyval, 
+        self.fwhm = Parameter(name, 'fwhm', 100., tinyval, hard_min=tinyval,
                               units="km/s")
         self.pos = Parameter(name, 'pos', 5000., tinyval, frozen=True, units='angstroms')
         self.tau = Parameter(name, 'tau', 0.5)
@@ -593,7 +592,7 @@ class LogEmission(ArithmeticModel):
         fmax = (arg - 1.0) * p[2] / p[1] / 2.0
 
         if (p[3] == 1.0):
-            return numpy.where(x >= p[1], fmax * numpy.power((x / p[1]), -arg), fmax * numpy.power((x / p[1]), arg)) 
+            return numpy.where(x >= p[1], fmax * numpy.power((x / p[1]), -arg), fmax * numpy.power((x / p[1]), arg))
 
         arg1 = 0.69314718 / numpy.log (1.0 + p[3] * p[0] / 2.9979e5 / 2.0)
         fmax = (arg - 1.0) * p[2] / p[1] / (1.0 + (arg - 1.0) / (arg1 - 1.0))
@@ -619,7 +618,7 @@ class Polynomial(ArithmeticModel):
         pars.append(self.offset)
         ArithmeticModel.__init__(self, name, pars)
 
-    #@modelCacher1d 
+    #@modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         y = numpy.zeros_like(x)
@@ -641,7 +640,7 @@ class Powerlaw(ArithmeticModel):
 
         ArithmeticModel.__init__(self, name, (self.refer, self.ampl, self.index))
 
-    #@modelCacher1d 
+    #@modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         if 0.0 == p[0]:
             raise ValueError('model evaluation failed, ' +
@@ -666,7 +665,7 @@ class Recombination(ArithmeticModel):
 
         ArithmeticModel.__init__(self, name, (self.refer, self.ampl, self.temperature, self.fwhm))
 
-    #@modelCacher1d 
+    #@modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         if 0.0 == p[0]:
             raise ValueError('model evaluation failed, ' +
@@ -744,7 +743,7 @@ class FM(ArithmeticModel):
     def __init__(self, name='fm'):
         self.ebv = Parameter(name, 'ebv', 0.5)  # E(B-V)
         self.x0 = Parameter(name, 'x0', 4.6)    # Position of Drude bump
-        self.width = Parameter(name, 'width', 0.06) # Width of Drude bump 
+        self.width = Parameter(name, 'width', 0.06) # Width of Drude bump
         self.c1 = Parameter(name, 'c1', 0.2)
         self.c2 = Parameter(name, 'c2', 0.1)
         self.c3 = Parameter(name, 'c3', 0.02)

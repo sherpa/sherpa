@@ -1,5 +1,6 @@
+from __future__ import print_function
 #
-# Copyright (C) 2014  Smithsonian Astrophysical Observatory
+# Copyright (C) 2014, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -28,11 +29,11 @@ try:
 except ImportError:
     import sys
 
-    print >> sys.stderr, (
+    print((
         "You need to install NUMPY in order to build Sherpa\n"
         "Other dependencies will be automatically installed\n"
         "Please install NUMPY (e.g. pip install numpy) and try again."
-    )
+    ), file=sys.stderr)
     sys.exit(2)
 
 try:
@@ -40,11 +41,12 @@ try:
 except:
     import sys
 
-    print >> sys.stderr, (
+    print((
         "WARNING\n"
         "Could not import setuptools.\n"
         "This might lead to an incomplete installation\n"
-    )
+    ), file=sys.stderr)
+
 from numpy.distutils.core import setup
 
 from helpers.extensions import static_ext_modules
@@ -66,7 +68,7 @@ meta = dict(name='sherpa',
             license='GNU GPL v3',
             long_description=open('README.md', 'rt').read(),
             platforms='Linux, Mac OS X',
-            install_requires=['numpy', ],
+            install_requires=['numpy', 'six'],
             tests_require=['pytest', 'mock'],
             packages=['sherpa',
                       'sherpa.estmethods',
@@ -125,6 +127,7 @@ meta = dict(name='sherpa',
                 'Programming Language :: C',
                 'Programming Language :: Fortran',
                 'Programming Language :: Python :: 2.7',
+                'Programming Language :: Python :: 3.5',
                 'Programming Language :: Python :: Implementation :: CPython',
                 'Topic :: Scientific/Engineering :: Astronomy',
                 'Topic :: Scientific/Engineering :: Physics'
