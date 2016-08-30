@@ -5233,7 +5233,7 @@ class Session(sherpa.ui.utils.Session):
     def set_rmf(self, id, rmf=None, resp_id=None, bkg_id=None):
         """Set the RMF for use by a PHA data set.
 
-        Set the effective area curve for a PHA data set, or its
+        Set the redistribution matrix for a PHA data set, or its
         background.
 
         Parameters
@@ -5241,13 +5241,13 @@ class Session(sherpa.ui.utils.Session):
         id : int or str, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        arf
-           An ARF, such as returned by `get_arf` or `unpack_arf`.
+        rmf
+           An RMF, such as returned by `get_rmf` or `unpack_rmf`.
         resp_id : int or str, optional
-           The identifier for the ARF within this data set, if there
+           The identifier for the RMF within this data set, if there
            are multiple responses.
         bkg_id : int or str, optional
-           Set this to identify the ARF as being for use with the
+           Set this to identify the RMF as being for use with the
            background.
 
         See Also
