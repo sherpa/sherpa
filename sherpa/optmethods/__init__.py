@@ -372,8 +372,8 @@ class LevMar(OptMethod):
        free parameters.
     epsfcn : number
        This is used in determining a suitable step length for the
-       forward-difference approximation; default is FLT_EPSILON ~ 1.19209289551e-07,
-       where DBL_EPSILON is the smallest number
+       forward-difference approximation; default is FLT_EPSILON
+       ~ 1.19209289551e-07, where FLT_EPSILON is the smallest number
        x such that `1.0 != 1.0 + x`. This approximation assumes that
        the relative errors in the functions are of the order of
        `epsfcn`. If `epsfcn` is less than the machine precision, it is
