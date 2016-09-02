@@ -4859,7 +4859,7 @@ class Session(sherpa.ui.utils.Session):
             id, arf = arf, id
 
         # store only the ARF dataset in the PHA response dict
-        if type(arf) in (sherpa.astro.instrument.ARF1D,):
+        if isinstance(arf, sherpa.astro.instrument.ARF1D):
             arf = arf._arf
         _check_type(arf, sherpa.astro.data.DataARF, 'arf', 'an ARF data set')
 
@@ -7919,7 +7919,7 @@ class Session(sherpa.ui.utils.Session):
         self._get_pha_data(id).unsubtract()
 
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
-                 grouping=None, grouped=False, quality=None, bkg=None):
+                 grouping=None, grouped=False, quality=None, bkg=None, noise=sherpa.utils.poisson_noise):
         """Simulate a PHA data set from a model.
 
         Take a PHA data set, evaluate the model for each bin, and then
@@ -8082,7 +8082,10 @@ class Session(sherpa.ui.utils.Session):
         # Calculate the source model, and take a Poisson draw based on
         # the source model.  That becomes the simulated data.
         m = self.get_model(id)
-        d.counts = sherpa.utils.poisson_noise(d.eval_model(m))
+        data = d.eval_model(m)
+        if(noise):
+            data = noise(data)
+        d.counts = data
 
         # Add in background counts:
         #  -- Scale each background properly given data's
