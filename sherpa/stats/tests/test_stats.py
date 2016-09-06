@@ -310,3 +310,11 @@ class test_stats(SherpaTestCase):
         ui.set_stat('chi2datavar')
         err = ui.get_staterror()
         numpy.testing.assert_allclose(err, numpy.sqrt(xy), rtol=1e-7, atol=1e-7)
+
+    def test_wstat_calc_stat_info(self):
+        ui.load_pha("stat", self.make_path("3c273.pi"))
+        ui.set_source("stat", ui.powlaw1d.p1)
+        ui.set_stat("wstat")
+        p1 = ui.get_model_component("p1")
+        ui.fit("stat")
+        ui.get_stat_info()
