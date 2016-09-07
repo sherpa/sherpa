@@ -18,11 +18,14 @@
 #
 
 from sherpa.ui.utils import Session
+from numpy.testing import assert_array_equal
 
 
 # bug #262
 def test_list_ids():
     session = Session()
     session.load_arrays(1, [1, 2, 3], [1, 2, 3])
-    session.load_arrays("bar", [1, 2, 3], [1, 2, 3])
-    assert [1, "bar"] == session.list_data_ids()
+    session.load_arrays("1", [1, 2, 3], [4, 5, 6])
+    assert [1, "1"] == session.list_data_ids()
+    assert_array_equal([4, 5, 6], session.get_data('1').get_dep())
+    assert_array_equal([1, 2, 3], session.get_data(1).get_dep())
