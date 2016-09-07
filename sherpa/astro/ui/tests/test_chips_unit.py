@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 import pytest
-from sherpa.utils import requires_fits
+from sherpa.utils import requires_data, requires_fits
 from six.moves import reload_module
 
 
@@ -57,6 +57,7 @@ def clean_up(request, ui):
     request.addfinalizer(fin)
 
 
+@requires_data
 @requires_fits
 @pytest.fixture(autouse=True)
 def load_data(ui, make_data_path):
@@ -102,6 +103,3 @@ def test_plot(call, args, chips, ui):
     function = getattr(ui, "plot_"+call)
     function(*args)
     assert_chips_called(chips)
-
-
-
