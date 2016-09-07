@@ -26,6 +26,8 @@ def test_list_ids():
     session = Session()
     session.load_arrays(1, [1, 2, 3], [1, 2, 3])
     session.load_arrays("1", [1, 2, 3], [4, 5, 6])
-    assert [1, "1"] == session.list_data_ids()
+
+    # order of 1 and "1" is not determined
+    assert {1, "1"} == set(session.list_data_ids())
     assert_array_equal([4, 5, 6], session.get_data('1').get_dep())
     assert_array_equal([1, 2, 3], session.get_data(1).get_dep())
