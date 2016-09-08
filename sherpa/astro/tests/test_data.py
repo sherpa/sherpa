@@ -21,10 +21,10 @@ import numpy
 from sherpa.astro.data import DataPHA
 from sherpa.utils import SherpaTestCase, requires_data, requires_fits
 from sherpa.astro.io import read_pha
-import unittest
 
 import logging
 logger = logging.getLogger('sherpa')
+
 
 class test_filter_energy_grid(SherpaTestCase):
 
@@ -72,21 +72,19 @@ class test_filter_energy_grid(SherpaTestCase):
         logger.setLevel(self.old_level)
 
     def test_notice(self):
-        #clear mask
+        # clear mask
         self.pha.notice()        
         self.pha.notice(0.0, 6.0)
-        #self.assertEqual(self._notice, self.pha.mask)
+        # self.assertEqual(self._notice, self.pha.mask)
         assert (self._notice == numpy.asarray(self.pha.mask)).all()
 
-
     def test_ignore(self):
-        #clear mask
+        # clear mask
         self.pha.notice()
         self.pha.ignore(0.0, 1.0)
         self.pha.ignore(3.0, 15.0)
-        #self.assertEqual(self._ignore, self.pha.mask)
+        # self.assertEqual(self._ignore, self.pha.mask)
         assert (self._ignore == numpy.asarray(self.pha.mask)).all()
-
 
 
 class test_filter_energy_grid_reversed(SherpaTestCase):
@@ -184,32 +182,31 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.34669766,  0.34418666,  0.33912122,  0.33720407,  0.33505177,
         0.33279634,  0.33081138,  0.32847831,  0.32592943], numpy.float)
 
-
     def setUp(self):
-        #self.old_level = logger.getEffectiveLevel()
-        #logger.setLevel(logging.ERROR)
+        # self.old_level = logger.getEffectiveLevel()
+        # logger.setLevel(logging.ERROR)
         self.pha = DataPHA('', numpy.arange(204, dtype=float)+1.,
                            numpy.zeros(204),
                            bin_lo=self._emin, bin_hi=self._emax)
         self.pha.units="energy"
 
     def tearDown(self):
-        #logger.setLevel(self.old_level)
+        # logger.setLevel(self.old_level)
         pass
 
     def test_notice(self):
-        #clear mask
+        # clear mask
         self.pha.notice()
         self.pha.notice(4., 8.3)
         assert (self._notice == numpy.asarray(self.pha.mask)).all()
 
-
     def test_ignore(self):
-        #clear mask
+        # clear mask
         self.pha.notice()
         self.pha.ignore(10.3, 13.8)
         self.pha.ignore(4.6, 6.2)
         assert (self._ignore == numpy.asarray(self.pha.mask)).all()
+
 
 class test_grouping(SherpaTestCase):
 
@@ -274,7 +271,6 @@ class test_grouping(SherpaTestCase):
 
     # issue 149
     # set a filter to the data before grouping it.
-    # NOTE: we expect this test to fail until issue #149 is resolved.
     @requires_fits
     @requires_data
     def test_group_counts_issue149(self):
@@ -294,7 +290,7 @@ class test_grouping(SherpaTestCase):
 
     # set quality flags and a filter to the data before grouping it.
     # NOTE: we expect this test to fail until we fix properly handle grouping
-    # and quality flags, and until issue #149 is resolved.
+    # and quality flags.
     @requires_fits
     @requires_data
     def test_grouping_with_previous_quality_flags(self):
@@ -322,10 +318,6 @@ class test_grouping(SherpaTestCase):
         data.group_counts(16)
 
         # the expected grouped counts
-        # note that the last element in the array is an unfilled group that
-        # should have a bad group quality value
-        # TODO: is this true? Or should unfilled groups be removed from the
-        # grouped array?
         grouped = [19, 18, 16, 21, 18, 19, 16, 17, 17, 19, 16, 16, 17, 16,
                    17, 16, 17, 16, 16, 16, 17, 16, 16, 16, 16]
 
@@ -486,7 +478,7 @@ class test_filter_wave_grid(SherpaTestCase):
 
     def test_notice(self):
         self.pha.units = 'wavelength'
-        #clear mask
+        # clear mask
         self.pha.notice()
         self.pha.notice(100.0, 225.0)
         numpy.testing.assert_array_equal(self._notice, numpy.asarray(
@@ -494,7 +486,7 @@ class test_filter_wave_grid(SherpaTestCase):
 
     def test_ignore(self):
         self.pha.units = 'wavelength'
-        #clear mask
+        # clear mask
         self.pha.notice()
         self.pha.ignore(30.01, 225.0)
         self.pha.ignore(0.1, 6.0)

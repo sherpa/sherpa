@@ -877,13 +877,7 @@ class DataPHA(Data1DInt):
 
         self.grouping, self.quality = group_func(*args, **kwargs)
 
-        # for fixing bug #149. Find the last group. If it's bad quality,
-        # remove it from the grouped view. This could be fixed in
-        # the grouping library; instead of assigning quality=2 to unfilled
-        # groups, just ignore them completely from the grouped view.
-        # last_bad_group_index = numpy.where(self.grouping == 1)[0][-1]
-        # if self.quality[last_bad_group_index] == 2:
-        #     self.grouping[last_bad_group_index:] = 0
+        # Ignore bad groups automatically (for bug #149)
         self._ignore_bad_groups()
 
         self.group()
