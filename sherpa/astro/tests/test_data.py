@@ -243,6 +243,7 @@ class test_grouping(SherpaTestCase):
 
     # test for when the last bin after grouping is less than the number
     # specified for group_counts()
+    # TODO: get rid of this test??
     @requires_data
     @requires_fits
     def test_group_counts_ignore_bad(self):
@@ -255,11 +256,12 @@ class test_grouping(SherpaTestCase):
         # control array. We expect the last bin to have less than 16 counts.
         # TODO: is this true? Or should unfilled groups be removed from the
         # grouped array?
+        # control array. All bins should have at least 16 counts
         new_y = [17.0, 16.0, 17.0, 16.0, 18.0, 21.0, 17.0, 23.0, 18.0, 21.0,
                 22.0, 21.0, 19.0, 21.0, 17.0, 17.0, 17.0, 17.0, 21.0, 17.0,
                 20.0, 17.0, 18.0, 17.0, 18.0, 17.0, 16.0, 16.0, 17.0, 17.0,
                 17.0, 16.0, 16.0, 17.0, 17.0, 16.0, 17.0, 16.0, 17.0, 16.0,
-                16.0, 9.0]
+                16.0]
 
         # The last bin is less than 16, and so should have a bad group quality
         group_quality = numpy.zeros(1024)
@@ -269,11 +271,6 @@ class test_grouping(SherpaTestCase):
 
         # before ignoring the bad data
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
-
-        # ignore bad data (with group quality=2) should remove the last bin
-        # with value 9
-        data.ignore_bad()
-        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y[:-1])
 
     # issue 149
     # set a filter to the data before grouping it.
@@ -330,16 +327,9 @@ class test_grouping(SherpaTestCase):
         # TODO: is this true? Or should unfilled groups be removed from the
         # grouped array?
         grouped = [19, 18, 16, 21, 18, 19, 16, 17, 17, 19, 16, 16, 17, 16,
-                   17, 16, 17, 16, 16, 16, 17, 16, 16, 16, 16, 3]
+                   17, 16, 17, 16, 16, 16, 17, 16, 16, 16, 16]
 
         numpy.testing.assert_array_equal(data.get_dep(filter=True), grouped)
-
-        # ignore any bad groups
-        data.ignore_bad()
-
-        # the last element in the grouped array should be masked
-        numpy.testing.assert_array_equal(data.get_dep(filter=True),
-                                         grouped[:-1])
 
     def test_group_bins_simple(self):
 
@@ -395,9 +385,9 @@ class test_grouping(SherpaTestCase):
         data.group_snr(5, errorCol=errs)
 
         # control x and y arrays.
-        new_x = numpy.arange(start=1, stop=101, step=7)
+        new_x = numpy.arange(start=1, stop=101, step=7)[:-1]
         new_y = numpy.ones(new_x.size) * 7
-        new_y[new_y.size-1] = 2 # 2 bins left over after grouping
+        # new_y[new_y.size-1] = 2 # 2 bins left over after grouping
 
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
         # TODO: uncomment when I figure out how to get the x data
@@ -407,7 +397,7 @@ class test_grouping(SherpaTestCase):
         data.ungroup()
         data.group_snr(5)
 
-        new_y = [26, 26, 26, 22]
+        new_y = [26, 26, 26]
 
         # there should be 10 bins with y=10
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
@@ -420,7 +410,7 @@ class test_grouping(SherpaTestCase):
         data.group_adapt_snr(17)
 
         # expected grouped array
-        new_y = [169.0, 365.0, 579.0, 819.0, 457.0, 359.0, 15.0]
+        new_y = [365.0, 579.0, 819.0, 457.0, 359.0]
 
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
 
@@ -432,7 +422,7 @@ class test_grouping(SherpaTestCase):
         data.group_adapt(700)
 
         # expected grouped array
-        new_y = [315.0, 798.0, 819.0, 816.0, 15.0]
+        new_y = [798.0, 819.0, 816.0]
 
         numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
 

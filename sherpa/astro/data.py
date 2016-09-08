@@ -837,6 +837,37 @@ class DataPHA(Data1DInt):
         # self.quality_filter used for pre-grouping filter
         self.quality_filter = qual_flags
 
+    def _ignore_bad_groups(self):
+        """Exclude grouped channels marked as bad.
+
+        Ignore any bin in the PHA data set which has a quality value
+        that is equal to 2.
+
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+           If the data set has no quality array.
+
+        See Also
+        --------
+        ignore : Exclude data from the fit.
+        notice : Include data in the fit.
+
+        Notes
+        -----
+        Bins with a non-zero quality setting are not automatically
+        excluded when a data set is created.
+
+        """
+        if self.quality is None:
+            raise DataErr("noquality", self.name)
+
+        # ignore bad groups (where quality flags == 2)
+        qual_flags = ~numpy.asarray(self.quality == 2, bool)
+
+        # self.quality_filter used for pre-grouping filter
+        self.quality_filter = qual_flags
+
     def _dynamic_group(self, group_func, *args, **kwargs):
 
         keys = list(kwargs.keys())[:]
@@ -844,20 +875,22 @@ class DataPHA(Data1DInt):
             if kwargs[key] is None:
                 kwargs.pop(key)
 
-        old_filter = self.get_filter(group=False)
-        do_notice = numpy.iterable(self.mask)
-
         self.grouping, self.quality = group_func(*args, **kwargs)
+
+        # for fixing bug #149. Find the last group. If it's bad quality,
+        # remove it from the grouped view. This could be fixed in
+        # the grouping library; instead of assigning quality=2 to unfilled
+        # groups, just ignore them completely from the grouped view.
+        # last_bad_group_index = numpy.where(self.grouping == 1)[0][-1]
+        # if self.quality[last_bad_group_index] == 2:
+        #     self.grouping[last_bad_group_index:] = 0
+        self._ignore_bad_groups()
+
         self.group()
         self._original_groups = False
 
-        if do_notice:
-            # self.group() above has cleared the filter if applicable
-            # No, that just sets a flag.  So manually clear filter
-            # here
-            self.ignore()
-            for vals in parse_expr(old_filter):
-                self.notice(*vals)
+        # self.group() above has cleared the filter if applicable; no need to
+        # re-filter the spectrum. See DataPHA._set_grouped()
 
         # warning('grouping flags have changed, noticing all bins')
 
@@ -1651,7 +1684,8 @@ class DataPHA(Data1DInt):
         # Go on if we are also supposed to filter the source data
         ignore = bool_cast(ignore)
         if lo is None and hi is None:
-            self.quality_filter = None
+            # commented out to fix bug #149. TODO: is this OK to remove?
+            #self.quality_filter = None
             self.notice_response(False)
 
         elo, ehi = self._get_ebins()

@@ -382,7 +382,7 @@ def requires_pylab(test_function):
 eps = numpy.finfo(numpy.float32).eps
 
 
-def filter_bins(mins, maxes, axislist, gt_operator=operator.ge):
+def filter_bins(mins, maxes, axislist):
     mask = None
 
     for lo, hi, axis in izip(mins, maxes, axislist):
@@ -401,7 +401,7 @@ def filter_bins(mins, maxes, axislist, gt_operator=operator.ge):
         else:
             # axismask = (lo <= axis) & (axis <= hi)
             axismask = (sao_fcmp(lo, axis, eps) <= 0) & \
-                       (gt_operator(sao_fcmp(hi, axis, eps), 0))
+                       (sao_fcmp(hi, axis, eps) >= 0)
 
         if mask is None:
             mask = axismask

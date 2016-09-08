@@ -320,10 +320,10 @@ class test_threads(SherpaTestCase):
     # jbudynk [sherpa 4.8.1]: fit results updated to fix bug #149.
     def test_grouped_ciao4_5(self):
         self.run_thread('grouped_ciao4.5')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 18.5383, 1e-4)
-        self.assertEqual(ui.get_fit_results().numpoints, 45)
-        self.assertEqualWithinTol(self.locals['aa'].gamma.val, 1.81842, 1e-4)
-        self.assertEqualWithinTol(self.locals['aa'].ampl.val, 0.000298156, 1e-4)
+        self.assertEqualWithinTol(ui.get_fit_results().statval, 18.8316, 1e-4)
+        self.assertEqual(ui.get_fit_results().numpoints, 46)
+        self.assertEqualWithinTol(self.locals['aa'].gamma.val, 1.83906, 1e-4)
+        self.assertEqualWithinTol(self.locals['aa'].ampl.val, 0.000301258, 1e-4)
 
     @requires_fits
     @requires_xspec

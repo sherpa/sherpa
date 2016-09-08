@@ -143,16 +143,7 @@ class BaseData(NoNewAttributesAfterInit):
         elif str in [type(axis) for axis in axislist]:
             raise DataErr('typecheck', 'grid')
 
-        # If the data is grouped,
-        try:
-            if self.grouped:
-                mask = filter_bins(mins, maxes, axislist, gt_operator=operator.gt)
-            else:
-                # use default filtering
-                mask = filter_bins(mins, maxes, axislist)
-        except AttributeError:
-            # isn't a PHA dataset. Use default filtering
-            mask = filter_bins(mins, maxes, axislist)
+        mask = filter_bins(mins, maxes, axislist)
 
         if mask is None:
             self.mask = not ignore
