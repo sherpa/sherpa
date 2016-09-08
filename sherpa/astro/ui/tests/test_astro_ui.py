@@ -150,7 +150,8 @@ class test_more_ui(SherpaTestCase):
         ui.group_counts('3c273', 30)
         ui.group_counts('3c273', 15)
 
-
+@requires_data
+@requires_fits
 class test_grouping_ui(SherpaTestCase):
     def setUp(self):
         self.data = self.make_path('3c273.pi')
@@ -175,20 +176,14 @@ class test_grouping_ui(SherpaTestCase):
         ui.group_counts('src', 16)
         ui.group_counts('src', 10, bkg_id=1)
 
-        print ui.get_data('src').to_fit()[0]
-        # print ui.get_dep('src').to_fit()[0]
-        print ui.get_bkg('src').get_dep(filter=True)
-
-        # TODO: Should unfilled groups be removed from the grouped array?
-        # the last element (9) should be removed if unfilled (bad group quality)
-        # groups are not included in the output grouped array.
         # grouped source data
         src_grouped = [17.0, 16.0, 17.0, 16.0, 18.0, 21.0, 17.0, 23.0, 18.0, 21.0,
                 22.0, 21.0, 19.0, 21.0, 17.0, 17.0, 17.0, 17.0, 21.0, 17.0,
                 20.0, 17.0, 18.0, 17.0, 18.0, 17.0, 16.0, 16.0, 17.0, 17.0,
                 17.0, 16.0, 16.0, 17.0, 17.0, 16.0, 17.0, 16.0, 17.0, 16.0,
-                16.0, 9.0]
+                16.0]
         # grouped background data
+        # TODO: is this expected?
         bkg_grouped = [10, 10, 10, 10, 10, 11, 10, 10, 10, 10, 10, 10, 10,
                        10, 10, 10, 10, 45]
 
