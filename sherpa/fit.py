@@ -24,8 +24,11 @@ import logging
 import os
 import signal
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, float, float32, finfo, nan, any, zeros, append, \
-    int, ones
+    ones_like, isnan, isinf, float, float32, finfo, nan, any, \
+    append, int, ones
+
+import numpy as np
+
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
@@ -507,35 +510,38 @@ class IterFit(NoNewAttributesAfterInit):
         exposure_time = None
         backscale_ratio = []
 
-        len_datasets = len(self.data.datasets)
-        data_size = zeros(len_datasets, dtype=int)
-        exposure_time = zeros(2 * len_datasets)
-        for index in xrange(len_datasets):
-            mydata = self.data.datasets[index]
-            data_size[index] = mydata.get_dep(True).size
-        result['data_size'] = data_size
-        for index in xrange(len_datasets):
-            mydata = self.data.datasets[index]
+        data_size = []
+        exposure_time = []
+        for mydata in self.data.datasets:
             if hasattr(mydata, 'response_ids') and \
                     hasattr(mydata, 'background_ids') and \
-                    len(mydata.response_ids) and len(mydata.background_ids):
+                    len(mydata.response_ids) and \
+                    len(mydata.background_ids):
+
+                # TODO: does this work for data sets with multiple
+                #       background components (e.g. grating data with
+                #       "up" and "down" components). It looks like it
+                #       only uses the first element.
                 bkg = mydata.get_background(mydata.background_ids[0])
                 tmp_bkg_dep = bkg.get_dep(True)
-                # data_size[index] = tmp_bkg_dep.size
+
+                npts = tmp_bkg_dep.size
+                data_size.append(npts)
+
                 bkg_dep = append(bkg_dep, tmp_bkg_dep)
-                exposure_time[2 * index] = mydata.exposure
-                exposure_time[2 * index + 1] = bkg.exposure
+
+                exposure_time.extend([mydata.exposure, bkg.exposure])
                 ratio = vectorize_backscale_ratio(bkg.backscal,
                                                   mydata.backscal,
-                                                  data_size[index])
+                                                  npts)
                 backscale_ratio = append(backscale_ratio, ratio)
             else:
                 return result
 
         result['bkg'] = bkg_dep
         result['backscale_ratio'] = backscale_ratio
-        # result['data_size'] = data_size
-        result['exposure_time'] = exposure_time
+        result['data_size'] = np.asarray(data_size, dtype=np.int)
+        result['exposure_time'] = np.asarray(exposure_time)
         return result
 
     def _get_callback(self, outfile=None, clobber=False):
