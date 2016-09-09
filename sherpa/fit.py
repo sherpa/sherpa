@@ -37,8 +37,8 @@ from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
-from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, LeastSq, \
-    Likelihood, WStat, UserStat
+from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, \
+    LeastSq, Likelihood, WStat, UserStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
