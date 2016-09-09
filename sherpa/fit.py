@@ -27,8 +27,7 @@ from numpy import arange, array, abs, iterable, sqrt, where, \
     ones_like, isnan, isinf, float, float32, finfo, nan, any, zeros, append, \
     int, ones
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
-    bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp, \
-    get_valid_args
+    bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
@@ -460,7 +459,7 @@ class IterFit(NoNewAttributesAfterInit):
         # Data set attributes needed to store fitting values between
         # calls to fit
         self._dep = None
-        self.bkg_data = None
+        self.extra_args = None
         self._staterror = None
         self._syserror = None
         self._nfev = 0
@@ -483,7 +482,7 @@ class IterFit(NoNewAttributesAfterInit):
     def _sig_handler(self, signum, frame):
         raise KeyboardInterrupt()
 
-    def get_bkg_data(self, dep):
+    def get_extra_args(self, dep):
         """get the bkg data for wstat and the user defined statistics"""
 
         def vectorize_backscale_ratio(bkg_backscal, src_backscal, num):
@@ -509,9 +508,12 @@ class IterFit(NoNewAttributesAfterInit):
         backscale_ratio = []
 
         len_datasets = len(self.data.datasets)
-
         data_size = zeros(len_datasets, dtype=int)
         exposure_time = zeros(2 * len_datasets)
+        for index in xrange(len_datasets):
+            mydata = self.data.datasets[index]
+            data_size[index] = mydata.get_dep(True).size
+        result['data_size'] = data_size
         for index in xrange(len_datasets):
             mydata = self.data.datasets[index]
             if hasattr(mydata, 'response_ids') and \
@@ -519,7 +521,7 @@ class IterFit(NoNewAttributesAfterInit):
                     len(mydata.response_ids) and len(mydata.background_ids):
                 bkg = mydata.get_background(mydata.background_ids[0])
                 tmp_bkg_dep = bkg.get_dep(True)
-                data_size[index] = tmp_bkg_dep.size
+                # data_size[index] = tmp_bkg_dep.size
                 bkg_dep = append(bkg_dep, tmp_bkg_dep)
                 exposure_time[2 * index] = mydata.exposure
                 exposure_time[2 * index + 1] = bkg.exposure
@@ -532,7 +534,7 @@ class IterFit(NoNewAttributesAfterInit):
 
         result['bkg'] = bkg_dep
         result['backscale_ratio'] = backscale_ratio
-        result['data_size'] = data_size
+        # result['data_size'] = data_size
         result['exposure_time'] = exposure_time
         return result
 
@@ -550,14 +552,13 @@ class IterFit(NoNewAttributesAfterInit):
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
-        self.bkg_data = self.get_bkg_data(self._dep)
-
+        self.extra_args = self.get_extra_args(self._dep)
         self._nfev = 0
         if outfile is not None:
             if os.path.isfile(outfile) and not clobber:
                 # raise FitError("'%s' exists, and clobber==False" % outfile)
                 raise FitErr('noclobererr', outfile)
-            self._file = file(outfile, 'w')
+            self._file = open(outfile, 'w')
             names = ['# nfev statistic']
             names.extend(['%s' % par.fullname for par in self.model.pars
                           if not par.frozen])
@@ -569,22 +570,9 @@ class IterFit(NoNewAttributesAfterInit):
 
             self.model.thawedpars = pars
             model = self.data.eval_model_to_fit(self.model)
-            valid_args = get_valid_args(self.stat.calc_stat)
-            if is_in('bkg', valid_args):
-                if isinstance(self.stat, UserStat):
-                    stat = self.stat.calc_stat(self._dep, model,
-                                               self._staterror,
-                                               syserror=self._syserror,
-                                               bkg=self.bkg_data['bkg'])
-                else:
-                    stat = self.stat.calc_stat(self._dep, model,
-                                               self._staterror,
-                                               syserror=self._syserror,
-                                               bkg=self.bkg_data)
-            else:
-                stat = self.stat.calc_stat(self._dep, model,
-                                           self._staterror,
-                                           syserror=self._syserror)
+            stat = self.stat.calc_stat(self._dep, model, self._staterror,
+                                       syserror=self._syserror,
+                                       extra_args=self.extra_args)
             if self._file is not None:
                 vals = ['%5e %5e' % (self._nfev, stat[0])]
                 vals.extend(['%5e' % val for val in self.model.thawedpars])
@@ -992,20 +980,9 @@ class Fit(NoNewAttributesAfterInit):
     def _calc_stat(self):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         model = self.data.eval_model_to_fit(self.model)
-        bkg_data = self._iterfit.get_bkg_data(dep)
-        valid_args = get_valid_args(self.stat.calc_stat)
-        if is_in('bkg', valid_args):
-            if isinstance(self.stat, UserStat):
-                return self.stat.calc_stat(dep, model, staterror,
-                                           syserror=syserror,
-                                           bkg=bkg_data['bkg'])
-            else:
-                return self.stat.calc_stat(dep, model, staterror,
-                                           syserror=syserror,
-                                           bkg=bkg_data)
-        else:
-            return self.stat.calc_stat(dep, model, staterror,
-                                       syserror=syserror)
+        extra_args = self._iterfit.get_extra_args(dep)
+        return self.stat.calc_stat(dep, model, staterror, syserror=syserror,
+                                   extra_args=extra_args)
 
     def calc_stat(self):
         """Calculate the fit statistic for a data set.
@@ -1054,7 +1031,10 @@ class Fit(NoNewAttributesAfterInit):
 
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
         model = self.data.eval_model_to_fit(self.model)
-        stat = self.stat.calc_stat(dep, model, staterror, syserror)[1]
+        extra_args = self._iterfit.get_extra_args(dep)
+        stat = self.stat.calc_stat(dep, model, staterror,
+                                   syserror=syserror,
+                                   extra_args=extra_args)[1]
         return stat * stat
 
     def calc_stat_info(self):
