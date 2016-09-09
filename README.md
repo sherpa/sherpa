@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/sherpa/sherpa.svg?branch=master)](https://travis-ci.org/sherpa/sherpa)
 [![DOI](https://zenodo.org/badge/683/sherpa/sherpa.svg)](https://zenodo.org/badge/latestdoi/683/sherpa/sherpa)
 [![GPLv3+ License](https://img.shields.io/badge/license-GPLv3+-blue.svg)](https://www.gnu.org/copyleft/gpl.html)
+![Python version](https://img.shields.io/badge/Python-2.7,3.5-green.svg?style=flat)
 
 <!-- TOC *generated with [DocToc](https://github.com/thlorenz/doctoc)* -->
 **Table of Contents**
@@ -73,6 +74,8 @@ How To Install Sherpa
 =====================
 
 Sherpa can be installed from a binary distribution or built from sources.
+The 4.8.1 release is only available for Python 2.7, while 4.8.2 will
+also support Python 3.5.
 
 The binary distribution is suited for people wanting to have Sherpa up
 and running as soon as possible in its standard form.
@@ -86,7 +89,12 @@ with the Conda installation (sections [1a](#1a-anaconda) and [1b](#1b-starting-f
 
 1. Binary installation (Anaconda)
 
+The binary distribution of Sherpa 4.8.1 only supports Python 2.7.
+
 2. Source build (from a source tarball or the GitHub repository)
+
+A source build is - at present - the *only* way to use Sherpa 
+with Python 3.5.
 
 Source builds can be customized, for instance:
 
@@ -112,6 +120,9 @@ and then refer to section [1a](#1a-anaconda).
 Notice that section [1b](#1b-starting-from-scratch). only provides instructions on how to install a minimal
 Anaconda-powered environment, not the full Anaconda distribution.
 
+The Sherpa 4.8.1 release - which is the latest binary release - is
+only compatible with Python 2.7. The 4.8.2 release is planned to
+include support for Python 3.5.
 
 ### 1a. Anaconda
 
@@ -218,7 +229,9 @@ The prerequisites for building from source are:
  - Python: `setuptools`, `numpy`
  - System: `gcc`, `g++`, `gfortran`, `make`, `flex`, `bison`
 
-The current Sherpa code base only works with Python 2.7.
+The current Sherpa code base works with Python 2.7 and 3.5 (as of the
+Sherpa 4.8.2 release); support for versions 3.3 and 3.4 is possible
+but would require community support.
 
 It is *highly* recommended that [`matplotlib`](http://matplotlib.org/)
 be installed, as this is used to create graphical output (although the
@@ -263,6 +276,9 @@ The most stable code is available through the 4.8.1 tag. The main
 development code, which is unstable, is available in the `master`
 branch. New features and bug fixes or other, even less stable versions
 of the code may be available in other branches.
+
+The master branch supports both Python 2.7 and Python 3.5 but the
+4.8.1 tag is only compatible with Python 2.7.
 
 ### 2c. Build Sherpa
 
