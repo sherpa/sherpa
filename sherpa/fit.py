@@ -548,7 +548,14 @@ class IterFit(NoNewAttributesAfterInit):
                 #       "up" and "down" components). It looks like it
                 #       only uses the first element.
                 bkg = mydata.get_background(mydata.background_ids[0])
-                tmp_bkg_dep = bkg.get_dep(True)
+
+                # This uses the grouping applied to the background
+                # data set, but we need to apply the source grouping
+                # to it.
+                #
+                # tmp_bkg_dep = bkg.get_dep(True)
+                tmp_bkg_dep = mydata.apply_filter(bkg.get_dep(False),
+                                                  groupfunc=np.sum)
 
                 npts = tmp_bkg_dep.size
                 data_size.append(npts)
@@ -566,6 +573,10 @@ class IterFit(NoNewAttributesAfterInit):
                 src_backscal = _to_array(mydata.backscal)
                 bkg_backscal = _to_array(bkg.backscal)
                 ratio = bkg_backscal / src_backscal
+
+                print("*** sizes")
+                print("*** bkg   = {}".format(npts))
+                print("*** ratio = {}".format(ratio.size))
 
                 backscale_ratio = append(backscale_ratio, ratio)
             else:
