@@ -2251,7 +2251,7 @@ class Session(NoNewAttributesAfterInit):
         # TODO3: I have left the explicit copy in (the "[:]" suffix)
         # when converting to Python 3, but it is probably unnescessary
         keys = list(self._data.keys())[:]
-        keys.sort()
+        keys.sort(key=str)  # always sort by string value.
         return keys
 
     def get_data(self, id=None):
