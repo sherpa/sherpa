@@ -3258,15 +3258,12 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
-           Set to identify which background component to use.  The
-           default value (``None``) means that the value is for the
-           source component of the data set.
 
         Returns
         -------
-        ratio : number
-           The scaling factor.
+        ratio : number or array
+           The scaling factor. The result can vary per channel, in which case
+           an array is returned.
 
         See Also
         --------
