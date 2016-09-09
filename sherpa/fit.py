@@ -29,8 +29,9 @@ from numpy import arange, array, abs, iterable, sqrt, where, \
 
 import numpy as np
 
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
-    bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
+from sherpa.utils import NoNewAttributesAfterInit, SherpaFloat, \
+    print_fields, erf, igamc, bool_cast, is_in, is_iterable, \
+    list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
@@ -518,6 +519,30 @@ class IterFit(NoNewAttributesAfterInit):
                     len(mydata.response_ids) and \
                     len(mydata.background_ids):
 
+                ntotal = mydata.get_dep(False).size
+                dummy = np.ones(ntotal, dtype=SherpaFloat)
+
+                def _to_array(bscale):
+                    """Convert backscale to a vector.
+
+                    There are two steps: convert to a vector the
+                    length of the data set (ungrouped or filtered)
+                    and then group, using the "average" method
+                    *and* the grouping scheme of the source
+                    dataset (even for the background) and filter.
+                    """
+
+                    # The assumption is that bscale is either a scalar
+                    # or a vector the same size as dummy
+                    vec = bscale * dummy
+                    return mydata.apply_filter(vec,
+                                               groupfunc=mydata._middle)
+
+                # The source data used is calculated using
+                # <data object>.get_dep(True)
+                # so the background and scaling arrays must
+                # match this.
+                #
                 # TODO: does this work for data sets with multiple
                 #       background components (e.g. grating data with
                 #       "up" and "down" components). It looks like it
@@ -531,9 +556,17 @@ class IterFit(NoNewAttributesAfterInit):
                 bkg_dep = append(bkg_dep, tmp_bkg_dep)
 
                 exposure_time.extend([mydata.exposure, bkg.exposure])
-                ratio = vectorize_backscale_ratio(bkg.backscal,
-                                                  mydata.backscal,
-                                                  npts)
+
+                # NOTE: use the source grouping for both the source
+                #       *and* background BACKSCAL arrays; that is, if
+                #       the background has different grouping to the
+                #       source it is ignored. The alternative would be
+                #       to error out here.
+                #
+                src_backscal = _to_array(mydata.backscal)
+                bkg_backscal = _to_array(bkg.backscal)
+                ratio = bkg_backscal / src_backscal
+
                 backscale_ratio = append(backscale_ratio, ratio)
             else:
                 return result
