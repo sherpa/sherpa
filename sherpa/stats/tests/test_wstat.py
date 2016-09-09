@@ -206,7 +206,7 @@ class test_wstat_two_scalar(SherpaTestCase):
         # normalization difference.
         #
         ui.set_source(1, ui.powlaw1d.pl1)
-        ui.set_source(2, ui.const1d.c2 * pl1)
+        ui.set_source(2, ui.const1d.c2 * ui.get_source(1))
 
         # The powerlaw slope and normalization are
         # intended to be "a reasonable approximation"
@@ -302,6 +302,114 @@ class test_wstat_two_scalar(SherpaTestCase):
         self._check_stat(1, 375, exp1)
         self._check_stat(2, 375, exp2)
         self._check_stat2(exp1 + exp2)
+
+
+@requires_data
+@requires_fits
+class test_wstat_group_counts(SherpaTestCase):
+    """PHA file that has been grouped.
+
+    This is the error reported in issue #227, whereby the
+    grouping in the source and background files is different,
+    which causes an error. It is not clear yet whether this
+    should be supported or not, but a regression test is added
+    to check this behavior.
+
+    The settings are the same as the test_wstat_two_scalar
+    case, for the 9774.pi file. It would be easier to move this
+    into test_wstat_two_scalar (since it avoids having multiple
+    copies of the settings, and lets the wstat be tested on
+    > 2 data sets), but for now keep as a separate set of tests
+    to make sure it is obvioud what is and isn't failing.
+    """
+
+    def setUp(self):
+
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
+
+        ui.set_stat('wstat')
+
+        infile = self.make_path('9774.pi')
+        ui.load_pha(1, infile)
+
+        ui.group_counts(1, 20)
+
+        # Unlike the test_wstat_two_scalar case, the grouping
+        # is not copied over.
+        # ui.set_grouping(1, bkg_id=1, val=ui.get_grouping(1))
+
+        ui.set_source(1, ui.const1d.c1 * ui.powlaw1d.pl1)
+
+        # These should be the same as test_wstat_two_scalar
+        #
+        ui.set_par("pl1.gamma", 1.7)
+        ui.set_par("pl1.ampl", 1.6e-4)
+        ui.set_par("c1.c0", 45)
+
+    def tearDown(self):
+        ui.clean()
+
+        try:
+            logger.setLevel(self._old_logger_level)
+        except AttributeError:
+            pass
+
+    def _filter_data(self):
+        """Filter the data.
+
+        Use a slightly-complex filter - e.g. not just the
+        end points - to exercise the system.
+        """
+
+        ui.ignore(None, 0.5)
+        ui.ignore(3, 4)
+        ui.ignore(7, None)
+
+    def _check_stat(self, idval, nbins, expected):
+
+        # check the filter sizes (mainly so that these tests
+        # get flagged as in need of a look if anything changes
+        # in other parts of the code, such as filtering and binning
+        #
+        self.assertEqual(nbins, ui.get_data(idval).get_dep(True).size)
+
+        stat = ui.calc_stat(idval)
+        self.assertAlmostEqual(expected, stat, places=7)
+
+    @expectedFailure
+    def test_wstat_grouped_all(self):
+
+        # Used git commit 770359b5004374b969ebb63c173f293419397b4c
+        # to create the oracle value, on a linux 64-bit machine.
+        expval = 401.75572944361613
+        self._check_stat(1, 148, expval)
+
+    @expectedFailure
+    def test_wstat_grouped_filtered(self):
+        self._filter_data()
+
+        # Used git commit 770359b5004374b969ebb63c173f293419397b4c
+        # to create the oracle value, on a linux 64-bit machine.
+        expval = 127.35556915677182
+        self._check_stat(1, 120, expval)
+
+    def test_wstat_ungrouped_all(self):
+        ui.ungroup(1)
+
+        # Used git commit 770359b5004374b969ebb63c173f293419397b4c
+        # to create the oracle value, on a linux 64-bit machine.
+        expval = 880.8442022201893
+        self._check_stat(1, 1024, expval)
+
+    def test_wstat_ungrouped_filtered(self):
+        ui.ungroup(1)
+        self._filter_data()
+
+        # Used git commit 770359b5004374b969ebb63c173f293419397b4c
+        # to create the oracle value, on a linux 64-bit machine.
+        expval = 397.4089421041855
+        self._check_stat(1, 375, expval)
 
 
 @requires_data
