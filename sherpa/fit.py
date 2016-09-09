@@ -574,10 +574,6 @@ class IterFit(NoNewAttributesAfterInit):
                 bkg_backscal = _to_array(bkg.backscal)
                 ratio = bkg_backscal / src_backscal
 
-                print("*** sizes")
-                print("*** bkg   = {}".format(npts))
-                print("*** ratio = {}".format(ratio.size))
-
                 backscale_ratio = append(backscale_ratio, ratio)
             else:
                 return result
