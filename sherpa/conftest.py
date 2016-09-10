@@ -46,7 +46,12 @@ known_warnings = {
         [
             r"unorderable dtypes.*",
             r"Non-string object detected for the array ordering.*",
-            r"using a non-integer number instead of an integer will result in an error in the future"
+            r"using a non-integer number instead of an integer will result in an error in the future",
+            # the following is needed for "old" versions of astropy
+            # (e.g. version 1.0.4), as newer versions (and the Sherpa
+            # code base) should not use inspect.getargspec
+            r"inspect.getargspec() is deprecated, use inspect.signature() instead"
+
         ],
     UserWarning:
         [
