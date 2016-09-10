@@ -50,7 +50,7 @@ known_warnings = {
             # the following is needed for "old" versions of astropy
             # (e.g. version 1.0.4), as newer versions (and the Sherpa
             # code base) should not use inspect.getargspec
-            r"inspect.getargspec() is deprecated, use inspect.signature() instead"
+            r"inspect.getargspec\(\) is deprecated"
 
         ],
     UserWarning:
