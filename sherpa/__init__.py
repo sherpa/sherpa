@@ -134,7 +134,7 @@ def smoke(verbosity=0, require_failure=False, fits=None, xspec=False):
 def _smoke_cli(verbosity=0, require_failure=False, fits=None, xspec=False):
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option("-v", "--verbosity", dest="verbosity",
+    parser.add_option("-v", "--verbosity", dest="verbosity", type=int,
                       help="verbosity level")
     parser.add_option("-0", "--require-failure", dest="require_failure", action="store_true",
                       help="require smoke test to fail (for debugging)")
