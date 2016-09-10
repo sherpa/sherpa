@@ -386,7 +386,6 @@ class test_wstat_group_counts(SherpaTestCase):
         stat = ui.calc_stat(idval)
         self.assertAlmostEqual(expected, stat, places=7)
 
-    @expectedFailure
     def test_wstat_grouped_all(self):
 
         # Used git commit 770359b5004374b969ebb63c173f293419397b4c
@@ -394,7 +393,6 @@ class test_wstat_group_counts(SherpaTestCase):
         expval = 401.75572944361613
         self._check_stat(1, 148, expval)
 
-    @expectedFailure
     def test_wstat_grouped_filtered(self):
         self._filter_data()
 

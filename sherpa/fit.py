@@ -504,14 +504,22 @@ class IterFit(NoNewAttributesAfterInit):
                 src = src_backscal
             return bkg / src
 
-        result = {'bkg': None, 'backscale_ratio': None, 'data_size': None,
+        result = {'bkg': None, 'backscale_ratio': None,
                   'exposure_time': None}
-        bkg_dep = []
-        data_size = None
+
+        # It looks like the sizes need to be filled up,
+        # even if the background data is not filled in (i.e if return
+        # is called in the middle of the loop through self.data.datasets
+        # below).
+        #
+        result['data_size'] = np.asarray([d.get_dep(True).size
+                                          for d in self.data.datasets],
+                                         dtype=np.int)
+
         exposure_time = None
         backscale_ratio = []
+        bkg_dep = []
 
-        data_size = []
         exposure_time = []
         for mydata in self.data.datasets:
             if hasattr(mydata, 'response_ids') and \
@@ -557,9 +565,6 @@ class IterFit(NoNewAttributesAfterInit):
                 tmp_bkg_dep = mydata.apply_filter(bkg.get_dep(False),
                                                   groupfunc=np.sum)
 
-                npts = tmp_bkg_dep.size
-                data_size.append(npts)
-
                 bkg_dep = append(bkg_dep, tmp_bkg_dep)
 
                 exposure_time.extend([mydata.exposure, bkg.exposure])
@@ -580,7 +585,6 @@ class IterFit(NoNewAttributesAfterInit):
 
         result['bkg'] = bkg_dep
         result['backscale_ratio'] = backscale_ratio
-        result['data_size'] = np.asarray(data_size, dtype=np.int)
         result['exposure_time'] = np.asarray(exposure_time)
         return result
 
