@@ -1,5 +1,7 @@
 language: python
 
+# leaving this as 2.7 for the pyfits test, as I am not sure if that works
+# with Python 3.5
 python:
   - "2.7"
 
@@ -17,41 +19,46 @@ addons:
       - flex
       - bison
 
-# We use matrix include so that xspec builds (which are more complicated and long) are started first
+# We use matrix include so that xspec builds (which are more complicated
+# and long) are started first
+#
+# The first run is the Python 2.7 run, the rest are python 3.5
 matrix:
   fast_finish: true
   include:
-    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=install TEST=smoke MATPLOTLIBVER=1.5
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
       python: "2.7"
+      sudo: required
+      dist: trusty
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=install TEST=smoke MATPLOTLIBVER=1.5
+      python: "3.5"
       sudo: required
       dist: trusty
     - env: XSPECVER="12.8.2q" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
-      python: "2.7"
+      python: "3.5"
       sudo: required
       dist: trusty
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 MKL=nomkl
-      python: "2.7"
+      python: "3.5"
       sudo: required
       dist: trusty
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
       python: "3.5"
       sudo: required
       dist: trusty
-    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
-      python: "2.7"
-      sudo: required
-      dist: trusty
     - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5
-      python: "2.7"
+      python: "3.5"
     - env: FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
-      python: "2.7"
+      python: "3.5"
     - env: FITS="astropy" INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.4 NUMPYVER=1.9
-      python: "2.7"
+      python: "3.5"
     - env: FITS="astropy" INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5 NUMPYVER=1.10
-      python: "2.7"
+      python: "3.5"
   allow_failures:
     - env: XSPECVER="12.8.2q" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
+      python: "2.7"
 
+# is this a python 2.7 or 3.5 run?
 env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.4 # 1.5 does not support numpy 1.8, required by pyfits
 
 before_install:
