@@ -132,11 +132,17 @@ def make_data_path():
 
     Returns
     -------
-    make_data_path : func A function that accepts a list of path elements to be joined with the base data dir path
+    make_data_path : func
+        A function that accepts a list of path elements to be joined with
+        the base data dir path. This function exits with a RuntimeError
+        if the data directory is None, pointing out the requires_data
+        decorator is needed.
     """
     path = SherpaTestCase.datadir
 
     def wrapped(arg):
+        if path is None:
+            raise RuntimeError("Test needs the requires_data decorator")
         return os.path.join(path, arg)
 
     return wrapped
