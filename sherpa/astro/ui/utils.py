@@ -9913,7 +9913,7 @@ class Session(sherpa.ui.utils.Session):
 
     def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins, correlated, numcores, bkg_id):
         dist = self.sample_photon_flux(
-            lo, hi, id, num, correlated, numcores, bkg_id)
+            lo, hi, id, num, None, correlated, numcores, bkg_id)
         plot.prepare(dist, bins)
         return plot
 

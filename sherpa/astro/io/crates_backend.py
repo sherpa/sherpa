@@ -952,8 +952,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
         # Chandra Level 3 PHA files
         for ii in range(phadataset.get_ncrates()):
             block = phadataset.get_crate(ii + 1)
-            hduclas2 = block.get_key('HDUCLAS2')
-            if hduclas2 is not None and hduclas2.value == 'BKG':
+            if (_try_hdr_key(block, 'HDUCLAS2') == 'BKG'):
                 pha = block
 
     if pha is None or pha.get_colnames() is None:

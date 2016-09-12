@@ -325,19 +325,17 @@ class test_stats(SherpaTestCase):
         if hasattr(self, "_old_logger_level"):
             logger.setLevel(self._old_logger_level)
 
-    def compare_results(self, arg1, arg2, tol1=1.0e-6, tol2=1.0e-3):
+    def compare_results(self, arg1, arg2, tol=1e-6):
 
         for key in ["succeeded", "numpoints", "dof"]:
             assert arg1[key] == int(getattr(arg2, key))
 
         for key in ["istatval", "statval"]:
-            assert numpy.allclose(float(arg1[key]), float(getattr(arg2, key)),
-                                  tol1, tol1)
+            numpy.testing.assert_allclose(float(arg1[key]), float(getattr(arg2, key)), tol)
 
         for key in ["parvals"]:
             try:
-                assert numpy.allclose(arg1[key], getattr(arg2, key),
-                                      tol2, tol2)
+                numpy.testing.assert_allclose(arg1[key], getattr(arg2, key), tol)
             except AssertionError:
                 print('parvals bench: ', arg1[key])
                 print('parvals fit:   ', getattr(arg2, key))
@@ -399,8 +397,7 @@ class test_stats(SherpaTestCase):
         data = self.bkg
         fit = Fit(data, self.model, MyChiNoBkg(), LevMar())
         results = fit.fit()
-        self.compare_results(self._fit_mychinobkg_results_bench, results,
-                             tol1=1.0e-5)
+        self.compare_results(self._fit_mychinobkg_results_bench, results, 1e-5)
 
     def test_mycash_datahasbkg_modelhasnobkg(self):
         fit = Fit(self.data, self.model, MyCashNoBkg(), NelderMead())
@@ -422,8 +419,7 @@ class test_stats(SherpaTestCase):
         data = self.bkg
         fit = Fit(data, self.model, MyChiWithBkg(), LevMar())
         results = fit.fit()
-        self.compare_results(self._fit_mychinobkg_results_bench, results,
-                             tol1=1.0e-5)
+        self.compare_results(self._fit_mychinobkg_results_bench, results, 1e-5)
 
     def test_wstat(self):
         fit = Fit(self.data, self.model, WStat(), NelderMead())
