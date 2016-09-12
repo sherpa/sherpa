@@ -28,4 +28,10 @@ case $OSTYPE in
 
 esac
 
+python setup.py clean --all
+
 python setup.py install --prefix=$PREFIX
+
+# This headers are known to collide with astropy's extensions and would prevent astropy from building
+rm -f $PREFIX/include/wcs*.h
+

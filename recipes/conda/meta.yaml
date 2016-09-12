@@ -1,22 +1,25 @@
+{% set pyver = '3.5*' if environ.get('PY3K', '') else '2.7*' %}
+
 package:
  name: sherpa
- version: "4.8.1"
+ version: '4.8.2' 
 
 build:
  number: 0
 
  entry_points:
   - sherpa_test = sherpa:clitest
+  - sherpa_smoke = sherpa:smoke
 
 requirements:
  build:
-  - python 2.7.*
+  - python x.x
   - numpy 1.9.*
   - setuptools
   - libgfortran 3.* # [linux]
 
  run:
-  - python 2.7.*
+  - python x.x
   - numpy >1.9
   - setuptools
   - pytest

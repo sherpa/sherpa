@@ -1,0 +1,28 @@
+package:
+ name: sherpatest 
+ version: "4.8.2"
+
+source:
+ path: ../../sherpa-test-data
+
+build:
+ number: 0
+ noarch_python: true 
+
+ script: python setup.py install --prefix=$PREFIX --old-and-unmanageable
+
+requirements:
+ build:
+  - python
+  - setuptools
+
+ run:
+  - python
+  - sherpa 4.8.2
+  - setuptools
+
+about:
+ home: http://cxc.cfa.harvard.edu/sherpa/
+ summary: Test data for Sherpa. Sherpa is the CIAO modeling and fitting application. It enables the user to construct complex models from simple definitions and fit those models to data, using a variety of statistics and optimization methods
+ license: GPLv3
+
