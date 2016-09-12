@@ -139,6 +139,22 @@ def set_xsxset(name, value):
 # http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Control.html
 # http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Setting.html
 def get_xsstate():
+    """Return the state of the XSPEC module.
+
+    Returns
+    -------
+    state : dict
+        The current settings for the XSPEC module, including but not
+        limited to: the abundance and cross-section settings, parameters
+        for the cosmological model, and any XSET parameters that have
+        been set.
+
+    See Also
+    --------
+    get_xsabund, get_xschatter, get_xscosmo, get_xsxsect, get_xsxset,
+    set_xsstate
+    """
+
     return {"abund": get_xsabund(),
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
@@ -146,6 +162,26 @@ def get_xsstate():
             "modelstrings": modelstrings}
 
 def set_xsstate(state):
+    """Restore the state of the XSPEC module.
+
+    Parameters
+    ----------
+    state : dict
+        The current settings for the XSPEC module. This is expected to
+        match the return value of ``get_xsstate``, and so requires the
+        keys: 'abund', 'chatter', 'cosmo', 'xsect', and 'modelstrings'.
+
+    See Also
+    --------
+    get_xsstate, set_xsabund, set_xschatter, set_xscosmo, set_xsxsect,
+    set_xsxset
+
+    Notes
+    -----
+    The state of the XSPEC module will only be changed if all
+    the required keys in the dictionary are present.
+    """
+
     if (type(state) == dict and
         'abund' in state and
         'chatter' in state and
@@ -167,6 +203,32 @@ __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
 
 
 class XSModel(ArithmeticModel):
+    """The base class for XSPEC models.
+
+    It is expected that sub-classes are used to represent the
+    five different types of XSPEC model (additive, multiplicative,
+    convolution, pile up, mixing, and tables), although not all are
+    currently supported in Sherpa.
+
+    Notes
+    -----
+    The XSPEC models are evaluated on a one-dimensional, integrated,
+    contiguous grid. When the ``calc`` method is called with both
+    low and high bin values, the arrays are converted into a single
+    array matching the XSPEC calling convention - that is elo_0,
+    elo_1, ..., elo_n for n bins (so the last value is the upper edge
+    of the last bin) - adding in any bins to account for a non-contiguous
+    input. This array is used to evaluate the model, and then the
+    return value is created by removing any extra bins that had to be
+    added to account for non-contiguous input values.
+
+    If used on an unbinned dataset, so only one array is sent to
+    ``calc``, then the input values are taken to match the XSPEC
+    calling convention - i.e. a contiguous grid where the last element
+    represents the upper edge of the last bin. This means that for
+    an input grid of ``n`` points, the returned array will contain
+    ``n`` values, but the last element will be zero.
+    """
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
@@ -194,6 +256,54 @@ class XSModel(ArithmeticModel):
 
 
 class XSTableModel(XSModel):
+    """Interface to XSPEC table models.
+
+    XSPEC supports loading in user-supplied data files for use
+    as a table model [1]_. This class provides a low-level
+    way to access this functionality. A simpler interface is provided
+    by the ``load_table_model`` routine provided by the
+    ``sherpa.astro.ui`` module
+
+    Parameters
+    ----------
+    filename : str
+        The name of the FITS file containing the data for the XSPEC
+        table model; the format is described in [2]_.
+    name : str
+        The name to use for the instance of the table model.
+    parnames : sequence
+        The parameter names. This corresponds to the "NAME" column from
+        the "PARAMETER" block of the input file. Any invalid characters
+        in each name will be replaced by the '_' character.
+    initvals : sequence
+        The initial values for each parameter. This corresponds to the
+        "INITIAL" column from the "PARAMETER" block of the input file.
+    delta : sequence
+        The delta value for each parameter. This corresponds to the
+        "DELTA" column from the "PARAMETER" block of the input file.
+    mins, maxes, hardmins, hardmaxes : sequence
+        The valid range of each parameter. These correspond to the
+        "BOTTOM", "TOP", "MINIMUM", and "MAXIMUM" columns from the
+        "PARAMETER" block of the input file.
+    nint : int
+        The first ``nint`` parameters are marked as thawed by default,
+        the remaining default to frozen.
+    addmodel : bool
+        Is this an additive model (``True``) or multiplicative model
+        (``False``)? It should be set to the value of the "ADDMODEL"
+        keyword of the primary header of the input file.
+    addredshift : bool
+        If ``True`` then a redshift parameter is added to the parameters.
+        It should be set to the value of the "REDSHIFT" keyword of the
+        primary header of the input file.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
+    .. [2] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+
+    """
 
     def __init__(self, filename, name='xstbl', parnames=(),
                  initvals=(), delta=(), mins=(), maxes=(), hardmins=(),
@@ -250,6 +360,16 @@ class XSTableModel(XSModel):
 
 
 class XSAdditiveModel(XSModel):
+    """The base class for XSPEC additive models.
+
+    The XSPEC additive models are listed at [1]_.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/Additive.html
+
+    """
 
     def guess(self, dep, *args, **kwargs):
         if hasattr(self, 'norm'):
@@ -258,10 +378,54 @@ class XSAdditiveModel(XSModel):
 
 
 class XSMultiplicativeModel(XSModel):
+    """The base class for XSPEC multiplicative models.
+
+    The XSPEC multiplicative models are listed at [1]_.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/Multiplicative.html
+
+    """
+
     pass
 
 
 class XSapec(XSAdditiveModel):
+    """The XSPEC apec model: APEC emission spectrum.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keywords "APECROOT", "APECTHERMAL", "APECVELOCITY",
+    and "APEC_TRACE_ABUND".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
+        keyword.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbapec, XSbvapec, XSbvvapec, XSvapec, XSvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelApec.html
+
+    """
 
     _calc =  _xspec.xsaped
 
@@ -274,6 +438,40 @@ class XSapec(XSAdditiveModel):
 
 
 class XSbapec(XSAdditiveModel):
+    """The XSPEC bapec model: velocity broadened APEC thermal plasma model.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keywords "APECROOT" and "APEC_TRACE_ABUND".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
+        keyword.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbvapec, XSbvvapec, XSvapec, XSvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBapec.html
+
+    """
 
     _calc =  _xspec.xsbape
 
@@ -287,6 +485,28 @@ class XSbapec(XSAdditiveModel):
 
 
 class XSbbody(XSAdditiveModel):
+    """The XSPEC bbody model: blackbody spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the object, in keV.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbbodyrad, XSzbbody
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBbody.html
+
+    """
 
     _calc =  _xspec.xsblbd
 
@@ -297,6 +517,28 @@ class XSbbody(XSAdditiveModel):
 
 
 class XSbbodyrad(XSAdditiveModel):
+    """The XSPEC bbodyrad model: blackbody spectrum, area normalized.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the object, in keV.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbbody, XSzbbody
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBbodyrad.html
+
+    """
 
     _calc =  _xspec.xsbbrd
 
@@ -306,7 +548,57 @@ class XSbbodyrad(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.norm))
 
 
+# DOC-NOTE: the XSPEC documentation has a different parameter order to
+#           the code.
 class XSbexrav(XSAdditiveModel):
+    """The XSPEC bexrav model: reflected e-folded broken power law, neutral medium.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Gamma1
+        The power-law index of the first power-law component.
+    breakE
+        The break energy, in keV.
+    Gamma2
+        The power-law index of the second power-law component.
+    foldE
+        The e-folding energy (Ec) in keV. If zero there is no cut off.
+    rel_refl
+        The reflection scaling parameter (a value of 1 for an
+        isotropic source above the disk).
+    cosIncl
+        The cosine of the inclination angle.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbexriv
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the BEXRAV_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBexrav.html
+
+    """
 
     _calc =  _xspec.C_xsbexrav
 
@@ -330,6 +622,58 @@ class XSbexrav(XSAdditiveModel):
 
 
 class XSbexriv(XSAdditiveModel):
+    """The XSPEC bexriv model: reflected e-folded broken power law, ionized medium.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Gamma1
+        The power-law index of the first power-law component.
+    breakE
+        The break energy, in keV.
+    Gamma2
+        The power-law index of the second power-law component.
+    foldE
+        The e-folding energy (Ec) in keV. If zero there is no cut off.
+    rel_refl
+        The reflection scaling parameter (a value of 1 for an
+        isotropic source above the disk).
+    redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    cosIncl
+        The cosine of the inclination angle.
+    T_disk
+        The disk temperature in K.
+    xi
+        The disk ionization parameter: see [1]_ for an explanation.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbexrav
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the BEXRIV_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBexriv.html
+
+    """
 
     _calc =  _xspec.C_xsbexriv
 
@@ -355,6 +699,33 @@ class XSbexriv(XSAdditiveModel):
 
 
 class XSbknpower(XSAdditiveModel):
+    """The XSPEC bknpower model: broken power law.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndx1
+        The power law photon index for energies less than BreakE.
+    BreakE
+        The break energy, in keV.
+    PhoIndx2
+        The power law photon index for energies greater than BreakE.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbkn2pow, XScutoffpl, XSpowerlaw, XSzpowerlw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBknpower.html
+
+    """
 
     _calc =  _xspec.C_brokenPowerLaw
 
@@ -372,6 +743,38 @@ class XSbknpower(XSAdditiveModel):
 
 
 class XSbkn2pow(XSAdditiveModel):
+    """The XSPEC bkn2pow model: broken power law with two breaks.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndx1
+        The power law photon index for energies less than BreakE1.
+    BreakE1
+        The first break energy, in keV.
+    PhoIndx2
+        The power law photon index for energies greater than BreakE1
+        but less than BreakE2.
+    BreakE2
+        The second break energy, in keV.
+    PhoIndx3
+        The power law photon index for energies greater than BreakE2.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbknpower, XScutoffpl, XSpowerlaw, XSzpowerlw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBkn2pow.html
+
+    """
 
     _calc =  _xspec.C_broken2PowerLaw
 
@@ -392,6 +795,28 @@ class XSbkn2pow(XSAdditiveModel):
 
 
 class XSbmc(XSAdditiveModel):
+    """The XSPEC bmc model: Comptonization by relativistic matter.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the thermal photon source in keV.
+    alpha
+        The energy spectral index.
+    logA
+        The log of the A parameter: see [1]_ for more details.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBmc.html
+
+    """
 
     _calc =  _xspec.xsbmc
 
@@ -404,6 +829,28 @@ class XSbmc(XSAdditiveModel):
 
 
 class XSbremss(XSAdditiveModel):
+    """The XSPEC bremss model: thermal bremsstrahlung.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The plasma temperature in keV.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSvbremss, XSzbremss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBremss.html
+
+    """
 
     _calc =  _xspec.xsbrms
 
@@ -414,6 +861,35 @@ class XSbremss(XSAdditiveModel):
 
 
 class XSbvapec(XSAdditiveModel):
+    """The XSPEC bvapec model: velocity broadened APEC thermal plasma model.
+
+    The model is described at [1]_, with ``XSbapec`` describing how
+    it is implemented in Sherpa.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbapec, XSbvvapec, XSvapec, XSvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBapec.html
+
+    """
 
     _calc =  _xspec.xsbvpe
 
@@ -439,6 +915,38 @@ class XSbvapec(XSAdditiveModel):
 
 
 class XSc6mekl(XSAdditiveModel):
+    """The XSPEC c6mekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSc6pmekl, XSc6pvmkl, XSc6vmekl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelC6mekl.html
+
+    """
 
     _calc =  _xspec.c6mekl
 
@@ -458,6 +966,39 @@ class XSc6mekl(XSAdditiveModel):
 
 
 class XSc6pmekl(XSAdditiveModel):
+    """The XSPEC c6pmekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
+
+    The model is described at [1]_. It differs from ``XSc6mekl`` by
+    by using the exponential of the 6th order Chebyshev polynomial.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSc6mekl, XSc6pvmkl, XSc6vmekl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelC6mekl.html
+
+    """
 
     _calc =  _xspec.c6pmekl
 
@@ -477,6 +1018,39 @@ class XSc6pmekl(XSAdditiveModel):
 
 
 class XSc6pvmkl(XSAdditiveModel):
+    """The XSPEC c6pvmkl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
+
+    The model is described at [1]_. It differs from ``XSc6vmekl`` by
+    by using the exponential of the 6th order Chebyshev polynomial.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSc6mekl, XSc6pmekl, XSc6vmekl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelC6mekl.html
+
+    """
 
     _calc =  _xspec.c6pvmkl
 
@@ -509,6 +1083,38 @@ class XSc6pvmkl(XSAdditiveModel):
 
 
 class XSc6vmekl(XSAdditiveModel):
+    """The XSPEC c6vmekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSc6mekl, XSc6pmekl, XSc6pvmkl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelC6mekl.html
+
+    """
 
     _calc =  _xspec.c6vmekl
 
@@ -541,6 +1147,40 @@ class XSc6vmekl(XSAdditiveModel):
 
 
 class XScemekl(XSAdditiveModel):
+    """The XSPEC cemekl model: plasma emission, multi-temperature using mekal.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The power-law index of the emissivity function.
+    Tmax
+        The maxmimum temperature, in keV.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XScevmkl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCemekl.html
+
+    """
 
     _calc =  _xspec.cemekl
 
@@ -556,6 +1196,40 @@ class XScemekl(XSAdditiveModel):
 
 
 class XScevmkl(XSAdditiveModel):
+    """The XSPEC cevmkl model: plasma emission, multi-temperature using mekal.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The power-law index of the emissivity function.
+    Tmax
+        The maxmimum temperature, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XScemekl
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCemekl.html
+
+    """
 
     _calc =  _xspec.C_cemVMekal
 
@@ -584,6 +1258,36 @@ class XScevmkl(XSAdditiveModel):
 
 
 class XScflow(XSAdditiveModel):
+    """The XSPEC cflow model: cooling flow.
+
+    The model is described at [1]_. The results of this model depend
+    on the cosmology settings set with ``set_xscosmo``.
+
+    Attributes
+    ----------
+    slope
+        The power-law index of the emissivity function.
+    lowT
+        The minimum temperature, in keV.
+    highT
+        The maxmimum temperature, in keV.
+    Abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    redshift
+        The redshift of the plasma.
+    norm
+        The mass accretion rate (solar mass per year).
+
+    See Also
+    --------
+    XScevmkl, XSmkcflow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCflow.html
+
+    """
 
     _calc =  _xspec.C_xscflw
 
@@ -598,6 +1302,32 @@ class XScflow(XSAdditiveModel):
 
 
 class XScompbb(XSAdditiveModel):
+    """The XSPEC compbb model: Comptonization, black body.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The blackbody temperature, in keV.
+    kTe
+        The electron temperature of the hot plasma, in keV.
+    tau
+        The optical depth of the plasma.
+    norm
+        The model normalization: it is the same definition as
+        used for the ``XSbbodyrad`` model.
+
+    See Also
+    --------
+    XSbbodyrad
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCompbb.html
+
+    """
 
     _calc =  _xspec.compbb
 
@@ -610,6 +1340,25 @@ class XScompbb(XSAdditiveModel):
 
 
 class XScompLS(XSAdditiveModel):
+    """The XSPEC compLS model: Comptonization, Lamb & Sanford.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The blackbody temperature, in keV.
+    tau
+        The optical depth of the plasma.
+    norm
+        The model normalization.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCompls.html
+
+    """
 
     _calc =  _xspec.compls
 
@@ -620,7 +1369,74 @@ class XScompLS(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.tau, self.norm))
 
 
+# DOC-NOTE: The XSPEC documentation for a number of parameters suggest
+#           that they can be negative, but the model.dat limits suggest
+#           otherwise (e.g. ktbb and tau_y).
+#
 class XScompPS(XSAdditiveModel):
+    """The XSPEC compPS model: Comptonization, Poutanen & Svenson.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kTe
+        The electron temperature in keV.
+    EleIndex
+        The electron power-law index.
+    Gmin
+        The minimum Lorentz factor gamma.
+    GMax
+        The maximum Lorentz factor gamma: see [1]_ for more details.
+    kTbb
+        The temperature of the soft photons, in keV.
+    tauy
+        The vertical optical depth of the corona: see [1]_ for more
+        details.
+    geom
+        The geometry to use; see [1]_ for more details.
+    HRcyl
+        The value of H/R, when a cylinder geometry is used
+        (abs(geom) = 2).
+    cosIncl
+        The cosine of the inclination angle.
+    cov_frac
+        The covering fraction of the cold clouds (only used when
+        abs(geom) < 4).
+    rel_refl
+        The amount of reflection (Omega / (2 pi))
+    Fe_ab_re
+        The iron abundance, in units of solar.
+    Me_ab
+        The abundance of heavy elements, in units of solar.
+    xi
+        The disk ionization parameter.
+    Tdisk
+        The disk temperature for reflection, in K.
+    Betor10
+        The reflection emissivity law: see [1]_ for more details.
+    Rin
+        The inner radius of the disk in Schwarzschild units.
+    Rout
+        The outer radius of the disk in Schwarzschild units.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model.
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the COMPPS_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCompps.html
+
+    """
 
     _calc =  _xspec.C_xscompps
 
@@ -649,6 +1465,25 @@ class XScompPS(XSAdditiveModel):
 
 
 class XScompST(XSAdditiveModel):
+    """The XSPEC compST model: Comptonization, Sunyaev & Titarchuk.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature, in keV.
+    tau
+        The optical depth of the plasma.
+    norm
+        The model normalization: see [1]_ for more details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCompst.html
+
+    """
 
     _calc =  _xspec.compst
 
@@ -659,7 +1494,37 @@ class XScompST(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.tau, self.norm))
 
 
+# DOC-NOTE: the approx parameter is described in XSPEC as being allowed
+#           to be negative, but the limits do not permit this.
+#
 class XScompTT(XSAdditiveModel):
+    """The XSPEC compTT model: Comptonization, Titarchuk.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    redshift
+        The redshift of the source.
+    T0
+        The input soft photon (Wien) temperature in keV.
+    kT
+        The plasma temperature, in keV.
+    taup
+        The plasma optical depth.
+    approx
+        The geometry setting: a value less than or equal to 1 is a
+        disk, above 1 it is a sphere. See [1]_ for more details on
+        how this parameter affects the model. It must remain frozen.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelComptt.html
+
+    """
 
     _calc =  _xspec.xstitg
 
@@ -674,6 +1539,31 @@ class XScompTT(XSAdditiveModel):
 
 
 class XScutoffpl(XSAdditiveModel):
+    """The XSPEC cutoffpl model: power law, high energy exponential cutoff.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The power law photon index.
+    HighECut
+        The e-folding energy of the exponential rolloff, in keV.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbknpower, XSbkn2pow, XSpowerlaw, XSzpowerlw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCutoffpl.html
+
+    """
 
     _calc =  _xspec.C_cutoffPowerLaw
 
@@ -685,6 +1575,32 @@ class XScutoffpl(XSAdditiveModel):
 
 
 class XSdisk(XSAdditiveModel):
+    """The XSPEC disk model: accretion disk, black body.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    accrate
+        The accretion rate, in Eddington luminosities.
+    NSmass
+        The central mass, in solar mass units.
+    Rinn
+        The inner disk radius in gravitational units (three
+        Schwarzschild radii).
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdiskbb, XSdiskm, XSdisko
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDisk.html
+
+    """
 
     _calc =  _xspec.disk
 
@@ -697,6 +1613,49 @@ class XSdisk(XSAdditiveModel):
 
 
 class XSdiskir(XSAdditiveModel):
+    """The XSPEC diskir model: Irradiated inner and outer disk.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT_disk
+        The temperature of the innermost part of the unilluminated
+        disk, in keV.
+    Gamma
+        The asymptotic power-law photon index.
+    kT_e
+        The electron temperature (high-energy rollover) in keV.
+    LcLd
+        The ratio of the luminosity in the Compton tail to that of
+        the unilluminated disk.
+    fin
+        The fraction of luminosity in the Compton tail which is
+        thermalized in the inner disk. Generally fix at 0.1 as
+        appropriate for an albedo of 0.3 and solid angle of 0.3.
+    rirr
+        The radius of the Compton illuminated disk in terms of the
+        inner disk radius.
+    fout
+        The fraction of bolometric flux which is thermalized in the
+        outer disk.
+    logrout
+        The log (base 10) of the outer disk radius in terms of the
+        inner disk radius.
+    norm
+        The model normalization: it is the same definition as
+        used for the ``XSdiskbb`` model.
+
+    See Also
+    --------
+    XSdiskbb
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskir.html
+
+    """
 
     _calc =  _xspec.diskir
 
@@ -714,6 +1673,27 @@ class XSdiskir(XSAdditiveModel):
 
 
 class XSdiskbb(XSAdditiveModel):
+    """The XSPEC disk model: accretion disk, multi-black body components.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tin
+        The temperature at the inner disk radius, in keV.
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdiskpbb, XSdiskpn
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskbb.html
+
+    """
 
     _calc =  _xspec.xsdskb
 
@@ -724,6 +1704,31 @@ class XSdiskbb(XSAdditiveModel):
 
 
 class XSdiskline(XSAdditiveModel):
+    """The XSPEC diskline model: accretion disk line emission, relativistic.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy in keV.
+    Betor10
+        The power law dependence of emissivity: see [1]_ for more details.
+    RinM
+        The inner radius, in units of GM^2/c.
+    RoutM
+        The outer radius, in units of GM^2/c.
+    Incl
+        The inclination, in degrees.
+    norm
+        The model normalization in photon/cm^2/s.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskline.html
+
+    """
 
     _calc =  _xspec.xsdili
 
@@ -743,6 +1748,34 @@ class XSdiskline(XSAdditiveModel):
 
 
 class XSdiskm(XSAdditiveModel):
+    """The XSPEC diskm model: accretion disk with gas pressure viscosity.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    NSmass
+        The accretion rate, in Eddington luminosities.
+    NSmass
+        The central mass, in solar mass units.
+    Rinn
+        The inner disk radius in gravitational units (three
+        Schwarzschild radii).
+    alpha
+        The viscosity.
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdisk, XSdisko
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskm.html
+
+    """
 
     _calc =  _xspec.diskm
 
@@ -756,6 +1789,34 @@ class XSdiskm(XSAdditiveModel):
 
 
 class XSdisko(XSAdditiveModel):
+    """The XSPEC disko model: accretion disk, inner, radiation pressure viscosity.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    NSmass
+        The accretion rate, in Eddington luminosities.
+    NSmass
+        The central mass, in solar mass units.
+    Rinn
+        The inner disk radius in gravitational units (three
+        Schwarzschild radii).
+    alpha
+        The viscosity.
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdisk, XSdiskm
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDisko.html
+
+    """
 
     _calc =  _xspec.disko
 
@@ -769,6 +1830,29 @@ class XSdisko(XSAdditiveModel):
 
 
 class XSdiskpbb(XSAdditiveModel):
+    """The XSPEC diskpbb model: accretion disk, power-law dependence for T(r).
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tin
+        The temperature at the inner disk radius, in keV.
+    p
+        The exponent of the radial dependence of the disk temperature.
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdiskbb, XSdiskpn
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskpbb.html
+
+    """
 
     _calc =  _xspec.diskpbb
 
@@ -780,6 +1864,29 @@ class XSdiskpbb(XSAdditiveModel):
 
 
 class XSdiskpn(XSAdditiveModel):
+    """The XSPEC diskpn model: accretion disk, black hole, black body.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    T_max
+        The maximum temperature in the disk, in keV.
+    R_in
+        The inner disk radius, in units of Rg (GM/c^2).
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    See Also
+    --------
+    XSdiskbb, XSdiskpbb
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDiskpn.html
+
+    """
 
     _calc =  _xspec.xsdiskpn
 
@@ -791,6 +1898,35 @@ class XSdiskpn(XSAdditiveModel):
 
 
 class XSequil(XSAdditiveModel):
+    """The XSPEC equil model: collisional plasma, ionization equilibrium.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSnei, XSgnei, XSpshock, XSvequil
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEquil.html
+
+    """
 
     _calc =  _xspec.C_equil
 
@@ -803,6 +1939,23 @@ class XSequil(XSAdditiveModel):
 
 
 class XSexpdec(XSAdditiveModel):
+    """The XSPEC expdec model: exponential decay.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    factor
+        The exponential factor.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelExpdec.html
+
+    """
 
     _calc =  _xspec.xsxpdec
 
@@ -813,6 +1966,23 @@ class XSexpdec(XSAdditiveModel):
 
 
 class XSezdiskbb(XSAdditiveModel):
+    """The XSPEC ezdiskbb model: multiple blackbody disk model with zero-torque inner boundary.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    T_max
+        The maximum temperature in the disk, in keV.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEzdiskbb.html
+
+    """
 
     _calc =  _xspec.ezdiskbb
 
@@ -823,6 +1993,29 @@ class XSezdiskbb(XSAdditiveModel):
 
 
 class XSgaussian(XSAdditiveModel):
+    """The XSPEC gaussian model: gaussian line profile.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Sigma
+        The line width, in keV. A value of zero means a delta function.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSagauss, XSlorentz, XSzagauss, XSzgauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGaussian.html
+
+    """
 
     _calc =  _xspec.xsgaul
 
@@ -839,6 +2032,39 @@ class XSgaussian(XSAdditiveModel):
 
 
 class XSgnei(XSAdditiveModel):
+    """The XSPEC gnei model: collisional plasma, non-equilibrium, temperature evolution.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    kT_ave
+        The ionization timescale averaged plasma temperature in keV.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSnei, XSvgnei, XSvvgnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGnei.html
+
+    """
 
     _calc =  _xspec.C_gnei
 
@@ -853,6 +2079,42 @@ class XSgnei(XSAdditiveModel):
 
 
 class XSgrad(XSAdditiveModel):
+    """The XSPEC grad model: accretion disk, Schwarzschild black hole.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    D
+        The distance to the source in kpc.
+    i
+        The disk inclination angle, in degrees. A face-on disk has
+        i=0.
+    Mass
+        The mass of the central object, in solar masses.
+    Mdot
+        The mass accretion rate in units of 10^18 g/s.
+    TclTef
+        The spectral hardening factor, Tcol/Teff. See [1]_ for more
+        details.
+    refflag
+        A flag to control the relativistic effects: if positive then
+        a relativistic calculation is used; if zero or negative then
+        a Newtonian calculation is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model. It should be fixed to 1.
+
+    See Also
+    --------
+    XSkerbb
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGrad.html
+
+    """
 
     _calc =  _xspec.grad
 
@@ -868,6 +2130,27 @@ class XSgrad(XSAdditiveModel):
 
 
 class XSgrbm(XSAdditiveModel):
+    """The XSPEC grbm model: gamma-ray burst continuum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The first powerlaw index.
+    beta
+        The second powerlaw index.
+    temp
+        The characteristic energy, in keV.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGrbm.html
+
+    """
 
     _calc =  _xspec.xsgrbm
 
@@ -880,6 +2163,55 @@ class XSgrbm(XSAdditiveModel):
 
 
 class XSkerrbb(XSAdditiveModel):
+    """The XSPEC kerrbb model: multi-temperature blackbody model for thin accretion disk around a Kerr black hole.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    eta
+        The ratio of the disk power produced by a torque at the disk
+        inner boundary to the disk power arising from accretion. See
+        [1]_ for more details.
+    a
+        The specific angular momentum of the black hole in units of the
+        black hole mass M (when G=c=1). It should be in the range [0, 1).
+    i
+        The disk inclination angle, in degrees. A face-on disk has
+        i=0. It must be less than or equal to 85 degrees.
+    Mbh
+        The mass of the black hole, in solar masses.
+    Mdd
+        The "effective" mass accretion rate in units of 10^18 g/s.
+        See [1]_ for more details.
+    Dbh
+        The distance from the observer to the black hole, in units of kpc.
+    hd
+        The spectral hardening factor, Tcol/Teff. See [1]_ for more
+        details.
+    rflag
+        A flag to switch on or off the effect of self irradiation:
+        when greater than zero the self irradition is included,
+        otherwise it is not. This parameter can not be thawed.
+    lflag
+        A flag to switch on or off the effect of limb darkening:
+        when greater than zero the disk emission is assumed to be
+        limb darkened, otherwise it is isotropic.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model. It should be fixed to 1
+        if the inclination, mass, and distance are frozen.
+
+    See Also
+    --------
+    XSgrad
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKerrbb.html
+
+    """
 
     _calc =  _xspec.C_kerrbb
 
@@ -898,6 +2230,42 @@ class XSkerrbb(XSAdditiveModel):
 
 
 class XSkerrd(XSAdditiveModel):
+    """The XSPEC kerrd model: optically thick accretion disk around a Kerr black hole.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    distance
+        The distance, in units of kpc.
+    TcollTeff
+        The spectral hardening factor, Tcol/Teff. See [1]_ for more
+        details.
+    M
+        The mass of the central object, in solar masses.
+    Mdot
+        The mass accretion rate in units of 10^18 g/s.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+    Rin
+        The inner radius, in units of GM/c^2. The last stable orbit
+        is 1.235.
+    Rout
+        The outer radius, in units of GM/c^2.
+    norm
+        The normalization of the model. It should be fixed to 1.
+
+    See Also
+    --------
+    XSlaor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKerrd.html
+
+    """
 
     _calc =  _xspec.C_kerrdisk
 
@@ -914,6 +2282,47 @@ class XSkerrd(XSAdditiveModel):
 
 
 class XSkerrdisk(XSAdditiveModel):
+    """The XSPEC kerrdisk model: accretion disk line emission with BH spin as free parameter.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    lineE
+        The rest-frame line energy, in keV.
+    Index1
+        The emissivity index for the inner disk.
+    Index2
+        The emissivity index for the outer disk.
+    r_brg
+        The break radius separating the inner and outer portions of the
+        disk, in gravitational radii.
+    a
+        The dimensionless black hole spin.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+    Rinms
+        The inner radius of the disk, in units of the radius of
+        marginal stability.
+    Routms
+        The outer radius of the disk, in units of the radius of
+        marginal stability.
+    z
+        The redshift of the source.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSdiskline, XSlaor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKerrdisk.html
+
+    """
 
     _calc =  _xspec.spin
 
@@ -937,6 +2346,36 @@ class XSkerrdisk(XSAdditiveModel):
 
 
 class XSlaor(XSAdditiveModel):
+    """The XSPEC laor model: accretion disk, black hole emission line.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    lineE
+        The rest-frame line energy, in keV.
+    Index
+        The power law dependence of emissivity (scales as R^-Index).
+    RinG
+        The inner radius, in units of GM/c^2.
+    RoutG
+        The outer radius, in units of GM/c^2.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSlaor2
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLaor.html
+
+    """
 
     _calc =  _xspec.C_xslaor
 
@@ -956,6 +2395,40 @@ class XSlaor(XSAdditiveModel):
 
 
 class XSlaor2(XSAdditiveModel):
+    """The XSPEC laor2 model: accretion disk with broken-power law emissivity profile, black hole emission line.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    lineE
+        The rest-frame line energy, in keV.
+    Index
+        The power law dependence of emissivity (scales as R^-Index).
+    RinG
+        The inner radius, in units of GM/c^2.
+    RoutG
+        The outer radius, in units of GM/c^2.
+    Incl
+        The disk inclination angle, in degrees. A face-on disk has
+        Incl=0.
+    Rbreak
+        The radius at which the emissivity power-law index changes.
+    Index1
+        The emissivity power-law index for r>Rbreak.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSlaor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLaor2.html
+
+    """
 
     _calc =  _xspec.C_laor2
 
@@ -977,6 +2450,29 @@ class XSlaor2(XSAdditiveModel):
 
 
 class XSlorentz(XSAdditiveModel):
+    """The XSPEC lorentz model: lorentz line profile.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Width
+        The FWHM of the line, in keV.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSgaussian
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLorentz.html
+
+    """
 
     _calc =  _xspec.xslorz
 
@@ -993,6 +2489,35 @@ class XSlorentz(XSAdditiveModel):
 
 
 class XSmeka(XSAdditiveModel):
+    """The XSPEC meka model: emission, hot diffuse gas (Mewe-Gronenschild).
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    nH
+        H density, in cm^-3.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSvmeka
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMeka.html
+
+    """
 
     _calc =  _xspec.xsmeka
 
@@ -1006,6 +2531,40 @@ class XSmeka(XSAdditiveModel):
 
 
 class XSmekal(XSAdditiveModel):
+    """The XSPEC mekal model: emission, hot diffuse gas (Mewe-Kaastra-Liedahl).
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    nH
+        H density, in cm^-3.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSvmekal
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMekal.html
+
+    """
 
     _calc =  _xspec.xsmekl
 
@@ -1020,6 +2579,39 @@ class XSmekal(XSAdditiveModel):
 
 
 class XSmkcflow(XSAdditiveModel):
+    """The XSPEC mkcflow model: cooling flow, mekal.
+
+    The model is described at [1]_. The results of this model depend
+    on the cosmology settings set with ``set_xscosmo``.
+
+    Attributes
+    ----------
+    lowT
+        The minimum temperature, in keV.
+    highT
+        The maxmimum temperature, in keV.
+    Abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The mass accretion rate (solar mass per year).
+
+    See Also
+    --------
+    XSapec, XScflow, XScevmkl, XSvmcflow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMkcflow.html
+
+    """
 
     _calc =  _xspec.C_xsmkcf
 
@@ -1034,6 +2626,37 @@ class XSmkcflow(XSAdditiveModel):
 
 
 class XSnei(XSAdditiveModel):
+    """The XSPEC nei model: collisional plasma, non-equilibrium, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSgnei, XSvnei, XSvvnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNei.html
+
+    """
 
     _calc =  _xspec.C_nei
 
@@ -1047,6 +2670,39 @@ class XSnei(XSAdditiveModel):
 
 
 class XSrnei(XSAdditiveModel):
+    """The XSPEC rnei model: non-equilibrium recombining collisional plasma.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    kT_init
+        The initial temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSnei, XSgnei, XSvrnei, XSvvrnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRnei.html
+
+    """
 
     _calc =  _xspec.C_rnei
 
@@ -1061,6 +2717,41 @@ class XSrnei(XSAdditiveModel):
 
 
 class XSvrnei(XSAdditiveModel):
+    """The XSPEC vrnei model: non-equilibrium recombining collisional plasma.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    kT_init
+        The initial temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSrnei, XSvvrnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRnei.html
+
+    """
 
     _calc =  _xspec.C_vrnei
 
@@ -1087,6 +2778,42 @@ class XSvrnei(XSAdditiveModel):
 
 
 class XSvvrnei(XSAdditiveModel):
+    """The XSPEC vvrnei model: non-equilibrium recombining collisional plasma.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    kT_init
+        The initial temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSrnei, XSvrnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRnei.html
+
+    """
 
     _calc =  _xspec.C_vvrnei
 
@@ -1130,6 +2857,43 @@ class XSvvrnei(XSAdditiveModel):
 
 
 class XSnpshock(XSAdditiveModel):
+    """The XSPEC npshock model: shocked plasma, plane parallel, separate ion, electron temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    Abundanc
+        The metal abundance, as defined by the
+        ``set_xsabund`` function.
+    Tau_l
+        The lower limit on the ionization timescale in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale in s/cm^3.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSsedov, XSvnpshock, XSvvnpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNpshock.html
+
+    """
 
     _calc =  _xspec.C_npshock
 
@@ -1145,6 +2909,35 @@ class XSnpshock(XSAdditiveModel):
 
 
 class XSnsa(XSAdditiveModel):
+    """The XSPEC nsa model: neutron star atmosphere.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LogT_eff
+        The log of Teff, the unredshifted effective temperature.
+    M_ns
+        The neutron star gravitational mass, in units of the solar mass.
+    R_ns
+        The neutron star radius, in km.
+    MagField
+        The neutron star magnetic field strength, in Gauss. It must be
+        fixed at one of 0, 1e12, or 1e13 G.
+    norm
+        The normalization is 1/D^2, where D is the distance to the
+        neutron star in pc.
+
+    See Also
+    --------
+    XSnsagrav
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsa.html
+
+    """
 
     _calc =  _xspec.nsa
 
@@ -1158,6 +2951,32 @@ class XSnsa(XSAdditiveModel):
 
 
 class XSnsagrav(XSAdditiveModel):
+    """The XSPEC nsagrav model: NS H atmosphere model for different g.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LogT_eff
+        The log of Teff, the unredshifted effective temperature.
+    NSmass
+        The neutron star gravitational mass, in units of the solar mass.
+    NSrad
+        The "true" neutron star radius, in km.
+    norm
+        The normalization is 1/D^2, where D is the distance to the
+        neutron star in pc.
+
+    See Also
+    --------
+    XSnsa
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsagrav.html
+
+    """
 
     _calc =  _xspec.nsagrav
 
@@ -1170,6 +2989,29 @@ class XSnsagrav(XSAdditiveModel):
 
 
 class XSnsatmos(XSAdditiveModel):
+    """The XSPEC nsatmos model: NS Hydrogen Atmosphere model with electron conduction and self-irradiation.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LogT_eff
+        The log of Teff, the unredshifted effective temperature.
+    M_ns
+        The neutron star gravitational mass, in units of the solar mass.
+    R_ns
+        The "true" neutron star radius, in km.
+    dist
+        The distance to the neutron star, in kpc.
+    norm
+        The fraction of the neutron star surface emitting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsatmos.html
+
+    """
 
     _calc =  _xspec.nsatmos
 
@@ -1183,6 +3025,32 @@ class XSnsatmos(XSAdditiveModel):
 
 
 class XSnsmax(XSAdditiveModel):
+    """The XSPEC nsmax model: Neutron Star Magnetic Atmosphere.
+
+    The model is described at [1]_. It has been superceeded by
+    ``XSnsmaxg``.
+
+    Attributes
+    ----------
+    LogTeff
+        The log of Teff, the unredshifted surface effective temperature.
+    redshift
+        This is 1 + zg, the gravitational redshift.
+    specfile
+        Which model to use: see [1]_ for more details.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    See Also
+    --------
+    XSnsmaxg
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsmax.html
+
+    """
 
     _calc =  _xspec.nsmax
 
@@ -1195,6 +3063,35 @@ class XSnsmax(XSAdditiveModel):
 
 
 class XSnsmaxg(XSAdditiveModel):
+    """The XSPEC nsmaxg model: neutron star with a magnetic atmosphere.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LogTeff
+        The log of Teff, the unredshifted surface effective temperature.
+    M_ns
+        The neutron star gravitational mass, in units of the solar mass.
+    R_ns
+        The neutron star radius, in km.
+    dist
+        The distance to the neutron star, in kpc.
+    specfile
+        Which model to use: see [1]_ for more details.
+    norm
+        The normalization: see [1]_ for more details.
+
+    See Also
+    --------
+    XSnsmax, XSnsx
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsmaxg.html
+
+    """
 
     _calc =  _xspec.nsmaxg
 
@@ -1209,6 +3106,35 @@ class XSnsmaxg(XSAdditiveModel):
 
 
 class XSnsx(XSAdditiveModel):
+    """The XSPEC nsx model: neutron star with a non-magnetic atmosphere.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LogTeff
+        The log of Teff, the unredshifted surface effective temperature.
+    M_ns
+        The neutron star gravitational mass, in units of the solar mass.
+    R_ns
+        The neutron star radius, in km.
+    dist
+        The distance to the neutron star, in kpc.
+    specfile
+        Which model to use: see [1]_ for more details.
+    norm
+        The normalization: see [1]_ for more details.
+
+    See Also
+    --------
+    XSnsmaxg
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNsx.html
+
+    """
 
     _calc =  _xspec.nsx
 
@@ -1222,6 +3148,62 @@ class XSnsx(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self.specfile, self.norm))
 
 class XSnteea(XSAdditiveModel):
+    """The XSPEC nteea model: non-thermal pair plasma.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    l_nth
+        The nonthermal electron compactness.
+    l_bb
+        The blackbody compactness.
+    f_refl
+        The scaling factor for reflection. This is 1 for an isotropic
+        source above the disk.
+    kT_bb
+        The blackbody temperature in eV.
+    g_max
+        The maximum Lorentz factor.
+    l_th
+        The thermal compactness. Set to 0 for a pure nonthermal plasma.
+    tau_p
+        The Thomson optical depth of ionization electrons.
+    G_inj
+        The electron injection index (0 for monoenergetic injection).
+    g_min
+        The minimum Lorentz factor of the power law injection (not used
+        for monoenergetic injection).
+    g_0
+        The minimum Lorentz factor for nonthermal reprocessing, in the
+        range (1, g_min].
+    radius
+        The radius in cm (for Coulomb/bremsstrahlung only).
+    pair_esc
+        The pair escape rate in c.
+    cosIncl
+        The cosine of the inclination angle.
+    Fe_abund
+        The iron abundance relative to that set by the ``set_xsabund``
+        function.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the NTEEA_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNteea.html
+
+    """
 
     _calc =  _xspec.C_xsnteea
 
@@ -1246,6 +3228,32 @@ class XSnteea(XSAdditiveModel):
 
 
 class XSnthComp(XSAdditiveModel):
+    """The XSPEC nthComp model: Thermally comptonized continuum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Gamma
+        The asymptotic power-law photon index.
+    kT_e
+        The electron temperature (high-energy rollover) in keV.
+    kT_bb
+        The seed photon temperature (low-energy rollover) in keV.
+    inp_type
+        The seed photon source: when 0 use a blackbody, when 1 use
+        a disk-blackbody.
+    redshift
+        The redshift.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNthcomp.html
+
+    """
 
     _calc =  _xspec.C_nthcomp
 
@@ -1260,6 +3268,33 @@ class XSnthComp(XSAdditiveModel):
 
 
 class XSpegpwrlw(XSAdditiveModel):
+    """The XSPEC pegpwrlw model: power law, pegged normalization.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The power law photon index.
+    eMin
+        The lower peg for the normalization, in keV.
+    eMax
+        The upper peg for the normalization, in keV.
+    norm
+        The flux, in units of 10^-12 erg/cm^2/s, over the range
+        eMin to eMax. If eMin=eMax then it is the flux in
+        micro-Jy at eMin.
+
+    See Also
+    --------
+    XSbknpower, XSbkn2pow, XScutoffpl, XSpowerlaw, XSzpowerlw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPegpwrlw.html
+
+    """
 
     _calc =  _xspec.xspegp
 
@@ -1272,6 +3307,51 @@ class XSpegpwrlw(XSAdditiveModel):
 
 
 class XSpexrav(XSAdditiveModel):
+    """The XSPEC pexrav model: reflected powerlaw, neutral medium.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The first power-law photon index.
+    foldE
+        The cut-off energy (E_c) in keV. Set to 0 for no cut off.
+    rel_refl
+        The reflection scaling parameter (a value between 0 and 1
+        for an isotropic source above the disk, less than 0 for no
+        reflected component).
+    redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    cosIncl
+        The cosine of the inclination angle in degrees.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSpexriv, XSpexmon
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the PEXRAV_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPexrav.html
+
+    """
 
     _calc =  _xspec.C_xspexrav
 
@@ -1288,6 +3368,55 @@ class XSpexrav(XSAdditiveModel):
 
 
 class XSpexriv(XSAdditiveModel):
+    """The XSPEC pexriv model: reflected powerlaw, neutral medium.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The first power-law photon index.
+    foldE
+        The cut-off energy (E_c) in keV. Set to 0 for no cut off.
+    rel_refl
+        The reflection scaling parameter (a value between 0 and 1
+        for an isotropic source above the disk, less than 0 for no
+        reflected component).
+    redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    cosIncl
+        The cosine of the inclination angle in degrees.
+    T_disk
+        The disk temperature in K.
+    xi
+        The disk ionization parameter: see [1]_ for more details.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSpexrav, XSpexmon
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the PEXRIV_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPexriv.html
+
+    """
 
     _calc =  _xspec.C_xspexriv
 
@@ -1306,6 +3435,44 @@ class XSpexriv(XSAdditiveModel):
 
 
 class XSplcabs(XSAdditiveModel):
+    """The XSPEC plcabs model: powerlaw observed through dense, cold matter.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The column density, in units of 10^22 cm^-2.
+    nMax
+        The maximum number of scatterings. This parameter can not be
+        thawed.
+    FeAbun
+        The iron abundance.
+    FeKedge
+        The energy of the Fe K edge, in keV.
+    PhoIndex
+        The power law photon index.
+    HighECut
+        The high-energy cut-off threshold energy, in keV.
+    foldE
+        The high-energy cut-off e-folding energy, in keV.
+    acrit
+        The critical albedo for switching to elastic scattering. See
+        [1]_ for more details.
+    FAST
+        If set to a value above 1, use a mean energy shift instead of
+        integration. This parameter can not be thawed.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPlcabs.html
+
+    """
 
     _calc =  _xspec.xsp1tr
 
@@ -1325,6 +3492,29 @@ class XSplcabs(XSAdditiveModel):
 
 
 class XSpowerlaw(XSAdditiveModel):
+    """The XSPEC powerlaw model: power law photon spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The power law photon index.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbknpower, XSbkn2pow, XScutoffpl, XSpegpwrlw, XSzpowerlw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPowerlaw.html
+
+    """
 
     _calc =  _xspec.C_powerLaw
 
@@ -1335,6 +3525,21 @@ class XSpowerlaw(XSAdditiveModel):
 
 
 class XSposm(XSAdditiveModel):
+    """The XSPEC posm model: positronium continuum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    norm
+        The normalization of the model: see [1]_ for details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPosm.html
+
+    """
 
     _calc =  _xspec.xsposm
 
@@ -1344,6 +3549,39 @@ class XSposm(XSAdditiveModel):
 
 
 class XSpshock(XSAdditiveModel):
+    """The XSPEC pshock model: plane-parallel shocked plasma, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau_l
+        The lower limit on the ionization timescale, in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale, in s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSvpshock, XSvvpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPshock.html
+
+    """
 
     _calc =  _xspec.C_pshock
 
@@ -1358,6 +3596,33 @@ class XSpshock(XSAdditiveModel):
 
 
 class XSraymond(XSAdditiveModel):
+    """The XSPEC raymond model: emission, hot diffuse gas, Raymond-Smith.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSvraymond
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRaymond.html
+
+    """
 
     _calc =  _xspec.xsrays
 
@@ -1370,6 +3635,25 @@ class XSraymond(XSAdditiveModel):
 
 
 class XSredge(XSAdditiveModel):
+    """The XSPEC redge model: emission, recombination edge.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    edge
+        The threshold energy, in keV.
+    kT
+        The plasma temperature, in keV.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRedge.html
+
+    """
 
     _calc =  _xspec.xredge
 
@@ -1386,6 +3670,56 @@ class XSredge(XSAdditiveModel):
 
 
 class XSrefsch(XSAdditiveModel):
+    """The XSPEC refsch model: reflected power law from ionized accretion disk.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The power-law photon index.
+    foldE
+        The cut-off energy (E_c) in keV. Set to 0 for no cut off.
+    rel_refl
+        The reflection scaling parameter (a value between 0 and 1
+        for an isotropic source above the disk, less than 0 for no
+        direct component).
+    redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    Incl
+        The inclination angle in degrees.
+    T_disk
+        The disk temperature in K.
+    xi
+        The disk ionization parameter: see [1]_ for more details.
+    Betor10
+        The power law dependence of emissivity: see [1]_ for more details.
+    Rin
+        The inner radius, in units of GM^2/c.
+    Rout
+        The outer radius, in units of GM^2/c.
+    accuracy
+        The internal model accuracy: points of spectrum per energy decade.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSdiskline, XSpexriv
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRefsch.html
+
+    """
 
     _calc =  _xspec.xsrefsch
 
@@ -1408,6 +3742,41 @@ class XSrefsch(XSAdditiveModel):
 
 
 class XSsedov(XSAdditiveModel):
+    """The XSPEC sedov model: sedov model, separate ion/electron temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSpshock, XSvsedov, XSvvsedov
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSedov.html
+
+    """
 
     _calc =  _xspec.C_sedov
 
@@ -1421,6 +3790,43 @@ class XSsedov(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT_a, self.kT_b, self.Abundanc, self.Tau, self.redshift, self.norm))
 
 class XSsirf(XSAdditiveModel):
+    """The XSPEC sirf model: self-irradiated funnel.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    tin
+        The inner temperature (at the inner, inside-the-funnel
+        photosphere), in keV.
+    rin
+        The inner (inner, inside-the-fulle photosphere) radius in
+        "spherisation radius" units (see [1]_ for details).
+    rout
+        The outer photosphere radius in "spherisation radius" units
+    theta
+        The half-opening angle of the cone, in degrees.
+    incl
+        The inclination angle of the funnel, in degrees. Affects mainly
+        self-occultation and relativistic boost effects.
+    valpha
+        The velocity law exponent.
+    gamma
+        The adiabatic index. It affects the inner, hotter parts of the
+        flow, therefore we set is to 4/3 by default.
+    mdot
+        The mass ejection rate in Eddington (critical) units.
+    irrad
+        The number of iterations for irradiation.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSirf.html
+
+    """
 
     _calc =  _xspec.C_sirf
 
@@ -1440,6 +3846,30 @@ class XSsirf(XSAdditiveModel):
                                               self.irrad, self.norm))
 
 class XSsrcut(XSAdditiveModel):
+    """The XSPEC srcut model: synchrotron spectrum, cutoff power law.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The radio spectral index.
+    breakfreq
+        The break frequency: approximately the frequency at which the
+        flux has dropped by a factor of 10 from a straight power law.
+    norm
+        The 1 Ghz flux in Jy.
+
+    See Also
+    --------
+    XSsresc
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSrcut.html
+
+    """
 
     _calc =  _xspec.srcut
 
@@ -1451,6 +3881,31 @@ class XSsrcut(XSAdditiveModel):
 
 
 class XSsresc(XSAdditiveModel):
+    """The XSPEC sresc model: synchrotron spectrum, cut off by particle escape.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The radio spectral index.
+    breakfreq
+        The break frequency: approximately the frequency at which the
+        flux has dropped by a factor of 6 from a straight power law.
+        See [1]_ for more details.
+    norm
+        The 1 Ghz flux in Jy.
+
+    See Also
+    --------
+    XSsrcut
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSresc.html
+
+    """
 
     _calc =  _xspec.sresc
 
@@ -1462,6 +3917,29 @@ class XSsresc(XSAdditiveModel):
 
 
 class XSstep(XSAdditiveModel):
+    """The XSPEC step model: step function convolved with gaussian.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Energy
+        The start energy, in keV.
+    Sigma
+        The gaussian sigma, in keV.
+    norm
+        The step amplitude.
+
+    See Also
+    --------
+    XSgaussian
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelStep.html
+
+    """
 
     _calc =  _xspec.xsstep
 
@@ -1478,6 +3956,33 @@ class XSstep(XSAdditiveModel):
 
 
 class XSvapec(XSAdditiveModel):
+    """The XSPEC vapec model: APEC emission spectrum.
+
+    The model is described at [1]_, with ``XSapec`` describing how
+    it is implemented in Sherpa.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbapec, XSbvapec, XSbvvapec, XSvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelApec.html
+
+    """
 
     _calc =  _xspec.xsvape
 
@@ -1502,6 +4007,30 @@ class XSvapec(XSAdditiveModel):
 
 
 class XSvbremss(XSAdditiveModel):
+    """The XSPEC vbremss model: thermal bremsstrahlung.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The plasma temperature in keV.
+    HeH
+        The ratio n(He) / n(H).
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbremss, XSzbremss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBremss.html
+
+    """
 
     _calc =  _xspec.xsbrmv
 
@@ -1513,6 +4042,34 @@ class XSvbremss(XSAdditiveModel):
 
 
 class XSvequil(XSAdditiveModel):
+    """The XSPEC vequil model: collisional plasma, ionization equilibrium.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEquil.html
+
+    """
 
     _calc =  _xspec.C_vequil
 
@@ -1536,6 +4093,41 @@ class XSvequil(XSAdditiveModel):
 
 
 class XSvgnei(XSAdditiveModel):
+    """The XSPEC gnei model: collisional plasma, non-equilibrium, temperature evolution.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    kT_ave
+        The ionization timescale averaged plasma temperature in keV.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSgnei, XSvnei, XSvvgnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGnei.html
+
+    """
 
     _calc =  _xspec.C_vgnei
 
@@ -1562,6 +4154,42 @@ class XSvgnei(XSAdditiveModel):
 
 
 class XSvvgnei(XSAdditiveModel):
+    """The XSPEC gnei model: collisional plasma, non-equilibrium, temperature evolution.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    kT_ave
+        The ionization timescale averaged plasma temperature in keV.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSgnei, XSvgnei, XSvvnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGnei.html
+
+    """
 
     _calc =  _xspec.C_vvgnei
 
@@ -1604,6 +4232,34 @@ class XSvvgnei(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Tau, self.kT_ave, self.redshift, self.norm))
 
 class XSvmeka(XSAdditiveModel):
+    """The XSPEC vmeka model: emission, hot diffuse gas (Mewe-Gronenschild).
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSmeka
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMeka.html
+
+    """
 
     _calc =  _xspec.xsvmek
 
@@ -1630,6 +4286,39 @@ class XSvmeka(XSAdditiveModel):
 
 
 class XSvmekal(XSAdditiveModel):
+    """The XSPEC vmekal model: emission, hot diffuse gas (Mewe-Kaastra-Liedahl).
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSvmekal
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMekal.html
+
+    """
 
     _calc =  _xspec.xsvmkl
 
@@ -1657,6 +4346,39 @@ class XSvmekal(XSAdditiveModel):
 
 
 class XSvmcflow(XSAdditiveModel):
+    """The XSPEC vmcflow model: cooling flow, mekal.
+
+    The model is described at [1]_. The results of this model depend
+    on the cosmology settings set with ``set_xscosmo``.
+
+    Attributes
+    ----------
+    lowT
+        The minimum temperature, in keV.
+    highT
+        The maxmimum temperature, in keV.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The mass accretion rate (solar mass per year).
+
+    See Also
+    --------
+    XSapec, XScflow, XScevmkl, XSmkcflow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelMkcflow.html
+
+    """
 
     _calc =  _xspec.C_xsvmcf
 
@@ -1684,6 +4406,39 @@ class XSvmcflow(XSAdditiveModel):
 
 
 class XSvnei(XSAdditiveModel):
+    """The XSPEC vnei model: collisional plasma, non-equilibrium, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSgnei, XSnei, XSvvnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNei.html
+
+    """
 
     _calc =  _xspec.C_vnei
 
@@ -1709,6 +4464,40 @@ class XSvnei(XSAdditiveModel):
 
 
 class XSvvnei(XSAdditiveModel):
+    """The XSPEC vvnei model: collisional plasma, non-equilibrium, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSgnei, XSnei, XSvnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNei.html
+
+    """
 
     _calc =  _xspec.C_vvnei
 
@@ -1751,6 +4540,45 @@ class XSvvnei(XSAdditiveModel):
 
 
 class XSvnpshock(XSAdditiveModel):
+    """The XSPEC vnpshock model: shocked plasma, plane parallel, separate ion, electron temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau_l
+        The lower limit on the ionization timescale in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale in s/cm^3.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSnpshock, XSvvnpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNpshock.html
+
+    """
 
     _calc =  _xspec.C_vnpshock
 
@@ -1778,6 +4606,46 @@ class XSvnpshock(XSAdditiveModel):
 
 
 class XSvvnpshock(XSAdditiveModel):
+    """The XSPEC vvnpshock model: shocked plasma, plane parallel, separate ion, electron temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau_l
+        The lower limit on the ionization timescale in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale in s/cm^3.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSnpshock, XSvnpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNpshock.html
+
+    """
 
     _calc =  _xspec.C_vvnpshock
 
@@ -1822,6 +4690,41 @@ class XSvvnpshock(XSAdditiveModel):
 
 
 class XSvpshock(XSAdditiveModel):
+    """The XSPEC vpshock model: plane-parallel shocked plasma, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Tau_l
+        The lower limit on the ionization timescale, in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale, in s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSpshock, XSvvpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPshock.html
+
+    """
 
     _calc =  _xspec.C_vpshock
 
@@ -1848,6 +4751,42 @@ class XSvpshock(XSAdditiveModel):
 
 
 class XSvvpshock(XSAdditiveModel):
+    """The XSPEC vvpshock model: plane-parallel shocked plasma, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau_l
+        The lower limit on the ionization timescale, in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale, in s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSequil, XSpshock, XSvpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPshock.html
+
+    """
 
     _calc =  _xspec.C_vvpshock
 
@@ -1891,6 +4830,32 @@ class XSvvpshock(XSAdditiveModel):
 
 
 class XSvraymond(XSAdditiveModel):
+    """The XSPEC vraymond model: emission, hot diffuse gas, Raymond-Smith.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSraymond
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRaymond.html
+
+    """
 
     _calc =  _xspec.xsvrys
 
@@ -1914,6 +4879,43 @@ class XSvraymond(XSAdditiveModel):
 
 
 class XSvsedov(XSAdditiveModel):
+    """The XSPEC vsedov model: sedov model, separate ion/electron temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSsedov, XSvvsedov
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSedov.html
+
+    """
 
     _calc =  _xspec.C_vsedov
 
@@ -1940,6 +4942,44 @@ class XSvsedov(XSAdditiveModel):
 
 
 class XSvvsedov(XSAdditiveModel):
+    """The XSPEC vvsedov model: sedov model, separate ion/electron temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element, with respect to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSsedov, XSvsedov
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSedov.html
+
+    """
 
     _calc =  _xspec.C_vvsedov
 
@@ -1983,6 +5023,30 @@ class XSvvsedov(XSAdditiveModel):
 
 
 class XSzbbody(XSAdditiveModel):
+    """The XSPEC zbbody model: blackbody spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the object, in keV.
+    redshift
+        The redshift of the object.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbbody, XSbbodyrad
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBbody.html
+
+    """
 
     _calc =  _xspec.xszbod
 
@@ -1994,6 +5058,30 @@ class XSzbbody(XSAdditiveModel):
 
 
 class XSzbremss(XSAdditiveModel):
+    """The XSPEC zbremss model: thermal bremsstrahlung.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kT
+        The plasma temperature in keV.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbremss, XSvbremss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBremss.html
+
+    """
 
     _calc =  _xspec.xszbrm
 
@@ -2005,6 +5093,31 @@ class XSzbremss(XSAdditiveModel):
 
 
 class XSzgauss(XSAdditiveModel):
+    """The XSPEC gaussian model: gaussian line profile.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Sigma
+        The line width, in keV. A value of zero means a delta function.
+    redshift
+        The redshift of the line.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSagauss, XSgaussian, XSzagauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGaussian.html
+
+    """
 
     _calc =  _xspec.C_xszgau
 
@@ -2022,6 +5135,31 @@ class XSzgauss(XSAdditiveModel):
 
 
 class XSzpowerlw(XSAdditiveModel):
+    """The XSPEC zpowerlw model: redshifted power law photon spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The power law photon index.
+    redshift
+        The redshift.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbknpower, XSbkn2pow, XScutoffpl, XSpowerlaw
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPowerlaw.html
+
+    """
 
     _calc =  _xspec.C_zpowerLaw
 
@@ -2033,6 +5171,32 @@ class XSzpowerlw(XSAdditiveModel):
 
 
 class XSabsori(XSMultiplicativeModel):
+    """The XSPEC absori model: ionized absorber.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The power-law photon index.
+    nH
+        The Hydrogen column, in units of 10^22 cm^-2.
+    Temp_abs
+        The absorber temperature, in K.
+    xi
+        The absorber ionization state. See [1]_ for more details.
+    redshift
+        The redshift of the absorber.
+    Fe_abund
+        The iron abundance with respect to solar, as set by the
+        ``set_xsabund`` function.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAbsori.html
+
+    """
 
     _calc =  _xspec.C_xsabsori
 
@@ -2047,6 +5211,34 @@ class XSabsori(XSMultiplicativeModel):
 
 
 class XSacisabs(XSMultiplicativeModel):
+    """The XSPEC acisabs model: Chandra ACIS q.e. decay.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Tdays
+        Days between Chandra launch and ACIS observation.
+    norm
+    tauinf
+        Slope of linear quantum efficiency decay.
+    tefold
+        Offset of linear quantum efficiency decay.
+    nC
+        Number of carbon atoms in hydrocarbon.
+    nH
+        Number of hydrogen atoms in hydrocarbon.
+    nO
+        Number of oxygen atoms in hydrocarbon.
+    nN
+        Number of nitrogen atoms in hydrocarbon.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAcisabs.html
+
+    """
 
     _calc =  _xspec.acisabs
 
@@ -2063,6 +5255,21 @@ class XSacisabs(XSMultiplicativeModel):
 
 
 class XSconstant(XSMultiplicativeModel):
+    """The XSPEC constant model: energy-independent factor.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    factor
+        The value of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelConstant.html
+
+    """
 
     _calc =  _xspec.xscnst
 
@@ -2072,6 +5279,21 @@ class XSconstant(XSMultiplicativeModel):
 
 
 class XScabs(XSMultiplicativeModel):
+    """The XSPEC cabs model: Optically-thin Compton scattering.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The Hydrogen column, in units of 10^22 cm^-2.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCabs.html
+
+    """
 
     _calc =  _xspec.xscabs
 
@@ -2081,6 +5303,29 @@ class XScabs(XSMultiplicativeModel):
 
 
 class XScyclabs(XSMultiplicativeModel):
+    """The XSPEC cyclabs model: absorption line, cyclotron.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Depth0
+        The depth of the fundamental.
+    E0
+        The cyclotron energy, in keV.
+    Width0
+        The width of the fundamental, in keV.
+    Depth2
+        The depth of the second harmonic.
+    Width2
+        The width of the second harmonic, in keV.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCyclabs.html
+
+    """
 
     _calc =  _xspec.xscycl
 
@@ -2094,6 +5339,23 @@ class XScyclabs(XSMultiplicativeModel):
 
 
 class XSdust(XSMultiplicativeModel):
+    """The XSPEC dust model: dust scattering.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Frac
+        The scattering fraction at 1 keV.
+    Halosz
+        The size of the halo at 1 keV in units of the detector beamsize.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelDust.html
+
+    """
 
     _calc =  _xspec.xsdust
 
@@ -2104,6 +5366,27 @@ class XSdust(XSMultiplicativeModel):
 
 
 class XSedge(XSMultiplicativeModel):
+    """The XSPEC edge model: absorption edge.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    edgeE
+        The threshold edge, in keV.
+    MaxTau
+        The absorption depth at the threshold.
+
+    See Also
+    --------
+    XSsmedge, XSzedge
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEdge.html
+
+    """
 
     _calc =  _xspec.xsedge
 
@@ -2114,6 +5397,21 @@ class XSedge(XSMultiplicativeModel):
 
 
 class XSexpabs(XSMultiplicativeModel):
+    """The XSPEC expabs model: exponential roll-off at low E.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LowECut
+        The e-folding energy for the absorption, in keV.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelExpabs.html
+
+    """
 
     _calc =  _xspec.xsabsc
 
@@ -2123,6 +5421,25 @@ class XSexpabs(XSMultiplicativeModel):
 
 
 class XSexpfac(XSMultiplicativeModel):
+    """The XSPEC expfac model: exponential modification.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Ampl
+        The amplitude of the effect.
+    Factor
+        The exponential factor.
+    StartE
+        The start energy of the modification, in keV.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelExpfac.html
+
+    """
 
     _calc =  _xspec.xsexp
 
@@ -2134,6 +5451,26 @@ class XSexpfac(XSMultiplicativeModel):
 
 
 class XSgabs(XSMultiplicativeModel):
+    """The XSPEC gabs model: gaussian absorption line.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Sigma
+        The line width (sigma), in keV.
+    Tau
+        The line depth. The optical depth at the line center is
+        Tau / (sqrt(2 pi) * Sigma).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGabs.html
+
+    """
 
     _calc =  _xspec.C_gaussianAbsorptionLine
 
@@ -2149,6 +5486,27 @@ class XSgabs(XSMultiplicativeModel):
 
 
 class XShighecut(XSMultiplicativeModel):
+    """The XSPEC highecut model: high-energy cutoff.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    cutoffE
+        The cut-off energy, in keV.
+    foldE
+        The e-folding energy, in keV.
+
+    See Also
+    --------
+    XSzhighect
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelHighecut.html
+
+    """
 
     _calc =  _xspec.xshecu
 
@@ -2163,6 +5521,40 @@ class XShighecut(XSMultiplicativeModel):
 
 
 class XShrefl(XSMultiplicativeModel):
+    """The XSPEC hrefl model: reflection model.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    thetamin
+        The minimum angle, in degrees, between source photons incident
+        on the slab and the slab normal.
+    thetamax
+        The maximum angle, in degrees, between source photons incident
+        on the slab and the slab normal.
+    thetamobs
+        The angle, in degrees, between the observer's line of sight and
+        the slab normal.
+    Feabun
+        The iron abundance relative to solar.
+    FeKedge
+        The iron K edge energy, in keV.
+    Escfrac
+        The fraction of the direct flux seen by the observer: see [1]_
+        for more details.
+    covfac
+        The normalization of the reflected continuum: see [1]_ for more
+        details.
+    redshift
+        The redshift.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelHrefl.html
+
+    """
 
     _calc =  _xspec.xshrfl
 
@@ -2179,6 +5571,25 @@ class XShrefl(XSMultiplicativeModel):
 
 
 class XSnotch(XSMultiplicativeModel):
+    """The XSPEC notch model: absorption line, notch.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Width
+        The line width, in keV.
+    CvrFract
+        The covering fraction.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNotch.html
+
+    """
 
     _calc =  _xspec.xsntch
 
@@ -2194,6 +5605,27 @@ class XSnotch(XSMultiplicativeModel):
 
 
 class XSpcfabs(XSMultiplicativeModel):
+    """The XSPEC pcfabs model: partial covering fraction absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    CvrFract
+        The covering fraction.
+
+    See Also
+    --------
+    XSphabs, XSpwab, XSzpcfabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPcfabs.html
+
+    """
 
     _calc =  _xspec.xsabsp
 
@@ -2204,6 +5636,31 @@ class XSpcfabs(XSMultiplicativeModel):
 
 
 class XSphabs(XSMultiplicativeModel):
+    """The XSPEC phabs model: photoelectric absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+
+    See Also
+    --------
+    XSvphabs, XSzphabs, XSzvphabs
+
+    Notes
+    -----
+    The `set_xsxsect` function changes the cross sections used by this
+    model. The `set_xsabund` function changes the relative abundances of
+    the elements.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPhabs.html
+
+    """
 
     _calc = _xspec.xsphab
 
@@ -2213,6 +5670,23 @@ class XSphabs(XSMultiplicativeModel):
 
 
 class XSplabs(XSMultiplicativeModel):
+    """The XSPEC plabs model: power law absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    index
+        The power-law index.
+    coef
+        The normalization.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPlabs.html
+
+    """
 
     _calc =  _xspec.xsplab
 
@@ -2223,6 +5697,31 @@ class XSplabs(XSMultiplicativeModel):
 
 
 class XSpwab(XSMultiplicativeModel):
+    """The XSPEC pwab model: power-law distribution of neutral absorbers.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nHmin
+        The minimum equivalent hydrogen column (in units of
+        10^22 atoms/cm^2).
+    nHmax
+        The maximum equivalent hydrogen column (in units of
+        10^22 atoms/cm^2).
+    beta
+        The power law index for the covering fraction.
+
+    See Also
+    --------
+    XSpcfabs, XSwabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPwab.html
+
+    """
 
     _calc =  _xspec.C_xspwab
 
@@ -2234,6 +5733,25 @@ class XSpwab(XSMultiplicativeModel):
 
 
 class XSredden(XSMultiplicativeModel):
+    """The XSPEC redden model: interstellar extinction.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    EBV
+        The value of E(B-v) for the line of sight to the source.
+
+    See Also
+    --------
+    XSzredden
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRedden.html
+
+    """
 
     _calc =  _xspec.xscred
 
@@ -2243,6 +5761,31 @@ class XSredden(XSMultiplicativeModel):
 
 
 class XSsmedge(XSMultiplicativeModel):
+    """The XSPEC smedge model: smeared edge.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    edgeE
+        The threshold edge, in keV.
+    MaxTau
+        The maximum absorption factor at the threshold.
+    index
+        The index for photo-electric cross-section.
+    width
+        The smearing width, in keV.
+
+    See Also
+    --------
+    XSedge, XSzedge
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSmedge.html
+
+    """
 
     _calc =  _xspec.xssmdg
 
@@ -2255,6 +5798,23 @@ class XSsmedge(XSMultiplicativeModel):
 
 
 class XSspexpcut(XSMultiplicativeModel):
+    """The XSPEC spexpcut model: super-exponential cutoff absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Ecut
+        The e-folding energy for the absorption, in keV.
+    alpha
+        The exponent index: see [1]_ for more details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSpexpcut.html
+
+    """
 
     _calc =  _xspec.C_superExpCutoff
 
@@ -2265,6 +5825,31 @@ class XSspexpcut(XSMultiplicativeModel):
 
 
 class XSspline(XSMultiplicativeModel):
+    """The XSPEC spline model: spline modification.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Estart
+        The start x value (energy), in keV.
+    YStart
+        The start y value.
+    Yend
+        The end y value.
+    YPstart
+        The start dy/dx value.
+    YPEnd
+        The end dy/dx value.
+    Eend
+        The end x value (energy), in keV.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSpline.html
+
+    """
 
     _calc =  _xspec.xsspln
 
@@ -2279,6 +5864,21 @@ class XSspline(XSMultiplicativeModel):
 
 
 class XSSSS_ice(XSMultiplicativeModel):
+    """The XSPEC sss_ice model: Einstein SSS ice absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    clumps
+        The ice thickness parameter.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSssice.html
+
+    """
 
     _calc =  _xspec.xssssi
 
@@ -2288,6 +5888,27 @@ class XSSSS_ice(XSMultiplicativeModel):
 
 
 class XSswind1(XSMultiplicativeModel):
+    """The XSPEC swind1 model: absorption by partially ionized material with large velocity shear.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    column
+        The column density, in units of 10^22 cm^2.
+    logxi
+        The log of xi: see [1]_ for more details.
+    sigma
+        The gaussian sigma for velocity smearing (v/c).
+    redshift
+        The redshift of the source.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSwind1.html
+
+    """
 
     _calc =  _xspec.swind1
 
@@ -2300,6 +5921,30 @@ class XSswind1(XSMultiplicativeModel):
 
 
 class XSTBabs(XSMultiplicativeModel):
+    """The XSPEC TBabs model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+
+    See Also
+    --------
+    XSTBgrain, XSTBvarabs, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
 
     _calc =  _xspec.C_tbabs
 
@@ -2309,6 +5954,41 @@ class XSTBabs(XSMultiplicativeModel):
 
 
 class XSTBgrain(XSMultiplicativeModel):
+    """The XSPEC TBgrain model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    h2
+        The equivalent molecular hydrogen column (in units of
+         10^22 atoms/cm^2).
+    rho
+        The grain density, in g/cm^3.
+    amin
+        The minimum grain size, in micro-meters.
+    amax
+        The maximum grain size, in micro-meters.
+    PL
+        The power-law index of grain sizes.
+
+    See Also
+    --------
+    XSTBabs, XSTBvarabs, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
 
     _calc =  _xspec.C_tbgrain
 
@@ -2323,6 +6003,48 @@ class XSTBgrain(XSMultiplicativeModel):
 
 
 class XSTBvarabs(XSMultiplicativeModel):
+    """The XSPEC TBvarabs model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
+        The abundance of the element in solar units.
+    H2
+        The equivalent molecular hydrogen column (in units of
+         10^22 atoms/cm^2).
+    rho
+        The grain density, in g/cm^3.
+    amin
+        The minimum grain size, in micro-meters.
+    amax
+        The maximum grain size, in micro-meters.
+    PL
+        The power-law index of grain sizes.
+    H_dep, He_dep, C_dep, N_dep, O_dep, Ne_dep, Na_dep, Mg_dep, Al_dep,
+    Si_dep, S_dep, Cl_dep, Ar_dep, Ca_dep, Cr_dep, Fe_dep, Co_dep, Ni_dep
+        The grain depletion fraction of the element.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSTBabs, XSTBgrain, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
 
     _calc =  _xspec.C_tbvabs
 
@@ -2373,6 +6095,21 @@ class XSTBvarabs(XSMultiplicativeModel):
 
 
 class XSuvred(XSMultiplicativeModel):
+    """The XSPEC uvred model: interstellar extinction, Seaton Law.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    EBV
+        The value of E(B-v) for the line of sight to the source.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelUvred.html
+
+    """
 
     _calc =  _xspec.xsred
 
@@ -2382,6 +6119,31 @@ class XSuvred(XSMultiplicativeModel):
 
 
 class XSvarabs(XSMultiplicativeModel):
+    """The XSPEC varabs model: photoelectric absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    H, He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
+        See [1]_ for a description of the units.
+
+    See Also
+    --------
+    XSvphabs, XSzvarabs
+
+    Notes
+    -----
+    The `set_xsxsect` function changes the cross sections used by this
+    model. The `set_xsabund` function changes the relative abundances of
+    the elements.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVarabs.html
+
+    """
 
     _calc =  _xspec.xsabsv
 
@@ -2408,6 +6170,33 @@ class XSvarabs(XSMultiplicativeModel):
 
 
 class XSvphabs(XSMultiplicativeModel):
+    """The XSPEC vphabs model: photoelectric absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
+        The abundance of the element in solar units.
+
+    See Also
+    --------
+    XSphabs, XSvarabs, XSzphabs, XSzvphabs
+
+    Notes
+    -----
+    The `set_xsxsect` function changes the cross sections used by this
+    model. The `set_xsabund` function changes the relative abundances of
+    the elements.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPhabs.html
+
+    """
 
     _calc =  _xspec.xsvphb
 
@@ -2434,6 +6223,25 @@ class XSvphabs(XSMultiplicativeModel):
 
 
 class XSwabs(XSMultiplicativeModel):
+    """The XSPEC wabs model: photoelectric absorption, Wisconsin cross-sections.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+
+    See Also
+    --------
+    XSzwabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWabs.html
+
+    """
 
     _calc =  _xspec.xsabsw
 
@@ -2443,6 +6251,27 @@ class XSwabs(XSMultiplicativeModel):
 
 
 class XSwndabs(XSMultiplicativeModel):
+    """The XSPEC wndabs model: photo-electric absorption, warm absorber.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    WindowE
+        The window energy, in keV.
+
+    See Also
+    --------
+    XSzwndabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWndabs.html
+
+    """
 
     _calc =  _xspec.xswnab
 
@@ -2453,6 +6282,45 @@ class XSwndabs(XSMultiplicativeModel):
 
 
 class XSxion(XSMultiplicativeModel):
+    """The XSPEC xion model: reflected spectrum of photo-ionized accretion disk/ring.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    height
+        The height of the source above the disk (in Schwarzschild radii).
+    lxld
+        The ratio of the X-ray source luminosity to that of the disk.
+    rate
+        The accretion rate (in Eddington units).
+    cosAng
+        The cosine of the inclination angle (1 is face on).
+    inner
+        The inner radius of the disk (in Schwarzschild radii).
+    outer
+        The er radius of the disk (in Schwarzschild radii).
+    index
+        The photon index of the source.
+    redshift
+        The redshift of the absorber.
+    Feabun
+        The Fe abundance relative to Solar: see [1]_ for more details.
+    E_cut
+        The exponential high energy cut-off energy for the source.
+    Ref_type
+        See [1]_ for details.
+    Ref_smear
+        See [1]_ for details.
+    Geometry
+        See [1]_ for details.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelXion.html
+
+    """
 
     _calc =  _xspec.xsxirf
 
@@ -2474,6 +6342,28 @@ class XSxion(XSMultiplicativeModel):
 
 
 class XSzdust(XSMultiplicativeModel):
+    """The XSPEC zdust model: extinction by dust grains.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    method
+        The model to use: 1 is Milky Way, 2 is LMC, 3 is SMC.
+        This parameter can not be thawed.
+    EBV
+        The color excess, E(B-V).
+    Rv
+        The ratio of total to selective extinction.
+    redshift
+        The redshift of the absorber.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZdust.html
+
+    """
 
     _calc =  _xspec.mszdst
 
@@ -2486,6 +6376,29 @@ class XSzdust(XSMultiplicativeModel):
 
 
 class XSzedge(XSMultiplicativeModel):
+    """The XSPEC edge model: absorption edge.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    edgeE
+        The threshold edge, in keV.
+    MaxTau
+        The absorption depth at the threshold.
+    redshift
+        The redshift of the edge.
+
+    See Also
+    --------
+    XSedge
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEdge.html
+
+    """
 
     _calc =  _xspec.xszedg
 
@@ -2497,6 +6410,29 @@ class XSzedge(XSMultiplicativeModel):
 
 
 class XSzhighect(XSMultiplicativeModel):
+    """The XSPEC highecut model: high-energy cutoff.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    cutoffE
+        The cut-off energy, in keV.
+    foldE
+        The e-folding energy, in keV.
+    redshift
+        The redshift.
+
+    See Also
+    --------
+    XShighecut
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelHighecut.html
+
+    """
 
     _calc =  _xspec.xszhcu
 
@@ -2512,6 +6448,29 @@ class XSzhighect(XSMultiplicativeModel):
 
 
 class XSzpcfabs(XSMultiplicativeModel):
+    """The XSPEC zpcfabs model: partial covering fraction absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    CvrFract
+        The covering fraction.
+    redshift
+        The redshift.
+
+    See Also
+    --------
+    XSpcfabs, XSphabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPcfabs.html
+
+    """
 
     _calc =  _xspec.xszabp
 
@@ -2523,6 +6482,33 @@ class XSzpcfabs(XSMultiplicativeModel):
 
 
 class XSzphabs(XSMultiplicativeModel):
+    """The XSPEC zphabs model: photoelectric absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSphabs, XSvphabs, XSzvphabs
+
+    Notes
+    -----
+    The `set_xsxsect` function changes the cross sections used by this
+    model. The `set_xsabund` function changes the relative abundances of
+    the elements.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPhabs.html
+
+    """
 
     _calc = _xspec.xszphb
 
@@ -2533,6 +6519,27 @@ class XSzphabs(XSMultiplicativeModel):
 
 
 class XSzxipcf(XSMultiplicativeModel):
+    """The XSPEC zxipcf model: partial covering absorption by partially ionized material.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The column density, in units of 10^22 cm^2.
+    logxi
+        The log of xi: see [1]_ for more details.
+    CvrFract
+        The covering fraction.
+    redshift
+        The redshift of the source.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZxipcf.html
+
+    """
 
     _calc =  _xspec.zxipcf
 
@@ -2545,6 +6552,27 @@ class XSzxipcf(XSMultiplicativeModel):
 
 
 class XSzredden(XSMultiplicativeModel):
+    """The XSPEC zredden model: redshifted version of redden.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    EBV
+        The value of E(B-v) for the line of sight to the source.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSredden
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZredden.html
+
+    """
 
     _calc =  _xspec.xszcrd
 
@@ -2555,6 +6583,27 @@ class XSzredden(XSMultiplicativeModel):
 
 
 class XSzsmdust(XSMultiplicativeModel):
+    """The XSPEC zsmdust model: extinction by dust grains in starburst galaxies.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    EBV
+        The value of E(B-v) for the line of sight to the source.
+    ExtIndex
+        The spectral index of the extinction curve.
+    Rv
+        The ratio of total to selective extinction.
+    redshift
+        The redshift of the absorber.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZsmdust.html
+
+    """
 
     _calc =  _xspec.msldst
 
@@ -2567,6 +6616,32 @@ class XSzsmdust(XSMultiplicativeModel):
 
 
 class XSzTBabs(XSMultiplicativeModel):
+    """The XSPEC zTBabs model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSTBabs, XSTBgrain, XSTBvarabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
 
     _calc =  _xspec.C_ztbabs
 
@@ -2577,6 +6652,33 @@ class XSzTBabs(XSMultiplicativeModel):
 
 
 class XSzvarabs(XSMultiplicativeModel):
+    """The XSPEC zvarabs model: photoelectric absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    H, He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
+        See [1]_ for a description of the units.
+    redshift
+        The redshift of the absorber
+
+    See Also
+    --------
+    XSvarabs, XSzvphabs
+
+    Notes
+    -----
+    The `set_xsxsect` function changes the cross sections used by this
+    model. The `set_xsabund` function changes the relative abundances of
+    the elements.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVarabs.html
+
+    """
 
     _calc =  _xspec.xszvab
 
@@ -2604,6 +6706,29 @@ class XSzvarabs(XSMultiplicativeModel):
 
 
 class XSzvfeabs(XSMultiplicativeModel):
+    """The XSPEC zvfeabs model: photoelectric absorption with free Fe edge energy.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    metals
+        The abundance relative to solar.
+    FEabun
+        The iron abundance relative to solar.
+    FEKedge
+        The Fe K edge energy, in keV.
+    redshift
+        The redshift of the absorber.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZvfeabs.html
+
+    """
 
     _calc =  _xspec.xszvfe
 
@@ -2617,6 +6742,35 @@ class XSzvfeabs(XSMultiplicativeModel):
 
 
 class XSzvphabs(XSMultiplicativeModel):
+    """The XSPEC vphabs model: photoelectric absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
+        The abundance of the element in solar units.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSphabs, XSvphabs, XSzphabs
+
+    Notes
+    -----
+    The `set_xsxsect` function changes the cross sections used by this
+    model. The `set_xsabund` function changes the relative abundances of
+    the elements.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPhabs.html
+
+    """
 
     _calc =  _xspec.xszvph
 
@@ -2644,6 +6798,27 @@ class XSzvphabs(XSMultiplicativeModel):
 
 
 class XSzwabs(XSMultiplicativeModel):
+    """The XSPEC zwabs model: photoelectric absorption, Wisconsin cross-sections.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSwabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWabs.html
+
+    """
 
     _calc =  _xspec.xszabs
 
@@ -2654,6 +6829,29 @@ class XSzwabs(XSMultiplicativeModel):
 
 
 class XSzwndabs(XSMultiplicativeModel):
+    """The XSPEC zwndabs model: photo-electric absorption, warm absorber.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    WindowE
+        The window energy, in keV.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSwndabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWndabs.html
+
+    """
 
     _calc =  _xspec.xszwnb
 
@@ -2668,6 +6866,27 @@ class XSzwndabs(XSMultiplicativeModel):
 
 
 class XScplinear(XSAdditiveModel):
+    """The XSPEC cplinear model: a non-physical piecewise-linear model for low count background spectra.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    energy00, energy01, energy02, energy03, energy04, energy05,
+    energy06, energy07, energy08, energy09
+        Energy in keV.
+    log_rate01, log_rate02, log_rate03, log_rate04, log_rate05,
+    log_rate06, log_rate07, log_rate08, log_rate09
+        Log of the rate.
+    norm
+        The normalization of the model.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCplinear.html
+
+    """
 
     _calc = _xspec.C_cplinear
 
@@ -2697,6 +6916,85 @@ class XScplinear(XSAdditiveModel):
 
 
 class XSeqpair(XSAdditiveModel):
+    """The XSPEC eqpair model: Paolo Coppi's hybrid (thermal/non-thermal) hot plasma emission models.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    l_hl_s
+        The ratio of the hard to soft compactness, l_h / l_s.
+    l_bb
+        The soft photon compactness.
+    kT_bb
+        The temperature of the blackbody if greater than 0.
+        When less than zero then the absolute value is used as
+        the T_max parameter of the ``XSdispkpn`` model. The units
+        are in eV.
+    l_ntl_h
+        The fraction of power supplied to energetic particles which
+        goes into accelerating non-thermal particles, l_nt / l_h.
+    tau_p
+        The Thomson scattering depth.
+    radius
+        The size of the scattering region in cm.
+    g_min
+        The minimum Lorentz factor of the pairs.
+    g_max
+        The maximum Lorentz factor of the pairs.
+    G_inj
+        If less than zero then the non-thermal spectrum is assumed
+        mono-energetic at g_max, otherwise a power law is used from
+        g_min to g_max.
+    pairinj
+        If zero then accelerated particles are electrons from thermal
+        pool. If one then accelerated particles are electrons and
+        positrons.
+    cosIncl
+        The cosine of the inclination angle of the reflecting material
+        to the line of sight.
+    Refl
+        The fraction of the scattering region's emission intercepted
+        by reflecting material.
+    Fe_abund
+        The iron abundance with respect to solar.
+    AbHe
+        The abundance of the other metals with respect to solar.
+    T_disk
+        The temperature of the reflecting disk, in K.
+    xi
+        The ionization parameter of the reflector.
+    Beta
+        The power-law index with radius of disk reflection
+        emissivity.
+    Rin
+        The inner radius of the reflecting material, in units of
+        GM/c^2.
+    Rout
+        The outer radius of the reflecting material, in units of
+        GM/c^2.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    See Also
+    --------
+    XScompth, XSeqtherm
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the EQPAIR_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEqpair.html
+
+    """
 
     _calc = _xspec.C_xseqpair
 
@@ -2726,6 +7024,85 @@ class XSeqpair(XSAdditiveModel):
 
 
 class XSeqtherm(XSAdditiveModel):
+    """The XSPEC eqtherm model: Paolo Coppi's hybrid (thermal/non-thermal) hot plasma emission models.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    l_hl_s
+        The ratio of the hard to soft compactness, l_h / l_s.
+    l_bb
+        The soft photon compactness.
+    kT_bb
+        The temperature of the blackbody if greater than 0.
+        When less than zero then the absolute value is used as
+        the T_max parameter of the ``XSdispkpn`` model. The units
+        are in eV.
+    l_ntl_h
+        The fraction of power supplied to energetic particles which
+        goes into accelerating non-thermal particles, l_nt / l_h.
+    tau_p
+        The Thomson scattering depth.
+    radius
+        The size of the scattering region in cm.
+    g_min
+        The minimum Lorentz factor of the pairs.
+    g_max
+        The maximum Lorentz factor of the pairs.
+    G_inj
+        If less than zero then the non-thermal spectrum is assumed
+        mono-energetic at g_max, otherwise a power law is used from
+        g_min to g_max.
+    pairinj
+        If zero then accelerated particles are electrons from thermal
+        pool. If one then accelerated particles are electrons and
+        positrons.
+    cosIncl
+        The cosine of the inclination angle of the reflecting material
+        to the line of sight.
+    Refl
+        The fraction of the scattering region's emission intercepted
+        by reflecting material.
+    Fe_abund
+        The iron abundance with respect to solar.
+    AbHe
+        The abundance of the other metals with respect to solar.
+    T_disk
+        The temperature of the reflecting disk, in K.
+    xi
+        The ionization parameter of the reflector.
+    Beta
+        The power-law index with radius of disk reflection
+        emissivity.
+    Rin
+        The inner radius of the reflecting material, in units of
+        GM/c^2.
+    Rout
+        The outer radius of the reflecting material, in units of
+        GM/c^2.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    See Also
+    --------
+    XScompth, XSeqpair
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the EQPAIR_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEqpair.html
+
+    """
 
     _calc = _xspec.C_xseqth
 
@@ -2755,6 +7132,85 @@ class XSeqtherm(XSAdditiveModel):
 
 
 class XScompth(XSAdditiveModel):
+    """The XSPEC compth model: Paolo Coppi's hybrid (thermal/non-thermal) hot plasma emission models.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    l_hl_s
+        The ratio of the hard to soft compactness, l_h / l_s.
+    l_bb
+        The soft photon compactness.
+    kT_bb
+        The temperature of the blackbody if greater than 0.
+        When less than zero then the absolute value is used as
+        the T_max parameter of the ``XSdispkpn`` model. The units
+        are in eV.
+    l_ntl_h
+        The fraction of power supplied to energetic particles which
+        goes into accelerating non-thermal particles, l_nt / l_h.
+    tau_p
+        The Thomson scattering depth.
+    radius
+        The size of the scattering region in cm.
+    g_min
+        The minimum Lorentz factor of the pairs.
+    g_max
+        The maximum Lorentz factor of the pairs.
+    G_inj
+        If less than zero then the non-thermal spectrum is assumed
+        mono-energetic at g_max, otherwise a power law is used from
+        g_min to g_max.
+    pairinj
+        If zero then accelerated particles are electrons from thermal
+        pool. If one then accelerated particles are electrons and
+        positrons.
+    cosIncl
+        The cosine of the inclination angle of the reflecting material
+        to the line of sight.
+    Refl
+        The fraction of the scattering region's emission intercepted
+        by reflecting material.
+    Fe_abund
+        The iron abundance with respect to solar.
+    AbHe
+        The abundance of the other metals with respect to solar.
+    T_disk
+        The temperature of the reflecting disk, in K.
+    xi
+        The ionization parameter of the reflector.
+    Beta
+        The power-law index with radius of disk reflection
+        emissivity.
+    Rin
+        The inner radius of the reflecting material, in units of
+        GM/c^2.
+    Rout
+        The outer radius of the reflecting material, in units of
+        GM/c^2.
+    redshift
+        The redshift of the source.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    See Also
+    --------
+    XSeqpair, XSeqtherm
+
+    Notes
+    -----
+    The precision of the numerical integration can be changed by using
+    the ``set_xsxset`` function to set the value of the EQPAIR_PRECISION
+    keyword, which defines the fractional precision. The default is 0.01
+    (1%).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEqpair.html
+
+    """
 
     _calc = _xspec.C_xscompth
 
@@ -2784,6 +7240,36 @@ class XScompth(XSAdditiveModel):
 
 
 class XSbvvapec(XSAdditiveModel):
+    """The XSPEC bvvapec model: velocity broadened APEC thermal plasma model.
+
+    The model is described at [1]_, with ``XSbapec`` describing how
+    it is implemented in Sherpa.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbapec, XSbvapec, XSvapec, XSvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBapec.html
+
+    """
 
     _calc = _xspec.xsbvvp
 
@@ -2826,6 +7312,34 @@ class XSbvvapec(XSAdditiveModel):
 
 
 class XSvvapec(XSAdditiveModel):
+    """The XSPEC vvapec model: APEC emission spectrum.
+
+    The model is described at [1]_, with ``XSapec`` describing how
+    it is implemented in Sherpa.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbapec, XSbvapec, XSbvvapec, XSvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelApec.html
+
+    """
 
     _calc = _xspec.xsvvap
 
@@ -2867,6 +7381,28 @@ class XSvvapec(XSAdditiveModel):
 
 
 class XSzigm(XSMultiplicativeModel):
+    """The XSPEC zigm model: UV/Optical attenuation by the intergalactic medium.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    redshift
+        The redshift of the absorber.
+        This parameter can not be thawed.
+    model
+        The model to use: 0 is Madau, 1 is Meiksin.
+        This parameter can not be thawed.
+    lyman_limit
+        Should photoelectric absorption be included (1), or not (0).
+        This parameter can not be thawed.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZigm.html
+
+    """
 
     _calc = _xspec.zigm
 
@@ -2881,6 +7417,46 @@ class XSzigm(XSMultiplicativeModel):
 
 
 class XSgadem(XSAdditiveModel):
+    """The XSPEC gadem model: plasma emission, multi-temperature with gaussian distribution of emission measure.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. See the ``XSapec`` documentation for settings
+    relevant to the APEC model (i.e. when ``switch=2``).
+
+    Attributes
+    ----------
+    Tmean
+        The mean temperature for the gaussian emission measure
+        distribution, in keV.
+    Tsigma
+        The sigma of the temperature distribution for the gaussian
+        emission measure, in keV.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSapec, XSvgadem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGadem.html
+
+    """
 
     _calc = _xspec.C_gaussDem
 
@@ -2896,6 +7472,45 @@ class XSgadem(XSAdditiveModel):
 
 
 class XSvgadem(XSAdditiveModel):
+    """The XSPEC gadem model: plasma emission, multi-temperature with gaussian distribution of emission measure.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. See the ``XSapec`` documentation for settings
+    relevant to the APEC model (i.e. when ``switch=2``).
+
+    Attributes
+    ----------
+    Tmean
+        The mean temperature for the gaussian emission measure
+        distribution, in keV.
+    Tsigma
+        The sigma of the temperature distribution for the gaussian
+        emission measure, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1
+        then interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used. See [1]_ for more details.
+        This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSapec, XSgadem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGadem.html
+
+    """
 
     _calc = _xspec.C_vgaussDem
 
@@ -2924,6 +7539,29 @@ class XSvgadem(XSAdditiveModel):
 
 
 class XSeplogpar(XSAdditiveModel):
+    """The XSPEC eplogpar model: log-parabolic blazar model with nu-Fnu normalization.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    Ep
+        The peak energy, in keV, of the nu-Fnu curve.
+    beta
+        The curvature term.
+    norm
+        The flux in nu-Fnu units at the energy Ep.
+
+    See Also
+    --------
+    XSlogpar
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEplogpar.html
+
+    """
 
     _calc = _xspec.eplogpar
 
@@ -2935,6 +7573,31 @@ class XSeplogpar(XSAdditiveModel):
 
 
 class XSlogpar(XSAdditiveModel):
+    """The XSPEC logpar model: log-parabolic blazar model.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The slope at the pivot energy.
+    beta
+        The curvature term.
+    pivotE
+        The pivot energy, in keV.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    See Also
+    --------
+    XSeplogpar
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLogpar.html
+
+    """
 
     _calc = _xspec.logpar
 
@@ -2947,6 +7610,59 @@ class XSlogpar(XSAdditiveModel):
 
 
 class XSoptxagn(XSAdditiveModel):
+    """The XSPEC optxagn model: Colour temperature corrected disc and energetically coupled Comptonisation model for AGN.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    mass
+        The black hole mass in solar masses.
+    dist
+        The comoving (proper) distance in Mpc.
+    logLLEdd
+        The Eddington ratio.
+    astar
+        The dimensionless black hole spin.
+    rcor
+        The coronal radius in Rg=GM/c^2. See [1]_ for more details.
+    logrout
+        The log of the outer radius of the disk in units of Rg. See
+        [1]_ for more details.
+    kT_e
+        The electron temperature for the soft Comptonisation component
+        (soft excess), in keV.
+    tau
+        The optical depth of the soft Comptonisation component. If this
+        parameter is negative then only the soft Compton component is used.
+    Gamma
+        The spectral index of the hard Comptonisation component
+        ('power law') which has temperature fixed to 100 keV.
+    fpl
+        The fraction of the power below rcor which is emitted in the hard
+        comptonisation component. If this parameter is negative then only
+        the hard Compton component is used.
+    fcol
+        The colour temperature correction to apply to the disc blackbody
+        emission for radii below rcor with effective temperature > tscat.
+    tscat
+        The effective temperature limit, in K, used in the colour
+        temperature correction.
+    Redshift
+        The redshift.
+    norm
+        The normalization of the model. It must be frozen.
+
+    See Also
+    --------
+    XSOptxagnf
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelOptxagn.html
+
+    """
 
     _calc = _xspec.optxagn
 
@@ -2969,6 +7685,53 @@ class XSoptxagn(XSAdditiveModel):
 
 
 class XSoptxagnf(XSAdditiveModel):
+    """The XSPEC optxagn model: Colour temperature corrected disc and energetically coupled Comptonisation model for AGN.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    mass
+        The black hole mass in solar masses.
+    dist
+        The comoving (proper) distance in Mpc.
+    logLLEdd
+        The Eddington ratio.
+    astar
+        The dimensionless black hole spin.
+    rcor
+        The coronal radius in Rg=GM/c^2. See [1]_ for more details.
+    logrout
+        The log of the outer radius of the disk in units of Rg. See
+        [1]_ for more details.
+    kT_e
+        The electron temperature for the soft Comptonisation component
+        (soft excess), in keV.
+    tau
+        The optical depth of the soft Comptonisation component. If this
+        parameter is negative then only the soft Compton component is used.
+    Gamma
+        The spectral index of the hard Comptonisation component
+        ('power law') which has temperature fixed to 100 keV.
+    fpl
+        The fraction of the power below rcor which is emitted in the hard
+        comptonisation component. If this parameter is negative then only
+        the hard Compton component is used.
+    Redshift
+        The redshift.
+    norm
+        The normalization of the model. It must be frozen.
+
+    See Also
+    --------
+    XSOptxagn
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelOptxagn.html
+
+    """
 
     _calc = _xspec.optxagnf
 
@@ -2988,7 +7751,49 @@ class XSoptxagnf(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.mass, self.dist, self.logLLEdd, self.astar, self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma, self.fpl, self.Redshift, self.norm))
 
 
+# DOC-NOTE: the parameter order in the XSPEC documentation is very different
+#           to the model.dat file. Or, rel_refl is actually labelled as scale
+#           and foldE as Ec.
+#
 class XSpexmon(XSAdditiveModel):
+    """The XSPEC pexmon model: neutral Compton reflection with self-consistent Fe and Ni lines.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndex
+        The power-law photon index.
+    foldE
+        The cut-off energy (E_c) in keV. Set to 0 for no cut off.
+    rel_refl
+        The reflection scaling parameter (a value of 1 for an
+        isotropic source above the disk, less than 0 for no direct
+        component).
+    redshift
+        The redshift of the source.
+    abund
+        The abundance of the elements heaver than He relative to their
+        solar abundance, as set by the ``set_xsabund`` function.
+    Fe_abund
+        The iron abundance relative to the solar abundance, as set by
+        the ``set_xsabund`` function.
+    Incl
+        The inclination angle in degrees.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSpexrav, XSpexriv
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPexmon.html
+
+    """
 
     _calc = _xspec.pexmon
 
@@ -3004,6 +7809,29 @@ class XSpexmon(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.foldE, self.rel_refl, self.redshift, self.abund, self.Fe_abund, self.Incl, self.norm))
 
 class XSagauss(XSAdditiveModel):
+    """The XSPEC agauss model: gaussian line profile in wavelength space.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line wavelength, in Angstrom.
+    Sigma
+        The line width, in Angstrom. A value of zero means a delta function.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSgaussian, XSzagauss, XSzgauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAgauss.html
+
+    """
 
     _calc =  _xspec.C_agauss
 
@@ -3014,6 +7842,31 @@ class XSagauss(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.LineE, self.Sigma, self.norm))
 
 class XSzagauss(XSAdditiveModel):
+    """The XSPEC zagauss model: gaussian line profile in wavelength space.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line wavelength, in Angstrom.
+    Sigma
+        The line width, in Angstrom. A value of zero means a delta function.
+    Redshift
+        The redshift of the line.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSagauss, XSgaussian, XSzgauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAgauss.html
+
+    """
 
     _calc =  _xspec.C_zagauss
 
@@ -3025,6 +7878,44 @@ class XSzagauss(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.LineE, self.Sigma, self.Redshift, self.norm))
 
 class XScompmag(XSAdditiveModel):
+    """The XSPEC compmag model: Thermal and bulk Comptonization for cylindrical accretion onto the polar cap of a magnetized neutron star.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kTbb
+        The seed blackbody temperature, in keV.
+    kTe
+        The electron temperature of the accretion column, in keV.
+    tau
+        The vertical optical depth of the accretion column, with
+        electron cross-section equal to 10^-3 of the Thomson cross-section.
+    eta
+        The index of the velocity profile when the accretion velocity
+        increases towards the neutron star (valid when betaflag is 1).
+    beta0
+        The terminal velocity of the accreting matter at the neutron star
+        surface (valid when betaflag is 1).
+    r0
+        The radius of the accretion column in units of the neutron star
+        Schwarzschild radius.
+    A
+        The albedo at the surface of the neutron star.
+    betaflag
+        A flag for setting the velocity profile of the accretion
+        column, described at [1]_. It has values of 1 or 2 and can
+        not be thawed.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCompmag.html
+
+    """
 
     _calc =  _xspec.xscompmag
 
@@ -3041,6 +7932,39 @@ class XScompmag(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kTbb, self.kTe, self.tau, self.eta, self.beta0, self.r0, self.A, self.betaflag, self.norm))
 
 class XScomptb(XSAdditiveModel):
+    """The XSPEC comptb model: Thermal and bulk Comptonization of a seed blackbody-like spectrum.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    kTs
+        The temperature of the seed photons, in keV.
+    gamma
+        The index of the seed photon spectrum.
+    alpha
+        The energy index of the Comptonization spectrum.
+    delta
+        The bulk parameter, efficiency of bulk over thermal
+        Comptonization.
+    kTe
+        The temperature of the electrons, in keV.
+    log_A
+        The log of the illuminating factor parameter (A).
+    norm
+        The normalization of the seed photon spectrum: it is the
+        same definition as used for the ``XSbbody`` model.
+
+    See Also
+    --------
+    XSbbody
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelComptb.html
+
+    """
 
     _calc =  _xspec.xscomptb
 
@@ -3056,6 +7980,29 @@ class XScomptb(XSAdditiveModel):
 
 
 class XSheilin(XSMultiplicativeModel):
+    """The XSPEC heilin model: Voigt absorption profiles for He I series.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nHeI
+        The He I column density, in 10^22 atoms/cm^2.
+    b
+        The b value, in km/s.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSlyman
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelHeilin.html
+
+    """
 
     _calc =  _xspec.xsphei
 
@@ -3066,6 +8013,31 @@ class XSheilin(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.nHei, self.b, self.redshift))
 
 class XSlyman(XSMultiplicativeModel):
+    """The XSPEC lyman model: Voigt absorption profiles for H I or He II Lyman series.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nHeI
+        The H I or He II column density, in 10^22 atoms/cm^2.
+    b
+        The b value, in km/s.
+    redshift
+        The redshift of the absorber.
+    ZA
+        The atomic number of the species being calculated.
+
+    See Also
+    --------
+    XSheilin
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLyman.html
+
+    """
 
     _calc =  _xspec.xslyman
 
@@ -3077,6 +8049,27 @@ class XSlyman(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.nHeI, self.b, self.redshift, self.ZA))
 
 class XSzbabs(XSMultiplicativeModel):
+    """The XSPEC lyman model: Voigt absorption profiles for H I or He II Lyman series.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The H column density, in 10^22 atoms/cm^2.
+    nHeI
+        The He I column density, in 10^22 atoms/cm^2.
+    nHeI
+        The He II column density, in 10^22 atoms/cm^2.
+    redshift
+        The redshift of the absorber.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelZbabs.html
+
+    """
 
     _calc =  _xspec.xszbabs
 

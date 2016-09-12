@@ -17,6 +17,25 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""
+Optical models intended for SED Analysis
+
+The models match those used by the SpecView application [1]_,
+and are intended for un-binned one-dimensional data sets defined
+on a wavelength grid, with units of Angstroms. When used with
+a binned data set the lower-edge of each bin is used to evaluate
+the model. This module does not contain all the spectral
+components from SpecView ([2]_).
+
+References
+----------
+
+.. [1] http://www.stsci.edu/institute/software_hardware/specview/
+
+.. [2] http://specview.stsci.edu/javahelp/Components.html
+
+"""
+
 from six.moves import xrange
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
@@ -73,6 +92,38 @@ def _extinct_interp(xtable, etable, x):
 # This model sets in edge (in Angstroms) beyond which absorption
 # is a significant feature to the spectrum or SED.
 class AbsorptionEdge(ArithmeticModel):
+    """Optical model of an absorption edge.
+
+    This model is intended to be used to modify another model (e.g.
+    by multiplying the two together). It is for use when the
+    independent axis is in wavelength units (e.g. Angstrom).
+
+    Attributes
+    ----------
+    egdew
+        The location of the edge. Above this value the model is
+        set to 1.
+    tau
+        The optical depth of the edge.
+    index
+        The exponent used for the relative distance from the edge.
+        It is a hidden parameter, with a value fixed at 3.
+
+    See Also
+    --------
+    AbsorptionGaussian, AbsorptionLorentz, AbsorptionVoigt,
+    OpticalGaussian
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = exp(-tau * (x / edgew)^index)   for x <= edgew
+
+             = 1                               otherwise
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='absorptionedge'):
         self.edgew = Parameter(name, 'edgew', 5000., tinyval, frozen=True, units='angstroms')
@@ -100,6 +151,30 @@ class AbsorptionEdge(ArithmeticModel):
 
 # This model is an accretion disk continuum function.
 class AccretionDisk(ArithmeticModel):
+    """A model of emission due to an accretion disk.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    ref
+        The reference wavelength, in Angstroms.
+    beta
+        The index of the power-law component.
+    ampl
+        The amplitude of the disk.
+    norm
+        The normalization value for the position. It is a hidden
+        parameter, with a value fixed at 20000.
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (x / norm)^(-beta) * exp(-ref / x)
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='accretiondisk'):
 
@@ -130,7 +205,48 @@ class AccretionDisk(ArithmeticModel):
 # This model calculates a Gaussian function expressed in
 # equivalent width, and models absorption due to this Gaussian.
 class AbsorptionGaussian(ArithmeticModel):
-    """Absorption Gaussian function expressed in equivalent width."""
+    """Gaussian function for modeling absorption (equivalent width).
+
+    This model is intended to be used to modify another model (e.g.
+    by multiplying the two together). It is for use when the
+    independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the gaussian, in Angstroms.
+    ewidth
+        The equivalent width of the model.
+    limit
+        The model is only evaluated for points that lie within
+        limit sigma of pos. It is a hidden parameter, with a
+        value fixed at 4.
+
+    See Also
+    --------
+    AbsorptionEdge, AbsorptionLorentz, AbsorptionVoigt,
+    EmissionGaussian, OpticalGaussian
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = 1 - ampl * exp(-0.5 * ((x - pos)/sigma)^2)
+
+        ampl = ewidth / sigma / 2.50662828
+
+        sigma = pos * fwhm / (2.354820044 * c)
+
+    and for integrated data sets the low-edge of the grid is used.
+    The calculation is only done for those points that line in the
+    range::
+
+        |x - pos| < limit * sigma
+
+    Outside this range the model is set to 1.
+    """
 
     def __init__(self, name='absorptiongaussian'):
 
@@ -169,7 +285,41 @@ class AbsorptionGaussian(ArithmeticModel):
 # This model calculates a Lorentzian function expressed in
 # equivalent width, and models absorption due to this Lorentzian.
 class AbsorptionLorentz(ArithmeticModel):
-    """Absorption Lorentz function expressed in equivalent width."""
+    """Lorentz function for modeling absorption (equivalent width).
+
+    This model is intended to be used to modify another model (e.g.
+    by multiplying the two together). It is for use when the
+    independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the lorentzian, in Angstroms.
+    ewidth
+        The equivalent width of the model.
+
+    See Also
+    --------
+    AbsorptionEdge, AbsorptionGaussian, AbsorptionVoigt,
+    EmissionLorentz, OpticalGaussian
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = 1 - ewidth * c / (1.571 * fwhm * pos * l(x))
+
+        l(x) = 1 + 4 * ((1 / x - 1 / pos) * pos * c / fwhm)^2
+
+        c = speed of light in km/s
+
+    and for integrated data sets the low-edge of the grid is used.
+
+    The speed of light can be found by inspecting the module
+    variable ``sherpa.astro.optical.c_km``.
+    """
 
     def __init__(self, name='absorptionlorentz'):
 
@@ -200,7 +350,42 @@ class AbsorptionLorentz(ArithmeticModel):
 
 # This model computes a Lorentzian profile for emission features.
 class EmissionLorentz(ArithmeticModel):
-    """Emission Lorentz function expressed in equivalent width."""
+    """Lorentz function for modeling emission.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the lorentzian, in Angstroms.
+    flux
+        The normalisation of the lorentzian.
+    kurt
+        The kurtosis of the lorentzian.
+
+    See Also
+    --------
+    AbsorptionLorentz, EmissionGaussian, EmissionVoigt
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = flux * 2 * pi * s / l(x)
+
+        l(x) = abs(x - pos)^kurt + (0.5 * s)^2
+
+        s = pos * fwhm / c
+
+        c = speed of light in km/s
+
+    and for integrated data sets the low-edge of the grid is used.
+
+    The speed of light can be found by inspecting the module
+    variable ``sherpa.astro.optical.c_km``.
+    """
 
     def __init__(self, name='emissionlorentz'):
 
@@ -235,7 +420,48 @@ class EmissionLorentz(ArithmeticModel):
 # This model computes an absorption Gaussian feature expressed in
 # optical depth.
 class OpticalGaussian(ArithmeticModel):
-    """Absorption Gaussian function expressed in optical depth."""
+    """Gaussian function for modeling absorption (optical depth).
+
+    This model is intended to be used to modify another model (e.g.
+    by multiplying the two together). It is for use when the
+    independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the gaussian, in Angstroms.
+    tau
+        The optical depth of the model.
+    limit
+        The model is only evaluated for points that lie within
+        limit sigma of pos. It is a hidden parameter, with a
+        value fixed at 4.
+
+    See Also
+    --------
+    AbsorptionEdge, AbsorptionGaussian, AbsorptionLorentz,
+    AbsorptionVoigt, EmissionGaussian
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = exp(-tau * g(x))
+
+        g(x) = exp(-0.5 * ((x - pos) / sigma)^2)
+
+        sigma = pos * fwhm / (2.9979e5 * 2.354820044)
+
+    and for integrated data sets the low-edge of the grid is used.
+    The calculation is only done for those points that line in the
+    range::
+
+        |x - pos| < limit * sigma
+
+    Outside this range the model is set to 1.
+    """
 
     def __init__(self, name='opticalgaussian'):
 
@@ -272,7 +498,58 @@ class OpticalGaussian(ArithmeticModel):
 
 # This model computes a Gaussian profile for emission features.
 class EmissionGaussian(ArithmeticModel):
-    """Emission Gaussian function."""
+    """Gaussian function for modeling emission.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the gaussian, in Angstroms.
+    flux
+        The normalisation of the gaussian.
+    skew
+        The skew of the gaussian.
+    limit
+        The model is only evaluated for points that lie within
+        limit sigma of pos. It is a hidden parameter, with a
+        value fixed at 4.
+
+    See Also
+    --------
+    AbsorptionGaussian, EmissionLorentz, EmissionVoigt, LogEmission
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = flux * exp(-0.5 * d(x)^2) / s2   if skew = 1
+
+             = 2 * flux * exp(-0.5 * d2(x)^2) / (s2 * (1 + skew))
+
+                                                otherwise
+
+        d(x) = (x - pos) / s
+
+        d2(x) = d(x)                  if x <= pos
+
+              = d(x) / s              otherwise
+
+        s2 = 2.50662828 * s
+
+        s = pos * fwhm / (2.9979e5 * 2.354820044)
+
+    and for integrated data sets the low-edge of the grid is used.
+
+    The calculation is only done for those points that line in the
+    range::
+
+        |x - pos| < limit * sigma
+
+    Outside this range the model is set to 0.
+    """
 
     def __init__(self, name='emissiongaussian'):
 
@@ -325,7 +602,52 @@ class EmissionGaussian(ArithmeticModel):
 # This model computes absorption as a Voigt function -- i.e., with
 # a Gaussian core and Lorentzian wings.
 class AbsorptionVoigt(ArithmeticModel):
-    """Absorption Voigt function expressed in equivalent width."""
+    """Voigt function for modeling absorption (equivalent width).
+
+    This model uses an ``AbsorptionGaussian`` component to model the
+    core of the profile and an ``AbsorptionLorentz`` component to
+    model the wings of the absorption feature. This model is intended
+    to be used to modify another model (e.g. by multiplying the two
+    together). It is for use when the independent axis is in
+    Angstroms.
+
+    Attributes
+    ----------
+    center
+        The center of the profile, in Angstroms.
+    ew
+        The equivalent width of the profile. The ewidth parameter
+        of the Gaussian and Lorentz sub-components is set to
+        half this value.
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    lg
+        The fwhm parameters of the Gaussian and Lorentz components
+        are set based on the ``fwhm`` and ``lg`` values: the
+        Gaussian component has its fwhm parameter set equal to
+        ``fwhm``, and the Lorentz component has its fwhm parameter
+        set to ``lg * fwhm``.
+
+    See Also
+    --------
+    AbsorptionEdge, AbsorptionGaussian, AbsorptionVoigt,
+    EmissionLorentz, OpticalGaussian
+
+    Notes
+    -----
+    The Voigt function is approximated by the sum of a Gaussian and
+    a Lorentzian profile ([1]_), which works best when the ratio
+    between the FWHM of the Gaussian and Lorentzian sub-components is
+    near unity. The flux value is always kept evenly divided in
+    between each sub-component. The FWHM of each sub-component is
+    related to that of the other sub-component via the lg parameter.
+
+    References
+    ----------
+
+    .. [1] K. R. Lang, Astrophysical Formulae, 1980, 2nd ed., page 220
+
+    """
 
     def __init__(self, name='absorptionvoigt'):
         self.center = Parameter(name, 'center', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -351,7 +673,35 @@ class AbsorptionVoigt(ArithmeticModel):
 
 # This model computes continuum emission as a blackbody function.
 class BlackBody(ArithmeticModel):
-    """Blackbody model."""
+    """Emission from a black body.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    refer
+        The reference point, in Angstroms.
+    ampl
+        The amplitude of the emission; it is defined at the reference
+        point but its numerical value there also depends on the
+        temperature.
+    temperature
+        The temperature in Kelvin.
+
+    See Also
+    --------
+    Bremsstrahlung
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * g(refer) / g(x)
+
+        g(x) = x^5 * (exp(1.438786E8 / temperature / x) - 1)
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='blackbody'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -396,7 +746,33 @@ class BlackBody(ArithmeticModel):
 
 # This model computes continuum emission with the bremsstrahlung function.
 class Bremsstrahlung(ArithmeticModel):
-    """Bremsstrahlung model."""
+    """Bremsstrahlung emission.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    refer
+        The reference point, in Angstroms.
+    ampl
+        The amplitude of the emission; it is defined at the reference
+        point but its numerical value there also depends on the
+        temperature.
+    temperature
+        The temperature in Kelvin.
+
+    See Also
+    --------
+    BlackBody
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (refer/x)^2 * exp(-1.438779E8 / temperature / x)
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='bremsstrahlung'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -418,7 +794,36 @@ class Bremsstrahlung(ArithmeticModel):
 # that is, the power-law index changes after a break at a particular
 # wavelength.
 class BrokenPowerlaw(ArithmeticModel):
-    """Broken power-law model."""
+    """Broken power-law model.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    refer
+        The reference point at which the amplitude is defined, with
+        units of Angstroms.
+    ampl
+        The amplitude at the reference point.
+    index1
+        The index for the power law below the reference point.
+    index2
+        The index for the power law above the reference point.
+
+    See Also
+    --------
+    Polynomial, Powerlaw
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (x / refer)^index1      x < refer
+
+             = ampl * (x / refer)^index2      x >= refer
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='brokenpowerlaw'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -443,7 +848,36 @@ class BrokenPowerlaw(ArithmeticModel):
 # Cardelli, Clayton, and Mathis
 # (ApJ, 1989, vol 345, pp 245)
 class CCM(ArithmeticModel):
-    """Cardelli, Clayton, and Mathis extinction curve."""
+    """Galactic extinction: the Cardelli, Clayton, and Mathis model.
+
+    The interstellar extinction is calculated using the formula
+    from [1]_. This model is intended to be used to modify another
+    model (e.g. by multiplying the two together). It is for use when
+    the independent axis is in Angstrom.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+    r
+        R_v
+
+    See Also
+    --------
+    FM, LMC, Seaton, SM, SMC, XGAL
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Cardelli, Clayton, & Mathis, 1989, ApJ, 345, 245-256.
+           http://adsabs.harvard.edu/abs/1989ApJ...345..245C
+
+    """
 
     def __init__(self, name='ccm'):
         self.ebv = Parameter(name, 'ebv', 0.5)
@@ -516,7 +950,40 @@ class CCM(ArithmeticModel):
 # This model computes absorption using a Gaussian function expressed
 # in optical depth, and using the log of the FWHM.
 class LogAbsorption(ArithmeticModel):
-    """Log of absorption Gaussian function expressed in optical depth."""
+    """Gaussian function for modeling absorption (log of fwhm).
+
+    This model is intended to be used to modify another model (e.g.
+    by multiplying the two together). It is for use when the
+    independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the feature in km/s.
+    pos
+        The center of the feature, in Angstroms.
+    tau
+        The optical depth of the feature.
+
+    See Also
+    --------
+    AbsorptionEdge, AbsorptionGaussian, AbsorptionLorentz,
+    AbsorptionVoigt, EmissionGaussian, LogEmission, OpticalGaussian
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = exp(-tau * (x / pos)^(term * alpha))
+
+        term = -1     if x >= pos
+
+             = 1      otherwise
+
+        alpha = log(2) / log(1 + 0.5 * fwhm / c)
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='logabsorption'):
 
@@ -552,8 +1019,60 @@ class LogAbsorption(ArithmeticModel):
 
 # This model computes emission using a Gaussian function expressed
 # in optical depth, and using the log of the FWHM.
+#
+# DOC NOTE: the specview docs and ahelp file claim that fmax
+#           requires c but the code uses the pos parameter.
+#           WHAT IS CORRECT? See
+#           https://github.com/sherpa/sherpa/issues/220
+#
 class LogEmission(ArithmeticModel):
-    """Log of the emission Gaussian function."""
+    """Gaussian function for modeling emission (log of fwhm).
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    pos
+        The center of the gaussian, in Angstroms.
+    flux
+        The normalisation of the gaussian.
+    skew
+        The skew of the gaussian.
+    limit
+        This is a hidden parameter and is unused by the model.
+
+    See Also
+    --------
+    EmissionGaussian, EmissionLorentz, EmissionVoigt, LogAbsorption
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = fmax * (x / pos)^arg                    if x <= pos
+
+               fmax * (x / pos)^(-alpha)               otherwise
+
+        arg = log(2) / log(1 + 0.5 * fwhm / c)
+
+        arg1 = log(2) / log(1 + 0.5 * skew * fwhm / c)
+
+        alpha = arg                                    if skew == 1
+
+              = arg1                                   otherwise
+
+        fmax = (arg - 1) * flux / (2 * pos)            if skew == 1
+
+             = (arg - 1) * flux / (pos * (1 + (arg - 1) / (arg1 - 1)))
+
+                                                       otherwise
+
+        c = 2.9979e5
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='logemission'):
 
@@ -602,7 +1121,41 @@ class LogEmission(ArithmeticModel):
 # This model computes continuum emission as a polynomial,
 # y = c0 + c1 * (x - offset) + c2 * (x - offset)^2 + c3 * (x - offset)^3 + c4 * (x - offset)^4 + c5 * (x - offset)^5
 class Polynomial(ArithmeticModel):
-    """Polynomial model."""
+    """Polynomial model of order 5.
+
+    This model can be used with any one-dimensional data set since
+    there are no units on the parameters.
+
+    Attributes
+    ----------
+    c0
+        The constant term.
+    c1
+        The amplitude of the (x-offset) term.
+    c2
+        The amplitude of the (x-offset)^2 term.
+    c3
+        The amplitude of the (x-offset)^3 term.
+    c4
+        The amplitude of the (x-offset)^4 term.
+    c5
+        The amplitude of the (x-offset)^5 term.
+    offset
+        There is a degeneracy between ``c0`` and ``offset``, so it
+        is recommended that at least one of these remains frozen.
+
+    See Also
+    --------
+    Powerlaw
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = sum_(i=0)^(i=8) c_i * (x - offset)^i
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='polynomial'):
         pars = []
@@ -631,7 +1184,32 @@ class Polynomial(ArithmeticModel):
 
 # This model computes continuum emission using a power-law.
 class Powerlaw(ArithmeticModel):
-    """Power-law model."""
+    """Power-law model.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    refer
+        The reference point at which the amplitude is defined, with
+        units of Angstroms.
+    ampl
+        The amplitude at the reference point.
+    index
+        The index for the power law.
+
+    See Also
+    --------
+    BrokenPowerlaw, Polynomial
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (x / refer)^index
+
+    and for integrated data sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='powerlaw'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -655,7 +1233,41 @@ class Powerlaw(ArithmeticModel):
 # This model computes the continuum with an optically thin
 # recombination function.
 class Recombination(ArithmeticModel):
-    """Optically thin recombination model."""
+    """Optically-thin recombination continuum model.
+
+    It is for use when the independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    refer
+        The reference point, in Angstroms.
+    ampl
+        The amplitude of the emission; it is defined at the reference
+        point but its numerical value there also depends on the
+        temperature.
+    temperature
+        The temperature in Kelvin.
+    fwhm
+        The full-width half-maximum of the model in km/s.
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (refer / x)^2 *
+               exp(-1.440E8 * (1 / x - 1 / refer) / temperature)
+
+               if x < refer
+
+             = ampl * exp(-0.5 * (x - refer)^2 / g(fwhm, refer)^2)
+
+               otherwise
+
+        g(fwhm, refer) = refer * fwhm / (2.354820044 * c)
+
+    where c is the speed of light in km/s. For integrated data
+    sets the low-edge of the grid is used.
+    """
 
     def __init__(self, name='recombination'):
         self.refer = Parameter(name, 'refer', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -680,7 +1292,48 @@ class Recombination(ArithmeticModel):
 # This model computes emission as a Voigt function -- i.e., with
 # a Gaussian core and Lorentzian wings.
 class EmissionVoigt(ArithmeticModel):
-    """Emission Voigt function."""
+    """Voigt function for modeling emission.
+
+    This model uses an ``EmissionGaussian`` component to model the
+    core of the profile and an ``EmissionLorentz`` component to
+    model the wings of the emission feature. It is for use when the
+    independent axis is in Angstroms.
+
+    Attributes
+    ----------
+    center
+        The center of the profile, in Angstroms.
+    flux
+        The flux the profile. This is the value used for
+        each of the Gaussian and Lorentz sub-components.
+    fwhm
+        The full-width half-maximum of the model in km/s.
+    lg
+        The fwhm parameters of the Gaussian and Lorentz components
+        are set based on the ``fwhm`` and ``lg`` values: the
+        Gaussian component has its fwhm parameter set equal to
+        ``fwhm``, and the Lorentz component has its fwhm parameter
+        set to ``lg * fwhm``.
+
+    See Also
+    --------
+    AbsorptionVoigt, EmissionGaussian, EmissionLorentz
+
+    Notes
+    -----
+    The Voigt function is approximated by the sum of a Gaussian and
+    a Lorentzian profile ([1]_), which works best when the ratio
+    between the FWHM of the Gaussian and Lorentzian sub-components is
+    near unity. The flux value is always kept evenly divided in
+    between each sub-component. The FWHM of each sub-component is
+    related to that of the other sub-component via the lg parameter.
+
+    References
+    ----------
+
+    .. [1] K. R. Lang, Astrophysical Formulae, 1980, 2nd ed., page 220
+
+    """
 
     def __init__(self, name='emissionvoigt'):
         self.center = Parameter(name, 'center', 5000., tinyval, hard_min=tinyval, frozen=True, units="angstroms")
@@ -707,7 +1360,34 @@ class EmissionVoigt(ArithmeticModel):
 # This model computes the extragalactic extinction function of
 # Calzetti, Kinney and Storchi-Bergmann, 1994, ApJ, 429, 582
 class XGal(ArithmeticModel):
-    """Extragalactic extinction function of Calzetti, Kinney and Storchi-Bergmann"""
+    """Extragalactic extinction: Calzetti, Kinney and Storchi-Bergmann
+
+    The extragalactic extinction is calculated using the formula
+    from [1]_. This model is intended to be used to modify another
+    model (e.g. by multiplying the two together). It is for use when
+    the independent axis is in Angstrom.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+
+    See Also
+    --------
+    CCM, FM, LMC, Seaton, SM, SMC
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Calzetti, Kinney, Storchi-Bergmann, 1994, ApJ, 429, 582
+           http://adsabs.harvard.edu/abs/1994ApJ...429..582C
+
+    """
 
     def __init__(self, name='xgal'):
         self.ebv = Parameter(name, 'ebv', 0.5)
@@ -738,7 +1418,46 @@ class XGal(ArithmeticModel):
 # See Fitzpatrick and Massa (ApJ, 1988, vol. 328, p. 734)
 
 class FM(ArithmeticModel):
-    """Extinction curve for UV spectra below 3200 A (Fitzpatrick and Massa 1988)"""
+    """UV extinction curve: Fitzpatrick and Massa 1988.
+
+    The UV extinction is calculated using [1]_. This model is
+    intended to be used to modify another model (e.g. by multiplying
+    the two together). It is for use when the independent axis is in
+    Angstrom.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+    x0
+        Position of the Drude bump.
+    width
+        Width of the Drude bump.
+    c1
+        The intercept of the linear term.
+    c2
+        The slope of the linear term.
+    c3
+        Normalization of the Drude bump.
+    c4
+        Normalization of the FUV curvature.
+
+    See Also
+    --------
+    CCM, LMC, Seaton, SM, SMC, XGAL
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Fitzpatrick and Massa 1988
+           http://adsabs.harvard.edu/abs/1988ApJ...328..734F
+
+    """
 
     def __init__(self, name='fm'):
         self.ebv = Parameter(name, 'ebv', 0.5)  # E(B-V)
@@ -770,7 +1489,34 @@ class FM(ArithmeticModel):
 # This model computes the extinction curve using the
 #  LMC extinction curve from Howarth 1983 MNRAS, 203, 301
 class LMC(ArithmeticModel):
-    """Howarth's LMC extinction curve (Howarth 1983 MNRAS, 203, 301)"""
+    """LMC extinction: the Howarth model.
+
+    The interstellar extinction is calculated using the formula
+    from [1]_. This model is intended to be used to modify another
+    model (e.g. by multiplying the two together). It is for use when
+    the independent axis is in Angstrom.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+
+    See Also
+    --------
+    CCM, FM, Seaton, SM, SMC, XGAL
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Howarth 1983 MNRAS, 203, 301
+           http://adsabs.harvard.edu/abs/1983MNRAS.203..301H
+
+    """
 
     def __init__(self, name='lmc'):
         self.ebv = Parameter(name, 'ebv', 0.5)
@@ -807,7 +1553,35 @@ class LMC(ArithmeticModel):
 # This model computes the galactic interstellar extinction function
 # from Savage & Mathis (1979, ARA&A, 17, 73-111)
 class SM(ArithmeticModel):
-    """Galactic interstellar extinction function from Savage & Mathis (1979, ARA&A, 17, 73-111)"""
+    """Galactic extinction: the Savage & Mathis model.
+
+    The interstellar extinction is calculated using the formula
+    from [1]_. This model is intended to be used to modify another
+    model (e.g. by multiplying the two together). It is for use when
+    the independent axis is in Angstrom.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+
+    See Also
+    --------
+    CCM, FM, LMC, Seaton, SMC, XGAL
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Savage & Mathis, 1979, ARA&A, 17, 73-111
+           http://adsabs.harvard.edu/abs/1979ARA%26A..17...73S
+
+    """
+
     def __init__(self, name='sm'):
         self.ebv = Parameter(name, 'ebv', 0.5)
 
@@ -837,7 +1611,35 @@ class SM(ArithmeticModel):
 # This model computes the SMC extinction function of
 # Prevot et al. 1984, A&A, 132, 389-392
 class SMC(ArithmeticModel):
-    """Prevot et.al. 1984 extinction curve for the SMC"""
+    """SMC extinction: the Prevot et al. 1984 model.
+
+    The interstellar extinction is calculated using the formula
+    from [1]_. This model is intended to be used to modify another
+    model (e.g. by multiplying the two together). It is for use when
+    the independent axis is in Angstrom.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+
+    See Also
+    --------
+    CCM, FM, LMC, Seaton, SM, XGAL
+
+    Notes
+    -----
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Prevot et al. 1984, A&A, 132, 389-392
+           http://adsabs.harvard.edu/abs/1984A%26A...132..389P
+
+    """
+
     def __init__(self, name='smc'):
         self.ebv = Parameter(name, 'ebv', 0.5)
 
@@ -892,7 +1694,58 @@ class SMC(ArithmeticModel):
 # 10000 < lambda		    extrapolate linearly in 1/lambda
 
 class Seaton(ArithmeticModel):
-    """Seaton's interstellar extinction function (1979 MNRAS)"""
+    """Galactic extinction: the Seaton model from Synphot.
+
+    The interstellar extinction is calculated using the formula
+    from [1]_ as implemented in STSCI's Synphot program [2]_.
+    The supported wavelength range is 1000 to 10000 Angstroms, and
+    the Notes section describes the changes from [1]_. This model is
+    intended to be used to modify another model (e.g. by multiplying
+    the two together). It is for use when the independent axis is in
+    Angstrom.
+
+    Attributes
+    ----------
+    ebv
+        E(B-V)
+
+    See Also
+    --------
+    CCM, FM, LMC, SM, SMC, XGAL
+
+    Notes
+    -----
+    The formulae are based on an adopted value of R=3.20.
+
+    For wavelengths above 3704 Angstrom, the function interpolates
+    linearly in 1/lambda in table 3 [1]_. For wavelengths below this,
+    the formulae from table 2 [1]_ are used (see also [3]_, corrected
+    to R=3.2).  The formulae match at the endpoints of their
+    respective intervals. There is a mismatch of 0.009 mag/ebmv at
+    nu=2.7 (lambda=3704 Angstrom). Seaton's tabulated value of 1.44
+    mag at 1/lambda = 1.1 may be in error; 1.64 seems more consistent
+    with his other values.
+
+    For wavelengths below 1000 Angstrom, a constant value equal to
+    the value at 1000 Angstrom is used. For wavelengths above 10000
+    Angstroms a linear extrapolation (in 1/lambda) is used.
+
+    When evaluated on a binned grid, the lower-edges of the bins are
+    used for the calculation.
+
+    References
+    ----------
+
+    .. [1] Seaton, M. J. 1979, MNRAS, 187, 73
+           http://adsabs.harvard.edu/abs/1979MNRAS.187P..73S
+
+    .. [2] http://www.stsci.edu/institute/software_hardware/stsdas/synphot
+
+    .. [3] Nandy et al., 1975, A&A, 44, 195-203.
+           http://adsabs.harvard.edu/abs/1975A%26A....44..195N
+
+    """
+
     def __init__(self, name='seaton'):
         self.ebv = Parameter(name, 'ebv', 0.5)
 
