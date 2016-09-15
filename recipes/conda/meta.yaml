@@ -24,6 +24,7 @@ requirements:
   - setuptools
   - pytest
   - libgfortran 3.* # [linux]
+  - six
 
 about:
  home: http://cxc.cfa.harvard.edu/sherpa/
