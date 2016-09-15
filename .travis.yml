@@ -65,10 +65,12 @@ before_install:
   - ./miniconda.sh -b -p $MINICONDA
   - export PATH=$MINICONDA/bin:$PATH
   - conda update --yes conda
-  - if [ -n "${FITS}" ]; then conda install --yes -c ${SHERPA_CHANNEL} ${FITS} ${MKL}; fi
   - if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
   - if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
   - echo ${MATPLOTLIB} ${NUMPY} ${FITS}
+  - conda create --yes -n build python=$TRAVIS_PYTHON_VERSION
+  - source activate build
+  - if [ -n "${FITS}" ]; then conda install --yes -c ${SHERPA_CHANNEL} ${FITS} ${MKL}; fi
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER
   - conda config --add channels ${SHERPA_CHANNEL}
   - pip install -r test_requirements.txt
@@ -91,8 +93,8 @@ before_install:
   - if [ -n "${XSPECVER}" ];
      then sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
      conda install --yes -c https://conda.anaconda.org/cxc/channel/dev xspec-modelsonly=${XSPECVER};
-     export HEADAS=$MINICONDA/Xspec/spectral;
-     export LD_LIBRARY_PATH=$MINICONDA/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
+     export HEADAS=$MINICONDA/envs/build/Xspec/spectral;
+     export LD_LIBRARY_PATH=$MINICONDA/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
      sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
      sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=$LD_LIBRARY_PATH|g" setup.cfg;
     fi
