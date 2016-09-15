@@ -178,6 +178,8 @@ def clitest():
 
     install_deps()
     import pytest
+    import os
+    sherpa_dir = os.path.dirname(__file__)
 
-    errno = pytest.main(['--pyargs', 'sherpa', '-rs'])
+    errno = pytest.main([sherpa_dir, '-rs'])
     sys.exit(errno)
