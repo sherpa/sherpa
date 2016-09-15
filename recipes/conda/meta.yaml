@@ -14,14 +14,14 @@ requirements:
   - python x.x
   - numpy 1.9.*
   - setuptools
-  - libgcc 4.8.5
+  - libgcc 4.8.5 # [linux]
 
  run:
   - python x.x
   - numpy >1.9
   - setuptools
   - pytest
-  - libgcc 4.8.5
+  - libgcc 4.8.5 # [linux]
   - six
 
 about:

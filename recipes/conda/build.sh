@@ -6,12 +6,8 @@ python setup.py clean --all
 
 case $OSTYPE in
     darwin*)
-    export LDFLAGS="-m64"
-    ;;
-
-    linux*)
-    export CFLAGS="-L$PREFIX/lib"
-    ;;
+    sed -i.orig "s|#extra-fortran-link-flags=|extra-fortran-link-flags=-static-libgfortran|" setup.cfg
+        ;;
 
 esac
 
