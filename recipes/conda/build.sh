@@ -24,6 +24,7 @@ case $OSTYPE in
 
     linux*)
         export CFLAGS="-L$PREFIX/lib"
+        export LD_PRELOAD="$PREFIX/lib/libgfortran.so.3"
         ;;
 
 esac
