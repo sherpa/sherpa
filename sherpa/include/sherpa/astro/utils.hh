@@ -376,7 +376,7 @@ namespace sherpa { namespace astro { namespace utils {
       // include channels where grouping == 0 so the filter will catch large
       // energy bins
       if( group[ ii ] >= 0 )
-	pick_pts.push_back( ii );
+	    pick_pts.push_back( ii );
     pick_pts.push_back( len_group );
 
     npy_intp dim = npy_intp( pick_pts.size( ) - 1 );
@@ -388,11 +388,11 @@ namespace sherpa { namespace astro { namespace utils {
       IndexType stop = pick_pts[ ii + 1 ];
       
       if ( stop > len_data )
-	return EXIT_FAILURE;
+	    return EXIT_FAILURE;
 
       if ( func == "_make_groups" ) {
-	grouped[ ii ] = data[0] + (SherpaFloat) ii;
-	continue;
+	    grouped[ ii ] = data[0] + (SherpaFloat) ii;
+	    continue;
       }
       
       funcs[func]( data, start, stop, val );

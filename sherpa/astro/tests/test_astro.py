@@ -317,6 +317,7 @@ class test_threads(SherpaTestCase):
     # As of CIAO 4.5, can filter on channel number, even when
     # data are grouped! Test results should exactly match CIAO 4.4
     # fit results in grouped/fit.py
+    # jbudynk [sherpa 4.8.1]: fit results updated to fix bug #149.
     def test_grouped_ciao4_5(self):
         self.run_thread('grouped_ciao4.5')
         self.assertEqualWithinTol(ui.get_fit_results().statval, 18.8316, 1e-4)

@@ -150,6 +150,48 @@ class test_more_ui(SherpaTestCase):
         ui.group_counts('3c273', 30)
         ui.group_counts('3c273', 15)
 
+@requires_data
+@requires_fits
+class test_grouping_ui(SherpaTestCase):
+    def setUp(self):
+        self.data = self.make_path('3c273.pi')
+        self.bkg = self.make_path('3c273_bg.pi')
+        self.loggingLevel = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
+        ui.clean()
+
+    def tearDown(self):
+        if hasattr(self, 'loggingLevel'):
+            logger.setLevel(self.loggingLevel)
+
+    def test_group_background_indep(self):
+        ui.load_pha('src', self.data)
+        ui.ungroup('src')
+        ui.load_pha('background', self.bkg)
+
+        # set bkg as background to src
+        ui.set_bkg('src', ui.get_data('background'), bkg_id=1)
+
+        # group the data and bkg separately
+        ui.group_counts('src', 16)
+        ui.group_counts('src', 10, bkg_id=1)
+
+        # grouped source data
+        src_grouped = [17.0, 16.0, 17.0, 16.0, 18.0, 21.0, 17.0, 23.0, 18.0, 21.0,
+                22.0, 21.0, 19.0, 21.0, 17.0, 17.0, 17.0, 17.0, 21.0, 17.0,
+                20.0, 17.0, 18.0, 17.0, 18.0, 17.0, 16.0, 16.0, 17.0, 17.0,
+                17.0, 16.0, 16.0, 17.0, 17.0, 16.0, 17.0, 16.0, 17.0, 16.0,
+                16.0]
+        # grouped background data
+        # TODO: is this expected?
+        bkg_grouped = [10, 10, 10, 10, 10, 11, 10, 10, 10, 10, 10, 10, 10,
+                       10, 10, 10, 10, 45]
+
+        # check results
+        numpy.testing.assert_array_equal(ui.get_data('src').to_fit()[0],
+                                         src_grouped)
+        numpy.testing.assert_array_equal(ui.get_bkg('src').get_dep(filter=True),
+                                         bkg_grouped)
 
 @requires_data
 @requires_fits

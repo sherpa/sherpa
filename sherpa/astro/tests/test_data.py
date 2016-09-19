@@ -1,5 +1,5 @@
 # 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,18 +19,20 @@
 
 import numpy
 from sherpa.astro.data import DataPHA
-from sherpa.utils import SherpaTestCase
+from sherpa.utils import SherpaTestCase, requires_data, requires_fits
+from sherpa.astro.io import read_pha
 
 import logging
 logger = logging.getLogger('sherpa')
 
+
 class test_filter_energy_grid(SherpaTestCase):
 
     _notice = numpy.ones(46, dtype=bool)
-    _notice[44:46]=False
+    _notice[44:46] = False
 
     _ignore = numpy.zeros(46, dtype=bool)
-    _ignore[14:33]=True
+    _ignore[14:33] = True
 
     _emin = numpy.array([
         1.46000006e-03,   2.48199999e-01,   3.06600004e-01,   4.67200011e-01,
@@ -63,38 +65,36 @@ class test_filter_energy_grid(SherpaTestCase):
         logger.setLevel(logging.ERROR)
         self.pha = DataPHA('', numpy.arange(46, dtype=float)+1.,
                            numpy.zeros(46),
-                           bin_lo = self._emin, bin_hi = self._emax )
+                           bin_lo=self._emin, bin_hi=self._emax )
         self.pha.units="energy"
 
     def tearDown(self):
         logger.setLevel(self.old_level)
 
     def test_notice(self):
-        #clear mask
+        # clear mask
         self.pha.notice()        
         self.pha.notice(0.0, 6.0)
-        #self.assertEqual(self._notice, self.pha.mask)
-        assert (self._notice==numpy.asarray(self.pha.mask)).all()
-
+        # self.assertEqual(self._notice, self.pha.mask)
+        assert (self._notice == numpy.asarray(self.pha.mask)).all()
 
     def test_ignore(self):
-        #clear mask
+        # clear mask
         self.pha.notice()
         self.pha.ignore(0.0, 1.0)
         self.pha.ignore(3.0, 15.0)
-        #self.assertEqual(self._ignore, self.pha.mask)
-        assert (self._ignore==numpy.asarray(self.pha.mask)).all()
-
+        # self.assertEqual(self._ignore, self.pha.mask)
+        assert (self._ignore == numpy.asarray(self.pha.mask)).all()
 
 
 class test_filter_energy_grid_reversed(SherpaTestCase):
 
     _notice = numpy.zeros(204, dtype=bool)
-    _notice[0:42]=True
+    _notice[0:42] = True
 
     _ignore = numpy.ones(204, dtype=bool)
-    _ignore[66:70]=False
-    _ignore[0:17]=False
+    _ignore[66:70] = False
+    _ignore[0:17] = False
 
     _emin = numpy.array([
         2.39196181,  2.35973215,  2.34076023,  2.30973101,  2.2884388 ,
@@ -182,41 +182,285 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.34669766,  0.34418666,  0.33912122,  0.33720407,  0.33505177,
         0.33279634,  0.33081138,  0.32847831,  0.32592943], numpy.float)
 
-
     def setUp(self):
-        #self.old_level = logger.getEffectiveLevel()
-        #logger.setLevel(logging.ERROR)
+        # self.old_level = logger.getEffectiveLevel()
+        # logger.setLevel(logging.ERROR)
         self.pha = DataPHA('', numpy.arange(204, dtype=float)+1.,
                            numpy.zeros(204),
-                           bin_lo = self._emin, bin_hi = self._emax )
+                           bin_lo=self._emin, bin_hi=self._emax)
         self.pha.units="energy"
 
     def tearDown(self):
-        #logger.setLevel(self.old_level)
+        # logger.setLevel(self.old_level)
         pass
 
     def test_notice(self):
-        #clear mask
+        # clear mask
         self.pha.notice()
         self.pha.notice(4., 8.3)
-        assert (self._notice==numpy.asarray(self.pha.mask)).all()
-
+        assert (self._notice == numpy.asarray(self.pha.mask)).all()
 
     def test_ignore(self):
-        #clear mask
+        # clear mask
         self.pha.notice()
         self.pha.ignore(10.3, 13.8)
         self.pha.ignore(4.6, 6.2)
-        assert (self._ignore==numpy.asarray(self.pha.mask)).all()
+        assert (self._ignore == numpy.asarray(self.pha.mask)).all()
+
+
+class test_grouping(SherpaTestCase):
+
+    def setUp(self):
+        self._old_logger_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.ERROR)
+        self.pha3c273 = self.make_path('3c273.pi')
+        self.specfit_dataset1 = self.make_path(
+            'acisf00308_000N001_r0044_pha3.fits')
+        self.specfit_dataset2 = self.make_path(
+            'acisf01878_000N001_r0100_pha3.fits')
+        self.adapt_dataset = self.make_path('dmgroup_pha1.fits')
+
+    def tearDown(self):
+        if hasattr(self, 'loggingLevel'):
+            logger.setLevel(self.loggingLevel)
+
+    def test_group_counts_simple(self):
+
+        x = numpy.arange(start=1, stop=161, step=1)
+        y = numpy.ones(x.size)
+        dataset = DataPHA("dataset", x, y)
+        dataset.group_counts(16)
+
+        # control arrays
+        newx = numpy.arange(start=1, stop=161, step=16)
+        newy = numpy.zeros(newx.size)+16
+
+        # test that the data is grouped correctly
+        numpy.testing.assert_array_equal(dataset.get_dep(filter=True), newy)
+
+    # test for when the last bin after grouping is less than the number
+    # specified for group_counts()
+    # TODO: get rid of this test??
+    @requires_data
+    @requires_fits
+    def test_group_counts_ignore_bad(self):
+
+        # load a real dataset to test
+        data = read_pha(self.pha3c273)
+        data.ungroup()
+        data.group_counts(16)
+
+        # control array. We expect the last bin to have less than 16 counts.
+        # TODO: is this true? Or should unfilled groups be removed from the
+        # grouped array?
+        # control array. All bins should have at least 16 counts
+        new_y = [17.0, 16.0, 17.0, 16.0, 18.0, 21.0, 17.0, 23.0, 18.0, 21.0,
+                22.0, 21.0, 19.0, 21.0, 17.0, 17.0, 17.0, 17.0, 21.0, 17.0,
+                20.0, 17.0, 18.0, 17.0, 18.0, 17.0, 16.0, 16.0, 17.0, 17.0,
+                17.0, 16.0, 16.0, 17.0, 17.0, 16.0, 17.0, 16.0, 17.0, 16.0,
+                16.0]
+
+        # The last bin is less than 16, and so should have a bad group quality
+        group_quality = numpy.zeros(1024)
+        group_quality[957] = 2
+        # TODO: decide how we will store bad group qualities, or if we will
+        # store them at all. See TODO above.
+
+        # before ignoring the bad data
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
+    # issue 149
+    # set a filter to the data before grouping it.
+    @requires_fits
+    @requires_data
+    def test_group_counts_issue149(self):
+
+        data = read_pha(self.specfit_dataset2, use_errors=True)
+        data.notice(0.5, 7.0)
+        mask = data.mask
+        invmask = mask == False
+        data.group_counts(16, tabStops=invmask)
+
+        # the expected grouped counts
+        grouped = [18., 16., 17., 24., 16., 19., 23., 22., 17., 17., 19., 16.,
+                   17., 16., 19., 17., 16., 19., 16., 16., 16., 17., 16., 16.,
+                   16., 16., 16.]
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), grouped)
+
+    # set quality flags and a filter to the data before grouping it.
+    # NOTE: we expect this test to fail until we fix properly handle grouping
+    # and quality flags.
+    @requires_fits
+    @requires_data
+    def test_grouping_with_previous_quality_flags(self):
+
+        data = read_pha(self.specfit_dataset1, use_errors=True)
+
+        # set the data quality arrays
+        # use OGIP standards (0=good, 1=bad from data redux pipeline, 2=bad from
+        # software, 5=bad from user)
+        quality = numpy.zeros(len(data.channel))
+        quality[:30] = 5
+        quality[301:350] = 5
+        quality[350:] = 1
+
+        data.quality = quality
+
+        # filter data
+        data.notice(0.5, 7.0)
+
+        # ignore bad data points
+        data.ignore_bad()
+
+        # group_counts() removes the filter before rebinning
+        # but re-applies the filter afterwards
+        data.group_counts(16)
+
+        # the expected grouped counts
+        grouped = [19, 18, 16, 21, 18, 19, 16, 17, 17, 19, 16, 16, 17, 16,
+                   17, 16, 17, 16, 16, 16, 17, 16, 16, 16, 16]
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), grouped)
+
+    def test_group_bins_simple(self):
+
+        # make a straight line from x=1 to x=100
+        x = numpy.arange(start=1, stop=101, step=1)
+        y = numpy.ones(100)
+        data = DataPHA("dataset", x, y)
+
+        # group into 10 bins
+        data.group_bins(10)
+
+        # control x and y arrays
+        new_x = numpy.arange(start=1, stop=101, step=10)
+        new_y = numpy.ones(10) * 10
+
+        # there should be 10 bins with y=10
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+        # TODO: uncomment when I figure out how to get the x data
+        # numpy.testing.assert_array_equal(data.get_indep(filter=True), new_x)
+
+    def test_group_width_simple(self):
+        # bin so each group has 'num' channels
+
+        # make a straight line from x=1 to x=1024
+        x = numpy.arange(start=1, stop=1025, step=1)
+        y = numpy.ones(x.size)
+        data = DataPHA("dataset", x, y)
+
+        # group so each bin is 16 channels wide
+        data.group_width(16)
+
+        # control x and y arrays. There should be 64 groups
+        new_x = numpy.arange(start=1, stop=1025, step=16)
+        new_y = numpy.ones(64) * 16
+
+        # there should be 64 bins with y=16
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+        # TODO: uncomment when I figure out how to get the x data
+        # numpy.testing.assert_array_equal(data.get_indep(filter=True), new_x)
+
+    def test_group_snr_simple(self):
+        # bin so each group has an SNR of at least 'num'
+
+        # make a straight line from x=1 to x=100
+        x = numpy.arange(start=1, stop=101, step=1)
+        y = numpy.ones(x.size)
+        data = DataPHA("dataset", x, y)
+
+        # errCol array to pass in to group_snr()
+        errs = numpy.ones(x.size)*0.5
+
+        # group so each bin has SNR of at least 5
+        data.group_snr(5, errorCol=errs)
+
+        # control x and y arrays.
+        new_x = numpy.arange(start=1, stop=101, step=7)[:-1]
+        new_y = numpy.ones(new_x.size) * 7
+        # new_y[new_y.size-1] = 2 # 2 bins left over after grouping
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+        # TODO: uncomment when I figure out how to get the x data
+        # numpy.testing.assert_array_equal(data.get_indep(filter=True), new_x)
+
+        # now test using the Poisson statistics (no errCol input)
+        data.ungroup()
+        data.group_snr(5)
+
+        new_y = [26, 26, 26]
+
+        # there should be 10 bins with y=10
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
+    def test_group_adapt_snr_simple(self):
+        # bin so low signal regions are grouped to at least 'num' snr, and
+        # adaptively ignore bright features
+
+        data = read_pha(self.adapt_dataset)
+        data.group_adapt_snr(17)
+
+        # expected grouped array
+        new_y = [365.0, 579.0, 819.0, 457.0, 359.0]
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
+    def test_group_adapt(self):
+        # bin so low signal regions are grouped to at least 'num' counts, and
+        # adaptively ignore bright features
+
+        data = read_pha(self.adapt_dataset)
+        data.group_adapt(700)
+
+        # expected grouped array
+        new_y = [798.0, 819.0, 816.0]
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
+    def test_group_filter_keep_good_bins(self):
+        # if a filter is set to the data, make sure all the grouped data inside
+        # the filter is still shown when calling "get_dep(filter=True)"
+
+        # make a straight line from x=1 to x=1024
+        x = numpy.arange(start=1, stop=1025, step=1)
+        y = numpy.ones(x.size)
+        data = DataPHA("dataset", x, y)
+
+        # group so each bin is 16 channels wide
+        data.group_width(16)
+
+        # set a filter to include 16 - 1008
+        data.notice(15, 1008)
+
+        # control x and y arrays. There should be 62 groups
+        new_x = numpy.arange(start=16, stop=1008, step=16)
+        new_y = numpy.ones(new_x.size) * 16
+
+        # there should be 64 bins with y=16
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
+
+        # cleanup
+        data.ungroup()
+
+        # set a filter to include the whole dataset *before* grouping
+        data.notice(0, 2000)
+        data.group_width(16)
+
+        # control x and y arrays. There should be 64 groups
+        new_x = numpy.arange(start=1, stop=1025, step=16)
+        new_y = numpy.ones(64) * 16
+
+        numpy.testing.assert_array_equal(data.get_dep(filter=True), new_y)
 
 
 class test_filter_wave_grid(SherpaTestCase):
 
     _notice = numpy.ones(16384, dtype=bool)
-    _notice[8465:16384]=False
+    _notice[8465:16384] = False
 
     _ignore = numpy.zeros(16384, dtype=bool)
-    _ignore[14064:15984]=True
+    _ignore[14064:15984] = True
 
     _emin = numpy.arange(205.7875, 0.9875, -0.0125)
 
@@ -227,25 +471,27 @@ class test_filter_wave_grid(SherpaTestCase):
         logger.setLevel(logging.ERROR)
         self.pha = DataPHA('', numpy.arange(16384, dtype=float)+1,
                            numpy.zeros(16384),
-                           bin_lo = self._emin, bin_hi = self._emax )
+                           bin_lo=self._emin, bin_hi=self._emax )
 
     def tearDown(self):
         logger.setLevel(self.old_level)
 
     def test_notice(self):
         self.pha.units = 'wavelength'
-        #clear mask
+        # clear mask
         self.pha.notice()
         self.pha.notice(100.0, 225.0)
-        assert (self._notice==numpy.asarray(self.pha.mask)).all()
+        numpy.testing.assert_array_equal(self._notice, numpy.asarray(
+            self.pha.mask))
 
     def test_ignore(self):
         self.pha.units = 'wavelength'
-        #clear mask
+        # clear mask
         self.pha.notice()
         self.pha.ignore(30.01, 225.0)
-        self.pha.ignore(0.1, 6.0)        
-        assert (self._ignore==numpy.asarray(self.pha.mask)).all()
+        self.pha.ignore(0.1, 6.0)
+        numpy.testing.assert_array_equal(self._ignore, numpy.asarray(
+            self.pha.mask))
 
 
 if __name__ == '__main__':

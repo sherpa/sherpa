@@ -24,6 +24,7 @@ Tools for creating, storing, inspecting, and manipulating data sets
 from six.moves import zip as izip
 import sys
 import inspect
+import operator
 import numpy
 from sherpa.utils.err import DataErr, NotImplementedErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
@@ -135,11 +136,11 @@ class BaseData(NoNewAttributesAfterInit):
     def notice(self, mins, maxes, axislist, ignore=False):
 
         ignore = bool_cast(ignore)
-        if( str in [type(min) for min in mins] ):
+        if str in [type(min) for min in mins]:
             raise DataErr('typecheck', 'lower bound')
-        elif( str in [type(max) for max in maxes] ):
+        elif str in [type(max) for max in maxes]:
             raise DataErr('typecheck', 'upper bound')
-        elif( str in [type(axis) for axis in axislist] ):
+        elif str in [type(axis) for axis in axislist]:
             raise DataErr('typecheck', 'grid')
 
         mask = filter_bins(mins, maxes, axislist)
