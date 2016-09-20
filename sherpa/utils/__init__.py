@@ -46,7 +46,7 @@ from sherpa.utils._psf import extract_kernel, normalize, set_origin, \
 
 from sherpa import get_config
 from six.moves.configparser import ConfigParser, NoSectionError
-from six.moves import xrange
+from six.moves import xrange, map
 
 import logging
 warning = logging.getLogger("sherpa").warning
@@ -1704,7 +1704,7 @@ def worker(f, ii, chunk, out_q, err_q, lock):
         return
 
     # output the result and task ID to output queue
-    out_q.put((ii, vals))
+    out_q.put((ii, list(vals)))
 
 
 def run_tasks(procs, err_q, out_q, num):
@@ -1763,7 +1763,7 @@ def parallel_map(function, sequence, numcores=None):
     size = len(sequence)
 
     if not _multi or size == 1 or (numcores is not None and numcores < 2):
-        return map(function, sequence)
+        return list(map(function, sequence))
 
     if numcores is None:
         numcores = _ncpus
