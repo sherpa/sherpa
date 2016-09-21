@@ -273,7 +273,7 @@ development code, which is unstable, is available in the `master`
 branch. New features and bug fixes or other, even less stable versions
 of the code may be available in other branches.
 
-The master branch supports both Python 2.7 and Python 3.5 *4.8.2 tag). Note the
+The master branch supports both Python 2.7 and Python 3.5 (4.8.2 tag). Note the
 4.8.1 tag is only compatible with Python 2.7.
 
 ### 2c. Build Sherpa
@@ -545,5 +545,6 @@ Previous releases
 -----------------
 
 4.8.1: 15 April 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.49832.svg)](http://dx.doi.org/10.5281/zenodo.49832)
+
 4.8.0: 27 January 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.45243.svg)](http://dx.doi.org/10.5281/zenodo.45243)
 
