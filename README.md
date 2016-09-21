@@ -73,9 +73,9 @@ version. A copy of the GNU General Public License can be found in the
 How To Install Sherpa
 =====================
 
-Sherpa can be installed from a binary distribution or built from sources.
-The 4.8.1 release is only available for Python 2.7, while 4.8.2 will
-also support Python 3.5.
+Sherpa can be installed from a binary distribution or built from
+sources.  The 4.8.2 release is available for Python 2.7 and for the
+first time with Python 3.5 (Beta).
 
 The binary distribution is suited for people wanting to have Sherpa up
 and running as soon as possible in its standard form.
@@ -89,12 +89,8 @@ with the Conda installation (sections [1a](#1a-anaconda) and [1b](#1b-starting-f
 
 1. Binary installation (Anaconda)
 
-The binary distribution of Sherpa 4.8.1 only supports Python 2.7.
-
 2. Source build (from a source tarball or the GitHub repository)
 
-A source build is - at present - the *only* way to use Sherpa 
-with Python 3.5.
 
 Source builds can be customized, for instance:
 
@@ -120,9 +116,9 @@ and then refer to section [1a](#1a-anaconda).
 Notice that section [1b](#1b-starting-from-scratch). only provides instructions on how to install a minimal
 Anaconda-powered environment, not the full Anaconda distribution.
 
-The Sherpa 4.8.1 release - which is the latest binary release - is
-only compatible with Python 2.7. The 4.8.2 release is planned to
-include support for Python 3.5.
+The Sherpa 4.8.2  release - which is the latest binary release - is
+compatible with Python 2.7 and for the first time with Python 3.5 (Beta).
+
 
 ### 1a. Anaconda
 
@@ -272,12 +268,12 @@ You can clone the Sherpa repository with:
     $ git clone https://github.com/sherpa/sherpa
     $ cd sherpa
 
-The most stable code is available through the 4.8.1 tag. The main
+The most stable code is available through the 4.8.2 tag. The main
 development code, which is unstable, is available in the `master`
 branch. New features and bug fixes or other, even less stable versions
 of the code may be available in other branches.
 
-The master branch supports both Python 2.7 and Python 3.5 but the
+The master branch supports both Python 2.7 and Python 3.5 *4.8.2 tag). Note the
 4.8.1 tag is only compatible with Python 2.7.
 
 ### 2c. Build Sherpa
@@ -354,7 +350,7 @@ was installed.
 
 ### 3a. Binary installation
 
-Starting with release 4.8.1, the external test data files can be
+The external test data files can be
 installed from the Sherpa conda channel by saying:
 
     $ conda install sherpatest
@@ -548,5 +544,6 @@ extend (whether to other areas of Astronomy or in other domains).
 Previous releases
 -----------------
 
+4.8.1: 15 April 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.49832.svg)](http://dx.doi.org/10.5281/zenodo.49832)
 4.8.0: 27 January 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.45243.svg)](http://dx.doi.org/10.5281/zenodo.45243)
 
