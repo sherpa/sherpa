@@ -41,7 +41,7 @@ that can be fit to the data using a variety of statistics and
 optimization methods.  It is easily extensible to include user models,
 statistics, and optimization methods.  It provides a high-level User
 Interface for interactive data-analysis work, such as within an
-IPython notebook, and it can also be used as a library component,
+Jupyter notebook, and it can also be used as a library component,
 providing fitting and modeling capabilities to an application.
 
 What can you do with Sherpa?
@@ -75,22 +75,18 @@ How To Install Sherpa
 
 Sherpa can be installed from a binary distribution or built from
 sources.  The 4.8.2 release is available for Python 2.7 and for the
-first time with Python 3.5 (Beta).
+first time for Python 3.5 (Beta).
 
-The binary distribution is suited for people wanting to have Sherpa up
-and running as soon as possible in its standard form.
+The binary distribution is available for Linux and Mac OSX via conda installation 
+described in sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch). This is the fastest
+way to start using Sherpa.
 
 Source installation is available for platforms incompatible with the
-binary builds, or for users wanting to customize the way Sherpa is
-built and installed.
-
-If you are in doubt about which installation to perform, you should try
-with the Conda installation (sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch)).
+binary builds. It also allows for customization.
 
 1. Binary installation (Anaconda)
 
 2. Source build (from a source tarball or the GitHub repository)
-
 
 Source builds can be customized, for instance:
 
@@ -483,7 +479,7 @@ used, but the full path should be in your own copy of the file):
         xspec_lib_dirs=$ASCDS_INSTALL/ots/lib
         xspec_libraries=XSFunctions XSModel XSUtil XS
 
-    **NOTE** Although this is possible, it is srtongly recommended
+    **NOTE** Although this is possible, it is strongly recommended
     that either of the first two approaches is used instead. There
     have been issues seen using the CIAO binaries on certain OS-X
     systems.
