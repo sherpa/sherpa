@@ -40,8 +40,8 @@ powerful language for combining simple models into complex expressions
 that can be fit to the data using a variety of statistics and
 optimization methods.  It is easily extensible to include user models,
 statistics, and optimization methods.  It provides a high-level User
-Interface for interactive data-analysis work, such as within an
-IPython notebook, and it can also be used as a library component,
+Interface for interactive data-analysis work, such as within a
+Jupyter notebook, and it can also be used as a library component,
 providing fitting and modeling capabilities to an application.
 
 What can you do with Sherpa?
@@ -73,28 +73,20 @@ version. A copy of the GNU General Public License can be found in the
 How To Install Sherpa
 =====================
 
-Sherpa can be installed from a binary distribution or built from sources.
-The 4.8.1 release is only available for Python 2.7, while 4.8.2 will
-also support Python 3.5.
+Sherpa can be installed from a binary distribution or built from
+sources.  The 4.8.2 release is available for Python 2.7 and for the
+first time for Python 3.5 (as a Beta release).
 
-The binary distribution is suited for people wanting to have Sherpa up
-and running as soon as possible in its standard form.
+The binary distribution is available for Linux and Mac OS X via conda installation 
+described in sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch). This is the fastest
+way to start using Sherpa.
 
 Source installation is available for platforms incompatible with the
-binary builds, or for users wanting to customize the way Sherpa is
-built and installed.
-
-If you are in doubt about which installation to perform, you should try
-with the Conda installation (sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch)).
+binary builds. It also allows for customization.
 
 1. Binary installation (Anaconda)
 
-The binary distribution of Sherpa 4.8.1 only supports Python 2.7.
-
 2. Source build (from a source tarball or the GitHub repository)
-
-A source build is - at present - the *only* way to use Sherpa 
-with Python 3.5.
 
 Source builds can be customized, for instance:
 
@@ -103,7 +95,7 @@ Source builds can be customized, for instance:
 - to build the [`XSPEC`](https://heasarc.gsfc.nasa.gov/xanadu/xspec/)
   extension to provide many common Astronomical X-ray spectral models 
 
-These and other customization options are descibed below.
+These and other customization options are described below.
 
 
 Binary installation using Anaconda
@@ -120,9 +112,9 @@ and then refer to section [1a](#1a-anaconda).
 Notice that section [1b](#1b-starting-from-scratch). only provides instructions on how to install a minimal
 Anaconda-powered environment, not the full Anaconda distribution.
 
-The Sherpa 4.8.1 release - which is the latest binary release - is
-only compatible with Python 2.7. The 4.8.2 release is planned to
-include support for Python 3.5.
+The Sherpa 4.8.2  release - which is the latest binary release - is
+compatible with Python 2.7 and for the first time with Python 3.5 (Beta).
+
 
 ### 1a. Anaconda
 
@@ -157,7 +149,6 @@ using Sherpa through Anaconda.
 Download the Miniconda (a minimal distribution of Anaconda) installer for your
 platform:
 
-- Linux 32 bit - [http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86.sh](http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86.sh)
 - Linux 64 bit - [http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh](http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh)
 - OS X 64 bit (10.7 and forward) - [http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh](http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh)
 
@@ -260,7 +251,7 @@ The `fortran` extensions are compiled by
 
 ### 2a. Extract the source tarball
 
-If you donwloaded the Sherpa source tarball, you can extract it by:
+If you downloaded the Sherpa source tarball, you can extract it by:
 
     $ tar xf sherpa-<version>.tar.gz
     $ cd sherpa-<version>
@@ -272,12 +263,12 @@ You can clone the Sherpa repository with:
     $ git clone https://github.com/sherpa/sherpa
     $ cd sherpa
 
-The most stable code is available through the 4.8.1 tag. The main
+The most stable code is available through the 4.8.2 tag. The main
 development code, which is unstable, is available in the `master`
 branch. New features and bug fixes or other, even less stable versions
 of the code may be available in other branches.
 
-The master branch supports both Python 2.7 and Python 3.5 but the
+The master branch supports both Python 2.7 and Python 3.5 (4.8.2 tag). Note the
 4.8.1 tag is only compatible with Python 2.7.
 
 ### 2c. Build Sherpa
@@ -354,7 +345,7 @@ was installed.
 
 ### 3a. Binary installation
 
-Starting with release 4.8.1, the external test data files can be
+The external test data files can be
 installed from the Sherpa conda channel by saying:
 
     $ conda install sherpatest
@@ -487,20 +478,20 @@ used, but the full path should be in your own copy of the file):
         xspec_lib_dirs=$ASCDS_INSTALL/ots/lib
         xspec_libraries=XSFunctions XSModel XSUtil XS
 
-    **NOTE** Although this is possible, it is srtongly recommended
+    **NOTE** Although this is possible, it is strongly recommended
     that either of the first two approaches is used instead. There
-    have been issues seen using the CIAO binaries on certain OS-X
+    have been issues seen using the CIAO binaries on certain OS X
     systems.
 
 In all cases, the same version of `gfortran` should be used to build
-Sherpa and XSPEC, in order to avoid possible incompatabilities.
+Sherpa and XSPEC, in order to avoid possible incompatibilities.
 
 If there are problems building, or using, the module, then the other
 options may need to be set - in particular the `gfortran_lib_dirs` and
 `gfortran_libraries` settings.
 
-The XSpec module is designed for use with XSpec versions 12.9.0 and
-12.8.2, although 12.9.0 is the preferred version. Using with other
+The XSPEC module is designed for use with XSPEC versions 12.9.0 and
+12.8.2, although 12.9.0 is the preferred version. Use with other
 versions may lead to build problems or incomplete support for the
 XSPEC models.
 
@@ -547,6 +538,8 @@ extend (whether to other areas of Astronomy or in other domains).
 
 Previous releases
 -----------------
+
+4.8.1: 15 April 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.49832.svg)](http://dx.doi.org/10.5281/zenodo.49832)
 
 4.8.0: 27 January 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.45243.svg)](http://dx.doi.org/10.5281/zenodo.45243)
 
