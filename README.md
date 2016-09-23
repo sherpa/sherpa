@@ -75,9 +75,9 @@ How To Install Sherpa
 
 Sherpa can be installed from a binary distribution or built from
 sources.  The 4.8.2 release is available for Python 2.7 and for the
-first time for Python 3.5 (Beta).
+first time for Python 3.5 (as a Beta release).
 
-The binary distribution is available for Linux and Mac OSX via conda installation 
+The binary distribution is available for Linux and Mac OS X via conda installation 
 described in sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch). This is the fastest
 way to start using Sherpa.
 
@@ -149,7 +149,6 @@ using Sherpa through Anaconda.
 Download the Miniconda (a minimal distribution of Anaconda) installer for your
 platform:
 
-- Linux 32 bit - [http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86.sh](http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86.sh)
 - Linux 64 bit - [http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh](http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh)
 - OS X 64 bit (10.7 and forward) - [http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh](http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh)
 
@@ -481,7 +480,7 @@ used, but the full path should be in your own copy of the file):
 
     **NOTE** Although this is possible, it is strongly recommended
     that either of the first two approaches is used instead. There
-    have been issues seen using the CIAO binaries on certain OS-X
+    have been issues seen using the CIAO binaries on certain OS X
     systems.
 
 In all cases, the same version of `gfortran` should be used to build
@@ -491,8 +490,8 @@ If there are problems building, or using, the module, then the other
 options may need to be set - in particular the `gfortran_lib_dirs` and
 `gfortran_libraries` settings.
 
-The XSpec module is designed for use with XSpec versions 12.9.0 and
-12.8.2, although 12.9.0 is the preferred version. Using with other
+The XSPEC module is designed for use with XSPEC versions 12.9.0 and
+12.8.2, although 12.9.0 is the preferred version. Use with other
 versions may lead to build problems or incomplete support for the
 XSPEC models.
 
