@@ -40,7 +40,7 @@ powerful language for combining simple models into complex expressions
 that can be fit to the data using a variety of statistics and
 optimization methods.  It is easily extensible to include user models,
 statistics, and optimization methods.  It provides a high-level User
-Interface for interactive data-analysis work, such as within an
+Interface for interactive data-analysis work, such as within a
 Jupyter notebook, and it can also be used as a library component,
 providing fitting and modeling capabilities to an application.
 
@@ -95,7 +95,7 @@ Source builds can be customized, for instance:
 - to build the [`XSPEC`](https://heasarc.gsfc.nasa.gov/xanadu/xspec/)
   extension to provide many common Astronomical X-ray spectral models 
 
-These and other customization options are descibed below.
+These and other customization options are described below.
 
 
 Binary installation using Anaconda
@@ -252,7 +252,7 @@ The `fortran` extensions are compiled by
 
 ### 2a. Extract the source tarball
 
-If you donwloaded the Sherpa source tarball, you can extract it by:
+If you downloaded the Sherpa source tarball, you can extract it by:
 
     $ tar xf sherpa-<version>.tar.gz
     $ cd sherpa-<version>
@@ -485,7 +485,7 @@ used, but the full path should be in your own copy of the file):
     systems.
 
 In all cases, the same version of `gfortran` should be used to build
-Sherpa and XSPEC, in order to avoid possible incompatabilities.
+Sherpa and XSPEC, in order to avoid possible incompatibilities.
 
 If there are problems building, or using, the module, then the other
 options may need to be set - in particular the `gfortran_lib_dirs` and
