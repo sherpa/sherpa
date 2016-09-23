@@ -1,26 +1,28 @@
 package:
  name: sherpa
- version: "4.8.1"
+ version: '4.8.2' 
 
 build:
  number: 0
 
  entry_points:
   - sherpa_test = sherpa:clitest
+  - sherpa_smoke = sherpa:smoke
 
 requirements:
  build:
-  - python 2.7.*
+  - python x.x
   - numpy 1.9.*
   - setuptools
-  - libgfortran 3.* # [linux]
+  - libgcc 4.8.5 # [linux]
 
  run:
-  - python 2.7.*
+  - python x.x
   - numpy >1.9
   - setuptools
   - pytest
-  - libgfortran 3.* # [linux]
+  - libgcc 4.8.5 # [linux]
+  - six
 
 about:
  home: http://cxc.cfa.harvard.edu/sherpa/

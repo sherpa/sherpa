@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 import pytest
-from sherpa.utils import requires_fits
+from sherpa.utils import requires_data, requires_fits
 from six.moves import reload_module
 
 
@@ -57,6 +57,7 @@ def clean_up(request, ui):
     request.addfinalizer(fin)
 
 
+@requires_data
 @requires_fits
 @pytest.fixture(autouse=True)
 def load_data(ui, make_data_path):
@@ -67,15 +68,6 @@ def load_data(ui, make_data_path):
     ui.set_source("powlaw1d.p")
     ui.set_bkg_model("const1d.c")
     ui.fit()
-
-#
-# @pytest.mark.xfail
-# @pytest.mark.parametrize("call", [
-# ])
-# def test_plot_failing(call, chips, ui):
-#     function = getattr(ui, "plot_"+call)
-#     function()
-#     assert_chips_called(chips)
 
 
 @pytest.mark.parametrize("call, args", [
@@ -91,7 +83,7 @@ def load_data(ui, make_data_path):
     ("bkg_fit", ()),
     ("bkg_source", ()),
     ("energy_flux", ()),
-    pytest.mark.xfail(("photon_flux", ())),
+    ("photon_flux", ()),
     ("bkg_fit_resid", ()),
     ("bkg_fit_delchi", ()),
     ("source_component", (1, "p")),
@@ -102,6 +94,3 @@ def test_plot(call, args, chips, ui):
     function = getattr(ui, "plot_"+call)
     function(*args)
     assert_chips_called(chips)
-
-
-

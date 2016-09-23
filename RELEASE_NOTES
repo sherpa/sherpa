@@ -1,5 +1,123 @@
 Release Notes
 
+Sherpa 4.8.2
+============
+
+This version of Sherpa is the first one to run under both Python 2.7
+and Python 3.5. The python 3 conversion is considered a beta designed
+to maintain backwards compatibility with python 2.7. As such, we
+expect to have some iterations before the Python 3.5 support stabilizes.
+
+The smoke test has been greatly simplified: rather that running all of
+the unit and regression tests that do not require test data, the smoke
+test now simply ensures that the basic installation works, i.e. that
+basic commands can be run and that dependencies can be reached. This
+allows the use of more advanced tools for actual unit and regression
+tests without having to ship such tools to users.
+
+Several bugs were fixed, some enhancements implemented, and some
+deprecated calls to external API replaced. In particular:
+
+  * more documentation was migrated and is not part of the code base
+    as *docstrings*.
+  * the `calc_stat` API has been generalized to make statistic
+    functions more extensible.
+  * `calc_stat_info` now properly takes background into account when
+    `wstat` is selected.
+
+Details
+-------
+
+Infrastructure and minor non-functional changes have been omitted.
+
+#209: Fix docstrings for `group_snr()` and `group_adapt_snr()`. Docstrings
+  used to say "Combine the data so that each bin has a signal-to-noise
+  ratio of at least minimum" but the end of the groups are marked only
+  if the SNR exceeds the given SNR.
+
+#210: The smoke test has been greatly simplified and it now simply ensures
+  that the basic installation works, i.e. that basic commands can be run
+  and that dependencies can be reached. Previously, the smoke test would
+  run all unit tests. Units and regression tests can now take advantage of
+  `py.test` and `mock` packages (the latter is part of the standard
+  library in Python3).
+
+#211: Cleanup of documentation and code in `sherpa.astro.utils`. The
+  `calc_kcorr` function is now exported by sherpa.astro.utils. Minor
+  changes to the documentation in `sherpa.astro.utils` to conform to
+  Sphinx standards.
+
+#221: Integrate existing model documentation (from external sources and
+  the CIAO ahelp documentation system) into the model classes.
+
+#229: Code is both Python 2.7 and 3.5 compliant. This included updating
+  the CIAO dependencies: region, group, and stack libraries, which were
+  ported to Python 3 as well.
+
+#242: Avoid use of `inspect.argspec`, which was deprecated in Python3.
+
+#252: `plot_photon_flux` function was calling an internal function with
+  the wrong number of arguments and thus raising an error. This has been
+  fixed.
+
+#253: `calc_stat_info` call failed when `wstat` was selected, as the
+  background was not taken into account. This issue has now been fixed.
+
+#256: Fix docstring in `set_quality`, which were listing the wrong values
+  of the quality flag.
+
+#257: Fix docstring for `levmar` tolerance, which was listing the wrong
+  function defaults.
+
+
+Caveats/Known Issues
+--------------------
+
+The following are known issues with the standalone 4.8.2 release
+
+  **`show_all` does not work on Python3 with PHA**. E.g., the following
+    code throws an exception:
+
+``` python
+from sherpa.astro.ui.utils import Session
+from sherpa.astro.data import DataPHA
+session = Session()
+session.load_arrays(1, [1, 2, 3], [1, 2, 3], DataPHA)
+session.show_all()
+```
+
+  **the `parallel_map` function throws an exception on Python 3** when
+    only one core is available on the system running Sherpa. This impacts
+    a number of functions taking advantage of tasks parallelization on
+    multi-core systems. This functions include `calc_flux`, `sample_flux`,
+    a number of functions for plotting parameter projections, and the
+    `grid_search` optimization algorithm.
+
+  **string representation of some (but not all) dataset classes is broken
+    on Python 3**. For instance, the following code will result in an exception:
+
+```python
+from sherpa.astro.ui import *
+load_pha('3c273.pi')
+print(get_data())
+```
+
+  **`sample_flux` does not work on Python 3 when called with the `scales`
+    argument**, e.g.:
+
+```python
+from sherpa.astro import ui
+
+ui.load_pha('sherpa-test-data/sherpatest/3c273.pi')
+ui.set_model('polynom1d.p1')
+ui.fit()
+ui.covar()
+scal = ui.get_covar_results().parmaxes
+ui.sample_flux(p1, 0.5, 1, num=5, correlated=False, scales=scal)
+```
+
+
+
 Sherpa 4.8.1
 ============
 

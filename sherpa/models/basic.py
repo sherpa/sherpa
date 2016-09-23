@@ -43,6 +43,42 @@ DBL_EPSILON = numpy.finfo(numpy.float).eps
 
 
 class Box1D(ArithmeticModel):
+    """One-dimensional box function.
+
+    The model is flat between ``xlow`` and ``xhi`` (both limits are
+    inclusive), where it is set to the ``ampl`` parameter. Outside
+    this range the model is zero.
+
+    Attributes
+    ----------
+    xlow
+        The lower edge of the box.
+    xhi
+        The upper edge of the box.
+    ampl
+        The amplitude of the box.
+
+    See Also
+    --------
+    Box2D, Const1D, Delta1D, StepLo1D, StepHi1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl if xlow <= x <= xhi
+             = 0       otherwise
+
+    and for an integrated grid it is::
+
+        f(lo,hi) = ampl         if lo >= xlow and hi <= xhi
+                 = 0            if hi <= xlow or lo >= xhi
+                 = ampl * g     where g is the fraction of lo,hi
+                                that falls within xlo,xhi
+
+    This behavior is different to how the amplitude is handled in
+    other models, such as ``Const1D``.
+    """
 
     def __init__(self, name='box1d'):
         self.xlow = Parameter(name, 'xlow', 0)
@@ -64,6 +100,28 @@ class Box1D(ArithmeticModel):
 
 
 class Const1D(ArithmeticModel):
+    """A constant model for one-dimensional data.
+
+    Attributes
+    ----------
+    c0
+        The amplitude of the model.
+
+    See Also
+    --------
+    Box1D, Const2D, Delta1D, Scale1D, StepLo1D, StepHi1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl
+
+    and for an integrated grid it is::
+
+        f(xlo,xhi) = ampl * (xhi - xlo)
+
+    """
 
     def __init__(self, name='const1d'):
         self.c0 = Parameter(name, 'c0', 1)
@@ -90,6 +148,30 @@ class Const1D(ArithmeticModel):
 
 
 class Cos(ArithmeticModel):
+    """One-dimensional cosine function.
+
+    Attributes
+    ----------
+    period
+        The period of the cosine, in units of the independent axis.
+    offset
+        The offset (related to the phase) of the cosine.
+    ampl
+        The amplitude of the cosine.
+
+    See Also
+    --------
+    Sin, Tan
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * cos (2 * pi * (x - offset) / period)
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='cos'):
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
@@ -109,6 +191,37 @@ class Cos(ArithmeticModel):
 
 
 class Delta1D(ArithmeticModel):
+    """One-dimensional delta function.
+
+    The model is only defined at a single point (or bin for integrated
+    grids).
+
+    Attributes
+    ----------
+    pos
+        The position of the signal.
+    ampl
+        The amplitude.
+
+    See Also
+    --------
+    Box1D, Const1D, Delta2D, StepLo1D, StepHi1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl if x == pos
+             = 0       otherwise
+
+    and for an integrated grid it is::
+
+        f(lo,hi) = ampl         if lo <= pos <= hi
+                 = 0            otherwise
+
+    This behavior is different to how the amplitude is handled in
+    other models, such as ``Const1D``.
+    """
 
     def __init__(self, name='delta1d'):
         self.pos = Parameter(name, 'pos', 0)
@@ -134,6 +247,38 @@ class Delta1D(ArithmeticModel):
 
 
 class Erf(ArithmeticModel):
+    """One-dimensional error function [1]_.
+
+    Attributes
+    ----------
+    ampl
+        The amplitude of the model.
+    offset
+        The offset of the model.
+    sigma
+        The scaling factor.
+
+    See Also
+    --------
+    Erfc
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * erf((x - offset) / sigma)
+
+        erf(y) = (2 / sqrt(pi)) Int_0^y exp(-t^2) dt
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+
+    References
+    ----------
+
+    .. [1] http://mathworld.wolfram.com/Erf.html
+
+    """
 
     def __init__(self, name='erf'):
         self.ampl = Parameter(name, 'ampl', 1, 0)
@@ -153,6 +298,38 @@ class Erf(ArithmeticModel):
 
 
 class Erfc(ArithmeticModel):
+    """One-dimensional complementary error function [1]_.
+
+    Attributes
+    ----------
+    ampl
+        The amplitude of the model.
+    offset
+        The offset of the model.
+    sigma
+        The scaling factor.
+
+    See Also
+    --------
+    Erf
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * erfc((x - offset) / sigma)
+
+        erfc(y) = (2 / sqrt(pi)) Int_y^infinity exp(-t^2) dt
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+
+    References
+    ----------
+
+    .. [1] http://mathworld.wolfram.com/Erfc.html
+
+    """
 
     def __init__(self, name='erfc'):
         self.ampl = Parameter(name, 'ampl', 1, 0)
@@ -172,6 +349,30 @@ class Erfc(ArithmeticModel):
 
 
 class Exp(ArithmeticModel):
+    """One-dimensional exponential function.
+
+    Attributes
+    ----------
+    offset
+        The offset of the model.
+    coeff
+        The scaling factor.
+    ampl
+        The amplitude of the model.
+
+    See Also
+    --------
+    Exp10, Log, Log10, LogParabola, Sqrt
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * exp(coeff * (x - offset))
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='exp'):
         self.offset = Parameter(name, 'offset', 0)
@@ -187,6 +388,30 @@ class Exp(ArithmeticModel):
 
 
 class Exp10(ArithmeticModel):
+    """One-dimensional exponential function, base 10.
+
+    Attributes
+    ----------
+    offset
+        The offset of the model.
+    coeff
+        The scaling factor.
+    ampl
+        The amplitude of the model.
+
+    See Also
+    --------
+    Exp, Log, Log10, LogParabola, Sqrt
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * 10^(coeff * (x - offset))
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='exp10'):
         self.offset = Parameter(name, 'offset', 0)
@@ -202,6 +427,65 @@ class Exp10(ArithmeticModel):
 
 
 class Gauss1D(ArithmeticModel):
+    """One-dimensional gaussian function.
+
+    Attributes
+    ----------
+    fwhm
+        The Full-Width Half Maximum of the gaussian. It is related to
+        the sigma value by: FWHM = sqrt(8 * log(2)) * sigma.
+    pos
+        The center of the gaussian.
+    ampl
+        The amplitude refers to the maximum peak of the model.
+
+    See Also
+    --------
+    Gauss2D, NormGauss1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * exp(-4 * log(2) * (x - pos)^2 / fwhm^2)
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+
+    Examples
+    --------
+
+    Compare the gaussian and normalized gaussian models:
+
+    >>> m1 = sherpa.models.basic.Gauss1D()
+    >>> m2 = sherpa.models.basic.NormGauss1D()
+    >>> m1.pos, m2.pos = 10, 10
+    >>> m1.ampl, m2.ampl = 10, 10
+    >>> m1.fwhm, m2.fwhm = 5, 5
+    >>> m1(10)
+    10.0
+    >>> m2(10)
+    1.8788745573993026
+    >>> m1.fwhm, m2.fwhm = 1, 1
+    >>> m1(10)
+    10.0
+    >>> m2(10)
+    9.394372786996513
+
+    The normalised version will sum to the amplitude when given
+    an integrated grid - i.e. both low and high edges rather than
+    points - that covers all the signal (and with a bin size a lot
+    smaller than the FWHM):
+
+    >>> m1.fwhm, m2.fwhm = 12.2, 12.2
+    >>> grid = np.arange(-90, 110, 0.01)
+    >>> glo, ghi = grid[:-1], grid[1:]
+    >>> m1(glo, ghi).sum()
+    129.86497637060958
+    >>> m2(glo, ghi).sum()
+    10.000000000000002
+
+    """
 
     def __init__(self, name='gauss1d'):
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
@@ -230,6 +514,30 @@ class Gauss1D(ArithmeticModel):
 
 
 class Log(ArithmeticModel):
+    """One-dimensional natural logarithm function.
+
+    Attributes
+    ----------
+    offset
+        The offset of the model.
+    coeff
+        The scaling factor.
+    ampl
+        The amplitude of the model.
+
+    See Also
+    --------
+    Exp, Exp10, Log10, LogParabola, Sqrt
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * log (coeff * (x - offset))
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='log'):
         self.offset = Parameter(name, 'offset', 0)
@@ -245,6 +553,30 @@ class Log(ArithmeticModel):
 
 
 class Log10(ArithmeticModel):
+    """One-dimensional logarithm function, base 10.
+
+    Attributes
+    ----------
+    offset
+        The offset of the model.
+    coeff
+        The scaling factor.
+    ampl
+        The amplitude of the model.
+
+    See Also
+    --------
+    Exp, Exp10, Log, LogParabola, Sqrt
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * log_10 (coeff * (x - offset))
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='log10'):
         self.offset = Parameter(name, 'offset', 0)
@@ -260,6 +592,40 @@ class Log10(ArithmeticModel):
 
 
 class LogParabola(ArithmeticModel):
+    """One-dimensional log-parabolic function.
+
+    Attributes
+    ----------
+    ref
+        The reference point for the normalization.
+    c1
+        The power-law index (gamma).
+    c2
+        The curvature of the parabola (beta).
+    ampl
+        The amplitude of the model.
+
+    See Also
+    --------
+    Exp, Exp10, Log, Log10, Sqrt
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (x / ref) ^ (-c1 - c2 * log_10 (x / ref))
+
+    The grid version is evaluated by numerically intgerating the
+    function over each bin using a non-adaptive Gauss-Kronrod scheme
+    suited for smooth functions [1]_, falling over to a simple
+    trapezoid scheme if this fails.
+
+    References
+    ----------
+
+    .. [1] https://www.gnu.org/software/gsl/manual/html_node/QNG-non_002dadaptive-Gauss_002dKronrod-integration.html
+
+    """
 
     def __init__(self, name='logparabola'):
         self.ref = Parameter(name, 'ref', 1, alwaysfrozen=True)
@@ -278,6 +644,35 @@ class LogParabola(ArithmeticModel):
 _gfactor = numpy.sqrt(numpy.pi/(4*numpy.log(2)))
 
 class NormGauss1D(ArithmeticModel):
+    """One-dimensional normalised gaussian function.
+
+    Attributes
+    ----------
+    fwhm
+        The Full-Width Half Maximum of the gaussian. It is related to
+        the sigma value by: FWHM = sqrt(8 * log(2)) * sigma.
+    pos
+        The center of the gaussian.
+    ampl
+        The amplitude refers to the integral of the model over the
+        range -infinity to infinity.
+
+
+    See Also
+    --------
+    Gauss1D, NormGauss2D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * exp(-4 * log(2) * (x - pos)^2 / fwhm^2)
+               ----------------------------------------------
+                       sqrt(pi / (4 * log(2))) * fwhm
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='normgauss1d'):
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
@@ -312,6 +707,36 @@ class NormGauss1D(ArithmeticModel):
 
 
 class Poisson(ArithmeticModel):
+    """One-dimensional Poisson function.
+
+    A model expressing the ratio of two Poisson distributions of mean
+    mu, one for which the random variable is x, and the other for
+    which the random variable is equal to mu itself.
+
+    Attributes
+    ----------
+    mean
+        The mean of the first distribution.
+    ampl
+        The amplitude of the model.
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * mean! exp((x - mean) * log(mean)) / x!
+
+    The grid version is evaluated by numerically intgerating the
+    function over each bin using a non-adaptive Gauss-Kronrod scheme
+    suited for smooth functions [1]_, falling over to a simple
+    trapezoid scheme if this fails.
+
+    References
+    ----------
+
+    .. [1] https://www.gnu.org/software/gsl/manual/html_node/QNG-non_002dadaptive-Gauss_002dKronrod-integration.html
+
+    """
 
     def __init__(self, name='poisson'):
         self.mean = Parameter(name, 'mean', 1, 1e-05, hard_min=tinyval)
@@ -331,6 +756,50 @@ class Poisson(ArithmeticModel):
 
 
 class Polynom1D(ArithmeticModel):
+    """One-dimensional polynomial function of order 8.
+
+    The maximum order of the polynomial is 8. The default setting has
+    all parameters frozen except for ``c0``, which means that the
+    model acts as a constant.
+
+    Attributes
+    ----------
+    c0
+        The constant term.
+    c1
+        The amplitude of the (x-offset) term.
+    c2
+        The amplitude of the (x-offset)^2 term.
+    c3
+        The amplitude of the (x-offset)^3 term.
+    c4
+        The amplitude of the (x-offset)^4 term.
+    c5
+        The amplitude of the (x-offset)^5 term.
+    c6
+        The amplitude of the (x-offset)^6 term.
+    c7
+        The amplitude of the (x-offset)^7 term.
+    c8
+        The amplitude of the (x-offset)^8 term.
+    offset
+        There is a degeneracy between ``c0`` and ``offset``, so it
+        is recommended that at least one of these remains frozen.
+
+
+    See Also
+    --------
+    PowLaw1D, Polynom2D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = sum_(i=0)^(i=8) c_i * (x - offset)^i
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='polynom1d'):
         pars = []
@@ -404,6 +873,34 @@ class Polynom1D(ArithmeticModel):
 
 
 class PowLaw1D(ArithmeticModel):
+    """One-dimensional power-law function.
+
+    It is assumed that the independent axis is positive at all points.
+
+    Attributes
+    ----------
+    gamma
+        The photon index of the power law.
+    ref
+        As the reference point is degenerate with the amplitude, the
+        ``alwaysfrozen`` attribute of the reference point is set so
+        that it can not be varied during a fit.
+    ampl
+        The amplitude of the model.
+
+    See Also
+    --------
+    Polynom1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * (x / ref)^(-gamma)
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='powlaw1d'):
         self.gamma = Parameter(name, 'gamma', 1, -10, 10)
@@ -436,6 +933,33 @@ class PowLaw1D(ArithmeticModel):
 
 
 class Scale1D(Const1D):
+    """A constant model for one-dimensional data.
+
+    This is a specialized form of the ``Const1D`` model where the
+    ``integrate`` flag is turned off.
+
+    Attributes
+    ----------
+    c0
+        The amplitude of the model.
+
+    See Also
+    --------
+    Box1D, Const1D, Delta1D, Scale2D, StepLo1D, StepHi1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl
+
+    and for an integrated grid it is::
+
+        f(xlo,xhi) = ampl * (xhi - xlo)
+
+    This later case will only be used if the ``integrate``
+    attribute is set to ``True``.
+    """
 
     def __init__(self, name='scale1d'):
         Const1D.__init__(self, name)
@@ -443,6 +967,30 @@ class Scale1D(Const1D):
 
 
 class Sin(ArithmeticModel):
+    """One-dimensional sine function.
+
+    Attributes
+    ----------
+    period
+        The period of the sine, in units of the independent axis.
+    offset
+        The offset (related to the phase) of the sine.
+    ampl
+        The amplitude of the sine.
+
+    See Also
+    --------
+    Cos, Tan
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * sin (2 * pi * (x - offset) / period)
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='sin'):
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
@@ -462,6 +1010,28 @@ class Sin(ArithmeticModel):
 
 
 class Sqrt(ArithmeticModel):
+    """One-dimensional square root function.
+
+    Attributes
+    ----------
+    offset
+        The offset of the model.
+    ampl
+        The amplitude of the model.
+
+    See Also
+    --------
+    Exp, Exp10, Log, Log10, LogParabola
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * sqrt (x - offset)
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='sqrt'):
         self.offset = Parameter(name, 'offset', 0)
@@ -475,6 +1045,36 @@ class Sqrt(ArithmeticModel):
 
 
 class StepHi1D(ArithmeticModel):
+    """One-dimensional step function.
+
+    The model is flat above ``xcut``, where it is set to the ``ampl``
+    parameter, and zero below this.
+
+    Attributes
+    ----------
+    xcut
+        The position of the step.
+    ampl
+        The amplitude of the step.
+
+    See Also
+    --------
+    Box1D, Const1D, Delta1D, StepLo1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl if x >= xcut
+             = 0       otherwise
+
+    and for an integrated grid it is::
+
+        f(xlo,xhi) = ampl * (xhi - xlo)  if xlo >= xcut
+                   = ampl * (xhi - xcut) if xlo < xcut and xhi >= xcut
+                   = 0                   if xhi < xcut
+
+    """
 
     def __init__(self, name='stephi1d'):
         self.xcut = Parameter(name, 'xcut', 0)
@@ -495,6 +1095,36 @@ class StepHi1D(ArithmeticModel):
 
 
 class StepLo1D(ArithmeticModel):
+    """One-dimensional step function.
+
+    The model is flat below ``xcut``, where it is set to the ``ampl``
+    parameter, and zero above this.
+
+    Attributes
+    ----------
+    xcut
+        The position of the step.
+    ampl
+        The amplitude of the step.
+
+    See Also
+    --------
+    Box1D, Const1D, Delta1D, StepHi1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl if x <= xcut
+             = 0       otherwise
+
+    and for an integrated grid it is::
+
+        f(xlo,xhi) = ampl * (xhi - xlo)  if xhi <= xcut
+                   = ampl * (xcut - xlo) if xlo <= xcut and xhi > xcut
+                   = 0                   if xlo > xcut
+
+    """
 
     def __init__(self, name='steplo1d'):
         self.xcut = Parameter(name, 'xcut', 0)
@@ -515,6 +1145,30 @@ class StepLo1D(ArithmeticModel):
 
 
 class Tan(ArithmeticModel):
+    """One-dimensional tan function.
+
+    Attributes
+    ----------
+    period
+        The period of the tangent, in units of the independent axis.
+    offset
+        The offset (related to the phase) of the tangent.
+    ampl
+        The amplitude of the tangent.
+
+    See Also
+    --------
+    Cos, Sin
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x) = ampl * tan (2 * pi * (x - offset) / period)
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='tan'):
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
@@ -535,6 +1189,47 @@ class Tan(ArithmeticModel):
 
 
 class Box2D(ArithmeticModel):
+    """Two-dimensional box function.
+
+    The model is flat between the limits, where it is set to the
+    ``ampl`` parameter. Outside this range the model is zero.
+
+    Attributes
+    ----------
+    xlow
+        The lower edge of the box (``x0`` axis).
+    xhi
+        The upper edge of the box (``x0`` axis).
+    ylow
+        The lower edge of the box (``x1`` axis).
+    yhi
+        The upper edge of the box (``x1`` axis).
+    ampl
+        The amplitude of the box.
+
+    See Also
+    --------
+    Box1D, Const2D, Delta2D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x0,x1) = ampl if xlow <= x0 <= xhi
+                           ylow <= x1 <= yhi
+                 = 0       otherwise
+
+    and for an integrated grid it is::
+
+        f(x0lo,x0hi,x1lo,x1hi)
+                 = 0            if x0hi <= xlow or x0lo >= xhi
+                                or x1hi <= ylow or x1lo >= yhi
+                 = ampl * g     where g is the fraction of the pixel
+                                that falls within the region
+
+    This behavior is different to how the amplitude is handled in
+    other models, such as ``Const2D``.
+    """
 
     def __init__(self, name='box2d'):
         self.xlow = Parameter(name, 'xlow', 0)
@@ -565,6 +1260,29 @@ class Box2D(ArithmeticModel):
 
 
 class Const2D(Const1D):
+    """A constant model for two-dimensional data.
+
+    Attributes
+    ----------
+    c0
+        The amplitude of the model.
+
+    See Also
+    --------
+    Box2D, Const1D, Delta2D, Scale2D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x0, x1) = ampl
+
+    and for an integrated grid it is::
+
+        f(x0lo, x1lo, x0hi, x1hi = ampl * (x0hi - x0lo)
+                                        * (x1hi - x1lo)
+
+    """
 
     def __init__(self, name='const2d'):
         Const1D.__init__(self, name)
@@ -576,6 +1294,34 @@ class Const2D(Const1D):
 
 
 class Scale2D(Const2D):
+    """A constant model for two-dimensional data.
+
+    This is a specialized form of the ``Const2D`` model where the
+    ``integrate`` flag is turned off.
+
+    Attributes
+    ----------
+    c0
+        The amplitude of the model.
+
+    See Also
+    --------
+    Box2D, Const2D, Delta2D, Scale1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x0, x1) = ampl
+
+    and for an integrated grid it is::
+
+        f(x0lo, x1lo, x0hi, x1hi) = ampl * (x0hi - x0lo)
+                                         * (x1hi - x1lo)
+
+    This later case will only be used if the ``integrate``
+    attribute is set to ``True``.
+    """
 
     def __init__(self, name='scale2d'):
         Const2D.__init__(self, name)
@@ -584,6 +1330,40 @@ class Scale2D(Const2D):
 
 
 class Delta2D(ArithmeticModel):
+    """Two-dimensional delta function.
+
+    The model is only defined at a single point (or bin for integrated
+    grids).
+
+    Attributes
+    ----------
+    xpos
+        The coordinate of the signal on the x0 axis.
+    ypos
+        The coordinate of the signal on the x1 axis.
+    ampl
+        The amplitude.
+
+    See Also
+    --------
+    Box2D, Const2D, Delta1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x0, x1) = ampl if x0 == xpos and x1 == ypos
+             = 0         otherwise
+
+    and for an integrated grid it is::
+
+        f(x0lo, x1lo, x0hi, x1hi) = ampl if x0lo <= xpos <= x0hi
+                                            x1lo <= ypos <= x1hi
+                                  = 0    otherwise
+
+    This behavior is different to how the amplitude is handled in
+    other models, such as ``Const2D``.
+    """
 
     def __init__(self, name='delta2d'):
         self.xpos = Parameter(name, 'xpos', 0)
@@ -612,6 +1392,58 @@ class Delta2D(ArithmeticModel):
         return _modelfcts.delta2d(*args, **kwargs)
 
 class Gauss2D(ArithmeticModel):
+    """Two-dimensional gaussian function.
+
+    Attributes
+    ----------
+    fwhm
+        The Full-Width Half Maximum of the gaussian along the major
+        axis. It is related to the sigma value by:
+        FWHM = sqrt(8 * log(2)) * sigma.
+    xpos
+        The center of the gaussian on the x0 axis.
+    ypos
+        The center of the gaussian on the x1 axis.
+    ellip
+        The ellipticity of the gaussian.
+    theta
+        The angle of the major axis. It is in radians, measured
+        counter-clockwise from the X0 axis (i.e. the line X1=0).
+    ampl
+        The amplitude refers to the maximum peak of the model.
+
+    See Also
+    --------
+    Gauss1D, NormGauss2D, SigmaGauss2D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x0,x1) = ampl * exp(-4 * log(2) * r(x0,x1)^2)
+
+        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
+                     -------------------------------------------
+                                fwhm^2 * (1-ellip)^2
+
+        xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+
+        yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+
+    The grid version is evaluated by adaptive multidimensional
+    integration scheme on hypercubes using cubature rules, based
+    on code from HIntLib ([1]_) and GSL ([2]_).
+
+    References
+    ----------
+
+    .. [1] HIntLib - High-dimensional Integration Library
+           http://mint.sbg.ac.at/HIntLib/
+
+    .. [2] GSL - GNU Scientific Library
+           http://www.gnu.org/software/gsl/
+
+    """
 
     def __init__(self, name='gauss2d'):
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
@@ -647,6 +1479,56 @@ class Gauss2D(ArithmeticModel):
         return _modelfcts.gauss2d(*args, **kwargs)
 
 class SigmaGauss2D(Gauss2D):
+    """Two-dimensional gaussian function (varying sigma).
+
+    Attributes
+    ----------
+    sigma_a
+        The sigma of the gaussian along the major axis.
+    sigma_b
+        The sigma of the gaussian along the minor axis.
+    xpos
+        The center of the gaussian on the x0 axis.
+    ypos
+        The center of the gaussian on the x1 axis.
+    theta
+        The angle of the major axis. It is in radians, measured
+        counter-clockwise from the X0 axis (i.e. the line X1=0).
+    ampl
+        The amplitude refers to the maximum peak of the model.
+
+    See Also
+    --------
+    Gauss2D, NormGauss2D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x0,x1) = ampl * exp(-r(x0,x1)^2 / 2)
+
+        r(x0,x1)^2 = xoff(x0,x1)^2 + yoff(x0,x1)^2
+                     -------------   -------------
+                       sigma_a^2       sigma_b^2
+
+        xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+
+        yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+
+    The grid version is evaluated by adaptive multidimensional
+    integration scheme on hypercubes using cubature rules, based
+    on code from HIntLib ([1]_) and GSL ([2]_).
+
+    References
+    ----------
+
+    .. [1] HIntLib - High-dimensional Integration Library
+           http://mint.sbg.ac.at/HIntLib/
+
+    .. [2] GSL - GNU Scientific Library
+           http://www.gnu.org/software/gsl/
+
+    """
 
     def __init__(self, name='sigmagauss2d'):
         self.sigma_a = Parameter(name, 'sigma_a', 10, tinyval, hard_min=tinyval)
@@ -668,6 +1550,61 @@ class SigmaGauss2D(Gauss2D):
 
 
 class NormGauss2D(ArithmeticModel):
+    """Two-dimensional normalised gaussian function.
+
+    Attributes
+    ----------
+    fwhm
+        The Full-Width Half Maximum of the gaussian along the major
+        axis. It is related to the sigma value by:
+        FWHM = sqrt(8 * log(2)) * sigma.
+    xpos
+        The center of the gaussian on the x0 axis.
+    ypos
+        The center of the gaussian on the x1 axis.
+    ellip
+        The ellipticity of the gaussian.
+    theta
+        The angle of the major axis. It is in radians, measured
+        counter-clockwise from the X0 axis (i.e. the line X1=0).
+    ampl
+        The amplitude refers to the integral of the model over the
+        range -infinity to infinity for both axes.
+
+    See Also
+    --------
+    Gauss2D, NormGauss1D, SigmaGauss2D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x0,x1) = 4 * log(2) * ampl * exp(-4 * log(2) * r(x0,x1)^2)
+                   -------------------------------------------------
+                       pi * fwhm * fwhm * sqrt(1 - ellip * ellip)
+
+        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
+                     -------------------------------------------
+                                 fwhm^2 * (1-ellip)^2
+
+        xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+
+        yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+
+    The grid version is evaluated by adaptive multidimensional
+    integration scheme on hypercubes using cubature rules, based
+    on code from HIntLib ([1]_) and GSL ([2]_).
+
+    References
+    ----------
+
+    .. [1] HIntLib - High-dimensional Integration Library
+           http://mint.sbg.ac.at/HIntLib/
+
+    .. [2] GSL - GNU Scientific Library
+           http://www.gnu.org/software/gsl/
+
+    """
 
     def __init__(self, name='normgauss2d'):
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
@@ -710,6 +1647,49 @@ class NormGauss2D(ArithmeticModel):
 
 
 class Polynom2D(ArithmeticModel):
+    """Two-dimensional polynomial function.
+
+    The maximum order of the polynomial is 2.
+
+    Attributes
+    ----------
+    c
+        The constant term.
+    cy1
+        The coefficient for the x1 term.
+    cy2
+        The coefficient for the x1^2 term.
+    cx1
+        The coefficient for the x0 term.
+    cx1y1
+        The coefficient for the x0 x1 term.
+    cx1y2
+        The coefficient for the x0 x1^2 term.
+    cx2
+        The coefficient for the x0^2 term.
+    cx2y1
+        The coefficient for the x0^2 x1 term.
+    cx2y2
+        The coefficient for the x0^2 x1^2 term.
+
+    See Also
+    --------
+    Polynom1D
+
+    Notes
+    -----
+    The functional form of the model for points is::
+
+        f(x,x1) = c + cx1 * x0 + cx2 * x0^2 +
+                      cy1 * x1 + cy2 * x1^2 +
+                      cx1y1 * x0 * x1 +
+                      cx1y2 * x0 * x1^2 +
+                      cx2y1 * x0^2 * x1 +
+                      cx2y2 * x0^2 * x1^2
+
+    and for an integrated grid it is the integral of this over
+    the bin.
+    """
 
     def __init__(self, name='polynom2d'):
         self.c = Parameter(name, 'c', 1)
@@ -842,6 +1822,11 @@ class TableModel(ArithmeticModel):
                        (len(self.__y), len(x0)))
 
 class UserModel(ArithmeticModel):
+    """Support for user-supplied models.
+
+    The class is used by sherpa.ui.load_user_model and
+    sherpa.astro.ui.load_user_model.
+    """
     def __init__(self, name='usermodel', pars=None):
         # these attributes should remain somewhat private
         # as not to conflict with user defined parameter names

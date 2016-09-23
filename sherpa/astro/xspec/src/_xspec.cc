@@ -820,6 +820,7 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 static PyMethodDef XSpecMethods[] = {
   { (char*)"get_xsversion", (PyCFunction)get_version, METH_NOARGS,
     (char*) "get_xsversion()\n\n"
+            "Return the version of the X-Spec model library in use.\n"
             RETURNSDOC
             "version : str\n"
             "   The version of the X-Spec model library used\n"
@@ -831,6 +832,7 @@ static PyMethodDef XSpecMethods[] = {
 
   { (char*)"get_xschatter", (PyCFunction)get_chatter, METH_NOARGS,
     (char*) "get_xschatter()\n\n"
+            "Return the chatter level used by X-Spec.\n"
             RETURNSDOC
             "chatter : int\n"
             "   The chatter setting used by the X-Spec routines.\n"
@@ -840,22 +842,23 @@ static PyMethodDef XSpecMethods[] = {
             ">>> get_xschatter()\n0\n\n"},
   { (char*)"set_xschatter", (PyCFunction)set_chatter, METH_VARARGS,
     (char*) "set_xschatter(level)\n\n"
+            "Set the chatter level used by X-Spec.\n\n"
             "Set the chatter setting used by the X-Spec routines\n"
             "for determining what information gets printed to the\n"
-            "screen. It is equivalent to the X-Spec `chatter`\n"
+            "screen. It is equivalent to the X-Spec ``chatter``\n"
             "command [1]_.\n"
             PARAMETERSDOC
             "level : int\n"
-            "   The higher the `level`, the more screen output will\n"
-            "   be created by X-Spec routines. A value of `0` hides\n"
-            "   most information while `25` will generate a lot of\n"
+            "   The higher the value of ``level``, the more screen output will\n"
+            "   be created by X-Spec routines. A value of ``0`` hides\n"
+            "   most information while ``25`` will generate a lot of\n"
             "   debug output.\n"
             SEEALSODOC
             "get_xschatter : Return the X-Spec chatter setting.\n"
             NOTESDOC
-            "The default `chatter` setting used by Sherpa is `0`, which\n"
+            "The default chatter setting used by Sherpa is ``0``, which\n"
             "is lower than - so, creates less screen output - the\n"
-            "default value used by X-Spec (`10`).\n\n"
+            "default value used by X-Spec (``10``).\n\n"
             "There is no way to change the X-Spec \"log chatter\"\n"
             "setting.\n"
             REFERENCESDOC "\n"
@@ -869,7 +872,7 @@ static PyMethodDef XSpecMethods[] = {
 
   { (char*)"get_xsabund", (PyCFunction)get_abund, METH_VARARGS,
     (char*) "get_xsabund(element=None)\n\n"
-            "Return the X-Spec abundance setting or elemental abundance.\n\n"
+            "Return the X-Spec abundance setting or elemental abundance.\n"
             PARAMETERSDOC
             "element : str, optional\n"
             "   When not given, the abundance table name is returned.\n"
@@ -880,17 +883,17 @@ static PyMethodDef XSpecMethods[] = {
             "   'Cu', 'Zn'. Case is important.\n"
             RETURNSDOC
             "val : str or float\n"
-            "   When `element` is `None`, the abundance table name is\n"
+            "   When ``element`` is ``None``, the abundance table name is\n"
             "   returned (see `set_xsabund`); the string 'file' is\n"
             "   used when the abundances were read from a file. A\n"
             "   numeric value is returned when an element name is\n"
             "   given. This value is the elemental abundance relative\n"
-            "   to `H`.\n"
+            "   to H.\n"
             SEEALSODOC
             "set_xsabund : Set the X-Spec abundance table.\n"
             EXAMPLESDOC "\n"
             "Return the current abundance setting, which in this case\n"
-            "is `angr`, the default value for X-Spec:\n\n"
+            "is 'angr', the default value for X-Spec:\n\n"
             ">>> get_xsabund()\n'angr'\n\n"
             "The `set_xsabund` function has been used to read in the\n"
             "abundances from a file, so the routine now returns the\n"
@@ -900,9 +903,10 @@ static PyMethodDef XSpecMethods[] = {
             ">>> get_xsabund('He')\n0.09769999980926514\n\n"},
   { (char*)"set_xsabund", (PyCFunction)set_abund, METH_VARARGS,
     (char*) "set_xsabund(abundance)\n\n"
+            "Set the elemental abundances used by X-Spec models.\n\n"
             "Set the abundance table used in the X-Spec plasma emission and\n"
             "photoelectric absorption models. It is equivalent to the X-Spec\n"
-            "`abund` command [1]_.\n"
+            "``abund`` command [1]_.\n"
             PARAMETERSDOC
             "abundance : str\n"
             "   A file name, format described below, or one of the\n"
@@ -913,15 +917,15 @@ static PyMethodDef XSpecMethods[] = {
             "set_xschatter : Control the screen output of X-Spec functions and models.\n"
             NOTESDOC
             "The pre-defined abundance tables are:\n\n"
-            " - `angr`, from [2]_\n"
-            " - `aspl`, from [3]_\n"
-            " - `feld`, from [4]_, except for elements not listed which\n"
-            "   are given `grsa` abundances\n"
-            " - `aneb`, from [5]_\n"
-            " - `grsa`, from [6]_\n"
-            " - `wilm`, from [7]_, except for elements not listed which\n"
+            " - 'angr', from [2]_\n"
+            " - 'aspl', from [3]_\n"
+            " - 'feld', from [4]_, except for elements not listed which\n"
+            "   are given 'grsa' abundances\n"
+            " - 'aneb', from [5]_\n"
+            " - 'grsa', from [6]_\n"
+            " - 'wilm', from [7]_, except for elements not listed which\n"
             "   are given zero abundance\n"
-            " - `lodd`, from [8]_\n\n"
+            " - 'lodd', from [8]_\n\n"
             "The values for these tables are given at [1]_.\n\n"
             "Data files should be in ASCII format, containing a single\n"
             "numeric (floating-point) column of the abundance values,\n"
@@ -959,10 +963,10 @@ static PyMethodDef XSpecMethods[] = {
 
   { (char*)"set_xscosmo", (PyCFunction)set_cosmo, METH_VARARGS,
     (char*) "set_xscosmo(h0, q0, l0)\n\n"
+            "Set the cosmological parameters used by X-Spec models.\n\n"
             "Set the cosmological parameters (H_0, q_0, lambda_0) used\n"
-            "by X-Spec.\n It is equivalent to the X-Spec\n"
-            "`cosmo` command [1]_. The default values are:\n"
-            "h0=70, q0=0, l0=0.73\n"
+            "by X-Spec. It is equivalent to the X-Spec ``cosmo``\n"
+            "command [1]_. The default values are h0=70, q0=0, and l0=0.73\n"
             PARAMETERSDOC
             "h0 : number\n"
             "   The Hubble constant in km/s/Mpc.\n"
@@ -986,7 +990,7 @@ static PyMethodDef XSpecMethods[] = {
     (char*) "get_xscosmo()\n\n"
             "Return the X-Spec cosmology settings.\n"
             RETURNSDOC
-            "(h0,q0,l0) :\n"
+            "(h0,q0,l0)\n"
             "   The Hubble constant, in km/s/Mpc, the deceleration\n"
             "   parameter, and the cosmological constant.\n"
             SEEALSODOC
@@ -996,7 +1000,8 @@ static PyMethodDef XSpecMethods[] = {
 
   { (char*)"get_xsxsect", (PyCFunction)get_cross, METH_NOARGS,
     (char*) "get_xsxsect()\n\n"
-            "Return the name of the X-Spec photoelectric absorption\n"
+            "Return the cross sections used by X-Spec models.\n\n"
+            "Return the name of the X-Spec photoelectric absorption "
             "cross-sections setting.\n"
             RETURNSDOC
             "val : str\n"
@@ -1008,16 +1013,17 @@ static PyMethodDef XSpecMethods[] = {
             ">>> get_xsxsect()\n'bcmc'\n\n"},
   { (char*)"set_xsxsect", (PyCFunction)set_cross, METH_VARARGS,
     (char*) "set_xsxsect(name)\n\n"
+            "Set the cross sections used by X-Spec models.\n\n"
             "Set the X-Spec photoelectric absorption cross-sections\n"
             "setting, which changes the cross-sections used by all\n"
-            "X-Spec absorption models *except* for `xswabs`. It is\n"
-            "equivalent to the X-Spec `xsect` command [1]_.\n"
+            "X-Spec absorption models *except* for `XSwabs`. It is\n"
+            "equivalent to the X-Spec ``xsect`` command [1]_.\n"
             PARAMETERSDOC
             "name : { 'bcmc', 'obcm', 'vern' }\n"
             "   The options are: 'bcmc' from [2]_ with a new\n"
             "   He cross-section based on [3]_; 'obcm' which is,\n"
             "   the same as 'bcmc', but with the He cross-section\n"
-            "   from [2]_, or 'vern' [4_].\n"
+            "   from [2]_, or 'vern' [4]_.\n"
             SEEALSODOC
             "get_xsxsect : Return the name of the X-Spec photoelectric absorption cross-sections.\n"
             "get_xsversion : Return the version of X-Spec used by this module.\n"
@@ -1043,8 +1049,9 @@ static PyMethodDef XSpecMethods[] = {
 
   { (char*)"set_xsxset", (PyCFunction)set_xset, METH_VARARGS,
     (char*) "set_xsxset(name, value)\n\n"
+            "Set an X-Spec XSET variable to a value.\n\n"
             "Set variables used by X-Spec models. It is equivalent to the\n"
-            "X-Spec `xset` command [1]_, but only for setting the model\n"
+            "X-Spec ``xset`` command [1]_, but only for setting the model\n"
             "database settings. See `set_xsabund`, `set_xscosmo`, and\n"
             "`set_xsxsect` for the other settings.\n"
             PARAMETERSDOC
@@ -1081,7 +1088,7 @@ static PyMethodDef XSpecMethods[] = {
             ">>> set_xsxset('POW_EMAX', '2.0')\n\n"},
   { (char*)"get_xsxset", (PyCFunction)get_xset, METH_VARARGS,
     (char*) "get_xsxset(name)\n\n"
-            "Return the X-Spec model setting.\n\n"
+            "Return the value of an X-Spec XSET variable.\n\n"
             PARAMETERSDOC
             "name : str\n"
             "   The name of the setting. There is no check that\n"
@@ -1092,7 +1099,7 @@ static PyMethodDef XSpecMethods[] = {
             "   or the empty string, if not set.\n"
             SEEALSODOC
             "set_xsxset : Set a X-Spec model setting.\n"
-            NOTESDOC "\n"
+            NOTESDOC
             "Due to the way X-Spec model settings work, `get_xsxset`\n"
             "will only return a value if it has previously been set\n"
             "with a call to `set_xsxset`. There is no way to retrive\n"
