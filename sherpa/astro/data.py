@@ -1463,6 +1463,7 @@ class DataPHA(Data1DInt):
 
     def get_y(self, filter=False, yfunc=None, response_id=None):
         vallist = Data1DInt.get_y(self, yfunc=yfunc)
+
         filter = bool_cast(filter)
 
         if not isinstance(vallist, tuple):
