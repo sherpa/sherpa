@@ -53,6 +53,10 @@ matrix:
       python: "2.7"
   allow_failures:
     - env: XSPECVER="12.8.2q" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
+      python: "nightly"
+      sudo: required
+      dist: trusty
 
 env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.4 # 1.5 does not support numpy 1.8, required by pyfits
 
