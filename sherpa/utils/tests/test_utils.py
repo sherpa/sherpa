@@ -17,6 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import pytest
 import numpy
 import multiprocessing
 from numpy.testing import assert_allclose, assert_equal
@@ -263,16 +264,23 @@ class test_utils(SherpaTestCase):
                 val = utils.neville2d(xx, yy, x, y, fval)
                 self.assertTrue(utils.Knuth_close(answer, val, tol))
 
-    def test_parallel_map(self):
-        ncpus = multiprocessing.cpu_count()
 
-        numtasks = 8
+@pytest.mark.parametrize("num_tasks, num_segments",
+                        [
+                            (1, 1),
+                            (8, 1),
+                            (1, 8),
+                            (10, 5),
+                            (5, 10),
+                            (5, 5)
+                        ])
+def test_parallel_map(num_tasks, num_segments):
         f = numpy.sum
-        iterable = [numpy.arange(1, 2+2*i) for i in range(numtasks)]
+        iterable = [numpy.arange(1, 2+2*i) for i in range(num_segments)]
 
         result = list(map(f, iterable))
         result = numpy.asarray(result)
 
-        pararesult = utils.parallel_map(f, iterable, ncpus)
+        pararesult = utils.parallel_map(f, iterable, num_tasks)
 
         assert_equal(result, numpy.asarray(pararesult))
