@@ -553,6 +553,7 @@ class test_basic_io(SherpaTestCase):
         self.assertEqualWithinTol(data.y, [4, 5, 6])
 
 
+@requires_fits
 def test_bug_276(make_data_path):
     ui.load_pha(make_data_path('3c273.pi'))
     ui.set_model('polynom1d.p1')
