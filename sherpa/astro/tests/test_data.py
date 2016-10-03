@@ -18,6 +18,7 @@
 #
 
 import numpy
+from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataPHA
 from sherpa.utils import SherpaTestCase
 
@@ -248,8 +249,14 @@ class test_filter_wave_grid(SherpaTestCase):
         assert (self._ignore==numpy.asarray(self.pha.mask)).all()
 
 
-if __name__ == '__main__':
+# It would be nice to add some unit testing here, but it's not trivial and time doesn't allow.
+def test_bug_275(make_data_path):
+    session = Session()
+    session.load_data(make_data_path('3c273.pi'))
+    str(session.get_data())
+    str(session.get_rmf())
+    str(session.get_arf())
 
-    from sherpa.utils import SherpaTest
-    import sherpa.astro
-    SherpaTest(sherpa.astro).test()
+    session.load_data(make_data_path('img.fits'))
+    str(session.get_data())
+
