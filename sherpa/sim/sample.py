@@ -166,7 +166,7 @@ class ParameterScaleVector(ParameterScale):
             if not numpy.iterable(myscales):
                 raise TypeError(
                     "scales option must be iterable of length %d " % len(thawedpars))
-            scales = map(abs, myscales)
+            scales = list(map(abs, myscales))
         scales = numpy.asarray(scales).transpose()
         return scales
 
