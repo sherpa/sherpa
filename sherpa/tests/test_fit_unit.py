@@ -1101,19 +1101,13 @@ wstat_single_array_mid_stat = 13.468744214842486
     (False, False, False, -1, 6, wstat_single_array_stat),
     (False, False, False, 1, 5, wstat_single_array_stat),
 
-    pytest.mark.xfail((False, True, False, 1.2, None,
-                       wstat_single_array_lo_stat)),
-    pytest.mark.xfail((False, False, True, 2, None,
-                       wstat_single_array_lo_stat)),
+    (False, True, False, 1.2, None, wstat_single_array_lo_stat),
+    (False, False, True, 2, None, wstat_single_array_lo_stat),
 
-    pytest.mark.xfail((False, False, False, None, 4.1,
-                       wstat_single_array_hi_stat)),
-    pytest.mark.xfail((False, False, False, 1.2, 4.1,
-                       wstat_single_array_mid_stat)),
-    pytest.mark.xfail((False, False, False, 2, 4.1,
-                       wstat_single_array_mid_stat)),
-    pytest.mark.xfail((False, False, False, 2, 4,
-                       wstat_single_array_mid_stat))
+    (False, False, False, None, 4.1, wstat_single_array_hi_stat),
+    (False, False, False, 1.2, 4.1, wstat_single_array_mid_stat),
+    (False, False, False, 2, 4.1, wstat_single_array_mid_stat),
+    (False, False, False, 2, 4, wstat_single_array_mid_stat)
 ])
 def test_fit_calc_stat_wstat_single(scalar, usestat, usesys,
                                     flo, fhi, expected):
@@ -1155,19 +1149,13 @@ def test_fit_calc_stat_wstat_single(scalar, usestat, usesys,
     (False, False, False, -1, 6, 5, wstat_single_array_stat),
     (False, False, False, 1, 5, 5, wstat_single_array_stat),
 
-    pytest.mark.xfail((False, True, False, 1.2, None, 4,
-                       wstat_single_array_lo_stat)),
-    pytest.mark.xfail((False, False, True, 2, None, 4,
-                       wstat_single_array_lo_stat)),
+    (False, True, False, 1.2, None, 4, wstat_single_array_lo_stat),
+    (False, False, True, 2, None, 4, wstat_single_array_lo_stat),
 
-    pytest.mark.xfail((False, False, False, None, 4.1, 4,
-                       wstat_single_array_hi_stat)),
-    pytest.mark.xfail((False, False, False, 1.2, 4.1, 3,
-                       wstat_single_array_mid_stat)),
-    pytest.mark.xfail((False, False, False, 2, 4.1, 3,
-                       wstat_single_array_mid_stat)),
-    pytest.mark.xfail((False, False, False, 2, 4, 3,
-                       wstat_single_array_mid_stat))
+    (False, False, False, None, 4.1, 4, wstat_single_array_hi_stat),
+    (False, False, False, 1.2, 4.1, 3, wstat_single_array_mid_stat),
+    (False, False, False, 2, 4.1, 3, wstat_single_array_mid_stat),
+    (False, False, False, 2, 4, 3, wstat_single_array_mid_stat)
 ])
 def test_fit_calc_stat_info_wstat_single(scalar, usestat, usesys,
                                          flo, fhi, nbin, expected):
@@ -1263,10 +1251,10 @@ def test_fit_calc_chisqr_wstat_single(scalar, usestat, usesys,
     # (using a slightly different approach to the final fix,
     # see #269, commit 332feb2ff70595d28fc4d6cd9e2f158a95ee46d9)
     #
-    pytest.mark.xfail((None, None, 179.593636089)),
-    pytest.mark.xfail((3, None, 177.863206820)),
-    pytest.mark.xfail((None, 12, 77.7333219274)),
-    pytest.mark.xfail((5, 15, 97.7590037051)),
+    (None, None, 179.593636089),
+    (3, None, 177.863206820),
+    (None, 12, 77.7333219274),
+    (5, 15, 97.7590037051),
 
 ])
 def test_fit_calc_stat_wstat_grouped_single(flo, fhi, expected):
@@ -1350,9 +1338,9 @@ wstat_multi_mid = 27.177406768
     (1, None, wstat_multi_all),
     (1, 1000, wstat_multi_all),
 
-    pytest.mark.xfail((2, None, wstat_multi_lo)),
-    pytest.mark.xfail((None, 8, wstat_multi_hi)),
-    pytest.mark.xfail((2, 8, wstat_multi_mid)),
+    (2, None, wstat_multi_lo),
+    (None, 8, wstat_multi_hi),
+    (2, 8, wstat_multi_mid),
 ])
 def test_fit_calc_stat_wstat_multiple(flo, fhi, expected):
     """Test the results from the calc_stat method of Fit for 3 data sets: wstat
@@ -1390,9 +1378,9 @@ wstat_multi_mid_nbins = wstat_multi_nbins - 3
     (1, None, wstat_multi_nbins, wstat_multi_all),
     (1, 1000, wstat_multi_nbins, wstat_multi_all),
 
-    pytest.mark.xfail((2, None, wstat_multi_lo_nbins, wstat_multi_lo)),
-    pytest.mark.xfail((None, 8, wstat_multi_hi_nbins, wstat_multi_hi)),
-    pytest.mark.xfail((2, 8, wstat_multi_mid_nbins, wstat_multi_mid)),
+    (2, None, wstat_multi_lo_nbins, wstat_multi_lo),
+    (None, 8, wstat_multi_hi_nbins, wstat_multi_hi),
+    (2, 8, wstat_multi_mid_nbins, wstat_multi_mid),
 ])
 def test_fit_calc_stat_info_wstat_multiple(flo, fhi, nbin, expected):
     """Test the results from the calc_stat_info method of Fit for 3 data sets: wstat
@@ -1486,6 +1474,61 @@ def test_fit_calc_stat_error_on_wstat():
         f = Fit(d, m, stat=Chi2())
         with pytest.raises(StatErr):
             f.calc_stat()
+
+
+# The Fit constructor should probably check, and error out if there
+# is a size mis-match. These should really be a unit test of the
+# stat class.
+#
+@pytest.mark.parametrize("stat", [
+    LeastSq, Chi2, Chi2DataVar, Cash, CStat
+])
+def test_fit_calc_stat_error_on_mismatch(stat):
+    """Check that an error message is raised when ndata != nmodel"""
+
+    # Do not need the fit objects returned by setup_stat_multiple,
+    # but easier to extract the information (data and models) from
+    # them.
+    #
+    statobj = stat()
+    _, fits = setup_stat_multiple(statobj, False, False)
+
+    data = [f.data for f in fits]
+    models = [f.model for f in fits]
+
+    dobj = DataSimulFit('too-many-data', data)
+    mobj = SimulFitModel('not-enough-models', models[0:2])
+    f = Fit(dobj, mobj, stat=statobj)
+    with pytest.raises(StatErr):
+        f.calc_stat()
+
+    dobj = DataSimulFit('not-enough-data', data[0:2])
+    mobj = SimulFitModel('too-many-models', models)
+    f = Fit(dobj, mobj, stat=statobj)
+    with pytest.raises(StatErr):
+        f.calc_stat()
+
+
+def test_fit_calc_stat_error_on_mismatch_wstat():
+    """Check that an error message is raised when ndata != nmodel + wstat"""
+
+    statobj = WStat()
+    _, fits = setup_wstat_multiple(None, None)
+
+    data = [f.data for f in fits]
+    models = [f.model for f in fits]
+
+    dobj = DataSimulFit('too-many-data', data)
+    mobj = SimulFitModel('not-enough-models', models[0:2])
+    f = Fit(dobj, mobj, stat=statobj)
+    with pytest.raises(StatErr):
+        f.calc_stat()
+
+    dobj = DataSimulFit('not-enough-data', data[0:2])
+    mobj = SimulFitModel('too-many-models', models)
+    f = Fit(dobj, mobj, stat=statobj)
+    with pytest.raises(StatErr):
+        f.calc_stat()
 
 
 def test_fit_calc_stat_error_no_cache():

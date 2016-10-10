@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2015, 2016  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,8 @@
 #define __sherpa_stat_extension_hh__
 
 #include <sherpa/extension.hh>
+
+#include <sstream>
 
 namespace sherpa { namespace stats {
 
@@ -138,14 +140,39 @@ namespace sherpa { namespace stats {
 
       const npy_intp nelem = yraw.get_size();
 
-      if ( ( model.get_size( ) != nelem ) || bkg.get_size( ) != nelem ||
-           ( 2 * data_size.get_size( ) != exposure_time.get_size( ) ) ||
-           nelem != backscale_ratio.get_size( ) ) {
-        PyErr_SetString( PyExc_TypeError,
-                         (char*)"statistic input array sizes do not match" );
+      if ( model.get_size() != nelem ) {
+        std::ostringstream err;
+        err << "statistic array mismatch: data size=" << nelem <<
+          " model size=" << model.get_size();
+        PyErr_SetString( PyExc_TypeError, err.str().c_str() );
         return NULL;
       }
 
+      if ( bkg.get_size() != nelem ) {
+        std::ostringstream err;
+        err << "statistic array mismatch: data size=" << nelem <<
+          " background size=" << bkg.get_size();
+        PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+        return NULL;
+      }
+
+      if ( backscale_ratio.get_size() != nelem ) {
+        std::ostringstream err;
+        err << "statistic array mismatch: data size=" << nelem <<
+          " backscale ratio size=" << backscale_ratio.get_size();
+        PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+        return NULL;
+      }
+
+      if ( exposure_time.get_size() != 2 * data_size.get_size() ) {
+        std::ostringstream err;
+        err << "statistic array mismatch: exposure size=" <<
+          exposure_time.get_size() << " 2*data size=" <<
+          2 * data_size.get_size();
+        PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+        return NULL;
+      }
+      
       npy_intp sum_data_size = 0;
       for ( npy_intp ii = 0; ii < data_size.get_size( ); ++ii )
         sum_data_size += data_size[ ii ];
@@ -172,6 +199,64 @@ namespace sherpa { namespace stats {
     }
 
 
+  template <typename ArrayType,
+	    typename DataType,
+	    int (*StatFunc)( npy_intp num, const ArrayType& yraw,
+			     const ArrayType& model,
+			     const ArrayType& weight,
+			     ArrayType& fvec, DataType& val, 
+			     DataType& trunc_value )>
+  PyObject* lklhd_statfct( PyObject* self, PyObject* args )
+  {
+
+    ArrayType yraw;
+    ArrayType model;
+    ArrayType weight;
+    DataType trunc_value = 1.0e-25;
+
+    if ( !PyArg_ParseTuple( args, (char*)"O&O&O&d",
+			    (converter)convert_to_array< ArrayType >, &yraw,
+			    (converter)convert_to_array< ArrayType >, &model,
+			    (converter)array_or_none< ArrayType >, &weight,
+			    &trunc_value) )
+      return NULL;
+
+    npy_intp nelem = yraw.get_size();
+
+    if ( model.get_size() != nelem ) {
+      std::ostringstream err;
+      err << "statistic array mismatch: data size=" << nelem <<
+        " model size=" << model.get_size();
+      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+      return NULL;
+    }
+
+    if ( weight && ( weight.get_size() != nelem ) ) {
+      std::ostringstream err;
+      err << "statistic array mismatch: data size=" << nelem <<
+        " weight size=" << model.get_size();
+      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+      return NULL;
+    }
+
+    ArrayType fvec;
+    if ( EXIT_SUCCESS != fvec.create( yraw.get_ndim(), yraw.get_dims() ) )
+      return NULL;
+
+    DataType val = 0.0;
+
+    if ( EXIT_SUCCESS != StatFunc( nelem, yraw, model, weight,
+				   fvec, val, trunc_value ) ) {
+      PyErr_SetString( PyExc_ValueError, (char*)"likelihood calculation failed");
+      return NULL;
+    }
+
+    return Py_BuildValue( (char*)"(dN)", val, fvec.return_new_ref() );
+
+  }
+
+
+    
 }  }  /* namespace stats, namespace sherpa */
 
 
@@ -182,6 +267,10 @@ namespace sherpa { namespace stats {
   sherpa::stats::name< SherpaFloatArray, SherpaFloatArray, SherpaFloat, \
                        npy_intp, IntArray >
 
+#define _LKLHD_STATFCTPTR(name) \
+  sherpa::stats::name< SherpaFloatArray, SherpaFloatArray, SherpaFloat, \
+                       npy_intp >
+
 #define _STATFCTSPEC(name, ftype) \
   FCTSPEC(name, (sherpa::stats::ftype< SherpaFloatArray, SherpaFloat, \
                                        _STATFCTPTR(name) >))
@@ -189,9 +278,14 @@ namespace sherpa { namespace stats {
   FCTSPEC(name, (sherpa::stats::ftype< SherpaFloatArray, SherpaFloat, \
                  IntArray, _WSTATFCTPTR(name) >))
 
+#define _LKLHD_STATFCTSPEC(name, ftype) \
+  FCTSPEC(name, (sherpa::stats::ftype< SherpaFloatArray, SherpaFloat, \
+                 _LKLHD_STATFCTPTR(name) >))
+
 #define STATERRFCT(name)	_STATFCTSPEC(name, staterrfct)
 #define STATFCT(name)		_STATFCTSPEC(name, statfct)
 #define WSTATFCT(name)		_WSTATFCTSPEC(name, wstatfct)
 
+#define LKLHD_STATFCT(name)	_LKLHD_STATFCTSPEC(name, lklhd_statfct)
 
 #endif /* __sherpa_stat_extension_hh__ */

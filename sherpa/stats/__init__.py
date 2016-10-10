@@ -17,10 +17,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import warnings
+
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.utils.err import StatErr
 import sherpa.stats._statfcts
+from sherpa.data import DataSimulFit
+from sherpa.models import SimulFitModel
 
 from sherpa import get_config
 from six.moves.configparser import ConfigParser
@@ -54,6 +58,10 @@ def get_syserror_weight_extra(dictionary):
 
 class Stat(NoNewAttributesAfterInit):
 
+    # Used by calc_stat_from_data.
+    #
+    _calc = None
+
     def __init__(self, name):
         self.name = name
         NoNewAttributesAfterInit.__init__(self)
@@ -70,6 +78,32 @@ class Stat(NoNewAttributesAfterInit):
     def calc_stat(self, data, model, staterror, *args, **kwargs):
         raise NotImplementedError
 
+    def calc_stat_from_data(self, data, model):
+        """Return the statistic value for the data and model.
+
+        Parameters
+        ----------
+        data : a DataSimulFit instance
+            The data sets to use.
+        model : a SimulFitModel instance
+            The model expressions for each data set. It must match
+            the data parameter (the models are in the same order
+            as the data objects).
+
+        Returns
+        -------
+        statval, fvec : number, array of numbers
+            The statistic value and the per-bin "statistic" value.
+
+        Notes
+        -----
+        Would it be a good idea to support "casting" a single data set
+        and model input into the relevant SimulFit instances, rather than
+        forcing the caller to?
+        """
+
+        raise NotImplementedError
+
 
 class Likelihood(Stat):
     """Maximum likelihood function"""
@@ -82,6 +116,25 @@ class Likelihood(Stat):
         # Likelihood stats do not have 'errors' associated with them.
         # return 1 to avoid dividing by 0 by some optimization methods.
         return numpy.ones_like(data)
+
+    def calc_stat_from_data(self, data, model):
+
+        if self._calc is None:
+            raise NotImplementedError("_calc method has not been set")
+
+        ndata = len(data.datasets)
+        nmdl = len(model.parts)
+        if ndata != nmdl:
+            raise StatErr('mismatch',
+                          'number of data sets', ndata,
+                          'model expressions', nmdl)
+
+        fitdata = data.to_fit(staterrfunc=self.calc_staterror)
+        modeldata = data.eval_model_to_fit(model)
+
+        return self._calc(fitdata[0], modeldata, None,
+                          truncation_value)
+
 
 # DOC-TODO: where is the truncate/trunc_value stored for objects
 #           AHA: it appears to be taken straight from the config
@@ -154,6 +207,8 @@ class Cash(Likelihood):
            http://adsabs.harvard.edu/abs/1979ApJ...228..939C
 
     """
+
+    _calc = _statfcts.calc_cash_stat2
 
     def __init__(self, name='cash'):
         Likelihood.__init__(self, name)
@@ -231,6 +286,8 @@ class CStat(Likelihood):
 
     """
 
+    _calc = _statfcts.calc_cstat_stat2
+
     def __init__(self, name='cstat'):
         Likelihood.__init__(self, name)
 
@@ -287,6 +344,8 @@ class Chi2(Stat):
 
     """
 
+    _calc = _statfcts.calc_chi2_stat
+
     def __init__(self, name='chi2'):
         Stat.__init__(self, name)
 
@@ -300,6 +359,28 @@ class Chi2(Stat):
         return _statfcts.calc_chi2_stat(data, model, staterror,
                                         syserror, weight, truncation_value)
 
+    def calc_stat_from_data(self, data, model):
+        """TODO: should weights be an argument or taken from data?"""
+
+        if self._calc is None:
+            raise NotImplementedError("_calc method has not been set")
+
+        ndata = len(data.datasets)
+        nmdl = len(model.parts)
+        if ndata != nmdl:
+            raise StatErr('mismatch',
+                          'number of data sets', ndata,
+                          'model expressions', nmdl)
+
+        # TODO: HOW TO GET THE WEIGHTS?
+        fitdata = data.to_fit(staterrfunc=self.calc_staterror)
+        modeldata = data.eval_model_to_fit(model)
+
+        return self._calc(fitdata[0], modeldata,
+                          fitdata[1], fitdata[2],
+                          None,  # TODO: weights
+                          truncation_value)
+
 
 class LeastSq(Chi2):
     """Least Squared Statistic.
@@ -308,6 +389,8 @@ class LeastSq(Chi2):
     statistic where the error on each point - sigma(i) - is 1.
 
     """
+
+    _calc = _statfcts.calc_lsq_stat
 
     def __init__(self, name='leastsq'):
         Stat.__init__(self, name)
@@ -433,6 +516,8 @@ class Chi2ModVar(Chi2):
 
     """
 
+    _calc = _statfcts.calc_chi2modvar_stat
+
     def __init__(self, name='chi2modvar'):
         Chi2.__init__(self, name)
 
@@ -526,6 +611,9 @@ class UserStat(Stat):
         #     return self.statfunc(data, model, staterror, syserror, weight,
         #                          bkg['bkg'])
 
+    def calc_stat_from_data(self, data, model, *args, **kwargs):
+        raise StatErr('nostat', self.name, 'calc_stat_from_data()')
+
 
 class WStat(Likelihood):
     """Maximum likelihood function including background (XSPEC style).
@@ -589,11 +677,14 @@ class WStat(Likelihood):
 
     """
 
+    _calc = _statfcts.calc_wstat_stat
+
     def __init__(self, name='wstat'):
         Likelihood.__init__(self, name)
 
     @staticmethod
     def calc_stat(data, model, staterror, *args, **kwargs):
+
         syserror, weight, extra = get_syserror_weight_extra(kwargs)
         if extra is None or extra['bkg'] is None:
             raise StatErr('usecstat')
@@ -604,3 +695,81 @@ class WStat(Likelihood):
                                          extra['bkg'],
                                          extra['backscale_ratio'],
                                          truncation_value)
+
+    def calc_stat_from_data(self, data, model):
+
+        ndata = len(data.datasets)
+        nmdl = len(model.parts)
+        if ndata != nmdl:
+            raise StatErr('mismatch',
+                          'number of data sets', ndata,
+                          'model expressions', nmdl)
+
+        # Need access to backscal values and background data filtered
+        # and grouped in the same manner as the data. There is no
+        # easy access to this via the Data API (in part because the
+        # Data class has no knowledge of grouping or backscale values).
+        #
+        data_src = []
+        data_model = []
+        data_bkg = []
+        nelems = []
+        exposures = []
+        backscales = []
+
+        for dset, mexpr in zip(data.datasets, model.parts):
+
+            y = dset.to_fit(staterrfunc=None)[0]
+            data_src.append(y)
+            data_model.append(dset.eval_model_to_fit(mexpr))
+            nelems.append(y.size)
+
+            try:
+                bids = dset.background_ids
+            except AttributeError:
+                raise StatErr('usecstat')
+
+            nbkg = len(bids)
+            if nbkg == 0:
+                raise StatErr('usecstat')
+
+            elif nbkg > 1:
+                # TODO: improve warning
+                warnings.warn("Only using first background component for data set {}".format(dset.name))
+
+            bid = bids[0]
+
+            bset = dset.get_background(bid)
+
+            data_bkg.append(dset.apply_filter(bset.get_dep(False),
+                                              groupfunc=numpy.sum))
+
+            exposures.extend([dset.exposure, bset.exposure])
+
+            # The assumption is that the source and background datasets
+            # have the same number of channels (before any grouping or
+            # filtering is applied).
+            #
+            # Since the backscal values can be a scalar or array, it is
+            # easiest just to convert everything to an array.
+            #
+            dummy = numpy.ones(dset.get_dep(False).size)
+
+            # Combine the BACKSCAL values by using the middle element
+            # of the group.
+            #
+            src_backscal = dset.apply_filter(dset.backscal * dummy,
+                                             groupfunc=dset._middle)
+            bkg_backscal = dset.apply_filter(bset.backscal * dummy,
+                                             groupfunc=dset._middle)
+
+            backscales.append(bkg_backscal / src_backscal)
+
+        data_src = numpy.concatenate(data_src)
+        data_model = numpy.concatenate(data_model)
+        data_bkg = numpy.concatenate(data_bkg)
+        backscales = numpy.concatenate(backscales)
+
+        return self._calc(data_src, data_model, nelems,
+                          exposures, data_bkg, backscales,
+                          truncation_value)

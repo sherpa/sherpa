@@ -977,20 +977,43 @@ class Fit(NoNewAttributesAfterInit):
         """
         self.model.guess(*self.data.to_guess(), **kwargs)
 
+    # QUS: should this have an @evaluates_model decorator?
+    #
     def _calc_stat(self):
-        dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
-        model = self.data.eval_model_to_fit(self.model)
-        extra_args = self._iterfit.get_extra_args(dep)
-        return self.stat.calc_stat(dep, model, staterror, syserror=syserror,
-                                   extra_args=extra_args)
+        """Calculate the current statistic value.
+
+        Returns
+        -------
+        statval, fvec : number, array of numbers
+            The overall statistic value and the "per-bin" value.
+        """
+
+        # Casting into simultaneous objects is not great (and should
+        # be done in __init__ if we are going to do this).
+        #
+        # Note that, because of Fit.simulfit, we can not assume that
+        # self.data and self.model are single (i.e. not simultaneous)
+        # objects.
+        #
+        if isinstance(self.data, DataSimulFit):
+            data = self.data
+        else:
+            data = DataSimulFit('simulfit data', (self.data,))
+
+        if isinstance(self.model, SimulFitModel):
+            model = self.model
+        else:
+            model = SimulFitModel('simulfit model', (self.model,))
+
+        # TODO: is there anything missing here that
+        #       self._iterfit.get_extra_args calculates?
+        return self.stat.calc_stat_from_data(data, model)
 
     def calc_stat(self):
-        """Calculate the fit statistic for a data set.
+        """Calculate the statistic value.
 
-        Evaluate the model for one or more data sets, compare it to
-        the data using the current statistic, and return the value.
-        No fitting is done, as the current model parameter, and any
-        filters, are used.
+        Evaluate the statistic for the current model and data
+        settings (e.g. parameter values and data filters).
 
         Returns
         -------
@@ -999,18 +1022,17 @@ class Fit(NoNewAttributesAfterInit):
 
         See Also
         --------
-        calc_chisqr : Calculate the per-bin chi-squared statistic.
+        calc_chisqr, calc_stat_info
 
         """
+
         return self._calc_stat()[0]
 
     def calc_chisqr(self):
         """Calculate the per-bin chi-squared statistic.
 
-        Evaluate the model for one or more data sets, compare it to
-        the data using the current statistic, and return the value for
-        each bin.  No fitting is done, as the current model parameter,
-        and any filters, are used.
+        Evaluate the per-bin statistic for the current model and data
+        settings (e.g. parameter values and data filters).
 
         Returns
         -------
@@ -1022,9 +1044,11 @@ class Fit(NoNewAttributesAfterInit):
 
         See Also
         --------
-        calc_stat : Calculate the fit statistic for a data set.
+        calc_stat, calc_stat_info
 
         """
+
+        # TODO: needs to be updated to use same approach as calc_stat
 
         if not isinstance(self.stat, Chi2):
             return None
@@ -1038,6 +1062,26 @@ class Fit(NoNewAttributesAfterInit):
         return stat * stat
 
     def calc_stat_info(self):
+        """Calculate the statistic value and related information.
+
+        Evaluate the statistic for the current model and data
+        settings (e.g. parameter values and data filters).
+
+        Returns
+        -------
+        statinfo : StatInfoResults instance
+           The current statistic value.
+
+        See Also
+        --------
+        calc_chisqr, calc_stat
+
+        """
+
+        # TODO: does this need to be updated due to changes in _calc_stat?
+        #       also, this logic would be better in the stat class
+        #       than here
+        #
         stat, fvec = self._calc_stat()
         model = self.data.eval_model_to_fit(self.model)
 

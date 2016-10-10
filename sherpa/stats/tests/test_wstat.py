@@ -23,6 +23,10 @@
 # elsewhere, but for now it is useful to have some testing of
 # the various options.
 #
+# Note: sherpa/tests/test_fit_unit.py has been added which replicates
+#       some of these tests. A review has not been done to see if
+#       these tests can be removed.
+#
 # At present the statistic tests are not broken up into unit and
 # integration tests, as most of the functionality is tested either
 # in integration tests (directly or implicitly).
@@ -320,7 +324,7 @@ class test_wstat_group_counts(SherpaTestCase):
     into test_wstat_two_scalar (since it avoids having multiple
     copies of the settings, and lets the wstat be tested on
     > 2 data sets), but for now keep as a separate set of tests
-    to make sure it is obvioud what is and isn't failing.
+    to make sure it is obvious what is and isn't failing.
     """
 
     def setUp(self):
@@ -377,7 +381,6 @@ class test_wstat_group_counts(SherpaTestCase):
         stat = ui.calc_stat(idval)
         self.assertAlmostEqual(expected, stat, places=7)
 
-    @expectedFailure
     def test_wstat_grouped_all(self):
 
         # Used git commit 770359b5004374b969ebb63c173f293419397b4c
@@ -385,7 +388,6 @@ class test_wstat_group_counts(SherpaTestCase):
         expval = 401.75572944361613
         self._check_stat(1, 148, expval)
 
-    @expectedFailure
     def test_wstat_grouped_filtered(self):
         self._filter_data()
 
@@ -482,14 +484,12 @@ class test_wstat_single_array(SherpaTestCase):
         stat = ui.calc_stat()
         self.assertAlmostEqual(expected, stat, places=7)
 
-    @expectedFailure
     def test_wstat_grouped_all(self):
 
         # Used git commit 770359b5004374b969ebb63c173f293419397b4c
         # to create the oracle value, on a linux 64-bit machine.
         self._check_stat(46, 71.21845954979574)
 
-    @expectedFailure
     def test_wstat_grouped_filtered(self):
         self._filter_data()
 
@@ -504,7 +504,6 @@ class test_wstat_single_array(SherpaTestCase):
         # to create the oracle value, on a linux 64-bit machine.
         self._check_stat(1024, 663.0160968458746)
 
-    @expectedFailure
     def test_wstat_ungrouped_filtered(self):
         ui.ungroup()
         self._filter_data()
