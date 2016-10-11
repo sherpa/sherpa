@@ -107,7 +107,7 @@ class DataARF(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = filter((lambda x: x != 'header'), self._fields)
+            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -181,7 +181,7 @@ class DataRMF(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = filter((lambda x: x != 'header'), self._fields)
+            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -401,7 +401,7 @@ class DataPHA(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = filter((lambda x: x != 'header'), self._fields)
+            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -1814,7 +1814,7 @@ class DataIMG(Data2D):
         old = self._fields
         ss = old
         try:
-            self._fields = filter((lambda x: x != 'header'), self._fields)
+            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
