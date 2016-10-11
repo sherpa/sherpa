@@ -18,8 +18,6 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import os.path
-
 import numpy
 
 from sherpa.utils import requires_data, requires_xspec, requires_fits
@@ -29,9 +27,8 @@ from sherpa.data import Data1D
 from sherpa.models import PowLaw1D, SimulFitModel
 from sherpa.data import DataSimulFit
 from sherpa.fit import Fit
-from sherpa.stats import Stat, Cash, LeastSq, UserStat, WStat, \
-    CStat, LeastSq, Chi2Gehrels, Chi2ConstVar, Chi2ModVar, Chi2XspecVar, \
-    Chi2DataVar
+from sherpa.stats import Cash, CStat, WStat, LeastSq, UserStat, \
+    Chi2Gehrels, Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Chi2DataVar
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.utils.err import StatErr
 from sherpa.astro import ui
@@ -417,11 +414,13 @@ class test_stats(SherpaTestCase):
             assert arg1[key] == int(getattr(arg2, key))
 
         for key in ["istatval", "statval"]:
-            numpy.testing.assert_allclose(float(arg1[key]), float(getattr(arg2, key)), tol)
+            numpy.testing.assert_allclose(float(arg1[key]),
+                                          float(getattr(arg2, key)), tol)
 
         for key in ["parvals"]:
             try:
-                numpy.testing.assert_allclose(arg1[key], getattr(arg2, key), tol)
+                numpy.testing.assert_allclose(arg1[key],
+                                              getattr(arg2, key), tol)
             except AssertionError:
                 print('parvals bench: ', arg1[key])
                 print('parvals fit:   ', getattr(arg2, key))
