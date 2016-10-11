@@ -160,8 +160,10 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
         for x in oflxiflx:
             sf = numpy.sort(x)
             median = numpy.median(sf)
-            upconfidence = sf[(1.0 - myconfidence) * size - 1]
-            loconfidence = sf[myconfidence * size - 1]
+            upconfidence_index = int((1.0 - myconfidence) * size - 1)
+            loconfidence_index = int(myconfidence * size - 1)
+            upconfidence = sf[upconfidence_index]
+            loconfidence = sf[loconfidence_index]
             result.append(numpy.array([median, upconfidence, loconfidence]))
 
         print_sample_result('original model flux', result[0])
