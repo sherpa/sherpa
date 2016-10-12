@@ -381,6 +381,33 @@ class Chi2(Stat):
                           None,  # TODO: weights
                           truncation_value)
 
+    def calc_chisqr(self, data, model):
+        """Return the chi-square value for each bin.
+
+        Parameters
+        ----------
+        data : a DataSimulFit instance
+            The data sets to use.
+        model : a SimulFitModel instance
+            The model expressions for each data set. It must match
+            the data parameter (the models are in the same order
+            as the data objects).
+
+        Returns
+        -------
+        chisqr : array of numbers
+            The per-bin chi-square values.
+
+        Notes
+        -----
+        Would it be a good idea to support "casting" a single data set
+        and model input into the relevant SimulFit instances, rather than
+        forcing the caller to?
+        """
+
+        _, fvec = self.calc_stat_from_data(data, model)
+        return fvec * fvec
+
 
 class LeastSq(Chi2):
     """Least Squared Statistic.

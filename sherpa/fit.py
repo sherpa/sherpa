@@ -1048,18 +1048,31 @@ class Fit(NoNewAttributesAfterInit):
 
         """
 
-        # TODO: needs to be updated to use same approach as calc_stat
-
-        if not isinstance(self.stat, Chi2):
+        # Since there is some setup work needed before calling
+        # this routine, and to avoid catching any AttributeErrors
+        # thrown by the routine, use this un-pythonic check.
+        #
+        if not hasattr(self.stat, 'calc_chisqr'):
             return None
 
-        dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
-        model = self.data.eval_model_to_fit(self.model)
-        extra_args = self._iterfit.get_extra_args(dep)
-        stat = self.stat.calc_stat(dep, model, staterror,
-                                   syserror=syserror,
-                                   extra_args=extra_args)[1]
-        return stat * stat
+        # Casting into simultaneous objects is not great (and should
+        # be done in __init__ if we are going to do this).
+        #
+        # Note that, because of Fit.simulfit, we can not assume that
+        # self.data and self.model are single (i.e. not simultaneous)
+        # objects.
+        #
+        if isinstance(self.data, DataSimulFit):
+            data = self.data
+        else:
+            data = DataSimulFit('simulfit data', (self.data,))
+
+        if isinstance(self.model, SimulFitModel):
+            model = self.model
+        else:
+            model = SimulFitModel('simulfit model', (self.model,))
+
+        return self.stat.calc_chisqr(data, model)
 
     def calc_stat_info(self):
         """Calculate the statistic value and related information.
