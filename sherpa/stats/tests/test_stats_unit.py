@@ -217,16 +217,20 @@ def setup_multiple_1dint(stat, sys):
     return mdata, mmodel
 
 
-def setup_single_pha(background=True):
+def setup_single_pha(stat, sys, background=True):
     """Return a single data set and model (as SimulFit objects).
 
     This is aimed at wstat calculation, and so the DataPHA object has
-    no attached response.
+    no attached response. The data set is grouped.
 
     Parameters
     ----------
+    stat, sys : bool
+        Should statistical and systematic errors be explicitly set
+        (True) or taken from the statistic (False)?
     background : bool
         Should a background data set be included (True) or not (False)?
+        The background is *not* subtracted when True.
 
     Returns
     -------
@@ -244,8 +248,16 @@ def setup_single_pha(background=True):
     channels = np.arange(1, 6, dtype=np.int16)
     counts = np.asarray([10, 13, 9, 17, 21], dtype=np.int16)
 
-    staterror = None
-    syserror = None
+    if stat:
+        staterror = np.asarray([3.0, 4.0, 3.0, 4.0, 5.0])
+    else:
+        staterror = None
+
+    if sys:
+        syserror = 0.2 * counts
+    else:
+        syserror = None
+
     grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
     # quality = np.asarray([0, 0, 0, 0, 0], dtype=np.int16)
     quality = None
@@ -262,8 +274,17 @@ def setup_single_pha(background=True):
 
     if background:
         bgcounts = np.asarray([2, 1, 0, 2, 2], dtype=np.int16)
-        bgstaterror = None
-        bgsyserror = None
+
+        if stat:
+            bgstaterror = np.asarray([0.2, 0.4, 0.5, 0.3, 0.2])
+        else:
+            bgstaterror = None
+
+        if sys:
+            bgsyserror = 0.3 * bgcounts
+        else:
+            bgsyserror = None
+
         bggrouping = None
         bgquality = None
 
@@ -335,7 +356,7 @@ def test_stats_calc_stat_wstat_nobg(usestat, usesys):
     with pytest.raises(StatErr):
         statobj.calc_stat_from_data(data, model)
 
-    data, model = setup_single_pha(background=False)
+    data, model = setup_single_pha(False, False, background=False)
     with pytest.raises(StatErr):
         statobj.calc_stat_from_data(data, model)
 
@@ -345,7 +366,7 @@ def test_stats_calc_stat_wstat_diffbins():
 
     statobj = WStat()
 
-    data, model = setup_single_pha(background=True)
+    data, model = setup_single_pha(True, False, background=True)
 
     # Tweak data to have one-less bin than the background
     d = data.datasets[0]
@@ -772,4 +793,64 @@ def test_stats_calc_stat_multi(stat, usestat, usesys, expected1, delta):
 
     # correct for the one missing bin in the second dataset
     expected = 2 * expected1 - delta
+    assert_almost_equal(answer, expected)
+
+
+# These values were created on a 64-bit Linux machine using
+# CIAO 4.8
+#
+stat_pha_chi2_tt = 1.30511684776
+stat_pha_chi2_tf = 2.0728
+
+# with background subtraction
+stat_pha_chi2_bg_tt = 1.36147410407
+stat_pha_chi2_bg_tf = 2.15970543269
+
+stat_pha_gehrels_ff = 1.37612618038
+stat_pha_gehrels_ft = 0.989239848562
+
+stat_pha_gehrels_bg_ff = 1.43234664248
+stat_pha_gehrels_bg_ft = 1.03105762001
+
+
+# This is not as extensive as some of the earlier checks as the
+# assumption is that if it works for these variants it should be
+# okay with the others.
+#
+@pytest.mark.parametrize("stat,usestat,usesys,havebg,usebg,expected", [
+    (Chi2, True, True, False, False, stat_pha_chi2_tt),
+    (Chi2, True, True, True, False, stat_pha_chi2_tt),
+    (Chi2, True, True, True, True, stat_pha_chi2_bg_tt),
+
+    (Chi2, True, False, False, False, stat_pha_chi2_tf),
+    (Chi2, True, False, True, False, stat_pha_chi2_tf),
+    (Chi2, True, False, True, True, stat_pha_chi2_bg_tf),
+
+    (Chi2Gehrels, True, True, False, False, stat_pha_chi2_tt),
+    (Chi2Gehrels, True, True, True, False, stat_pha_chi2_tt),
+    (Chi2Gehrels, True, True, True, True, stat_pha_chi2_bg_tt),
+
+    (Chi2Gehrels, True, False, False, False, stat_pha_chi2_tf),
+    (Chi2Gehrels, True, False, True, False, stat_pha_chi2_tf),
+    (Chi2Gehrels, True, False, True, True, stat_pha_chi2_bg_tf),
+
+    (Chi2Gehrels, False, False, False, False, stat_pha_gehrels_ff),
+    (Chi2Gehrels, False, False, True, False, stat_pha_gehrels_ff),
+    (Chi2Gehrels, False, False, True, True, stat_pha_gehrels_bg_ff),
+
+    (Chi2Gehrels, False, True, False, False, stat_pha_gehrels_ft),
+    (Chi2Gehrels, False, True, True, False, stat_pha_gehrels_ft),
+    (Chi2Gehrels, False, True, True, True, stat_pha_gehrels_bg_ft),
+])
+def test_stats_calc_stat_pha_chi2(stat, usestat, usesys,
+                                  havebg, usebg, expected):
+    """statistic calculates expected values: single PHA dataset"""
+
+    data, model = setup_single_pha(usestat, usesys, background=havebg)
+    if usebg:
+        data.datasets[0].subtract()
+
+    statobj = stat()
+    # do not check fvec
+    answer, _ = statobj.calc_stat_from_data(data, model)
     assert_almost_equal(answer, expected)
