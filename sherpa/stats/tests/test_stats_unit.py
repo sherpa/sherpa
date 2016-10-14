@@ -41,9 +41,10 @@ import numpy as np
 
 from numpy.testing import assert_almost_equal, assert_equal
 
+from sherpa.astro.data import DataPHA
 from sherpa.data import Data1D, Data1DInt, DataSimulFit
 from sherpa.models.model import SimulFitModel
-from sherpa.models.basic import Polynom1D
+from sherpa.models.basic import Const1D, Polynom1D
 from sherpa.utils.err import StatErr
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
@@ -131,6 +132,9 @@ def setup_single_1dint(stat, sys):
     mdl.c2 = 0.08
     mdl.offset = -1
 
+    mdl.offset.frozen = False
+    mdl.c2.frozen = False
+
     return DataSimulFit('tst', (data,)), SimulFitModel('mdl', (mdl,))
 
 
@@ -213,6 +217,81 @@ def setup_multiple_1dint(stat, sys):
     return mdata, mmodel
 
 
+def setup_single_pha(background=True):
+    """Return a single data set and model (as SimulFit objects).
+
+    This is aimed at wstat calculation, and so the DataPHA object has
+    no attached response.
+
+    Parameters
+    ----------
+    background : bool
+        Should a background data set be included (True) or not (False)?
+
+    Returns
+    -------
+    data, model
+        DataSimulFit and SimulFitModel objects. The data is a DataPHA
+        object.
+
+    """
+
+    # If used the same bins as setup_single_1dint then could
+    # re-use the results, but the bins are different, and it
+    # is useful for the Data1DInt case to test non-consecutive
+    # histogram bins.
+    #
+    channels = np.arange(1, 6, dtype=np.int16)
+    counts = np.asarray([10, 13, 9, 17, 21], dtype=np.int16)
+
+    staterror = None
+    syserror = None
+    grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
+    # quality = np.asarray([0, 0, 0, 0, 0], dtype=np.int16)
+    quality = None
+
+    exposure = 150.0
+    backscal = 0.01
+
+    # does not set areascal or header
+    data = DataPHA(name='tstpha', channel=channels,
+                   counts=counts, staterror=staterror,
+                   syserror=syserror, grouping=grouping,
+                   quality=quality, exposure=exposure,
+                   backscal=backscal)
+
+    if background:
+        bgcounts = np.asarray([2, 1, 0, 2, 2], dtype=np.int16)
+        bgstaterror = None
+        bgsyserror = None
+        bggrouping = None
+        bgquality = None
+
+        bgexposure = 550.0
+        bgbackscal = np.asarray([0.05, 0.06, 0.04, 0.04, 0.07])
+
+        bgdata = DataPHA(name='bgpha', channel=channels,
+                         counts=bgcounts, staterror=bgstaterror,
+                         syserror=bgsyserror, grouping=bggrouping,
+                         quality=bgquality, exposure=bgexposure,
+                         backscal=bgbackscal)
+
+        data.set_background(bgdata)
+
+    # Trying a multi-component model, even though this actual
+    # model is degenerate (cnst.c0 and poly.c0)
+    cnst = Const1D('cnst')
+    poly = Polynom1D('poly')
+
+    cnst.c0 = 1.2
+    poly.c0 = 7.9
+    poly.c1 = 2.1
+    poly.c1.frozen = False
+
+    mdl = cnst + poly
+    return DataSimulFit('tst', (data,)), SimulFitModel('mdl', (mdl,))
+
+
 @pytest.mark.parametrize("stat", [Cash, CStat, WStat, UserStat])
 def test_stats_calc_chisqr_missing(stat):
     """non chi-quare statistics do not have a calc_chisqr."""
@@ -247,12 +326,43 @@ def test_stats_calc_stat_chi2_nostat(usesys):
     (False, True),
     (False, False),
 ])
-def test_stats_calc_stat_wstat(usestat, usesys):
+def test_stats_calc_stat_wstat_nobg(usestat, usesys):
     """wstat statistic fails with no background"""
 
-    data, model = setup_single(usestat, usesys)
     statobj = WStat()
+
+    data, model = setup_single(usestat, usesys)
     with pytest.raises(StatErr):
+        statobj.calc_stat_from_data(data, model)
+
+    data, model = setup_single_pha(background=False)
+    with pytest.raises(StatErr):
+        statobj.calc_stat_from_data(data, model)
+
+
+def test_stats_calc_stat_wstat_diffbins():
+    """wstat statistic fails when src/bg bin sizes do not match"""
+
+    statobj = WStat()
+
+    data, model = setup_single_pha(background=True)
+
+    # Tweak data to have one-less bin than the background
+    d = data.datasets[0]
+    d.channel = d.channel[:-1]
+    d.counts = d.channel[:-1]
+    for attr in ['staterror', 'syserror', 'grouping', 'quality',
+                 'backscal']:
+        val = getattr(d, attr)
+        if val is not None:
+            try:
+                setattr(d, attr, val[:-1])
+            except TypeError:
+                # assume a scalar, so leave be
+                pass
+
+    # There is no Sherpa error for this, which seems surprising
+    with pytest.raises(TypeError):
         statobj.calc_stat_from_data(data, model)
 
 
