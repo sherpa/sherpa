@@ -799,10 +799,14 @@ def test_stats_calc_stat_multi(stat, usestat, usesys, expected1, delta):
 # These values were created on a 64-bit Linux machine using
 # CIAO 4.8
 #
+stat_pha_lsq = 51.82
+
 stat_pha_chi2_tt = 1.30511684776
 stat_pha_chi2_tf = 2.0728
 
 # with background subtraction
+stat_pha_lsq_bg = 53.9958239163
+
 stat_pha_chi2_bg_tt = 1.36147410407
 stat_pha_chi2_bg_tf = 2.15970543269
 
@@ -818,6 +822,14 @@ stat_pha_gehrels_bg_ft = 1.03105762001
 # okay with the others.
 #
 @pytest.mark.parametrize("stat,usestat,usesys,havebg,usebg,expected", [
+    (LeastSq, True, True, False, False, stat_pha_lsq),
+    (LeastSq, True, True, True, False, stat_pha_lsq),
+    (LeastSq, True, True, True, True, stat_pha_lsq_bg),
+
+    (LeastSq, False, False, False, False, stat_pha_lsq),
+    (LeastSq, False, False, True, False, stat_pha_lsq),
+    (LeastSq, False, False, True, True, stat_pha_lsq_bg),
+
     (Chi2, True, True, False, False, stat_pha_chi2_tt),
     (Chi2, True, True, True, False, stat_pha_chi2_tt),
     (Chi2, True, True, True, True, stat_pha_chi2_bg_tt),
