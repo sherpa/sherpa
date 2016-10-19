@@ -782,8 +782,10 @@ class WStat(Likelihood):
             #
             dummy = numpy.ones(dset.get_dep(False).size)
 
-            # Combine the BACKSCAL values by using the middle element
-            # of the group.
+            # Combine the BACKSCAL values (use the default _middle
+            # scheme as this is used elsewhere when combining
+            # BACKSCAL values; perhaps there should be an API call
+            # for this?).
             #
             src_backscal = dset.apply_filter(dset.backscal * dummy,
                                              groupfunc=dset._middle)

@@ -157,12 +157,10 @@ def setup_multiple(usestat, usesys):
     """
 
     x, y = setup_single(usestat, usesys)
-
     data1 = x.datasets[0]
     model1 = y.parts[0]
 
     x, y = setup_single(usestat, usesys)
-
     data2 = x.datasets[0]
     data2.ignore(1, 3.5)
 
@@ -173,7 +171,6 @@ def setup_multiple(usestat, usesys):
 
     mdata = DataSimulFit('simul', (data1, data2))
     mmodel = SimulFitModel('simul', (model1, model1))
-
     return mdata, mmodel
 
 
@@ -197,12 +194,10 @@ def setup_multiple_1dint(stat, sys):
     """
 
     x, y = setup_single_1dint(stat, sys)
-
     data1 = x.datasets[0]
     model1 = y.parts[0]
 
     x, y = setup_single_1dint(stat, sys)
-
     # The bins cover (-10,-5), (-5,2), (3,4), (4,7)
     data2 = x.datasets[0]
     data2.ignore(2.5, 3.5)
@@ -213,7 +208,6 @@ def setup_multiple_1dint(stat, sys):
 
     mdata = DataSimulFit('simul', (data1, data2))
     mmodel = SimulFitModel('simul', (model1, model1))
-
     return mdata, mmodel
 
 
@@ -816,6 +810,15 @@ stat_pha_gehrels_ft = 0.989239848562
 stat_pha_gehrels_bg_ff = 1.43234664248
 stat_pha_gehrels_bg_ft = 1.03105762001
 
+# TODO: should the background subtraction actually raise an errror
+#       for the likelihood statistics?
+#
+stat_pha_cash = -299.771783393
+stat_pha_cash_bg = -297.366618448
+
+stat_pha_cstat = 1.75191290087
+stat_pha_cstat_bg = 1.8269289994
+
 
 # This is not as extensive as some of the earlier checks as the
 # assumption is that if it works for these variants it should be
@@ -853,9 +856,18 @@ stat_pha_gehrels_bg_ft = 1.03105762001
     (Chi2Gehrels, False, True, False, False, stat_pha_gehrels_ft),
     (Chi2Gehrels, False, True, True, False, stat_pha_gehrels_ft),
     (Chi2Gehrels, False, True, True, True, stat_pha_gehrels_bg_ft),
+
+    (Cash, True, True, False, False, stat_pha_cash),
+    (Cash, False, False, False, False, stat_pha_cash),
+    (Cash, False, False, True, True, stat_pha_cash_bg),
+
+    (CStat, True, True, False, False, stat_pha_cstat),
+    (CStat, False, False, False, False, stat_pha_cstat),
+    (CStat, False, False, True, True, stat_pha_cstat_bg),
+
 ])
-def test_stats_calc_stat_pha_chi2(stat, usestat, usesys,
-                                  havebg, usebg, expected):
+def test_stats_calc_stat_pha(stat, usestat, usesys,
+                             havebg, usebg, expected):
     """statistic calculates expected values: single PHA dataset"""
 
     data, model = setup_single_pha(usestat, usesys, background=havebg)
