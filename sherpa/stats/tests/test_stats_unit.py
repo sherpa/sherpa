@@ -860,6 +860,8 @@ stat_pha_cash_bg = -297.366618448
 stat_pha_cstat = 1.75191290087
 stat_pha_cstat_bg = 1.8269289994
 
+stat_pha_wstat = 1.81735155799
+
 
 # This is not as extensive as some of the earlier checks as the
 # assumption is that if it works for these variants it should be
@@ -906,6 +908,10 @@ stat_pha_cstat_bg = 1.8269289994
     (CStat, False, False, False, False, stat_pha_cstat),
     (CStat, False, False, True, True, stat_pha_cstat_bg),
 
+    # Using havebg=False for wstat will raise an error
+    (WStat, False, False, True, False, stat_pha_wstat),
+    (WStat, True, True, True, False, stat_pha_wstat),
+
 ])
 def test_stats_calc_stat_pha(stat, usestat, usesys,
                              havebg, usebg, expected):
@@ -941,6 +947,8 @@ delta_pha_cash_bg = -114.907812934
 
 delta_pha_cstat = 1.56044177301
 delta_pha_cstat_bg = 1.62535170774
+
+delta_pha_wstat = 1.61766768199
 
 
 @pytest.mark.parametrize("stat,usestat,usesys,havebg,usebg,expected1,delta", [
@@ -996,6 +1004,8 @@ delta_pha_cstat_bg = 1.62535170774
     (CStat, False, False, False, False, stat_pha_cstat, delta_pha_cstat),
     (CStat, False, False, True, True, stat_pha_cstat_bg, delta_pha_cstat_bg),
 
+    # Using havebg=False for wstat will raise an error
+    (WStat, False, False, True, False, stat_pha_wstat, delta_pha_wstat),
 ])
 def test_stats_calc_stat_pha_multi(stat, usestat, usesys,
                                    havebg, usebg,
