@@ -307,6 +307,47 @@ def setup_single_pha(stat, sys, background=True):
     return DataSimulFit('tst', (data,)), SimulFitModel('mdl', (mdl,))
 
 
+def setup_multiple_pha(stat, sys, background=True):
+    """Return multiple DataPHA sets and model (as SimulFit objects).
+
+    This is aimed at wstat calculation, and so the DataPHA object has
+    no attached response. The data set is grouped. As with
+    setup_multiple, the second dataset is a filtered version of the
+    first one.
+
+    Parameters
+    ----------
+    stat, sys : bool
+        Should statistical and systematic errors be explicitly set
+        (True) or taken from the statistic (False)?
+    background : bool
+        Should a background data set be included (True) or not (False)?
+        The background is *not* subtracted when True.
+
+    Returns
+    -------
+    data, model
+        DataSimulFit and SimulFitModel objects. The data sets
+        are DataPHA objects.
+
+    """
+
+    x, y = setup_single_pha(stat, sys, background=background)
+    data1 = x.datasets[0]
+    model1 = y.parts[0]
+
+    x, y = setup_single_pha(stat, sys, background=background)
+    data2 = x.datasets[0]
+    data2.ignore(3, 3.8)
+
+    # sanity check
+    assert_equal(data2.mask, np.asarray([True, False, True]))
+
+    mdata = DataSimulFit('simul', (data1, data2))
+    mmodel = SimulFitModel('simul', (model1, model1))
+    return mdata, mmodel
+
+
 @pytest.mark.parametrize("stat", [Cash, CStat, WStat, UserStat])
 def test_stats_calc_chisqr_missing(stat):
     """non chi-quare statistics do not have a calc_chisqr."""
@@ -877,4 +918,99 @@ def test_stats_calc_stat_pha(stat, usestat, usesys,
     statobj = stat()
     # do not check fvec
     answer, _ = statobj.calc_stat_from_data(data, model)
+    assert_almost_equal(answer, expected)
+
+
+delta_pha_lsq = 47.61
+delta_pha_lsq_bg = 49.5104132231
+
+delta_pha_chi2_tt = 1.19623115578
+delta_pha_chi2_bg_tt = 1.24393083148
+
+delta_pha_chi2_tf = 1.9044
+delta_pha_chi2_bg_tf = 1.98029132869
+
+delta_pha_gehrels_ff = 1.24980047974
+delta_pha_gehrels_bg_ff = 1.29856800178
+
+delta_pha_gehrels_ft = 0.900100722244
+delta_pha_gehrels_bg_ft = 0.935448397267
+
+delta_pha_cash = -115.860578204
+delta_pha_cash_bg = -114.907812934
+
+delta_pha_cstat = 1.56044177301
+delta_pha_cstat_bg = 1.62535170774
+
+
+@pytest.mark.parametrize("stat,usestat,usesys,havebg,usebg,expected1,delta", [
+    (LeastSq, True, True, False, False, stat_pha_lsq, delta_pha_lsq),
+    (LeastSq, True, True, True, False, stat_pha_lsq, delta_pha_lsq),
+    (LeastSq, True, True, True, True, stat_pha_lsq_bg, delta_pha_lsq_bg),
+
+    (LeastSq, False, False, False, False, stat_pha_lsq, delta_pha_lsq),
+    (LeastSq, False, False, True, False, stat_pha_lsq, delta_pha_lsq),
+    (LeastSq, False, False, True, True, stat_pha_lsq_bg, delta_pha_lsq_bg),
+
+    (Chi2, True, True, False, False, stat_pha_chi2_tt, delta_pha_chi2_tt),
+    (Chi2, True, True, True, False, stat_pha_chi2_tt, delta_pha_chi2_tt),
+    (Chi2, True, True, True, True, stat_pha_chi2_bg_tt, delta_pha_chi2_bg_tt),
+
+    (Chi2, True, False, False, False, stat_pha_chi2_tf, delta_pha_chi2_tf),
+    (Chi2, True, False, True, False, stat_pha_chi2_tf, delta_pha_chi2_tf),
+    (Chi2, True, False, True, True, stat_pha_chi2_bg_tf, delta_pha_chi2_bg_tf),
+
+    (Chi2Gehrels, True, True, False, False, stat_pha_chi2_tt,
+     delta_pha_chi2_tt),
+    (Chi2Gehrels, True, True, True, False, stat_pha_chi2_tt,
+     delta_pha_chi2_tt),
+    (Chi2Gehrels, True, True, True, True, stat_pha_chi2_bg_tt,
+     delta_pha_chi2_bg_tt),
+
+    (Chi2Gehrels, True, False, False, False, stat_pha_chi2_tf,
+     delta_pha_chi2_tf),
+    (Chi2Gehrels, True, False, True, False, stat_pha_chi2_tf,
+     delta_pha_chi2_tf),
+    (Chi2Gehrels, True, False, True, True, stat_pha_chi2_bg_tf,
+     delta_pha_chi2_bg_tf),
+
+    (Chi2Gehrels, False, False, False, False, stat_pha_gehrels_ff,
+     delta_pha_gehrels_ff),
+    (Chi2Gehrels, False, False, True, False, stat_pha_gehrels_ff,
+     delta_pha_gehrels_ff),
+    (Chi2Gehrels, False, False, True, True, stat_pha_gehrels_bg_ff,
+     delta_pha_gehrels_bg_ff),
+
+    (Chi2Gehrels, False, True, False, False, stat_pha_gehrels_ft,
+     delta_pha_gehrels_ft),
+    (Chi2Gehrels, False, True, True, False, stat_pha_gehrels_ft,
+     delta_pha_gehrels_ft),
+    (Chi2Gehrels, False, True, True, True, stat_pha_gehrels_bg_ft,
+     delta_pha_gehrels_bg_ft),
+
+    (Cash, True, True, False, False, stat_pha_cash, delta_pha_cash),
+    (Cash, False, False, False, False, stat_pha_cash, delta_pha_cash),
+    (Cash, False, False, True, True, stat_pha_cash_bg, delta_pha_cash_bg),
+
+    (CStat, True, True, False, False, stat_pha_cstat, delta_pha_cstat),
+    (CStat, False, False, False, False, stat_pha_cstat, delta_pha_cstat),
+    (CStat, False, False, True, True, stat_pha_cstat_bg, delta_pha_cstat_bg),
+
+])
+def test_stats_calc_stat_pha_multi(stat, usestat, usesys,
+                                   havebg, usebg,
+                                   expected1, delta):
+    """statistic calculates expected values: multiple PHA dataset, chi-square"""
+
+    data, model = setup_multiple_pha(usestat, usesys, background=havebg)
+    if usebg:
+        for dset in data.datasets:
+            dset.subtract()
+
+    statobj = stat()
+    # do not check fvec
+    answer, _ = statobj.calc_stat_from_data(data, model)
+
+    # correct for the one missing bin in the second dataset
+    expected = 2 * expected1 - delta
     assert_almost_equal(answer, expected)
