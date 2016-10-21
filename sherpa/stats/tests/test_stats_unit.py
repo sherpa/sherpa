@@ -23,14 +23,18 @@
 # sent to these routines correctly).
 #
 # The calc_info/chisqr tests are similar to those in
-# sherpa/tests/test_fit_unit.py; once there are enough here it may
+# sherpa/tests/test_fit_unit.py; once there are enough here it should
 # be possible to reduce the number of tests in test_fit_unit.py.
+# As there is no "simple" API provided by the Data class to get at
+# all the data needed by the statistic functions (e.g. getting
+# the grouped background data), there are a large number of
+# combinations of data object (1D, 1D integrated, PHA, 2D) and statistic
+# (particular all the various chi-square based options) when
+# calculating the various statistics. They do not all test different
+# code paths, but I wanted a good base of tests to check against any
+# future changes.
 #
 # TODO:
-#   add calc_stat_from_data tests for wstat
-#
-#   add some tests with Data2D and/or DataIMG (to check nD where n > 1)
-#
 #   add some error checks for mixed data types - e.g. Data1D and Data1DInt
 #   as well as those with and without errors (e.g. to check that they are
 #   caught and raise an error if necessary)
@@ -42,9 +46,10 @@ import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal
 
 from sherpa.astro.data import DataPHA
-from sherpa.data import Data1D, Data1DInt, DataSimulFit
+from sherpa.data import Data1D, Data1DInt, Data2D, DataSimulFit
 from sherpa.models.model import SimulFitModel
 from sherpa.models.basic import Const1D, Polynom1D
+from sherpa.astro.models import Lorentz2D
 from sherpa.utils.err import StatErr
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
@@ -136,6 +141,48 @@ def setup_single_1dint(stat, sys):
     mdl.c2.frozen = False
 
     return DataSimulFit('tst', (data,)), SimulFitModel('mdl', (mdl,))
+
+
+def setup_single_2d(stat, sys):
+    """Return a single data set and model (as SimulFit objects).
+
+    Parameters
+    ----------
+    stat, sys : bool
+        Should statistical and systematic errors be explicitly set
+        (True) or taken from the statistic (False)?
+
+    Returns
+    -------
+    data, model
+        DataSimulFit and SimulFitModel objects. The data is a Data2D
+        object, but the shape attribute is not set.
+
+    """
+
+    x0 = np.asarray([110, 150])
+    x1 = np.asarray([200, 300])
+    y = np.asarray([1000, 1100])
+
+    if stat:
+        # pick values close to sqrt(y)
+        staterr = np.asarray([35, 30])
+    else:
+        staterr = None
+    if sys:
+        syserr = 0.05 * y
+    else:
+        syserr = None
+
+    data = Data2D('tst2d', x0, x1, y, staterror=staterr, syserror=syserr)
+
+    mdl = Lorentz2D('mdl2d')
+    mdl.fwhm = 200
+    mdl.xpos = 130
+    mdl.ypos = 260
+    mdl.ampl = 1350
+
+    return DataSimulFit('tst2d', (data,)), SimulFitModel('mdl2d', (mdl,))
 
 
 def setup_multiple(usestat, usesys):
@@ -386,11 +433,15 @@ def test_stats_calc_stat_wstat_nobg(usestat, usesys):
     """wstat statistic fails with no background"""
 
     statobj = WStat()
-
     data, model = setup_single(usestat, usesys)
     with pytest.raises(StatErr):
         statobj.calc_stat_from_data(data, model)
 
+
+def test_stats_calc_stat_wstat_pha_nobg():
+    """wstat statistic fails with no background"""
+
+    statobj = WStat()
     data, model = setup_single_pha(False, False, background=False)
     with pytest.raises(StatErr):
         statobj.calc_stat_from_data(data, model)
@@ -542,6 +593,46 @@ def test_stats_calc_chisqr_1dint(stat, usestat, usesys, expected):
     """chi-quare statistics calculates expected values"""
 
     data, model = setup_single_1dint(usestat, usesys)
+    statobj = stat()
+    answer = statobj.calc_chisqr(data, model)
+    assert_almost_equal(answer, expected)
+
+
+# As the aim is to test out that the system still works with a
+# nD dataset, I have decided not to loop through as many
+# combinations as earlier tests.
+#
+exp2d_lsq = np.asarray([1275.51020408, 625.0])
+
+exp2d_chi2_tt = np.asarray([0.34241885, 0.15923567])
+exp2d_chi2_tf = np.asarray([1.04123282, 0.69444444])
+
+exp2d_dvar_ft = np.asarray([0.36443149, 0.15151515])
+exp2d_dvar_ff = np.asarray([1.2755102, 0.56818182])
+
+
+@pytest.mark.parametrize("stat,usestat,usesys,expected", [
+    (Chi2, True, True, exp2d_chi2_tt),
+    (Chi2, True, False, exp2d_chi2_tf),
+    (LeastSq, True, True, exp2d_lsq),
+    (LeastSq, True, False, exp2d_lsq),
+    (LeastSq, False, True, exp2d_lsq),
+    (LeastSq, False, False, exp2d_lsq),
+    (Chi2DataVar, True, True, exp2d_chi2_tt),
+    (Chi2DataVar, True, False, exp2d_chi2_tf),
+    (Chi2DataVar, False, True, exp2d_dvar_ft),
+    (Chi2DataVar, False, False, exp2d_dvar_ff),
+    # include XSpec variances just to check it is not restricted
+    # to 1D datasets
+    (Chi2XspecVar, True, True, exp2d_chi2_tt),
+    (Chi2XspecVar, True, False, exp2d_chi2_tf),
+    (Chi2XspecVar, False, True, exp2d_dvar_ft),
+    (Chi2XspecVar, False, False, exp2d_dvar_ff),
+])
+def test_stats_calc_chisqr_2d(stat, usestat, usesys, expected):
+    """chi-quare statistics calculates expected values"""
+
+    data, model = setup_single_2d(usestat, usesys)
     statobj = stat()
     answer = statobj.calc_chisqr(data, model)
     assert_almost_equal(answer, expected)
@@ -756,6 +847,123 @@ def test_stats_calc_stat(stat, usestat, usesys, expected):
     assert_almost_equal(answer, expected)
 
 
+stat1dint_lsq = exp1dint_lsq.sum()
+
+stat1dint_chi2_tt = exp1dint_chi2_tt.sum()
+stat1dint_chi2_tf = exp1dint_chi2_tf.sum()
+
+stat1dint_gehrels_ft = exp1dint_gehrels_ft.sum()
+stat1dint_gehrels_ff = exp1dint_gehrels_ff.sum()
+
+stat1dint_dvar_ft = exp1dint_dvar_ft.sum()
+stat1dint_dvar_ff = exp1dint_dvar_ff.sum()
+
+stat1dint_cvar_ft = exp1dint_cvar_ft.sum()
+stat1dint_cvar_ff = exp1dint_cvar_ff.sum()
+
+stat1dint_mvar_xt = exp1dint_mvar_xt.sum()
+stat1dint_mvar_xf = exp1dint_mvar_xf.sum()
+
+stat1dint_cash = -64.1074202509
+stat1dint_cstat = 5.72588729301
+
+
+@pytest.mark.parametrize("stat,usestat,usesys,expected", [
+    (Chi2, True, True, stat1dint_chi2_tt),
+    (Chi2, True, False, stat1dint_chi2_tf),
+    (LeastSq, True, True, stat1dint_lsq),
+    (LeastSq, True, False, stat1dint_lsq),
+    (LeastSq, False, True, stat1dint_lsq),
+    (LeastSq, False, False, stat1dint_lsq),
+    (Chi2Gehrels, True, True, stat1dint_chi2_tt),
+    (Chi2Gehrels, True, False, stat1dint_chi2_tf),
+    (Chi2Gehrels, False, True, stat1dint_gehrels_ft),
+    (Chi2Gehrels, False, False, stat1dint_gehrels_ff),
+    (Chi2DataVar, True, True, stat1dint_chi2_tt),
+    (Chi2DataVar, True, False, stat1dint_chi2_tf),
+    (Chi2DataVar, False, True, stat1dint_dvar_ft),
+    (Chi2DataVar, False, False, stat1dint_dvar_ff),
+    (Chi2XspecVar, True, True, stat1dint_chi2_tt),
+    (Chi2XspecVar, True, False, stat1dint_chi2_tf),
+    (Chi2XspecVar, False, True, stat1dint_dvar_ft),
+    (Chi2XspecVar, False, False, stat1dint_dvar_ff),
+    (Chi2ConstVar, True, True, stat1dint_chi2_tt),
+    (Chi2ConstVar, True, False, stat1dint_chi2_tf),
+    (Chi2ConstVar, False, True, stat1dint_cvar_ft),
+    (Chi2ConstVar, False, False, stat1dint_cvar_ff),
+    (Chi2ModVar, True, True, stat1dint_mvar_xt),
+    (Chi2ModVar, True, False, stat1dint_mvar_xf),
+    (Chi2ModVar, False, True, stat1dint_mvar_xt),
+    (Chi2ModVar, False, False, stat1dint_mvar_xf),
+
+    (Cash, True, True, stat1dint_cash),
+    (Cash, True, False, stat1dint_cash),
+    (Cash, False, True, stat1dint_cash),
+    (Cash, False, False, stat1dint_cash),
+    (CStat, True, True, stat1dint_cstat),
+    (CStat, True, False, stat1dint_cstat),
+    (CStat, False, True, stat1dint_cstat),
+    (CStat, False, False, stat1dint_cstat),
+
+])
+def test_stats_calc_stat_1dint(stat, usestat, usesys, expected):
+    """statistic calculates expected values: single dataset"""
+
+    data, model = setup_single_1dint(usestat, usesys)
+    statobj = stat()
+    # do not check fvec
+    answer, _ = statobj.calc_stat_from_data(data, model)
+    assert_almost_equal(answer, expected)
+
+
+stat2d_lsq = exp2d_lsq.sum()
+
+stat2d_chi2_tt = exp2d_chi2_tt.sum()
+stat2d_chi2_tf = exp2d_chi2_tf.sum()
+
+stat2d_dvar_ft = exp2d_dvar_ft.sum()
+stat2d_dvar_ff = exp2d_dvar_ff.sum()
+
+stat2d_cash = -25020.3881333
+stat2d_cstat = 1.86643403865
+
+
+@pytest.mark.parametrize("stat,usestat,usesys,expected", [
+    (Chi2, True, True, stat2d_chi2_tt),
+    (Chi2, True, False, stat2d_chi2_tf),
+    (LeastSq, True, True, stat2d_lsq),
+    (LeastSq, True, False, stat2d_lsq),
+    (LeastSq, False, True, stat2d_lsq),
+    (LeastSq, False, False, stat2d_lsq),
+    (Chi2DataVar, True, True, stat2d_chi2_tt),
+    (Chi2DataVar, True, False, stat2d_chi2_tf),
+    (Chi2DataVar, False, True, stat2d_dvar_ft),
+    (Chi2DataVar, False, False, stat2d_dvar_ff),
+    (Chi2XspecVar, True, True, stat2d_chi2_tt),
+    (Chi2XspecVar, True, False, stat2d_chi2_tf),
+    (Chi2XspecVar, False, True, stat2d_dvar_ft),
+    (Chi2XspecVar, False, False, stat2d_dvar_ff),
+
+    (Cash, True, True, stat2d_cash),
+    (Cash, True, False, stat2d_cash),
+    (Cash, False, True, stat2d_cash),
+    (Cash, False, False, stat2d_cash),
+    (CStat, True, True, stat2d_cstat),
+    (CStat, True, False, stat2d_cstat),
+    (CStat, False, True, stat2d_cstat),
+    (CStat, False, False, stat2d_cstat),
+
+])
+def test_stats_calc_stat_2d(stat, usestat, usesys, expected):
+    """statistic calculates expected values: single dataset"""
+
+    data, model = setup_single_2d(usestat, usesys)
+    statobj = stat()
+    # do not check fvec
+    answer, _ = statobj.calc_stat_from_data(data, model)
+    assert_almost_equal(answer, expected)
+
+
 delta_lsq = exp_lsq[2]
 
 delta_chi2_tt = exp_chi2_tt[2]
@@ -860,7 +1068,15 @@ stat_pha_cash_bg = -297.366618448
 stat_pha_cstat = 1.75191290087
 stat_pha_cstat_bg = 1.8269289994
 
+# The value returned for the background-subtracted in this PR
+# is different to the CIAO 4.8 value
+#    CIAO 4.8  stat_pha_wstat_bg = 1.89508667251
+#          PR                    = 1.8959639988070474
+# but as this should be an error I am not investigating it
+# further.
+#
 stat_pha_wstat = 1.81735155799
+stat_pha_wstat_bg = 1.8959639988070474
 
 
 # This is not as extensive as some of the earlier checks as the
@@ -911,6 +1127,7 @@ stat_pha_wstat = 1.81735155799
     # Using havebg=False for wstat will raise an error
     (WStat, False, False, True, False, stat_pha_wstat),
     (WStat, True, True, True, False, stat_pha_wstat),
+    (WStat, True, True, True, True, stat_pha_wstat_bg),
 
 ])
 def test_stats_calc_stat_pha(stat, usestat, usesys,
@@ -948,7 +1165,10 @@ delta_pha_cash_bg = -114.907812934
 delta_pha_cstat = 1.56044177301
 delta_pha_cstat_bg = 1.62535170774
 
+# See the discussion for stat_pha_wstat_bg as to how this is not a
+# true regression test for this PR
 delta_pha_wstat = 1.61766768199
+delta_pha_wstat_bg = 1.68368941351
 
 
 @pytest.mark.parametrize("stat,usestat,usesys,havebg,usebg,expected1,delta", [
@@ -1006,6 +1226,8 @@ delta_pha_wstat = 1.61766768199
 
     # Using havebg=False for wstat will raise an error
     (WStat, False, False, True, False, stat_pha_wstat, delta_pha_wstat),
+    (WStat, True, True, True, False, stat_pha_wstat, delta_pha_wstat),
+    (WStat, True, True, True, True, stat_pha_wstat_bg, delta_pha_wstat_bg),
 ])
 def test_stats_calc_stat_pha_multi(stat, usestat, usesys,
                                    havebg, usebg,
