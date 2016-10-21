@@ -1059,8 +1059,9 @@ stat_pha_gehrels_ft = 0.989239848562
 stat_pha_gehrels_bg_ff = 1.43234664248
 stat_pha_gehrels_bg_ft = 1.03105762001
 
-# TODO: should the background subtraction actually raise an errror
-#       for the likelihood statistics?
+# NOTE: The code should error out rather than calculate a
+#       statistic for background subtracted data for the
+#       likelihood stats (wstat may behave differently)
 #
 stat_pha_cash = -299.771783393
 stat_pha_cash_bg = -297.366618448
@@ -1072,8 +1073,10 @@ stat_pha_cstat_bg = 1.8269289994
 # is different to the CIAO 4.8 value
 #    CIAO 4.8  stat_pha_wstat_bg = 1.89508667251
 #          PR                    = 1.8959639988070474
-# but as this should be an error I am not investigating it
-# further.
+# because of the way the 4.8 code has to be run to calculate
+# this (to avoid the bugs in the 4.8 code with handling filtered
+# backscal arrays). As this code should not be running I am not
+# going to try and work out a regression value using 4.8.
 #
 stat_pha_wstat = 1.81735155799
 stat_pha_wstat_bg = 1.8959639988070474
