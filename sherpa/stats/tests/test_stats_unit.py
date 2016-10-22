@@ -57,7 +57,7 @@ from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
 
 
 def setup_single(stat, sys):
-    """Return a single data set and model (as SimulFit objects).
+    """Return a single data set and model.
 
     Parameters
     ----------
@@ -68,8 +68,7 @@ def setup_single(stat, sys):
     Returns
     -------
     data, model
-        DataSimulFit and SimulFitModel objects. The data is a Data1D
-        object.
+        Data1D and Model objects.
 
     """
 
@@ -92,11 +91,11 @@ def setup_single(stat, sys):
     mdl.c2 = 0.2
     mdl.offset = -1
 
-    return DataSimulFit('tst', (data,)), SimulFitModel('mdl', (mdl,))
+    return data, mdl
 
 
 def setup_single_1dint(stat, sys):
-    """Return a single data set and model (as SimulFit objects).
+    """Return a single data set and model.
 
     Parameters
     ----------
@@ -107,8 +106,7 @@ def setup_single_1dint(stat, sys):
     Returns
     -------
     data, model
-        DataSimulFit and SimulFitModel objects. The data is a
-        Data1DInt object.
+        Data1DInt and Model objects.
 
     """
 
@@ -140,11 +138,11 @@ def setup_single_1dint(stat, sys):
     mdl.offset.frozen = False
     mdl.c2.frozen = False
 
-    return DataSimulFit('tst', (data,)), SimulFitModel('mdl', (mdl,))
+    return data, mdl
 
 
 def setup_single_2d(stat, sys):
-    """Return a single data set and model (as SimulFit objects).
+    """Return a single data set and model.
 
     Parameters
     ----------
@@ -155,8 +153,7 @@ def setup_single_2d(stat, sys):
     Returns
     -------
     data, model
-        DataSimulFit and SimulFitModel objects. The data is a Data2D
-        object, but the shape attribute is not set.
+        Data2D and Model objects.
 
     """
 
@@ -182,7 +179,7 @@ def setup_single_2d(stat, sys):
     mdl.ypos = 260
     mdl.ampl = 1350
 
-    return DataSimulFit('tst2d', (data,)), SimulFitModel('mdl2d', (mdl,))
+    return data, mdl
 
 
 def setup_multiple(usestat, usesys):
@@ -203,12 +200,8 @@ def setup_multiple(usestat, usesys):
         are Data1D objects.
     """
 
-    x, y = setup_single(usestat, usesys)
-    data1 = x.datasets[0]
-    model1 = y.parts[0]
-
-    x, y = setup_single(usestat, usesys)
-    data2 = x.datasets[0]
+    data1, model1 = setup_single(usestat, usesys)
+    data2, _ = setup_single(usestat, usesys)
     data2.ignore(1, 3.5)
 
     # not an essential part of the stats code; more a check that
@@ -240,13 +233,10 @@ def setup_multiple_1dint(stat, sys):
 
     """
 
-    x, y = setup_single_1dint(stat, sys)
-    data1 = x.datasets[0]
-    model1 = y.parts[0]
+    data1, model1 = setup_single_1dint(stat, sys)
+    data2, _ = setup_single_1dint(stat, sys)
 
-    x, y = setup_single_1dint(stat, sys)
     # The bins cover (-10,-5), (-5,2), (3,4), (4,7)
-    data2 = x.datasets[0]
     data2.ignore(2.5, 3.5)
 
     # not an essential part of the stats code; more a check that
@@ -259,7 +249,7 @@ def setup_multiple_1dint(stat, sys):
 
 
 def setup_single_pha(stat, sys, background=True):
-    """Return a single data set and model (as SimulFit objects).
+    """Return a single data set and model.
 
     This is aimed at wstat calculation, and so the DataPHA object has
     no attached response. The data set is grouped.
@@ -276,8 +266,7 @@ def setup_single_pha(stat, sys, background=True):
     Returns
     -------
     data, model
-        DataSimulFit and SimulFitModel objects. The data is a DataPHA
-        object.
+        DataPHA and Model objects.
 
     """
 
@@ -351,7 +340,7 @@ def setup_single_pha(stat, sys, background=True):
     poly.c1.frozen = False
 
     mdl = cnst + poly
-    return DataSimulFit('tst', (data,)), SimulFitModel('mdl', (mdl,))
+    return data, mdl
 
 
 def setup_multiple_pha(stat, sys, background=True):
@@ -379,12 +368,8 @@ def setup_multiple_pha(stat, sys, background=True):
 
     """
 
-    x, y = setup_single_pha(stat, sys, background=background)
-    data1 = x.datasets[0]
-    model1 = y.parts[0]
-
-    x, y = setup_single_pha(stat, sys, background=background)
-    data2 = x.datasets[0]
+    data1, model1 = setup_single_pha(stat, sys, background=background)
+    data2, _ = setup_single_pha(stat, sys, background=background)
     data2.ignore(3, 3.8)
 
     # sanity check
@@ -480,15 +465,14 @@ def test_stats_calc_stat_wstat_diffbins():
     data, model = setup_single_pha(True, False, background=True)
 
     # Tweak data to have one-less bin than the background
-    d = data.datasets[0]
-    d.channel = d.channel[:-1]
-    d.counts = d.channel[:-1]
+    data.channel = data.channel[:-1]
+    data.counts = data.channel[:-1]
     for attr in ['staterror', 'syserror', 'grouping', 'quality',
                  'backscal']:
-        val = getattr(d, attr)
+        val = getattr(data, attr)
         if val is not None:
             try:
-                setattr(d, attr, val[:-1])
+                setattr(data, attr, val[:-1])
             except TypeError:
                 # assume a scalar, so leave be
                 pass
@@ -1142,7 +1126,7 @@ def test_stats_calc_stat_pha(stat, usestat, usesys,
 
     data, model = setup_single_pha(usestat, usesys, background=havebg)
     if usebg:
-        data.datasets[0].subtract()
+        data.subtract()
 
     statobj = stat()
     # do not check fvec

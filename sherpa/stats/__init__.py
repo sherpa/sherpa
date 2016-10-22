@@ -73,6 +73,37 @@ class Stat(NoNewAttributesAfterInit):
                 (type(self).__name__, self.name))
 
     @staticmethod
+    def _bundle_inputs(data, model):
+        """Convert input into SimulFit instances.
+
+        Convert the inputs into DataSimulFit and SimulFitModel
+        instances.
+
+        Parameters
+        ----------
+        data : a Data or DataSimulFit instance
+            The data set, or sets, to use.
+        model : a Model or SimulFitModel instance
+            The model expression, or expressions. If a SimulFitModel
+            is given then it must match the number of data sets in the
+            data parameter.
+
+        Returns
+        -------
+        data, model : DataSimulFit instance, SimulFitModel instance
+            If the input was a SimulFit object then this is just
+            the input value.
+        """
+
+        if not isinstance(data, DataSimulFit):
+            data = DataSimulFit('simulfit data', (data,))
+
+        if not isinstance(model, SimulFitModel):
+            model = SimulFitModel('simulfit model', (model,))
+
+        return data, model
+
+    @staticmethod
     def _check_has_bins(data):
         """Raise an error if there are no noticed bins in the dataset.
 
@@ -134,16 +165,23 @@ class Stat(NoNewAttributesAfterInit):
 
         The default behavior is to check that the data contains
         at least one bin and that the number of datasets matches
-        the number of models.
+        the number of models. It also converts single values to
+        simultaneous objects, if necessary.
 
         Parameters
         ----------
-        data : a DataSimulFit instance
-            The data sets to use.
-        model : a SimulFitModel instance
+        data : a Data or DataSimulFit instance
+            The data set, or sets, to use.
+        model : a Model or SimulFitModel instance
             The model expressions for each data set. It must match
             the data parameter (the models are in the same order
             as the data objects).
+
+        Returns
+        -------
+        data, model : DataSimulFit instance, SimulFitModel instance
+            If the input was a SimulFit object then this is just
+            the input value.
         """
 
         if self._calc is None:
@@ -153,8 +191,10 @@ class Stat(NoNewAttributesAfterInit):
             #
             raise NotImplementedError("_calc method has not been set")
 
+        data, model = self._bundle_inputs(data, model)
         self._check_has_bins(data)
         self._check_sizes_match(data, model)
+        return data, model
 
     def calc_staterror(self, data):
         raise NotImplementedError
@@ -167,23 +207,18 @@ class Stat(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        data : a DataSimulFit instance
-            The data sets to use.
-        model : a SimulFitModel instance
-            The model expressions for each data set. It must match
-            the data parameter (the models are in the same order
-            as the data objects).
+        data : a Data or DataSimulFit instance
+            The data set, or sets, to use.
+        model : a Model or SimulFitModel instance
+            The model expression, or expressions. If a SimulFitModel
+            is given then it must match the number of data sets in the
+            data parameter.
 
         Returns
         -------
         statval, fvec : number, array of numbers
             The statistic value and the per-bin "statistic" value.
 
-        Notes
-        -----
-        Would it be a good idea to support "casting" a single data set
-        and model input into the relevant SimulFit instances, rather than
-        forcing the caller to?
         """
 
         raise NotImplementedError
@@ -225,11 +260,12 @@ class Likelihood(Stat):
                 raise FitErr('statnotforbackgsub', self.name)
 
     def _validate_inputs(self, data, model):
+        data, model = Stat._validate_inputs(self, data, model)
         self._check_background_subtraction(data)
-        Stat._validate_inputs(self, data, model)
+        return data, model
 
     def calc_stat_from_data(self, data, model):
-        self._validate_inputs(data, model)
+        data, model = self._validate_inputs(data, model)
         fitdata = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
 
@@ -478,12 +514,12 @@ class Chi2(Stat):
 
         Parameters
         ----------
-        data : a DataSimulFit instance
-            The data sets to use.
-        model : a SimulFitModel instance
-            The model expressions for each data set. It must match
-            the data parameter (the models are in the same order
-            as the data objects).
+        data : a Data or DataSimulFit instance
+            The data set, or sets, to use.
+        model : a Model or SimulFitModel instance
+            The model expression, or expressions. If a SimulFitModel
+            is given then it must match the number of data sets in the
+            data parameter.
 
         Returns
         -------
@@ -817,7 +853,7 @@ class WStat(Likelihood):
 
     def calc_stat_from_data(self, data, model):
 
-        self._validate_inputs(data, model)
+        data, model = self._validate_inputs(data, model)
 
         # Need access to backscal values and background data filtered
         # and grouped in the same manner as the data. There is no

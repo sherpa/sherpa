@@ -988,26 +988,9 @@ class Fit(NoNewAttributesAfterInit):
             The overall statistic value and the "per-bin" value.
         """
 
-        # Casting into simultaneous objects is not great (and should
-        # be done in __init__ if we are going to do this).
-        #
-        # Note that, because of Fit.simulfit, we can not assume that
-        # self.data and self.model are single (i.e. not simultaneous)
-        # objects.
-        #
-        if isinstance(self.data, DataSimulFit):
-            data = self.data
-        else:
-            data = DataSimulFit('simulfit data', (self.data,))
-
-        if isinstance(self.model, SimulFitModel):
-            model = self.model
-        else:
-            model = SimulFitModel('simulfit model', (self.model,))
-
         # TODO: is there anything missing here that
         #       self._iterfit.get_extra_args calculates?
-        return self.stat.calc_stat_from_data(data, model)
+        return self.stat.calc_stat_from_data(self.data, self.model)
 
     def calc_stat(self):
         """Calculate the statistic value.
@@ -1055,24 +1038,7 @@ class Fit(NoNewAttributesAfterInit):
         if not hasattr(self.stat, 'calc_chisqr'):
             return None
 
-        # Casting into simultaneous objects is not great (and should
-        # be done in __init__ if we are going to do this).
-        #
-        # Note that, because of Fit.simulfit, we can not assume that
-        # self.data and self.model are single (i.e. not simultaneous)
-        # objects.
-        #
-        if isinstance(self.data, DataSimulFit):
-            data = self.data
-        else:
-            data = DataSimulFit('simulfit data', (self.data,))
-
-        if isinstance(self.model, SimulFitModel):
-            model = self.model
-        else:
-            model = SimulFitModel('simulfit model', (self.model,))
-
-        return self.stat.calc_chisqr(data, model)
+        return self.stat.calc_chisqr(self.data, self.model)
 
     def calc_stat_info(self):
         """Calculate the statistic value and related information.
