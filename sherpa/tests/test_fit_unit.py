@@ -101,7 +101,7 @@ from sherpa.data import Data1D, DataSimulFit
 from sherpa.astro.data import DataPHA
 from sherpa.models.model import SimulFitModel
 from sherpa.models.basic import Const1D, Gauss1D, Polynom1D, StepLo1D
-from sherpa.utils.err import StatErr
+from sherpa.utils.err import FitErr, StatErr
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
     Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Cash, CStat, WStat, UserStat
@@ -220,6 +220,25 @@ def setup_stat_multiple(stat, usestat, usesys):
     fit3 = Fit(data3, mdl3, stat=stat)
 
     return fit, [fit1, fit2, fit3]
+
+
+@pytest.mark.parametrize("stat", [Cash, CStat, WStat])
+def test_fit_raises_error_on_bgsubtraction(stat):
+    """Check that fits using likelihood stats fail when bkg subtracted."""
+
+    # It is not worth looping through all the combinations to the setup
+    # routine here.
+    statobj = stat()
+    fit = setup_pha_single(False, False, False, None, None, stat=statobj)
+    fit.data.subtract()
+
+    # Can we check the error message itself?
+    with pytest.raises(FitErr) as excinfo:
+        fit.fit()
+
+    emsg = '{} statistics cannot be used with '.format(statobj.name) + \
+           'background subtracted data'
+    assert str(excinfo.value) == emsg
 
 expected_leastsq = 31.5625
 
@@ -846,8 +865,8 @@ def test_fit_calc_chisqr_multiple(stat, usestat, usesys, expected):
         assert_almost_equal(combined, expected)
 
 
-def setup_wstat_single(scalar, usestat, usesys, flo, fhi):
-    """Set up a single dataset for the WSTAT tests.
+def setup_pha_single(scalar, usestat, usesys, flo, fhi, stat=None):
+    """Set up a single PHA dataset.
 
     A sherpa.data.DataPHA instance is used, with an associated
     background data set.
@@ -863,6 +882,8 @@ def setup_wstat_single(scalar, usestat, usesys, flo, fhi):
     flo, fhi : None or number
         The channel filters (used in a notice call) that is applied
         to the source only.
+    stat : sherpa.stats.Stat instance, optional
+        The statistic object to use. If not set uses a WStat object.
 
     Returns
     -------
@@ -916,7 +937,12 @@ def setup_wstat_single(scalar, usestat, usesys, flo, fhi):
     mdl.c1 = 1.2
 
     # For now restrict to the default statistic values
-    fit = Fit(src, mdl, stat=WStat())
+    if stat is None:
+        statobj = WStat()
+    else:
+        statobj = stat
+
+    fit = Fit(src, mdl, stat=statobj)
 
     # Due to the way wstat is handled in Sherpa 4.8.0, need the
     # following work around, otherwise the code thinks there's
@@ -930,8 +956,8 @@ def setup_wstat_single(scalar, usestat, usesys, flo, fhi):
     return fit
 
 
-def setup_wstat_multiple(flo, fhi):
-    """Set up multiple datasets for the WSTAT tests.
+def setup_pha_multiple(flo, fhi):
+    """Set up multiple PHA datasets.
 
     A sherpa.data.DataPHA instance is used, with an associated
     background data set.
@@ -1119,7 +1145,7 @@ def test_fit_calc_stat_wstat_single(scalar, usestat, usesys,
 
     """
 
-    fit = setup_wstat_single(scalar, usestat, usesys, flo, fhi)
+    fit = setup_pha_single(scalar, usestat, usesys, flo, fhi)
     assert_almost_equal(fit.calc_stat(), expected)
 
 
@@ -1167,7 +1193,7 @@ def test_fit_calc_stat_info_wstat_single(scalar, usestat, usesys,
 
     """
 
-    fit = setup_wstat_single(scalar, usestat, usesys, flo, fhi)
+    fit = setup_pha_single(scalar, usestat, usesys, flo, fhi)
     ans = fit.calc_stat_info()
 
     # mdl.c0 is the only thawed parameter
@@ -1232,7 +1258,7 @@ def test_fit_calc_chisqr_wstat_single(scalar, usestat, usesys,
 
     """
 
-    fit = setup_wstat_single(scalar, usestat, usesys, flo, fhi)
+    fit = setup_pha_single(scalar, usestat, usesys, flo, fhi)
     ans = fit.calc_chisqr()
     assert ans is None
 
@@ -1351,7 +1377,7 @@ def test_fit_calc_stat_wstat_multiple(flo, fhi, expected):
 
     """
 
-    fit, fits = setup_wstat_multiple(flo, fhi)
+    fit, fits = setup_pha_multiple(flo, fhi)
     assert_almost_equal(fit.calc_stat(), expected)
 
     # Test that the sum of the individual cases matches the expected
@@ -1391,7 +1417,7 @@ def test_fit_calc_stat_info_wstat_multiple(flo, fhi, nbin, expected):
 
     """
 
-    fit, _ = setup_wstat_multiple(flo, fhi)
+    fit, _ = setup_pha_multiple(flo, fhi)
     ans = fit.calc_stat_info()
 
     dof = nbin - 5
@@ -1435,7 +1461,7 @@ def test_fit_calc_chisqr_wstat_multiple(flo, fhi, expected):
 
     """
 
-    fit, fits = setup_wstat_multiple(flo, fhi)
+    fit, fits = setup_pha_multiple(flo, fhi)
 
     assert fit.calc_chisqr() is None
     assert all([f.calc_chisqr() is None for f in fits])
@@ -1513,7 +1539,7 @@ def test_fit_calc_stat_error_on_mismatch_wstat():
     """Check that an error message is raised when ndata != nmodel + wstat"""
 
     statobj = WStat()
-    _, fits = setup_wstat_multiple(None, None)
+    _, fits = setup_pha_multiple(None, None)
 
     data = [f.data for f in fits]
     models = [f.model for f in fits]
