@@ -1126,6 +1126,9 @@ class Fit(NoNewAttributesAfterInit):
     @evaluates_model
     def fit(self, outfile=None, clobber=False):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
+
+        # TODO: add tests to check this happens before it can be removed,
+        #       as it should be handled by the calc_stat routine
         if not iterable(dep) or len(dep) == 0:
             # raise FitError('no noticed bins found in data set')
             raise FitErr('nobins')
@@ -1137,12 +1140,6 @@ class Fit(NoNewAttributesAfterInit):
             # raise FitError('zeros found in uncertainties, consider using' +
             #               ' calculated uncertainties')
             raise FitErr('binhas0')
-
-        if (getattr(self.data, 'subtracted', False) and
-                isinstance(self.stat, Likelihood)):
-            # raise FitError('%s statistics cannot be used with background'
-            #               % self.stat.name + ' subtracted data')
-            raise FitErr('statnotforbackgsub', self.stat.name)
 
         init_stat = self.calc_stat()
         # output = self.method.fit ...

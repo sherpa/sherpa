@@ -215,17 +215,14 @@ class Likelihood(Stat):
         """
 
         for dobj in data.datasets:
-            try:
-                if dobj.subtracted:
-                    # TODO:
-                    # Historically this has been a FitErr, but it
-                    # would make more sense to be a StatErr. This could
-                    # break people's code, so hold off for now
-                    # (October 2016).
-                    #
-                    raise FitErr('statnotforbackgsub', self.name)
-            except AttributeError:
-                pass
+            if getattr(dobj, 'subtracted', False):
+                # TODO:
+                # Historically this has been a FitErr, but it
+                # would make more sense to be a StatErr. This could
+                # break people's code, so hold off for now
+                # (October 2016).
+                #
+                raise FitErr('statnotforbackgsub', self.name)
 
     def _validate_inputs(self, data, model):
         self._check_background_subtraction(data)
