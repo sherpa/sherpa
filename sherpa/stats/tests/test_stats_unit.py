@@ -50,7 +50,7 @@ from sherpa.data import Data1D, Data1DInt, Data2D, DataSimulFit
 from sherpa.models.model import SimulFitModel
 from sherpa.models.basic import Const1D, Polynom1D
 from sherpa.astro.models import Lorentz2D
-from sherpa.utils.err import StatErr
+from sherpa.utils.err import FitErr, StatErr
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
     Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Cash, CStat, WStat, UserStat
@@ -409,8 +409,12 @@ def test_stats_calc_chisqr_chi2_nostat(usesys):
 
     data, model = setup_single(False, usesys)
     statobj = Chi2()
-    with pytest.raises(StatErr):
+    with pytest.raises(StatErr) as excinfo:
         statobj.calc_chisqr(data, model)
+
+    emsg = 'If you select chi2 as the statistic, all datasets ' + \
+           'must provide a staterror column'
+    assert emsg == str(excinfo.value)
 
 
 @pytest.mark.parametrize("usesys", [True, False])
@@ -419,8 +423,29 @@ def test_stats_calc_stat_chi2_nostat(usesys):
 
     data, model = setup_single(False, usesys)
     statobj = Chi2()
-    with pytest.raises(StatErr):
+    with pytest.raises(StatErr) as excinfo:
         statobj.calc_stat_from_data(data, model)
+
+    emsg = 'If you select chi2 as the statistic, all datasets ' + \
+           'must provide a staterror column'
+    assert emsg == str(excinfo.value)
+
+
+@pytest.mark.parametrize("stat", [Cash, CStat, WStat])
+def test_stats_calc_stat_likelihood_bgnd(stat):
+    """likelihood statistic with background subtraction fails"""
+
+    # Use multiple datasets and make the second one subtracted
+    # but the first one not.
+    data, model = setup_multiple_pha(False, False, background=True)
+    data.datasets[1].subtract()
+    statobj = stat()
+    with pytest.raises(FitErr) as excinfo:
+        statobj.calc_stat_from_data(data, model)
+
+    emsg = '{} statistics cannot be used with '.format(statobj.name) + \
+           'background subtracted data'
+    assert emsg == str(excinfo.value)
 
 
 @pytest.mark.parametrize("usestat,usesys", [
@@ -439,7 +464,7 @@ def test_stats_calc_stat_wstat_nobg(usestat, usesys):
 
 
 def test_stats_calc_stat_wstat_pha_nobg():
-    """wstat statistic fails with no background"""
+    """wstat statistic fails with no background: PHA dataset"""
 
     statobj = WStat()
     data, model = setup_single_pha(False, False, background=False)
@@ -1059,27 +1084,9 @@ stat_pha_gehrels_ft = 0.989239848562
 stat_pha_gehrels_bg_ff = 1.43234664248
 stat_pha_gehrels_bg_ft = 1.03105762001
 
-# NOTE: The code should error out rather than calculate a
-#       statistic for background subtracted data for the
-#       likelihood stats (wstat may behave differently)
-#
 stat_pha_cash = -299.771783393
-stat_pha_cash_bg = -297.366618448
-
 stat_pha_cstat = 1.75191290087
-stat_pha_cstat_bg = 1.8269289994
-
-# The value returned for the background-subtracted in this PR
-# is different to the CIAO 4.8 value
-#    CIAO 4.8  stat_pha_wstat_bg = 1.89508667251
-#          PR                    = 1.8959639988070474
-# because of the way the 4.8 code has to be run to calculate
-# this (to avoid the bugs in the 4.8 code with handling filtered
-# backscal arrays). As this code should not be running I am not
-# going to try and work out a regression value using 4.8.
-#
 stat_pha_wstat = 1.81735155799
-stat_pha_wstat_bg = 1.8959639988070474
 
 
 # This is not as extensive as some of the earlier checks as the
@@ -1121,17 +1128,13 @@ stat_pha_wstat_bg = 1.8959639988070474
 
     (Cash, True, True, False, False, stat_pha_cash),
     (Cash, False, False, False, False, stat_pha_cash),
-    (Cash, False, False, True, True, stat_pha_cash_bg),
 
     (CStat, True, True, False, False, stat_pha_cstat),
     (CStat, False, False, False, False, stat_pha_cstat),
-    (CStat, False, False, True, True, stat_pha_cstat_bg),
 
     # Using havebg=False for wstat will raise an error
     (WStat, False, False, True, False, stat_pha_wstat),
     (WStat, True, True, True, False, stat_pha_wstat),
-    (WStat, True, True, True, True, stat_pha_wstat_bg),
-
 ])
 def test_stats_calc_stat_pha(stat, usestat, usesys,
                              havebg, usebg, expected):
@@ -1163,15 +1166,8 @@ delta_pha_gehrels_ft = 0.900100722244
 delta_pha_gehrels_bg_ft = 0.935448397267
 
 delta_pha_cash = -115.860578204
-delta_pha_cash_bg = -114.907812934
-
 delta_pha_cstat = 1.56044177301
-delta_pha_cstat_bg = 1.62535170774
-
-# See the discussion for stat_pha_wstat_bg as to how this is not a
-# true regression test for this PR
 delta_pha_wstat = 1.61766768199
-delta_pha_wstat_bg = 1.68368941351
 
 
 @pytest.mark.parametrize("stat,usestat,usesys,havebg,usebg,expected1,delta", [
@@ -1221,16 +1217,13 @@ delta_pha_wstat_bg = 1.68368941351
 
     (Cash, True, True, False, False, stat_pha_cash, delta_pha_cash),
     (Cash, False, False, False, False, stat_pha_cash, delta_pha_cash),
-    (Cash, False, False, True, True, stat_pha_cash_bg, delta_pha_cash_bg),
 
     (CStat, True, True, False, False, stat_pha_cstat, delta_pha_cstat),
     (CStat, False, False, False, False, stat_pha_cstat, delta_pha_cstat),
-    (CStat, False, False, True, True, stat_pha_cstat_bg, delta_pha_cstat_bg),
 
     # Using havebg=False for wstat will raise an error
     (WStat, False, False, True, False, stat_pha_wstat, delta_pha_wstat),
     (WStat, True, True, True, False, stat_pha_wstat, delta_pha_wstat),
-    (WStat, True, True, True, True, stat_pha_wstat_bg, delta_pha_wstat_bg),
 ])
 def test_stats_calc_stat_pha_multi(stat, usestat, usesys,
                                    havebg, usebg,

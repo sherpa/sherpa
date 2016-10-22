@@ -21,7 +21,7 @@ import warnings
 
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit
-from sherpa.utils.err import StatErr
+from sherpa.utils.err import FitErr, StatErr
 import sherpa.stats._statfcts
 from sherpa.data import DataSimulFit
 from sherpa.models import SimulFitModel
@@ -72,6 +72,90 @@ class Stat(NoNewAttributesAfterInit):
         return ("<%s statistic instance '%s'>" %
                 (type(self).__name__, self.name))
 
+    @staticmethod
+    def _check_has_bins(data):
+        """Raise an error if there are no noticed bins in the dataset.
+
+        Parameters
+        ----------
+        data : a DataSimulFit instance
+            The data sets to use.
+
+        Raises
+        ------
+        FitErr
+
+        Notes
+        -----
+        It is unclear whether this should error out if any particular
+        dataset has no noticed bins, or only if all the datasets have
+        no noticed bins (the latter approach is taken).
+
+        """
+
+        for dset in data.datasets:
+            # Assume that the error column does not need to be
+            # calculated for this check, so staterrfunc can be
+            # None.
+            dep, _, _ = dset.to_fit(staterrfunc=None)
+            if numpy.iterable(dep) and len(dep) > 0:
+                return
+
+        raise FitErr('nobins')
+
+    @staticmethod
+    def _check_sizes_match(data, model):
+        """Raise an error if number of datasets and models do not match.
+
+        Parameters
+        ----------
+        data : a DataSimulFit instance
+            The data sets to use.
+        model : a SimulFitModel instance
+            The model expressions for each data set. It must match
+            the data parameter (the models are in the same order
+            as the data objects).
+
+        Raises
+        ------
+        StatErr
+
+        """
+
+        ndata = len(data.datasets)
+        nmdl = len(model.parts)
+        if ndata != nmdl:
+            raise StatErr('mismatch',
+                          'number of data sets', ndata,
+                          'model expressions', nmdl)
+
+    def _validate_inputs(self, data, model):
+        """Ensure that the inputs are correct for the statistic.
+
+        The default behavior is to check that the data contains
+        at least one bin and that the number of datasets matches
+        the number of models.
+
+        Parameters
+        ----------
+        data : a DataSimulFit instance
+            The data sets to use.
+        model : a SimulFitModel instance
+            The model expressions for each data set. It must match
+            the data parameter (the models are in the same order
+            as the data objects).
+        """
+
+        if self._calc is None:
+            # This is a programmer error rather than a user error,
+            # so use NotImplementedError rather than
+            # StatErr('nostat', self.name, '_calc')
+            #
+            raise NotImplementedError("_calc method has not been set")
+
+        self._check_has_bins(data)
+        self._check_sizes_match(data, model)
+
     def calc_staterror(self, data):
         raise NotImplementedError
 
@@ -117,18 +201,38 @@ class Likelihood(Stat):
         # return 1 to avoid dividing by 0 by some optimization methods.
         return numpy.ones_like(data)
 
+    def _check_background_subtraction(self, data):
+        """Raise an error if any dataset has been background subtracted.
+
+        Parameters
+        ----------
+        data : a DataSimulFit instance
+            The data sets to use.
+
+        Raises
+        ------
+        FitErr
+        """
+
+        for dobj in data.datasets:
+            try:
+                if dobj.subtracted:
+                    # TODO:
+                    # Historically this has been a FitErr, but it
+                    # would make more sense to be a StatErr. This could
+                    # break people's code, so hold off for now
+                    # (October 2016).
+                    #
+                    raise FitErr('statnotforbackgsub', self.name)
+            except AttributeError:
+                pass
+
+    def _validate_inputs(self, data, model):
+        self._check_background_subtraction(data)
+        Stat._validate_inputs(self, data, model)
+
     def calc_stat_from_data(self, data, model):
-
-        if self._calc is None:
-            raise NotImplementedError("_calc method has not been set")
-
-        ndata = len(data.datasets)
-        nmdl = len(model.parts)
-        if ndata != nmdl:
-            raise StatErr('mismatch',
-                          'number of data sets', ndata,
-                          'model expressions', nmdl)
-
+        self._validate_inputs(data, model)
         fitdata = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
 
@@ -362,17 +466,8 @@ class Chi2(Stat):
     def calc_stat_from_data(self, data, model):
         """TODO: should weights be an argument or taken from data?"""
 
-        if self._calc is None:
-            raise NotImplementedError("_calc method has not been set")
-
-        ndata = len(data.datasets)
-        nmdl = len(model.parts)
-        if ndata != nmdl:
-            raise StatErr('mismatch',
-                          'number of data sets', ndata,
-                          'model expressions', nmdl)
-
         # TODO: HOW TO GET THE WEIGHTS?
+        self._validate_inputs(data, model)
         fitdata = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
 
@@ -725,17 +820,17 @@ class WStat(Likelihood):
 
     def calc_stat_from_data(self, data, model):
 
-        ndata = len(data.datasets)
-        nmdl = len(model.parts)
-        if ndata != nmdl:
-            raise StatErr('mismatch',
-                          'number of data sets', ndata,
-                          'model expressions', nmdl)
+        self._validate_inputs(data, model)
 
         # Need access to backscal values and background data filtered
         # and grouped in the same manner as the data. There is no
         # easy access to this via the Data API (in part because the
         # Data class has no knowledge of grouping or backscale values).
+        #
+        # An alternative approach would be to just calculate the
+        # statistic for each dataset individually and then
+        # sum the statistics for the return value, but the
+        # original code used this approach.
         #
         data_src = []
         data_model = []
