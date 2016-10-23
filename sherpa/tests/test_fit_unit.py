@@ -84,12 +84,6 @@
 # Note that the stats test should be probing those cases, as here they
 # are just representative tests.
 #
-# *) remove wstat _response_ids workaround
-#
-# For Sherpa 4.8.2 and earlier, the wstat tests need to fake a response,
-# by setting the _response_ids field of the source dataset. This should
-# be removed as soon as possible.
-#
 
 import pytest
 import numpy as np
@@ -942,18 +936,7 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi, stat=None):
     else:
         statobj = stat
 
-    fit = Fit(src, mdl, stat=statobj)
-
-    # Due to the way wstat is handled in Sherpa 4.8.0, need the
-    # following work around, otherwise the code thinks there's
-    # no background. All that is needed is for the response_ids
-    # attribute to be the non-empty list - i.e. it does not even
-    # have to have a response - but you can not change response_ids
-    # directly, so I work around this.
-    #
-    src._response_ids = [1]
-
-    return fit
+    return Fit(src, mdl, stat=statobj)
 
 
 def setup_pha_multiple(flo, fhi):
@@ -1031,13 +1014,6 @@ def setup_pha_multiple(flo, fhi):
     src2.notice(lo=flo, hi=fhi)
     bg2.notice(lo=flo, hi=fhi)
     bg3.notice(lo=flo, hi=fhi)
-
-    # work around issue with wstat in Sherpa 4.8.0 (in that it
-    # requires both background_ids and response_ids arrays to
-    # not be empty)
-    src1._response_ids = [1]
-    src2._response_ids = [1]
-    src3._response_ids = [1]
 
     # Model components
     m1 = Gauss1D('m1')
@@ -1331,16 +1307,6 @@ def test_fit_calc_stat_wstat_grouped_single(flo, fhi, expected):
 
     # For now restrict to the default statistic values
     fit = Fit(src, mdl, stat=WStat())
-
-    # Due to the way wstat is handled in Sherpa 4.8.0, need the
-    # following work around, otherwise the code thinks there's
-    # no background. All that is needed is for the response_ids
-    # attribute to be the non-empty list - i.e. it does not even
-    # have to have a response - but you can not change response_ids
-    # directly, so I work around this.
-    #
-    src._response_ids = [1]
-
     assert_almost_equal(fit.calc_stat(), expected)
 
 
