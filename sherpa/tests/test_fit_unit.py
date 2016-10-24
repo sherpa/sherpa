@@ -20,7 +20,8 @@
 # Unit tests for fit to support the statistic redesign (part of
 # investigating #248 and #227).
 #
-# It does *not* include tests of the fit/error calculations.
+# It includes very-basic tests of the fit/error calculations
+# (at present fit only).
 #
 # Notes
 #
@@ -1604,3 +1605,160 @@ def test_fit_str_multiple(stat):
     expected = "\n".join(["{:9s} = {}".format(*e) for e in expected])
 
     assert out == expected
+
+
+# Calculated using LevMar
+#
+fit_lsq = 26.1355932203
+
+fit_chi2_tt = 3.76425157747
+fit_chi2_tf = 8.32136015756
+
+fit_gehrels_ff = 1.22882590966
+fit_gehrels_ft = 1.04190448781
+
+# Chi2DataVar fails as can not calculate the errors. There was
+# a change in Sherpa 4.8.2 - PR #? - but maybe this didn't make it to
+# the fit code (calculating errors)
+#
+# fit_dvar_ff = np.nan
+# fit_dvar_ft = np.nan
+
+fit_xvar_ff = 2.1192140563
+fit_xvar_ft = 1.61852598
+
+fit_cvar_ff = 2.41996233522
+fit_cvar_ft = 1.78836616916
+
+fit_mvar_xt = 1.42493962338
+fit_mvar_xf = 1.84372887153
+
+fit_cash = -173.299239257
+fit_cstat = 1.96098192899
+
+
+@pytest.mark.parametrize("stat,usestat,usesys,finalstat", [
+    (LeastSq, False, False, fit_lsq),
+    (LeastSq, True, True, fit_lsq),
+    (Chi2, True, True, fit_chi2_tt),
+    (Chi2, True, False, fit_chi2_tf),
+    (Chi2Gehrels, True, True, fit_chi2_tt),
+    (Chi2Gehrels, True, False, fit_chi2_tf),
+    (Chi2Gehrels, False, False, fit_gehrels_ff),
+    (Chi2Gehrels, False, True, fit_gehrels_ft),
+    (Chi2DataVar, True, True, fit_chi2_tt),
+    (Chi2DataVar, True, False, fit_chi2_tf),
+    # (Chi2DataVar, False, False, fit_dvar_ff),
+    # (Chi2DataVar, False, True, fit_dvar_ft),
+    (Chi2XspecVar, True, True, fit_chi2_tt),
+    (Chi2XspecVar, True, False, fit_chi2_tf),
+    (Chi2XspecVar, False, False, fit_xvar_ff),
+    (Chi2XspecVar, False, True, fit_xvar_ft),
+    (Chi2ConstVar, True, True, fit_chi2_tt),
+    (Chi2ConstVar, True, False, fit_chi2_tf),
+    (Chi2ConstVar, False, False, fit_cvar_ff),
+    (Chi2ConstVar, False, True, fit_cvar_ft),
+    (Chi2ModVar, True, True, fit_mvar_xt),
+    (Chi2ModVar, True, False, fit_mvar_xf),
+    (Chi2ModVar, False, False, fit_mvar_xf),
+    (Chi2ModVar, False, True, fit_mvar_xt),
+
+    (Cash, True, True, fit_cash),
+    (Cash, True, False, fit_cash),
+    (Cash, False, False, fit_cash),
+    (Cash, False, True, fit_cash),
+
+    (CStat, True, True, fit_cstat),
+    (CStat, True, False, fit_cstat),
+    (CStat, False, False, fit_cstat),
+    (CStat, False, True, fit_cstat),
+])
+def test_fit_single(stat, usestat, usesys, finalstat):
+    """Check that the fit method works: single dataset, successful fit
+
+    This is a minimal test, in that it just checks the
+    final statistic of the fit (not the model parameters).
+    The data and models are not designed to give good fit
+    results.
+    """
+
+    statobj = stat()
+    fit = setup_stat_single(statobj, usestat, usesys)
+    fr = fit.fit()
+    assert fr.succeeded is True
+    assert_almost_equal(fr.statval, finalstat)
+
+
+# Calculated using LevMar
+#
+fit_multi_lsq = 12992.8666667
+
+fit_multi_chi2_tt = 27.6895333147
+fit_multi_chi2_tf = 156.932316029
+
+fit_multi_gehrels_ff = 136.866794565
+fit_multi_gehrels_ft = 100.624578034
+
+fit_multi_xvar_ff = 171.96397815
+fit_multi_xvar_ft = 117.858874425
+
+fit_multi_cvar_ff = 114.086122486
+fit_multi_cvar_ft = 92.2492728722
+
+fit_multi_mvar_xt = 87.8410045128
+fit_multi_mvar_xf = 107.836151226
+
+fit_multi_cash = -137160.045124
+fit_multi_cstat = 133.900187108
+
+
+@pytest.mark.parametrize("stat,usestat,usesys,finalstat", [
+    (LeastSq, False, False, fit_multi_lsq),
+    (LeastSq, True, True, fit_multi_lsq),
+    (Chi2, True, True, fit_multi_chi2_tt),
+    (Chi2, True, False, fit_multi_chi2_tf),
+    (Chi2Gehrels, True, True, fit_multi_chi2_tt),
+    (Chi2Gehrels, True, False, fit_multi_chi2_tf),
+    (Chi2Gehrels, False, False, fit_multi_gehrels_ff),
+    (Chi2Gehrels, False, True, fit_multi_gehrels_ft),
+    (Chi2DataVar, True, True, fit_multi_chi2_tt),
+    (Chi2DataVar, True, False, fit_multi_chi2_tf),
+    # (Chi2DataVar, False, False, fit_multi_dvar_ff),
+    # (Chi2DataVar, False, True, fit_multi_dvar_ft),
+    (Chi2XspecVar, True, True, fit_multi_chi2_tt),
+    (Chi2XspecVar, True, False, fit_multi_chi2_tf),
+    (Chi2XspecVar, False, False, fit_multi_xvar_ff),
+    (Chi2XspecVar, False, True, fit_multi_xvar_ft),
+    (Chi2ConstVar, True, True, fit_multi_chi2_tt),
+    (Chi2ConstVar, True, False, fit_multi_chi2_tf),
+    (Chi2ConstVar, False, False, fit_multi_cvar_ff),
+    (Chi2ConstVar, False, True, fit_multi_cvar_ft),
+    (Chi2ModVar, True, True, fit_multi_mvar_xt),
+    (Chi2ModVar, True, False, fit_multi_mvar_xf),
+    (Chi2ModVar, False, False, fit_multi_mvar_xf),
+    (Chi2ModVar, False, True, fit_multi_mvar_xt),
+
+    (Cash, True, True, fit_multi_cash),
+    (Cash, True, False, fit_multi_cash),
+    (Cash, False, False, fit_multi_cash),
+    (Cash, False, True, fit_multi_cash),
+
+    (CStat, True, True, fit_multi_cstat),
+    (CStat, True, False, fit_multi_cstat),
+    (CStat, False, False, fit_multi_cstat),
+    (CStat, False, True, fit_multi_cstat),
+])
+def test_fit_multiple(stat, usestat, usesys, finalstat):
+    """Check that the fit method works: multiple datasets, successful fit
+
+    This is a minimal test, in that it just checks the
+    final statistic of the fit (not the model parameters).
+    The data and models are not designed to give good fit
+    results.
+    """
+
+    statobj = stat()
+    fit, _ = setup_stat_multiple(statobj, usestat, usesys)
+    fr = fit.fit()
+    assert fr.succeeded is True
+    assert_almost_equal(fr.statval, finalstat)
