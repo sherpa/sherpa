@@ -312,7 +312,7 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi, stat=None):
     return Fit(src, mdl, stat=statobj)
 
 
-def setup_pha_multiple(flo, fhi):
+def setup_pha_multiple(flo, fhi, stat=None):
     """Set up multiple PHA datasets.
 
     A sherpa.data.DataPHA instance is used, with an associated
@@ -323,6 +323,8 @@ def setup_pha_multiple(flo, fhi):
     flo, fhi : None or number
         The channel filters (used in a notice call). These filters are
         applied to source only, both, and background only.
+    stat : sherpa.stats.Stat instance, optional
+        The statistic object to use. If not set uses a WStat object.
 
     Returns
     -------
@@ -376,6 +378,16 @@ def setup_pha_multiple(flo, fhi):
     src2.set_background(bg2)
     src3.set_background(bg3)
 
+    # HACK
+    #
+    # This is needed for Sherpa 4.8.2 code; I had thought I could remove
+    # this, but it is still needed to get the fit object to work when using
+    # the WStat statistic (when calc_stat_from_data is moved to calc_stat
+    # in the stat object then this should be able to be removed).
+    #
+    for src in [src1, src2, src3]:
+        src._response_ids = [1]
+
     # Apply filtering to
     #  1: source only
     #  2: source and background (same filter)
@@ -412,7 +424,11 @@ def setup_pha_multiple(flo, fhi):
     data = DataSimulFit("multi", (src1, src2, src3))
     model = SimulFitModel("multi", (mexpr1, mexpr2, mexpr3))
 
-    statobj = WStat()
+    # For now restrict to the default statistic values
+    if stat is None:
+        statobj = WStat()
+    else:
+        statobj = stat
 
     fit = Fit(data, model, stat=statobj)
 
@@ -2183,6 +2199,50 @@ def test_est_errors_single_pha(stat, scalar, usestat, usesys, filtflag):
 
     fit.estmethod = Covariance()
     fit.fit()
+    result = fit.est_errors()
+
+    # check that a new best-fit location was not found during error
+    # analysis
+    assert result.nfits == 0
+
+
+# Due to the way the errors are set in setup_pha_multiple(), can not
+# use Chi2 here.
+#
+@pytest.mark.parametrize("stat,flo,fhi",[
+    (Chi2Gehrels, None, None),
+    (Chi2Gehrels, 2, None),
+    (Chi2Gehrels, None, 8),
+    (Chi2Gehrels, 2, 8),
+    (Chi2ModVar, None, None),
+    (Chi2ModVar, 2, 8),
+    (Cash, None, None),
+    (Cash, 2, None),
+    (Cash, None, 8),
+    (Cash, 2, 8),
+    (CStat, None, None),
+    (CStat, 2, None),
+    (CStat, None, 8),
+    (CStat, 2, 8),
+    (WStat, None, None),
+
+    # filtering/grouping issues
+    pytest.mark.xfail((WStat, 2, None)),
+    pytest.mark.xfail((WStat, None, 8)),
+    pytest.mark.xfail((WStat, 2, 8)),
+])
+def test_est_errors_multiple_pha(stat, flo, fhi):
+    """Check that the est_errors method works: multiple datasets, PHA, successful fit
+
+    This is a minimal test, in that it just checks that the
+    error routine runs without raising an error.
+    """
+
+    statobj = stat()
+    fit, _ = setup_pha_multiple(flo, fhi, stat=statobj)
+    fit.estmethod = Covariance()
+    fit.fit()
+
     result = fit.est_errors()
 
     # check that a new best-fit location was not found during error
