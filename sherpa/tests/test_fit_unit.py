@@ -101,7 +101,8 @@ from sherpa.models.basic import Const1D, Gauss1D, Polynom1D, StepLo1D
 from sherpa.utils.err import DataErr, EstErr, FitErr, StatErr
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
-    Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Cash, CStat, WStat, UserStat
+    Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Likelihood, \
+    Cash, CStat, WStat, UserStat
 
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.estmethods import Covariance, Confidence
@@ -1971,8 +1972,31 @@ def test_fit_multiple(stat, usestat, usesys, finalstat):
     assert fr.succeeded is True
     assert_almost_equal(fr.statval, finalstat)
 
+    # As the datasets and models are independent, the fit
+    # to just the third dataset should return the same parameter
+    # values. Actually, this is incorrect, as the convergence is
+    # not guaranteed to be the same in the single-fit versus
+    # multiple-fit cases, so there could be small differences.
+    # This is particularly the cases for the likelihood stats
+    # since the LevMar optimiser in use here is not ideal in
+    # these cases. This is why the number of decimal places is
+    # much smaller for the likelihood cases.
+    #
+    # Recall the setup code to ensure separate models are used
+    _, fits = setup_stat_multiple(statobj, usestat, usesys)
+    fr2 = fits[2].fit()
 
-# TODO: add explicit wstat fit tests
+    # assume only a single free parameter
+    assert fr.parnames[-1] == fr2.parnames[-1]
+
+    if isinstance(statobj, Likelihood):
+        ndp = 0
+    else:
+        ndp = 7
+
+    assert_almost_equal(fr2.parvals[-1], fr.parvals[-1],
+                        decimal=ndp)
+
 
 @pytest.mark.parametrize("method,estmethod,usestat,usesys", [
     (LevMar, Covariance, True, True),
@@ -2087,6 +2111,26 @@ def test_est_errors_single(stat, usestat, usesys):
 
     statobj = stat()
     fit = setup_stat_single(statobj, usestat, usesys)
+    fit.estmethod = Covariance()
+    fit.fit()
+
+    result = fit.est_errors()
+
+    # check that a new best-fit location was not found during error
+    # analysis
+    assert result.nfits == 0
+
+
+@pytest.mark.parametrize("stat", [Chi2, Chi2Gehrels, Cash, CStat])
+def test_est_errors_multiple(stat):
+    """Check that the est_errors method works: multiple datasets, successful fit
+
+    This is a minimal test, in that it just checks that the
+    error routine runs without raising an error.
+    """
+
+    statobj = stat()
+    fit, _ = setup_stat_multiple(statobj, True, True)
     fit.estmethod = Covariance()
     fit.fit()
 
