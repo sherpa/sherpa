@@ -2095,3 +2095,52 @@ def test_est_errors_single(stat, usestat, usesys):
     # check that a new best-fit location was not found during error
     # analysis
     assert result.nfits == 0
+
+
+@pytest.mark.parametrize("stat,scalar,usestat,usesys,filtflag", [
+    (Chi2, False, True, True, False),
+    (Chi2, False, True, True, True),
+    (Chi2, True, True, True, True),
+    (Chi2Gehrels, False, False, False, False),
+    (Chi2Gehrels, False, False, False, True),
+    (Chi2ModVar, True, True, True, True),
+    (Chi2ModVar, True, True, True, False),
+    (Cash, False, False, False, False),
+    (Cash, False, False, False, True),
+    (Cash, True, False, False, False),
+    (Cash, True, False, False, True),
+    (CStat, False, False, False, False),
+    (CStat, False, False, False, True),
+    (CStat, True, False, False, False),
+    (CStat, True, False, False, True),
+    (WStat, False, False, False, False),
+
+    # This errors out due to a mis-match in the number of bins.
+    pytest.mark.xfail((WStat, False, False, False, True)),
+
+    (WStat, True, False, False, False),
+    (WStat, True, False, False, True),
+])
+def test_est_errors_single_pha(stat, scalar, usestat, usesys, filtflag):
+    """Check that the est_errors method works: single dataset, PHA, successful fit
+
+    This is a minimal test, in that it just checks that the
+    error routine runs without raising an error.
+    """
+
+    statobj = stat()
+    fit = setup_pha_single(scalar, usestat, usesys, None, None,
+                           stat=statobj)
+    assert fit.method.name == 'levmar'
+    assert fit.data.subtracted is False
+
+    if filtflag:
+        fit.data.ignore(3.8, 4.5)
+
+    fit.estmethod = Covariance()
+    fit.fit()
+    result = fit.est_errors()
+
+    # check that a new best-fit location was not found during error
+    # analysis
+    assert result.nfits == 0
