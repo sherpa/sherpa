@@ -2209,7 +2209,7 @@ def test_est_errors_single_pha(stat, scalar, usestat, usesys, filtflag):
 # Due to the way the errors are set in setup_pha_multiple(), can not
 # use Chi2 here.
 #
-@pytest.mark.parametrize("stat,flo,fhi",[
+@pytest.mark.parametrize("stat,flo,fhi", [
     (Chi2Gehrels, None, None),
     (Chi2Gehrels, 2, None),
     (Chi2Gehrels, None, 8),
