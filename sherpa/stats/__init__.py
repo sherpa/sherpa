@@ -500,7 +500,7 @@ class Chi2(Stat):
         """TODO: should weights be an argument or taken from data?"""
 
         # TODO: HOW TO GET THE WEIGHTS?
-        self._validate_inputs(data, model)
+        data, model = self._validate_inputs(data, model)
         fitdata = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
 

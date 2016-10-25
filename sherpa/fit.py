@@ -1093,8 +1093,11 @@ class Fit(NoNewAttributesAfterInit):
     def fit(self, outfile=None, clobber=False):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
 
-        # TODO: add tests to check this happens before it can be removed,
-        #       as it should be handled by the calc_stat routine
+        # TODO: This test may already be handled by data.to_fit(),
+        #       which raises DataErr('notmask'), although I have not
+        #       investigated if it is possible to pass that check
+        #       but fail the following.
+        #
         if not iterable(dep) or len(dep) == 0:
             # raise FitError('no noticed bins found in data set')
             raise FitErr('nobins')

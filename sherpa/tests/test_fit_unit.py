@@ -18,7 +18,9 @@
 #
 
 # Unit tests for fit to support the statistic redesign (part of
-# investigating #248 and #227).
+# investigating #248 and #227). It is possible that many of these
+# tests can be removed after these issues have been addressed (i.e.
+# the functionality should be tested elsewhere).
 #
 # It includes very-basic tests of the fit/error calculations
 # (at present fit only).
@@ -96,10 +98,13 @@ from sherpa.data import Data1D, DataSimulFit
 from sherpa.astro.data import DataPHA
 from sherpa.models.model import SimulFitModel
 from sherpa.models.basic import Const1D, Gauss1D, Polynom1D, StepLo1D
-from sherpa.utils.err import FitErr, StatErr
+from sherpa.utils.err import DataErr, EstErr, FitErr, StatErr
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
     Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Cash, CStat, WStat, UserStat
+
+from sherpa.optmethods import LevMar, NelderMead
+from sherpa.estmethods import Covariance, Confidence
 
 
 def setup_stat_single(stat, usestat, usesys):
@@ -217,6 +222,197 @@ def setup_stat_multiple(stat, usestat, usesys):
     return fit, [fit1, fit2, fit3]
 
 
+def setup_pha_single(scalar, usestat, usesys, flo, fhi, stat=None):
+    """Set up a single PHA dataset.
+
+    A sherpa.data.DataPHA instance is used, with an associated
+    background data set.
+
+    Parameters
+    ----------
+    scalar : bool
+        Should a scalar BACKSCAL value be used for the background
+        region (True) or an array (False)? The source always uses
+        a scalar BACKSCAL.
+    usestat, usesys : bool
+        Should statistical or systematic errors be used?
+    flo, fhi : None or number
+        The channel filters (used in a notice call) that is applied
+        to the source only.
+    stat : sherpa.stats.Stat instance, optional
+        The statistic object to use. If not set uses a WStat object.
+
+    Returns
+    -------
+    fit : sherpa.fit.Fit instance
+    """
+
+    # ran numpy.random.poisson([10, 10, 10, 10, 10]) to get
+    # the src_counts values below, and with values of 2 for
+    # the background counts (just to get poisson-distributed
+    # data; it doesn't actually matter how it is distributed
+    # here as just evaluating at these values and not fitting).
+    #
+    # The channel starts at 1 just to follow the expected PHA
+    # behavior, but it should not matter here.
+    #
+    channels = np.arange(1, 6, dtype=np.int)
+    src_counts = np.asarray([14, 15, 11, 3, 8], dtype=np.int)
+    bg_counts = np.asarray([2, 0, 2, 3, 4], dtype=np.int)
+
+    # TODO: can add a grouping flag; if given use a larger set of bins and set
+    # up grouping
+
+    src = DataPHA('tst', channels, src_counts,
+                  exposure=100.0, backscal=0.01)
+
+    if scalar:
+        backscal = 0.03
+    else:
+        backscal = np.asarray([0.03, 0.02, 0.04, 0.03, 0.03])
+
+    bg = DataPHA('tstbg', channels, bg_counts,
+                 exposure=200.0, backscal=backscal)
+
+    if usestat:
+        src.staterror = np.sqrt(src.counts)
+        bg.staterror = np.sqrt(bg.counts)
+
+    if usesys:
+        src.syserror = 0.1 * src.counts
+        bg.syserror = 0.1 * bg.counts
+
+    src.set_background(bg)
+
+    # Filtering is *only* applied to the source
+    src.notice(lo=flo, hi=fhi)
+
+    # Pick something that varies with the channel number, to
+    # make sure that filtering is handled correctly.
+    mdl = Polynom1D('mdl')
+    mdl.c0 = 8
+    mdl.c1 = 1.2
+
+    # For now restrict to the default statistic values
+    if stat is None:
+        statobj = WStat()
+    else:
+        statobj = stat
+
+    return Fit(src, mdl, stat=statobj)
+
+
+def setup_pha_multiple(flo, fhi):
+    """Set up multiple PHA datasets.
+
+    A sherpa.data.DataPHA instance is used, with an associated
+    background data set.
+
+    Parameters
+    ----------
+    flo, fhi : None or number
+        The channel filters (used in a notice call). These filters are
+        applied to source only, both, and background only.
+
+    Returns
+    -------
+    fit, fits : sherpa.fit.Fit instance, list of sherpa.fit.Fit instances
+        The fit object for the combined data set and a list of those
+        for the individual data sets.
+    """
+
+    # Using three data sets means that can have scalar and array
+    # backscale values.
+    #
+    x1 = np.arange(1, 10)
+    y1 = np.asarray([2, 3, 2, 5, 3, 0, 0, 2, 1])
+    b1 = np.asarray([4, 2, 1, 2, 1, 0, 1, 3, 2])
+
+    x2 = np.arange(1, 6)
+    y2 = np.asarray([10, 12, 14, 12, 14])
+    b2 = np.asarray([2, 4, 3, 2, 1])
+
+    x3 = np.arange(1, 12)
+    y3 = np.asarray([0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0])
+    b3 = np.asarray([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+
+    e1 = 100.0
+    be1 = 125.0
+    bscal1 = 0.012
+    bbscal1 = np.asarray([0.024, 0.024, 0.023, 0.025, 0.03, 0.025,
+                          0.04, 0.035, 0.031])
+
+    e2 = 1000.0
+    be2 = 1000.0
+    bscal2 = np.asarray([0.12, 0.13, 0.12, 0.09, 0.08])
+    bbscal2 = 0.24
+
+    e3 = 800.0
+    be3 = 700.0
+    bscal3 = 0.0145 * np.ones(y3.size)
+    bbscal3 = 0.0232 * np.ones(y3.size)
+    bscal3[0] = 0.008
+    bbscal3[-1] = 0.012
+
+    src1 = DataPHA('p1', x1, y1, exposure=e1, backscal=bscal1)
+    src2 = DataPHA('p2', x2, y2, exposure=e2, backscal=bscal2)
+    src3 = DataPHA('p3', x3, y3, exposure=e3, backscal=bscal3)
+
+    bg1 = DataPHA('b1', x1, b1, exposure=be1, backscal=bbscal1)
+    bg2 = DataPHA('b2', x2, b2, exposure=be2, backscal=bbscal2)
+    bg3 = DataPHA('b3', x3, b3, exposure=be3, backscal=bbscal3)
+
+    src1.set_background(bg1)
+    src2.set_background(bg2)
+    src3.set_background(bg3)
+
+    # Apply filtering to
+    #  1: source only
+    #  2: source and background (same filter)
+    #  3: background only
+    #
+    # The background filters should be ignored
+    #
+    src1.notice(lo=flo, hi=fhi)
+    src2.notice(lo=flo, hi=fhi)
+    bg2.notice(lo=flo, hi=fhi)
+    bg3.notice(lo=flo, hi=fhi)
+
+    # Model components
+    m1 = Gauss1D('m1')
+    m1.fwhm = 0.8
+    m1.pos = 4.05
+    m1.ampl = 4.5
+
+    m2 = Const1D('m2')
+    m2.c0 = 12
+
+    m3 = Polynom1D('m3')
+    m3.c0 = 1.1
+    m3.c1 = -0.05
+
+    # Models for the datasets; at present no component is re-used,
+    # since support for that functionality should be tested elsewhere,
+    # and it should not be directly relevant to the statistics code
+    # being tested.
+    mexpr1 = m1
+    mexpr2 = m2
+    mexpr3 = m3
+
+    data = DataSimulFit("multi", (src1, src2, src3))
+    model = SimulFitModel("multi", (mexpr1, mexpr2, mexpr3))
+
+    statobj = WStat()
+
+    fit = Fit(data, model, stat=statobj)
+
+    fit1 = Fit(src1, mexpr1, stat=statobj)
+    fit2 = Fit(src2, mexpr2, stat=statobj)
+    fit3 = Fit(src3, mexpr3, stat=statobj)
+
+    return fit, [fit1, fit2, fit3]
+
+
 @pytest.mark.parametrize("stat", [Cash, CStat, WStat])
 def test_fit_raises_error_on_bgsubtraction(stat):
     """Check that fits using likelihood stats fail when bkg subtracted."""
@@ -227,7 +423,6 @@ def test_fit_raises_error_on_bgsubtraction(stat):
     fit = setup_pha_single(False, False, False, None, None, stat=statobj)
     fit.data.subtract()
 
-    # Can we check the error message itself?
     with pytest.raises(FitErr) as excinfo:
         fit.fit()
 
@@ -860,197 +1055,6 @@ def test_fit_calc_chisqr_multiple(stat, usestat, usesys, expected):
         assert_almost_equal(combined, expected)
 
 
-def setup_pha_single(scalar, usestat, usesys, flo, fhi, stat=None):
-    """Set up a single PHA dataset.
-
-    A sherpa.data.DataPHA instance is used, with an associated
-    background data set.
-
-    Parameters
-    ----------
-    scalar : bool
-        Should a scalar BACKSCAL value be used for the background
-        region (True) or an array (False)? The source always uses
-        a scalar BACKSCAL.
-    usestat, usesys : bool
-        Should statistical or systematic errors be used?
-    flo, fhi : None or number
-        The channel filters (used in a notice call) that is applied
-        to the source only.
-    stat : sherpa.stats.Stat instance, optional
-        The statistic object to use. If not set uses a WStat object.
-
-    Returns
-    -------
-    fit : sherpa.fit.Fit instance
-    """
-
-    # ran numpy.random.poisson([10, 10, 10, 10, 10]) to get
-    # the src_counts values below, and with values of 2 for
-    # the background counts (just to get poisson-distributed
-    # data; it doesn't actually matter how it is distributed
-    # here as just evaluating at these values and not fitting).
-    #
-    # The channel starts at 1 just to follow the expected PHA
-    # behavior, but it should not matter here.
-    #
-    channels = np.arange(1, 6, dtype=np.int)
-    src_counts = np.asarray([14, 15, 11, 3, 8], dtype=np.int)
-    bg_counts = np.asarray([2, 0, 2, 3, 4], dtype=np.int)
-
-    # TODO: can add a grouping flag; if given use a larger set of bins and set
-    # up grouping
-
-    src = DataPHA('tst', channels, src_counts,
-                  exposure=100.0, backscal=0.01)
-
-    if scalar:
-        backscal = 0.03
-    else:
-        backscal = np.asarray([0.03, 0.02, 0.04, 0.03, 0.03])
-
-    bg = DataPHA('tstbg', channels, bg_counts,
-                 exposure=200.0, backscal=backscal)
-
-    if usestat:
-        src.staterror = np.sqrt(src.counts)
-        bg.staterror = np.sqrt(bg.counts)
-
-    if usesys:
-        src.syserror = 0.1 * src.counts
-        bg.syserror = 0.1 * bg.counts
-
-    src.set_background(bg)
-
-    # Filtering is *only* applied to the source
-    src.notice(lo=flo, hi=fhi)
-
-    # Pick something that varies with the channel number, to
-    # make sure that filtering is handled correctly.
-    mdl = Polynom1D('mdl')
-    mdl.c0 = 8
-    mdl.c1 = 1.2
-
-    # For now restrict to the default statistic values
-    if stat is None:
-        statobj = WStat()
-    else:
-        statobj = stat
-
-    return Fit(src, mdl, stat=statobj)
-
-
-def setup_pha_multiple(flo, fhi):
-    """Set up multiple PHA datasets.
-
-    A sherpa.data.DataPHA instance is used, with an associated
-    background data set.
-
-    Parameters
-    ----------
-    flo, fhi : None or number
-        The channel filters (used in a notice call). These filters are
-        applied to source only, both, and background only.
-
-    Returns
-    -------
-    fit, fits : sherpa.fit.Fit instance, list of sherpa.fit.Fit instances
-        The fit object for the combined data set and a list of those
-        for the individual data sets.
-    """
-
-    # Using three data sets means that can have scalar and array
-    # backscale values.
-    #
-    x1 = np.arange(1, 10)
-    y1 = np.asarray([2, 3, 2, 5, 3, 0, 0, 2, 1])
-    b1 = np.asarray([4, 2, 1, 2, 1, 0, 1, 3, 2])
-
-    x2 = np.arange(1, 6)
-    y2 = np.asarray([10, 12, 14, 12, 14])
-    b2 = np.asarray([2, 4, 3, 2, 1])
-
-    x3 = np.arange(1, 12)
-    y3 = np.asarray([0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0])
-    b3 = np.asarray([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
-
-    e1 = 100.0
-    be1 = 125.0
-    bscal1 = 0.012
-    bbscal1 = np.asarray([0.024, 0.024, 0.023, 0.025, 0.03, 0.025,
-                          0.04, 0.035, 0.031])
-
-    e2 = 1000.0
-    be2 = 1000.0
-    bscal2 = np.asarray([0.12, 0.13, 0.12, 0.09, 0.08])
-    bbscal2 = 0.24
-
-    e3 = 800.0
-    be3 = 700.0
-    bscal3 = 0.0145 * np.ones(y3.size)
-    bbscal3 = 0.0232 * np.ones(y3.size)
-    bscal3[0] = 0.008
-    bbscal3[-1] = 0.012
-
-    src1 = DataPHA('p1', x1, y1, exposure=e1, backscal=bscal1)
-    src2 = DataPHA('p2', x2, y2, exposure=e2, backscal=bscal2)
-    src3 = DataPHA('p3', x3, y3, exposure=e3, backscal=bscal3)
-
-    bg1 = DataPHA('b1', x1, b1, exposure=be1, backscal=bbscal1)
-    bg2 = DataPHA('b2', x2, b2, exposure=be2, backscal=bbscal2)
-    bg3 = DataPHA('b3', x3, b3, exposure=be3, backscal=bbscal3)
-
-    src1.set_background(bg1)
-    src2.set_background(bg2)
-    src3.set_background(bg3)
-
-    # Apply filtering to
-    #  1: source only
-    #  2: source and background (same filter)
-    #  3: background only
-    #
-    # The background filters should be ignored
-    #
-    src1.notice(lo=flo, hi=fhi)
-    src2.notice(lo=flo, hi=fhi)
-    bg2.notice(lo=flo, hi=fhi)
-    bg3.notice(lo=flo, hi=fhi)
-
-    # Model components
-    m1 = Gauss1D('m1')
-    m1.fwhm = 0.8
-    m1.pos = 4.05
-    m1.ampl = 4.5
-
-    m2 = Const1D('m2')
-    m2.c0 = 12
-
-    m3 = Polynom1D('m3')
-    m3.c0 = 1.1
-    m3.c1 = -0.05
-
-    # Models for the datasets; at present no component is re-used,
-    # since support for that functionality should be tested elsewhere,
-    # and it should not be directly relevant to the statistics code
-    # being tested.
-    mexpr1 = m1
-    mexpr2 = m2
-    mexpr3 = m3
-
-    data = DataSimulFit("multi", (src1, src2, src3))
-    model = SimulFitModel("multi", (mexpr1, mexpr2, mexpr3))
-
-    statobj = WStat()
-
-    fit = Fit(data, model, stat=statobj)
-
-    fit1 = Fit(src1, mexpr1, stat=statobj)
-    fit2 = Fit(src2, mexpr2, stat=statobj)
-    fit3 = Fit(src3, mexpr3, stat=statobj)
-
-    return fit, [fit1, fit2, fit3]
-
-
 wstat_single_scalar_stat = 18.907726418126835
 wstat_single_scalar_lo_stat = 17.094447413086726
 wstat_single_scalar_hi_stat = 15.29434361363597
@@ -1607,6 +1611,79 @@ def test_fit_str_multiple(stat):
     assert out == expected
 
 
+# Can include WStat in this check since the check for nobins is
+# done before validating the data type matches the statistic.
+#
+@pytest.mark.parametrize("stat",
+                         [LeastSq, Chi2, Chi2Gehrels, Chi2DataVar,
+                          Chi2ConstVar, Chi2ModVar, Chi2XspecVar,
+                          Cash, CStat, WStat])
+def test_fit_single_fails_nobins(stat):
+    """Check that the fit method fails: single dataset, no valid bins
+    """
+
+    # The statistical/systematic errors should not be relevant
+    # to this check, so pick something that allows Chi2 to be
+    # used.
+    #
+    statobj = stat()
+    fit = setup_stat_single(statobj, True, False)
+    fit.data.ignore(None, None)
+    with pytest.raises(DataErr) as excinfo:
+        fit.fit()
+
+    emsg = 'mask excludes all data'
+    assert str(excinfo.value) == emsg
+
+
+@pytest.mark.parametrize("stat",
+                         [LeastSq, Chi2, Chi2Gehrels, Chi2DataVar,
+                          Chi2ConstVar, Chi2ModVar, Chi2XspecVar,
+                          Cash, CStat, WStat])
+def test_fit_single_fails_pha_nobins(stat):
+    """Check that the fit method fails: single dataset, PHA, no valid bins
+
+    This probably does not add much to test_fit_single_fails_nobins.
+    """
+
+    # The statistical/systematic errors should not be relevant
+    # to this check, so pick something that allows Chi2 to be
+    # used.
+    #
+    statobj = stat()
+    fit = setup_pha_single(True, True, False, None, None, stat=statobj)
+    fit.data.ignore(None, None)
+    with pytest.raises(DataErr) as excinfo:
+        fit.fit()
+
+    emsg = 'mask excludes all data'
+    assert str(excinfo.value) == emsg
+
+
+# Note that prior to Sherpa 4.8.1 the error here would have been a
+# ValueError with the message 'calculation of errors has failed
+# using current statistic' coming from a call to self.get_staterror().
+# This was changed by PR #153.
+#
+@pytest.mark.parametrize("usesys", [True, False])
+def test_fit_single_fails_dvar(usesys):
+    """Check that the fit method fails: single dataset, datavar, 0's
+
+    Does the Chi2DataVar stat error out with an error message
+    about the inability to calculate the statistic when there
+    are 0 values in the dependent axis (statistical error)
+    """
+
+    statobj = Chi2DataVar()
+    fit = setup_stat_single(statobj, False, usesys)
+    with pytest.raises(FitErr) as excinfo:
+        fit.fit()
+
+    emsg = 'zeros found in uncertainties, consider using ' + \
+           'calculated uncertainties'
+    assert str(excinfo.value) == emsg
+
+
 # Calculated using LevMar
 #
 fit_lsq = 26.1355932203
@@ -1616,13 +1693,6 @@ fit_chi2_tf = 8.32136015756
 
 fit_gehrels_ff = 1.22882590966
 fit_gehrels_ft = 1.04190448781
-
-# Chi2DataVar fails as can not calculate the errors. There was
-# a change in Sherpa 4.8.2 - PR #? - but maybe this didn't make it to
-# the fit code (calculating errors)
-#
-# fit_dvar_ff = np.nan
-# fit_dvar_ft = np.nan
 
 fit_xvar_ff = 2.1192140563
 fit_xvar_ft = 1.61852598
@@ -1648,8 +1718,6 @@ fit_cstat = 1.96098192899
     (Chi2Gehrels, False, True, fit_gehrels_ft),
     (Chi2DataVar, True, True, fit_chi2_tt),
     (Chi2DataVar, True, False, fit_chi2_tf),
-    # (Chi2DataVar, False, False, fit_dvar_ff),
-    # (Chi2DataVar, False, True, fit_dvar_ft),
     (Chi2XspecVar, True, True, fit_chi2_tt),
     (Chi2XspecVar, True, False, fit_chi2_tf),
     (Chi2XspecVar, False, False, fit_xvar_ff),
@@ -1684,6 +1752,37 @@ def test_fit_single(stat, usestat, usesys, finalstat):
 
     statobj = stat()
     fit = setup_stat_single(statobj, usestat, usesys)
+    assert fit.method.name == 'levmar'
+    fr = fit.fit()
+    assert fr.succeeded is True
+    assert_almost_equal(fr.statval, finalstat)
+
+
+@pytest.mark.parametrize("stat,usestat,usesys,finalstat", [
+    (LeastSq, False, False, fit_lsq),
+    (Chi2, True, True, fit_chi2_tt),
+    (Chi2Gehrels, True, True, fit_chi2_tt),
+    (Chi2Gehrels, False, False, fit_gehrels_ff),
+    (Chi2XspecVar, False, True, fit_xvar_ft),
+    (Chi2ConstVar, False, True, fit_cvar_ft),
+    (Chi2ModVar, True, True, fit_mvar_xt),
+    (Chi2ModVar, True, False, fit_mvar_xf),
+    (Chi2ModVar, False, False, fit_mvar_xf),
+    (Chi2ModVar, False, True, fit_mvar_xt),
+
+    (Cash, True, True, fit_cash),
+    (CStat, True, True, fit_cstat),
+])
+def test_fit_single_nm(stat, usestat, usesys, finalstat):
+    """Check that the fit method works: single dataset, successful fit, simplex
+
+    Test several cases from test_fit_single but using the
+    NelderMead optimiser instead of the default LevMar.
+    """
+
+    statobj = stat()
+    fit = setup_stat_single(statobj, usestat, usesys)
+    fit.method = NelderMead()
     fr = fit.fit()
     assert fr.succeeded is True
     assert_almost_equal(fr.statval, finalstat)
@@ -1699,8 +1798,15 @@ fit_multi_chi2_tf = 156.932316029
 fit_multi_gehrels_ff = 136.866794565
 fit_multi_gehrels_ft = 100.624578034
 
-fit_multi_xvar_ff = 171.96397815
-fit_multi_xvar_ft = 117.858874425
+# The data sets used in the multiple case are different to
+# the single case, and do not contain the problem values that
+# caused the single case to error out.
+#
+fit_multi_dvar_ff = 171.96397815
+fit_multi_dvar_ft = 117.858874425
+
+fit_multi_xvar_ff = fit_multi_dvar_ff
+fit_multi_xvar_ft = fit_multi_dvar_ft
 
 fit_multi_cvar_ff = 114.086122486
 fit_multi_cvar_ft = 92.2492728722
@@ -1723,8 +1829,8 @@ fit_multi_cstat = 133.900187108
     (Chi2Gehrels, False, True, fit_multi_gehrels_ft),
     (Chi2DataVar, True, True, fit_multi_chi2_tt),
     (Chi2DataVar, True, False, fit_multi_chi2_tf),
-    # (Chi2DataVar, False, False, fit_multi_dvar_ff),
-    # (Chi2DataVar, False, True, fit_multi_dvar_ft),
+    (Chi2DataVar, False, False, fit_multi_dvar_ff),
+    (Chi2DataVar, False, True, fit_multi_dvar_ft),
     (Chi2XspecVar, True, True, fit_multi_chi2_tt),
     (Chi2XspecVar, True, False, fit_multi_chi2_tf),
     (Chi2XspecVar, False, False, fit_multi_xvar_ff),
@@ -1762,3 +1868,128 @@ def test_fit_multiple(stat, usestat, usesys, finalstat):
     fr = fit.fit()
     assert fr.succeeded is True
     assert_almost_equal(fr.statval, finalstat)
+
+
+# TODO: add explicit wstat fit tests
+
+@pytest.mark.parametrize("method,estmethod,usestat,usesys", [
+    (LevMar, Covariance, True, True),
+    (NelderMead, Covariance, True, False),
+    (LevMar, Covariance, False, False),
+    (NelderMead, Covariance, False, True),
+    (LevMar, Confidence, True, True),
+    (NelderMead, Confidence, True, False),
+    (LevMar, Confidence, False, False),
+    (NelderMead, Confidence, False, True),
+])
+def test_est_errors_single_fails_lsq(method, estmethod, usestat, usesys):
+    """Check that the est_errors method fails: single dataset, LeastSq
+
+    The method setting should not affect this, but include as a check
+    (do not check all combinations).
+    """
+
+    statobj = LeastSq()
+    fit = setup_stat_single(statobj, usestat, usesys)
+    fit.method = method()
+    fit.estmethod = estmethod()
+    fit.fit()
+
+    with pytest.raises(EstErr) as excinfo:
+        fit.est_errors()
+
+    emsg = 'cannot estimate confidence limits with LeastSq'
+    assert str(excinfo.value) == emsg
+
+
+@pytest.mark.parametrize("method, estmethod", [
+    (LevMar, Covariance),
+    (LevMar, Confidence),
+    (NelderMead, Covariance),
+    (NelderMead, Confidence),
+])
+def test_est_errors_single_fails_nobins(method, estmethod):
+    """Check that the est_errors method fails: single dataset, no bins
+
+    Check that, if a user has changed the bins after a fit, that the
+    code errors out when there are no bins.
+    """
+
+    # Assume do not need to loop over the statistic or stat/sys errors
+    statobj = Chi2()
+    fit = setup_stat_single(statobj, True, False)
+    fit.method = method()
+    fit.estmethod = estmethod()
+    fit.fit()
+
+    fit.data.ignore(None, None)
+    with pytest.raises(DataErr) as excinfo:
+        fit.est_errors()
+
+    emsg = 'mask excludes all data'
+    assert str(excinfo.value) == emsg
+
+
+# Using Covariance does not trigger this error.
+@pytest.mark.parametrize("stat, method, estmethod", [
+    (Chi2, LevMar, Confidence),
+    (Chi2, NelderMead, Confidence),
+    # Since usestat=True in the call to setup_stat_single then
+    # all the Chi2XXX statistics (other than ModVar) are going
+    # to have the same error values
+    (Chi2Gehrels, LevMar, Confidence),
+    (Chi2Gehrels, NelderMead, Confidence),
+    (Chi2ModVar, LevMar, Confidence),
+    (Chi2ModVar, NelderMead, Confidence),
+    (CStat, LevMar, Confidence),
+    (CStat, NelderMead, Confidence),
+])
+def test_est_errors_single_fails_badfit(stat, method, estmethod):
+    """Check that the est_errors method fails: single dataset, bad fit
+
+    Check that if this is a bad fit the error estimate call fails.
+    """
+
+    statobj = stat()
+    fit = setup_stat_single(statobj, True, False)
+    fit.method = method()
+    fit.estmethod = estmethod()
+
+    with pytest.raises(EstErr) as excinfo:
+        fit.est_errors()
+
+    emsg = 'reduced statistic larger than 3'
+    assert str(excinfo.value) == emsg
+
+
+# Restrict the choices run here to save time; ideally the parameter
+# values should be set rather than rely on a call to fit.
+#
+@pytest.mark.parametrize("stat,usestat,usesys", [
+    (Chi2, True, True),
+    (Chi2Gehrels, True, True),
+    (Chi2Gehrels, True, False),
+    (Chi2Gehrels, False, False),
+    (Chi2Gehrels, False, True),
+    (Chi2ModVar, True, True),
+    (Chi2ModVar, True, False),
+    (Cash, False, True),
+    (CStat, False, True),
+])
+def test_est_errors_single(stat, usestat, usesys):
+    """Check that the est_errors method works: single dataset, successful fit
+
+    This is a minimal test, in that it just checks that the
+    error routine runs without raising an error.
+    """
+
+    statobj = stat()
+    fit = setup_stat_single(statobj, usestat, usesys)
+    fit.estmethod = Covariance()
+    fit.fit()
+
+    result = fit.est_errors()
+
+    # check that a new best-fit location was not found during error
+    # analysis
+    assert result.nfits == 0
