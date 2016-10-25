@@ -299,6 +299,15 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi, stat=None):
     else:
         statobj = stat
 
+    # HACK
+    #
+    # This is needed for Sherpa 4.8.2 code; I had thought I could remove
+    # this, but it is still needed to get the fit object to work when using
+    # the WStat statistic (when calc_stat_from_data is moved to calc_stat
+    # in the stat object then this should be able to be removed).
+    #
+    src._response_ids = [1]
+
     return Fit(src, mdl, stat=statobj)
 
 
@@ -1785,6 +1794,99 @@ def test_fit_single_nm(stat, usestat, usesys, finalstat):
     fit.method = NelderMead()
     fr = fit.fit()
     assert fr.succeeded is True
+    assert_almost_equal(fr.statval, finalstat)
+
+
+# Since the background is being ignored in this fit (except for
+# wstat), the status of the BACKSCAL value (whether it's an array
+# of values or not) should make no difference to the fit for all
+# but WStat.
+#
+fit_pha_lsq = 166.8
+fit_pha_filt_lsq = 78.6
+
+fit_pha_chi2 = 20.4880257038
+fit_pha_filt_chi2 = 6.76891612899
+fit_pha_gehrels = 11.0170341689
+fit_pha_filt_gehrels = 4.15421342256
+fit_pha_mvar = 14.425605409
+fit_pha_filt_mvar = 5.73844232605
+
+fit_pha_cash = -128.007204397
+fit_pha_filt_cash = -138.731060074
+
+fit_pha_cstat = 17.7443412653
+fit_pha_filt_cstat = 6.42881185701
+
+fit_pha_wstat_t = 18.5533195269
+fit_pha_filt_wstat_t = 6.91786326729
+fit_pha_wstat_f = 18.552838794
+
+# The expected value was calculated in CIAO 4.8 and so may not
+# be correct (due to known issues there).
+fit_pha_filt_wstat_f = fit_pha_filt_wstat_t
+
+
+@pytest.mark.parametrize("stat,scalar,usestat,usesys,filtflag,finalstat", [
+    (LeastSq, True, False, False, False, fit_pha_lsq),
+    (LeastSq, True, False, False, True, fit_pha_filt_lsq),
+    (LeastSq, False, True, True, False, fit_pha_lsq),
+
+    (Chi2, True, True, True, False, fit_pha_chi2),
+    (Chi2, True, True, True, True, fit_pha_filt_chi2),
+    (Chi2, False, True, True, False, fit_pha_chi2),
+
+    (Chi2Gehrels, True, False, False, False, fit_pha_gehrels),
+    (Chi2Gehrels, False, False, False, False, fit_pha_gehrels),
+    (Chi2Gehrels, False, False, False, True, fit_pha_filt_gehrels),
+
+    (Chi2ModVar, True, False, False, False, fit_pha_mvar),
+    (Chi2ModVar, True, False, False, True, fit_pha_filt_mvar),
+    (Chi2ModVar, False, False, False, False, fit_pha_mvar),
+
+    (Cash, True, True, False, False, fit_pha_cash),
+    (Cash, False, True, False, False, fit_pha_cash),
+    (Cash, False, False, False, True, fit_pha_filt_cash),
+
+    (CStat, True, True, False, False, fit_pha_cstat),
+    (CStat, False, True, False, False, fit_pha_cstat),
+    (CStat, False, False, False, True, fit_pha_filt_cstat),
+
+    (WStat, True, True, False, False, fit_pha_wstat_t),
+    (WStat, True, True, False, True, fit_pha_filt_wstat_t),
+    (WStat, False, True, False, False, fit_pha_wstat_f),
+
+    # This errors out due to a mis-match in the number of bins.
+    pytest.mark.xfail((WStat, False, True, False, True,
+                       fit_pha_filt_wstat_f)),
+])
+def test_fit_single_pha(stat, scalar, usestat, usesys, filtflag, finalstat):
+    """Check that the fit method works: single dataset, PHA, successful fit
+
+    This is a minimal test, in that it just checks the
+    final statistic of the fit (not the model parameters).
+    The data and models are not designed to give good fit
+    results.
+
+    This combines two tests to avoid typing: all data and a simple
+    filtered case.
+    """
+
+    statobj = stat()
+    fit = setup_pha_single(scalar, usestat, usesys, None, None,
+                           stat=statobj)
+    assert fit.method.name == 'levmar'
+    assert fit.data.subtracted is False
+
+    numpoints = 5
+    if filtflag:
+        fit.data.ignore(3.8, 4.5)
+        numpoints -= 1
+
+    fr = fit.fit()
+    assert fr.succeeded is True
+    assert fr.numpoints == numpoints
+    assert fr.dof == (numpoints - 1)
     assert_almost_equal(fr.statval, finalstat)
 
 
