@@ -459,7 +459,7 @@ class IterFit(NoNewAttributesAfterInit):
         # Data set attributes needed to store fitting values between
         # calls to fit
         self._dep = None
-        self.extra_args = None
+        # self.extra_args = None
         self._staterror = None
         self._syserror = None
         self._nfev = 0
@@ -482,62 +482,6 @@ class IterFit(NoNewAttributesAfterInit):
     def _sig_handler(self, signum, frame):
         raise KeyboardInterrupt()
 
-    def get_extra_args(self, dep):
-        """get the bkg data for wstat and the user defined statistics"""
-
-        def vectorize_backscale_ratio(bkg_backscal, src_backscal, num):
-            '''return the ratio of bkg_backscal/src_backscal as a numpy
-            array of length n. bkg_backscal and/or src_backscal can be
-            either a floating point number or a numpy array'''
-            if hasattr(bkg_backscal, '__iter__') is False and \
-                    hasattr(src_backscal, '__iter__') is False:
-                # both backscal are floating point numbers, generate arrays
-                bkg = bkg_backscal * ones(num)
-                src = src_backscal
-            else:
-                # at least one of the backscals is a numpy array
-                bkg = bkg_backscal
-                src = src_backscal
-            return bkg / src
-
-        result = {'bkg': None, 'backscale_ratio': None, 'data_size': None,
-                  'exposure_time': None}
-        bkg_dep = []
-        data_size = None
-        exposure_time = None
-        backscale_ratio = []
-
-        len_datasets = len(self.data.datasets)
-        data_size = zeros(len_datasets, dtype=int)
-        exposure_time = zeros(2 * len_datasets)
-        for index in xrange(len_datasets):
-            mydata = self.data.datasets[index]
-            data_size[index] = mydata.get_dep(True).size
-        result['data_size'] = data_size
-        for index in xrange(len_datasets):
-            mydata = self.data.datasets[index]
-            if hasattr(mydata, 'response_ids') and \
-                    hasattr(mydata, 'background_ids') and \
-                    len(mydata.response_ids) and len(mydata.background_ids):
-                bkg = mydata.get_background(mydata.background_ids[0])
-                tmp_bkg_dep = bkg.get_dep(True)
-                # data_size[index] = tmp_bkg_dep.size
-                bkg_dep = append(bkg_dep, tmp_bkg_dep)
-                exposure_time[2 * index] = mydata.exposure
-                exposure_time[2 * index + 1] = bkg.exposure
-                ratio = vectorize_backscale_ratio(bkg.backscal,
-                                                  mydata.backscal,
-                                                  data_size[index])
-                backscale_ratio = append(backscale_ratio, ratio)
-            else:
-                return result
-
-        result['bkg'] = bkg_dep
-        result['backscale_ratio'] = backscale_ratio
-        # result['data_size'] = data_size
-        result['exposure_time'] = exposure_time
-        return result
-
     def _get_callback(self, outfile=None, clobber=False):
         if len(self.model.thawedpars) == 0:
             # raise FitError('model has no thawed parameters')
@@ -552,7 +496,7 @@ class IterFit(NoNewAttributesAfterInit):
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
-        self.extra_args = self.get_extra_args(self._dep)
+        # self.extra_args = self.get_extra_args(self._dep)
         self._nfev = 0
         if outfile is not None:
             if os.path.isfile(outfile) and not clobber:
