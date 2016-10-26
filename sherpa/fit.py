@@ -143,6 +143,38 @@ class StatInfoResults(NoNewAttributesAfterInit):
         return s
 
 
+def _cleanup_chi2_name(stat, data):
+    """Simplify the chi-square name if possible.
+
+    Returns the statistic name for reporting fit results, simplifying
+    the chi-square name (e.g. chi2gehrels) when possible.
+
+    Parameters
+    ----------
+    stat : a sherpa.stats.Stat instance
+    data : a sherpa.data.Data or sherpa.data.DataSimulFit instance
+
+    Returns
+    -------
+    name : str
+        The statistic name (will be 'chi2' if possible)
+    """
+
+    if isinstance(stat, LeastSq) or not isinstance(stat, Chi2):
+        return stat.name
+
+    if isinstance(data, DataSimulFit):
+        is_error_set = [d.staterror is not None
+                        for d in data.datasets]
+        if all(is_error_set):
+            return 'chi2'
+
+    elif data.staterror is not None:
+        return 'chi2'
+
+    return stat.name
+
+
 class FitResults(NoNewAttributesAfterInit):
     """A summary of the fit results.
 
@@ -230,16 +262,9 @@ class FitResults(NoNewAttributesAfterInit):
         self.modelvals = _vals
         self.methodname = type(fit.method).__name__.lower()
         self.itermethodname = fit._iterfit.itermethod_opts['name']
-        statname = type(fit.stat).__name__.lower()
-        if isinstance(fit.stat, Chi2) and not isinstance(fit.stat, LeastSq):
-            isSimulFit = isinstance(fit.data, DataSimulFit)
-            if isSimulFit:
-                is_error_set = [d.staterror is not None
-                                for d in fit.data.datasets]
-                if all(is_error_set):
-                    statname = 'chi2'
-            elif fit.data.staterror is not None:
-                statname = 'chi2'
+
+        statname = _cleanup_chi2_name(fit.stat, fit.data)
+
         self.statname = statname
         self.datasets = None  # To be filled by calling function
         self.param_warnings = param_warnings
@@ -1006,23 +1031,14 @@ class Fit(NoNewAttributesAfterInit):
         rstat = None
         numpoints = len(model)
         dof = numpoints - len(self.model.thawedpars)
+        # TODO: should this include WStat?
         if (isinstance(self.stat, (CStat, Chi2)) and
                 not isinstance(self.stat, LeastSq)):
             if stat >= 0.0:
                 qval = igamc(dof / 2., stat / 2.)
             rstat = stat / dof
 
-        name = self.stat.name
-
-        if isinstance(self.stat, Chi2) and not isinstance(self.stat, LeastSq):
-            isSimulFit = isinstance(self.data, DataSimulFit)
-            if isSimulFit:
-                is_error_set = [d.staterror is not None
-                                for d in self.data.datasets]
-                if all(is_error_set):
-                    name = 'chi2'
-            elif self.data.staterror is not None:
-                name = 'chi2'
+        name = _cleanup_chi2_name(self.stat, self.data)
 
         return StatInfoResults(name, stat, numpoints, model,
                                dof, qval, rstat)
