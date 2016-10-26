@@ -58,7 +58,7 @@ def get_syserror_weight_extra(dictionary):
 
 class Stat(NoNewAttributesAfterInit):
 
-    # Used by calc_stat_from_data.
+    # Used by calc_stat
     #
     _calc = None
 
@@ -199,10 +199,11 @@ class Stat(NoNewAttributesAfterInit):
     def calc_staterror(self, data):
         raise NotImplementedError
 
-    def calc_stat(self, data, model, staterror, *args, **kwargs):
-        raise NotImplementedError
+    # def calc_stat(self, data, model, staterror, *args, **kwargs):
+    #     raise NotImplementedError
 
-    def calc_stat_from_data(self, data, model):
+    # TODO: add *args, **kwargs?
+    def calc_stat(self, data, model):
         """Return the statistic value for the data and model.
 
         Parameters
@@ -264,7 +265,7 @@ class Likelihood(Stat):
         self._check_background_subtraction(data)
         return data, model
 
-    def calc_stat_from_data(self, data, model):
+    def calc_stat(self, data, model):
         data, model = self._validate_inputs(data, model)
         fitdata = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
@@ -350,12 +351,6 @@ class Cash(Likelihood):
     def __init__(self, name='cash'):
         Likelihood.__init__(self, name)
 
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        return _statfcts.calc_cash_stat(data, model, staterror, syserror,
-                                        weight, truncation_value)
-
 
 class CStat(Likelihood):
     """Maximum likelihood function (XSPEC style).
@@ -428,12 +423,6 @@ class CStat(Likelihood):
     def __init__(self, name='cstat'):
         Likelihood.__init__(self, name)
 
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        return _statfcts.calc_cstat_stat(data, model, staterror, syserror,
-                                         weight, truncation_value)
-
 
 class Chi2(Stat):
     """Chi Squared statistic.
@@ -490,13 +479,13 @@ class Chi2(Stat):
     def calc_staterror(data):
         raise StatErr('chi2noerr')
 
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        return _statfcts.calc_chi2_stat(data, model, staterror,
-                                        syserror, weight, truncation_value)
+    #@staticmethod
+    #def calc_stat(data, model, staterror, *args, **kwargs):
+    #    syserror, weight, extra = get_syserror_weight_extra(kwargs)
+    #    return _statfcts.calc_chi2_stat(data, model, staterror,
+    #                                    syserror, weight, truncation_value)
 
-    def calc_stat_from_data(self, data, model):
+    def calc_stat(self, data, model):
         """TODO: should weights be an argument or taken from data?"""
 
         # TODO: HOW TO GET THE WEIGHTS?
@@ -526,14 +515,9 @@ class Chi2(Stat):
         chisqr : array of numbers
             The per-bin chi-square values.
 
-        Notes
-        -----
-        Would it be a good idea to support "casting" a single data set
-        and model input into the relevant SimulFit instances, rather than
-        forcing the caller to?
         """
 
-        _, fvec = self.calc_stat_from_data(data, model)
+        _, fvec = self.calc_stat(data, model)
         return fvec * fvec
 
 
@@ -554,11 +538,11 @@ class LeastSq(Chi2):
     def calc_staterror(data):
         return numpy.ones_like(data)
 
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        return _statfcts.calc_lsq_stat(data, model, staterror,
-                                       syserror, weight, truncation_value)
+    #@staticmethod
+    #def calc_stat(data, model, staterror, *args, **kwargs):
+    #    syserror, weight, extra = get_syserror_weight_extra(kwargs)
+    #    return _statfcts.calc_lsq_stat(data, model, staterror,
+    #                                   syserror, weight, truncation_value)
 
 
 class Chi2Gehrels(Chi2):
@@ -681,12 +665,12 @@ class Chi2ModVar(Chi2):
     def calc_staterror(data):
         return numpy.zeros_like(data)
 
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        return _statfcts.calc_chi2modvar_stat(data, model, staterror,
-                                              syserror, weight,
-                                              truncation_value)
+    #@staticmethod
+    #def calc_stat(data, model, staterror, *args, **kwargs):
+    #    syserror, weight, extra = get_syserror_weight_extra(kwargs)
+    #    return _statfcts.calc_chi2modvar_stat(data, model, staterror,
+    #                                          syserror, weight,
+    #                                          truncation_value)
 
 
 class Chi2XspecVar(Chi2):
@@ -756,9 +740,9 @@ class UserStat(Stat):
             raise StatErr('nostat', self.name, 'calc_staterror()')
         return self.errfunc(data)
 
-    def calc_stat(self, data, model, staterror, *args, **kwargs):
-        if not self._statfuncset:
-            raise StatErr('nostat', self.name, 'calc_stat()')
+    # def calc_stat(self, data, model, staterror, *args, **kwargs):
+    #     if not self._statfuncset:
+    #          raise StatErr('nostat', self.name, 'calc_stat()')
 
         # if bkg is None or bkg['bkg'] is None:
         #     return self.statfunc(data, model, staterror, syserror, weight)
@@ -766,8 +750,9 @@ class UserStat(Stat):
         #     return self.statfunc(data, model, staterror, syserror, weight,
         #                          bkg['bkg'])
 
-    def calc_stat_from_data(self, data, model, *args, **kwargs):
-        raise StatErr('nostat', self.name, 'calc_stat_from_data()')
+    # def calc_stat(self, data, model, *args, **kwargs):
+    def calc_stat(self, data, model):
+        raise StatErr('nostat', self.name, 'calc_stat()')
 
 
 class WStat(Likelihood):
@@ -837,21 +822,21 @@ class WStat(Likelihood):
     def __init__(self, name='wstat'):
         Likelihood.__init__(self, name)
 
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
+    #@staticmethod
+    #def calc_stat(data, model, staterror, *args, **kwargs):
+    #
+    #    syserror, weight, extra = get_syserror_weight_extra(kwargs)
+    #    if extra is None or extra['bkg'] is None:
+    #        raise StatErr('usecstat')
+    #
+    #    return _statfcts.calc_wstat_stat(data, model,
+    #                                     extra['data_size'],
+    #                                     extra['exposure_time'],
+    #                                     extra['bkg'],
+    #                                     extra['backscale_ratio'],
+    #                                     truncation_value)
 
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        if extra is None or extra['bkg'] is None:
-            raise StatErr('usecstat')
-
-        return _statfcts.calc_wstat_stat(data, model,
-                                         extra['data_size'],
-                                         extra['exposure_time'],
-                                         extra['bkg'],
-                                         extra['backscale_ratio'],
-                                         truncation_value)
-
-    def calc_stat_from_data(self, data, model):
+    def calc_stat(self, data, model):
 
         data, model = self._validate_inputs(data, model)
 

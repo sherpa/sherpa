@@ -569,10 +569,19 @@ class IterFit(NoNewAttributesAfterInit):
             # linked parameters
 
             self.model.thawedpars = pars
-            model = self.data.eval_model_to_fit(self.model)
-            stat = self.stat.calc_stat(self._dep, model, self._staterror,
-                                       syserror=self._syserror,
-                                       extra_args=self.extra_args)
+
+            # model = self.data.eval_model_to_fit(self.model)
+            # stat = self.stat.calc_stat(self._dep, model, self._staterror,
+            #                            syserror=self._syserror,
+            #                            extra_args=self.extra_args)
+
+            # TODO: does this work for iterated statistics - e.g.
+            #       sigmarej or primini?
+            #       It's not clear what is going along with ._dep and
+            #       ._stat/syserror
+            #
+            stat = self.stat.calc_stat(self.data, self.model)
+
             if self._file is not None:
                 vals = ['%5e %5e' % (self._nfev, stat[0])]
                 vals.extend(['%5e' % val for val in self.model.thawedpars])
@@ -990,7 +999,7 @@ class Fit(NoNewAttributesAfterInit):
 
         # TODO: is there anything missing here that
         #       self._iterfit.get_extra_args calculates?
-        return self.stat.calc_stat_from_data(self.data, self.model)
+        return self.stat.calc_stat(self.data, self.model)
 
     def calc_stat(self):
         """Calculate the statistic value.

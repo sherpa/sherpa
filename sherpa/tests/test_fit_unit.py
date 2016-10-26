@@ -300,15 +300,6 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi, stat=None):
     else:
         statobj = stat
 
-    # HACK
-    #
-    # This is needed for Sherpa 4.8.2 code; I had thought I could remove
-    # this, but it is still needed to get the fit object to work when using
-    # the WStat statistic (when calc_stat_from_data is moved to calc_stat
-    # in the stat object then this should be able to be removed).
-    #
-    src._response_ids = [1]
-
     return Fit(src, mdl, stat=statobj)
 
 
@@ -377,16 +368,6 @@ def setup_pha_multiple(flo, fhi, stat=None):
     src1.set_background(bg1)
     src2.set_background(bg2)
     src3.set_background(bg3)
-
-    # HACK
-    #
-    # This is needed for Sherpa 4.8.2 code; I had thought I could remove
-    # this, but it is still needed to get the fit object to work when using
-    # the WStat statistic (when calc_stat_from_data is moved to calc_stat
-    # in the stat object then this should be able to be removed).
-    #
-    for src in [src1, src2, src3]:
-        src._response_ids = [1]
 
     # Apply filtering to
     #  1: source only
@@ -1839,9 +1820,9 @@ fit_pha_wstat_t = 18.5533195269
 fit_pha_filt_wstat_t = 6.91786326729
 fit_pha_wstat_f = 18.552838794
 
-# The expected value was calculated in CIAO 4.8 and so may not
-# be correct (due to known issues there).
-fit_pha_filt_wstat_f = fit_pha_filt_wstat_t
+# This value is not from CIAO 4.8 since the code there does not
+# calculate the correct value.
+fit_pha_filt_wstat_f = 6.89372285597
 
 
 @pytest.mark.parametrize("stat,scalar,usestat,usesys,filtflag,finalstat", [
@@ -1872,10 +1853,7 @@ fit_pha_filt_wstat_f = fit_pha_filt_wstat_t
     (WStat, True, True, False, False, fit_pha_wstat_t),
     (WStat, True, True, False, True, fit_pha_filt_wstat_t),
     (WStat, False, True, False, False, fit_pha_wstat_f),
-
-    # This errors out due to a mis-match in the number of bins.
-    pytest.mark.xfail((WStat, False, True, False, True,
-                       fit_pha_filt_wstat_f)),
+    (WStat, False, True, False, True, fit_pha_filt_wstat_f),
 ])
 def test_fit_single_pha(stat, scalar, usestat, usesys, filtflag, finalstat):
     """Check that the fit method works: single dataset, PHA, successful fit
@@ -2174,10 +2152,7 @@ def test_est_errors_multiple(stat):
     (CStat, True, False, False, False),
     (CStat, True, False, False, True),
     (WStat, False, False, False, False),
-
-    # This errors out due to a mis-match in the number of bins.
-    pytest.mark.xfail((WStat, False, False, False, True)),
-
+    (WStat, False, False, False, True),
     (WStat, True, False, False, False),
     (WStat, True, False, False, True),
 ])
@@ -2225,11 +2200,9 @@ def test_est_errors_single_pha(stat, scalar, usestat, usesys, filtflag):
     (CStat, None, 8),
     (CStat, 2, 8),
     (WStat, None, None),
-
-    # filtering/grouping issues
-    pytest.mark.xfail((WStat, 2, None)),
-    pytest.mark.xfail((WStat, None, 8)),
-    pytest.mark.xfail((WStat, 2, 8)),
+    (WStat, 2, None),
+    (WStat, None, 8),
+    (WStat, 2, 8)
 ])
 def test_est_errors_multiple_pha(stat, flo, fhi):
     """Check that the est_errors method works: multiple datasets, PHA, successful fit

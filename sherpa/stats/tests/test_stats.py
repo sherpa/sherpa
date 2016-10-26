@@ -45,6 +45,7 @@ class MySimulStat(UserStat):
     def mycal_staterror(data):
         return numpy.ones_like(data)
 
+    """
     @staticmethod
     def my_simulstat(data, model, staterror, *args, **kwargs):
         data_size = kwargs['extra_args']['data_size']
@@ -63,14 +64,12 @@ class MySimulStat(UserStat):
         # print stat1 + stat2 - stat
         return (stat, fvec)
         return (stat1 + stat2, numpy.append(fvec1, fvec2))
+    """
 
-    calc_stat = my_simulstat
-    calc_staterror = mycal_staterror
-
-    # This is based on my_simulstat, but it's not 100% clear
+    # This is based on the original code, but it's not 100% clear
     # why some of the values are being calculated.
     #
-    def calc_stat_from_data(self, data, model, *args, **kwargs):
+    def my_simulstat(self, data, model, *args, **kwargs):
 
         tofit = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
@@ -87,20 +86,18 @@ class MySimulStat(UserStat):
         # It is not clear what separating the data sets does
         # here, based on the original my_simulsat code.
         #
-        mystat = Chi2DataVar()
-        for dset, mexpr in zip(data.datasets, model.parts):
+        stats = [Chi2DataVar(), Chi2DataVar()]
+        for mystat, dset, mexpr in zip(stats, data.datasets, model.parts):
 
-            # At present calc_stat_from_data require SimulFit objects
-            sdata = DataSimulFit('temp', (dset,))
-            smdl = SimulFitModel('temp', (mexpr,))
-
-            thisstat, thisvec = mystat.calc_stat_from_data(sdata, smdl)
-
+            thisstat, thisvec = mystat.calc_stat(dset, mexpr)
             mstat += thisstat
             mfvec.append(thisvec)
 
         # return (mstat, numpy.concatenate(mfvec))
         return (stat, fvec)
+
+    calc_stat = my_simulstat
+    calc_staterror = mycal_staterror
 
 
 class MyCashWithBkg(UserStat):
@@ -112,6 +109,7 @@ class MyCashWithBkg(UserStat):
     def mycal_staterror(data):
         return None
 
+    """
     @staticmethod
     def cash_withbkg(data, model, staterror, *args, **kwargs):
         fvec = model - (data * numpy.log(model))
@@ -119,12 +117,10 @@ class MyCashWithBkg(UserStat):
         if weight is not None:
             fvec = fvec * weight
         return 2.0 * sum(fvec), fvec
-
-    calc_stat = cash_withbkg
-    calc_staterror = mycal_staterror
+    """
 
     @staticmethod
-    def calc_stat_from_data(data, model, *args, **kwargs):
+    def cash_withbkg(data, model, *args, **kwargs):
 
         tofit = data.to_fit(staterrfunc=None)
         modeldata = data.eval_model_to_fit(model)
@@ -136,6 +132,9 @@ class MyCashWithBkg(UserStat):
             fvec = fvec * weight
 
         return 2.0 * fvec.sum(), fvec
+
+    calc_stat = cash_withbkg
+    calc_staterror = mycal_staterror
 
 
 class MyChiWithBkg(UserStat):
@@ -147,16 +146,15 @@ class MyChiWithBkg(UserStat):
     def mycal_staterror(data):
         return numpy.ones_like(data)
 
+    """
     @staticmethod
     def chi_withbkg(data, model, staterror, *args, **kwargs):
         fvec = ((data - model) / staterror)**2
         stat = fvec.sum()
         return (stat, fvec)
+    """
 
-    calc_stat = chi_withbkg
-    calc_staterror = mycal_staterror
-
-    def calc_stat_from_data(self, data, model, *args, **kwargs):
+    def chi_withbkg(self, data, model, *args, **kwargs):
 
         tofit = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
@@ -166,6 +164,9 @@ class MyChiWithBkg(UserStat):
 
         fvec = ((fitdata - modeldata) / staterror)**2
         return fvec.sum(), fvec
+
+    calc_stat = chi_withbkg
+    calc_staterror = mycal_staterror
 
 
 class MyCashNoBkg(UserStat):
@@ -177,6 +178,7 @@ class MyCashNoBkg(UserStat):
     def mycal_staterror(data):
         return None
 
+    """
     @staticmethod
     def cash_nobkg(data, model, staterror, *args, **kwargs):
         fvec = model - (data * numpy.log(model))
@@ -184,12 +186,10 @@ class MyCashNoBkg(UserStat):
         if weight is not None:
             fvec = fvec * weight
         return 2.0 * sum(fvec), fvec
-
-    calc_stat = cash_nobkg
-    calc_staterror = mycal_staterror
+    """
 
     @staticmethod
-    def calc_stat_from_data(data, model, *args, **kwargs):
+    def cash_nobkg(data, model, *args, **kwargs):
 
         tofit = data.to_fit(staterrfunc=None)
         modeldata = data.eval_model_to_fit(model)
@@ -202,6 +202,9 @@ class MyCashNoBkg(UserStat):
 
         return 2.0 * fvec.sum(), fvec
 
+    calc_stat = cash_nobkg
+    calc_staterror = mycal_staterror
+
 
 class MyChiNoBkg(UserStat):
 
@@ -212,16 +215,15 @@ class MyChiNoBkg(UserStat):
     def mycal_staterror(data):
         return numpy.ones_like(data)
 
+    """
     @staticmethod
     def chi_nobkg(data, model, staterror, *args, **kwargs):
         fvec = ((data - model) / staterror)**2
         stat = fvec.sum()
         return (stat, fvec)
+    """
 
-    calc_stat = chi_nobkg
-    calc_staterror = mycal_staterror
-
-    def calc_stat_from_data(self, data, model, *args, **kwargs):
+    def chi_nobkg(self, data, model, *args, **kwargs):
 
         tofit = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
@@ -231,6 +233,9 @@ class MyChiNoBkg(UserStat):
 
         fvec = ((fitdata - modeldata) / staterror)**2
         return fvec.sum(), fvec
+
+    calc_stat = chi_nobkg
+    calc_staterror = mycal_staterror
 
 
 @requires_fits

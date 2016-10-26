@@ -409,7 +409,7 @@ def test_stats_calc_stat_chi2_nostat(usesys):
     data, model = setup_single(False, usesys)
     statobj = Chi2()
     with pytest.raises(StatErr) as excinfo:
-        statobj.calc_stat_from_data(data, model)
+        statobj.calc_stat(data, model)
 
     emsg = 'If you select chi2 as the statistic, all datasets ' + \
            'must provide a staterror column'
@@ -426,7 +426,7 @@ def test_stats_calc_stat_likelihood_bgnd(stat):
     data.datasets[1].subtract()
     statobj = stat()
     with pytest.raises(FitErr) as excinfo:
-        statobj.calc_stat_from_data(data, model)
+        statobj.calc_stat(data, model)
 
     emsg = '{} statistics cannot be used with '.format(statobj.name) + \
            'background subtracted data'
@@ -445,7 +445,7 @@ def test_stats_calc_stat_wstat_nobg(usestat, usesys):
     statobj = WStat()
     data, model = setup_single(usestat, usesys)
     with pytest.raises(StatErr):
-        statobj.calc_stat_from_data(data, model)
+        statobj.calc_stat(data, model)
 
 
 def test_stats_calc_stat_wstat_pha_nobg():
@@ -454,7 +454,7 @@ def test_stats_calc_stat_wstat_pha_nobg():
     statobj = WStat()
     data, model = setup_single_pha(False, False, background=False)
     with pytest.raises(StatErr):
-        statobj.calc_stat_from_data(data, model)
+        statobj.calc_stat(data, model)
 
 
 def test_stats_calc_stat_wstat_diffbins():
@@ -479,7 +479,7 @@ def test_stats_calc_stat_wstat_diffbins():
 
     # There is no Sherpa error for this, which seems surprising
     with pytest.raises(TypeError):
-        statobj.calc_stat_from_data(data, model)
+        statobj.calc_stat(data, model)
 
 
 # Numeric answers calculated using CIAO 4.8 (sherpa 4.8.0)
@@ -852,7 +852,7 @@ def test_stats_calc_stat(stat, usestat, usesys, expected):
     data, model = setup_single(usestat, usesys)
     statobj = stat()
     # do not check fvec
-    answer, _ = statobj.calc_stat_from_data(data, model)
+    answer, _ = statobj.calc_stat(data, model)
     assert_almost_equal(answer, expected)
 
 
@@ -921,7 +921,7 @@ def test_stats_calc_stat_1dint(stat, usestat, usesys, expected):
     data, model = setup_single_1dint(usestat, usesys)
     statobj = stat()
     # do not check fvec
-    answer, _ = statobj.calc_stat_from_data(data, model)
+    answer, _ = statobj.calc_stat(data, model)
     assert_almost_equal(answer, expected)
 
 
@@ -969,7 +969,7 @@ def test_stats_calc_stat_2d(stat, usestat, usesys, expected):
     data, model = setup_single_2d(usestat, usesys)
     statobj = stat()
     # do not check fvec
-    answer, _ = statobj.calc_stat_from_data(data, model)
+    answer, _ = statobj.calc_stat(data, model)
     assert_almost_equal(answer, expected)
 
 
@@ -1041,7 +1041,7 @@ def test_stats_calc_stat_multi(stat, usestat, usesys, expected1, delta):
     data, model = setup_multiple(usestat, usesys)
     statobj = stat()
     # do not check fvec
-    answer, _ = statobj.calc_stat_from_data(data, model)
+    answer, _ = statobj.calc_stat(data, model)
 
     # correct for the one missing bin in the second dataset
     expected = 2 * expected1 - delta
@@ -1130,7 +1130,7 @@ def test_stats_calc_stat_pha(stat, usestat, usesys,
 
     statobj = stat()
     # do not check fvec
-    answer, _ = statobj.calc_stat_from_data(data, model)
+    answer, _ = statobj.calc_stat(data, model)
     assert_almost_equal(answer, expected)
 
 
@@ -1221,7 +1221,7 @@ def test_stats_calc_stat_pha_multi(stat, usestat, usesys,
 
     statobj = stat()
     # do not check fvec
-    answer, _ = statobj.calc_stat_from_data(data, model)
+    answer, _ = statobj.calc_stat(data, model)
 
     # correct for the one missing bin in the second dataset
     expected = 2 * expected1 - delta
