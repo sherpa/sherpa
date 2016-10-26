@@ -223,7 +223,8 @@ def setup_stat_multiple(stat, usestat, usesys):
     return fit, [fit1, fit2, fit3]
 
 
-def setup_pha_single(scalar, usestat, usesys, flo, fhi, stat=None):
+def setup_pha_single(scalar, usestat, usesys, flo, fhi,
+                     stat=None, itermethod=None):
     """Set up a single PHA dataset.
 
     A sherpa.data.DataPHA instance is used, with an associated
@@ -242,6 +243,8 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi, stat=None):
         to the source only.
     stat : sherpa.stats.Stat instance, optional
         The statistic object to use. If not set uses a WStat object.
+    itermethod : {None, True, False}
+        None means no iterated fit, True means sigmarej, False means primini.
 
     Returns
     -------
@@ -300,7 +303,15 @@ def setup_pha_single(scalar, usestat, usesys, flo, fhi, stat=None):
     else:
         statobj = stat
 
-    return Fit(src, mdl, stat=statobj)
+    if itermethod is None:
+        iopts = None
+    elif itermethod:
+        iopts = {'name': 'sigmarej', 'maxiters': 5,
+                 'hrej': 3, 'lrej': 3, 'grow': 0}
+    else:
+        iopts = {'name': 'primini', 'maxiters': 10, 'tol': 1.0e-3}
+
+    return Fit(src, mdl, stat=statobj, itermethod_opts=iopts)
 
 
 def setup_pha_multiple(flo, fhi, stat=None):
@@ -2263,6 +2274,49 @@ def setup_single_iter(stat, sigmarej=True):
         iopts = {'name': 'primini', 'maxiters': 10, 'tol': 1.0e-3}
 
     return Fit(data, mdl, stat=stat, itermethod_opts=iopts)
+
+
+@pytest.mark.parametrize("stat", [LeastSq, Cash, CStat])
+@pytest.mark.parametrize("sigmarej", [True, False])
+def test_fit_iterfit_fails_nonchi2(stat, sigmarej):
+    """Check that iterfit fails with non-chi2/leastsq stats"""
+
+    statobj = stat()
+    fit = setup_single_iter(statobj, sigmarej=sigmarej)
+    with pytest.raises(FitErr) as excinfo:
+        fit.fit()
+
+    if sigmarej:
+        emsg = "Sigma-rejection"
+    else:
+        emsg = "Primini's"
+
+    emsg += " method requires a deviates array; use a chi-square  statistic"
+    assert str(excinfo.value) == emsg
+
+
+@pytest.mark.parametrize("stat", [LeastSq, Cash, CStat, WStat])
+@pytest.mark.parametrize("sigmarej", [True, False])
+def test_fit_iterfit_fails_nonchi2_wstat(stat, sigmarej):
+    """Check that iterfit fails with wstat
+
+    This needs a "PHA" data set to get to the error with WSTAT.
+    Throw in the other stats just as a check.
+    """
+
+    statobj = stat()
+    fit = setup_pha_single(True, False, False, None, None,
+                           stat=statobj, itermethod=sigmarej)
+    with pytest.raises(FitErr) as excinfo:
+        fit.fit()
+
+    if sigmarej:
+        emsg = "Sigma-rejection"
+    else:
+        emsg = "Primini's"
+
+    emsg += " method requires a deviates array; use a chi-square  statistic"
+    assert str(excinfo.value) == emsg
 
 
 @pytest.mark.parametrize("stat", [Chi2, Chi2Gehrels])
