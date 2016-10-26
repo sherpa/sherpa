@@ -1761,7 +1761,7 @@ def test_fit_single(stat, usestat, usesys, finalstat):
     fit = setup_stat_single(statobj, usestat, usesys)
     assert fit.method.name == 'levmar'
     fr = fit.fit()
-    assert fr.succeeded is True
+    assert fr.succeeded
     assert_almost_equal(fr.statval, finalstat)
 
 
@@ -1791,7 +1791,7 @@ def test_fit_single_nm(stat, usestat, usesys, finalstat):
     fit = setup_stat_single(statobj, usestat, usesys)
     fit.method = NelderMead()
     fr = fit.fit()
-    assert fr.succeeded is True
+    assert fr.succeeded
     assert_almost_equal(fr.statval, finalstat)
 
 
@@ -1879,7 +1879,7 @@ def test_fit_single_pha(stat, scalar, usestat, usesys, filtflag, finalstat):
         numpoints -= 1
 
     fr = fit.fit()
-    assert fr.succeeded is True
+    assert fr.succeeded
     assert fr.numpoints == numpoints
     assert fr.dof == (numpoints - 1)
     assert_almost_equal(fr.statval, finalstat)
@@ -1963,7 +1963,7 @@ def test_fit_multiple(stat, usestat, usesys, finalstat):
     statobj = stat()
     fit, _ = setup_stat_multiple(statobj, usestat, usesys)
     fr = fit.fit()
-    assert fr.succeeded is True
+    assert fr.succeeded
     assert_almost_equal(fr.statval, finalstat)
 
     # As the datasets and models are independent, the fit
@@ -2221,3 +2221,108 @@ def test_est_errors_multiple_pha(stat, flo, fhi):
     # check that a new best-fit location was not found during error
     # analysis
     assert result.nfits == 0
+
+
+# Test iterated-fit methods.
+#
+def setup_single_iter(stat, sigmarej=True):
+    """Create a data set and model for testing iterated-fit methods.
+
+    A sherpa.data.Data1D instance is used.
+
+    Parameters
+    ----------
+    stat : sherpa.stats.Stat instance
+        The statistic object to use
+    sigmarej : bool, optional
+        If True use sigmarej, otherwise Primini
+
+    Returns
+    -------
+    fit : sherpa.fit.Fit instance
+    """
+
+    # data created from y = 10 + 2 * x with gaussian noise (scale=1.2)
+    # added and then one point manually changed
+    #
+    x = np.linspace(0, 30, 7)
+    y = np.asarray([8.722, 21.012, 30.780, 40.920, 22.84, 59.34, 68.20])
+    dy = np.ones(x.size) * 1.2
+
+    data = Data1D('idata', x, y, staterror=dy)
+
+    mdl = Polynom1D("poly")
+    mdl.c1.frozen = False
+
+    # Default values taken from sherpa.ui.utils.clean()
+    #
+    if sigmarej:
+        iopts = {'name': 'sigmarej', 'maxiters': 5,
+                 'hrej': 3, 'lrej': 3, 'grow': 0}
+    else:
+        iopts = {'name': 'primini', 'maxiters': 10, 'tol': 1.0e-3}
+
+    return Fit(data, mdl, stat=stat, itermethod_opts=iopts)
+
+
+@pytest.mark.parametrize("stat", [Chi2, Chi2Gehrels])
+def test_fit_iterfit_single_sigmarej_chi2(stat):
+    """Very limited test of iteratet-fit code.
+
+    Since setup_single_iter creates a staterror column then
+    the Chi2-based statistics (module Chi2ModVar) should all
+    give the same result.
+    """
+
+    statobj = stat()
+    fit = setup_single_iter(statobj, sigmarej=True)
+
+    # be explicit here since the result is not guaranteed to be a bool
+    assert fit.data.mask is True
+
+    fr = fit.fit()
+    assert fr.succeeded
+
+    # The results are much "worse" than the Chi2Gehrels case
+    expected_mask = [True, True, False, False, False, False, False]
+    assert np.all(fit.data.mask == expected_mask)
+
+    assert_almost_equal(fr.statval, 0.0)
+
+    mdl = fit.model
+    assert_almost_equal(mdl.c0.val, 8.722)
+    assert_almost_equal(mdl.c1.val, 2.458)
+
+    assert fr.numpoints == 2
+    assert fr.dof == 0
+
+
+def test_fit_iterfit_single_sigmarej_chi2gehrels():
+    """Very limited test of iterated fit code."""
+
+    # If remove the staterror column and use the data values
+    # the fit is "better".
+    #
+    statobj = Chi2Gehrels()
+    fit = setup_single_iter(statobj, sigmarej=True)
+
+    fit.data.staterror = None
+
+    # be explicit here since the result is not guaranteed to be a bool
+    assert fit.data.mask is True
+
+    fr = fit.fit()
+    assert fr.succeeded
+
+    # the discrepant point should be excluded
+    expected_mask = [True, True, True, True, False, True, True]
+    assert np.all(fit.data.mask == expected_mask)
+
+    assert_almost_equal(fr.statval, 0.1914790757)
+
+    mdl = fit.model
+    assert_almost_equal(mdl.c0.val, 9.69168196604)
+    assert_almost_equal(mdl.c1.val, 2.00600360315)
+
+    assert fr.numpoints == 6
+    assert fr.dof == 4
