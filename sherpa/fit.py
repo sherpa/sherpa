@@ -41,13 +41,6 @@ info = logging.getLogger(__name__).info
 __all__ = ('FitResults', 'ErrorEstResults', 'Fit')
 
 
-# def get_valid_args(func):
-#     valid_args = func.func_code.co_varnames[:func.func_code.co_argcount]
-#     kwargs_length = len(func.func_defaults)  # number of keyword arguments
-#     valid_kwargs = valid_args[-kwargs_length:]  # because kwargs are last
-#     return valid_kwargs
-
-
 def evaluates_model(func):
     """
     Fit object decorator that runs model startup() and teardown()
@@ -352,10 +345,11 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         self.parmins = ()
         self.parmaxes = ()
         self.nfits = 0
-        success = True
+        # The success flag is currently unused
+        # success = True
         for i in range(len(parlist)):
-            if results[2][i] != est_success:
-                success = False
+            # if results[2][i] != est_success:
+            #     success = False
             if (results[2][i] == est_hardmin or
                     results[2][i] == est_hardminmax):
                 self.parmins = self.parmins + (None,)
@@ -733,11 +727,6 @@ class IterFit(NoNewAttributesAfterInit):
         if grow < 0:
             raise SherpaErr("'grow' factor must be zero or greater")
 
-        # Keep record of current and previous statistics
-        #
-        # In this algorithm however, they do not seem to be used
-        # previous_stat = float32(finfo(float32).max)
-        # current_stat = statfunc(pars)[0]
         nfev = 0
         iters = 0
 
@@ -753,7 +742,13 @@ class IterFit(NoNewAttributesAfterInit):
             else:
                 mask_original.append(array(d.mask))
 
+        # QUS: why is teardown being called now when the model can be
+        #      evaluated multiple times in the following loop?
+        #      Note that after the loop  self.model.startup
+        #      is called, so either I [DJB] or the code has them the
+        #      wrong way around
         self.model.teardown()
+
         final_fit_results = None
         rejected = True
         try:
@@ -841,6 +836,8 @@ class IterFit(NoNewAttributesAfterInit):
 
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
+
+        # QUS: shouldn't this be teardown, not startup?
         self.model.startup()
 
         # N.B. -- If sigma-rejection in Sherpa 3.4 succeeded,
@@ -1020,9 +1017,7 @@ class Fit(NoNewAttributesAfterInit):
 
         """
 
-        # TODO: does this need to be updated due to changes in _calc_stat?
-        #       also, this logic would be better in the stat class
-        #       than here
+        # TODO: This logic would be better in the stat class than here
         #
         stat, fvec = self._calc_stat()
         model = self.data.eval_model_to_fit(self.model)
