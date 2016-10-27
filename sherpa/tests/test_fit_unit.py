@@ -1148,42 +1148,72 @@ def test_fit_calc_stat_wstat_single(scalar, usestat, usesys,
     assert_almost_equal(fit.calc_stat(), expected)
 
 
-@pytest.mark.parametrize("scalar,usestat,usesys,flo,fhi,nbin,expected", [
-    (True, False, False, None, None, 5, wstat_single_scalar_stat),
-    (True, True, False, None, None, 5, wstat_single_scalar_stat),
-    (True, False, True, None, None, 5, wstat_single_scalar_stat),
-    (True, True, True, None, None, 5, wstat_single_scalar_stat),
+# The qval values were calculated using changeset
+# b47c94ec7a28b7572b0665ac735db404d0dad13b
+qval_scalar = 0.000819438167689
+qval_scalar_lo = 0.000675824858126
+qval_scalar_hi = 0.00158163032114
+qval_scalar_mid = 0.00118201779597
 
-    (True, False, False, -10, 10, 5, wstat_single_scalar_stat),
-    (True, False, False, 1, 5, 5, wstat_single_scalar_stat),
+qval_array = 0.000824015790193
+qval_array_lo = 0.000679780437499
+qval_array_hi = 0.00159083325587
+qval_array_mid = 0.00118932173205
 
-    (True, False, False, 2, None, 4, wstat_single_scalar_lo_stat),
-    (True, False, False, 1.2, None, 4, wstat_single_scalar_lo_stat),
-    (True, True, True, 2, None, 4, wstat_single_scalar_lo_stat),
-    (True, False, False, None, 4.1, 4, wstat_single_scalar_hi_stat),
-    (True, True, True, None, 4.1, 4, wstat_single_scalar_hi_stat),
-    (True, False, False, 1.2, 4.1, 3, wstat_single_scalar_mid_stat),
-    (True, False, False, 2, 4.1, 3, wstat_single_scalar_mid_stat),
-    (True, True, True, 1.2, 4.1, 3, wstat_single_scalar_mid_stat),
 
-    (False, False, False, None, None, 5, wstat_single_array_stat),
-    (False, True, False, None, None, 5, wstat_single_array_stat),
-    (False, False, True, None, None, 5, wstat_single_array_stat),
-    (False, True, True, None, None, 5, wstat_single_array_stat),
+@pytest.mark.parametrize("scalar,usestat,usesys,flo,fhi,nbin,expected,qval", [
+    (True, False, False, None, None, 5, wstat_single_scalar_stat, qval_scalar),
+    (True, True, False, None, None, 5, wstat_single_scalar_stat, qval_scalar),
+    (True, False, True, None, None, 5, wstat_single_scalar_stat, qval_scalar),
+    (True, True, True, None, None, 5, wstat_single_scalar_stat, qval_scalar),
 
-    (False, False, False, -1, 6, 5, wstat_single_array_stat),
-    (False, False, False, 1, 5, 5, wstat_single_array_stat),
+    (True, False, False, -10, 10, 5, wstat_single_scalar_stat, qval_scalar),
+    (True, False, False, 1, 5, 5, wstat_single_scalar_stat, qval_scalar),
 
-    (False, True, False, 1.2, None, 4, wstat_single_array_lo_stat),
-    (False, False, True, 2, None, 4, wstat_single_array_lo_stat),
+    (True, False, False, 2, None, 4, wstat_single_scalar_lo_stat,
+     qval_scalar_lo),
+    (True, False, False, 1.2, None, 4, wstat_single_scalar_lo_stat,
+     qval_scalar_lo),
+    (True, True, True, 2, None, 4, wstat_single_scalar_lo_stat,
+     qval_scalar_lo),
 
-    (False, False, False, None, 4.1, 4, wstat_single_array_hi_stat),
-    (False, False, False, 1.2, 4.1, 3, wstat_single_array_mid_stat),
-    (False, False, False, 2, 4.1, 3, wstat_single_array_mid_stat),
-    (False, False, False, 2, 4, 3, wstat_single_array_mid_stat)
+    (True, False, False, None, 4.1, 4, wstat_single_scalar_hi_stat,
+     qval_scalar_hi),
+    (True, True, True, None, 4.1, 4, wstat_single_scalar_hi_stat,
+     qval_scalar_hi),
+
+    (True, False, False, 1.2, 4.1, 3, wstat_single_scalar_mid_stat,
+     qval_scalar_mid),
+    (True, False, False, 2, 4.1, 3, wstat_single_scalar_mid_stat,
+     qval_scalar_mid),
+    (True, True, True, 1.2, 4.1, 3, wstat_single_scalar_mid_stat,
+     qval_scalar_mid),
+
+    (False, False, False, None, None, 5, wstat_single_array_stat, qval_array),
+    (False, True, False, None, None, 5, wstat_single_array_stat, qval_array),
+    (False, False, True, None, None, 5, wstat_single_array_stat, qval_array),
+    (False, True, True, None, None, 5, wstat_single_array_stat, qval_array),
+
+    (False, False, False, -1, 6, 5, wstat_single_array_stat, qval_array),
+    (False, False, False, 1, 5, 5, wstat_single_array_stat, qval_array),
+
+    (False, True, False, 1.2, None, 4, wstat_single_array_lo_stat,
+     qval_array_lo),
+    (False, False, True, 2, None, 4, wstat_single_array_lo_stat,
+     qval_array_lo),
+
+    (False, False, False, None, 4.1, 4, wstat_single_array_hi_stat,
+     qval_array_hi),
+
+    (False, False, False, 1.2, 4.1, 3, wstat_single_array_mid_stat,
+     qval_array_mid),
+    (False, False, False, 2, 4.1, 3, wstat_single_array_mid_stat,
+     qval_array_mid),
+    (False, False, False, 2, 4, 3, wstat_single_array_mid_stat,
+     qval_array_mid),
 ])
 def test_fit_calc_stat_info_wstat_single(scalar, usestat, usesys,
-                                         flo, fhi, nbin, expected):
+                                         flo, fhi, nbin, expected, qval):
     """Test the results from the calc_stat_info method of Fit for 1 data set: wstat
 
     This was created using the CIAO 4.8 version of Sherpa
@@ -1208,13 +1238,8 @@ def test_fit_calc_stat_info_wstat_single(scalar, usestat, usesys,
     assert ans.dof == dof
     assert_almost_equal(ans.statval, expected)
 
-    # TODO: as this is derived from cstat, shouldn't it calculate
-    #       a q value and reduced stat?
-    assert ans.qval is None
-    assert ans.rstat is None
-
-    # assert_almost_equal(ans.qval, qval)
-    # assert_almost_equal(ans.rstat, ans.statval / dof)
+    assert_almost_equal(ans.qval, qval)
+    assert_almost_equal(ans.rstat, expected / dof)
 
 
 # Do not really need to go through all these options, but it's easy
@@ -1384,20 +1409,27 @@ wstat_multi_lo_nbins = wstat_multi_nbins - 2
 wstat_multi_hi_nbins = wstat_multi_nbins - 1
 wstat_multi_mid_nbins = wstat_multi_nbins - 3
 
+# The qval values were calculated using changeset
+# b47c94ec7a28b7572b0665ac735db404d0dad13b
+qval_multi = 0.106711635305
+qval_multi_lo = 0.0731604652765
+qval_multi_hi = 0.0839948772314
+qval_multi_mid = 0.0555167652247
 
-@pytest.mark.parametrize("flo,fhi,nbin,expected", [
-    (None, None, wstat_multi_nbins, wstat_multi_all),
-    (None, 1000, wstat_multi_nbins, wstat_multi_all),
-    (0, None, wstat_multi_nbins, wstat_multi_all),
-    (0, 1000, wstat_multi_nbins, wstat_multi_all),
-    (1, None, wstat_multi_nbins, wstat_multi_all),
-    (1, 1000, wstat_multi_nbins, wstat_multi_all),
 
-    (2, None, wstat_multi_lo_nbins, wstat_multi_lo),
-    (None, 8, wstat_multi_hi_nbins, wstat_multi_hi),
-    (2, 8, wstat_multi_mid_nbins, wstat_multi_mid),
+@pytest.mark.parametrize("flo,fhi,nbin,expected, qval", [
+    (None, None, wstat_multi_nbins, wstat_multi_all, qval_multi),
+    (None, 1000, wstat_multi_nbins, wstat_multi_all, qval_multi),
+    (0, None, wstat_multi_nbins, wstat_multi_all, qval_multi),
+    (0, 1000, wstat_multi_nbins, wstat_multi_all, qval_multi),
+    (1, None, wstat_multi_nbins, wstat_multi_all, qval_multi),
+    (1, 1000, wstat_multi_nbins, wstat_multi_all, qval_multi),
+
+    (2, None, wstat_multi_lo_nbins, wstat_multi_lo, qval_multi_lo),
+    (None, 8, wstat_multi_hi_nbins, wstat_multi_hi, qval_multi_hi),
+    (2, 8, wstat_multi_mid_nbins, wstat_multi_mid, qval_multi_mid),
 ])
-def test_fit_calc_stat_info_wstat_multiple(flo, fhi, nbin, expected):
+def test_fit_calc_stat_info_wstat_multiple(flo, fhi, nbin, expected, qval):
     """Test the results from the calc_stat_info method of Fit for 3 data sets: wstat
 
     This was created using the CIAO 4.8 version of Sherpa
@@ -1421,13 +1453,8 @@ def test_fit_calc_stat_info_wstat_multiple(flo, fhi, nbin, expected):
     assert ans.dof == dof
     assert_almost_equal(ans.statval, expected)
 
-    # TODO: as this is derived from cstat, shouldn't it calculate
-    #       a q value and reduced stat?
-    assert ans.qval is None
-    assert ans.rstat is None
-
-    # assert_almost_equal(ans.qval, qval)
-    # assert_almost_equal(ans.rstat, ans.statval / dof)
+    assert_almost_equal(ans.qval, qval)
+    assert_almost_equal(ans.rstat, expected / dof)
 
 
 @pytest.mark.parametrize("flo,fhi,expected", [
@@ -2382,9 +2409,14 @@ def test_fit_iterfit_single_sigmarej_chi2gehrels():
     assert fr.dof == 4
 
 
-# Check that rstat and qval are displayed for WSTAT
-@pytest.mark.xfail()
-def test_wstat_rstat_qval():
+def test_wstat_rstat_qval_fields_not_none():
+    """It turns out there are other tests that check if rstat/qval
+    are populated, but leave these in.
+
+    Note the tests do not check the numerical values (these are
+    handled elsewhere), just that the qval and rstat fields are
+    not None.
+    """
 
     fit = setup_pha_single(True, False, False, None, None)
 

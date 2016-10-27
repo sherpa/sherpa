@@ -168,6 +168,31 @@ def _cleanup_chi2_name(stat, data):
     return stat.name
 
 
+def _can_calculate_rstat(stat):
+    """Can we calculate reduced statistic and qval?
+
+    Parameters
+    ----------
+    stat : sherpa.stats.Stat instance
+
+    Returns
+    -------
+    flag : bool
+        True if the reduced statistic and qval can be calculated.
+
+    Notes
+    -----
+    This really should be left to the statistic object to determine
+    (by actually caculating the value or not), but for now leave as
+    a separate routine.
+    """
+
+    # Note that LeastSq is currently a subclass of Chi2, which
+    # requires an extra test.
+    return isinstance(stat, (CStat, WStat, Chi2)) and \
+        not isinstance(stat, LeastSq)
+
+
 class FitResults(NoNewAttributesAfterInit):
     """A summary of the fit results.
 
@@ -226,8 +251,7 @@ class FitResults(NoNewAttributesAfterInit):
         _qval = None
         _rstat = None
         _covarerr = results[4].get('covarerr')
-        if (isinstance(fit.stat, (CStat, WStat, Chi2)) and
-                not isinstance(fit.stat, LeastSq)):
+        if _can_calculate_rstat(fit.stat):
             if _dof > 0 and results[2] >= 0.0:
                 _qval = igamc(_dof / 2., results[2] / 2.)
                 _rstat = results[2] / _dof
@@ -1026,9 +1050,7 @@ class Fit(NoNewAttributesAfterInit):
         rstat = None
         numpoints = len(model)
         dof = numpoints - len(self.model.thawedpars)
-        # TODO: should this include WStat?
-        if (isinstance(self.stat, (CStat, Chi2)) and
-                not isinstance(self.stat, LeastSq)):
+        if _can_calculate_rstat(self.stat):
             if stat >= 0.0:
                 qval = igamc(dof / 2., stat / 2.)
             rstat = stat / dof
