@@ -52,13 +52,6 @@ if (bool(truncation_flag) is False or truncation_flag == "FALSE" or
     truncation_value = 1.0e-25
 
 
-def get_syserror_weight_extra(dictionary):
-    syserror = dictionary.get('syserror')
-    weight = dictionary.get('weight')
-    extra = dictionary.get('extra_args')
-    return syserror, weight, extra
-
-
 class Stat(NoNewAttributesAfterInit):
 
     # Used by calc_stat
@@ -199,11 +192,28 @@ class Stat(NoNewAttributesAfterInit):
         self._check_sizes_match(data, model)
         return data, model
 
+    # TODO:
+    #  - should this accept sherpa.data.Data input instead of
+    #    "raw" data (i.e. to match calc_stat)
+    #  - should this be moved out of the base Stat class since
+    #    isn't relevant for likelihood statistics?
+    #
     def calc_staterror(self, data):
-        raise NotImplementedError
+        """Return the statistic error values for the data.
 
-    # def calc_stat(self, data, model, staterror, *args, **kwargs):
-    #     raise NotImplementedError
+        Parameters
+        ----------
+        data : scalar or 1D array of numbers
+            The data values.
+
+        Returns
+        -------
+        staterror : scalar or array of numbers
+            The errors for the input data values (matches the data
+            argument).
+
+        """
+        raise NotImplementedError
 
     # TODO: add *args, **kwargs?
     def calc_stat(self, data, model):
@@ -482,14 +492,7 @@ class Chi2(Stat):
     def calc_staterror(data):
         raise StatErr('chi2noerr')
 
-    #@staticmethod
-    #def calc_stat(data, model, staterror, *args, **kwargs):
-    #    syserror, weight, extra = get_syserror_weight_extra(kwargs)
-    #    return _statfcts.calc_chi2_stat(data, model, staterror,
-    #                                    syserror, weight, truncation_value)
-
     def calc_stat(self, data, model):
-        """TODO: should weights be an argument or taken from data?"""
 
         # TODO: HOW TO GET THE WEIGHTS?
         data, model = self._validate_inputs(data, model)
@@ -540,12 +543,6 @@ class LeastSq(Chi2):
     @staticmethod
     def calc_staterror(data):
         return numpy.ones_like(data)
-
-    #@staticmethod
-    #def calc_stat(data, model, staterror, *args, **kwargs):
-    #    syserror, weight, extra = get_syserror_weight_extra(kwargs)
-    #    return _statfcts.calc_lsq_stat(data, model, staterror,
-    #                                   syserror, weight, truncation_value)
 
 
 class Chi2Gehrels(Chi2):
@@ -668,13 +665,6 @@ class Chi2ModVar(Chi2):
     def calc_staterror(data):
         return numpy.zeros_like(data)
 
-    #@staticmethod
-    #def calc_stat(data, model, staterror, *args, **kwargs):
-    #    syserror, weight, extra = get_syserror_weight_extra(kwargs)
-    #    return _statfcts.calc_chi2modvar_stat(data, model, staterror,
-    #                                          syserror, weight,
-    #                                          truncation_value)
-
 
 class Chi2XspecVar(Chi2):
     """Chi Squared with data variance (XSPEC style).
@@ -743,17 +733,6 @@ class UserStat(Stat):
             raise StatErr('nostat', self.name, 'calc_staterror()')
         return self.errfunc(data)
 
-    # def calc_stat(self, data, model, staterror, *args, **kwargs):
-    #     if not self._statfuncset:
-    #          raise StatErr('nostat', self.name, 'calc_stat()')
-
-        # if bkg is None or bkg['bkg'] is None:
-        #     return self.statfunc(data, model, staterror, syserror, weight)
-        # else:
-        #     return self.statfunc(data, model, staterror, syserror, weight,
-        #                          bkg['bkg'])
-
-    # def calc_stat(self, data, model, *args, **kwargs):
     def calc_stat(self, data, model):
         raise StatErr('nostat', self.name, 'calc_stat()')
 
@@ -824,20 +803,6 @@ class WStat(Likelihood):
 
     def __init__(self, name='wstat'):
         Likelihood.__init__(self, name)
-
-    #@staticmethod
-    #def calc_stat(data, model, staterror, *args, **kwargs):
-    #
-    #    syserror, weight, extra = get_syserror_weight_extra(kwargs)
-    #    if extra is None or extra['bkg'] is None:
-    #        raise StatErr('usecstat')
-    #
-    #    return _statfcts.calc_wstat_stat(data, model,
-    #                                     extra['data_size'],
-    #                                     extra['exposure_time'],
-    #                                     extra['bkg'],
-    #                                     extra['backscale_ratio'],
-    #                                     truncation_value)
 
     def calc_stat(self, data, model):
 
