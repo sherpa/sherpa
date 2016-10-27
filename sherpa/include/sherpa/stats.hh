@@ -36,55 +36,6 @@ namespace sherpa { namespace stats {
   //
   template <typename ArrayType, typename ConstArrayType, typename DataType,
 	    typename IndexType>
-  inline int calc_cstat_stat( IndexType num, const ConstArrayType& yraw,
-                              const ConstArrayType& model,
-                              const ConstArrayType& error,
-                              const ConstArrayType& syserror,
-                              const ConstArrayType& weight,
-                              ArrayType& fvec, DataType& stat,
-                              DataType& trunc_value ) {
-
-    DataType mymodel;
-    for ( IndexType ii = num - 1; ii >= 0; --ii ) {
-
-      if ( model[ ii ] > 0.0) 
-	mymodel = model[ ii ];
-      else {
-	if (trunc_value > 0)
-	  mymodel = trunc_value;
-	else
-	  return EXIT_FAILURE;
-      }
-
-      if( yraw[ ii ] > 0.0 )
-	fvec[ ii ] = mymodel - yraw[ ii ] +
-	  yraw[ ii ] * ( std::log( yraw[ ii ] / mymodel ) );
-      else if ( yraw[ ii ] == 0.0 )
-	fvec[ ii ] = mymodel;
-      else
-	return EXIT_FAILURE;
-
-      // weight is not given in the following url
-      // https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
-      if ( weight )
-	fvec[ ii ] *= weight[ ii ];
-     
-    }
- 
-    stat = 2.0 *
-      sherpa::utils::kahan_sum< ArrayType, DataType, IndexType >( num, fvec );
-
-    DataType sqrt2 = std::sqrt( 2.0 );
-    for ( IndexType ii = num - 1; ii >= 0; --ii )
-      fvec[ ii ] = sqrt2 * std::sqrt( std::fabs(fvec[ii]) );
-
-    return EXIT_SUCCESS;
-
-  }
-
-
-  template <typename ArrayType, typename ConstArrayType, typename DataType,
-	    typename IndexType>
   inline int calc_cstat_stat2( IndexType num, const ConstArrayType& yraw,
                                const ConstArrayType& model,
                                const ConstArrayType& weight,
@@ -127,56 +78,6 @@ namespace sherpa { namespace stats {
 
     return EXIT_SUCCESS;
 
-  }
-
-
-  //
-  // fvec is needed for chi square and lmdif, it is not needed for Cash
-  //
-  template <typename ArrayType, typename ConstArrayType, typename DataType,
-	    typename IndexType>
-  inline int calc_cash_stat( IndexType num, const ConstArrayType& yraw,
-                             const ConstArrayType& model,
-                             const ConstArrayType& error,
-                             const ConstArrayType& syserror,
-                             const ConstArrayType& weight, ArrayType& fvec,
-                             DataType& stat, DataType& trunc_value ) {
-
-    DataType mymodel, d;
-    for ( IndexType ii = num - 1; ii >= 0; --ii ) {
-      
-      if ( model[ ii ] > 0.0) 
-	mymodel = model[ ii ];
-      else {
-	if (trunc_value > 0)
-	  mymodel = trunc_value;
-	else
-	  return EXIT_FAILURE;
-      }
-      
-      if ( 0.0 == yraw[ ii ] )
-      	d = mymodel;
-      else
-	d = mymodel - ( yraw[ ii ] * std::log( mymodel ) );
-      
-      if ( weight )
-	d *= weight[ ii ];
- 
-      fvec[ ii ] = d;
-
-    }
- 
-    stat = 2.0 *
-      sherpa::utils::kahan_sum< ArrayType, DataType, IndexType >( num, fvec );
-
-    {
-      DataType junkcstat;
-      return calc_cstat_stat( num, yraw, model, error, syserror, weight, fvec,
-			      junkcstat, trunc_value );
-    }
-
-    return EXIT_SUCCESS;
- 
   }
 
 

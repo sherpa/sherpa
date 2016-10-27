@@ -32,15 +32,13 @@ static PyMethodDef StatFcts[] = {
   STATERRFCT( calc_chi2datavar_errors ),
   STATERRFCT( calc_chi2xspecvar_errors ),
 
-  STATFCT( calc_cash_stat ),
-  STATFCT( calc_cstat_stat ),
   STATFCT( calc_chi2_stat ),
   STATFCT( calc_chi2modvar_stat ),
   STATFCT( calc_lsq_stat ),
-  WSTATFCT( calc_wstat_stat ),
 
   LKLHD_STATFCT( calc_cash_stat2 ),
   LKLHD_STATFCT( calc_cstat_stat2 ),
+  WSTATFCT( calc_wstat_stat ),
 
   { NULL, NULL, 0, NULL }
 
