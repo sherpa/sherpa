@@ -2380,3 +2380,24 @@ def test_fit_iterfit_single_sigmarej_chi2gehrels():
 
     assert fr.numpoints == 6
     assert fr.dof == 4
+
+
+# Check that rstat and qval are displayed for WSTAT
+@pytest.mark.xfail()
+def test_wstat_rstat_qval():
+
+    fit = setup_pha_single(True, False, False, None, None)
+
+    s1 = fit.calc_stat_info()
+    assert s1.rstat is not None
+    assert s1.qval is not None
+
+    fr = fit.fit()
+    assert fr.rstat is not None
+    assert fr.qval is not None
+
+    s2 = fit.calc_stat_info()
+    assert s2.rstat is not None
+    assert s2.qval is not None
+    assert s2.rstat < s1.rstat
+    assert s2.qval > s1.qval
