@@ -36,11 +36,11 @@ namespace sherpa { namespace stats {
   //
   template <typename ArrayType, typename ConstArrayType, typename DataType,
 	    typename IndexType>
-  inline int calc_cstat_stat2( IndexType num, const ConstArrayType& yraw,
-                               const ConstArrayType& model,
-                               const ConstArrayType& weight,
-                               ArrayType& fvec, DataType& stat,
-                               DataType& trunc_value ) {
+  inline int calc_cstat_stat( IndexType num, const ConstArrayType& yraw,
+                              const ConstArrayType& model,
+                              const ConstArrayType& weight,
+                              ArrayType& fvec, DataType& stat,
+                              DataType& trunc_value ) {
 
     DataType mymodel;
     for ( IndexType ii = num - 1; ii >= 0; --ii ) {
@@ -86,10 +86,10 @@ namespace sherpa { namespace stats {
   //
   template <typename ArrayType, typename ConstArrayType, typename DataType,
 	    typename IndexType>
-  inline int calc_cash_stat2( IndexType num, const ConstArrayType& yraw,
-                              const ConstArrayType& model,
-                              const ConstArrayType& weight, ArrayType& fvec,
-                              DataType& stat, DataType& trunc_value ) {
+  inline int calc_cash_stat( IndexType num, const ConstArrayType& yraw,
+                             const ConstArrayType& model,
+                             const ConstArrayType& weight, ArrayType& fvec,
+                             DataType& stat, DataType& trunc_value ) {
 
     DataType mymodel, d;
     for ( IndexType ii = num - 1; ii >= 0; --ii ) {
@@ -120,8 +120,8 @@ namespace sherpa { namespace stats {
 
     {
       DataType junkcstat;
-      return calc_cstat_stat2( num, yraw, model, weight, fvec,
-                               junkcstat, trunc_value );
+      return calc_cstat_stat( num, yraw, model, weight, fvec,
+                              junkcstat, trunc_value );
     }
 
     return EXIT_SUCCESS;

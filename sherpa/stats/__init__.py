@@ -17,14 +17,17 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import absolute_import
+
 import warnings
 
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.utils.err import FitErr, StatErr
-import sherpa.stats._statfcts
 from sherpa.data import DataSimulFit
 from sherpa.models import SimulFitModel
+
+from . import _statfcts
 
 from sherpa import get_config
 from six.moves.configparser import ConfigParser
@@ -346,7 +349,7 @@ class Cash(Likelihood):
 
     """
 
-    _calc = _statfcts.calc_cash_stat2
+    _calc = _statfcts.calc_cash_stat
 
     def __init__(self, name='cash'):
         Likelihood.__init__(self, name)
@@ -418,7 +421,7 @@ class CStat(Likelihood):
 
     """
 
-    _calc = _statfcts.calc_cstat_stat2
+    _calc = _statfcts.calc_cstat_stat
 
     def __init__(self, name='cstat'):
         Likelihood.__init__(self, name)
