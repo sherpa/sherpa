@@ -541,7 +541,7 @@ def test_fit_calc_stat_single(stat, usestat, usesys, expected):
 # Unfortunately the parameter choces mean that the qval values,
 # when calculated, are often very small.
 #
-q_chi2_tf = 0.0  # actually ~ 1e-9 but check os to 7 dp
+q_chi2_tf = 1.23237e-09  # needed for check of format() output
 q_chi2_tt = 0.0018035516
 
 q_mod_statonly = 0.0475222107
@@ -620,13 +620,13 @@ def test_fit_calc_stat_info_single(stat, usestat, usesys, expected, qval):
     assert ans.dof == 1
     assert_almost_equal(ans.statval, expected)
 
-    # The choice of ans.statname is interesting for chi-squared
-    # cases, since it depends on whether usestat is True.
-    #
-    if statobj.name.startswith('chi2') and usestat:
-        assert ans.statname == 'chi2'
-    else:
-        assert ans.statname == statobj.name
+    # The logic for the statistical name is a bit complicated.
+    statname = statobj.name
+    if usestat and isinstance(statobj, Chi2) and type(statobj) != Chi2 and \
+       type(statobj) != LeastSq:
+        statname = 'chi2'
+
+    assert ans.statname == statname
 
     if qval is None:
         assert ans.qval is None
@@ -636,6 +636,73 @@ def test_fit_calc_stat_info_single(stat, usestat, usesys, expected, qval):
         assert_almost_equal(ans.qval, qval)
         # as there's only 1 dof, statval == rstat
         assert_almost_equal(ans.rstat, ans.statval)
+
+    # It is easiest just to do a direct string comparison, but
+    # differences in precision/formatting can make this annoying.
+    #
+    def tostr_short(k, v):
+        return "{:9s} = {}".format(k, v)
+
+    def tostr_long(k, v):
+        return "{:21s} = {}".format(k, v)
+
+    # The __str__ and format methods use different formats when
+    # displaying the numeric values. Unfortunately the format
+    # method uses %g which - for the numbers here - can be less
+    # than 7 decimal places, so assert_almost_equal is not
+    # usable.
+    #
+    def checkval_short(s, k, v):
+        """Check that s == 'k = <v>'"""
+
+        assert s.startswith(tostr_short(k, ''))
+        sval = s.split(' = ')[1]
+        assert_almost_equal(float(sval), v)
+
+    def checkval_long(s, k, v):
+        """Check that s == 'k = <v>'"""
+
+        assert s.startswith(tostr_long(k, ''))
+        sval = s.split(' = ')[1]
+        assert sval == "%g" % (v, )
+
+    # Validate __str__
+    #
+    sans = str(ans).split("\n")
+    assert sans[0] == tostr_short('name', '')
+    assert sans[1] == tostr_short('ids', 'None')
+    assert sans[2] == tostr_short('bkg_ids', 'None')
+
+    assert sans[3] == tostr_short('statname', statname)
+
+    checkval_short(sans[4], 'statval', expected)
+    assert sans[5] == tostr_short('numpoints', '5')
+    assert sans[6] == tostr_short('dof', '1')
+    if qval is None:
+        assert sans[7] == tostr_short('qval', 'None')
+        assert sans[8] == tostr_short('rstat', 'None')
+    else:
+        checkval_short(sans[7], 'qval', qval)
+        checkval_short(sans[8], 'rstat', expected)
+
+    assert len(sans) == 9
+
+    # Validate format
+    #
+    sans = ans.format().split("\n")
+
+    assert sans[0] == tostr_long('Statistic', statname)
+    checkval_long(sans[1], 'Fit statistic value', expected)
+    assert sans[2] == tostr_long('Data points', '5')
+    assert sans[3] == tostr_long('Degrees of freedom', '1')
+
+    nlines = 4
+    if qval is not None:
+        checkval_long(sans[4], 'Probability [Q-value]', qval)
+        checkval_long(sans[5], 'Reduced statistic', expected)
+        nlines += 2
+
+    assert len(sans) == nlines
 
 
 chisqr_leastsq = [0.25, 4.0, 20.25, 3.0625, 4.0]
