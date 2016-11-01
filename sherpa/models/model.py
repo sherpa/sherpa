@@ -83,6 +83,43 @@ def modelCacher1d(func):
 
 
 class Model(NoNewAttributesAfterInit):
+    """The base class for Sherpa models.
+
+    A model contains zero or more parameters that control the
+    predictions of the model when given one or more coordinates.
+    These parameters may represent some variable that describes
+    the model, such as the temperature of a black body, or the
+    computation, such as what form of interpolation to use.
+
+    Parameters
+    ----------
+    name : str
+        A label for the model instance.
+    pars : sequence of sherpa.parameter.Parameter objects
+        The parameters of the model.
+
+    Attributes
+    ----------
+    name : str
+        The name given to the instance.
+    pars : tuple of sherpa.parameter.Parameter objects
+        The parameters of the model instance.
+
+    Notes
+    -----
+    Parameters can be accessed via the ``pars`` attribute, but it is
+    expected that they will generally be accessed directly, as the
+    class provides case-insensitive access to the parameter names
+    as object attributes. That is, if the model contains parameters
+    called ``breakFreq`` and ``norm``, and the instance is stored in
+    the variable ``mdl``, then the following can be used to access
+    the parameters::
+
+        print("Break frequency = {}".format(mdl.breakfreq))
+
+        mdl.norm = 1.2e-3
+
+    """
 
     def __init__(self, name, pars=()):
         self.name = name
@@ -97,9 +134,12 @@ class Model(NoNewAttributesAfterInit):
 
     def __str__(self):
         s = self.name
+        sep5 = '-' * 5
+        sep4 = '-' * 4
+        sep3 = '-' * 3
         hfmt = '\n   %-12s %-6s %12s %12s %12s %10s'
         s += hfmt % ('Param', 'Type', 'Value', 'Min', 'Max', 'Units')
-        s += hfmt % ('-'*5, '-'*4, '-'*5, '-'*3, '-'*3, '-'*5)
+        s += hfmt % (sep5, sep4, sep5, sep3, sep3, sep5)
         for p in self.pars:
             if p.hidden:
                 continue
@@ -194,15 +234,47 @@ class Model(NoNewAttributesAfterInit):
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
     def startup(self):
+        """Called before a model may be evaluated multiple times.
+
+        See Also
+        --------
+        teardown
+        """
         raise NotImplementedError
 
     def calc(self, p, *args, **kwargs):
+        """Evaluate the model on a grid.
+
+        Parameters
+        ----------
+        p : sequence of numbers
+            The parameter values to use. The order matches the
+            ``pars`` field.
+        *args
+            The model grid. The values can be scalar or arrays,
+            and the number depends on the dimensionality of the
+            model and whether it is being evaluated over an
+            integrated grid or at a point (or points).
+        """
         raise NotImplementedError
 
     def teardown(self):
+        """Called after a model may be evaluated multiple times.
+
+        See Also
+        --------
+        setup
+        """
         raise NotImplementedError
 
     def guess(self, dep, *args, **kwargs):
+        """Set an initial guess for the parameter values.
+
+        Attempt to set the parameter values, and ranges, for
+        the model to match the data values. This is intended
+        as a rough guess, so it is expected that the model
+        is only evaluated a small number of times, if at all.
+        """
         raise NotImplementedError
 
     def get_center(self):
@@ -210,7 +282,6 @@ class Model(NoNewAttributesAfterInit):
 
     def set_center(self, *args, **kwargs):
         raise NotImplementedError
-
 
     def __call__(self, *args, **kwargs):
         # A bit of trickery, to make model creation
@@ -222,6 +293,7 @@ class Model(NoNewAttributesAfterInit):
 
     def _get_thawed_pars(self):
         return [p.val for p in self.pars if not p.frozen]
+
     def _set_thawed_pars(self, vals):
         tpars = [p for p in self.pars if not p.frozen]
 
@@ -242,10 +314,12 @@ class Model(NoNewAttributesAfterInit):
                          'setting to maximum') % p.fullname)
             else:
                 p._val = v
+
     thawedpars = property(_get_thawed_pars, _set_thawed_pars)
 
     def _get_thawed_par_mins(self):
         return [p.min for p in self.pars if not p.frozen]
+
     def _set_thawed_pars_mins(self, vals):
         tpars = [p for p in self.pars if not p.frozen]
 
@@ -268,10 +342,12 @@ class Model(NoNewAttributesAfterInit):
                          'setting to hard maximum') % p.fullname)
             else:
                 p._min = v
+
     thawedparmins = property(_get_thawed_par_mins, _set_thawed_pars_mins)
 
     def _get_thawed_par_maxes(self):
         return [p.max for p in self.pars if not p.frozen]
+
     def _set_thawed_pars_maxes(self, vals):
         tpars = [p for p in self.pars if not p.frozen]
 
@@ -294,19 +370,23 @@ class Model(NoNewAttributesAfterInit):
                          'setting to hard maximum') % p.fullname)
             else:
                 p._max = v
+
     thawedparmaxes = property(_get_thawed_par_maxes, _set_thawed_pars_maxes)
 
     def _get_thawed_par_hardmins(self):
         return [p.hard_min for p in self.pars if not p.frozen]
+
     thawedparhardmins = property(_get_thawed_par_hardmins)
 
     def _get_thawed_par_hardmaxes(self):
         return [p.hard_max for p in self.pars if not p.frozen]
+
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes)
 
     def reset(self):
         for p in self.pars:
             p.reset()
+
 
 class CompositeModel(Model):
 
@@ -354,11 +434,9 @@ class CompositeModel(Model):
         return parts
 
     def startup(self):
-        #print 'Starting up %s...' % type(self).__name__
         pass
 
     def teardown(self):
-        #print 'Tearing down %s...' % type(self).__name__
         pass
 
 
@@ -399,16 +477,12 @@ class SimulFitModel(CompositeModel):
     def __iter__(self):
         return iter(self.parts)
 
-
     def startup(self):
-        #print 'Starting up %s...' % type(self).__name__
         for part in self:
             part.startup()
         CompositeModel.startup(self)
 
-
     def teardown(self):
-        #print 'Tearing down %s...' % type(self).__name__
         for part in self:
             part.teardown()
         CompositeModel.teardown(self)
@@ -424,14 +498,12 @@ class ArithmeticConstantModel(Model):
         Model.__init__(self, self.name)
 
     def startup(self):
-        #print 'Starting up %s...' % type(self).__name__
         pass
 
     def calc(self, p, *args, **kwargs):
         return self.val
 
     def teardown(self):
-        #print 'Tearing down %s...' % type(self).__name__
         pass
 
 
@@ -440,18 +512,21 @@ def _make_unop(op, opstr):
         return UnaryOpModel(self, op, opstr)
     return func
 
+
 def _make_binop(op, opstr):
     def func(self, rhs):
         return BinaryOpModel(self, rhs, op, opstr)
+
     def rfunc(self, lhs):
         return BinaryOpModel(lhs, self, op, opstr)
+
     return (func, rfunc)
 
 
 class ArithmeticModel(Model):
 
     def __init__(self, name, pars=()):
-        self.integrate=True
+        self.integrate = True
 
         # Model caching ability
         # queue memory of maximum size
@@ -490,7 +565,6 @@ class ArithmeticModel(Model):
         if 'cache' not in state:
             self.__dict__['cache'] = 5
 
-
     def __getitem__(self, filter):
         return FilterModel(self, filter)
 
@@ -498,7 +572,7 @@ class ArithmeticModel(Model):
         self._queue = ['']
         self._cache = {}
         if int(self.cache) > 0:
-            self._queue = ['']*int(self.cache)
+            self._queue = [''] * int(self.cache)
             frozen = numpy.array([par.frozen for par in self.pars], dtype=bool)
             if len(frozen) > 0 and frozen.all():
                 self._use_caching = True
@@ -508,6 +582,7 @@ class ArithmeticModel(Model):
 
     def apply(self, outer, *otherargs, **otherkwargs):
         return NestedModel(outer, self, *otherargs, **otherkwargs)
+
 
 class UnaryOpModel(CompositeModel, ArithmeticModel):
 
@@ -538,18 +613,15 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
                                  (self.lhs.name, opstr, self.rhs.name)),
                                 (self.lhs, self.rhs))
 
-
     def startup(self):
         self.lhs.startup()
         self.rhs.startup()
         CompositeModel.startup(self)
 
-
     def teardown(self):
         self.lhs.teardown()
         self.rhs.teardown()
         CompositeModel.teardown(self)
-
 
     def calc(self, p, *args, **kwargs):
         nlhs = len(self.lhs.pars)
@@ -562,6 +634,7 @@ class BinaryOpModel(CompositeModel, ArithmeticModel):
                              (type(self.lhs).__name__, len(lhs),
                               type(self.rhs).__name__, len(rhs)))
         return val
+
 
 class FilterModel(CompositeModel, ArithmeticModel):
 
@@ -614,11 +687,9 @@ class ArithmeticFunctionModel(Model):
         return self.func(*args, **kwargs)
 
     def startup(self):
-        #print 'Starting up %s...' % type(self).__name__
         pass
 
     def teardown(self):
-        #print 'Tearing down %s...' % type(self).__name__
         pass
 
 
@@ -640,25 +711,21 @@ class NestedModel(CompositeModel, ArithmeticModel):
                                  (self.outer.name, self.inner.name)),
                                 (self.outer, self.inner))
 
-
     def startup(self):
         self.inner.startup()
         self.outer.startup()
         CompositeModel.startup(self)
-
 
     def teardown(self):
         self.inner.teardown()
         self.outer.teardown()
         CompositeModel.teardown(self)
 
-
     def calc(self, p, *args, **kwargs):
         nouter = len(self.outer.pars)
         return self.outer.calc(p[:nouter],
                                self.inner.calc(p[nouter:], *args, **kwargs),
                                *self.otherargs, **self.otherkwargs)
-
 
 
 class MultigridSumModel(CompositeModel, ArithmeticModel):
