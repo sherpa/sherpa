@@ -7817,25 +7817,28 @@ class XSeqtherm(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.l_hovl_s, self.l_bb, self.kT_bb, self.l_ntol_h, self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj, self.pairinj, self.cosIncl, self.Refl, self.Fe_abund, self.Ab_met, self.T_disk, self.xi, self.Beta, self.Rin, self.Rout, self.redshift, self.norm))
 
 
+# It is not obvious from the XSPEC documentation what theta, showbb,
+# and RefOn are.
+#
 class XScompth(XSAdditiveModel):
     """The XSPEC compth model: Paolo Coppi's hybrid (thermal/non-thermal) hot plasma emission models.
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``AbHe`` will be removed in the next release as it has been
+              replaced by ``Ab_met``, to match the XSPEC naming convention.
+
     Attributes
     ----------
-    l_hl_s
-        The ratio of the hard to soft compactness, l_h / l_s.
-    l_bb
-        The soft photon compactness.
+    theta
+    showbb
     kT_bb
         The temperature of the blackbody if greater than 0.
         When less than zero then the absolute value is used as
         the T_max parameter of the ``XSdispkpn`` model. The units
         are in eV.
-    l_ntl_h
-        The fraction of power supplied to energetic particles which
-        goes into accelerating non-thermal particles, l_nt / l_h.
+    RefOn
     tau_p
         The Thomson scattering depth.
     radius
@@ -7890,6 +7893,10 @@ class XScompth(XSAdditiveModel):
     the ``set_xsxset`` function to set the value of the EQPAIR_PRECISION
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
+
+    In Sherpa 4.9.0 the ``AbHe`` parameter has been renamed to
+    ``Ab_met``. It can still be accessed using ``AbHe`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
