@@ -23,7 +23,11 @@ from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.model import ArithmeticModel, modelCacher1d
 from sherpa.astro.utils import apply_pileup
 from sherpa.utils.err import ModelErr
-from sherpa.utils import *
+from sherpa.utils import _guess_ampl_scale, bool_cast, get_fwhm, \
+    get_peak, get_position, guess_amplitude, guess_amplitude2d, \
+    guess_amplitude_at_ref, guess_fwhm, guess_position, \
+    guess_radius, guess_reference, lgam, param_apply_limits
+
 import sherpa.astro.models._modelfcts
 
 import six
@@ -207,7 +211,6 @@ class BBodyFreq(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1, 0, hard_min=0)
         ArithmeticModel.__init__(self, name, (self.T, self.ampl))
 
-
     def guess(self, dep, *args, **kwargs):
         vmax = get_peak(dep, *args)
         tMax = vmax / 5.88e+10
@@ -220,8 +223,8 @@ class BBodyFreq(ArithmeticModel):
         factor = numpy.exp(2.82) * numpy.square(c_cm) / h_erg / 2.
         modampl = norm['val'] * factor / numpy.power(vmax, 3.)
         mod = {'val': modampl,
-               'min': modampl/_guess_ampl_scale,
-               'max': modampl*_guess_ampl_scale}
+               'min': modampl / _guess_ampl_scale,
+               'max': modampl * _guess_ampl_scale}
         param_apply_limits(mod, self.ampl, **kwargs)
         param_apply_limits(t, self.t, **kwargs)
 
@@ -513,7 +516,6 @@ class LineBroad(ArithmeticModel):
         ArithmeticModel.__init__(self, name,
                                  (self.ampl, self.rest, self.vsini))
 
-
     def guess(self, dep, *args, **kwargs):
         ref = guess_reference(self.rest.min, self.rest.max, *args)
         param_apply_limits(ref, self.rest, **kwargs)
@@ -529,7 +531,7 @@ class LineBroad(ArithmeticModel):
             param_apply_limits(vs, self.vsini, **kwargs)
 
         modampl = norm['val'] * numpy.pi * self.vsini.val * \
-            self.rest.val / 2. /c_km
+            self.rest.val / 2. / c_km
         mod = {'val': modampl,
                'min': modampl / _guess_ampl_scale,
                'max': modampl * _guess_ampl_scale}
@@ -1056,7 +1058,6 @@ class Lorentz2D(ArithmeticModel):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-
     def calc(self, *args, **kwargs):
         kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.lorentz2d(*args, **kwargs)
@@ -1178,6 +1179,7 @@ class JDPileup(ArithmeticModel):
 class MultiResponseSumModel(ArithmeticModel):
     pass
 
+
 class Sersic2D(ArithmeticModel):
     """Two-dimensional Sersic model.
 
@@ -1255,7 +1257,7 @@ class Sersic2D(ArithmeticModel):
         self.theta = Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi, -2*numpy.pi,
                                4*numpy.pi, 'radians')
         self.ampl = Parameter(name, 'ampl', 1)
-        self.n = Parameter(name,'n', 1, .1, 10, 0.01, 100, frozen=True )
+        self.n = Parameter(name, 'n', 1, .1, 10, 0.01, 100, frozen=True)
         ArithmeticModel.__init__(self, name,
                                  (self.r0, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl, self.n))
