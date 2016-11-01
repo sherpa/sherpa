@@ -26,6 +26,8 @@ from sherpa.utils.err import ModelErr
 from sherpa.utils import *
 import sherpa.astro.models._modelfcts
 
+import six
+
 __all__ = ('Atten', 'BBody', 'BBodyFreq', 'Beta1D', 'BPL1D', 'Dered', 'Edge',
            'LineBroad', 'Lorentz1D', 'NormBeta1D', 'Schechter',
            'Beta2D', 'DeVaucouleurs2D', 'HubbleReynolds', 'Lorentz2D',
@@ -1151,18 +1153,19 @@ class JDPileup(ArithmeticModel):
             if num_terms > 0:
                 sum = pileup_fractions[1]
 
-            sum_piled = pileup_fractions[2:num_terms+1].sum()
+            sum_piled = pileup_fractions[2:num_terms + 1].sum()
             sum += sum_piled
 
             pn = numpy.exp(-integral_ae)
 
             s += '\n\n'
 
-            for i in xrange(1, num_terms+1):
+            for i in six.moves.xrange(1, num_terms + 1):
                 pn *= integral_ae / float(i)
-                s += '   %d: %g  %g\n' % (i, pn, pileup_fractions[i]/sum)
+                s += '   %d: %g  %g\n' % (i, pn,
+                                          pileup_fractions[i] / sum)
 
-            s += '   *** pileup fraction: %g' % (sum_piled/sum)
+            s += '   *** pileup fraction: %g' % (sum_piled / sum)
 
         return s
 

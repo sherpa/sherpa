@@ -170,16 +170,48 @@ class test_threads(SherpaTestCase):
     @requires_xspec
     def test_pileup(self):
         self.run_thread('pileup')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 53.6112, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().rstat, 1.44895, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().qval, 0.0379417, 1e-4)
-        self.assertEqualWithinTol(self.locals['jdp'].alpha.val, 0.522593, 1e-1)
-        self.assertEqualWithinTol(self.locals['jdp'].f.val, 0.913458, 1e-2)
-        self.assertEqualWithinTol(self.locals['abs1'].nh.val, 6.12101, 1e-2)
-        self.assertEqualWithinTol(self.locals['power'].gamma.val, 1.41887, 1e-2)
-        self.assertEqualWithinTol(self.locals['power'].ampl.val, 0.00199457, 1e-2)
-        self.assertEqual(ui.get_fit_results().numpoints, 42)
-        self.assertEqual(ui.get_fit_results().dof, 37)
+
+        fr = ui.get_fit_results()
+        self.assertEqualWithinTol(fr.statval, 53.6112, 1e-4)
+        self.assertEqualWithinTol(fr.rstat, 1.44895, 1e-4)
+        self.assertEqualWithinTol(fr.qval, 0.0379417, 1e-4)
+        self.assertEqual(fr.numpoints, 42)
+        self.assertEqual(fr.dof, 37)
+
+        jdp = self.locals['jdp']
+        self.assertEqualWithinTol(jdp.alpha.val, 0.522593, 1e-1)
+        self.assertEqualWithinTol(jdp.f.val, 0.913458, 1e-2)
+
+        abs1 = self.locals['abs1']
+        self.assertEqualWithinTol(abs1.nh.val, 6.12101, 1e-2)
+
+        power = self.locals['power']
+        self.assertEqualWithinTol(power.gamma.val, 1.41887, 1e-2)
+        self.assertEqualWithinTol(power.ampl.val, 0.00199457, 1e-2)
+
+        # Issue #294 was a problem with serializing the pileup model
+        # after a fit in Python 3 (but not Python 2). Add some basic
+        # validation that the conversion to a string works. For the
+        # pileup model we expect the standard model layout - e.g.
+        #
+        #   jdp
+        #   paramter headers
+        #   ---- ----- ...
+        #   jdp.alpha ...
+        #   ...
+        #   jdp.nterms ...
+        #   <blank line>
+        #   1: ...
+        #   ...
+        #   7: ...
+        #   *** pileup fraction: value
+        #
+        lines = str(jdp).split('\n')
+        self.assertEqual(len(lines), 19)
+        self.assertEqual(lines[10].strip(), '')
+        self.assertTrue(lines[11].startswith('   1: '))
+        self.assertTrue(lines[17].startswith('   7: '))
+        self.assertTrue(lines[18].startswith('   *** pileup fraction: '))
 
     @requires_fits
     def test_radpro(self):
