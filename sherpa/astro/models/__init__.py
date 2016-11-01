@@ -20,7 +20,7 @@
 
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
-from sherpa.models.model import ArithmeticModel, CompositeModel, modelCacher1d
+from sherpa.models.model import ArithmeticModel, modelCacher1d
 from sherpa.astro.utils import apply_pileup
 from sherpa.utils.err import ModelErr
 from sherpa.utils import *
