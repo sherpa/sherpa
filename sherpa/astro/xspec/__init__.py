@@ -919,17 +919,27 @@ class XSbmc(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``logA`` will be removed in the next release as it has been
+              replaced by ``log_A``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     kT
         The temperature of the thermal photon source in keV.
     alpha
         The energy spectral index.
-    logA
+    log_A
         The log of the A parameter: see [1]_ for more details.
     norm
         The normalization of the model: see [1]_ for an explanation
         of the units.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``logA`` parameter has been renamed to ``log_A``.
+    It can still be accessed using ``log_A`` for the time being, but this
+    attribute has been deprecated.
 
     References
     ----------
@@ -1040,6 +1050,10 @@ class XSc6mekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``switch`` will be removed in the next release as it has been
+              replaced by ``_switch``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -1050,7 +1064,7 @@ class XSc6mekl(XSAdditiveModel):
         The abundance relative to Solar, as set by ``set_xsabund``.
     redshift
         The redshift of the plasma.
-    switch
+    _switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1061,6 +1075,12 @@ class XSc6mekl(XSAdditiveModel):
     See Also
     --------
     XSc6pmekl, XSc6pvmkl, XSc6vmekl
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    ``_switch``. It can still be accessed using ``switch`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1095,6 +1115,10 @@ class XSc6pmekl(XSAdditiveModel):
     The model is described at [1]_. It differs from ``XSc6mekl`` by
     by using the exponential of the 6th order Chebyshev polynomial.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``switch`` will be removed in the next release as it has been
+              replaced by ``_switch``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -1105,7 +1129,7 @@ class XSc6pmekl(XSAdditiveModel):
         The abundance relative to Solar, as set by ``set_xsabund``.
     redshift
         The redshift of the plasma.
-    switch
+    _switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1116,6 +1140,12 @@ class XSc6pmekl(XSAdditiveModel):
     See Also
     --------
     XSc6mekl, XSc6pvmkl, XSc6vmekl
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    ``_switch``. It can still be accessed using ``switch`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1150,6 +1180,10 @@ class XSc6pvmkl(XSAdditiveModel):
     The model is described at [1]_. It differs from ``XSc6vmekl`` by
     by using the exponential of the 6th order Chebyshev polynomial.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``switch`` will be removed in the next release as it has been
+              replaced by ``_switch``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -1160,7 +1194,7 @@ class XSc6pvmkl(XSAdditiveModel):
         The abundance relative to Solar.
     redshift
         The redshift of the plasma.
-    switch
+    _switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1171,6 +1205,12 @@ class XSc6pvmkl(XSAdditiveModel):
     See Also
     --------
     XSc6mekl, XSc6pmekl, XSc6vmekl
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    ``_switch``. It can still be accessed using ``switch`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1217,6 +1257,10 @@ class XSc6vmekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``switch`` will be removed in the next release as it has been
+              replaced by ``_switch``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -1227,7 +1271,7 @@ class XSc6vmekl(XSAdditiveModel):
         The abundance relative to Solar.
     redshift
         The redshift of the plasma.
-    switch
+    _switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1238,6 +1282,12 @@ class XSc6vmekl(XSAdditiveModel):
     See Also
     --------
     XSc6mekl, XSc6pmekl, XSc6pvmkl
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    ``_switch``. It can still be accessed using ``switch`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1284,6 +1334,10 @@ class XScemekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``switch`` will be removed in the next release as it has been
+              replaced by ``_switch``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     alpha
@@ -1296,7 +1350,7 @@ class XScemekl(XSAdditiveModel):
         The abundance relative to Solar, as set by ``set_xsabund``.
     redshift
         The redshift of the plasma.
-    switch
+    _switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1307,6 +1361,12 @@ class XScemekl(XSAdditiveModel):
     See Also
     --------
     XScevmkl
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    ``_switch``. It can still be accessed using ``switch`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1336,6 +1396,10 @@ class XScevmkl(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``switch`` will be removed in the next release as it has been
+              replaced by ``_switch``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     alpha
@@ -1348,7 +1412,7 @@ class XScevmkl(XSAdditiveModel):
         The abundance relative to Solar.
     redshift
         The redshift of the plasma.
-    switch
+    _switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1359,6 +1423,12 @@ class XScevmkl(XSAdditiveModel):
     See Also
     --------
     XScemekl
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    ``_switch``. It can still be accessed using ``switch`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1517,6 +1587,11 @@ class XScompPS(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``tauy`` and ``HRcyl`` will be removed in the next release as
+              they have been replaced by ``tau_y`` and ``HovR_cyl``
+              respectively, to match the XSPEC naming convention.
+
     Attributes
     ----------
     kTe
@@ -1529,12 +1604,12 @@ class XScompPS(XSAdditiveModel):
         The maximum Lorentz factor gamma: see [1]_ for more details.
     kTbb
         The temperature of the soft photons, in keV.
-    tauy
+    tau_y
         The vertical optical depth of the corona: see [1]_ for more
         details.
     geom
         The geometry to use; see [1]_ for more details.
-    HRcyl
+    HovR_cyl
         The value of H/R, when a cylinder geometry is used
         (abs(geom) = 2).
     cosIncl
@@ -1569,6 +1644,10 @@ class XScompPS(XSAdditiveModel):
     the ``set_xsxset`` function to set the value of the COMPPS_PRECISION
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
+
+    In Sherpa 4.9.0 ``tauy`` has been renamed to ``tau_y`` and
+    ``HRcyl`` to ``HovR_cyl``. They can still be accessed using the old
+    names for the time being, but these attributes have been deprecated.
 
     References
     ----------
@@ -1721,11 +1800,15 @@ class XSdisk(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``NSmass`` will be removed in the next release as it has been
+              replaced by ``CenMass``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     accrate
         The accretion rate, in Eddington luminosities.
-    NSmass
+    CenMass
         The central mass, in solar mass units.
     Rinn
         The inner disk radius in gravitational units (three
@@ -1736,6 +1819,12 @@ class XSdisk(XSAdditiveModel):
     See Also
     --------
     XSdiskbb, XSdiskm, XSdisko
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``NSmass`` parameter has been renamed to
+    ``CenMass``. It can still be accessed using ``NSMass`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1762,6 +1851,10 @@ class XSdiskir(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``LcLd`` will be removed in the next release as it has been
+              replaced by ``LcovrLd``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     kT_disk
@@ -1771,7 +1864,7 @@ class XSdiskir(XSAdditiveModel):
         The asymptotic power-law photon index.
     kT_e
         The electron temperature (high-energy rollover) in keV.
-    LcLd
+    LcovrLd
         The ratio of the luminosity in the Compton tail to that of
         the unilluminated disk.
     fin
@@ -1794,6 +1887,12 @@ class XSdiskir(XSAdditiveModel):
     See Also
     --------
     XSdiskbb
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``LcLd`` parameter has been renamed to
+    ``LcovrLd``. It can still be accessed using ``LcLd`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1856,20 +1955,31 @@ class XSdiskline(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``RinM`` and ``RoutM`` will be removed in the next release as
+              they have been replaced by ``Rin_M`` and ``Rout_M``
+              respectively, to match the XSPEC naming convention.
+
     Attributes
     ----------
     LineE
         The line energy in keV.
     Betor10
         The power law dependence of emissivity: see [1]_ for more details.
-    RinM
+    Rin_M
         The inner radius, in units of GM^2/c.
-    RoutM
+    Rout_M
         The outer radius, in units of GM^2/c.
     Incl
         The inclination, in degrees.
     norm
         The model normalization in photon/cm^2/s.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 ``RinM`` has been renamed to ``Rin_M`` and
+    ``RoutM`` to ``Rout_M``. They can still be accessed using the old
+    names for the time being, but these attributes have been deprecated.
 
     References
     ----------
@@ -2055,6 +2165,10 @@ class XSequil(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``kT_ave`` will be removed in the next release as it has been
+              replaced by ``meankT``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     kT
@@ -2198,7 +2312,7 @@ class XSgnei(XSAdditiveModel):
         ``set_xsabund`` function.
     Tau
         The ionization timescale in units of s/cm^3.
-    kT_ave
+    meankT
         The ionization timescale averaged plasma temperature in keV.
     redshift
         The redshift of the plasma.
@@ -2209,6 +2323,12 @@ class XSgnei(XSAdditiveModel):
     See Also
     --------
     XSequil, XSnei, XSvgnei, XSvvgnei
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``kT_ave`` parameter has been renamed to
+    ``meankT``. It can still be accessed using ``kT_ave`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -2237,6 +2357,10 @@ class XSgrad(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``TclTef`` will be removed in the next release as it has been
+              replaced by ``TclovTef``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     D
@@ -2248,7 +2372,7 @@ class XSgrad(XSAdditiveModel):
         The mass of the central object, in solar masses.
     Mdot
         The mass accretion rate in units of 10^18 g/s.
-    TclTef
+    TclovTef
         The spectral hardening factor, Tcol/Teff. See [1]_ for more
         details.
     refflag
@@ -2262,6 +2386,12 @@ class XSgrad(XSAdditiveModel):
     See Also
     --------
     XSkerbb
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``TclTef`` parameter has been renamed to
+    ``TclovTef``. It can still be accessed using ``TclTef`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -2291,16 +2421,26 @@ class XSgrbm(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``temp`` will be removed in the next release as it has been
+              replaced by ``tem``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     alpha
         The first powerlaw index.
     beta
         The second powerlaw index.
-    temp
+    tem
         The characteristic energy, in keV.
     norm
         The normalization of the model.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``temp`` parameter has been renamed to
+    ``tem``. It can still be accessed using ``temp`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -2394,11 +2534,15 @@ class XSkerrd(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``TcolTeff`` will be removed in the next release as it has been
+              replaced by ``TcoloTeff``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     distance
         The distance, in units of kpc.
-    TcollTeff
+    TcoloTeff
         The spectral hardening factor, Tcol/Teff. See [1]_ for more
         details.
     M
@@ -2419,6 +2563,12 @@ class XSkerrd(XSAdditiveModel):
     See Also
     --------
     XSlaor
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``TcolTeff`` parameter has been renamed to
+    ``TcoloTeff``. It can still be accessed using ``TcolTeff`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -2449,6 +2599,12 @@ class XSkerrdisk(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``r_brg``, ``Rinms``, and ``Routms`` will be removed in the
+              next release as they have been replaced by ``r_br_g``,
+              ``Rin_ms``, and ``Rout_ms`` respectively, to match the XSPEC
+              naming convention.
+
     Attributes
     ----------
     lineE
@@ -2457,7 +2613,7 @@ class XSkerrdisk(XSAdditiveModel):
         The emissivity index for the inner disk.
     Index2
         The emissivity index for the outer disk.
-    r_brg
+    r_br_g
         The break radius separating the inner and outer portions of the
         disk, in gravitational radii.
     a
@@ -2465,10 +2621,10 @@ class XSkerrdisk(XSAdditiveModel):
     Incl
         The disk inclination angle, in degrees. A face-on disk has
         Incl=0.
-    Rinms
+    Rin_ms
         The inner radius of the disk, in units of the radius of
         marginal stability.
-    Routms
+    Rout_ms
         The outer radius of the disk, in units of the radius of
         marginal stability.
     z
@@ -2479,6 +2635,13 @@ class XSkerrdisk(XSAdditiveModel):
     See Also
     --------
     XSdiskline, XSlaor
+
+    Notes
+    -----
+    In Sherpa 4.9.0 ``r_brg`` has been renamed to ``r_br_g``, ``Rinms``
+    to ``Rin_ms``, and ``Routms`` to ``Rout_ms``. They can still be
+    accessed using the old names for the time being, but these attributes
+    have been deprecated.
 
     References
     ----------
@@ -2518,15 +2681,20 @@ class XSlaor(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``RinG`` and ``RoutG`` will be removed in the next release as
+              they have been replaced by ``Rin_G`` and ``Rout_G``
+              respectively, to match the XSPEC naming convention.
+
     Attributes
     ----------
     lineE
         The rest-frame line energy, in keV.
     Index
         The power law dependence of emissivity (scales as R^-Index).
-    RinG
+    Rin_G
         The inner radius, in units of GM/c^2.
-    RoutG
+    Rout_G
         The outer radius, in units of GM/c^2.
     Incl
         The disk inclination angle, in degrees. A face-on disk has
@@ -2537,6 +2705,12 @@ class XSlaor(XSAdditiveModel):
     See Also
     --------
     XSlaor2
+
+    Notes
+    -----
+    In Sherpa 4.9.0 ``RinG`` has been renamed to ``Rin_G`` and
+    ``RoutG`` to ``Rout_G``. They can still be accessed using the old
+    names for the time being, but these attributes have been deprecated.
 
     References
     ----------
@@ -2570,15 +2744,20 @@ class XSlaor2(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``RinG`` and ``RoutG`` will be removed in the next release as
+              they have been replaced by ``Rin_G`` and ``Rout_G``
+              respectively, to match the XSPEC naming convention.
+
     Attributes
     ----------
     lineE
         The rest-frame line energy, in keV.
     Index
         The power law dependence of emissivity (scales as R^-Index).
-    RinG
+    Rin_G
         The inner radius, in units of GM/c^2.
-    RoutG
+    Rout_G
         The outer radius, in units of GM/c^2.
     Incl
         The disk inclination angle, in degrees. A face-on disk has
@@ -2593,6 +2772,12 @@ class XSlaor2(XSAdditiveModel):
     See Also
     --------
     XSlaor
+
+    Notes
+    -----
+    In Sherpa 4.9.0 ``RinG`` has been renamed to ``Rin_G`` and
+    ``RoutG`` to ``Rout_G``. They can still be accessed using the old
+    names for the time being, but these attributes have been deprecated.
 
     References
     ----------
@@ -2667,6 +2852,10 @@ class XSmeka(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``switch`` will be removed in the next release as it has been
+              replaced by ``_switch``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     kT
@@ -2720,7 +2909,7 @@ class XSmekal(XSAdditiveModel):
         ``set_xsabund`` function.
     redshift
         The redshift of the plasma.
-    switch
+    _switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -2732,6 +2921,12 @@ class XSmekal(XSAdditiveModel):
     See Also
     --------
     XSapec, XSvmekal
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    ``_switch``. It can still be accessed using ``switch`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -2761,6 +2956,10 @@ class XSmkcflow(XSAdditiveModel):
     The model is described at [1]_. The results of this model depend
     on the cosmology settings set with ``set_xscosmo``.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``switch`` will be removed in the next release as it has been
+              replaced by ``_switch``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     lowT
@@ -2771,7 +2970,7 @@ class XSmkcflow(XSAdditiveModel):
         The abundance relative to Solar, as set by ``set_xsabund``.
     redshift
         The redshift of the plasma.
-    switch
+    _switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -2782,6 +2981,12 @@ class XSmkcflow(XSAdditiveModel):
     See Also
     --------
     XSapec, XScflow, XScevmkl, XSvmcflow
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    ``_switch``. It can still be accessed using ``switch`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -3210,13 +3415,17 @@ class XSnsmax(XSAdditiveModel):
     The model is described at [1]_. It has been superceeded by
     ``XSnsmaxg``.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``specfile`` will be removed in the next release as it has been
+              replaced by ``_specfile``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     LogTeff
         The log of Teff, the unredshifted surface effective temperature.
     redshift
         This is 1 + zg, the gravitational redshift.
-    specfile
+    _specfile
         Which model to use: see [1]_ for more details.
     norm
         The normalization of the model: see [1]_ for more details.
@@ -3224,6 +3433,12 @@ class XSnsmax(XSAdditiveModel):
     See Also
     --------
     XSnsmaxg
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``specfile`` parameter has been renamed to
+    ``_specfile``. It can still be accessed using ``specfile`` for the
+    time being, but this attribute has been deprecated.
 
     References
     ----------
@@ -3250,6 +3465,10 @@ class XSnsmaxg(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``specfile`` will be removed in the next release as it has been
+              replaced by ``_specfile``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     LogTeff
@@ -3260,7 +3479,7 @@ class XSnsmaxg(XSAdditiveModel):
         The neutron star radius, in km.
     dist
         The distance to the neutron star, in kpc.
-    specfile
+    _specfile
         Which model to use: see [1]_ for more details.
     norm
         The normalization: see [1]_ for more details.
@@ -3268,6 +3487,12 @@ class XSnsmaxg(XSAdditiveModel):
     See Also
     --------
     XSnsmax, XSnsx
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``specfile`` parameter has been renamed to
+    ``_specfile``. It can still be accessed using ``specfile`` for the
+    time being, but this attribute has been deprecated.
 
     References
     ----------
@@ -3296,6 +3521,10 @@ class XSnsx(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``specfile`` will be removed in the next release as it has been
+              replaced by ``_specfile``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     LogTeff
@@ -3306,7 +3535,7 @@ class XSnsx(XSAdditiveModel):
         The neutron star radius, in km.
     dist
         The distance to the neutron star, in kpc.
-    specfile
+    _specfile
         Which model to use: see [1]_ for more details.
     norm
         The normalization: see [1]_ for more details.
@@ -3314,6 +3543,12 @@ class XSnsx(XSAdditiveModel):
     See Also
     --------
     XSnsmaxg
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``specfile`` parameter has been renamed to
+    ``_specfile``. It can still be accessed using ``specfile`` for the
+    time being, but this attribute has been deprecated.
 
     References
     ----------
@@ -3628,11 +3863,16 @@ class XSplcabs(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``nmax`` and ``FAST`` will be removed in the next release as
+              they have been replaced by ``_nmax`` and ``_FAST``
+              respectively, to match the XSPEC naming convention.
+
     Attributes
     ----------
     nH
         The column density, in units of 10^22 cm^-2.
-    nMax
+    _nmax
         The maximum number of scatterings. This parameter can not be
         thawed.
     FeAbun
@@ -3648,13 +3888,19 @@ class XSplcabs(XSAdditiveModel):
     acrit
         The critical albedo for switching to elastic scattering. See
         [1]_ for more details.
-    FAST
+    _FAST
         If set to a value above 1, use a mean energy shift instead of
         integration. This parameter can not be thawed.
     redshift
         The redshift of the source.
     norm
         The normalization of the model.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 ``nmax`` has been renamed to ``_nmax`` and
+    ``FAST`` to ``_FAST``. They can still be accessed using the old
+    names for the time being, but these attributes have been deprecated.
 
     References
     ----------
@@ -4042,11 +4288,16 @@ class XSsrcut(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``breakfreq`` will be removed in the next release as it has
+              been replaced by ``break_``, to match the XSPEC naming
+              convention.
+
     Attributes
     ----------
     alpha
         The radio spectral index.
-    breakfreq
+    break_
         The break frequency: approximately the frequency at which the
         flux has dropped by a factor of 10 from a straight power law.
     norm
@@ -4055,6 +4306,12 @@ class XSsrcut(XSAdditiveModel):
     See Also
     --------
     XSsresc
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``breakfreq`` parameter has been renamed to
+    ``break_``. It can still be accessed using ``breakfreq`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -4206,11 +4463,15 @@ class XSvbremss(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``HeH`` will be removed in the next release as it has been
+              replaced by ``HeovrH``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     kT
         The plasma temperature in keV.
-    HeH
+    HeovrH
         The ratio n(He) / n(H).
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -4219,6 +4480,12 @@ class XSvbremss(XSAdditiveModel):
     See Also
     --------
     XSbremss, XSzbremss
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``HeH`` parameter has been renamed to
+    ``HeovrH``. It can still be accessed using ``HeH`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -4245,6 +4512,10 @@ class XSvequil(XSAdditiveModel):
     The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
+
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``kT_ave`` will be removed in the next release as it has been
+              replaced by ``meankT``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -4297,6 +4568,10 @@ class XSvgnei(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``kT_ave`` will be removed in the next release as it has been
+              replaced by ``meankT``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     kT
@@ -4308,7 +4583,7 @@ class XSvgnei(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    kT_ave
+    meankT
         The ionization timescale averaged plasma temperature in keV.
     redshift
         The redshift of the plasma.
@@ -4319,6 +4594,12 @@ class XSvgnei(XSAdditiveModel):
     See Also
     --------
     XSequil, XSgnei, XSvnei, XSvvgnei
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``kT_ave`` parameter has been renamed to
+    ``meankT``. It can still be accessed using ``kT_ave`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -4373,7 +4654,7 @@ class XSvvgnei(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    kT_ave
+    meankT
         The ionization timescale averaged plasma temperature in keV.
     redshift
         The redshift of the plasma.
@@ -4384,6 +4665,12 @@ class XSvvgnei(XSAdditiveModel):
     See Also
     --------
     XSequil, XSgnei, XSvgnei, XSvvnei
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``kT_ave`` parameter has been renamed to
+    ``meankT``. It can still be accessed using ``kT_ave`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -4439,6 +4726,10 @@ class XSvmeka(XSAdditiveModel):
     """The XSPEC vmeka model: emission, hot diffuse gas (Mewe-Gronenschild).
 
     The model is described at [1]_.
+
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``switch`` will be removed in the next release as it has been
+              replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -4504,7 +4795,7 @@ class XSvmekal(XSAdditiveModel):
         The abundance relative to Solar.
     redshift
         The redshift of the plasma.
-    switch
+    _switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -4516,6 +4807,12 @@ class XSvmekal(XSAdditiveModel):
     See Also
     --------
     XSapec, XSvmekal
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    ``_switch``. It can still be accessed using ``switch`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -4558,6 +4855,10 @@ class XSvmcflow(XSAdditiveModel):
     The model is described at [1]_. The results of this model depend
     on the cosmology settings set with ``set_xscosmo``.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``switch`` will be removed in the next release as it has been
+              replaced by ``_switch``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     lowT
@@ -4568,7 +4869,7 @@ class XSvmcflow(XSAdditiveModel):
         The abundance relative to Solar.
     redshift
         The redshift of the plasma.
-    switch
+    _switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -4579,6 +4880,12 @@ class XSvmcflow(XSAdditiveModel):
     See Also
     --------
     XSapec, XScflow, XScevmkl, XSmkcflow
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    ``_switch``. It can still be accessed using ``switch`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -5665,15 +5972,26 @@ class XSgabs(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``Tau`` will be removed in the next release as it has been
+              replaced by ``Strength``, to match the XSPEC namin
+              convention.
+
     Attributes
     ----------
     LineE
         The line energy, in keV.
     Sigma
         The line width (sigma), in keV.
-    Tau
+    Strength
         The line depth. The optical depth at the line center is
         Tau / (sqrt(2 pi) * Sigma).
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``Tau`` parameter has been renamed to
+    ``Strength``. It can still be accessed using ``Tau`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -5950,14 +6268,24 @@ class XSredden(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``EBV`` will be removed in the next release as it has been
+              replaced by ``E_BmV``, to match the XSPEC naming convention.
+
     Attributes
     ----------
-    EBV
+    E_BmV
         The value of E(B-v) for the line of sight to the source.
 
     See Also
     --------
     XSzredden
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``EBV`` parameter has been renamed to
+    ``E_Bmv``. It can still be accessed using ``EBV`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -6108,16 +6436,26 @@ class XSswind1(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``logxi`` will be removed in the next release as it has been
+              replaced by ``log_xi``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     column
         The column density, in units of 10^22 cm^2.
-    logxi
+    log_xi
         The log of xi: see [1]_ for more details.
     sigma
         The gaussian sigma for velocity smearing (v/c).
     redshift
         The redshift of the source.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``logxi`` parameter has been renamed to
+    ``log_xi``. It can still be accessed using ``logxi`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -6318,10 +6656,20 @@ class XSuvred(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``EBV`` will be removed in the next release as it has been
+              replaced by ``E_BmV``, to match the XSPEC naming convention.
+
     Attributes
     ----------
-    EBV
+    E_BmV
         The value of E(B-v) for the line of sight to the source.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``EBV`` parameter has been renamed to
+    ``E_Bmv``. It can still be accessed using ``EBV`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -6508,11 +6856,15 @@ class XSxion(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``lxld`` will be removed in the next release as it has been
+              replaced by ``lxovrld``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     height
         The height of the source above the disk (in Schwarzschild radii).
-    lxld
+    lxovrld
         The ratio of the X-ray source luminosity to that of the disk.
     rate
         The accretion rate (in Eddington units).
@@ -6536,6 +6888,12 @@ class XSxion(XSMultiplicativeModel):
         See [1]_ for details.
     Geometry
         See [1]_ for details.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``lxld`` parameter has been renamed to
+    ``lxovrld``. It can still be accessed using ``lxld`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -6571,17 +6929,29 @@ class XSzdust(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``method`` and ``EBV`` will be removed in the next release as
+              they have been replaced by ``_method`` and ``E_BmV``
+              respectively, to match the XSPEC naming convention.
+
     Attributes
     ----------
-    method
+    _method
         The model to use: 1 is Milky Way, 2 is LMC, 3 is SMC.
         This parameter can not be thawed.
-    EBV
+    E_BmV
         The color excess, E(B-V).
     Rv
         The ratio of total to selective extinction.
     redshift
         The redshift of the absorber.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 ``method`` has been renamed to ``_method`` and
+    ``EBV`` to ``E_BmV``. They can still be accessed using the old
+    names for the time being, but these attributes have been deprecated.
+
 
     References
     ----------
@@ -6751,16 +7121,26 @@ class XSzxipcf(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``logxi`` will be removed in the next release as it has been
+              replaced by ``log_xi``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     nH
         The column density, in units of 10^22 cm^2.
-    logxi
+    log_xi
         The log of xi: see [1]_ for more details.
     CvrFract
         The covering fraction.
     redshift
         The redshift of the source.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``logxi`` parameter has been renamed to
+    ``log_xi``. It can still be accessed using ``logxi`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -6787,9 +7167,13 @@ class XSzredden(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``EBV`` will be removed in the next release as it has been
+              replaced by ``E_BmV``, to match the XSPEC naming convention.
+
     Attributes
     ----------
-    EBV
+    E_BmV
         The value of E(B-v) for the line of sight to the source.
     redshift
         The redshift of the absorber.
@@ -6797,6 +7181,12 @@ class XSzredden(XSMultiplicativeModel):
     See Also
     --------
     XSredden
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``EBV`` parameter has been renamed to
+    ``E_Bmv``. It can still be accessed using ``EBV`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -6821,9 +7211,13 @@ class XSzsmdust(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``EBV`` will be removed in the next release as it has been
+              replaced by ``E_BmV``, to match the XSPEC naming convention.
+
     Attributes
     ----------
-    EBV
+    E_BmV
         The value of E(B-v) for the line of sight to the source.
     ExtIndex
         The spectral index of the extinction curve.
@@ -6831,6 +7225,12 @@ class XSzsmdust(XSMultiplicativeModel):
         The ratio of total to selective extinction.
     redshift
         The redshift of the absorber.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``EBV`` parameter has been renamed to
+    ``E_Bmv``. It can still be accessed using ``EBV`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -7107,16 +7507,27 @@ class XScplinear(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              The ``energy01`` to ``energy09`` attributes will be removed in
+              the next release as they has been replaced by ``_energy01``
+              to ``_energy09``, to match the XSPEC naming convention.
+
     Attributes
     ----------
-    energy00, energy01, energy02, energy03, energy04, energy05,
-    energy06, energy07, energy08, energy09
+    _energy00, _energy01, _energy02, _energy03, _energy04, _energy05,
+    _energy06, _energy07, _energy08, _energy09
         Energy in keV.
     log_rate01, log_rate02, log_rate03, log_rate04, log_rate05,
     log_rate06, log_rate07, log_rate08, log_rate09
         Log of the rate.
     norm
         The normalization of the model.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``energy01`` to ``energy09`` attributes have been
+    renamed to ``_energy01`` to ``_energy09``. They can still be
+    accessed using the old names, but they have been deprecated.
 
     References
     ----------
@@ -7163,9 +7574,15 @@ class XSeqpair(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``l_hl_s``, ``l_ntl_h``, and ``AbHe`` will be removed in the
+              next release as they have been replaced by ``l_hovl_s``,
+              ``l_ntol_h``, and ``Ab_met`` respectively, to match the XSPEC
+              naming convention.
+
     Attributes
     ----------
-    l_hl_s
+    l_hovl_s
         The ratio of the hard to soft compactness, l_h / l_s.
     l_bb
         The soft photon compactness.
@@ -7174,7 +7591,7 @@ class XSeqpair(XSAdditiveModel):
         When less than zero then the absolute value is used as
         the T_max parameter of the ``XSdispkpn`` model. The units
         are in eV.
-    l_ntl_h
+    l_ntol_h
         The fraction of power supplied to energetic particles which
         goes into accelerating non-thermal particles, l_nt / l_h.
     tau_p
@@ -7201,7 +7618,7 @@ class XSeqpair(XSAdditiveModel):
         by reflecting material.
     Fe_abund
         The iron abundance with respect to solar.
-    AbHe
+    Ab_met
         The abundance of the other metals with respect to solar.
     T_disk
         The temperature of the reflecting disk, in K.
@@ -7231,6 +7648,11 @@ class XSeqpair(XSAdditiveModel):
     the ``set_xsxset`` function to set the value of the EQPAIR_PRECISION
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
+
+    In Sherpa 4.9.0 ``l_hl_s`` has been renamed to ``l_hovl_s``,
+    ``l_ntl_h`` to ``l_ntol_h``, and ``AbHe`` to ``Ab_met``. They can still
+    be accessed using the old names for the time being, but these attributes
+    have been deprecated.
 
     References
     ----------
@@ -7276,9 +7698,15 @@ class XSeqtherm(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``l_hl_s``, ``l_ntl_h``, and ``AbHe`` will be removed in the
+              next release as they have been replaced by ``l_hovl_s``,
+              ``l_ntol_h``, and ``Ab_met`` respectively, to match the XSPEC
+              naming convention.
+
     Attributes
     ----------
-    l_hl_s
+    l_hovl_s
         The ratio of the hard to soft compactness, l_h / l_s.
     l_bb
         The soft photon compactness.
@@ -7287,7 +7715,7 @@ class XSeqtherm(XSAdditiveModel):
         When less than zero then the absolute value is used as
         the T_max parameter of the ``XSdispkpn`` model. The units
         are in eV.
-    l_ntl_h
+    l_ntol_h
         The fraction of power supplied to energetic particles which
         goes into accelerating non-thermal particles, l_nt / l_h.
     tau_p
@@ -7314,7 +7742,7 @@ class XSeqtherm(XSAdditiveModel):
         by reflecting material.
     Fe_abund
         The iron abundance with respect to solar.
-    AbHe
+    Ab_met
         The abundance of the other metals with respect to solar.
     T_disk
         The temperature of the reflecting disk, in K.
@@ -7344,6 +7772,11 @@ class XSeqtherm(XSAdditiveModel):
     the ``set_xsxset`` function to set the value of the EQPAIR_PRECISION
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
+
+    In Sherpa 4.9.0 ``l_hl_s`` has been renamed to ``l_hovl_s``,
+    ``l_ntl_h`` to ``l_ntol_h``, and ``AbHe`` to ``Ab_met``. They can still
+    be accessed using the old names for the time being, but these attributes
+    have been deprecated.
 
     References
     ----------
@@ -7427,7 +7860,7 @@ class XScompth(XSAdditiveModel):
         by reflecting material.
     Fe_abund
         The iron abundance with respect to solar.
-    AbHe
+    Ab_met
         The abundance of the other metals with respect to solar.
     T_disk
         The temperature of the reflecting disk, in K.
@@ -7641,17 +8074,30 @@ class XSzigm(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``redshift``, ``model``, and ``lyman_limit`` will be removed
+               in the next release as they have been replaced by
+               ``_redshift``, ``_model``, and ``_lyman_limit``
+              respectively, to match the XSPEC naming convention.
+
     Attributes
     ----------
-    redshift
+    _redshift
         The redshift of the absorber.
         This parameter can not be thawed.
-    model
+    _model
         The model to use: 0 is Madau, 1 is Meiksin.
         This parameter can not be thawed.
-    lyman_limit
+    _lyman_limit
         Should photoelectric absorption be included (1), or not (0).
         This parameter can not be thawed.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 all the parameters have been renamed so that they
+    start with an underscore character. They can still be accessed using
+    the old names for the time being, but these attributes have been
+    deprecated.
 
     References
     ----------
@@ -7683,7 +8129,7 @@ class XSgadem(XSAdditiveModel):
     The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
     functions change and return the current settings for the relative
     abundances of the metals. See the ``XSapec`` documentation for settings
-    relevant to the APEC model (i.e. when ``switch=2``).
+    relevant to the APEC model (i.e. when ``_switch=2``).
 
     Attributes
     ----------
@@ -7741,7 +8187,7 @@ class XSvgadem(XSAdditiveModel):
     The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
     functions change and return the current settings for the relative
     abundances of the metals. See the ``XSapec`` documentation for settings
-    relevant to the APEC model (i.e. when ``switch=2``).
+    relevant to the APEC model (i.e. when ``_switch=2``).
 
     Attributes
     ----------
@@ -7844,13 +8290,17 @@ class XSlogpar(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``pivotE`` will be removed in the next release as it has been
+              replaced by ``_pivotE``, to match the XSPEC naming convention.
+
     Attributes
     ----------
     alpha
         The slope at the pivot energy.
     beta
         The curvature term.
-    pivotE
+    _pivotE
         The pivot energy, in keV.
     norm
         The normalization of the model: see [1]_ for more details.
@@ -7858,6 +8308,12 @@ class XSlogpar(XSAdditiveModel):
     See Also
     --------
     XSeplogpar
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``pivotE`` parameter has been renamed to
+    ``_pivotE``. It can still be accessed using ``pivotE`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -7884,13 +8340,18 @@ class XSoptxagn(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``logLLEdd`` will be removed in the next release as it has
+              been replaced by ``logLoLedd``, to match the XSPEC naming
+              convention.
+
     Attributes
     ----------
     mass
         The black hole mass in solar masses.
     dist
         The comoving (proper) distance in Mpc.
-    logLLEdd
+    logLoLEdd
         The Eddington ratio.
     astar
         The dimensionless black hole spin.
@@ -7927,6 +8388,12 @@ class XSoptxagn(XSAdditiveModel):
     --------
     XSOptxagnf
 
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``logLLEdd`` parameter has been renamed to
+    ``logLoLedd``. It can still be accessed using ``logLLEdd`` for the
+    time being, but this attribute has been deprecated.
+
     References
     ----------
 
@@ -7962,13 +8429,18 @@ class XSoptxagnf(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``logLLEdd`` will be removed in the next release as it has
+              been replaced by ``logLoLedd``, to match the XSPEC naming
+              convention.
+
     Attributes
     ----------
     mass
         The black hole mass in solar masses.
     dist
         The comoving (proper) distance in Mpc.
-    logLLEdd
+    logLoLEdd
         The Eddington ratio.
     astar
         The dimensionless black hole spin.
@@ -7998,6 +8470,12 @@ class XSoptxagnf(XSAdditiveModel):
     See Also
     --------
     XSOptxagn
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``logLLEdd`` parameter has been renamed to
+    ``logLoLedd``. It can still be accessed using ``logLLEdd`` for the
+    time being, but this attribute has been deprecated.
 
     References
     ----------
@@ -8260,18 +8738,29 @@ class XSheilin(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``redshift`` will be removed in the next release as it has
+              been replaced by ``z``, to match the XSPEC naming
+              convention.
+
     Attributes
     ----------
     nHeI
         The He I column density, in 10^22 atoms/cm^2.
     b
         The b value, in km/s.
-    redshift
+    z
         The redshift of the absorber.
 
     See Also
     --------
     XSlyman
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``redshift`` parameter has been renamed to
+    ``z``. It can still be accessed using ``redshift`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -8297,13 +8786,18 @@ class XSlyman(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``nHeI`` and ``redshift`` will be removed in the next
+              release as they have been replaced by ``n`` and ``z``
+              respectively, to match the XSPEC naming convention.
+
     Attributes
     ----------
-    nHeI
+    n
         The H I or He II column density, in 10^22 atoms/cm^2.
     b
         The b value, in km/s.
-    redshift
+    z
         The redshift of the absorber.
     ZA
         The atomic number of the species being calculated.
@@ -8311,6 +8805,12 @@ class XSlyman(XSMultiplicativeModel):
     See Also
     --------
     XSheilin
+
+    Notes
+    -----
+    In Sherpa 4.9.0 ``nHeI`` has been renamed to ``n`` and ``redshift``
+    to ``z``. They can still be accessed using the old names for the
+    time being, but these attributes have been deprecated.
 
     References
     ----------
@@ -8337,6 +8837,11 @@ class XSzbabs(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.9.0
+              ``redshift`` will be removed in the next release as it has
+              been replaced by ``z``, to match the XSPEC naming
+              convention.
+
     Attributes
     ----------
     nH
@@ -8345,8 +8850,14 @@ class XSzbabs(XSMultiplicativeModel):
         The He I column density, in 10^22 atoms/cm^2.
     nHeI
         The He II column density, in 10^22 atoms/cm^2.
-    redshift
+    z
         The redshift of the absorber.
+
+    Notes
+    -----
+    In Sherpa 4.9.0 the ``redshift`` parameter has been renamed to
+    ``z``. It can still be accessed using ``redshift`` for the time
+    being, but this attribute has been deprecated.
 
     References
     ----------
