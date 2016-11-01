@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import absolute_import
+
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.model import ArithmeticModel, modelCacher1d
@@ -28,7 +30,7 @@ from sherpa.utils import _guess_ampl_scale, bool_cast, get_fwhm, \
     guess_amplitude_at_ref, guess_fwhm, guess_position, \
     guess_radius, guess_reference, lgam, param_apply_limits
 
-import sherpa.astro.models._modelfcts
+from . import _modelfcts
 
 import six
 
