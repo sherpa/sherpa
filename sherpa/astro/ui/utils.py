@@ -8943,33 +8943,9 @@ class Session(sherpa.ui.utils.Session):
             if not sherpa.utils.is_binary_file(filename):
                 raise Exception("Not a FITS file")
 
-            read_tbl = sherpa.astro.io.backend.get_table_data
-            read_hdr = sherpa.astro.io.backend.get_header_data
-
-            blkname = 'PRIMARY'
-            hdrkeys = ['HDUCLAS1', 'REDSHIFT', 'ADDMODEL']
-            hdr = read_hdr(filename, blockname=blkname, hdrkeys=hdrkeys)
-
-            addmodel = sherpa.utils.bool_cast(hdr[hdrkeys[2]])
-            addredshift = sherpa.utils.bool_cast(hdr[hdrkeys[1]])
-
-            if str(hdr[hdrkeys[0]]).upper() != 'XSPEC TABLE MODEL':
-                raise Exception("Not an XSPEC table model")
-
-            XSTableModel = sherpa.astro.xspec.XSTableModel
-
-            blkname = 'PARAMETERS'
-            colkeys = ['NAME', 'INITIAL', 'DELTA', 'BOTTOM', 'TOP',
-                       'MINIMUM', 'MAXIMUM']
-            hdrkeys = ['NINTPARM', 'NADDPARM']
-
-            (colnames, cols,
-             name, hdr) = read_tbl(filename, colkeys=colkeys, hdrkeys=hdrkeys,
-                                   blockname=blkname, fix_type=False)
-            nint = int(hdr[hdrkeys[0]])
-            tablemodel = XSTableModel(filename, modelname, *cols,
-                                      nint=nint, addmodel=addmodel,
-                                      addredshift=addredshift)
+            # If the import fails the exception handler will catch it
+            from sherpa.astro import xspec
+            tablemodel = xspec.read_xstable_model(modelname, filename)
 
         except Exception:
             x = None
