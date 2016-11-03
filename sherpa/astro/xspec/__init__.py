@@ -199,6 +199,72 @@ def set_xsstate(state):
         for name in state["modelstrings"].keys():
             set_xsxset(name, state["modelstrings"][name])
 
+
+def read_xstable_model(modelname, filename):
+    """Create a XSPEC table model.
+
+    XSPEC additive (atable, [1]_) and multiplicative (mtable, [2]_)
+    table models are supported.
+
+    Parameters
+    ----------
+    modelname : str
+       The identifier for this table model.
+    filename : str
+       The name of the file containing the XSPEC table model.
+
+    Returns
+    -------
+    tablemodel : XSTableModel instance
+
+    References
+    ----------
+
+    .. [1] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+
+    .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+
+    Examples
+    --------
+
+    Load in the XSPEC table model from the file 'bbrefl_1xsolar.fits'
+    and create a model labelled 'xmdl', which is then returned:
+
+    >>> mdl = read_xstable_model('xmdl', 'bbrefl_1xsolar.fits')
+    >>> print(mdl)
+
+    """
+
+    # TODO: how to avoid loading this if no backend is available
+    import sherpa.astro.io
+    read_tbl = sherpa.astro.io.backend.get_table_data
+    read_hdr = sherpa.astro.io.backend.get_header_data
+
+    blkname = 'PRIMARY'
+    hdrkeys = ['HDUCLAS1', 'REDSHIFT', 'ADDMODEL']
+    hdr = read_hdr(filename, blockname=blkname, hdrkeys=hdrkeys)
+
+    addmodel = bool_cast(hdr[hdrkeys[2]])
+    addredshift = bool_cast(hdr[hdrkeys[1]])
+
+    # TODO: change Exception to something more useful
+    if str(hdr[hdrkeys[0]]).upper() != 'XSPEC TABLE MODEL':
+        raise Exception("Not an XSPEC table model")
+
+    blkname = 'PARAMETERS'
+    colkeys = ['NAME', 'INITIAL', 'DELTA', 'BOTTOM', 'TOP',
+               'MINIMUM', 'MAXIMUM']
+    hdrkeys = ['NINTPARM', 'NADDPARM']
+
+    (colnames, cols,
+     name, hdr) = read_tbl(filename, colkeys=colkeys, hdrkeys=hdrkeys,
+                           blockname=blkname, fix_type=False)
+    nint = int(hdr[hdrkeys[0]])
+    return XSTableModel(filename, modelname, *cols,
+                        nint=nint, addmodel=addmodel,
+                        addredshift=addredshift)
+
+
 # The model classes are added to __all__ at the end of the file
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
@@ -265,8 +331,7 @@ class XSTableModel(XSModel):
     XSPEC supports loading in user-supplied data files for use
     as a table model [1]_. This class provides a low-level
     way to access this functionality. A simpler interface is provided
-    by the ``load_table_model`` routine provided by the
-    ``sherpa.astro.ui`` module
+    by ``read_xstable_model`` and ``sherpa.astro.ui.load_xstable_model``.
 
     Parameters
     ----------
