@@ -17,7 +17,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import six
 import pytest
 import os
 import sys
@@ -69,6 +68,9 @@ if sys.version_info >= (3, 2):
                 r"unclosed file .*aref_Cedge.fits.* closefd=True>",
                 r"unclosed file .*aref_sample.fits.* closefd=True>",
                 r"unclosed file .*/tmp.* closefd=True>",
+                # added for sherpa/astro/ui/tests/test_astro_ui_utils_unit.py
+                r"unclosed file .*/dev/null.* closefd=True>",
+                r"unclosed file .*table.txt.* closefd=True>",
             ]
     }
     known_warnings.update(python3_warnings)
