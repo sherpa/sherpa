@@ -23,11 +23,11 @@ import string
 from sherpa.models import Parameter, ArithmeticModel, modelCacher1d
 from sherpa.models.parameter import hugeval
 import sherpa.astro.xspec._xspec
-from sherpa.utils import guess_amplitude, param_apply_limits
+from sherpa.utils import bool_cast, guess_amplitude, param_apply_limits
 from sherpa.astro.utils import get_xspec_position
-from sherpa.astro.xspec._xspec import get_xschatter, get_xsabund, get_xscosmo, \
-     get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, set_xsxsect, \
-     get_xsversion
+from sherpa.astro.xspec._xspec import get_xschatter, get_xsabund, \
+    get_xscosmo, get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, \
+    set_xsxsect, get_xsversion
 
 try:
     maketrans = string.maketrans  # Python 2
@@ -40,6 +40,7 @@ except AttributeError:
 # See:
 # http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
 modelstrings = {}
+
 
 def get_xsxset(name):
     """Return the X-Spec model setting.
@@ -69,6 +70,7 @@ def get_xsxset(name):
     """
     name = name.upper()
     return sherpa.astro.xspec._xspec.get_xsxset(name)
+
 
 def set_xsxset(name, value):
     """Set a X-Spec model setting.
@@ -127,8 +129,9 @@ def set_xsxset(name, value):
     """
     name = name.upper()
     sherpa.astro.xspec._xspec.set_xsxset(name, value)
-    if (get_xsxset(name) != ""):
+    if get_xsxset(name) != "":
         modelstrings[name] = get_xsxset(name)
+
 
 # Provide XSPEC module state as a dictionary.  The "cosmo" state is
 # a 3-tuple, and "modelstrings" is a dictionary of model strings
@@ -160,6 +163,7 @@ def get_xsstate():
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
             "modelstrings": modelstrings}
+
 
 def set_xsstate(state):
     """Restore the state of the XSPEC module.
