@@ -26,7 +26,7 @@ import sherpa.ui.utils
 from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
-    IdentifierErr, IOErr, ModelErr
+    IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.data import Data1D
 import sherpa.astro.all
 import sherpa.astro.plot
@@ -8862,11 +8862,85 @@ class Session(sherpa.ui.utils.Session):
                     raise
         return (x, y)
 
+    def load_xstable_model(self, modelname, filename):
+        """Load a XSPEC table model.
+
+        Create an additive (``atable``, [1]_) or multiplicative
+        (``mtable``, [2]_) XSPEC table model component. These models
+        may have multiple model parameters.
+
+        Parameters
+        ----------
+        modelname : str
+           The identifier for this model component.
+        filename : str
+           The name of the FITS file containing the data, which should
+           match the XSPEC table model definition [3]_.
+
+        Raises
+        ------
+        sherpa.utils.err.ImportErr
+           If XSPEC support is not enabled.
+
+        See Also
+        --------
+        load_conv : Load a 1D convolution model.
+        load_psf : Create a PSF model
+        load_template_model : Load a set of templates and use it as a model component.
+        load_table_model : Load tabular or image data and use it as a model component.
+        set_model : Set the source model expression for a data set.
+        set_full_model : Define the convolved model expression for a data set.
+
+        Notes
+        -----
+        NASA's HEASARC site contains a link to community-provided
+        XSPEC table models [4]_.
+
+        References
+        ----------
+
+        .. [1] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+
+        .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+
+        .. [3] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+
+        .. [4] https://heasarc.gsfc.nasa.gov/xanadu/xspec/newmodels.html
+
+        Examples
+        --------
+
+        Load in the XSPEC table model from the file 'bbrefl_1xsolar.fits'
+        and create a model component labelled 'xtbl', which is then
+        used in a source expression:
+
+        >>> load_xstable_model('xtbl', 'bbrefl_1xsolar.fits')
+        >>> set_source(xsphabs.gal * xtbl)
+        >>> print(xtbl)
+
+        """
+
+        try:
+            from sherpa.astro import xspec
+        except ImportError:
+            # TODO: what is the best error to raise here?
+            raise ImportErr('notsupported', 'XSPEC')
+
+        tablemodel = xspec.read_xstable_model(modelname, filename)
+        self._tbl_models.append(tablemodel)
+        self._add_model_component(tablemodel)
+
     # also in sherpa.utils
     # DOC-NOTE: can filename be a crate/hdulist?
     # DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
     def load_table_model(self, modelname, filename, method=sherpa.utils.linear_interp, *args, **kwargs):
         """Load tabular or image data and use it as a model component.
+
+        .. note:: Deprecated in Sherpa 4.9
+                  The new `load_xstable_model` routine should be used for
+                  loading XSPEC table model files. Support for these files
+                  will be removed from ``load_table_model` in the next
+                  release.
 
         A table model is defined on a grid of points which is
         interpolated onto the independent axis of the data set.  The
@@ -8895,6 +8969,7 @@ class Session(sherpa.ui.utils.Session):
         load_conv : Load a 1D convolution model.
         load_psf : Create a PSF model
         load_template_model : Load a set of templates and use it as a model component.
+        load_xstable_model : Load a XSPEC table model.
         set_model : Set the source model expression for a data set.
         set_full_model : Define the convolved model expression for a data set.
 
@@ -8943,9 +9018,8 @@ class Session(sherpa.ui.utils.Session):
             if not sherpa.utils.is_binary_file(filename):
                 raise Exception("Not a FITS file")
 
-            # If the import fails the exception handler will catch it
-            from sherpa.astro import xspec
-            tablemodel = xspec.read_xstable_model(modelname, filename)
+            self.load_xstable_model(modelname, filename)
+            return
 
         except Exception:
             x = None
@@ -8964,7 +9038,7 @@ class Session(sherpa.ui.utils.Session):
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
-    ### also in sherpa.utils
+    # ## also in sherpa.utils
     # DOC-TODO: how to describe *args/**kwargs
     # DOC-TODO: how is the _y value used if set
     def load_user_model(self, func, modelname, filename=None, *args, **kwargs):
