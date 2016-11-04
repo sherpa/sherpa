@@ -22,12 +22,14 @@ from six.moves import xrange
 import string
 from sherpa.models import Parameter, ArithmeticModel, modelCacher1d
 from sherpa.models.parameter import hugeval
-import sherpa.astro.xspec._xspec
 from sherpa.utils import guess_amplitude, param_apply_limits
+from sherpa.utils.err import ModelErr
 from sherpa.astro.utils import get_xspec_position
-from sherpa.astro.xspec._xspec import get_xschatter, get_xsabund, get_xscosmo, \
-     get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, set_xsxsect, \
-     get_xsversion
+from sherpa.astro.xspec._xspec import get_xschatter, get_xsabund, \
+    get_xscosmo, get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, \
+    set_xsxsect, get_xsversion
+
+import sherpa.astro.xspec._xspec
 
 try:
     maketrans = string.maketrans  # Python 2
@@ -418,7 +420,7 @@ class XSapec(XSAdditiveModel):
 
     See Also
     --------
-    XSbapec, XSbvapec, XSbvvapec, XSvapec, XSvvapec
+    XSbapec, XSbvapec, XSbvvapec, XSnlapec, XSvapec, XSvvapec
 
     References
     ----------
@@ -430,6 +432,63 @@ class XSapec(XSAdditiveModel):
     _calc =  _xspec.xsaped
 
     def __init__(self, name='apec'):
+        self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
+        self.Abundanc = Parameter(name, 'Abundanc', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name, (self.kT, self.Abundanc, self.redshift, self.norm))
+
+
+# Handle optional routine
+if hasattr(_xspec, 'C_nlapec'):
+    _nlapec = getattr(_xspec, 'C_nlapec')
+else:
+    def _nlapec(*args, **kwargs):
+        raise ModelErr('notavailable', 'XSPEC nlapec')
+
+
+class XSnlapec(XSAdditiveModel):
+    """The XSPEC nlapec model: continuum-only APEC emission spectrum.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keywords "APECROOT", "APECTHERMAL", "APECVELOCITY",
+    and "APEC_TRACE_ABUND".
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
+        keyword.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbapec, XSbvapec, XSbvvapec, XSvapec, XSvvapec
+
+    Notes
+    -----
+    This model is only available for XSPEC version 12.9.0 and higher.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNlapec.html
+
+    """
+
+    _calc = _nlapec
+
+    def __init__(self, name='nlapec'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
         self.Abundanc = Parameter(name, 'Abundanc', 1., 0., 5., 0.0, hugeval, frozen=True)
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)

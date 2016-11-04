@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@ from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
 from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_fits, requires_xspec
-
+from sherpa.utils.err import ModelErr
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh
@@ -48,6 +48,26 @@ def remove_item(xs, x):
         xs.remove(x)
     except ValueError:
         pass
+
+
+def is_xspec_at_least(major, minor):
+    """Returns True if XSPEC version is >= the given constraint.
+
+    There is no support for patches at present, or a check
+    on the "micro" version number. If xspec is not available
+    then it always returns False: I did not expect this to
+    be necessary, as it is supposed to be used within a class
+    that has the @requires_xspec decorator, but I can see that the
+    ordering of when the checks are run could be surprising.
+    """
+
+    try:
+        import sherpa.astro.xspec as xs
+    except ImportError:
+        return False
+
+    version = [int(v) for v in xs.get_xsversion().split('.')[0:2]]
+    return tuple(version) >= (major, minor)
 
 
 # There is an argument to be made that these tests only need
@@ -83,12 +103,13 @@ def get_xspec_models(xs):
 
     # In XSPEC 12.8.2, the nteea model is written in such a way that
     # it fails in Sherpa (but not from within XSPEC). This has
-    # been fixed in 12.9.0, but can cause problems for Sherpa tests
-    # when the model is evaluated multiple times.
+    # been fixed in 12.9.0.
     #
-    version = [int(v) for v in xs.get_xsversion().split('.')[0:2]]
-    if tuple(version) < (12, 9):
+    # remove nlapec for XSPEC < 12.9 as it is not callable
+    #
+    if not is_xspec_at_least(12, 9):
         remove_item(models, 'XSnteea')
+        remove_item(models, 'XSnlapec')
 
     return models
 
@@ -182,7 +203,10 @@ class test_xspec(SherpaTestCase):
                 cls()
                 count += 1
 
-        self.assertEqual(count, 164)
+        # The XSnlapec model instance can be created in XSPEC 12.8.2,
+        # it just can not be called.
+        nmodels = 165
+        self.assertEqual(count, nmodels)
 
     def test_norm_works(self):
         # Check that the norm parameter for additive models
@@ -233,11 +257,21 @@ class test_xspec(SherpaTestCase):
         self.assertRaises(TypeError, mdl, [0.1, 0.2, 0.3], [0.2, 0.3])
         self.assertRaises(TypeError, mdl, [0.1, 0.2], [0.2, 0.3, 0.4])
 
+    @unittest.skipIf(is_xspec_at_least(12, 9),
+                     "nlapec is available, so do not check it is missing")
+    def test_xspec_models_optional(self):
+        """Check for optional models when they are not available"""
+
+        import sherpa.astro.xspec as xs
+        mdl = xs.XSnlapec("missing")
+        self.assertRaises(ModelErr, mdl, [0.1, 0.2, 0.3], [0.2, 0.3, 0.4])
+
     def test_xspec_models(self):
         import sherpa.astro.xspec as xs
         models = get_xspec_models(xs)
 
         egrid, elo, ehi, wgrid, wlo, whi = make_grid()
+
         for model in models:
             cls = getattr(xs, model)
             # use an identifier in case there is an error

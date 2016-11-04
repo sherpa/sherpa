@@ -317,6 +317,7 @@ class ModelErr(SherpaErr):
             'filtermismatch': "Mismatch between %s and %s",
             'nobkg': 'background model %s for data set %s has not been set',
             'norsp': 'No background response found for background %s in data set %s',
+            'notavailable': 'The %s model is not available'
             }
 
     def __init__(self, key, *args):
