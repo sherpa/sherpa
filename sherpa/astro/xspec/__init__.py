@@ -209,9 +209,10 @@ def read_xstable_model(modelname, filename):
     Parameters
     ----------
     modelname : str
-       The identifier for this table model.
+       The identifier for this model component.
     filename : str
-       The name of the file containing the XSPEC table model.
+       The name of the FITS file containing the data, which should
+       match the XSPEC table model definition [3]_.
 
     Returns
     -------
@@ -223,6 +224,8 @@ def read_xstable_model(modelname, filename):
     .. [1] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
 
     .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+
+    .. [3] http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
 
     Examples
     --------
