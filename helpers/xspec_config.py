@@ -17,6 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import os
 
 from numpy.distutils.core import Command
 from .extensions import build_ext, build_lib_arrays
@@ -24,6 +25,58 @@ from .extensions import build_ext, build_lib_arrays
 def clean(xs):
     "Remove all '' entries from xs, returning the new list."
     return [x for x in xs if x != '']
+
+# Try to support "optional" models; that is, those models
+# that are added (or deleted) in a version. At present
+# (XSPEC 12.9.0) this is only the nlapec model, so special
+# case it rather than come up with a generic method.
+#
+# The current approach to determining if the nlapec model is available
+# is to do a quick query on the model.dat file. However, this is
+# not specified in the build configuration - the best guess we have
+# here are:
+#  1) 'xspec-lib-dirs' + '../../spectral/manager/model.dat'
+#  2) $HEADAS + '../spectral/manager/model.dat'
+#
+# For now, the former approach is taken. This is not as flexible,
+# but requires less changes to the current build (since, at present,
+# there is no explicit requirement that the HEADAS environment variable
+# is set up for the build - although perhaps there should be).
+#
+
+def does_nlapec_model_exist(libdir):
+    """Can we find nlapec model in model.dat?
+
+    Parameters
+    ----------
+    libdir : str
+        The location of the XSPEC libraries. The model.dat file is
+        assumed to be located relative to this directory:
+        ../spectral/manager/model.dat.
+
+    Returns
+    -------
+    flag : bool
+        True if model.dat can be found and nlapec is found in it,
+        False otherwise.
+    """
+
+    fname = os.path.join(libdir, '../../spectral/manager/model.dat')
+    try:
+        cts = open(fname, 'r').read()
+    except IOError:
+        return False
+
+    # Do not use a full parser for the model.dat file
+    for l in cts.split("\n"):
+        toks = l.split()
+        # limited check that we have found the nlapec model line
+        if len(toks) < 7 or toks[0] != 'nlapec' or toks[4] != 'C_nlapec':
+            continue
+        return True
+
+    return False
+
 
 class xspec_config(Command):
     description = "Configure XSPEC Models external module (optional) "
@@ -84,7 +137,15 @@ class xspec_config(Command):
             inc = clean(inc1 + inc2 + inc3 + inc4 + inc5)
             l = clean(l1 + l2 + l3 + l4 + l5)
 
-            self.distribution.ext_modules.append(build_ext('xspec', ld, inc, l))
+            # Assume the first element in XSPEC library path
+            # is the one to use.
+            if does_nlapec_model_exist(ld1[0]):
+                macros = [('XSPEC_HAS_NLAPEC_MODEL', None)]
+            else:
+                macros = None
+
+            ext = build_ext('xspec', ld, inc, l, define_macros=macros)
+            self.distribution.ext_modules.append(ext)
 
         else:
             if package in dist_packages:
