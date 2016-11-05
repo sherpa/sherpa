@@ -18,10 +18,13 @@
 #
 from six.moves import zip as izip
 from six import string_types
+import logging
 import os
 import sys
-import logging
+import warnings
+
 import numpy
+
 import sherpa.ui.utils
 from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
@@ -8975,20 +8978,9 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        X-Spec style additive (atable, [1]_) and multiplicative
-        (mtable, [2]_) table models are supported. These models may
-        have multiple model parameters.
-
         Examples of interpolation schemes provided by `sherpa.utils`
         are: `linear_interp`, `nearest_interp`, `neville`, and
         `neville2d`.
-
-        References
-        ----------
-
-        .. [1] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
-
-        .. [2] http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
 
         Examples
         --------
@@ -9019,6 +9011,8 @@ class Session(sherpa.ui.utils.Session):
                 raise Exception("Not a FITS file")
 
             self.load_xstable_model(modelname, filename)
+            warnings.warn('Use load_xstable_model to load XSPEC table models',
+                          DeprecationWarning)
             return
 
         except Exception:

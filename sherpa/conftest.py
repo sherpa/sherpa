@@ -45,7 +45,8 @@ known_warnings = {
         [
             r"unorderable dtypes.*",
             r"Non-string object detected for the array ordering.*",
-            r"using a non-integer number instead of an integer will result in an error in the future"
+            r"using a non-integer number instead of an integer will result in an error in the future",
+            r"Use load_xstable_model to load XSPEC table models"
         ],
     UserWarning:
         [
