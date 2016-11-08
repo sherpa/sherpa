@@ -18,13 +18,21 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import absolute_import
+
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
-from sherpa.models.model import ArithmeticModel, CompositeModel, modelCacher1d
+from sherpa.models.model import ArithmeticModel, modelCacher1d
 from sherpa.astro.utils import apply_pileup
 from sherpa.utils.err import ModelErr
-from sherpa.utils import *
-import sherpa.astro.models._modelfcts
+from sherpa.utils import _guess_ampl_scale, bool_cast, get_fwhm, \
+    get_peak, get_position, guess_amplitude, guess_amplitude2d, \
+    guess_amplitude_at_ref, guess_fwhm, guess_position, \
+    guess_radius, guess_reference, lgam, param_apply_limits
+
+from . import _modelfcts
+
+import six
 
 __all__ = ('Atten', 'BBody', 'BBodyFreq', 'Beta1D', 'BPL1D', 'Dered', 'Edge',
            'LineBroad', 'Lorentz1D', 'NormBeta1D', 'Schechter',
@@ -88,7 +96,7 @@ class Atten(ArithmeticModel):
     @modelCacher1d
     def calc(self, *args, **kwargs):
         # atten should act like xsphabs, never integrate.
-        kwargs['integrate']=False
+        kwargs['integrate'] = False
         return _modelfcts.atten(*args, **kwargs)
 
 
@@ -147,27 +155,27 @@ class BBody(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1, 1e-20, 1e+20, 1e-20, 1e+20)
         ArithmeticModel.__init__(self, name, (self.space, self.kT, self.ampl))
 
-
     def guess(self, dep, *args, **kwargs):
         if args[0][0] > args[0][-1]:
             self.space.val = 1
         Emax = get_peak(dep, *args)
-        tMax = Emax/1.594
-        kt = {'val':tMax,
-              'min':tMax/_guess_ampl_scale,
-              'max':tMax*_guess_ampl_scale}
+        tMax = Emax / 1.594
+        kt = {'val': tMax,
+              'min': tMax / _guess_ampl_scale,
+              'max': tMax * _guess_ampl_scale}
         param_apply_limits(kt, self.kt, **kwargs)
 
         norm = guess_amplitude(dep, *args)
-        modampl = norm['val']*(numpy.exp(Emax/tMax)-1)/numpy.square(Emax)
+        modampl = norm['val'] * (numpy.exp(Emax / tMax) - 1) / \
+            numpy.square(Emax)
         mod = {'val': modampl,
-               'min': modampl/_guess_ampl_scale,
-               'max': modampl*_guess_ampl_scale}
+               'min': modampl / _guess_ampl_scale,
+               'max': modampl * _guess_ampl_scale}
         param_apply_limits(mod, self.ampl, **kwargs)
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.bbody(*args, **kwargs)
 
 
@@ -205,27 +213,26 @@ class BBodyFreq(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1, 0, hard_min=0)
         ArithmeticModel.__init__(self, name, (self.T, self.ampl))
 
-
     def guess(self, dep, *args, **kwargs):
         vmax = get_peak(dep, *args)
-        tMax = vmax/5.88e+10
-        t = {'val':tMax,
-             'min':tMax/_guess_ampl_scale,
-             'max':tMax*_guess_ampl_scale}
+        tMax = vmax / 5.88e+10
+        t = {'val': tMax,
+             'min': tMax / _guess_ampl_scale,
+             'max': tMax * _guess_ampl_scale}
         norm = guess_amplitude(dep, *args)
         c_cm = 2.99792458e+10
         h_erg = 6.6260693e-27
-        factor = numpy.exp(2.82)*numpy.square(c_cm)/h_erg/2.
-        modampl = norm['val']*factor/numpy.power(vmax,3.)
+        factor = numpy.exp(2.82) * numpy.square(c_cm) / h_erg / 2.
+        modampl = norm['val'] * factor / numpy.power(vmax, 3.)
         mod = {'val': modampl,
-               'min': modampl/_guess_ampl_scale,
-               'max': modampl*_guess_ampl_scale}
+               'min': modampl / _guess_ampl_scale,
+               'max': modampl * _guess_ampl_scale}
         param_apply_limits(mod, self.ampl, **kwargs)
         param_apply_limits(t, self.t, **kwargs)
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.bbodyfreq(*args, **kwargs)
 
 
@@ -293,10 +300,9 @@ class Beta1D(ArithmeticModel):
         norm = guess_amplitude_at_ref(self.r0.val, dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.beta1d(*args, **kwargs)
 
 
@@ -344,7 +350,6 @@ class BPL1D(ArithmeticModel):
                                  (self.gamma1, self.gamma2,
                                   self.eb, self.ref, self.ampl))
 
-
     def guess(self, dep, *args, **kwargs):
         pos = get_position(dep, *args)
         param_apply_limits(pos, self.eb, **kwargs)
@@ -357,7 +362,7 @@ class BPL1D(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.bpl1d(*args, **kwargs)
 
 
@@ -421,7 +426,7 @@ class Dered(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.dered(*args, **kwargs)
 
 
@@ -471,7 +476,7 @@ class Edge(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.edge(*args, **kwargs)
 
 
@@ -513,7 +518,6 @@ class LineBroad(ArithmeticModel):
         ArithmeticModel.__init__(self, name,
                                  (self.ampl, self.rest, self.vsini))
 
-
     def guess(self, dep, *args, **kwargs):
         ref = guess_reference(self.rest.min, self.rest.max, *args)
         param_apply_limits(ref, self.rest, **kwargs)
@@ -522,21 +526,22 @@ class LineBroad(ArithmeticModel):
         fwhm = get_fwhm(dep, *args)
         c_km = 2.99792458e+5
         if self.rest.val != 0:
-            vsini = 2.*fwhm*c_km/numpy.sqrt(3.)/self.rest.val
+            vsini = 2. * fwhm * c_km / numpy.sqrt(3.) / self.rest.val
             vs = {'val': vsini,
-                  'min': vsini/_guess_ampl_scale,
-                  'max': vsini*_guess_ampl_scale }
+                  'min': vsini / _guess_ampl_scale,
+                  'max': vsini * _guess_ampl_scale }
             param_apply_limits(vs, self.vsini, **kwargs)
 
-        modampl = norm['val']*numpy.pi*self.vsini.val*self.rest.val/2./c_km
+        modampl = norm['val'] * numpy.pi * self.vsini.val * \
+            self.rest.val / 2. / c_km
         mod = {'val': modampl,
-               'min': modampl/_guess_ampl_scale,
-               'max': modampl*_guess_ampl_scale}
+               'min': modampl / _guess_ampl_scale,
+               'max': modampl * _guess_ampl_scale}
         param_apply_limits(mod, self.ampl, **kwargs)
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.linebroad(*args, **kwargs)
 
 
@@ -594,17 +599,17 @@ class Lorentz1D(ArithmeticModel):
 
         norm = guess_amplitude(dep, *args)
         if fwhm != 10:
-            aprime = norm['val']*self.fwhm.val*numpy.pi/2.
+            aprime = norm['val'] * self.fwhm.val * numpy.pi / 2.
             ampl = {'val': aprime,
-                    'min': aprime/_guess_ampl_scale,
-                    'max': aprime*_guess_ampl_scale}
+                    'min': aprime / _guess_ampl_scale,
+                    'max': aprime * _guess_ampl_scale}
             param_apply_limits(ampl, self.ampl, **kwargs)
         else:
             param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.lorentz1d(*args, **kwargs)
 
 
@@ -668,15 +673,15 @@ class NormBeta1D(ArithmeticModel):
         pos = get_position(dep, *args)
         fwhm = guess_fwhm(dep, *args)
         param_apply_limits(pos, self.pos, **kwargs)
-        norm = (fwhm['val']*numpy.sqrt(numpy.pi)*
-                numpy.exp(lgam(self.index.val-0.5)-lgam(self.index.val)))
+        norm = fwhm['val'] * numpy.sqrt(numpy.pi) * \
+            numpy.exp(lgam(self.index.val - 0.5) - lgam(self.index.val))
         for key in ampl.keys():
             ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.nbeta1d(*args, **kwargs)
 
 
@@ -714,7 +719,6 @@ class Schechter(ArithmeticModel):
         self.ref = Parameter(name, 'ref', 1)
         self.norm = Parameter(name, 'norm', 1)
         ArithmeticModel.__init__(self, name, (self.alpha, self.ref, self.norm))
-
 
     def guess(self, dep, *args, **kwargs):
         norm = guess_amplitude(dep, *args)
@@ -815,9 +819,8 @@ class Beta2D(ArithmeticModel):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.beta2d(*args, **kwargs)
 
 
@@ -897,9 +900,8 @@ class DeVaucouleurs2D(ArithmeticModel):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.devau(*args, **kwargs)
 
 
@@ -955,7 +957,6 @@ class HubbleReynolds(ArithmeticModel):
 
     """
 
-
     def __init__(self, name='hubblereynolds'):
         self.r0 = Parameter(name, 'r0', 10, 0, hard_min=0)
         self.xpos = Parameter(name, 'xpos', 0)
@@ -985,9 +986,8 @@ class HubbleReynolds(ArithmeticModel):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.hr(*args, **kwargs)
 
 
@@ -1060,9 +1060,8 @@ class Lorentz2D(ArithmeticModel):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.lorentz2d(*args, **kwargs)
 
 
@@ -1151,18 +1150,19 @@ class JDPileup(ArithmeticModel):
             if num_terms > 0:
                 sum = pileup_fractions[1]
 
-            sum_piled = pileup_fractions[2:num_terms+1].sum()
+            sum_piled = pileup_fractions[2:num_terms + 1].sum()
             sum += sum_piled
 
             pn = numpy.exp(-integral_ae)
 
             s += '\n\n'
 
-            for i in xrange(1, num_terms+1):
+            for i in six.moves.xrange(1, num_terms + 1):
                 pn *= integral_ae / float(i)
-                s += '   %d: %g  %g\n' % (i, pn, pileup_fractions[i]/sum)
+                s += '   %d: %g  %g\n' % (i, pn,
+                                          pileup_fractions[i] / sum)
 
-            s += '   *** pileup fraction: %g' % (sum_piled/sum)
+            s += '   *** pileup fraction: %g' % (sum_piled / sum)
 
         return s
 
@@ -1180,6 +1180,7 @@ class JDPileup(ArithmeticModel):
 
 class MultiResponseSumModel(ArithmeticModel):
     pass
+
 
 class Sersic2D(ArithmeticModel):
     """Two-dimensional Sersic model.
@@ -1258,7 +1259,7 @@ class Sersic2D(ArithmeticModel):
         self.theta = Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi, -2*numpy.pi,
                                4*numpy.pi, 'radians')
         self.ampl = Parameter(name, 'ampl', 1)
-        self.n = Parameter(name,'n', 1, .1, 10, 0.01, 100, frozen=True )
+        self.n = Parameter(name, 'n', 1, .1, 10, 0.01, 100, frozen=True)
         ArithmeticModel.__init__(self, name,
                                  (self.r0, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl, self.n))
@@ -1280,14 +1281,14 @@ class Sersic2D(ArithmeticModel):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.sersic(*args, **kwargs)
 
-### disk2d and shell2d models
-### Contributed by Christoph Deil of the HESS project
-### Added to CIAO 4.6 for Dec. 2013 release SMD
+
+# ## disk2d and shell2d models
+# ## Contributed by Christoph Deil of the HESS project
+# ## Added to CIAO 4.6 for Dec. 2013 release SMD
 
 class Disk2D(ArithmeticModel):
     """Two-dimensional uniform disk model.
@@ -1321,10 +1322,10 @@ class Disk2D(ArithmeticModel):
     """
 
     def __init__(self, name='disk2d'):
-        self.xpos = Parameter(name, 'xpos', 0) # p[0]
-        self.ypos = Parameter(name, 'ypos', 0) # p[1]
-        self.ampl = Parameter(name, 'ampl', 1) # p[2]
-        self.r0 = Parameter(name, 'r0', 1, 0) # p[3]
+        self.xpos = Parameter(name, 'xpos', 0)  # p[0]
+        self.ypos = Parameter(name, 'ypos', 0)  # p[1]
+        self.ampl = Parameter(name, 'ampl', 1)  # p[2]
+        self.r0 = Parameter(name, 'r0', 1, 0)  # p[3]
         ArithmeticModel.__init__(self, name, (self.xpos, self.ypos, self.ampl, self.r0))
 
     def calc(self, p, x, y, *args, **kwargs):
@@ -1333,6 +1334,7 @@ class Disk2D(ArithmeticModel):
 
         # Return ampl when r2 <= r0 else return 0
         return numpy.select([r2 <= p[3] ** 2], [p[2]])
+
 
 # DOC-NOTE: TODO finish the functional form description
 
@@ -1374,17 +1376,18 @@ class Shell2D(ArithmeticModel):
     """
 
     def __init__(self, name='shell2d'):
-        self.xpos = Parameter(name, 'xpos', 0) # p[0]
-        self.ypos = Parameter(name, 'ypos', 0) # p[1]
-        self.ampl = Parameter(name, 'ampl', 1) # p[2]
-        self.r0 = Parameter(name, 'r0', 1, 0) # p[3]
+        self.xpos = Parameter(name, 'xpos', 0)  # p[0]
+        self.ypos = Parameter(name, 'ypos', 0)  # p[1]
+        self.ampl = Parameter(name, 'ampl', 1)  # p[2]
+        self.r0 = Parameter(name, 'r0', 1, 0)  # p[3]
         self.width = Parameter(name, 'width', 0.1, 0)
         ArithmeticModel.__init__(self, name, (self.xpos, self.ypos, self.ampl, self.r0, self.width))
 
     def calc(self, p, x, y, *args, **kwargs):
         """Homogeneously emitting spherical shell,
         projected along the z-direction
-        (this is not 100% correct for very large shells on the sky)."""
+        (this is not 100% correct for very large shells on the sky).
+        """
         (xpos, ypos, ampl, r_0, width) = p
 
         r2 = (x - xpos) * (x - xpos) + (y - ypos) * (y - ypos)
