@@ -458,6 +458,41 @@ class Data(BaseData):
 
 
 class DataSimulFit(Data):
+    """Store multiple data sets.
+
+    This class lets multiple data sets be treated as a single
+    dataset by concatenation. That is, if two data sets have lengths
+    n1 and n2 then they can be considered as a single data set of
+    length n1 + n2.
+
+    Parameters
+    ----------
+    name : str
+        The name for the collection of data.
+    datasets : sequence of Data objects
+        The datasets to be stored; there must be at least one. They are
+        assumed to behave as sherpa.data.Data objects, but there is no
+        check for this condition.
+
+    Attributes
+    ----------
+    datasets : sequence of Data
+
+    See Also
+    --------
+    sherpa.models.model.SimulFitModel
+
+    Examples
+    --------
+
+    >>> d1 = Data1D('d1', [1, 2, 3], [10, 12, 15])
+    >>> d2 = Data1D('d2', [1, 2, 5, 7], [4, 15, 9, 24])
+    >>> dall = DataSimulFit('comb', (d1, d2))
+    >>> yvals, _, _ = dall.to_fit()
+    >>> print(yvals)
+    [10 12 15  4 15  9 24]
+
+    """
 
     def __init__(self, name, datasets):
         if len(datasets) == 0:

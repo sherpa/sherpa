@@ -312,6 +312,38 @@ class CompositeModel(Model):
 
 
 class SimulFitModel(CompositeModel):
+    """Store multiple models.
+
+    This class is for use with sherpa.data.DataSimulFit.
+
+    Parameters
+    ----------
+    name : str
+        The name for the collection of models.
+    parts : sequence of Model objects
+        The models.
+
+    Attributes
+    ----------
+    parts : sequence of Model
+
+    See Also
+    --------
+    sherpa.data.DataSimulFit
+
+    Examples
+    --------
+
+    >>> m1 = Polynom1D('m1')
+    >>> m2 = Gauss1D('g1')
+    >>> mall = SimulFitModel('comp', (m1, m1 + m2))
+
+    If dall is a DataSimulFit object then the model components
+    can be evaluated for the composite object using:
+
+    >>> ymdl = dall.eval_model_to_fit(mall)
+
+    """
 
     def __iter__(self):
         return iter(self.parts)

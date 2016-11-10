@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -38,8 +38,6 @@ namespace sherpa { namespace stats {
 	    typename IndexType>
   inline int calc_cstat_stat( IndexType num, const ConstArrayType& yraw,
                               const ConstArrayType& model,
-                              const ConstArrayType& error,
-                              const ConstArrayType& syserror,
                               const ConstArrayType& weight,
                               ArrayType& fvec, DataType& stat,
                               DataType& trunc_value ) {
@@ -90,8 +88,6 @@ namespace sherpa { namespace stats {
 	    typename IndexType>
   inline int calc_cash_stat( IndexType num, const ConstArrayType& yraw,
                              const ConstArrayType& model,
-                             const ConstArrayType& error,
-                             const ConstArrayType& syserror,
                              const ConstArrayType& weight, ArrayType& fvec,
                              DataType& stat, DataType& trunc_value ) {
 
@@ -124,8 +120,8 @@ namespace sherpa { namespace stats {
 
     {
       DataType junkcstat;
-      return calc_cstat_stat( num, yraw, model, error, syserror, weight, fvec,
-			      junkcstat, trunc_value );
+      return calc_cstat_stat( num, yraw, model, weight, fvec,
+                              junkcstat, trunc_value );
     }
 
     return EXIT_SUCCESS;

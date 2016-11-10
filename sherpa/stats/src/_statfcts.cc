@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -32,11 +32,12 @@ static PyMethodDef StatFcts[] = {
   STATERRFCT( calc_chi2datavar_errors ),
   STATERRFCT( calc_chi2xspecvar_errors ),
 
-  STATFCT( calc_cash_stat ),
-  STATFCT( calc_cstat_stat ),
   STATFCT( calc_chi2_stat ),
   STATFCT( calc_chi2modvar_stat ),
   STATFCT( calc_lsq_stat ),
+
+  LKLHD_STATFCT( calc_cash_stat ),
+  LKLHD_STATFCT( calc_cstat_stat ),
   WSTATFCT( calc_wstat_stat ),
 
   { NULL, NULL, 0, NULL }

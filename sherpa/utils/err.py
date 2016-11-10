@@ -344,6 +344,7 @@ class StatErr(SherpaErr):
             'badstat': '%s not applicable using current statistic: %s',
             'chi2noerr': 'If you select chi2 as the statistic, all datasets must provide a staterror column',
             'usecstat': 'No background data has been supplied. Use cstat',
+            'mismatch': 'size mismatch between %s (%d) and %s (%d)',
             }
 
     def __init__(self, key, *args):

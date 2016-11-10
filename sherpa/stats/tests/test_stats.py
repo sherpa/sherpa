@@ -18,8 +18,6 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import os.path
-
 import numpy
 
 from sherpa.utils import requires_data, requires_xspec, requires_fits
@@ -29,9 +27,8 @@ from sherpa.data import Data1D
 from sherpa.models import PowLaw1D, SimulFitModel
 from sherpa.data import DataSimulFit
 from sherpa.fit import Fit
-from sherpa.stats import Stat, Cash, LeastSq, UserStat, WStat, \
-    CStat, LeastSq, Chi2Gehrels, Chi2ConstVar, Chi2ModVar, Chi2XspecVar, \
-    Chi2DataVar
+from sherpa.stats import Cash, CStat, WStat, LeastSq, UserStat, \
+    Chi2Gehrels, Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Chi2DataVar
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.utils.err import StatErr
 from sherpa.astro import ui
@@ -40,6 +37,7 @@ logger = logging.getLogger("sherpa")
 
 
 class MySimulStat(UserStat):
+
     def __init__(self, name='mysimulstat'):
         UserStat.__init__(self, name)
 
@@ -47,6 +45,7 @@ class MySimulStat(UserStat):
     def mycal_staterror(data):
         return numpy.ones_like(data)
 
+    """
     @staticmethod
     def my_simulstat(data, model, staterror, *args, **kwargs):
         data_size = kwargs['extra_args']['data_size']
@@ -65,6 +64,37 @@ class MySimulStat(UserStat):
         # print stat1 + stat2 - stat
         return (stat, fvec)
         return (stat1 + stat2, numpy.append(fvec1, fvec2))
+    """
+
+    # This is based on the original code, but it's not 100% clear
+    # why some of the values are being calculated.
+    #
+    def my_simulstat(self, data, model, *args, **kwargs):
+
+        tofit = data.to_fit(staterrfunc=self.calc_staterror)
+        modeldata = data.eval_model_to_fit(model)
+
+        fitdata = tofit[0]
+        staterror = tofit[1]
+
+        fvec = numpy.power((fitdata - modeldata) / staterror, 2)
+        stat = numpy.sum(fvec)
+
+        mstat = 0.0
+        mfvec = []
+
+        # It is not clear what separating the data sets does
+        # here, based on the original my_simulsat code.
+        #
+        stats = [Chi2DataVar(), Chi2DataVar()]
+        for mystat, dset, mexpr in zip(stats, data.datasets, model.parts):
+
+            thisstat, thisvec = mystat.calc_stat(dset, mexpr)
+            mstat += thisstat
+            mfvec.append(thisvec)
+
+        # return (mstat, numpy.concatenate(mfvec))
+        return (stat, fvec)
 
     calc_stat = my_simulstat
     calc_staterror = mycal_staterror
@@ -79,6 +109,7 @@ class MyCashWithBkg(UserStat):
     def mycal_staterror(data):
         return None
 
+    """
     @staticmethod
     def cash_withbkg(data, model, staterror, *args, **kwargs):
         fvec = model - (data * numpy.log(model))
@@ -86,6 +117,21 @@ class MyCashWithBkg(UserStat):
         if weight is not None:
             fvec = fvec * weight
         return 2.0 * sum(fvec), fvec
+    """
+
+    @staticmethod
+    def cash_withbkg(data, model, *args, **kwargs):
+
+        tofit = data.to_fit(staterrfunc=None)
+        modeldata = data.eval_model_to_fit(model)
+
+        fitdata = tofit[0]
+        fvec = modeldata - (fitdata  * numpy.log(modeldata))
+        weight = kwargs.get('weight')
+        if weight is not None:
+            fvec = fvec * weight
+
+        return 2.0 * fvec.sum(), fvec
 
     calc_stat = cash_withbkg
     calc_staterror = mycal_staterror
@@ -100,11 +146,24 @@ class MyChiWithBkg(UserStat):
     def mycal_staterror(data):
         return numpy.ones_like(data)
 
+    """
     @staticmethod
     def chi_withbkg(data, model, staterror, *args, **kwargs):
         fvec = ((data - model) / staterror)**2
         stat = fvec.sum()
         return (stat, fvec)
+    """
+
+    def chi_withbkg(self, data, model, *args, **kwargs):
+
+        tofit = data.to_fit(staterrfunc=self.calc_staterror)
+        modeldata = data.eval_model_to_fit(model)
+
+        fitdata = tofit[0]
+        staterror = tofit[1]
+
+        fvec = ((fitdata - modeldata) / staterror)**2
+        return fvec.sum(), fvec
 
     calc_stat = chi_withbkg
     calc_staterror = mycal_staterror
@@ -119,6 +178,7 @@ class MyCashNoBkg(UserStat):
     def mycal_staterror(data):
         return None
 
+    """
     @staticmethod
     def cash_nobkg(data, model, staterror, *args, **kwargs):
         fvec = model - (data * numpy.log(model))
@@ -126,6 +186,21 @@ class MyCashNoBkg(UserStat):
         if weight is not None:
             fvec = fvec * weight
         return 2.0 * sum(fvec), fvec
+    """
+
+    @staticmethod
+    def cash_nobkg(data, model, *args, **kwargs):
+
+        tofit = data.to_fit(staterrfunc=None)
+        modeldata = data.eval_model_to_fit(model)
+
+        fitdata = tofit[0]
+        fvec = modeldata - (fitdata  * numpy.log(modeldata))
+        weight = kwargs.get('weight')
+        if weight is not None:
+            fvec = fvec * weight
+
+        return 2.0 * fvec.sum(), fvec
 
     calc_stat = cash_nobkg
     calc_staterror = mycal_staterror
@@ -140,11 +215,24 @@ class MyChiNoBkg(UserStat):
     def mycal_staterror(data):
         return numpy.ones_like(data)
 
+    """
     @staticmethod
     def chi_nobkg(data, model, staterror, *args, **kwargs):
         fvec = ((data - model) / staterror)**2
         stat = fvec.sum()
         return (stat, fvec)
+    """
+
+    def chi_nobkg(self, data, model, *args, **kwargs):
+
+        tofit = data.to_fit(staterrfunc=self.calc_staterror)
+        modeldata = data.eval_model_to_fit(model)
+
+        fitdata = tofit[0]
+        staterror = tofit[1]
+
+        fvec = ((fitdata - modeldata) / staterror)**2
+        return fvec.sum(), fvec
 
     calc_stat = chi_nobkg
     calc_staterror = mycal_staterror
@@ -331,11 +419,13 @@ class test_stats(SherpaTestCase):
             assert arg1[key] == int(getattr(arg2, key))
 
         for key in ["istatval", "statval"]:
-            numpy.testing.assert_allclose(float(arg1[key]), float(getattr(arg2, key)), tol)
+            numpy.testing.assert_allclose(float(arg1[key]),
+                                          float(getattr(arg2, key)), tol)
 
         for key in ["parvals"]:
             try:
-                numpy.testing.assert_allclose(arg1[key], getattr(arg2, key), tol)
+                numpy.testing.assert_allclose(arg1[key],
+                                              getattr(arg2, key), tol)
             except AssertionError:
                 print('parvals bench: ', arg1[key])
                 print('parvals fit:   ', getattr(arg2, key))

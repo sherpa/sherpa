@@ -17,10 +17,17 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import absolute_import
+
+import warnings
+
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit
-from sherpa.utils.err import StatErr
-import sherpa.stats._statfcts
+from sherpa.utils.err import FitErr, StatErr
+from sherpa.data import DataSimulFit
+from sherpa.models import SimulFitModel
+
+from . import _statfcts
 
 from sherpa import get_config
 from six.moves.configparser import ConfigParser
@@ -45,14 +52,11 @@ if (bool(truncation_flag) is False or truncation_flag == "FALSE" or
     truncation_value = 1.0e-25
 
 
-def get_syserror_weight_extra(dictionary):
-    syserror = dictionary.get('syserror')
-    weight = dictionary.get('weight')
-    extra = dictionary.get('extra_args')
-    return syserror, weight, extra
-
-
 class Stat(NoNewAttributesAfterInit):
+
+    # Used by calc_stat
+    #
+    _calc = None
 
     def __init__(self, name):
         self.name = name
@@ -64,10 +68,173 @@ class Stat(NoNewAttributesAfterInit):
         return ("<%s statistic instance '%s'>" %
                 (type(self).__name__, self.name))
 
+    @staticmethod
+    def _bundle_inputs(data, model):
+        """Convert input into SimulFit instances.
+
+        Convert the inputs into DataSimulFit and SimulFitModel
+        instances.
+
+        Parameters
+        ----------
+        data : a Data or DataSimulFit instance
+            The data set, or sets, to use.
+        model : a Model or SimulFitModel instance
+            The model expression, or expressions. If a SimulFitModel
+            is given then it must match the number of data sets in the
+            data parameter.
+
+        Returns
+        -------
+        data, model : DataSimulFit instance, SimulFitModel instance
+            If the input was a SimulFit object then this is just
+            the input value.
+        """
+
+        if not isinstance(data, DataSimulFit):
+            data = DataSimulFit('simulfit data', (data,))
+
+        if not isinstance(model, SimulFitModel):
+            model = SimulFitModel('simulfit model', (model,))
+
+        return data, model
+
+    @staticmethod
+    def _check_has_bins(data):
+        """Raise an error if there are no noticed bins in the dataset.
+
+        Parameters
+        ----------
+        data : a DataSimulFit instance
+            The data sets to use.
+
+        Raises
+        ------
+        FitErr
+
+        Notes
+        -----
+        It is unclear whether this should error out if any particular
+        dataset has no noticed bins, or only if all the datasets have
+        no noticed bins (the latter approach is taken).
+
+        """
+
+        for dset in data.datasets:
+            # Assume that the error column does not need to be
+            # calculated for this check, so staterrfunc can be
+            # None.
+            dep, _, _ = dset.to_fit(staterrfunc=None)
+            if numpy.iterable(dep) and len(dep) > 0:
+                return
+
+        raise FitErr('nobins')
+
+    @staticmethod
+    def _check_sizes_match(data, model):
+        """Raise an error if number of datasets and models do not match.
+
+        Parameters
+        ----------
+        data : a DataSimulFit instance
+            The data sets to use.
+        model : a SimulFitModel instance
+            The model expressions for each data set. It must match
+            the data parameter (the models are in the same order
+            as the data objects).
+
+        Raises
+        ------
+        StatErr
+
+        """
+
+        ndata = len(data.datasets)
+        nmdl = len(model.parts)
+        if ndata != nmdl:
+            raise StatErr('mismatch',
+                          'number of data sets', ndata,
+                          'model expressions', nmdl)
+
+    def _validate_inputs(self, data, model):
+        """Ensure that the inputs are correct for the statistic.
+
+        The default behavior is to check that the data contains
+        at least one bin and that the number of datasets matches
+        the number of models. It also converts single values to
+        simultaneous objects, if necessary.
+
+        Parameters
+        ----------
+        data : a Data or DataSimulFit instance
+            The data set, or sets, to use.
+        model : a Model or SimulFitModel instance
+            The model expressions for each data set. It must match
+            the data parameter (the models are in the same order
+            as the data objects).
+
+        Returns
+        -------
+        data, model : DataSimulFit instance, SimulFitModel instance
+            If the input was a SimulFit object then this is just
+            the input value.
+        """
+
+        if self._calc is None:
+            # This is a programmer error rather than a user error,
+            # so use NotImplementedError rather than
+            # StatErr('nostat', self.name, '_calc')
+            #
+            raise NotImplementedError("_calc method has not been set")
+
+        data, model = self._bundle_inputs(data, model)
+        self._check_has_bins(data)
+        self._check_sizes_match(data, model)
+        return data, model
+
+    # TODO:
+    #  - should this accept sherpa.data.Data input instead of
+    #    "raw" data (i.e. to match calc_stat)
+    #  - should this be moved out of the base Stat class since
+    #    isn't relevant for likelihood statistics?
+    #
     def calc_staterror(self, data):
+        """Return the statistic error values for the data.
+
+        Parameters
+        ----------
+        data : scalar or 1D array of numbers
+            The data values.
+
+        Returns
+        -------
+        staterror : scalar or array of numbers
+            The errors for the input data values (matches the data
+            argument).
+
+        """
         raise NotImplementedError
 
-    def calc_stat(self, data, model, staterror, *args, **kwargs):
+    # TODO: add *args, **kwargs?
+    def calc_stat(self, data, model):
+        """Return the statistic value for the data and model.
+
+        Parameters
+        ----------
+        data : a Data or DataSimulFit instance
+            The data set, or sets, to use.
+        model : a Model or SimulFitModel instance
+            The model expression, or expressions. If a SimulFitModel
+            is given then it must match the number of data sets in the
+            data parameter.
+
+        Returns
+        -------
+        statval, fvec : number, array of numbers
+            The statistic value and the per-bin "statistic" value.
+
+        """
+
         raise NotImplementedError
 
 
@@ -82,6 +249,43 @@ class Likelihood(Stat):
         # Likelihood stats do not have 'errors' associated with them.
         # return 1 to avoid dividing by 0 by some optimization methods.
         return numpy.ones_like(data)
+
+    def _check_background_subtraction(self, data):
+        """Raise an error if any dataset has been background subtracted.
+
+        Parameters
+        ----------
+        data : a DataSimulFit instance
+            The data sets to use.
+
+        Raises
+        ------
+        FitErr
+        """
+
+        for dobj in data.datasets:
+            if getattr(dobj, 'subtracted', False):
+                # TODO:
+                # Historically this has been a FitErr, but it
+                # would make more sense to be a StatErr. This could
+                # break people's code, so hold off for now
+                # (October 2016).
+                #
+                raise FitErr('statnotforbackgsub', self.name)
+
+    def _validate_inputs(self, data, model):
+        data, model = Stat._validate_inputs(self, data, model)
+        self._check_background_subtraction(data)
+        return data, model
+
+    def calc_stat(self, data, model):
+        data, model = self._validate_inputs(data, model)
+        fitdata = data.to_fit(staterrfunc=self.calc_staterror)
+        modeldata = data.eval_model_to_fit(model)
+
+        return self._calc(fitdata[0], modeldata, None,
+                          truncation_value)
+
 
 # DOC-TODO: where is the truncate/trunc_value stored for objects
 #           AHA: it appears to be taken straight from the config
@@ -155,14 +359,10 @@ class Cash(Likelihood):
 
     """
 
+    _calc = _statfcts.calc_cash_stat
+
     def __init__(self, name='cash'):
         Likelihood.__init__(self, name)
-
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        return _statfcts.calc_cash_stat(data, model, staterror, syserror,
-                                        weight, truncation_value)
 
 
 class CStat(Likelihood):
@@ -231,14 +431,10 @@ class CStat(Likelihood):
 
     """
 
+    _calc = _statfcts.calc_cstat_stat
+
     def __init__(self, name='cstat'):
         Likelihood.__init__(self, name)
-
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        return _statfcts.calc_cstat_stat(data, model, staterror, syserror,
-                                         weight, truncation_value)
 
 
 class Chi2(Stat):
@@ -287,6 +483,8 @@ class Chi2(Stat):
 
     """
 
+    _calc = _statfcts.calc_chi2_stat
+
     def __init__(self, name='chi2'):
         Stat.__init__(self, name)
 
@@ -294,11 +492,39 @@ class Chi2(Stat):
     def calc_staterror(data):
         raise StatErr('chi2noerr')
 
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        return _statfcts.calc_chi2_stat(data, model, staterror,
-                                        syserror, weight, truncation_value)
+    def calc_stat(self, data, model):
+
+        # TODO: HOW TO GET THE WEIGHTS?
+        data, model = self._validate_inputs(data, model)
+        fitdata = data.to_fit(staterrfunc=self.calc_staterror)
+        modeldata = data.eval_model_to_fit(model)
+
+        return self._calc(fitdata[0], modeldata,
+                          fitdata[1], fitdata[2],
+                          None,  # TODO: weights
+                          truncation_value)
+
+    def calc_chisqr(self, data, model):
+        """Return the chi-square value for each bin.
+
+        Parameters
+        ----------
+        data : a Data or DataSimulFit instance
+            The data set, or sets, to use.
+        model : a Model or SimulFitModel instance
+            The model expression, or expressions. If a SimulFitModel
+            is given then it must match the number of data sets in the
+            data parameter.
+
+        Returns
+        -------
+        chisqr : array of numbers
+            The per-bin chi-square values.
+
+        """
+
+        _, fvec = self.calc_stat(data, model)
+        return fvec * fvec
 
 
 class LeastSq(Chi2):
@@ -309,18 +535,14 @@ class LeastSq(Chi2):
 
     """
 
+    _calc = _statfcts.calc_lsq_stat
+
     def __init__(self, name='leastsq'):
         Stat.__init__(self, name)
 
     @staticmethod
     def calc_staterror(data):
         return numpy.ones_like(data)
-
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        return _statfcts.calc_lsq_stat(data, model, staterror,
-                                       syserror, weight, truncation_value)
 
 
 class Chi2Gehrels(Chi2):
@@ -433,6 +655,8 @@ class Chi2ModVar(Chi2):
 
     """
 
+    _calc = _statfcts.calc_chi2modvar_stat
+
     def __init__(self, name='chi2modvar'):
         Chi2.__init__(self, name)
 
@@ -440,13 +664,6 @@ class Chi2ModVar(Chi2):
     @staticmethod
     def calc_staterror(data):
         return numpy.zeros_like(data)
-
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        return _statfcts.calc_chi2modvar_stat(data, model, staterror,
-                                              syserror, weight,
-                                              truncation_value)
 
 
 class Chi2XspecVar(Chi2):
@@ -516,15 +733,8 @@ class UserStat(Stat):
             raise StatErr('nostat', self.name, 'calc_staterror()')
         return self.errfunc(data)
 
-    def calc_stat(self, data, model, staterror, *args, **kwargs):
-        if not self._statfuncset:
-            raise StatErr('nostat', self.name, 'calc_stat()')
-
-        # if bkg is None or bkg['bkg'] is None:
-        #     return self.statfunc(data, model, staterror, syserror, weight)
-        # else:
-        #     return self.statfunc(data, model, staterror, syserror, weight,
-        #                          bkg['bkg'])
+    def calc_stat(self, data, model):
+        raise StatErr('nostat', self.name, 'calc_stat()')
 
 
 class WStat(Likelihood):
@@ -589,18 +799,87 @@ class WStat(Likelihood):
 
     """
 
+    _calc = _statfcts.calc_wstat_stat
+
     def __init__(self, name='wstat'):
         Likelihood.__init__(self, name)
 
-    @staticmethod
-    def calc_stat(data, model, staterror, *args, **kwargs):
-        syserror, weight, extra = get_syserror_weight_extra(kwargs)
-        if extra is None or extra['bkg'] is None:
-            raise StatErr('usecstat')
+    def calc_stat(self, data, model):
 
-        return _statfcts.calc_wstat_stat(data, model,
-                                         extra['data_size'],
-                                         extra['exposure_time'],
-                                         extra['bkg'],
-                                         extra['backscale_ratio'],
-                                         truncation_value)
+        data, model = self._validate_inputs(data, model)
+
+        # Need access to backscal values and background data filtered
+        # and grouped in the same manner as the data. There is no
+        # easy access to this via the Data API (in part because the
+        # Data class has no knowledge of grouping or backscale values).
+        #
+        # An alternative approach would be to just calculate the
+        # statistic for each dataset individually and then
+        # sum the statistics for the return value, but the
+        # original code used this approach.
+        #
+        data_src = []
+        data_model = []
+        data_bkg = []
+        nelems = []
+        exposures = []
+        backscales = []
+
+        for dset, mexpr in zip(data.datasets, model.parts):
+
+            y = dset.to_fit(staterrfunc=None)[0]
+            data_src.append(y)
+            data_model.append(dset.eval_model_to_fit(mexpr))
+            nelems.append(y.size)
+
+            try:
+                bids = dset.background_ids
+            except AttributeError:
+                raise StatErr('usecstat')
+
+            nbkg = len(bids)
+            if nbkg == 0:
+                raise StatErr('usecstat')
+
+            elif nbkg > 1:
+                # TODO: improve warning
+                warnings.warn("Only using first background component for data set {}".format(dset.name))
+
+            bid = bids[0]
+
+            bset = dset.get_background(bid)
+
+            data_bkg.append(dset.apply_filter(bset.get_dep(False),
+                                              groupfunc=numpy.sum))
+
+            exposures.extend([dset.exposure, bset.exposure])
+
+            # The assumption is that the source and background datasets
+            # have the same number of channels (before any grouping or
+            # filtering is applied).
+            #
+            # Since the backscal values can be a scalar or array, it is
+            # easiest just to convert everything to an array.
+            #
+            dummy = numpy.ones(dset.get_dep(False).size)
+
+            # Combine the BACKSCAL values (use the default _middle
+            # scheme as this is used elsewhere when combining
+            # BACKSCAL values; perhaps there should be an API call
+            # for this?).
+            #
+            src_backscal = dset.apply_filter(dset.backscal * dummy,
+                                             groupfunc=dset._middle)
+            bkg_backscal = dset.apply_filter(bset.backscal * dummy,
+                                             groupfunc=dset._middle)
+
+            backscales.append(bkg_backscal / src_backscal)
+
+        data_src = numpy.concatenate(data_src)
+        data_model = numpy.concatenate(data_model)
+        data_bkg = numpy.concatenate(data_bkg)
+        backscales = numpy.concatenate(backscales)
+
+        return self._calc(data_src, data_model, nelems,
+                          exposures, data_bkg, backscales,
+                          truncation_value)

@@ -24,8 +24,7 @@ import logging
 import os
 import signal
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, float, float32, finfo, nan, any, zeros, append, \
-    int, ones
+    ones_like, isnan, isinf, float, float32, finfo, nan, any, int
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
@@ -33,20 +32,13 @@ from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
-from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, LeastSq, \
-    Likelihood, WStat, UserStat
+from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, \
+    LeastSq, Likelihood, WStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
 __all__ = ('FitResults', 'ErrorEstResults', 'Fit')
-
-
-# def get_valid_args(func):
-#     valid_args = func.func_code.co_varnames[:func.func_code.co_argcount]
-#     kwargs_length = len(func.func_defaults)  # number of keyword arguments
-#     valid_kwargs = valid_args[-kwargs_length:]  # because kwargs are last
-#     return valid_kwargs
 
 
 def evaluates_model(func):
@@ -66,7 +58,6 @@ def evaluates_model(func):
 
 
 class StatInfoResults(NoNewAttributesAfterInit):
-
     """A summary of the current statistic value for
     one or more data sets.
 
@@ -126,12 +117,12 @@ class StatInfoResults(NoNewAttributesAfterInit):
 
     def format(self):
         s = ''
-        if (self.ids is not None and self.bkg_ids is None):
+        if self.ids is not None and self.bkg_ids is None:
             if len(self.ids) == 1:
                 s = 'Dataset               = %s\n' % str(self.ids[0])
             else:
                 s = 'Datasets              = %s\n' % str(self.ids).strip("()")
-        elif (self.ids is not None and self.bkg_ids is not None):
+        elif self.ids is not None and self.bkg_ids is not None:
             s = 'Background %s in Dataset = %s\n' % (str(self.bkg_ids[0]),
                                                      str(self.ids[0]))
         s += 'Statistic             = %s\n' % self.statname
@@ -145,8 +136,64 @@ class StatInfoResults(NoNewAttributesAfterInit):
         return s
 
 
-class FitResults(NoNewAttributesAfterInit):
+def _cleanup_chi2_name(stat, data):
+    """Simplify the chi-square name if possible.
 
+    Returns the statistic name for reporting fit results, simplifying
+    the chi-square name (e.g. chi2gehrels) when possible.
+
+    Parameters
+    ----------
+    stat : a sherpa.stats.Stat instance
+    data : a sherpa.data.Data or sherpa.data.DataSimulFit instance
+
+    Returns
+    -------
+    name : str
+        The statistic name (will be 'chi2' if possible)
+    """
+
+    if isinstance(stat, LeastSq) or not isinstance(stat, Chi2):
+        return stat.name
+
+    if isinstance(data, DataSimulFit):
+        is_error_set = [d.staterror is not None
+                        for d in data.datasets]
+        if all(is_error_set):
+            return 'chi2'
+
+    elif data.staterror is not None:
+        return 'chi2'
+
+    return stat.name
+
+
+def _can_calculate_rstat(stat):
+    """Can we calculate reduced statistic and qval?
+
+    Parameters
+    ----------
+    stat : sherpa.stats.Stat instance
+
+    Returns
+    -------
+    flag : bool
+        True if the reduced statistic and qval can be calculated.
+
+    Notes
+    -----
+    This really should be left to the statistic object to determine
+    (by actually caculating the value or not), but for now leave as
+    a separate routine.
+    """
+
+    # Note that LeastSq is currently a subclass of Chi2, which
+    # requires an extra test.
+    return isinstance(stat, (CStat, WStat, Chi2)) and \
+        not isinstance(stat, LeastSq)
+
+
+class FitResults(NoNewAttributesAfterInit):
     """A summary of the fit results.
 
     Attributes
@@ -204,8 +251,7 @@ class FitResults(NoNewAttributesAfterInit):
         _qval = None
         _rstat = None
         _covarerr = results[4].get('covarerr')
-        if (isinstance(fit.stat, (CStat, WStat, Chi2)) and
-                not isinstance(fit.stat, LeastSq)):
+        if _can_calculate_rstat(fit.stat):
             if _dof > 0 and results[2] >= 0.0:
                 _qval = igamc(_dof / 2., results[2] / 2.)
                 _rstat = results[2] / _dof
@@ -233,16 +279,9 @@ class FitResults(NoNewAttributesAfterInit):
         self.modelvals = _vals
         self.methodname = type(fit.method).__name__.lower()
         self.itermethodname = fit._iterfit.itermethod_opts['name']
-        statname = type(fit.stat).__name__.lower()
-        if isinstance(fit.stat, Chi2) and not isinstance(fit.stat, LeastSq):
-            isSimulFit = isinstance(fit.data, DataSimulFit)
-            if isSimulFit:
-                is_error_set = [
-                    d.staterror is not None for d in fit.data.datasets]
-                if all(is_error_set):
-                    statname = 'chi2'
-            elif fit.data.staterror is not None:
-                statname = 'chi2'
+
+        statname = _cleanup_chi2_name(fit.stat, fit.data)
+
         self.statname = statname
         self.datasets = None  # To be filled by calling function
         self.param_warnings = param_warnings
@@ -265,13 +304,13 @@ class FitResults(NoNewAttributesAfterInit):
 
     def format(self):
         s = ''
-        if (self.datasets is not None):
+        if self.datasets is not None:
             if len(self.datasets) == 1:
                 s = 'Dataset               = %s\n' % str(self.datasets[0])
             else:
                 s = 'Datasets              = %s\n' % str(
                     self.datasets).strip("()")
-        if (self.itermethodname is not None and self.itermethodname != 'none'):
+        if self.itermethodname is not None and self.itermethodname != 'none':
             s += 'Iterative Fit Method  = %s\n' % self.itermethodname.capitalize()
         s += 'Method                = %s\n' % self.methodname
         s += 'Statistic             = %s\n' % self.statname
@@ -293,7 +332,8 @@ class FitResults(NoNewAttributesAfterInit):
             for name, val in izip(self.parnames, self.parvals):
                 s += '\n   %-12s   %-12g' % (name, val)
         else:
-            for name, val, covarerr in izip(self.parnames, self.parvals, self.covarerr):
+            for name, val, covarerr in izip(self.parnames, self.parvals,
+                                            self.covarerr):
                 s += '\n   %-12s   %-12g +/- %-12g' % (name, val, covarerr)
 
         if self.param_warnings != "":
@@ -309,10 +349,11 @@ class ErrorEstResults(NoNewAttributesAfterInit):
                'parmaxes', 'nfits')
 
     def __init__(self, fit, results, parlist=None):
-        if (parlist is None):
+        if parlist is None:
             parlist = [p for p in fit.model.pars if not p.frozen]
 
-        from sherpa.estmethods import est_success, est_hardmin, est_hardmax, est_hardminmax
+        from sherpa.estmethods import est_success, est_hardmin, \
+            est_hardmax, est_hardminmax
 
         warning_hmin = "hard minimum hit for parameter "
         warning_hmax = "hard maximum hit for parameter "
@@ -328,10 +369,11 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         self.parmins = ()
         self.parmaxes = ()
         self.nfits = 0
-        success = True
+        # The success flag is currently unused
+        # success = True
         for i in range(len(parlist)):
-            if (results[2][i] != est_success):
-                success = False
+            # if results[2][i] != est_success:
+            #     success = False
             if (results[2][i] == est_hardmin or
                     results[2][i] == est_hardminmax):
                 self.parmins = self.parmins + (None,)
@@ -365,14 +407,14 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
     def format(self):
         s = ""
-        if (self.datasets is not None):
+        if self.datasets is not None:
             if len(self.datasets) == 1:
                 s = 'Dataset               = %s\n' % str(self.datasets[0])
             else:
                 s = 'Datasets              = %s\n' % str(
                     self.datasets).strip("()")
         s += 'Confidence Method     = %s\n' % self.methodname
-        if (self.iterfitname is not None or self.iterfitname != 'none'):
+        if self.iterfitname is not None or self.iterfitname != 'none':
             s += 'Iterative Fit Method  = %s\n' % self.iterfitname.capitalize()
         s += 'Fitting Method        = %s\n' % self.fitname
         s += 'Statistic             = %s\n' % self.statname
@@ -391,14 +433,14 @@ class ErrorEstResults(NoNewAttributesAfterInit):
                 if is_iterable(lower):
                     str += ' '
                     str += list_to_open_interval(lower)
-                elif (lower is None):
+                elif lower is None:
                     str += lowstr % '-----'
                 else:
                     str += lownum % lower
                 if is_iterable(upper):
                     str += '  '
                     str += list_to_open_interval(upper)
-                elif (upper is None):
+                elif upper is None:
                     str += highstr % '-----'
                 else:
                     str += highnum % upper
@@ -449,17 +491,17 @@ class IterFit(NoNewAttributesAfterInit):
         # models into the objects needed for simultaneous fitting,
         # if they are not already in such objects.
         self.data = data
-        if (type(data) is not DataSimulFit):
+        if type(data) is not DataSimulFit:
             self.data = DataSimulFit('simulfit data', (data,))
         self.model = model
-        if (type(model) is not SimulFitModel):
+        if type(model) is not SimulFitModel:
             self.model = SimulFitModel('simulfit model', (model,))
         self.stat = stat
         self.method = method
         # Data set attributes needed to store fitting values between
         # calls to fit
         self._dep = None
-        self.extra_args = None
+        # self.extra_args = None
         self._staterror = None
         self._syserror = None
         self._nfev = 0
@@ -469,7 +511,7 @@ class IterFit(NoNewAttributesAfterInit):
         self.iterate = False
         self.funcs = {'primini': self.primini, 'sigmarej': self.sigmarej}
         self.current_func = None
-        if (itermethod_opts['name'] != 'none'):
+        if itermethod_opts['name'] != 'none':
             self.current_func = self.funcs[itermethod_opts['name']]
             self.iterate = True
 
@@ -482,65 +524,8 @@ class IterFit(NoNewAttributesAfterInit):
     def _sig_handler(self, signum, frame):
         raise KeyboardInterrupt()
 
-    def get_extra_args(self, dep):
-        """get the bkg data for wstat and the user defined statistics"""
-
-        def vectorize_backscale_ratio(bkg_backscal, src_backscal, num):
-            '''return the ratio of bkg_backscal/src_backscal as a numpy
-            array of length n. bkg_backscal and/or src_backscal can be
-            either a floating point number or a numpy array'''
-            if hasattr(bkg_backscal, '__iter__') is False and \
-                    hasattr(src_backscal, '__iter__') is False:
-                # both backscal are floating point numbers, generate arrays
-                bkg = bkg_backscal * ones(num)
-                src = src_backscal
-            else:
-                # at least one of the backscals is a numpy array
-                bkg = bkg_backscal
-                src = src_backscal
-            return bkg / src
-
-        result = {'bkg': None, 'backscale_ratio': None, 'data_size': None,
-                  'exposure_time': None}
-        bkg_dep = []
-        data_size = None
-        exposure_time = None
-        backscale_ratio = []
-
-        len_datasets = len(self.data.datasets)
-        data_size = zeros(len_datasets, dtype=int)
-        exposure_time = zeros(2 * len_datasets)
-        for index in xrange(len_datasets):
-            mydata = self.data.datasets[index]
-            data_size[index] = mydata.get_dep(True).size
-        result['data_size'] = data_size
-        for index in xrange(len_datasets):
-            mydata = self.data.datasets[index]
-            if hasattr(mydata, 'response_ids') and \
-                    hasattr(mydata, 'background_ids') and \
-                    len(mydata.response_ids) and len(mydata.background_ids):
-                bkg = mydata.get_background(mydata.background_ids[0])
-                tmp_bkg_dep = bkg.get_dep(True)
-                # data_size[index] = tmp_bkg_dep.size
-                bkg_dep = append(bkg_dep, tmp_bkg_dep)
-                exposure_time[2 * index] = mydata.exposure
-                exposure_time[2 * index + 1] = bkg.exposure
-                ratio = vectorize_backscale_ratio(bkg.backscal,
-                                                  mydata.backscal,
-                                                  data_size[index])
-                backscale_ratio = append(backscale_ratio, ratio)
-            else:
-                return result
-
-        result['bkg'] = bkg_dep
-        result['backscale_ratio'] = backscale_ratio
-        # result['data_size'] = data_size
-        result['exposure_time'] = exposure_time
-        return result
-
     def _get_callback(self, outfile=None, clobber=False):
         if len(self.model.thawedpars) == 0:
-            # raise FitError('model has no thawed parameters')
             raise FitErr('nothawedpar')
 
         # support Sherpa use with SAMP
@@ -552,11 +537,10 @@ class IterFit(NoNewAttributesAfterInit):
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
-        self.extra_args = self.get_extra_args(self._dep)
+        # self.extra_args = self.get_extra_args(self._dep)
         self._nfev = 0
         if outfile is not None:
-            if os.path.isfile(outfile) and not clobber:
-                # raise FitError("'%s' exists, and clobber==False" % outfile)
+            if not clobber and os.path.isfile(outfile):
                 raise FitErr('noclobererr', outfile)
             self._file = open(outfile, 'w')
             names = ['# nfev statistic']
@@ -569,10 +553,8 @@ class IterFit(NoNewAttributesAfterInit):
             # linked parameters
 
             self.model.thawedpars = pars
-            model = self.data.eval_model_to_fit(self.model)
-            stat = self.stat.calc_stat(self._dep, model, self._staterror,
-                                       syserror=self._syserror,
-                                       extra_args=self.extra_args)
+            stat = self.stat.calc_stat(self.data, self.model)
+
             if self._file is not None:
                 vals = ['%5e %5e' % (self._nfev, stat[0])]
                 vals.extend(['%5e' % val for val in self.model.thawedpars])
@@ -638,12 +620,11 @@ class IterFit(NoNewAttributesAfterInit):
         # Get tolerance, max number of iterations from the
         # dictionary for Primini's method
         tol = self.itermethod_opts['tol']
-        if (type(tol) != int and
-                type(tol) != float):
+        if type(tol) != int and type(tol) != float:
             raise SherpaErr(
                 "'tol' value for Primini's method must be a number")
         maxiters = self.itermethod_opts['maxiters']
-        if (type(maxiters) != int):
+        if type(maxiters) != int:
             raise SherpaErr(
                 "'maxiters' value for Primini's method must be an integer")
 
@@ -673,8 +654,8 @@ class IterFit(NoNewAttributesAfterInit):
         # agree to within tolerance.
         final_fit_results = None
         try:
-            while (sao_fcmp(previous_stat, current_stat, tol) != 0 and
-                   iters < maxiters):
+            while (iters < maxiters and
+                   sao_fcmp(previous_stat, current_stat, tol) != 0):
                 final_fit_results = self.method.fit(statfunc,
                                                     self.model.thawedpars,
                                                     parmins, parmaxes,
@@ -741,39 +722,35 @@ class IterFit(NoNewAttributesAfterInit):
         # to include with rejected data point).
 
         maxiters = self.itermethod_opts['maxiters']
-        if (type(maxiters) != int):
+        if type(maxiters) != int:
             raise SherpaErr(
                 "'maxiters' value for sigma rejection method must be an integer")
-        if (maxiters < 1):
+        if maxiters < 1:
             raise SherpaErr("'maxiters' must be one or greater")
 
         hrej = self.itermethod_opts['hrej']
-        if (type(hrej) != int and
-                type(hrej) != float):
+        if type(hrej) != int and type(hrej) != float:
             raise SherpaErr(
                 "'hrej' value for sigma rejection method must be a number")
-        if (not (hrej > 0)):
+        if hrej <= 0:
             raise SherpaErr("'hrej' must be greater than zero")
 
         lrej = self.itermethod_opts['lrej']
         # FIXME: [OL] There are more reliable ways of checking if an object
         # is (not) a number.
-        if (type(lrej) != int and type(lrej) != float):
+        if type(lrej) != int and type(lrej) != float:
             raise SherpaErr(
                 "'lrej' value for sigma rejection method must be a number")
         if lrej <= 0:
             raise SherpaErr("'lrej' must be greater than zero")
 
         grow = self.itermethod_opts['grow']
-        if (type(grow) != int):
+        if type(grow) != int:
             raise SherpaErr(
                 "'grow' value for sigma rejection method must be an integer")
-        if (grow < 0):
+        if grow < 0:
             raise SherpaErr("'grow' factor must be zero or greater")
 
-        # Keep record of current and previous statistics
-        previous_stat = float32(finfo(float32).max)
-        current_stat = statfunc(pars)[0]
         nfev = 0
         iters = 0
 
@@ -783,17 +760,23 @@ class IterFit(NoNewAttributesAfterInit):
         for d in self.data.datasets:
             # If there's no filter, create a filter that is
             # all True
-            if (iterable(d.mask) != True):
+            if not iterable(d.mask):
                 mask_original.append(d.mask)
                 d.mask = ones_like(array(d.get_dep(False), dtype=bool))
             else:
                 mask_original.append(array(d.mask))
 
+        # QUS: why is teardown being called now when the model can be
+        #      evaluated multiple times in the following loop?
+        #      Note that after the loop  self.model.startup
+        #      is called, so either I [DJB] or the code has them the
+        #      wrong way around
         self.model.teardown()
+
         final_fit_results = None
         rejected = True
         try:
-            while (rejected and iters < maxiters):
+            while rejected and iters < maxiters:
                 # Update stored y, staterror and syserror values
                 # from data, so callback function will work properly
                 self._dep, self._staterror, self._syserror = self.data.to_fit(
@@ -823,19 +806,17 @@ class IterFit(NoNewAttributesAfterInit):
                     j = 0
                     kmin = 0
                     for i in xrange(0, ressize):
-                        while (newmask[j] == False and
-                               j < filsize):
+                        while newmask[j] is False and j < filsize:
                             j = j + 1
-                        if (j >= filsize):
+                        if j >= filsize:
                             break
-                        if (residuals[i] <= -lrej or
-                                residuals[i] >= hrej):
+                        if residuals[i] <= -lrej or residuals[i] >= hrej:
                             rejected = True
                             kmin = j - grow
-                            if (kmin < 0):
+                            if kmin < 0:
                                 kmin = 0
                             kmax = j + grow
-                            if (kmax >= filsize):
+                            if kmax >= filsize:
                                 kmax = filsize - 1
                             for k in xrange(kmin, kmax + 1):
                                 newmask[k] = False
@@ -844,20 +825,19 @@ class IterFit(NoNewAttributesAfterInit):
                         # If we've masked out *all* data,
                         # immediately raise fit error, clean up
                         # on way out.
-                        if (any(newmask) == False):
+                        if any(newmask) is False:
                             raise FitErr('nobins')
                         d.mask = newmask
 
                 # For data sets with backgrounds, correct that
                 # backgrounds have masks that match their sources
                 for d in self.data.datasets:
-                    if (hasattr(d, "background_ids") == True and
-                            hasattr(d, "get_background") == True):
+                    if (hasattr(d, "background_ids") and
+                            hasattr(d, "get_background")):
                         for bid in d.background_ids:
                             b = d.get_background(bid)
-                            if (iterable(b.mask) == True and
-                                    iterable(d.mask) == True):
-                                if (len(b.mask) == len(d.mask)):
+                            if iterable(b.mask) and iterable(d.mask):
+                                if len(b.mask) == len(d.mask):
                                     b.mask = d.mask
 
                 # teardown model, get ready for next iteration
@@ -880,6 +860,8 @@ class IterFit(NoNewAttributesAfterInit):
 
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
+
+        # QUS: shouldn't this be teardown, not startup?
         self.model.startup()
 
         # N.B. -- If sigma-rejection in Sherpa 3.4 succeeded,
@@ -895,7 +877,8 @@ class IterFit(NoNewAttributesAfterInit):
         # Return results from sigma rejection
         return final_fit_results
 
-    def fit(self, statfunc, pars, parmins, parmaxes, statargs=(), statkwargs=None):
+    def fit(self, statfunc, pars, parmins, parmaxes,
+            statargs=(), statkwargs=None):
         if statkwargs is None:
             statkwargs = {}
         if not self.iterate:
@@ -956,7 +939,8 @@ class Fit(NoNewAttributesAfterInit):
         self.__dict__.update(state)
 
         if '_iterfit' not in state:
-            self.__dict__['_iterfit'] = IterFit(self.data, self.model, self.stat, self.method,
+            self.__dict__['_iterfit'] = IterFit(self.data, self.model,
+                                                self.stat, self.method,
                                                 {'name': 'none'})
 
     def __str__(self):
@@ -977,20 +961,26 @@ class Fit(NoNewAttributesAfterInit):
         """
         self.model.guess(*self.data.to_guess(), **kwargs)
 
+    # QUS: should this have an @evaluates_model decorator?
+    #
     def _calc_stat(self):
-        dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
-        model = self.data.eval_model_to_fit(self.model)
-        extra_args = self._iterfit.get_extra_args(dep)
-        return self.stat.calc_stat(dep, model, staterror, syserror=syserror,
-                                   extra_args=extra_args)
+        """Calculate the current statistic value.
+
+        Returns
+        -------
+        statval, fvec : number, array of numbers
+            The overall statistic value and the "per-bin" value.
+        """
+
+        # TODO: is there anything missing here that
+        #       self._iterfit.get_extra_args calculates?
+        return self.stat.calc_stat(self.data, self.model)
 
     def calc_stat(self):
-        """Calculate the fit statistic for a data set.
+        """Calculate the statistic value.
 
-        Evaluate the model for one or more data sets, compare it to
-        the data using the current statistic, and return the value.
-        No fitting is done, as the current model parameter, and any
-        filters, are used.
+        Evaluate the statistic for the current model and data
+        settings (e.g. parameter values and data filters).
 
         Returns
         -------
@@ -999,18 +989,17 @@ class Fit(NoNewAttributesAfterInit):
 
         See Also
         --------
-        calc_chisqr : Calculate the per-bin chi-squared statistic.
+        calc_chisqr, calc_stat_info
 
         """
+
         return self._calc_stat()[0]
 
     def calc_chisqr(self):
         """Calculate the per-bin chi-squared statistic.
 
-        Evaluate the model for one or more data sets, compare it to
-        the data using the current statistic, and return the value for
-        each bin.  No fitting is done, as the current model parameter,
-        and any filters, are used.
+        Evaluate the per-bin statistic for the current model and data
+        settings (e.g. parameter values and data filters).
 
         Returns
         -------
@@ -1022,22 +1011,38 @@ class Fit(NoNewAttributesAfterInit):
 
         See Also
         --------
-        calc_stat : Calculate the fit statistic for a data set.
+        calc_stat, calc_stat_info
 
         """
 
-        if not isinstance(self.stat, Chi2):
+        # Since there is some setup work needed before calling
+        # this routine, and to avoid catching any AttributeErrors
+        # thrown by the routine, use this un-pythonic check.
+        #
+        if not hasattr(self.stat, 'calc_chisqr'):
             return None
 
-        dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
-        model = self.data.eval_model_to_fit(self.model)
-        extra_args = self._iterfit.get_extra_args(dep)
-        stat = self.stat.calc_stat(dep, model, staterror,
-                                   syserror=syserror,
-                                   extra_args=extra_args)[1]
-        return stat * stat
+        return self.stat.calc_chisqr(self.data, self.model)
 
     def calc_stat_info(self):
+        """Calculate the statistic value and related information.
+
+        Evaluate the statistic for the current model and data
+        settings (e.g. parameter values and data filters).
+
+        Returns
+        -------
+        statinfo : StatInfoResults instance
+           The current statistic value.
+
+        See Also
+        --------
+        calc_chisqr, calc_stat
+
+        """
+
+        # TODO: This logic would be better in the stat class than here
+        #
         stat, fvec = self._calc_stat()
         model = self.data.eval_model_to_fit(self.model)
 
@@ -1045,23 +1050,12 @@ class Fit(NoNewAttributesAfterInit):
         rstat = None
         numpoints = len(model)
         dof = numpoints - len(self.model.thawedpars)
-        if (isinstance(self.stat, (CStat, Chi2)) and
-                not isinstance(self.stat, LeastSq)):
+        if _can_calculate_rstat(self.stat):
             if stat >= 0.0:
                 qval = igamc(dof / 2., stat / 2.)
             rstat = stat / dof
 
-        name = self.stat.name
-
-        if isinstance(self.stat, Chi2) and not isinstance(self.stat, LeastSq):
-            isSimulFit = isinstance(self.data, DataSimulFit)
-            if isSimulFit:
-                is_error_set = [
-                    d.staterror is not None for d in self.data.datasets]
-                if all(is_error_set):
-                    name = 'chi2'
-            elif self.data.staterror is not None:
-                name = 'chi2'
+        name = _cleanup_chi2_name(self.stat, self.data)
 
         return StatInfoResults(name, stat, numpoints, model,
                                dof, qval, rstat)
@@ -1069,23 +1063,20 @@ class Fit(NoNewAttributesAfterInit):
     @evaluates_model
     def fit(self, outfile=None, clobber=False):
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
+
+        # TODO: This test may already be handled by data.to_fit(),
+        #       which raises DataErr('notmask'), although I have not
+        #       investigated if it is possible to pass that check
+        #       but fail the following.
+        #
         if not iterable(dep) or len(dep) == 0:
-            # raise FitError('no noticed bins found in data set')
             raise FitErr('nobins')
 
         if ((iterable(staterror) and 0.0 in staterror) and
                 isinstance(self.stat, Chi2) and
                 type(self.stat) != Chi2 and
                 type(self.stat) != Chi2ModVar):
-            # raise FitError('zeros found in uncertainties, consider using' +
-            #               ' calculated uncertainties')
             raise FitErr('binhas0')
-
-        if (getattr(self.data, 'subtracted', False) and
-                isinstance(self.stat, Likelihood)):
-            # raise FitError('%s statistics cannot be used with background'
-            #               % self.stat.name + ' subtracted data')
-            raise FitErr('statnotforbackgsub', self.stat.name)
 
         init_stat = self.calc_stat()
         # output = self.method.fit ...
@@ -1157,7 +1148,7 @@ class Fit(NoNewAttributesAfterInit):
             return (current_pars, current_parmins, current_parmaxes)
 
         def thaw_par(i):
-            if (i < 0):
+            if i < 0:
                 pass
             else:
                 self.model.pars[self.thaw_indices[i]].frozen = False
@@ -1170,7 +1161,7 @@ class Fit(NoNewAttributesAfterInit):
         # Call from a parameter estimation method, to report
         # that limits for a given parameter have been found
         def report_progress(i, lower, upper):
-            if (i < 0):
+            if i < 0:
                 pass
             else:
                 name = self.model.pars[self.thaw_indices[i]].fullname
@@ -1188,17 +1179,14 @@ class Fit(NoNewAttributesAfterInit):
         # more than 3, don't bother calling method to estimate
         # parameter limits.
 
-        if (type(self.stat) is LeastSq):
-            # raise FitError('cannot estimate confidence limits with ' +
-            #               type(self.stat).__name__)
+        if type(self.stat) is LeastSq:
             raise EstErr('noerr4least2', type(self.stat).__name__)
 
-        if (type(self.stat) is not Cash):
+        if type(self.stat) is not Cash:
             dep, staterror, syserror = self.data.to_fit(
                 self.stat.calc_staterror)
 
             if not iterable(dep) or len(dep) == 0:
-                #raise FitError('no noticed bins found in data set')
                 raise FitErr('nobins')
 
             # For chi-squared and C-stat, reduced statistic is
@@ -1208,14 +1196,11 @@ class Fit(NoNewAttributesAfterInit):
             # Degress of freedom are number of data bins included
             # in fit, minus the number of thawed parameters.
             dof = len(dep) - len(self.model.thawedpars)
-            if (dof < 1):
-                #raise FitError('degrees of freedom are zero or lower')
+            if dof < 1:
                 raise EstErr('nodegfreedom')
 
             if (hasattr(self.estmethod, "max_rstat") and
                     (self.calc_stat() / dof) > self.estmethod.max_rstat):
-                # raise FitError('reduced statistic larger than ' +
-                #               str(self.estmethod.max_rstat))
                 raise EstErr('rstat>max', str(self.estmethod.max_rstat))
 
         # If statistic is chi-squared, change fitting method to
@@ -1235,13 +1220,13 @@ class Fit(NoNewAttributesAfterInit):
         if (hasattr(self.estmethod, "fast") and
                 bool_cast(self.estmethod.fast) and
                 methoddict is not None):
-            if (isinstance(self.stat, Likelihood)):
-                if (type(self.method) is not NelderMead):
+            if isinstance(self.stat, Likelihood):
+                if type(self.method) is not NelderMead:
                     self.method = methoddict['neldermead']
                     warning("Setting optimization to " + self.method.name
                             + " for confidence limit search")
             else:
-                if (type(self.method) is not LevMar):
+                if type(self.method) is not LevMar:
                     self.method = methoddict['levmar']
                     warning("Setting optimization to " + self.method.name
                             + " for confidence limit search")
@@ -1257,7 +1242,7 @@ class Fit(NoNewAttributesAfterInit):
 
         # If restricted to soft_limits, only send soft limits to
         # method, and do not reset model limits
-        if (bool_cast(self.estmethod.soft_limits) is True):
+        if bool_cast(self.estmethod.soft_limits):
             starthardmins = self.model.thawedparmins
             starthardmaxs = self.model.thawedparmaxes
         else:
@@ -1301,7 +1286,7 @@ class Fit(NoNewAttributesAfterInit):
         output = None
         results = None
         oldremin = -1.0
-        if (hasattr(self.estmethod, "remin")):
+        if hasattr(self.estmethod, "remin"):
             oldremin = self.estmethod.remin
         try:
             output = self.estmethod.compute(self._iterfit._get_callback(),
@@ -1325,7 +1310,7 @@ class Fit(NoNewAttributesAfterInit):
                 self.model.thawedparmins = startsoftmins
                 self.model.thawedparmaxes = startsoftmaxs
                 self.method = oldmethod
-                if (hasattr(self.estmethod, "remin")):
+                if hasattr(self.estmethod, "remin"):
                     self.estmethod.remin = -1.0
                 warning("Maximum number of reminimizations reached")
 
@@ -1342,8 +1327,8 @@ class Fit(NoNewAttributesAfterInit):
             self.model.thawedparmaxes = startsoftmaxs
             results = self.fit()
             self.refits = self.refits + 1
-            warning(
-                "New minimum statistic found while computing confidence limits")
+            warning("New minimum statistic found while computing " +
+                    "confidence limits")
             warning("New best-fit parameters:\n" + results.format())
 
             # Now, recompute errors for new best-fit parameters
@@ -1351,7 +1336,7 @@ class Fit(NoNewAttributesAfterInit):
             self.model.thawedparmins = startsoftmins
             self.model.thawedparmaxes = startsoftmaxs
             self.method = oldmethod
-            if (hasattr(self.estmethod, "remin")):
+            if hasattr(self.estmethod, "remin"):
                 self.estmethod.remin = oldremin
             return results
         except:
@@ -1362,7 +1347,7 @@ class Fit(NoNewAttributesAfterInit):
             self.model.thawedparmins = startsoftmins
             self.model.thawedparmaxes = startsoftmaxs
             self.method = oldmethod
-            if (hasattr(self.estmethod, "remin")):
+            if hasattr(self.estmethod, "remin"):
                 self.estmethod.remin = oldremin
             raise
 
@@ -1374,7 +1359,7 @@ class Fit(NoNewAttributesAfterInit):
         self.model.thawedparmaxes = startsoftmaxs
         results = ErrorEstResults(self, output, parlist)
         self.method = oldmethod
-        if (hasattr(self.estmethod, "remin")):
+        if hasattr(self.estmethod, "remin"):
             self.estmethod.remin = oldremin
 
         return results
