@@ -24,6 +24,21 @@ TEST = [1, 2, 3]
 TEST2 = [4, 5, 6]
 
 
+# bug #303
+def test_set_log():
+    session = Session()
+    assert not session.get_data_plot_prefs()['xlog']
+    assert not session.get_data_plot_prefs()['ylog']
+    session.set_xlog()
+    assert session.get_data_plot_prefs()['xlog']
+    session.set_ylog()
+    assert session.get_data_plot_prefs()['ylog']
+    session.set_xlinear()
+    assert not session.get_data_plot_prefs()['xlog']
+    session.set_ylinear()
+    assert not session.get_data_plot_prefs()['ylog']
+
+
 # bug #262
 def test_list_ids():
     session = Session()

@@ -360,7 +360,7 @@ class Session(sherpa.ui.utils.Session):
             if bkg_id is not None:
                 bkg_ids = [bkg_id]
             else:
-                bkg_ids = self._background_models.get(id, {}).keys()
+                bkg_ids = list(self._background_models.get(id, {}).keys())
                 bkg_ids.extend(self._background_sources.get(id, {}).keys())
                 bkg_ids = list(set(bkg_ids))
 
