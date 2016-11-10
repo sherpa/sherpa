@@ -20,14 +20,32 @@
 from sherpa.ui.utils import Session
 from numpy.testing import assert_array_equal
 
+TEST = [1, 2, 3]
+TEST2 = [4, 5, 6]
+
 
 # bug #262
 def test_list_ids():
     session = Session()
-    session.load_arrays(1, [1, 2, 3], [1, 2, 3])
-    session.load_arrays("1", [1, 2, 3], [4, 5, 6])
+    session.load_arrays(1, TEST, TEST)
+    session.load_arrays("1", TEST, TEST2)
 
     # order of 1 and "1" is not determined
     assert {1, "1"} == set(session.list_data_ids())
-    assert_array_equal([4, 5, 6], session.get_data('1').get_dep())
-    assert_array_equal([1, 2, 3], session.get_data(1).get_dep())
+    assert_array_equal(TEST2, session.get_data('1').get_dep())
+    assert_array_equal(TEST, session.get_data(1).get_dep())
+
+
+# bug #297
+def test_save_restore(tmpdir):
+    outfile = tmpdir.join("sherpa.save")
+    session = Session()
+    session.load_arrays(1, TEST, TEST2)
+    session.save(str(outfile), clobber=True)
+    session.clean()
+    assert set() == set(session.list_data_ids())
+
+    session.restore(str(outfile))
+    assert {1, } == set(session.list_data_ids())
+    assert_array_equal(TEST, session.get_data(1).get_indep()[0])
+    assert_array_equal(TEST2, session.get_data(1).get_dep())

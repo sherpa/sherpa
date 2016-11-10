@@ -120,7 +120,7 @@ def _send_to_pager(all, filename=None, clobber=False):
             _check_type(filename, string_types, 'filename', 'a string')
             if os.path.isfile(filename) and not clobber:
                 raise IOErr('filefound', filename)
-            pager = file(filename, 'w')
+            pager = open(filename, 'w')
         print(all, file=pager)
     except:
         if (pager is not None):
@@ -467,7 +467,7 @@ class Session(NoNewAttributesAfterInit):
         if os.path.isfile(filename) and not clobber:
             raise sherpa.utils.err.IOErr("filefound", filename)
 
-        fout = file(filename, 'wb')
+        fout = open(filename, 'wb')
         try:
             pickle.dump(self, fout, 2)  # Use newer binary protocol
         finally:
@@ -519,7 +519,7 @@ class Session(NoNewAttributesAfterInit):
         """
         _check_type(filename, string_types, 'filename', 'a string')
 
-        fin = file(filename, 'rb')
+        fin = open(filename, 'rb')
         try:
             obj = pickle.load(fin)
         finally:
