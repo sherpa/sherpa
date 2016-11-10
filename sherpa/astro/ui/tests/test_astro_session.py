@@ -17,6 +17,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 from sherpa.astro.ui.utils import Session
+from sherpa.utils import requires_data, requires_fits
+from sherpa.models import PowLaw1D
 
 
 # bug #303
@@ -24,3 +26,16 @@ def test_show_bkg_model():
     session = Session()
     session.load_arrays(1, [1, 2], [1, 2])
     session.show_bkg_model()
+    session.show_bkg_model('xx')
+    session.show_bkg_source()
+    session.show_bkg_source('xx')
+
+
+# bug #303
+@requires_data
+@requires_fits
+def test_show_bkg_model_with_bkg(make_data_path):
+    session = Session()
+    session.load_data('foo', make_data_path('3c273.pi'))
+    session.show_bkg_model()
+    session.show_bkg_model('foo')
