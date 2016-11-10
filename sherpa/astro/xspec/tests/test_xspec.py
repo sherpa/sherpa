@@ -16,7 +16,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
+import pytest
 import numpy
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
@@ -398,7 +398,8 @@ class test_xspec(SherpaTestCase):
     @requires_data
     @requires_fits
     def test_xspec_tablemodel(self):
-        self._test_xspec_tablemodel(ui.load_table_model)
+        with pytest.warns(DeprecationWarning):
+            self._test_xspec_tablemodel(ui.load_table_model)
 
     @requires_data
     @requires_fits

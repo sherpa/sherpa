@@ -24,7 +24,6 @@
 #
 
 import os
-import tempfile
 
 import pytest
 
@@ -32,8 +31,6 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.utils import requires_data, requires_fits, requires_xspec
-
-tmpdir = tempfile.gettempdir()
 
 
 # Note that the logic in load_table_model is quite convoluted,
@@ -48,38 +45,32 @@ tmpdir = tempfile.gettempdir()
 #
 
 @requires_fits
-@pytest.mark.skipif(not(os.path.isdir(tmpdir)),
-                    reason='temp directory does not exist')
-def test_load_table_model_fails_with_dir():
+def test_load_table_model_fails_with_dir(tmpdir):
     """Check that the function fails with invalid input: directory
 
-    The temporary directory is used for this (the test is skipped if
-    it does not exist).
+    The temporary directory is used for this.
     """
 
     ui.clean()
     assert ui.list_model_components() == []
     with pytest.raises(IOError):
-        ui.load_table_model('tmpdir', tmpdir)
+        ui.load_table_model('tmpdir', str(tmpdir))
 
     assert ui.list_model_components() == []
 
 
 @requires_fits
 @requires_xspec
-@pytest.mark.skipif(not(os.path.isdir(tmpdir)),
-                    reason='temp directory does not exist')
-def test_load_xstable_model_fails_with_dir():
+def test_load_xstable_model_fails_with_dir(tmpdir):
     """Check that the function fails with invalid input: directory
 
-    The temporary directory is used for this (the test is skipped if
-    it does not exist).
+    The temporary directory is used for this.
     """
 
     ui.clean()
     assert ui.list_model_components() == []
     with pytest.raises(IOError):
-        ui.load_xstable_model('tmpdir', tmpdir)
+        ui.load_xstable_model('tmpdir', str(tmpdir))
 
     assert ui.list_model_components() == []
 
