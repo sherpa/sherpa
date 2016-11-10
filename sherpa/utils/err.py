@@ -131,6 +131,7 @@ class NotImplementedErr(SherpaErr):
 class ImportErr(SherpaErr):
 
     dict = {'importfailed': "failed to import %s module; %s routines are not available",
+            'notsupported': '%s support is not enabled in this build of Sherpa'
             }
 
     def __init__(self, key, *args):

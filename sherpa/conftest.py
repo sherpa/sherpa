@@ -17,7 +17,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import six
 import pytest
 import os
 import sys
@@ -46,7 +45,8 @@ known_warnings = {
         [
             r"unorderable dtypes.*",
             r"Non-string object detected for the array ordering.*",
-            r"using a non-integer number instead of an integer will result in an error in the future"
+            r"using a non-integer number instead of an integer will result in an error in the future",
+            r"Use load_xstable_model to load XSPEC table models"
         ],
     UserWarning:
         [
@@ -69,6 +69,9 @@ if sys.version_info >= (3, 2):
                 r"unclosed file .*aref_Cedge.fits.* closefd=True>",
                 r"unclosed file .*aref_sample.fits.* closefd=True>",
                 r"unclosed file .*/tmp.* closefd=True>",
+                # added for sherpa/astro/ui/tests/test_astro_ui_utils_unit.py
+                r"unclosed file .*/dev/null.* closefd=True>",
+                r"unclosed file .*table.txt.* closefd=True>",
             ]
     }
     known_warnings.update(python3_warnings)
