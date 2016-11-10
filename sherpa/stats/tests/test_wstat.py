@@ -72,14 +72,14 @@
 #     Actually, DougBurke believes this is due to the behavior
 #     of group_counts, which we already work around below,
 #     search for "Note: this is related to issue 227".
+#     and in fact this issue may have been fixed by the same
+#     code that is used to get all these tests to pass.
 #
 
 import numpy as np
 
 from sherpa.utils import SherpaTestCase, requires_data, requires_fits
 from sherpa.astro import ui
-
-from unittest import expectedFailure
 
 import logging
 
@@ -177,7 +177,16 @@ class test_wstat_single_scalar(SherpaTestCase):
 @requires_data
 @requires_fits
 class test_wstat_two_scalar(SherpaTestCase):
-    """Two PHA files with a scalar backscal value"""
+    """Two PHA files with a scalar backscal value.
+
+    Although two PHA files are used, there are three data sets.
+    Two of the data sets are the same file (9774) but grouped
+    differently: one where the background grouping from group_counts
+    is overwritten (the work around mentiond for issue #227),
+    and one where this is not done, to see if #227 has been
+    "fixed" (at least with regard to calculating the statistic
+    value).
+    """
 
     def setUp(self):
 
@@ -251,7 +260,7 @@ class test_wstat_two_scalar(SherpaTestCase):
         stat = ui.calc_stat(idval)
         self.assertAlmostEqual(expected, stat, places=7)
 
-    def _check_stat2(self, expected):
+    def _check_stat_all(self, expected):
         """Is calc_stat() == expected?"""
 
         stat = ui.calc_stat()
@@ -265,7 +274,7 @@ class test_wstat_two_scalar(SherpaTestCase):
         exp2 = 401.75572944361613
         self._check_stat(1, 46, exp1)
         self._check_stat(2, 148, exp2)
-        self._check_stat2(exp1 + exp2)
+        self._check_stat_all(exp1 + exp2)
 
     def test_wstat_grouped_filtered(self):
         self._filter_data()
@@ -276,7 +285,7 @@ class test_wstat_two_scalar(SherpaTestCase):
         exp2 = 127.35556915677182
         self._check_stat(1, 35, exp1)
         self._check_stat(2, 120, exp2)
-        self._check_stat2(exp1 + exp2)
+        self._check_stat_all(exp1 + exp2)
 
     def test_wstat_ungrouped_all(self):
         ui.ungroup(1)
@@ -288,7 +297,7 @@ class test_wstat_two_scalar(SherpaTestCase):
         exp2 = 880.8442022201893
         self._check_stat(1, 1024, exp1)
         self._check_stat(2, 1024, exp2)
-        self._check_stat2(exp1 + exp2)
+        self._check_stat_all(exp1 + exp2)
 
     def test_wstat_ungrouped_filtered(self):
         ui.ungroup(1)
@@ -301,7 +310,7 @@ class test_wstat_two_scalar(SherpaTestCase):
         exp2 = 397.4089421041855
         self._check_stat(1, 375, exp1)
         self._check_stat(2, 375, exp2)
-        self._check_stat2(exp1 + exp2)
+        self._check_stat_all(exp1 + exp2)
 
 
 @requires_data
@@ -377,7 +386,6 @@ class test_wstat_group_counts(SherpaTestCase):
         stat = ui.calc_stat(idval)
         self.assertAlmostEqual(expected, stat, places=7)
 
-    @expectedFailure
     def test_wstat_grouped_all(self):
 
         # Used git commit 770359b5004374b969ebb63c173f293419397b4c
@@ -385,7 +393,6 @@ class test_wstat_group_counts(SherpaTestCase):
         expval = 401.75572944361613
         self._check_stat(1, 148, expval)
 
-    @expectedFailure
     def test_wstat_grouped_filtered(self):
         self._filter_data()
 
@@ -482,14 +489,12 @@ class test_wstat_single_array(SherpaTestCase):
         stat = ui.calc_stat()
         self.assertAlmostEqual(expected, stat, places=7)
 
-    @expectedFailure
     def test_wstat_grouped_all(self):
 
         # Used git commit 770359b5004374b969ebb63c173f293419397b4c
         # to create the oracle value, on a linux 64-bit machine.
         self._check_stat(46, 71.21845954979574)
 
-    @expectedFailure
     def test_wstat_grouped_filtered(self):
         self._filter_data()
 
@@ -504,7 +509,6 @@ class test_wstat_single_array(SherpaTestCase):
         # to create the oracle value, on a linux 64-bit machine.
         self._check_stat(1024, 663.0160968458746)
 
-    @expectedFailure
     def test_wstat_ungrouped_filtered(self):
         ui.ungroup()
         self._filter_data()

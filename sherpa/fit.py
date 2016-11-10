@@ -24,17 +24,21 @@ import logging
 import os
 import signal
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, float, float32, finfo, nan, any, zeros, append, \
-    int, ones
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
-    bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
+    ones_like, isnan, isinf, float, float32, finfo, nan, any, \
+    append, int, ones
+
+import numpy as np
+
+from sherpa.utils import NoNewAttributesAfterInit, SherpaFloat, \
+    print_fields, erf, igamc, bool_cast, is_in, is_iterable, \
+    list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
-from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, LeastSq, \
-    Likelihood, WStat, UserStat
+from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, \
+    LeastSq, Likelihood, WStat, UserStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -500,42 +504,88 @@ class IterFit(NoNewAttributesAfterInit):
                 src = src_backscal
             return bkg / src
 
-        result = {'bkg': None, 'backscale_ratio': None, 'data_size': None,
+        result = {'bkg': None, 'backscale_ratio': None,
                   'exposure_time': None}
-        bkg_dep = []
-        data_size = None
+
+        # It looks like the sizes need to be filled up,
+        # even if the background data is not filled in (i.e if return
+        # is called in the middle of the loop through self.data.datasets
+        # below).
+        #
+        result['data_size'] = np.asarray([d.get_dep(True).size
+                                          for d in self.data.datasets],
+                                         dtype=np.int)
+
         exposure_time = None
         backscale_ratio = []
+        bkg_dep = []
 
-        len_datasets = len(self.data.datasets)
-        data_size = zeros(len_datasets, dtype=int)
-        exposure_time = zeros(2 * len_datasets)
-        for index in xrange(len_datasets):
-            mydata = self.data.datasets[index]
-            data_size[index] = mydata.get_dep(True).size
-        result['data_size'] = data_size
-        for index in xrange(len_datasets):
-            mydata = self.data.datasets[index]
+        exposure_time = []
+        for mydata in self.data.datasets:
             if hasattr(mydata, 'response_ids') and \
                     hasattr(mydata, 'background_ids') and \
-                    len(mydata.response_ids) and len(mydata.background_ids):
+                    len(mydata.response_ids) and \
+                    len(mydata.background_ids):
+
+                ntotal = mydata.get_dep(False).size
+                dummy = np.ones(ntotal, dtype=SherpaFloat)
+
+                def _to_array(bscale):
+                    """Convert backscale to a vector.
+
+                    There are two steps: convert to a vector the
+                    length of the data set (ungrouped or filtered)
+                    and then group, using the "average" method
+                    *and* the grouping scheme of the source
+                    dataset (even for the background) and filter.
+                    """
+
+                    # The assumption is that bscale is either a scalar
+                    # or a vector the same size as dummy
+                    vec = bscale * dummy
+                    return mydata.apply_filter(vec,
+                                               groupfunc=mydata._middle)
+
+                # The source data used is calculated using
+                # <data object>.get_dep(True)
+                # so the background and scaling arrays must
+                # match this.
+                #
+                # TODO: does this work for data sets with multiple
+                #       background components (e.g. grating data with
+                #       "up" and "down" components). It looks like it
+                #       only uses the first element.
                 bkg = mydata.get_background(mydata.background_ids[0])
-                tmp_bkg_dep = bkg.get_dep(True)
-                # data_size[index] = tmp_bkg_dep.size
+
+                # This uses the grouping applied to the background
+                # data set, but we need to apply the source grouping
+                # to it.
+                #
+                # tmp_bkg_dep = bkg.get_dep(True)
+                tmp_bkg_dep = mydata.apply_filter(bkg.get_dep(False),
+                                                  groupfunc=np.sum)
+
                 bkg_dep = append(bkg_dep, tmp_bkg_dep)
-                exposure_time[2 * index] = mydata.exposure
-                exposure_time[2 * index + 1] = bkg.exposure
-                ratio = vectorize_backscale_ratio(bkg.backscal,
-                                                  mydata.backscal,
-                                                  data_size[index])
+
+                exposure_time.extend([mydata.exposure, bkg.exposure])
+
+                # NOTE: use the source grouping for both the source
+                #       *and* background BACKSCAL arrays; that is, if
+                #       the background has different grouping to the
+                #       source it is ignored. The alternative would be
+                #       to error out here.
+                #
+                src_backscal = _to_array(mydata.backscal)
+                bkg_backscal = _to_array(bkg.backscal)
+                ratio = bkg_backscal / src_backscal
+
                 backscale_ratio = append(backscale_ratio, ratio)
             else:
                 return result
 
         result['bkg'] = bkg_dep
         result['backscale_ratio'] = backscale_ratio
-        # result['data_size'] = data_size
-        result['exposure_time'] = exposure_time
+        result['exposure_time'] = np.asarray(exposure_time)
         return result
 
     def _get_callback(self, outfile=None, clobber=False):
