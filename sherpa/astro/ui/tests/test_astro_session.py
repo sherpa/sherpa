@@ -16,25 +16,11 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-from sherpa.ui.utils import Session
-from numpy.testing import assert_array_equal
+from sherpa.astro.ui.utils import Session
 
 
 # bug #303
-def test_set_log():
+def test_show_bkg_model():
     session = Session()
-    session.set_xlog()
-    session.set_ylog()
-
-
-# bug #262
-def test_list_ids():
-    session = Session()
-    session.load_arrays(1, [1, 2, 3], [1, 2, 3])
-    session.load_arrays("1", [1, 2, 3], [4, 5, 6])
-
-    # order of 1 and "1" is not determined
-    assert {1, "1"} == set(session.list_data_ids())
-    assert_array_equal([4, 5, 6], session.get_data('1').get_dep())
-    assert_array_equal([1, 2, 3], session.get_data(1).get_dep())
+    session.load_arrays(1, [1, 2], [1, 2])
+    session.show_bkg_model()
