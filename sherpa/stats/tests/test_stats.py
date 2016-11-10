@@ -308,6 +308,9 @@ class test_stats(SherpaTestCase):
         self.data = read_pha(pha_fname)
         self.data.notice(0.5, 7.0)
 
+        # hard-code number of channels
+        self.data.backscal = self.data.backscal * numpy.ones(1024)
+         
         bkg_fname = self.make_path("9774_bg.pi")
         self.bkg = read_pha(bkg_fname)
 
