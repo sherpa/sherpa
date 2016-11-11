@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
 import numpy
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
@@ -307,15 +306,14 @@ class test_xspec(SherpaTestCase):
             assert_allclose(evals2, wvals2,
                             err_msg=emsg + "energy to wavelength")
 
-    @requires_data
-    @requires_fits
-    def test_tablemodel_checks_input_length(self):
+    # Support for XSPEC support in load_table_model has been deprecated
+    # in Sherpa 4.9.0; use load_xstable_model instead. For now the
+    # tests are run with both functions, which means making the loading
+    # function a parameter of the tests.
+    #
+    def _test_xspec_tablemodel_checks_input_length(self, loadfunc):
 
-        # see test_table_model for more information on the table
-        # model being used.
-        #
-        ui.load_table_model('mdl',
-                            self.make_path('xspec-tablemodel-RCS.mod'))
+        loadfunc('mdl', self.make_path('xspec-tablemodel-RCS.mod'))
         mdl = ui.get_model_component('mdl')
 
         # Check when input array is too small (< 2 elements)
@@ -326,9 +324,7 @@ class test_xspec(SherpaTestCase):
         self.assertRaises(TypeError, mdl, [0.1, 0.2, 0.3], [0.2, 0.3])
         self.assertRaises(TypeError, mdl, [0.1, 0.2], [0.2, 0.3, 0.4])
 
-    @requires_data
-    @requires_fits
-    def test_xspec_tablemodel(self):
+    def _test_xspec_tablemodel(self, loadfunc):
         # Just test one table model; use the same scheme as
         # test_xspec_models_noncontiguous().
         #
@@ -336,8 +332,7 @@ class test_xspec(SherpaTestCase):
         # https://heasarc.gsfc.nasa.gov/xanadu/xspec/models/rcs.html
         # retrieved July 9 2015. The exact model is irrelevant for this
         # test, so this was chosen as it's relatively small.
-        ui.load_table_model('tmod',
-                            self.make_path('xspec-tablemodel-RCS.mod'))
+        loadfunc('tmod', self.make_path('xspec-tablemodel-RCS.mod'))
 
         # when used in the test suite it appears that the tmod
         # global symbol is not created, so need to access the component
@@ -365,12 +360,9 @@ class test_xspec(SherpaTestCase):
         assert_allclose(evals2, wvals2,
                         err_msg=emsg + "two args")
 
-    @requires_data
-    @requires_fits
-    def test_xspec_tablemodel_noncontiguous2(self):
+    def _test_xspec_tablemodel_noncontiguous2(self, loadfunc):
 
-        ui.load_table_model('tmod',
-                            self.make_path('xspec-tablemodel-RCS.mod'))
+        loadfunc('tmod', self.make_path('xspec-tablemodel-RCS.mod'))
         tmod = ui.get_model_component('tmod')
 
         elo, ehi, wlo, whi = make_grid_noncontig2()
@@ -385,6 +377,38 @@ class test_xspec(SherpaTestCase):
         rtol = 1e-3
         assert_allclose(evals2, wvals2, rtol=rtol,
                         err_msg=emsg + "energy to wavelength")
+
+    @requires_data
+    @requires_fits
+    def test_xstablemodel_checks_input_length(self):
+        self._test_xspec_tablemodel_checks_input_length(
+            ui.load_xstable_model)
+
+    @requires_data
+    @requires_fits
+    def test_tablemodel_checks_input_length(self):
+        self._test_xspec_tablemodel_checks_input_length(
+            ui.load_table_model)
+
+    @requires_data
+    @requires_fits
+    def test_xspec_xstablemodel(self):
+        self._test_xspec_tablemodel(ui.load_xstable_model)
+
+    @requires_data
+    @requires_fits
+    def test_xspec_tablemodel(self):
+        self._test_xspec_tablemodel(ui.load_table_model)
+
+    @requires_data
+    @requires_fits
+    def test_xspec_xstablemodel_noncontiguous2(self):
+        self._test_xspec_tablemodel_noncontiguous2(ui.load_xstable_model)
+
+    @requires_data
+    @requires_fits
+    def test_xspec_tablemodel_noncontiguous2(self):
+        self._test_xspec_tablemodel_noncontiguous2(ui.load_table_model)
 
     def test_convolution_model_cflux(self):
         # Use the cflux convolution model, since this gives
