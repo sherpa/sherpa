@@ -24,7 +24,7 @@ import numpy
 import random
 import sys
 from six.moves import zip as izip
-
+from six.moves import xrange
 
 from . import _minpack
 from . import _minim
@@ -298,7 +298,7 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
             list_ranges[ ii ] = slice( *list_ranges[ ii ] )
         grid = numpy.mgrid[ list_ranges ]
         mynfev = pow( N, npar )
-        grid = map( numpy.ravel, grid )
+        grid = list(map( numpy.ravel, grid ))
         sequence = []
         for index in xrange( mynfev ):
             tmp = []
