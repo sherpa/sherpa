@@ -27,8 +27,6 @@ import six
 from sherpa.ui.utils import Session
 
 
-@pytest.mark.skipif(not six.PY2,
-                    reason='gridsearch/session=None fails with Python 3')
 def test_309(make_data_path):
 
     idval = 'bug309'
