@@ -2415,7 +2415,7 @@ def test_fit_iterfit_fails_nonchi2_wstat(stat, sigmarej):
 
 @pytest.mark.parametrize("stat", [Chi2, Chi2Gehrels])
 def test_fit_iterfit_single_sigmarej_chi2(stat):
-    """Very limited test of iteratet-fit code.
+    """Very limited test of iterated-fit code.
 
     Since setup_single_iter creates a staterror column then
     the Chi2-based statistics (module Chi2ModVar) should all
@@ -2446,7 +2446,7 @@ def test_fit_iterfit_single_sigmarej_chi2(stat):
 
 
 def test_fit_iterfit_single_sigmarej_chi2gehrels():
-    """Very limited test of iterated fit code."""
+    """Very limited test of iterated-fit code."""
 
     # If remove the staterror column and use the data values
     # the fit is "better".
@@ -2474,6 +2474,40 @@ def test_fit_iterfit_single_sigmarej_chi2gehrels():
 
     assert fr.numpoints == 6
     assert fr.dof == 4
+
+
+def test_fit_iterfit_single_sigmarej_ignore_chi2gehrels():
+    """Very limited test of iterated-fit code.
+
+    This ignores some data before the fit since this checks
+    logic that is not tested above.
+    """
+
+    statobj = Chi2Gehrels()
+    fit = setup_single_iter(statobj, sigmarej=True)
+
+    fit.data.ignore(4, 6)
+    fit.data.staterror = None
+
+    # be explicit here since the result is not guaranteed to be a bool
+    start_mask = [True, False, True, True, True, True, True]
+    assert np.all(fit.data.mask == start_mask)
+
+    fr = fit.fit()
+    assert fr.succeeded
+
+    # the discrepant point should be excluded
+    expected_mask = [True, False, True, True, False, True, True]
+    assert np.all(fit.data.mask == expected_mask)
+
+    assert_almost_equal(fr.statval, 0.1245627587)
+
+    mdl = fit.model
+    assert_almost_equal(mdl.c0.val, 9.25537857670)
+    assert_almost_equal(mdl.c1.val, 2.01845980545)
+
+    assert fr.numpoints == 5
+    assert fr.dof == 3
 
 
 def test_wstat_rstat_qval_fields_not_none():
