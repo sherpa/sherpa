@@ -25,7 +25,6 @@ from sherpa.utils.err import ModelErr
 from sherpa import ui
 import numpy
 import logging
-import os
 
 logger = logging.getLogger("sherpa")
 
