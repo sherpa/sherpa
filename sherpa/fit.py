@@ -806,7 +806,7 @@ class IterFit(NoNewAttributesAfterInit):
                     j = 0
                     kmin = 0
                     for i in xrange(0, ressize):
-                        while newmask[j] is False and j < filsize:
+                        while not(newmask[j]) and j < filsize:
                             j = j + 1
                         if j >= filsize:
                             break
@@ -825,7 +825,7 @@ class IterFit(NoNewAttributesAfterInit):
                         # If we've masked out *all* data,
                         # immediately raise fit error, clean up
                         # on way out.
-                        if any(newmask) is False:
+                        if not(any(newmask)):
                             raise FitErr('nobins')
                         d.mask = newmask
 
@@ -916,7 +916,7 @@ class Fit(NoNewAttributesAfterInit):
         self.thaw_indices = ()
         iter = 0
         for current_par in self.model.pars:
-            if current_par.frozen is True:
+            if current_par.frozen:
                 pass
             else:
                 self.thaw_indices = self.thaw_indices + (iter,)
