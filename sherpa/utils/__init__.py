@@ -95,7 +95,8 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaTestCase',
            'guess_reference', 'histogram1d', 'histogram2d', 'igam', 'igamc',
            'incbet', 'interpolate', 'is_binary_file', 'Knuth_close',
            'lgam', 'linear_interp', 'nearest_interp',
-           'neville', 'neville2d', 'requires_data', 'requires_fits', 'requires_package',
+           'neville', 'neville2d',
+           'requires_data', 'requires_fits', 'requires_package',
            'new_muller', 'normalize', 'numpy_convolve',
            'pad_bounding_box', 'parallel_map', 'param_apply_limits',
            'parse_expr', 'poisson_noise', 'print_fields', 'rebin',
@@ -367,6 +368,13 @@ def requires_pylab(test_function):
     packages = ('pylab',
                 )
     msg = "matplotlib backend required"
+    return requires_package(msg, *packages)(test_function)
+
+
+def requires_plotting(test_function):
+    """Decorator for test functions requiring a plotting library."""
+    packages = ('pylab', 'pychips')
+    msg = "plotting backend required"
     return requires_package(msg, *packages)(test_function)
 
 
