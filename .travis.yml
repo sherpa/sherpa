@@ -52,7 +52,7 @@ matrix:
     - env: FITS="astropy" INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5 NUMPYVER=1.10
       python: "2.7"
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
-      python: "nightly"
+      python: "3.6-dev"
       sudo: required
       dist: trusty
   allow_failures:
