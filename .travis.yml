@@ -52,7 +52,7 @@ matrix:
     - env: FITS="astropy" INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5 NUMPYVER=1.10
       python: "2.7"
       # matplotlib is not available for python 3.6 just yet (early Jan 2017)
-    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule NUMPYVER=1.10
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule NUMPYVER=1.11
       python: "3.6"
       sudo: required
       dist: trusty
