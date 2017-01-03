@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -30,6 +30,12 @@ try:  # Python 3
 except ImportError:  # Python 2
     import mock
 
+try:
+    from astropy.utils.exceptions import AstropyDeprecationWarning
+    have_astropy = True
+except ImportError:
+    have_astropy = False
+
 
 TEST_DATA_OPTION = "--test-data"
 
@@ -39,7 +45,8 @@ def pytest_addoption(parser):
                      help="Alternative location of test data files")
 
 
-# Whilelist of known warnings. One can associate different warning messages to the same warning class
+# Whilelist of known warnings. One can associate different warning messages
+# to the same warning class
 known_warnings = {
     DeprecationWarning:
         [
@@ -75,6 +82,17 @@ if sys.version_info >= (3, 2):
             ]
     }
     known_warnings.update(python3_warnings)
+
+
+if have_astropy:
+    astropy_warnings = {
+        AstropyDeprecationWarning:
+        [
+            r'"clobber" was deprecated in version 1.3 and will be ' +
+            'removed in a future version.*'
+        ]
+    }
+    known_warnings.update(astropy_warnings)
 
 
 @pytest.fixture(scope="function", autouse=True)
