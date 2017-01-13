@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,12 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils import SherpaTestCase, requires_data, requires_fits, requires_xspec
+from sherpa.utils import SherpaTestCase, requires_data, requires_fits, \
+    requires_xspec
 from sherpa.astro import ui
 
-from unittest import skipIf
 from tempfile import NamedTemporaryFile
-import warnings
 
 
 class test_89_issues(SherpaTestCase):
@@ -40,22 +39,18 @@ class test_89_issues(SherpaTestCase):
 
     @requires_fits
     def test_warnings_are_gone_arrays(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            with NamedTemporaryFile() as f:
-                ui.load_arrays(1, [1,2,3], [4,5,6])
-                ui.save_data(1, f.name, ascii=True, clobber=True)
-            with NamedTemporaryFile() as f:
-                ui.save_data(1, f.name, ascii=False, clobber=True)
-            assert len(w) == 0
+        ui.load_arrays(1, [1, 2, 3], [4, 5, 6])
+        #  We now have logic in conftest.py to catch white-listed warnings and fail on unexpected ones.
+        #  We just need to make any warnings bubble up, here and in the following test.
+        with NamedTemporaryFile() as f:
+            ui.save_data(1, f.name, ascii=True, clobber=True)
+        with NamedTemporaryFile() as f:
+            ui.save_data(1, f.name, ascii=False, clobber=True)
 
     @requires_fits
     @requires_data
     def test_warnings_are_gone_pha(self):
         pha = self.make_path("3c273.pi")
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            with NamedTemporaryFile() as f:
-                ui.load_pha(pha)
-                ui.save_data(1, f.name, ascii=False, clobber=True)
-            assert len(w) == 0
+        ui.load_pha(pha)
+        with NamedTemporaryFile() as f:
+            ui.save_data(1, f.name, ascii=False, clobber=True)
