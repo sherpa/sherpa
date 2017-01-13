@@ -74,8 +74,9 @@ How To Install Sherpa
 =====================
 
 Sherpa can be installed from a binary distribution or built from
-sources.  The 4.8.2 release is available for Python 2.7 and for the
-first time for Python 3.5 (as a Beta release).
+sources. The 4.9.0 release is available for both Python 2.7 and 3.5.
+Support for Python 3.5 has greatly improved in version 4.9.0. Sherpa should be
+compatible with Python 3.6, but testing on this platform has been minimal.
 
 The binary distribution is available for Linux and Mac OS X via conda installation 
 described in sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch). This is the fastest
@@ -113,7 +114,7 @@ Notice that section [1b](#1b-starting-from-scratch). only provides instructions 
 Anaconda-powered environment, not the full Anaconda distribution.
 
 The Sherpa 4.8.2  release - which is the latest binary release - is
-compatible with Python 2.7 and for the first time with Python 3.5 (Beta).
+compatible with Python 2.7 and with Python 3.5.
 
 
 ### 1a. Anaconda
@@ -176,7 +177,7 @@ Add the Sherpa conda repositories to your configuration:
 
 Create a new environment and install Sherpa:
 
-    $ conda create -n sherpa sherpa=4.8
+    $ conda create -n sherpa sherpa=4.9
 
 The above command will download and install Sherpa and its dependencies in an
 isolated environment, so that Sherpa will not interfere with your System's
@@ -263,13 +264,13 @@ You can clone the Sherpa repository with:
     $ git clone https://github.com/sherpa/sherpa
     $ cd sherpa
 
-The most stable code is available through the 4.8.2 tag. The main
+The most stable code is available through the 4.9.0 tag. The main
 development code, which is unstable, is available in the `master`
 branch. New features and bug fixes or other, even less stable versions
 of the code may be available in other branches.
 
-The master branch supports both Python 2.7 and Python 3.5 (4.8.2 tag). Note the
-4.8.1 tag is only compatible with Python 2.7.
+The master branch supports both Python 2.7 and Python 3.5 (4.9.0 tag). Note the
+4.8.1 tag and earlier are only compatible with Python 2.7.
 
 ### 2c. Build Sherpa
 
@@ -473,7 +474,7 @@ used, but the full path should be in your own copy of the file):
     [CIAO](http://cxc.harvard.edu/ciao/). In this case the
     `wcs` library does not need to be specified because of
     the way the XSPEC models-only version was built with
-    CIAO 4.8.
+    CIAO.
 
         xspec_lib_dirs=$ASCDS_INSTALL/ots/lib
         xspec_libraries=XSFunctions XSModel XSUtil XS
