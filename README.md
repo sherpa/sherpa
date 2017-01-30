@@ -347,9 +347,9 @@ was installed.
 ### 3a. Binary installation
 
 The external test data files can be
-installed from the Sherpa conda channel by saying:
+installed from GitHub channel by saying:
 
-    $ conda install sherpatest
+    $ pip install https://github.com/sherpa/sherpa-test-data/archive/4.9.0.tar.gz
 
 At this point, `sherpa_test` will pick up the data and so run more
 tests.
