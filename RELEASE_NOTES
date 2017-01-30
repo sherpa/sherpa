@@ -16,6 +16,9 @@ Details
 
 Infrastructure and minor non-functional changes have been omitted.
 
+#242 Avoid use of inspect.getargspec in Python3
+  Finish off the replacement of inspect.getargspec by inspect.signature.
+
 #263 List_data_ids() fails on py3 with mixed id types (Fix #262).
   Sherpa was sorting the list of dataset IDs in a non-python3 compliant fashion,
   which resulted in issues when using strings and integers together as dataset
@@ -77,6 +80,31 @@ Infrastructure and minor non-functional changes have been omitted.
 #313 Allow sequence=None when using gridsearch and Python 3.5 (Fix #309).
   Allow the `gridsearch` optimiser to be used with the `sequence` option set
   to `None` for Python 3.5.
+
+Caveats
+------------
+
+The requirements for Sherpa are to build with Python 2.7 and 3.5. There has been limited
+testing with Python 3.6, for which we distribute conda binaries. If in doubt, please install
+Sherpa in 2.7 or 3.5 environments only. Support for Python versions 3.3 and 3.4 is possible
+but would require community support.
+
+It has been reported during testing that some versions of the matplotlib conda package do not
+install properly because of a pyqt v5 dependency. If you encounter this issue, please pin down
+pyqt to version 4, e.g. `conda install matplotlib pyqt=4`.
+
+The `sherpatest` package is not distributed as a conda package anymore. This will probably be
+true for the foreseeable future. The `sherpatest` package contains data and functional tests
+that relies on external datasets, so it allows users and developers to run the entire regression
+tests suite. If you want to install `sherpatest`, please use pip and github:
+
+~~~~
+$ pip install https://github.com/sherpa/sherpa-test-data/archive/4.9.0.tar.gz
+~~~~
+
+If you decide to run the full regression tests suite you should also have matplotlib installed.
+If matplotlib is not installed a test will run and fail rather than being skipped. This issue
+will be fixed in the next release.
 
 Sherpa 4.8.2
 ============
