@@ -540,6 +540,8 @@ extend (whether to other areas of Astronomy or in other domains).
 Previous releases
 -----------------
 
+4.8.2: 23 September 2016 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.154744.svg)](https://doi.org/10.5281/zenodo.154744)
+
 4.8.1: 15 April 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.49832.svg)](http://dx.doi.org/10.5281/zenodo.49832)
 
 4.8.0: 27 January 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.45243.svg)](http://dx.doi.org/10.5281/zenodo.45243)
