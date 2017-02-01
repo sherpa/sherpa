@@ -1,5 +1,111 @@
 Release Notes
 
+Sherpa 4.9.0
+============
+
+This version fixes many bugs in the Python 3 support. Moreover, it includes a significant
+refactoring of the `Fit` and `Stat` classes that made it possible to fix several bugs
+related to the recent `wstat` implementation while making these classes more maintainable
+and extensible.
+
+Note that this version deprecates the use of `load_table_model` for XSPEC models.
+Sherpa/XSPEC users should use the new `load_xstable_model` function instead.
+
+Details
+-------
+
+Infrastructure and minor non-functional changes have been omitted.
+
+#242 Avoid use of inspect.getargspec in Python3
+  Finish off the replacement of inspect.getargspec by inspect.signature.
+
+#263 List_data_ids() fails on py3 with mixed id types (Fix #262).
+  Sherpa was sorting the list of dataset IDs in a non-python3 compliant fashion,
+  which resulted in issues when using strings and integers together as dataset
+  IDs. This has now been fixed.
+
+#267 add wstat tests
+  Add several regression tests for wstat.
+
+#282 Parallel_map not working on py3 with numcores=1 (Fix #277).
+  The `utils` function `parallel_map` failed on Python 3 when called with `numcores=1`,
+  i.e. on systems with only one processor/core. This has been fixed.
+
+#283 Sample flux and numpy deprecations (Fix #273 and #276).
+  The `sample_flux` function was not working under Python 3 if the `scales` argument
+  was provided. This has been fixed. Also, a `DeprecationWarning` was issued by
+  `numpy` because during the `sample_flux` execution values were extracted from
+  an array with non-integer indices. This has also been fixed.
+
+#284 String representation of data classes under py3 (Fix #275).
+  Data classes `DataPHA`, `DataARF`, `DataRMF`, `DataIMG`, and `DataIMGInt` in
+  `sherpa.astro.data` would throw an exception if users tried to print them as
+   strings, under Python 3. This has been fixed.
+
+#287 Rewrite sherpa.stats.Stat.calc_stat and simplify sherpa.fit.Fit (fix #227 #248 #289 #292).
+  In order to fix several issues related to the WStat support, and in order to
+  make the code more maintainable, the `sherpa.stats.Stat.calc_stat` and
+  `sherpa.fit.Fit` classes have gone through a round of refactoring. This fixes
+  the following issues: #227 Issues using wstat when grouping/filtering data; #248
+  backscal column not treated properly for WStat; #289 calc_stat does not error out
+  if background subtracted data is used with Likelihood statistics; #292 stat info
+  does not include reduced stat/qval for wstat.
+
+#295 Fix display of pileup model in Python 3.5 (Fix #294).
+  Fix display of instances of `sherpa.astro.models.JDPileup` so that, in Python 3.5,
+  they can be displayed after the model has been evaluated.
+
+#304 replace file -> open (Fix #297).
+  The `save` and `restore` functions used to use the `file` function which is not
+  compatible with Python 3. This has now been fixed.
+
+#305 Fix python 3 issues with some session commands (Fix #303).
+  The `set_xlog`, `set_ylog`, and `show_bkg_model` functions were not compatible
+  with Python 3. This has now been fixed (Issue #303).
+
+#307 Move XSPEC table support to load_xstable_model and deprecate its support
+  in load_table_model (Fix #270).
+  Add the `load_xstable_model` routine to the `sherpa.astro.ui` module, which
+  supports loading XSPEC additive or multiplicative (atable and mtable) models.
+  The support for these models is still available via `load_table_model` in this
+  release, but it is deprecated. The `read_xstable_model` routine has been added
+  to the `sherpa.astro.xspec` module.
+
+#312 Fix over-zealous code clean up in PR #287 affecting sigmarej.
+  Fits using the sigmarej iterated-fit method were broken if a filter had been
+  applied to the data before the fit and there are any bins that get ignored at
+  larger bin values than the filtered-out data. (This fixes a subtle regression
+  introduced by #287).
+
+#313 Allow sequence=None when using gridsearch and Python 3.5 (Fix #309).
+  Allow the `gridsearch` optimiser to be used with the `sequence` option set
+  to `None` for Python 3.5.
+
+Caveats
+------------
+
+The requirements for Sherpa are to build with Python 2.7 and 3.5. There has been limited
+testing with Python 3.6, for which we distribute conda binaries. If in doubt, please install
+Sherpa in 2.7 or 3.5 environments only. Support for Python versions 3.3 and 3.4 is possible
+but would require community support.
+
+It has been reported during testing that some versions of the matplotlib conda package do not
+install properly because of a pyqt v5 dependency. If you encounter this issue, please pin down
+pyqt to version 4, e.g. `conda install matplotlib pyqt=4`.
+
+The `sherpatest` package is not distributed as a conda package anymore. This will probably be
+true for the foreseeable future. The `sherpatest` package contains data and functional tests
+that relies on external datasets, so it allows users and developers to run the entire regression
+tests suite. If you want to install `sherpatest`, please use pip and github:
+
+~~~~
+$ pip install https://github.com/sherpa/sherpa-test-data/archive/4.9.0.tar.gz
+~~~~
+
+If you decide to run the full regression tests suite you should also have matplotlib installed.
+If matplotlib is not installed a test will run and fail rather than being skipped. This issue
+will be fixed in the next release.
+
 Sherpa 4.8.2
 ============
 
