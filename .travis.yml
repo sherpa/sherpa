@@ -1,66 +1,44 @@
-language: python
-
-python:
-  - "2.7"
+language: c
 
 sudo: false
-
-cache:
-  directories:
-    - $HOME/xspec
 
 addons:
   apt:
     packages: &default_apt
-      - build-essential
       - gfortran
-      - flex
-      - bison
 
-# We use matrix include so that xspec builds (which are more complicated and long) are started first
+# Barebone build to check tests pass when most of the tests must be skipped.
+# We need to use TEST=package to avoid dependencies from being installed by pytest
+env: INSTALL_TYPE=install TEST=package NUMPYVER=1.11 TRAVIS_PYTHON_VERSION="2.7"
+
 matrix:
-  allow_failures:
-      - python: "3.5"
   fast_finish: true
   include:
-    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=install TEST=smoke MATPLOTLIBVER=1.5
-      python: "2.7"
+    # Full build (including ds9 and xspec), Python 2.7, setup.py develop, astropy, matplotlib 1.5
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="2.7"
       sudo: required
       dist: trusty
-    - env: XSPECVER="12.8.2q" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
-      python: "2.7"
+    # As above, Python 3.5
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.5"
       sudo: required
       dist: trusty
-    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 MKL=nomkl
-      python: "2.7"
+    # As above, Python 3.6, setup.py install
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.6"
       sudo: required
       dist: trusty
-    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
-      python: "3.5"
-      sudo: required
-      dist: trusty
-    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
-      python: "2.7"
-      sudo: required
-      dist: trusty
-    - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5
-      python: "2.7"
-    - env: FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
-      python: "2.7"
-    - env: FITS="astropy" INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.4 NUMPYVER=1.9
-      python: "2.7"
-    - env: FITS="astropy" INSTALL_TYPE=install TEST=package MATPLOTLIBVER=1.5 NUMPYVER=1.10
-      python: "2.7"
-    - env: INSTALL_TYPE=install TEST=package NUMPYVER=1.11
-      python: "2.7"
+    # Install sherpatest package rather than relying on relative location of the submodule
+    # Also, install matplotlib 2.0 and do not install astropy (checks tests are properly skipped)
+    - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="2.7"
+    # Install astropy without matplotlib (checks tests are properly skipped)
+    - env: INSTALL_TYPE=develop TEST=submodule FITS="astropy" TRAVIS_PYTHON_VERSION="3.5"
+    # Barebone build with no test data
+    - env: INSTALL_TYPE=develop TEST=none NUMPYVER=1.11 TRAVIS_PYTHON_VERSION="2.7"
   allow_failures:
-    - env: XSPECVER="12.8.2q" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5
-
-env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.4 # 1.5 does not support numpy 1.8, required by pyfits
+    - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.6"
 
 before_install:
-  - export LIBGFORTRANVER="1.0"
-  - export SHERPA_CHANNEL=https://conda.anaconda.org/sherpa
+  - export LIBGFORTRANVER="3.0"
+  - export SHERPA_CHANNEL=sherpa
   - export MINICONDA=/home/travis/miniconda
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
@@ -75,16 +53,15 @@ before_install:
   - if [ -n "${FITS}" ]; then conda install --yes -c ${SHERPA_CHANNEL} ${FITS} ${MKL}; fi
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER
   - conda config --add channels ${SHERPA_CHANNEL}
-  - pip install -r test_requirements.txt
   - if [ ${TEST} == package ];
      then pip install ./sherpa-test-data;
      git submodule deinit -f .;
     fi
   - if [ -n "${XSPECVER}" ];
-     then DS9_SITE=http://ds9.si.edu/download/linux64/;
-     XPA_SITE=http://ds9.si.edu/download/linux64_5/;
-     DS9_TAR=ds9.linux64.7.3.2.tar.gz;
-     XPA_TAR=xpa.linux64_5.2.1.14.tar.gz;
+     then DS9_SITE=http://ds9.si.edu/download/centos6/;
+     XPA_SITE=http://ds9.si.edu/download/centos6/;
+     DS9_TAR=ds9.centos6.7.5.tar.gz;
+     XPA_TAR=xpa.centos6.2.1.17.tar.gz;
      wget $DS9_SITE$DS9_TAR;
      wget $XPA_SITE$XPA_TAR;
      THIS_DIR=`pwd`;
@@ -94,7 +71,7 @@ before_install:
     fi
   - if [ -n "${XSPECVER}" ];
      then sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
-     conda install --yes -c https://conda.anaconda.org/cxc/channel/dev xspec-modelsonly=${XSPECVER};
+     conda install --quiet --yes -c cxc/channel/dev xspec-modelsonly=${XSPECVER};
      export HEADAS=$MINICONDA/envs/build/Xspec/spectral;
      export LD_LIBRARY_PATH=$MINICONDA/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
      sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
@@ -112,11 +89,9 @@ script:
   - if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
   - SMOKEVARS="${XSPECTEST} ${FITSTEST} -v 3"
   - if [ ${TEST} == submodule ]; then pip install pytest-cov; python setup.py test -a "--cov sherpa --cov-report term"; fi
-  - if [ ${TEST} == smoke ];
-        then cd /home;
-        sherpa_smoke ${SMOKEVARS};
-    fi
-  - if [ ${TEST} == package ];
+  - cd /home;
+  - sherpa_smoke ${SMOKEVARS};
+  - if [ ${TEST} == package ] || [ ${TEST} == none ];
         then cd $HOME;
         sherpa_test;
     fi
