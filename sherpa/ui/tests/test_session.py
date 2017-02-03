@@ -17,6 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import sherpa.utils
 from sherpa.ui.utils import Session
 from numpy.testing import assert_array_equal
 
@@ -25,6 +26,7 @@ TEST2 = [4, 5, 6]
 
 
 # bug #303
+@sherpa.utils.requires_plotting
 def test_set_log():
     session = Session()
     assert not session.get_data_plot_prefs()['xlog']
