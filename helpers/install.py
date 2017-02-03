@@ -27,4 +27,4 @@ class install(_install):
     def run(self):
         self.get_finalized_command('xspec_config', True).run()
         self.get_finalized_command('sherpa_config', True).run()
-        _install.run(self)
+        _install.do_egg_install(self)
