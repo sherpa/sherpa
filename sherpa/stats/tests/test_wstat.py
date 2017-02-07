@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -80,7 +80,8 @@
 
 import numpy as np
 
-from sherpa.utils import SherpaTestCase, requires_data, requires_fits
+from sherpa.utils import SherpaTestCase, requires_data, requires_fits, \
+    requires_group
 from sherpa.astro import ui
 
 from unittest import expectedFailure
@@ -178,6 +179,7 @@ class test_wstat_single_scalar(SherpaTestCase):
         self._check_stat(375, 416.0601496345599)
 
 
+@requires_group
 @requires_data
 @requires_fits
 class test_wstat_two_scalar(SherpaTestCase):
@@ -308,6 +310,7 @@ class test_wstat_two_scalar(SherpaTestCase):
         self._check_stat2(exp1 + exp2)
 
 
+@requires_group
 @requires_data
 @requires_fits
 class test_wstat_group_counts(SherpaTestCase):
