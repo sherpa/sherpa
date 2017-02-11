@@ -58,8 +58,7 @@ def evaluates_model(func):
 
 
 class StatInfoResults(NoNewAttributesAfterInit):
-    """A summary of the current statistic value for
-    one or more data sets.
+    """A summary of the current statistic value for one or more data sets.
 
     Attributes
     ----------
@@ -92,6 +91,7 @@ class StatInfoResults(NoNewAttributesAfterInit):
 
     """
 
+    # The fields to include in the __str__ output.
     _fields = ('name', 'ids', 'bkg_ids', 'statname', 'statval',
                'numpoints', 'dof', 'qval', 'rstat')
 
@@ -116,6 +116,13 @@ class StatInfoResults(NoNewAttributesAfterInit):
         return print_fields(self._fields, vars(self))
 
     def format(self):
+        """Return a string representation of the statistic.
+
+        Returns
+        -------
+        txt : str
+            A multi-line representation of the statistic value or values.
+        """
         s = ''
         if self.ids is not None and self.bkg_ids is None:
             if len(self.ids) == 1:
@@ -194,14 +201,20 @@ def _can_calculate_rstat(stat):
 
 
 class FitResults(NoNewAttributesAfterInit):
-    """A summary of the fit results.
+    """The results of a fit.
+
+    This object contains the parameter values, information on the
+    statistic and optimisation-method used, and other relevant
+    information.
 
     Attributes
     ----------
-    datasets : sequence of int or str
+    datasets : sequence of int or str, or `None`
        A sequence of the data set ids included in the results.
     itermethodname : str or `None`
        What iterated-fit scheme was used, if any.
+    methodname : str
+       The name of the optimisation method used (in lower case).
     statname : str
        The name of the statistic function.
     succeeded : bool
@@ -237,9 +250,16 @@ class FitResults(NoNewAttributesAfterInit):
        optimisation method.
     nfev : int
        The number of model evaluations made during the fit.
+    extra_output
+       The ``extra_output`` field from the fit.
+    covarerr : tuple or `None`
+       The ``covarerr`` field from the fit, if available.
+    modelvals : NumPy array
+       The values of the best-fit model evaluated for the data.
 
     """
 
+    # The fields to include in the __str__ output.
     _fields = ('datasets', 'itermethodname', 'methodname', 'statname',
                'succeeded', 'parnames', 'parvals', 'statval', 'istatval',
                'dstatval', 'numpoints', 'dof', 'qval', 'rstat', 'message',
@@ -303,6 +323,13 @@ class FitResults(NoNewAttributesAfterInit):
         return print_fields(self._fields, vars(self))
 
     def format(self):
+        """Return a string representation of the fit results.
+
+        Returns
+        -------
+        txt : str
+            A multi-line representation of the fit results.
+        """
         s = ''
         if self.datasets is not None:
             if len(self.datasets) == 1:
@@ -343,7 +370,47 @@ class FitResults(NoNewAttributesAfterInit):
 
 
 class ErrorEstResults(NoNewAttributesAfterInit):
+    """The results of an error estimation run.
 
+    This object contains the parameter ranges, information on the
+    statistic and optimisation-method used, and other relevant
+    information.
+
+    Attributes
+    ----------
+    datasets : sequence of int or str, or `None`
+       A sequence of the data set ids included in the results.
+    methodname : str
+       The name of the optimisation method used (in lower case).
+    itermethodname : str or `None`
+       What iterated-fit scheme was used, if any.
+    fitname : str
+       The name of the method used to fit the data, in lower case.
+    statname : str
+       The name of the statistic used to fit the data, in lower case.
+    sigma : number
+        The error values represent this number of sigma (assuming a
+        Gaussian distribution).
+    percent : number
+        The percentage value for the errors (calculated from the
+        ``sigma`` value assuming Gaussian errors).
+    parnames : tuple of str
+       the parameter names that were varied in the fit
+       (the thawed parameters in the model expression).
+    parvals : tuple of number
+       The parameter values, in the same order as `parnames`.
+    parmins : tuple of number
+       The parameter minimum values, in the same order as `parnames`.
+    parmaxes : tuple of number
+       The parameter maximum values, in the same order as `parnames`.
+    nfits : int
+       The number of fits performed during the error analysis.
+    extra_output
+       The ``extra_output`` field from the fit.
+
+    """
+
+    # The fields to include in the __str__ output.
     _fields = ('datasets', 'methodname', 'iterfitname', 'fitname', 'statname',
                'sigma', 'percent', 'parnames', 'parvals', 'parmins',
                'parmaxes', 'nfits')
@@ -406,6 +473,13 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         return print_fields(self._fields, vars(self))
 
     def format(self):
+        """Return a string representation of the error estimates.
+
+        Returns
+        -------
+        txt : str
+            A multi-line representation of the error estimates.
+        """
         s = ""
         if self.datasets is not None:
             if len(self.datasets) == 1:
@@ -572,18 +646,40 @@ class IterFit(NoNewAttributesAfterInit):
 
         This is a chi-square statistic where the variance is computed
         from model amplitudes derived in the previous iteration of the
-        fit. This 'Iterative Weighting' ([1]_) attempts to remove
+        fit. This 'Iterative Weighting' [1]_ attempts to remove
         biased estimates of model parameters which is inherent in
-        chi-square2 statistics ([2]_).
+        chi-square statistics [2]_.
+
+        Raises
+        ------
+        sherpa.utils.err.FitErr
+            This exception is raised if the statistic is not
+            supported. This method can only be used with
+            Chi-Square statistics with errors.
+
+        Notes
+        -----
+        The following keys are looked for in the ``itermethod_opts``
+        dictionary:
+
+        ========  =========  ===========
+        Key       Type       Description
+        ========  =========  ===========
+        tol       number     The tolerance used when comparing the statistic
+                             values.
+        maxiters  int        The maximum number of iterations.
+        ========  =========  ===========
 
         The variance in bin i is estimated to be:
 
-        sigma^2_i^j = S(i, t_s^(j-1)) + (A_s/A_b)^2 B_off(i, t_b^(j-1))
+        .. math::
+
+           \sigma(j)_i^2 = S(i, t_s(j-1)) + (A_s/A_b)^2 B_{off}(i, t_b(j-1))
 
         where j is the number of iterations that have been carried out
         in the fitting process, B_off is the background model
-        amplitude in bin i of the off-source region, and t_s^(j-1) and
-        t_b^(j-1) are the set of source and background model parameter
+        amplitude in bin i of the off-source region, and t_s(j-1) and
+        t_b(j-1) are the set of source and background model parameter
         values derived during the iteration previous to the current
         one. The variances are set to an array of ones on the first
         iteration.
@@ -693,16 +789,39 @@ class IterFit(NoNewAttributesAfterInit):
         """Exclude points that are significately far away from the best fit.
 
         The `sigmarej` scheme is based on the IRAF `sfit` function
-        [1]_, where after a fit data points are excluded if the value
-        of `(data-model)/error)` exceeds a threshold, and the data
+        [3]_, where after a fit data points are excluded if the value
+        of `(data-model) / error` exceeds a threshold, and the data
         re-fit. This removal of data points continues until the fit
-        has converged. The error removal can be asymmetric, since
-        there are separate parameters for the lower and upper limits.
+        has converged or a maximum number of iterations has been reached.
+        The error removal can be asymmetric, since there are separate
+        options for the lower and upper limits.
+
+        Raises
+        ------
+        sherpa.utils.err.FitErr
+            This exception is raised if the statistic is not
+            supported. This method can only be used with
+            Chi-Square statistics with errors.
+
+        Notes
+        -----
+        The following keys are looked for in the ``itermethod_opts``
+        dictionary:
+
+        ========  ==========  ===========
+        Key       Type        Description
+        ========  ==========  ===========
+        maxiters  int > 0     The maximum number of iterations.
+        lrej      number > 0  The number of sigma below the model to reject.
+        hrej      number > 0  The number of sigma above the model to reject.
+        grow      int >= 0    If greater than zero, also remove this many data
+                              points to either side of the identified element.
+        ========  ==========  ===========
 
         References
         ----------
 
-        .. [1] http://iraf.net/irafhelp.php?val=sfit
+        .. [3] http://iraf.net/irafhelp.php?val=sfit
 
         """
         if statkwargs is None:
@@ -717,7 +836,7 @@ class IterFit(NoNewAttributesAfterInit):
             raise FitErr('needchi2', 'Sigma-rejection')
 
         # Get maximum number of allowed iterations, high and low
-        # sigma thresholds for jrection of data points, and
+        # sigma thresholds for rejection of data points, and
         # "grow" factor (i.e., how many surrounding data points
         # to include with rejected data point).
 
@@ -890,6 +1009,29 @@ class IterFit(NoNewAttributesAfterInit):
 
 
 class Fit(NoNewAttributesAfterInit):
+    """Fit a model to a data set.
+
+    Parameters
+    ----------
+    data : sherpa.data.Data or sherpa.data.DataSimulFit instance
+       The data to be fit.
+    model : sherpa.models.model.Model or sherpa.models.model.SimulFitModel instance
+       The model to fit to the data. It should match the `data` parameter
+       (i.e. be a SimulFitModel object when data is a DataSimulFit).
+    stat : sherpa.stats.Stat instance or None, optional
+       The statistic object to use. If not given then
+       :py:class:`~sherpa.stats.Chi2Gehrels` is used.
+    method : sherpa.optmethods.OptMethod instance or None, optional
+       The optimiser to use. If not given then
+       :py:class:`~sherpa.optmethods.LevMar` is used.
+    estmethod : sherpa.estmethod.EstMethod instance or None, optional
+       The class used to calculate errors. If not given then
+       :py:class:`~sherpa.estmethods.Covariance` is used.
+    itermethod_opts : dict or None, optional
+       If set, defines the iterated-fit method and options to use.
+       It is passed through to :py:class:`~sherpa.fit.IterFit`.
+
+    """
 
     def __init__(self, data, model, stat=None, method=None, estmethod=None,
                  itermethod_opts=None):
@@ -956,13 +1098,15 @@ class Fit(NoNewAttributesAfterInit):
                  type(self.estmethod).__name__))
 
     def guess(self, **kwargs):
-        """
-        kwargs = { 'limits' : True, 'values' : False }
+        """Guess parameter values and limits.
+
+        The model's :py:meth:`~sherpa.models.model.Model.guess` method
+        is called with the data values (the dependent axis of the
+        data set) and the ``kwargs`` arguments.
         """
         self.model.guess(*self.data.to_guess(), **kwargs)
 
     # QUS: should this have an @evaluates_model decorator?
-    #
     def _calc_stat(self):
         """Calculate the current statistic value.
 
@@ -1062,6 +1206,40 @@ class Fit(NoNewAttributesAfterInit):
 
     @evaluates_model
     def fit(self, outfile=None, clobber=False):
+        """Fit the model to the data.
+
+        Parameters
+        ----------
+        outfile : str or `None`, optional
+           If not `None` then information on the fit is written to
+           this file.
+        clobber : bool, optional
+           Determines if the output file can be overwritten.
+
+        Returns
+        -------
+        fitres : FitResults instance
+
+        Raises
+        ------
+        sherpa.utils.err.FitErr
+           This is raised if `clobber` is `False` and `outfile` already
+           exists or if all the bins have been masked out of the fit.
+
+        See Also
+        --------
+        est_errors, simulfit
+
+        Notes
+        -----
+        The file created when `outfile` is set is a simple ASCII
+        file with a header line containing the text
+        "# nfev statistic" and then a list of the thawed parameters,
+        and then one line for each iteration, with the values separated
+        by spaces.
+
+        """
+
         dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
 
         # TODO: This test may already be handled by data.to_fit(),
@@ -1116,6 +1294,27 @@ class Fit(NoNewAttributesAfterInit):
 
     @evaluates_model
     def simulfit(self, *others):
+        """Fit multiple data sets and models simultaneously.
+
+        The current fit object is combined with the other fit
+        objects and a simultaneous fit is made, using the object's
+        statistic and optimisation method.
+
+        Parameters
+        ----------
+        *others : sherpa.fit.Fit instances
+            The ``data`` and ``model`` attributes of these arguments
+            are used, along with those from the object.
+
+        Returns
+        -------
+        fitres : FitResults instance
+
+        See Also
+        --------
+        fit
+
+        """
         if len(others) == 0:
             return self.fit()
 
@@ -1128,6 +1327,56 @@ class Fit(NoNewAttributesAfterInit):
 
     @evaluates_model
     def est_errors(self, methoddict=None, parlist=None):
+        """Estimate errors.
+
+        Calculate the low and high errors for one or more of the
+        thawed parameters in the fit.
+
+        Parameters
+        ----------
+        methoddict : dict or `None`, optional
+            A dictionary mapping from lower-cased method name to
+            the associated optimisation method instance to use. This
+            is only used if the method is changed, as described in
+            the Notes section below.
+        parlist : seqquence of sherpa.model.parameter.Parameter instances or `None`, optional
+            The names of the parameters for which the errors should
+            be calculated. If set to `None` then all the thawed
+            parameters are used.
+
+        Returns
+        -------
+        res : ErrorEstResults instance
+
+        Raises
+        ------
+        sherpa.utils.err.EstErr
+           If any parameter in parlist is not valid (i.e. is not
+           thawed or is not a member of the model expression being
+           fit), or if the statistic is :py:class:`~sherpa.stats.LeastSq`,
+           or if the reduced chi-square value of the current parameter
+           values is larger than the ``max_rstat`` option (for
+           chi-square statistics).
+
+        See Also
+        --------
+        fit
+
+        Notes
+        -----
+        If a new minimum is found for any parameter then the calculation
+        is automatically started for all the parameters using this
+        new best-fit location. This can repeat until the ``maxfits``
+        option is reached.
+
+        Unless the :py:class:`~sherpa.estmethods.Covariance` estimator
+        is being used, ot the ``fast`` option is unset, then the method
+        will be changed to :py:class:`~sherpa.optmethods.NelderMead` (for
+        likelihood-based statistics) or :py:class:`~sherpa.optmethods.LevMar`
+        (for chi-square based statistics) whilst calculating the
+        errors.
+        """
+
         # Define functions to freeze and thaw a parameter before
         # we call fit function -- projection can call fit several
         # times, for each parameter -- that parameter must be frozen
