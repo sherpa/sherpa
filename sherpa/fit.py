@@ -23,6 +23,9 @@ from six.moves import xrange
 import logging
 import os
 import signal
+
+from functools import wraps
+
 from numpy import arange, array, abs, iterable, sqrt, where, \
     ones_like, isnan, isinf, float, float32, finfo, nan, any, int
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
@@ -42,18 +45,15 @@ __all__ = ('FitResults', 'ErrorEstResults', 'Fit')
 
 
 def evaluates_model(func):
+    """Fit object decorator that runs model startup() and teardown()
     """
-    Fit object decorator that runs model startup() and teardown()
-
-    """
+    @wraps(func)
     def run(fit, *args, **kwargs):
         fit.model.startup()
         result = func(fit, *args, **kwargs)
         fit.model.teardown()
         return result
 
-    run.__name__ = func.__name__
-    run.__doc__ = func.__doc__
     return run
 
 
