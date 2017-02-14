@@ -76,7 +76,7 @@ before_install:
      sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
      sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=$LD_LIBRARY_PATH|g" setup.cfg;
     fi
-  - if [ ${TEST} == smoke || ${TEST} == none ];
+  - if [ ${TEST} == smoke ] || [ ${TEST} == none ];
      then git submodule deinit -f .;
     fi
 
