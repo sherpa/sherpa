@@ -61,7 +61,7 @@ before_install:
 
   # Create and activate conda build environment
   # We create a new environment so we don't care about the python version in the root environment.
-  - conda create --yes -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER $XSPEC $FITS
+  - conda create --yes --quiet -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER $XSPEC $FITS
   - source activate build
 
   # XSPEC and DS9
@@ -70,8 +70,8 @@ before_install:
      XPA_SITE=http://ds9.si.edu/download/centos6/;
      DS9_TAR=ds9.centos6.7.5.tar.gz;
      XPA_TAR=xpa.centos6.2.1.17.tar.gz;
-     wget $DS9_SITE$DS9_TAR;
-     wget $XPA_SITE$XPA_TAR;
+     wget --quiet $DS9_SITE$DS9_TAR;
+     wget --quiet $XPA_SITE$XPA_TAR;
      THIS_DIR=`pwd`;
      cd $MINICONDA/bin; tar xf $THIS_DIR/$DS9_TAR; tar xf $THIS_DIR/$XPA_TAR; cd -;
      export DISPLAY=:99;
@@ -104,7 +104,7 @@ script:
   - SMOKEVARS="${XSPECTEST} ${FITSTEST} -v 3"
 
   # Install coverage tooling and run tests using setuptools
-  - if [ ${TEST} == submodule ]; then pip install pytest-cov; python setup.py test -a "--cov sherpa --cov-report term"; fi
+  - if [ ${TEST} == submodule ]; then pip install pytest-cov; python setup.py -q test -a "--cov sherpa --cov-report term"; fi
 
   # Run smoke test
   - cd /home;
