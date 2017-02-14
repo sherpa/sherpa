@@ -50,7 +50,7 @@ try:
             # import here, cause outside the eggs aren't loaded
             import pytest
             if not self.pytest_args:
-                self.pytest_args = 'sherpa'
+                self.pytest_args = ['sherpa',]
             errno = pytest.main(self.pytest_args)
             sys.exit(errno)
 
