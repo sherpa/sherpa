@@ -36,25 +36,35 @@ matrix:
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.6"
 
 before_install:
+  # General configurations
   - export LIBGFORTRANVER="3.0"
   - export SHERPA_CHANNEL=sherpa
   - export XSPEC_CHANNEL=cxc/channel/dev
   - export MINICONDA=/home/travis/miniconda
+
+  # Install, update, and configure conda
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p $MINICONDA
   - export PATH=$MINICONDA/bin:$PATH
   - conda update --yes conda
+  - conda config --add channels ${SHERPA_CHANNEL}
+  - conda config --add channels ${XSPEC_CHANNEL}
+
+  # Figure out requested dependencies
   - if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
   - if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
   - if [ -n "${XSPECVER}" ];
      then export XSPEC="xspec-modelsonly=${XSPECVER}";
     fi
   - echo ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}
-  - conda config --add channels ${SHERPA_CHANNEL}
-  - conda config --add channels ${XSPEC_CHANNEL}
+
+  # Create and activate conda build environment
+  # We create a new environment so we don't care about the python version in the root environment.
   - conda create --yes -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER $XSPEC $FITS
   - source activate build
+
+  # XSPEC and DS9
   - if [ -n "${XSPECVER}" ];
      then DS9_SITE=http://ds9.si.edu/download/centos6/;
      XPA_SITE=http://ds9.si.edu/download/centos6/;
@@ -72,9 +82,13 @@ before_install:
      sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
      sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=$LD_LIBRARY_PATH|g" setup.cfg;
     fi
+
+  # No test data, then remove submodule (git automatically clones recursively)
   - if [ ${TEST} == none ];
      then git submodule deinit -f .;
     fi
+
+  # Install test data as a package, then remove the submodule
   - if [ ${TEST} == package ];
      then pip install ./sherpa-test-data;
      git submodule deinit -f .;
@@ -84,12 +98,19 @@ install:
     - python setup.py $INSTALL_TYPE &> install.log
 
 script:
+  # Build smoke test switches, to ensure requested dependencies are reachable
   - if [ -n "${XSPECVER}" ]; then XSPECTEST="-x"; fi
   - if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
   - SMOKEVARS="${XSPECTEST} ${FITSTEST} -v 3"
+
+  # Install coverage tooling and run tests using setuptools
   - if [ ${TEST} == submodule ]; then pip install pytest-cov; python setup.py test -a "--cov sherpa --cov-report term"; fi
+
+  # Run smoke test
   - cd /home;
   - sherpa_smoke ${SMOKEVARS};
+
+  # Run regression tests using sherpa_test
   - if [ ${TEST} == package ] || [ ${TEST} == none ];
         then cd $HOME;
         sherpa_test;
