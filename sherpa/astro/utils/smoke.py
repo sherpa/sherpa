@@ -58,7 +58,7 @@ def run(verbosity=0, require_failure=False, fits=None, xspec=False):
     The function will exit with a non-zero exit status if any errors are detected.
     """
     test_suite = SmokeTestSuite(require_failure=require_failure)
-    runner = unittest.TextTestRunner(verbosity=verbosity)
+    runner = unittest.TextTestRunner(verbosity=int(verbosity))
     result = runner.run(test_suite)
 
     missing_requirements = []
