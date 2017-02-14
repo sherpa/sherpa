@@ -8,8 +8,8 @@ addons:
       - gfortran
 
 # Barebone build to check tests pass when most of the tests must be skipped.
-# We need to use TEST=package to avoid dependencies from being installed by pytest
-env: INSTALL_TYPE=install TEST=package NUMPYVER=1.11 TRAVIS_PYTHON_VERSION="2.7"
+# We need to use TEST=none to remove the test-data submodule.
+env: INSTALL_TYPE=install TEST=none NUMPYVER=1.11 TRAVIS_PYTHON_VERSION="2.7"
 
 matrix:
   fast_finish: true
@@ -77,7 +77,7 @@ before_install:
      sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
      sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=$LD_LIBRARY_PATH|g" setup.cfg;
     fi
-  - if [ ${TEST} == smoke ];
+  - if [ ${TEST} == smoke || ${TEST} == none ];
      then git submodule deinit -f .;
     fi
 
