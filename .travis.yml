@@ -53,7 +53,7 @@ before_install:
   - echo ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}
   - conda config --add channels ${SHERPA_CHANNEL}
   - conda config --add channels ${XSPEC_CHANNEL}
-  - conda create --yes -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER $XSPEC
+  - conda create --yes -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER $XSPEC $FITS
   - source activate build
   - if [ -n "${XSPECVER}" ];
      then DS9_SITE=http://ds9.si.edu/download/centos6/;
@@ -72,7 +72,7 @@ before_install:
      sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
      sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=$LD_LIBRARY_PATH|g" setup.cfg;
     fi
-  - if [ ${TEST} == smoke ] || [ ${TEST} == none ];
+  - if [ ${TEST} == none ];
      then git submodule deinit -f .;
     fi
   - if [ ${TEST} == package ];
