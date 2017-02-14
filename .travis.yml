@@ -38,6 +38,7 @@ matrix:
 before_install:
   - export LIBGFORTRANVER="3.0"
   - export SHERPA_CHANNEL=sherpa
+  - export XSPEC_CHANNEL=cxc/channel/dev
   - export MINICONDA=/home/travis/miniconda
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
@@ -46,16 +47,14 @@ before_install:
   - conda update --yes conda
   - if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
   - if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
-  - echo ${MATPLOTLIB} ${NUMPY} ${FITS}
-  - conda create --yes -n build python=$TRAVIS_PYTHON_VERSION
-  - source activate build
-  - if [ -n "${FITS}" ]; then conda install --yes -c ${SHERPA_CHANNEL} ${FITS} ${MKL}; fi
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER
-  - conda config --add channels ${SHERPA_CHANNEL}
-  - if [ ${TEST} == package ];
-     then pip install ./sherpa-test-data;
-     git submodule deinit -f .;
+  - if [ -n "${XSPECVER}" ];
+     then export XSPEC="xspec-modelsonly=${XSPECVER}";
     fi
+  - echo ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}
+  - conda config --add channels ${SHERPA_CHANNEL}
+  - conda config --add channels ${XSPEC_CHANNEL}
+  - conda create --yes -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER $XSPEC
+  - source activate build
   - if [ -n "${XSPECVER}" ];
      then DS9_SITE=http://ds9.si.edu/download/centos6/;
      XPA_SITE=http://ds9.si.edu/download/centos6/;
@@ -67,10 +66,7 @@ before_install:
      cd $MINICONDA/bin; tar xf $THIS_DIR/$DS9_TAR; tar xf $THIS_DIR/$XPA_TAR; cd -;
      export DISPLAY=:99;
      /sbin/start-stop-daemon --start --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16;
-    fi
-  - if [ -n "${XSPECVER}" ];
-     then sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
-     conda install --quiet --yes -c cxc/channel/dev xspec-modelsonly=${XSPECVER};
+     sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
      export HEADAS=$MINICONDA/envs/build/Xspec/spectral;
      export LD_LIBRARY_PATH=$MINICONDA/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
      sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
@@ -78,6 +74,10 @@ before_install:
     fi
   - if [ ${TEST} == smoke ] || [ ${TEST} == none ];
      then git submodule deinit -f .;
+    fi
+  - if [ ${TEST} == package ];
+     then pip install ./sherpa-test-data;
+     git submodule deinit -f .;
     fi
 
 install:
