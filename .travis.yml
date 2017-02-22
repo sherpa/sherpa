@@ -33,6 +33,7 @@ matrix:
     # Install astropy without matplotlib (checks tests are properly skipped)
     - env: INSTALL_TYPE=develop TEST=submodule FITS="astropy" TRAVIS_PYTHON_VERSION="3.5"
   allow_failures:
+    # Python 3.6 build fails because of unhandled warnings coming (mostly?) from the ds9 integration.
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.6"
 
 before_install:
