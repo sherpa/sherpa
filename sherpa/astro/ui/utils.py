@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -197,7 +197,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -244,7 +244,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         IOError
-           If ``filename`` does not exist.
+           If `filename` does not exist.
 
         See Also
         --------
@@ -412,7 +412,7 @@ class Session(sherpa.ui.utils.Session):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -420,7 +420,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -430,7 +430,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -462,7 +462,7 @@ class Session(sherpa.ui.utils.Session):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -470,7 +470,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -482,7 +482,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -515,7 +515,7 @@ class Session(sherpa.ui.utils.Session):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -523,7 +523,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -535,7 +535,7 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -719,19 +719,21 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        a1, .., aN : array_like
+        args : array_like
            Arrays of data. The order, and number, is determined by
-           the ``dstype`` parameter, and listed in the `load_arrays`
+           the `dstype` parameter, and listed in the `load_arrays`
            routine.
         dstype
            The data set type. The default is `Data1D` and values
            include: `Data1D`, `Data1DInt`, `Data2D`, `Data2DInt`,
-           `DataPHA`, and `DataIMG`.
+           `DataPHA`, and `DataIMG`. The class is expected to
+           be derived from `sherpa.data.BaseData`.
 
         Returns
         -------
-        data
-           The data set object matching the requested ``dstype``.
+        instance
+           The data set object matching the requested `dstype`
+           parameter.
 
         See Also
         --------
@@ -884,20 +886,21 @@ class Session(sherpa.ui.utils.Session):
            use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
         ncols : int, optional
-           The number of columns to read in (the first ``ncols`` columns
+           The number of columns to read in (the first `ncols` columns
            in the file). The meaning of the columns is determined by
-           the ``dstype`` parameter.
+           the `dstype` parameter.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
            ``None``.
         dstype : optional
-           The data class to use. The default is `Data1D`.
+           The data class to use. The default is `Data1D` and it
+           is expected to be derived from `sherpa.data.BaseData`.
 
         Returns
         -------
-        data
+        instance
            The class of the returned object is controlled by the
-           ``dstype`` parameter.
+           `dstype` parameter.
 
         See Also
         --------
@@ -931,7 +934,7 @@ class Session(sherpa.ui.utils.Session):
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
-        also be done using the ``colkeys`` parameter, as shown above:
+        also be done using the `colkeys` parameter, as shown above:
 
         >>> d = unpack_table('rprof.fits[cols rmid,sur_bri,sur_bri_err]',
                              ncols=3)
@@ -981,8 +984,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1073,9 +1076,9 @@ class Session(sherpa.ui.utils.Session):
            column depends on the I/O library in use (Crates or
            AstroPy).
         ncols : int, optional
-           The number of columns to read in (the first ``ncols`` columns
+           The number of columns to read in (the first `ncols` columns
            in the file). The meaning of the columns is determined by
-           the ``dstype`` parameter.
+           the `dstype` parameter.
         colkeys : array of str, optional
            An array of the column name to read in. The default is
            ``None``.
@@ -1084,13 +1087,14 @@ class Session(sherpa.ui.utils.Session):
         comment : str, optional
            The comment character. The default is ``'#'``.
         dstype : optional
-           The data class to use. The default is `Data1D`.
+           The data class to use. The default is `Data1D` and it
+           is expected to be derived from `sherpa.data.BaseData`.
 
         Returns
         -------
-        data
-           The class of the returned object is controlled by the
-           ``dstype`` parameter.
+        instance
+           The type of the returned object is controlled by the
+           `dstype` parameter.
 
         See Also
         --------
@@ -1124,7 +1128,7 @@ class Session(sherpa.ui.utils.Session):
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
-        also be done using the ``colkeys`` parameter, as shown above:
+        also be done using the `colkeys` parameter, as shown above:
 
         >>> d = unpack_ascii('tbl.dat[cols rmid,sur_bri,sur_bri_err]',
                              ncols=3)
@@ -1182,8 +1186,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1267,14 +1271,16 @@ class Session(sherpa.ui.utils.Session):
            use, as used by the I/O backend in use by Sherpa: e.g.  a
            ``PHACrateDataset``, ``TABLECrate``, or ``IMAGECrate`` for
            crates, as used by CIAO, or a list of AstroPy HDU objects.
-        *args, **kwargs
-           The options supported by
-           `unpack_pha`, `unpack_image`, `unpack_table`, and
-           `unpack_ascii`.
+        args
+           The arguments supported by `unpack_pha`, `unpack_image`,
+           `unpack_table`, and `unpack_ascii`.
+        kwargs
+           The keyword arguments supported by `unpack_pha`, `unpack_image`,
+           `unpack_table`, and `unpack_ascii`.
 
         Returns
         -------
-        data
+        instance
            The data set object.
 
         See Also
@@ -1332,10 +1338,12 @@ class Session(sherpa.ui.utils.Session):
            use, as used by the I/O backend in use by Sherpa: e.g.  a
            ``PHACrateDataset``, ``TABLECrate``, or ``IMAGECrate`` for
            crates, as used by CIAO, or a list of AstroPy HDU objects.
-        *args, **kwargs
-           The options supported by
-           `load_pha`, `load_image`, `load_table`, and
-           `load_ascii`.
+        args
+           The arguments supported by `load_pha`, `load_image`,
+           `load_table`, and `load_ascii`.
+        kwargs
+           The keyword arguments supported by `load_pha`, `load_image`,
+           `load_table`, and `load_ascii`.
 
         See Also
         --------
@@ -1352,8 +1360,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments,
-        then they are interpreted as the ``id`` and ``filename``
+        the `filename` parameter. If given two un-named arguments,
+        then they are interpreted as the `id` and `filename`
         parameters, respectively. The remaining parameters are
         expected to be given as named arguments.
 
@@ -1478,8 +1486,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``arg`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``arg`` parameters,
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1655,8 +1663,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``arg`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``arg`` parameters,
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1804,8 +1812,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1887,8 +1895,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -1974,8 +1982,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2041,8 +2049,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``val`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``val`` parameters,
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
         respectively.
 
         Examples
@@ -2126,8 +2134,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2210,8 +2218,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2278,8 +2286,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``val`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``val`` parameters,
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
         respectively.
 
         Examples
@@ -2338,10 +2346,10 @@ class Session(sherpa.ui.utils.Session):
         val : array or scalar
            The systematic error.
         fractional : bool, optional
-           If ``False`` (the default value), then the ``val`` parameter is
-           the absolute value, otherwise the ``val`` parameter
+           If ``False`` (the default value), then the `val` parameter is
+           the absolute value, otherwise the `val` parameter
            represents the fractional error, so the absolute value is
-           calculated as ``get_dep() * val`` (and ``val`` must be
+           calculated as ``get_dep() * val`` (and `val` must be
            a scalar).
         bkg_id : int or str, optional
            Set to identify which background component to set. The
@@ -2360,8 +2368,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``val`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``val`` parameters,
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
         respectively.
 
         Examples
@@ -2410,10 +2418,10 @@ class Session(sherpa.ui.utils.Session):
         val : array or scalar
            The systematic error.
         fractional : bool, optional
-           If ``False`` (the default value), then the ``val`` parameter is
-           the absolute value, otherwise the ``val`` parameter
+           If ``False`` (the default value), then the `val` parameter is
+           the absolute value, otherwise the `val` parameter
            represents the fractional error, so the absolute value is
-           calculated as ``get_dep() * val`` (and ``val`` must be
+           calculated as ``get_dep() * val`` (and `val` must be
            a scalar).
         bkg_id : int or str, optional
            Set to identify which background component to set. The
@@ -2432,8 +2440,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``val`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``val`` parameters,
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
         respectively.
 
         Examples
@@ -2500,8 +2508,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``exptime`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``exptime`` parameters,
+        the `exptime` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `exptime` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2567,8 +2575,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``backscale`` parameter. If given two un-named arguments,
-        then they are interpreted as the ``id`` and ``backscale``
+        the `backscale` parameter. If given two un-named arguments,
+        then they are interpreted as the `id` and `backscale`
         parameters, respectively. The remaining parameters are
         expected to be given as named arguments.
 
@@ -2618,8 +2626,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``area`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``area`` parameters,
+        the `area` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `area` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -3447,7 +3455,7 @@ class Session(sherpa.ui.utils.Session):
         args : array of arrays
            The arrays to write out.
         fields : array of str
-           The column names (should match the size of ``args``).
+           The column names (should match the size of `args`).
         ascii : bool, optional
            If ``False`` then the data is written as a FITS format binary
            table. The default is ``True``. The exact format of the
@@ -3461,7 +3469,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -3506,7 +3514,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the background model should be written out
            rather than the source.
@@ -3516,7 +3524,7 @@ class Session(sherpa.ui.utils.Session):
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -3526,7 +3534,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -3540,8 +3548,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -3589,7 +3597,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the background model should be written out
            rather than the source.
@@ -3599,7 +3607,7 @@ class Session(sherpa.ui.utils.Session):
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -3609,7 +3617,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -3623,8 +3631,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -3669,7 +3677,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the background residuals should be written out
            rather than the source.
@@ -3679,7 +3687,7 @@ class Session(sherpa.ui.utils.Session):
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -3689,7 +3697,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -3701,8 +3709,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -3741,7 +3749,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the background residuals should be written out
            rather than the source.
@@ -3751,7 +3759,7 @@ class Session(sherpa.ui.utils.Session):
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -3761,7 +3769,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -3773,8 +3781,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -3813,7 +3821,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the background should be written out rather
            than the source.
@@ -3823,7 +3831,7 @@ class Session(sherpa.ui.utils.Session):
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -3833,7 +3841,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.DataErr
            If the data set has not been filtered.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -3845,8 +3853,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -3903,7 +3911,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the background should be written out rather
            than the source.
@@ -3913,7 +3921,7 @@ class Session(sherpa.ui.utils.Session):
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -3921,7 +3929,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -3934,8 +3942,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -3989,7 +3997,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the background should be written out rather
            than the source.
@@ -3999,7 +4007,7 @@ class Session(sherpa.ui.utils.Session):
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4009,7 +4017,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IOErr
            If the data set does not contain any systematic errors.
         sherpa.utils.err.DataErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4022,8 +4030,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4083,7 +4091,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the background should be written out rather
            than the source.
@@ -4093,7 +4101,7 @@ class Session(sherpa.ui.utils.Session):
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4101,7 +4109,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4117,8 +4125,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4171,7 +4179,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the background should be written out rather
            than the source.
@@ -4181,7 +4189,7 @@ class Session(sherpa.ui.utils.Session):
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4191,7 +4199,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4202,8 +4210,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4252,7 +4260,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the grouping array should be taken from the
            background associated with the data set.
@@ -4262,7 +4270,7 @@ class Session(sherpa.ui.utils.Session):
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4270,7 +4278,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4283,8 +4291,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4337,7 +4345,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the array to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         bkg_id : int or str, optional
            Set if the quality array should be taken from the
            background associated with the data set.
@@ -4347,7 +4355,7 @@ class Session(sherpa.ui.utils.Session):
            exact format of the output file depends on the
            I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4355,7 +4363,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4368,8 +4376,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4419,14 +4427,14 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the data to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         ascii : bool, optional
            If ``False`` then the data is written as a FITS format binary
            table. The default is ``False``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4434,7 +4442,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
            If the data set does not contain 2D data.
 
         See Also
@@ -4449,8 +4457,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4487,14 +4495,14 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         filename : str
            The name of the file to write the data to. The format
-           is determined by the ``ascii`` argument.
+           is determined by the `ascii` argument.
         ascii : bool, optional
            If ``False`` then the data is written as a FITS format binary
            table. The default is ``False``. The exact format of the
            output file depends on the I/O library in use (Crates or
            AstroPy).
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4502,7 +4510,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4517,8 +4525,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4575,7 +4583,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.IdentifierErr
            If there is no matching data set.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4597,8 +4605,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4825,8 +4833,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``arf`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``arf`` parameters,
+        the `arf` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arf` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4961,8 +4969,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``arg`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``arg`` parameters,
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5076,8 +5084,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``arg`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``arg`` parameters,
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5132,7 +5140,7 @@ class Session(sherpa.ui.utils.Session):
         parameter use, since it is designed for easy interactive use.
         When called with two arguments, they are assumed to be
         ``filenames`` and ``resp_ids``, and three positional arguments
-        means ``id``, ``filenames``, and ``resp_ids``.
+        means `id`, ``filenames``, and ``resp_ids``.
 
         Examples
         --------
@@ -5264,8 +5272,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``rmf`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``rmf`` parameters,
+        the `rmf` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `rmf` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5400,8 +5408,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``arg`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``arg`` parameters,
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5510,8 +5518,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``arg`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``arg`` parameters,
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5566,7 +5574,7 @@ class Session(sherpa.ui.utils.Session):
         parameter use, since it is designed for easy interactive use.
         When called with two arguments, they are assumed to be
         ``filenames`` and ``resp_ids``, and three positional arguments
-        means ``id``, ``filenames``, and ``resp_ids``.
+        means `id`, ``filenames``, and ``resp_ids``.
 
         Examples
         --------
@@ -5684,8 +5692,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``bkg`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``bkg`` parameters,
+        the `bkg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `bkg` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -5819,7 +5827,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IdentifierErr
-           If the ``id`` argument is not recognized.
+           If the `id` argument is not recognized.
 
         See Also
         --------
@@ -5830,8 +5838,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``quantity`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``quantity`` parameters,
+        the `quantity` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `quantity` parameters,
         respectively.
 
         Examples
@@ -5891,7 +5899,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain PHA data.
         sherpa.utils.err.IdentifierErr
-           If the ``id`` argument is not recognized.
+           If the `id` argument is not recognized.
 
         See Also
         --------
@@ -5934,8 +5942,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``coord`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``coord`` parameters,
+        the `coord` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `coord` parameters,
         respectively.
 
         Any limits or values already set for model parameters, such as
@@ -5943,8 +5951,8 @@ class Session(sherpa.ui.utils.Session):
         the coordinate system.
 
         The 'logical' system is one in which the center of the
-        lower-left pixel has coordinates ``(1,1)`` and the center of the
-        top-right pixel has coordinates ``(nx,ny)``, for a ``nx``
+        lower-left pixel has coordinates ``(1, 1)`` and the center of the
+        top-right pixel has coordinates ``(nx, ny)``, for a ``nx``
         (columns) by ``ny`` (rows) pixel image. The pixels have a side
         of length 1, so the first pixel covers the range ``x=0.5`` to
         ``x=1.5`` and ``y=0.5`` to ``y=1.5``.
@@ -6008,7 +6016,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.utils.err.ArgumentErr
            If the data set does not contain image data.
         sherpa.utils.err.IdentifierErr
-           If the ``id`` argument is not recognized.
+           If the `id` argument is not recognized.
 
         See Also
         --------
@@ -6585,8 +6593,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``arg`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``arg`` parameters,
+        the `arg` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `arg` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -6793,8 +6801,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``val`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``val`` parameters,
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
         respectively.
 
         References
@@ -6929,8 +6937,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``val`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``val`` parameters,
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
         respectively.
 
         References
@@ -7143,7 +7151,7 @@ class Session(sherpa.ui.utils.Session):
     def group_bins(self, id, num=None, bkg_id=None, tabStops=None):
         """Group into a fixed number of bins.
 
-        Combine the data so that there ``num`` equal-width bins (or
+        Combine the data so that there `num` equal-width bins (or
         groups). The binning scheme is applied to all the channels,
         but any existing filter - created by the `ignore` or `notice`
         set of functions - is re-applied after the data has been
@@ -7190,8 +7198,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``num`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``num`` parameters,
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7256,7 +7264,7 @@ class Session(sherpa.ui.utils.Session):
     def group_width(self, id, num=None, bkg_id=None, tabStops=None):
         """Group into a fixed bin width.
 
-        Combine the data so that each bin contains ``num`` channels.
+        Combine the data so that each bin contains `num` channels.
         The binning scheme is applied to all the channels, but any
         existing filter - created by the `ignore` or `notice` set of
         functions - is re-applied after the data has been grouped.
@@ -7301,8 +7309,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``num`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``num`` parameters,
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7364,7 +7372,7 @@ class Session(sherpa.ui.utils.Session):
                      maxLength=None, tabStops=None):
         """Group into a minimum number of counts per bin.
 
-        Combine the data so that each bin contains ``num`` or more
+        Combine the data so that each bin contains `num` or more
         counts. The binning scheme is applied to all the channels, but
         any existing filter - created by the `ignore` or `notice` set
         of functions - is re-applied after the data has been grouped.
@@ -7415,8 +7423,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``num`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``num`` parameters,
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7481,7 +7489,7 @@ class Session(sherpa.ui.utils.Session):
         """Group into a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        of at least ``snr``. The binning scheme is applied to all the
+        of at least `snr`. The binning scheme is applied to all the
         channels, but any existing filter - created by the `ignore` or
         `notice` set of functions - is re-applied after the data has
         been grouped.  The background is *not* included in this
@@ -7537,8 +7545,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``snr`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``snr`` parameters,
+        the `snr` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `snr` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7578,7 +7586,7 @@ class Session(sherpa.ui.utils.Session):
                     maxLength=None, tabStops=None):
         """Adaptively group to a minimum number of counts.
 
-        Combine the data so that each bin contains ``min`` or more
+        Combine the data so that each bin contains `min` or more
         counts. The difference to `group_counts` is that this
         algorithm starts with the bins with the largest signal, in
         order to avoid over-grouping bright features, rather than at
@@ -7632,8 +7640,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``min`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``min`` parameters,
+        the `min` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `min` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -7676,7 +7684,7 @@ class Session(sherpa.ui.utils.Session):
         """Adaptively group to a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        of at least ``num``. The difference to `group_snr` is that this
+        of at least `num`. The difference to `group_snr` is that this
         algorithm starts with the bins with the largest signal, in
         order to avoid over-grouping bright features, rather than at
         the first channel of the data. The adaptive nature means that
@@ -7735,8 +7743,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``num`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``num`` parameters,
+        the `num` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `num` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -8180,8 +8188,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Some functions - such as `plot_source` and `calc_energy_flux`
@@ -8417,8 +8425,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         This is a generic function, and can be used to model other
@@ -8519,20 +8527,20 @@ class Session(sherpa.ui.utils.Session):
         This returns the model expression for the background of a data
         set, including the instrument response (e.g. ARF and RMF),
         whether created automatically or explicitly, with
-        `set_bkg_full_model`.
+        ``set_bkg_full_model``.
 
         Parameters
         ----------
         id : int or str, optional
            The data set to use. If not given then the default
-           identifier is used, as returned by `get_default_id`.
+           identifier is used, as returned by ``get_default_id``.
         bkg_id : int or str, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
 
         Returns
         -------
-        model
+        instance
            This can contain multiple model components and any
            instrument response. Changing attributes of this model
            changes the model used by the data set.
@@ -8609,8 +8617,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Some functions - such as `plot_bkg_source` - may not work for
@@ -8715,8 +8723,8 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         The emission defined by the background model expression is
@@ -8942,7 +8950,7 @@ class Session(sherpa.ui.utils.Session):
         .. note:: Deprecated in Sherpa 4.9
                   The new `load_xstable_model` routine should be used for
                   loading XSPEC table model files. Support for these files
-                  will be removed from ``load_table_model` in the next
+                  will be removed from `load_table_model` in the next
                   release.
 
         A table model is defined on a grid of points which is
@@ -8964,8 +8972,10 @@ class Session(sherpa.ui.utils.Session):
            the coordinate grid of the data set. Linear,
            nearest-neighbor, and polynomial schemes are provided in
            the sherpa.utils module.
-        *args, **kwargs
+        args
            Arguments for reading in the data.
+        kwargs
+           Keyword arguments for reading in the data.
 
         See Also
         --------
@@ -9055,9 +9065,12 @@ class Session(sherpa.ui.utils.Session):
            Set this to include data from this file in the model. The
            file should contain two columns, and the second column is
            stored in the ``_y`` attribute of the model.
-        *args, **kwargs
-           Options for reading in the data from ``filename``, if set.
+        args
+           Arguments for reading in the data from `filename`, if set.
            See `load_table` and `load_image` for more information.
+        kwargs
+           Keyword arguments for reading in the data from `filename`,
+           if set. See `load_table` and `load_image` for more information.
 
         See Also
         --------
@@ -9106,12 +9119,12 @@ class Session(sherpa.ui.utils.Session):
         use it in a source expression:
 
         >>> def func1d(pars, x, xhi=None):
-                if xhi is not None:
-                    x = (x + xhi)/2
-                return x * pars[1] + pars[0]
-
+        ...     if xhi is not None:
+        ...         x = (x + xhi)/2
+        ...     return x * pars[1] + pars[0]
+        ...
         >>> load_user_model(func1d, "myfunc")
-        >>> add_user_pars(myfunc, ["c","m"], [0,1])
+        >>> add_user_pars(myfunc, ["c", "m"], [0, 1])
         >>> set_source(myfunc + gauss1d.gline)
 
         """
@@ -9247,7 +9260,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.FitErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -9330,7 +9343,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.FitErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -9493,7 +9506,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        data
+        instance
            An object representing the data used to create the plot by
            `plot_source`. The return value depends on the data
            set (e.g. PHA, 1D binned, 1D un-binned).
@@ -11267,7 +11280,7 @@ class Session(sherpa.ui.utils.Session):
         -------
         vals
            The return array has the shape ``(num, N+1)``, where ``N`` is the
-           number of free parameters and num is the ``num`` parameter.
+           number of free parameters and num is the `num` parameter.
            The rows of this array contain the flux value, as
            calculated by `calc_photon_flux`, followed by the values of
            the thawed parameters used for that iteration. The order of
@@ -11369,7 +11382,7 @@ class Session(sherpa.ui.utils.Session):
         -------
         vals
            The return array has the shape ``(num, N+1)``, where ``N`` is the
-           number of free parameters and num is the ``num`` parameter.
+           number of free parameters and num is the `num` parameter.
            The rows of this array contain the flux value, as
            calculated by `calc_energy_flux`, followed by the values of
            the thawed parameters used for that iteration. The order of
@@ -11455,12 +11468,12 @@ class Session(sherpa.ui.utils.Session):
            The number of samples to create. The default is 1.
         scales : array, optional
            The scales used to define the normal distributions for the
-           parameters. The form depends on the ``correlated``
+           parameters. The form depends on the `correlated`
            parameter: when ``True``, the array should be a symmetric
-           positive semi-definite (N,N) array, otherwise a 1D array
+           positive semi-definite (N, N) array, otherwise a 1D array
            of length N, where N is the number of free parameters.
         correlated : bool, optional
-           If ``True`` (the default is ``False``) then ``scales`` is the
+           If ``True`` (the default is ``False``) then `scales` is the
            full covariance matrix, otherwise it is just a 1D array
            containing the variances of the parameters (the diagonal
            elements of the covariance matrix).
@@ -11482,14 +11495,14 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        (fullflux,cptflux,vals)
+        (fullflux, cptflux, vals)
            The fullflux and cptflux arrays contain the results for
-           the full source model and the flux of the ``modelcomponent``
+           the full source model and the flux of the `modelcomponent`
            argument (they can be the same). They have three elements
            and give the median value, upper quartile, and lower
            quartile values of the flux distribution. The vals array
-           has a shape of ``(num+1,N+2)``, where ``N`` is the number of free
-           parameters and num is the ``num`` parameter. The rows of
+           has a shape of ``(num+1, N+2)``, where ``N`` is the number of
+           free parameters and num is the `num` parameter. The rows of
            this array contain the flux value for the iteration (for
            the full source model), the parameter values, and then the
            statistic value for this set of parameters.
@@ -11659,7 +11672,7 @@ class Session(sherpa.ui.utils.Session):
            to use the low value of the data set.
         hi : number, optional
            The maximum limit of the band, which must be larger than
-           ``lo``. Use ``None``, the default, to use the upper value of
+           `lo`. Use ``None``, the default, to use the upper value of
            the data set.
         id : int or str, optional
            Use the source expression associated with this data set. If
@@ -11671,13 +11684,13 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        flux
+        number
            The flux from the source model integrated over the given
            band. This represents the flux from the model without any
            instrument response (i.e. the intrinsic flux of the
            source). For X-Spec style models the units will be
-           photon/cm^2/s. If ``hi`` is ``None`` but ``lo`` is set then the
-           flux density is returned at that point: photon/cm^2/s/keV
+           photon/cm^2/s. If `hi` is ``None`` but `lo` is set the
+           the flux density is returned at that point: photon/cm^2/s/keV
            or photon/cm^2/s/Angstrom depending on the analysis
            setting.
 
@@ -11687,11 +11700,12 @@ class Session(sherpa.ui.utils.Session):
         calc_model_sum : Sum up the fitted model over a pass band.
         calc_energy_flux : Integrate the source model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
+        set_analysis : Set the units used when fitting and displaying spectral data
         set_model : Set the source model expression for a data set.
 
         Notes
         -----
-        The units of ``lo`` and ``hi`` are determined by the analysis
+        The units of `lo` and `hi` are determined by the analysis
         setting for the data set (e.g. `get_analysis`).
 
         Any existing filter on the data set - e.g. as created by
@@ -11756,25 +11770,25 @@ class Session(sherpa.ui.utils.Session):
            to use the low value of the data set.
         hi : number, optional
            The maximum limit of the band, which must be larger than
-           ``lo``. Use ``None``, the default, to use the upper value of
+           `lo`. Use ``None``, the default, to use the upper value of
            the data set.
         id : int or str, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
-           by `get_default_id`.
+           by ``get_default_id``.
         bkg_id : int or str, optional
            If set, use the model associated with the given background
            component rather than the source model.
 
         Returns
         -------
-        flux
+        number
            The flux from the source model integrated over the given
            band. This represents the flux from the model without any
            instrument response (i.e. the intrinsic flux of the
            source). For X-Spec style models the units will be
-           erg/cm^2/s. If ``hi`` is ``None`` but ``lo`` is set then the flux
-           density is returned at that point: erg/cm^2/s/keV or
+           erg/cm^2/s. If ``hi`` is ``None`` but ``lo`` is set then the
+           flux density is returned at that point: erg/cm^2/s/keV or
            erg/cm^2/s/Angstrom depending on the analysis setting.
 
         See Also
@@ -11783,15 +11797,16 @@ class Session(sherpa.ui.utils.Session):
         calc_model_sum : Sum up the fitted model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
         calc_photon_flux : Integrate the source model over a pass band.
+        set_analysis : Set the units used when fitting and displaying spectral data
         set_model : Set the source model expression for a data set.
 
         Notes
         -----
         The units of ``lo`` and ``hi`` are determined by the analysis
-        setting for the data set (e.g. `get_analysis`).
+        setting for the data set (e.g. ``get_analysis``).
 
         Any existing filter on the data set - e.g. as created by
-        `ignore` or `notice` - is ignored by this function.
+        ``ignore`` or ``notice`` - is ignored by this function.
 
         The flux is calculated from the given source model, so if it
         includes an absorbing component then the result will represent
@@ -12426,13 +12441,13 @@ class Session(sherpa.ui.utils.Session):
         ----------
         outfile : str or file-like, optional
            If given, the output is written to this file, and the
-           ``clobber`` parameter controls what happens if the
+           `clobber` parameter controls what happens if the
            file already exists.
-           ``outfile`` can be a filename string or a file handle
+           `outfile` can be a filename string or a file handle
            (or file-like object, such as ``StringIO``) to write
            to. If not set then the standard output is used.
         clobber : bool, optional
-           If ``outfile`` is a filename, then this flag controls
+           If `outfile` is a filename, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -12440,7 +12455,7 @@ class Session(sherpa.ui.utils.Session):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
