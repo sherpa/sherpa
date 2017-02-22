@@ -25,8 +25,10 @@ import pytest
 import six
 
 from sherpa.ui.utils import Session
+from sherpa.utils import requires_data
 
 
+@requires_data
 def test_309(make_data_path):
 
     idval = 'bug309'
