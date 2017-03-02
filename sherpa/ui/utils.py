@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -431,7 +431,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -485,7 +485,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         IOError
-           If ``filename`` does not exist.
+           If `filename` does not exist.
 
         See Also
         --------
@@ -665,7 +665,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -673,7 +673,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -684,7 +684,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -712,7 +712,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -720,7 +720,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -730,7 +730,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -770,7 +770,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -778,7 +778,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -790,7 +790,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -817,7 +817,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -825,7 +825,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -834,7 +834,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -860,7 +860,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -868,7 +868,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -881,7 +881,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -911,7 +911,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -919,7 +919,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -930,7 +930,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -961,7 +961,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -969,7 +969,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -980,7 +980,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -1009,7 +1009,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -1017,7 +1017,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -1031,7 +1031,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -1070,7 +1070,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -1078,7 +1078,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -1092,7 +1092,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -1127,7 +1127,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -1135,7 +1135,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -1144,7 +1144,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -1168,7 +1168,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -1176,7 +1176,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -1185,7 +1185,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -1209,7 +1209,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -1217,7 +1217,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -1226,7 +1226,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -1254,7 +1254,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -1262,7 +1262,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -1288,7 +1288,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -1335,7 +1335,7 @@ class Session(NoNewAttributesAfterInit):
            otherwise it is taken to be the name of the file to
            write the results to.
         clobber : bool, optional
-           If ``outfile`` is not ``None``, then this flag controls
+           If `outfile` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -1343,7 +1343,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``outfile`` already exists and ``clobber`` is ``False``.
+           If `outfile` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -1352,7 +1352,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When ``outfile`` is ``None``, the text is displayed via an external
+        When `outfile` is ``None``, the text is displayed via an external
         program to support paging of the information. The program
         used is determined by the ``PAGER`` environment variable. If
         ``PAGER`` is not found then '/usr/bin/more' is used.
@@ -2268,7 +2268,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data
+        instance
            An instance of a sherpa.Data.Data-derived class.
 
         Raises
@@ -2329,8 +2329,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``data`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``data`` parameters,
+        the `data` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `data` parameters,
         respectively.
 
         Examples
@@ -2395,8 +2395,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2464,8 +2464,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2534,8 +2534,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -2592,8 +2592,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``val`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``val`` parameters,
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
         respectively.
 
         Examples
@@ -2653,8 +2653,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``val`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``val`` parameters,
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
         respectively.
 
         Examples
@@ -2698,10 +2698,10 @@ class Session(NoNewAttributesAfterInit):
         val : array or scalar
            The systematic error.
         fractional : bool, optional
-           If ``False`` (the default value), then the ``val`` parameter is
-           the absolute value, otherwise the ``val`` parameter
+           If ``False`` (the default value), then the `val` parameter is
+           the absolute value, otherwise the `val` parameter
            represents the fractional error, so the absolute value is
-           calculated as ``get_dep() * val`` (and ``val`` must be
+           calculated as ``get_dep() * val`` (and `val` must be
            a scalar).
 
         See Also
@@ -2716,8 +2716,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``val`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``val`` parameters,
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
         respectively.
 
         Examples
@@ -2762,10 +2762,10 @@ class Session(NoNewAttributesAfterInit):
         val : array or scalar
            The systematic error.
         fractional : bool, optional
-           If ``False`` (the default value), then the ``val`` parameter is
-           the absolute value, otherwise the ``val`` parameter
+           If ``False`` (the default value), then the `val` parameter is
+           the absolute value, otherwise the `val` parameter
            represents the fractional error, so the absolute value is
-           calculated as ``get_dep() * val`` (and ``val`` must be
+           calculated as ``get_dep() * val`` (and `val` must be
            a scalar).
 
         See Also
@@ -2780,8 +2780,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``val`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``val`` parameters,
+        the `val` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `val` parameters,
         respectively.
 
         Examples
@@ -3443,17 +3443,18 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        a1, .., aN : array_like
+        args : array_like
            Arrays of data. The order, and number, is determined by
-           the ``dstype`` parameter, and listed in the `load_arrays`
+           the `dstype` parameter, and listed in the `load_arrays`
            routine.
         dstype
            The data set type. The default is `Data1D` and values
            include: `Data1D`, `Data1DInt`, `Data2D`, and `Data2DInt`.
+           It is expected to be derived from `sherpa.data.BaseData`.
 
         Returns
         -------
-        data
+        instance
            The data set object matching the requested ``dstype``.
 
         See Also
@@ -3504,7 +3505,7 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the ASCII file to read in.
         ncols : int, optional
-           The number of columns to read in (the first ``ncols`` columns
+           The number of columns to read in (the first `ncols` columns
            in the file).
         colkeys : array of str, optional
            An array of the column name to read in. The default is
@@ -3518,19 +3519,19 @@ class Session(NoNewAttributesAfterInit):
         comment : str, optional
            The comment character. The default is ``'#'``.
         require_floats : bool, optional
-           If ``True`` (the default), non-numeric data values will
+           If `True` (the default), non-numeric data values will
            raise a `ValueError`.
 
         Returns
         -------
-        data
+        instance
            The data set object.
 
         Raises
         ------
         ValueError
            If a column value can not be converted into a numeric value
-           and the ``require_floats`` parameter is True.
+           and the `require_floats` parameter is True.
 
         See Also
         --------
@@ -3542,31 +3543,31 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-
         The file reading is performed by `sherpa.io.get_ascii_data`,
         which reads in each line from the file, strips out any unsupported
-        characters (replacing them by the ``sep`` argument), skips
+        characters (replacing them by the `sep` argument), skips
         empty lines, and then identifies whether it is a comment or data
         line.
 
-        The list of unsupported characters are: ``\t``, ``\n``,
-        ``\r``, comma, semi-colon, colon, space, and ``|``.
+        The list of unsupported characters are: tab, new line,
+        carriage return, comma, semi-colon, colon, space, and "|".
 
         The last comment line before the data is used to define the
-        column names, splitting the line by the ``sep`` argument.
+        column names, splitting the line by the `sep` argument.
         If there are no comment lines then the columns are named
-        starting at ``col1``, ``col2``, up to the number of columns.
+        starting at `col1`, `col2`, increasing up to the number of
+        columns.
 
         Data lines are separated into columns - splitting by the
-        ``sep`` comment - and then converted to NumPy arrays.
-        If the ``require_floats`` argument is ``True`` then the
+        `sep` comment - and then converted to NumPy arrays.
+        If the `require_floats` argument is ``True`` then the
         column will be converted to the `sherpa.utils.SherpaFloat`
         type, with an error raised if this fails.
 
         An error is raised if the number of columns per row
         is not constant.
 
-        If the ``colkeys`` argument is used then a case-sensitive
+        If the `colkeys` argument is used then a case-sensitive
         match is used to determine what columns to return.
 
         Examples
@@ -3646,8 +3647,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -3801,9 +3802,9 @@ class Session(NoNewAttributesAfterInit):
         args : array of arrays
            The arrays to write out.
         fields : array of str
-           The column names (should match the size of ``args``).
+           The column names (should match the size of `args`).
         clobber : bool, optional
-           If ``filename`` is not ``None``, then this flag controls
+           If `filename` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -3820,7 +3821,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -3882,7 +3883,7 @@ class Session(NoNewAttributesAfterInit):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -3896,8 +3897,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -3940,7 +3941,7 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If ``filename`` is not ``None``, then this flag controls
+           If `filename` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -3959,7 +3960,7 @@ class Session(NoNewAttributesAfterInit):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -3973,8 +3974,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4014,7 +4015,7 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If ``filename`` is not ``None``, then this flag controls
+           If `filename` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4033,7 +4034,7 @@ class Session(NoNewAttributesAfterInit):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4045,8 +4046,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4085,7 +4086,7 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If ``filename`` is not ``None``, then this flag controls
+           If `filename` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4104,7 +4105,7 @@ class Session(NoNewAttributesAfterInit):
         sherpa.utils.err.IdentifierErr
            If no model has been set for this data set.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4116,8 +4117,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4164,7 +4165,7 @@ class Session(NoNewAttributesAfterInit):
         comment : str, optional
            The comment character. The default is ``'#'``.
         clobber : bool, optional
-           If ``filename`` is not ``None``, then this flag controls
+           If `filename` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4179,7 +4180,7 @@ class Session(NoNewAttributesAfterInit):
         sherpa.utils.err.IdentifierErr
            If there is no matching data set.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4196,8 +4197,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4237,7 +4238,7 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If ``filename`` is not ``None``, then this flag controls
+           If `filename` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4256,7 +4257,7 @@ class Session(NoNewAttributesAfterInit):
         sherpa.utils.err.DataErr
            If the data set has not been filtered.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4268,8 +4269,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4316,7 +4317,7 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If ``filename`` is not ``None``, then this flag controls
+           If `filename` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4333,7 +4334,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4346,8 +4347,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4390,7 +4391,7 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If ``filename`` is not ``None``, then this flag controls
+           If `filename` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4409,7 +4410,7 @@ class Session(NoNewAttributesAfterInit):
         sherpa.utils.err.IOErr
            If the data set does not contain any systematic errors.
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4422,8 +4423,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4472,7 +4473,7 @@ class Session(NoNewAttributesAfterInit):
         filename : str
            The name of the file to write the array to.
         clobber : bool, optional
-           If ``filename`` is not ``None``, then this flag controls
+           If `filename` is not ``None``, then this flag controls
            whether an existing file can be overwritten (``True``)
            or if it raises an exception (``False``, the default
            setting).
@@ -4489,7 +4490,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.IOErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -4505,8 +4506,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``filename`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``filename`` parameters,
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
@@ -4856,7 +4857,7 @@ class Session(NoNewAttributesAfterInit):
     def paramprompt(self, val=False):
         """Should the user be asked for the parameter values when creating a model?
 
-        When ``val`` is ``True``, calls to `set_model` will cause the user
+        When `val` is ``True``, calls to `set_model` will cause the user
         to be prompted for each parameter in the expression.  The
         prompt includes the parameter name and default value, in ``[]``:
         the valid responses are
@@ -4942,9 +4943,8 @@ class Session(NoNewAttributesAfterInit):
         """Create a user-defined model class.
 
         Create a model from a class. The name of the class can then be
-        used to create model components - e.g.  with
-        `create_model_component` or `set_model` - as with any existing
-        Sherpa model.
+        used to create model components - e.g.  with `set_model` or
+        `create_model_component` - as with any existing Sherpa model.
 
         Parameters
         ----------
@@ -4952,8 +4952,10 @@ class Session(NoNewAttributesAfterInit):
            A class derived from `sherpa.models.model.ArithmeticModel`. This
            class defines the functional form and the parameters of the
            model.
-        args, kwargs : optional
+        args
            Arguments for the class constructor.
+        kwargs
+           Keyword arguments for the class constructor.
 
         See Also
         --------
@@ -4982,7 +4984,9 @@ class Session(NoNewAttributesAfterInit):
         functionality.
 
         >>> from sherpa.models import Gauss1D
-        >>> class MyGauss1D(Gauss1D): pass
+        >>> class MyGauss1D(Gauss1D):
+        ...     pass
+        ...
         >>> add_model(MyGauss1D)
         >>> set_source(mygauss1d.g1 + mygauss1d.g2)
 
@@ -5595,7 +5599,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        model
+        instance
            This can contain multiple model components and any
            instrument response. Changing attributes of this model
            changes the model used by the data set.
@@ -5716,8 +5720,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Some functions - such as `plot_source` - may not work for
@@ -5785,8 +5789,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         PHA data sets will automatically apply the instrumental
@@ -6721,9 +6725,11 @@ class Session(NoNewAttributesAfterInit):
            The identifier for this PSF model.
         filename_or_model : str or model instance
            This can be the name of an ASCII file or a Sherpa model component.
-        *args, **kwargs
-           Arguments for `unpack_data` if ``filename_or_model``
-           is a file.
+        args
+           Arguments for `unpack_data` if `filename_or_model` is a file.
+        kwargs
+           Keyword arguments for `unpack_data` if `filename_or_model` is
+           a file.
 
         See Also
         --------
@@ -6794,9 +6800,11 @@ class Session(NoNewAttributesAfterInit):
            The identifier for this PSF model.
         filename_or_model : str or model instance
            This can be the name of an ASCII file or a Sherpa model component.
-        *args, **kwargs
-           Arguments for `unpack_data` if ``filename_or_model``
-           is a file.
+        args
+           Arguments for `unpack_data` if `filename_or_model` is a file.
+        kwargs
+           Keyword arguments for `unpack_data` if `filename_or_model` is
+           a file.
 
         See Also
         --------
@@ -6877,8 +6885,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``psf`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``psf`` parameters,
+        the `psf` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `psf` parameters,
         respectively.
 
         A PSF component should only be applied to a single data set.
@@ -7297,7 +7305,7 @@ class Session(NoNewAttributesAfterInit):
            The parameter to link.
         val
            The value - wihch can be a numeric value or a function
-           of other model parameters, to set ``par`` to.
+           of other model parameters, to set `par` to.
 
         See Also
         --------
@@ -7309,7 +7317,7 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         The ``link`` attribute of the parameter is set to match the
-        mathematical expression used for ``val``.
+        mathematical expression used for `val`.
 
         For a parameter value to be varied during a fit, it must be
         part of one of the source expressions involved in the fit.
@@ -7758,8 +7766,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         The guess function can reduce the time required to fit a
@@ -7934,7 +7942,7 @@ class Session(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.FitErr
-           If ``filename`` already exists and ``clobber`` is ``False``.
+           If `filename` already exists and `clobber` is ``False``.
 
         See Also
         --------
@@ -9249,7 +9257,7 @@ class Session(NoNewAttributesAfterInit):
         ----------
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         parameters : optional
@@ -9376,7 +9384,7 @@ class Session(NoNewAttributesAfterInit):
         ----------
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         parameters : optional
@@ -9570,7 +9578,7 @@ class Session(NoNewAttributesAfterInit):
         ----------
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         parameters : optional
@@ -10267,7 +10275,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data
+        instance
            An object representing the data used to create the plot by
            `plot_model`. The return value depends on the data
            set (e.g. 1D binned or un-binned).
@@ -10298,7 +10306,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data
+        instance
            An object representing the data used to create the plot by
            `plot_source`. The return value depends on the data
            set (e.g. 1D binned or un-binned).
@@ -10335,7 +10343,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data
+        instance
            An object representing the data used to create the plot by
            `plot_model_component`. The return value depends on the
            data set (e.g. 1D binned or un-binned).
@@ -10351,8 +10359,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Examples
@@ -10398,7 +10406,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        data
+        instance
            An object representing the data used to create the plot by
            `plot_source_component`. The return value depends on the
            data set (e.g. 1D binned or un-binned).
@@ -10414,8 +10422,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Examples
@@ -11812,8 +11820,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Examples
@@ -11879,8 +11887,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Examples
@@ -13322,7 +13330,7 @@ class Session(NoNewAttributesAfterInit):
            The parameter to plot.
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
@@ -13333,19 +13341,19 @@ class Session(NoNewAttributesAfterInit):
         min : number, optional
            The minimum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         max : number, optional
            The maximum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         nloop : int, optional
-           The number of steps to use. This is used when ``delv`` is set
+           The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
            The step size for the parameter. Setting this over-rides
-           the ``nloop`` parameter. The default is ``None``.
+           the `nloop` parameter. The default is ``None``.
         fac : number, optional
-           When ``min`` or ``max`` is not given, multiply the covariance
+           When `min` or `max` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
@@ -13416,7 +13424,7 @@ class Session(NoNewAttributesAfterInit):
            The parameter to plot.
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
@@ -13427,19 +13435,19 @@ class Session(NoNewAttributesAfterInit):
         min : number, optional
            The minimum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         max : number, optional
            The maximum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         nloop : int, optional
-           The number of steps to use. This is used when ``delv`` is set
+           The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
            The step size for the parameter. Setting this over-rides
-           the ``nloop`` parameter. The default is ``None``.
+           the `nloop` parameter. The default is ``None``.
         fac : number, optional
-           When ``min`` or ``max`` is not given, multiply the covariance
+           When `min` or `max` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
@@ -13509,7 +13517,7 @@ class Session(NoNewAttributesAfterInit):
            The parameters to plot on the X and Y axes, respectively.
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
@@ -13524,19 +13532,19 @@ class Session(NoNewAttributesAfterInit):
         min : pair of numbers, optional
            The minimum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         max : pair of number, optional
            The maximum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         nloop : pair of int, optional
-           The number of steps to use. This is used when ``delv`` is set
+           The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
            The step size for the parameter. Setting this over-rides
-           the ``nloop`` parameter. The default is ``None``.
+           the `nloop` parameter. The default is ``None``.
         fac : number, optional
-           When ``min`` or ``max`` is not given, multiply the covariance
+           When `min` or `max` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
@@ -13549,7 +13557,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the ``sigma`` parameter, if set (the default is
+           over-rides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
@@ -13617,7 +13625,7 @@ class Session(NoNewAttributesAfterInit):
            The parameters to plot on the X and Y axes, respectively.
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         recalc : bool, optional
@@ -13632,19 +13640,19 @@ class Session(NoNewAttributesAfterInit):
         min : pair of numbers, optional
            The minimum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         max : pair of number, optional
            The maximum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         nloop : pair of int, optional
-           The number of steps to use. This is used when ``delv`` is set
+           The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
            The step size for the parameter. Setting this over-rides
-           the ``nloop`` parameter. The default is ``None``.
+           the `nloop` parameter. The default is ``None``.
         fac : number, optional
-           When ``min`` or ``max`` is not given, multiply the covariance
+           When `min` or `max` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
@@ -13657,7 +13665,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the ``sigma`` parameter, if set (the default is
+           over-rides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
@@ -13755,7 +13763,7 @@ class Session(NoNewAttributesAfterInit):
            The parameter to plot.
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
@@ -13768,19 +13776,19 @@ class Session(NoNewAttributesAfterInit):
         min : number, optional
            The minimum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         max : number, optional
            The maximum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         nloop : int, optional
-           The number of steps to use. This is used when ``delv`` is set
+           The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
            The step size for the parameter. Setting this over-rides
-           the ``nloop`` parameter. The default is ``None``.
+           the `nloop` parameter. The default is ``None``.
         fac : number, optional
-           When ``min`` or ``max`` is not given, multiply the covariance
+           When `min` or `max` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
@@ -13872,7 +13880,7 @@ class Session(NoNewAttributesAfterInit):
            The parameter to plot.
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
@@ -13881,19 +13889,19 @@ class Session(NoNewAttributesAfterInit):
         min : number, optional
            The minimum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         max : number, optional
            The maximum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         nloop : int, optional
-           The number of steps to use. This is used when ``delv`` is set
+           The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
            The step size for the parameter. Setting this over-rides
-           the ``nloop`` parameter. The default is ``None``.
+           the `nloop` parameter. The default is ``None``.
         fac : number, optional
-           When ``min`` or ``max`` is not given, multiply the covariance
+           When `min` or `max` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
@@ -14012,7 +14020,7 @@ class Session(NoNewAttributesAfterInit):
            The parameters to plot on the X and Y axes, respectively.
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
@@ -14025,19 +14033,19 @@ class Session(NoNewAttributesAfterInit):
         min : pair of numbers, optional
            The minimum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         max : pair of number, optional
            The maximum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         nloop : pair of int, optional
-           The number of steps to use. This is used when ``delv`` is set
+           The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
            The step size for the parameter. Setting this over-rides
-           the ``nloop`` parameter. The default is ``None``.
+           the `nloop` parameter. The default is ``None``.
         fac : number, optional
-           When ``min`` or ``max`` is not given, multiply the covariance
+           When `min` or `max` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
@@ -14050,7 +14058,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the ``sigma`` parameter, if set (the default is
+           over-rides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
@@ -14140,7 +14148,7 @@ class Session(NoNewAttributesAfterInit):
            The parameters to plot on the X and Y axes, respectively.
         id : str or int, optional
         otherids : list of str or int, optional
-           The ``id`` and ``otherids`` arguments determine which data set
+           The `id` and `otherids` arguments determine which data set
            or data sets are used. If not given, all data sets which
            have a defined source model are used.
         replot : bool, optional
@@ -14149,19 +14157,19 @@ class Session(NoNewAttributesAfterInit):
         min : pair of numbers, optional
            The minimum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         max : pair of number, optional
            The maximum parameter value for the calcutation. The
            default value of ``None`` means that the limit is calculated
-           from the covariance, using the ``fac`` value.
+           from the covariance, using the `fac` value.
         nloop : pair of int, optional
-           The number of steps to use. This is used when ``delv`` is set
+           The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
            The step size for the parameter. Setting this over-rides
-           the ``nloop`` parameter. The default is ``None``.
+           the `nloop` parameter. The default is ``None``.
         fac : number, optional
-           When ``min`` or ``max`` is not given, multiply the covariance
+           When `min` or `max` is not given, multiply the covariance
            of the parameter by this value to calculate the limit
            (which is then added or subtracted to the parameter value,
            as required).
@@ -14174,7 +14182,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the ``sigma`` parameter, if set (the default is
+           over-rides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
@@ -14446,8 +14454,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Examples
@@ -14506,8 +14514,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Examples
@@ -14874,8 +14882,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Image visualization is optional, and provided by the
@@ -14956,8 +14964,8 @@ class Session(NoNewAttributesAfterInit):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the ``model`` parameter. If given two un-named arguments, then
-        they are interpreted as the ``id`` and ``model`` parameters,
+        the `model` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `model` parameters,
         respectively.
 
         Image visualization is optional, and provided by the
