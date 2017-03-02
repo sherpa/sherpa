@@ -21,7 +21,7 @@ import pytest
 import os
 import sys
 import re
-from sherpa.utils import SherpaTestCase, requires_data
+from sherpa.utils import SherpaTestCase
 
 from six.moves import reload_module
 
@@ -148,7 +148,6 @@ def pytest_configure(config):
 
 
 @pytest.fixture(scope="session")
-@requires_data
 def make_data_path():
     """
     Fixture for tests requiring the test data dir. It returns a function that can be used to make paths by using
