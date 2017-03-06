@@ -734,7 +734,10 @@ class UserStat(Stat):
         return self.errfunc(data)
 
     def calc_stat(self, data, model):
-        raise StatErr('nostat', self.name, 'calc_stat()')
+        if not self._statfuncset:
+            raise StatErr('nostat', self.name, 'calc_stat()')
+        else:
+            return self.statfunc(data, model)
 
 
 class WStat(Likelihood):
