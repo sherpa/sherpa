@@ -695,6 +695,7 @@ class UserStat(Stat):
 
         if statfunc is not None:
             self.statfunc = statfunc
+            self._calc = statfunc
             self._statfuncset = True
 
         if errfunc is not None:
@@ -734,10 +735,13 @@ class UserStat(Stat):
         return self.errfunc(data)
 
     def calc_stat(self, data, model):
+        data, model = self._validate_inputs(data, model)
+        fitdata = data.to_fit(staterrfunc=self.calc_staterror)
+        modeldata = data.eval_model_to_fit(model)
         if not self._statfuncset:
             raise StatErr('nostat', self.name, 'calc_stat()')
         else:
-            return self.statfunc(data, model)
+            return self.statfunc(fitdata[0], modeldata)
 
 
 class WStat(Likelihood):
