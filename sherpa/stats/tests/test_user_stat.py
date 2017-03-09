@@ -20,21 +20,28 @@ import numpy as np
 import pytest
 
 from sherpa.astro import ui
+from sherpa.data import Data1D
 from sherpa.utils.err import StatErr
 
 
 def test_user_stat_unit():
-    def calc_stat(data, _model):
+    given_stat_error = [1.1, 2.2, 3.3]
+    given_sys_error = [10.1, 10.2, 10.3]
+
+    def calc_stat(data, _model, staterror, syserror=None, weight=None):
+        # Make sure values are being injected correctly
+        np.testing.assert_array_equal(given_stat_error, staterror)
+        np.testing.assert_array_equal(given_sys_error, syserror)
         return 3.235, np.ones_like(data)
 
     xdata = [1, 2, 3]
     ydata = xdata
 
-    ui.load_arrays(1, xdata, ydata)
+    ui.load_arrays(1, xdata, ydata, None, given_sys_error, Data1D)
 
     ui.set_model(1, 'polynom1d.p')
 
-    ui.load_user_stat('customstat', calc_stat, lambda x: np.ones_like(x))
+    ui.load_user_stat('customstat', calc_stat, lambda x: given_stat_error)
     ui.set_stat(customstat)
 
     try:
@@ -44,6 +51,54 @@ def test_user_stat_unit():
 
     # Test the result is what we made the user stat return
     assert 3.235 == ui.get_fit_results().statval
+
+
+def test_user_model_stat_docs():
+    """
+    This test reproduces the documentation shown at:
+    http://cxc.harvard.edu/sherpa4.4/statistics/#userstat
+
+    and:
+    http://cxc.harvard.edu/sherpa/threads/user_model/
+
+    I tried to be as faithful as possible to the original, although the examples in thedocs
+    are not completely self-contained, so some changes were necessary. I changed the numpy
+    reference, as it is imported as `np` here, and added a clean up of the environment
+    before doing anything.
+
+    For the model, the difference is that I am not importing the function from an
+    external module, plus the dataset is different.
+
+    Also, the stats docs do not perform a fit.
+    """
+    def my_stat_func(data, model, staterror, syserror=None, weight=None):
+        # A simple function to replicate χ2
+        fvec = ((data - model) / staterror)**2
+        stat = fvec.sum()
+        return (stat, fvec)
+
+    def my_staterr_func(data):
+        # A simple staterror function
+        return np.sqrt(data)
+
+    def myline(pars, x):
+        return pars[0]*x + pars[1]
+
+    x = [1, 2, 3]
+    y = [4, 5, 6.01]
+
+    ui.clean()
+    ui.load_arrays(1, x, y)
+    ui.load_user_stat("mystat", my_stat_func, my_staterr_func)
+    ui.set_stat(mystat)
+    ui.load_user_model(myline, "myl")
+    ui.add_user_pars("myl", ["m", "b"])
+    ui.set_model(myl)
+
+    ui.fit()
+
+    assert abs(1 - ui.get_par("myl.m").val) < 0.01
+    assert abs(3 - ui.get_par("myl.b").val) < 0.01
 
 
 def test_341():

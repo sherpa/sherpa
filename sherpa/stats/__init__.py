@@ -741,7 +741,11 @@ class UserStat(Stat):
         if not self._statfuncset:
             raise StatErr('nostat', self.name, 'calc_stat()')
         else:
-            return self.statfunc(fitdata[0], modeldata)
+            return self.statfunc(fitdata[0],
+                                 modeldata,
+                                 staterror=fitdata[1],
+                                 syserror=fitdata[2],
+                                 weight=None)  # TODO weights
 
 
 class WStat(Likelihood):
