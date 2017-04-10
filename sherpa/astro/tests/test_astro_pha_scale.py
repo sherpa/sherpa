@@ -36,7 +36,9 @@ data and/or model values are shown).
 
 """
 
-import pytest
+# import pytest
+import six
+import warnings
 
 import numpy as np
 from numpy.testing import assert_allclose
@@ -179,11 +181,17 @@ def test_get_dep_raises_divbyzero(recwarn):
     """Does the areascal=0 cause problems?"""
 
     dset = setup_basic_dataset()
-    dset.get_dep()
+    with warnings.catch_warnings():
+        warnings.simplefilter('always')
+        dset.get_dep()
 
     assert len(recwarn) == 1
     w = recwarn.pop(RuntimeWarning)
-    expected = 'invalid value encountered in true_divide'
+    if six.PY2:
+        divname = 'divide'
+    else:
+        divname = 'true_divide'
+    expected = 'invalid value encountered in ' + divname
     assert w.message.args[0] == expected
     recwarn.clear()
 
@@ -192,11 +200,17 @@ def test_get_y_raises_divbyzero(recwarn):
     """Does the areascal=0 cause problems?"""
 
     dset = setup_basic_dataset()
-    dset.get_y()
+    with warnings.catch_warnings():
+        warnings.simplefilter('always')
+        dset.get_y()
 
     assert len(recwarn) == 1
     w = recwarn.pop(RuntimeWarning)
-    expected = 'invalid value encountered in true_divide'
+    if six.PY2:
+        divname = 'divide'
+    else:
+        divname = 'true_divide'
+    expected = 'invalid value encountered in ' + divname
     assert w.message.args[0] == expected
     recwarn.clear()
 
