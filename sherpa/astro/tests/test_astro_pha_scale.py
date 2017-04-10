@@ -175,7 +175,6 @@ def test_staterror_is_not_set():
 # fixture doesn't get triggered; it is not done at the end of the test
 # in case there are other warnings.
 #
-@pytest.mark.xfail
 def test_get_dep_raises_divbyzero(recwarn):
     """Does the areascal=0 cause problems?"""
 
@@ -189,7 +188,6 @@ def test_get_dep_raises_divbyzero(recwarn):
     recwarn.clear()
 
 
-@pytest.mark.xfail
 def test_get_y_raises_divbyzero(recwarn):
     """Does the areascal=0 cause problems?"""
 
@@ -203,7 +201,6 @@ def test_get_y_raises_divbyzero(recwarn):
     recwarn.clear()
 
 
-@pytest.mark.xfail
 def test_get_dep(recwarn):
     """What does get_dep return"""
 
@@ -217,7 +214,6 @@ def test_get_dep(recwarn):
     recwarn.clear()
 
 
-@pytest.mark.xfail
 def test_get_y(recwarn):
     """What does get_y return"""
 
@@ -230,7 +226,6 @@ def test_get_y(recwarn):
     recwarn.clear()
 
 
-@pytest.mark.xfail
 def test_get_staterror():
     """What does get_staterror return?
 
@@ -251,7 +246,6 @@ def test_get_staterror():
 # Ensure that the interfaces used by the statistic object
 # are behaving correctly.
 #
-@pytest.mark.xfail
 def test_chisquare(recwarn):
     """Is the chi square correct?
 

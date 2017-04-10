@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2015, 2016, 2017 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1247,6 +1247,14 @@ class DataPHA(Data1DInt):
         # return self.counts - self.sum_background_data()
         dep = self.counts
         filter = bool_cast(filter)
+
+        # QUS: how to handle area scaling?
+        #      could skip if areascal == 1.0
+        #
+        areascal = self.areascal
+        if areascal is not None:
+            dep = dep / areascal
+
         if self.subtracted:
             bkg = self.sum_background_data()
             if len(dep) != len(bkg):
@@ -1257,6 +1265,17 @@ class DataPHA(Data1DInt):
         return dep
 
     def set_dep(self, val):
+        # QUS: should this "invert" the areascaling to val
+        #      to get the stored values?
+        #
+        #      Otherwise, when areascal /= 1
+        #            y1 = d.get_dep()
+        #            d.set_dep(y1)
+        #            y2 = d.get_dep()
+        #            y1 != y2
+        #
+        # Or perhaps it removes the areascal value in this case?
+        #
         dep = None
         if numpy.iterable(val):
             dep = numpy.asarray(val, SherpaFloat)
@@ -1267,6 +1286,7 @@ class DataPHA(Data1DInt):
 
     def get_staterror(self, filter=False, staterrfunc=None):
         staterr = self.staterror
+
         filter = bool_cast(filter)
         if filter:
             staterr = self.apply_filter(staterr, self._sum_sq)
@@ -1275,12 +1295,34 @@ class DataPHA(Data1DInt):
 
         if (staterr is None) and (staterrfunc is not None):
             cnts = self.counts
+
             if filter:
                 cnts = self.apply_filter(cnts)
             else:
                 cnts = self.apply_grouping(cnts)
 
             staterr = staterrfunc(cnts)
+
+            # QUS: is this correct?
+            #
+            # The errors need to be scaled by the area scaling
+            # factor, but only after the error has been calculated.
+            #
+            # Need to apply the area scaling to the calculated
+            # errors. Grouping and filtering complicate this; is
+            # _middle the best choice here?
+            #
+            area = self.areascal
+            if staterr is not None and area is not None:
+                if numpy.isscalar(area):
+                    area = numpy.zeros(self.channel.size) + area
+
+                # TODO: replace with _check_scale?
+                if filter:
+                    area = self.apply_filter(area, self._middle)
+                else:
+                    area = self.apply_grouping(area, self._middle)
+                staterr = staterr / area
 
         if (staterr is not None) and self.subtracted:
             bkg_staterr_list = []
@@ -1301,6 +1343,8 @@ class DataPHA(Data1DInt):
                     else:
                         bkg_cnts = self.apply_grouping(bkg_cnts)
 
+                    # TODO: shouldn't the following logic be somewhere
+                    #       else more general?
                     if hasattr(staterrfunc, '__name__') and \
                        staterrfunc.__name__ == 'calc_chi2datavar_errors' and \
                        0.0 in bkg_cnts:
@@ -1413,6 +1457,8 @@ class DataPHA(Data1DInt):
             self.units = 'energy'
 
     def _fix_y_units(self, val, filter=False, response_id=None):
+        """Rescale the data as necessary."""
+
         if val is None:
             return val
 
@@ -1422,10 +1468,6 @@ class DataPHA(Data1DInt):
 
         if self.rate and self.exposure:
             val /= self.exposure
-            areascal = self.areascal
-            if areascal is not None:
-                areascal = self._check_scale(areascal, filter=filter)
-                val /= areascal
 
         if self.grouped or self.rate:
 
