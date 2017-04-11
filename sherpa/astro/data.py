@@ -22,6 +22,8 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 """
 
 import os.path
+import warnings
+
 import numpy
 from sherpa.data import BaseData, Data1DInt, Data2D, DataND
 from sherpa.utils.err import DataErr, ImportErr
@@ -1253,7 +1255,14 @@ class DataPHA(Data1DInt):
         #
         areascal = self.areascal
         if areascal is not None:
-            dep = dep / areascal
+            # Attempt to hide division-by-zero errors from the following
+            # line (e.g. bad-quality points may have a 0 areascal value).
+            # It is unclear whether we should hide such messages from the
+            # user, but they are causing problems with the test suite.
+            #
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                dep = dep / areascal
 
         if self.subtracted:
             bkg = self.sum_background_data()
