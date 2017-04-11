@@ -36,7 +36,7 @@ data and/or model values are shown).
 
 """
 
-# import pytest
+import pytest
 import six
 import warnings
 
@@ -55,6 +55,13 @@ def expected_basic_areascal():
     areascal[0] = 0.0
     areascal[6:] = 0.5
     return areascal.copy()
+
+
+def expected_basic_areascal_bgnd():
+    """Return the expected areascal values for the background."""
+
+    return np.asarray([0.0, 2.0, 2.0, 2.0, 2.0,
+                       4.0, 4.0, 4.0, 4.0, 4.0]).copy()
 
 
 def expected_basic_counts(scale=False):
@@ -90,6 +97,42 @@ def expected_basic_counts(scale=False):
         counts[1:] = counts[1:] / ascal[1:]
 
         counts = counts.astype(np.int16)
+
+    return counts.copy()
+
+
+def expected_basic_counts_bgnd(scale=False):
+    """Return the expected count values for the background.
+
+    Parameters
+    ----------
+    scale : bool, optional
+        If True then the counts are scaled by areascal, otherwise
+        (when False) it is the value that should be stored in the
+        DataPHA object.
+
+    Notes
+    -----
+    There's three regions: the first bin, which is bad so has
+    an area scaling of 0, then the next four bins with a value
+    of 2.0 and then the remaining 5 bins with a value of 4.0.
+    The aim is to have a slightly-different structure to the
+    "source" data set, and to use values larger than 1. The
+    background level is constant, at 10, before any scaling;
+    this means that the scaled values are not always integer
+    values.
+    """
+
+    counts = np.zeros(10, dtype=np.int16) + 10
+    counts[0] = 0
+    if scale:
+        ascal = expected_basic_areascal_bgnd()
+
+        # the first channel has areascal=0, so leave (it is 0).
+        counts = counts.astype(np.float64)
+        counts[1:] = counts[1:] / ascal[1:]
+
+        # counts = counts.astype(np.int16)
 
     return counts.copy()
 
@@ -135,6 +178,34 @@ def setup_basic_dataset():
 
     return DataPHA('test', channel=channels, counts=counts,
                    quality=quality, areascal=areascal)
+
+
+def setup_basic_dataset_bgnd():
+    """Create a basic PHA data set with an AREASCAL value and a background.
+
+    Returns
+    -------
+    dataset : sherpa.astro.data.DataPHA instance
+        The first channel has non-zero quality, but is not
+        masked out (so the caller needs to call ignore_bad
+        to ignore it).
+    """
+
+    dset = setup_basic_dataset()
+
+    channels = np.arange(1, 11)
+    counts = expected_basic_counts_bgnd(scale=False)
+
+    quality = np.zeros(10, dtype=np.int16)
+    quality[0] = 1
+
+    areascal = expected_basic_areascal_bgnd()
+
+    bset = DataPHA('testbg', channel=channels, counts=counts,
+                   quality=quality, areascal=areascal)
+
+    dset.set_background(bset)
+    return dset
 
 
 # The first few tests are really of the DataPHA class, and so
@@ -241,3 +312,70 @@ def test_chisquare():
     sval = stat.calc_stat(dset, mdl)
 
     assert_allclose(sval[0], expected)
+
+
+def test_get_dep_no_bgnd():
+    """What does get_dep return: background but not subtracted"""
+
+    # As no background subtracted, the same as test_get_dep,
+    # except that the bad channel is now ignored.
+    #
+    dset = setup_basic_dataset_bgnd()
+    dset.ignore_bad()
+
+    expected = expected_basic_counts(scale=True)
+    expected = expected.astype(np.float64)
+    expected[0] = np.nan
+
+    assert_allclose(dset.get_dep(), expected,
+                    equal_nan=True)
+
+
+def test_get_y_no_bgnd():
+    """What does get_y return: background but not subtracted"""
+
+    # As no background subtracted, the same as test_get_y,
+    # except that the bad channel is now ignored.
+    #
+    dset = setup_basic_dataset_bgnd()
+    dset.ignore_bad()
+
+    expected = expected_basic_counts(scale=True)
+    expected = expected.astype(np.float64)
+    expected[0] = np.nan
+
+    assert_allclose(dset.get_y(), expected,
+                    equal_nan=True)
+
+
+@pytest.mark.xfail
+def test_get_dep_bgnd():
+    """What does get_dep return: background subtracted"""
+
+    dset = setup_basic_dataset_bgnd()
+    dset.subtract()
+
+    src = expected_basic_counts(scale=True)
+    bg = expected_basic_counts_bgnd(scale=True)
+    expected = src - bg
+    expected[0] = np.nan
+
+    assert_allclose(dset.get_dep(), expected,
+                    equal_nan=True)
+
+
+@pytest.mark.xfail
+def test_get_y_bgnd():
+    """What does get_y return: background but not subtracted"""
+
+    # As no background subtracted, the same as test_get_dep.
+    dset = setup_basic_dataset_bgnd()
+    dset.subtract()
+
+    src = expected_basic_counts(scale=True)
+    bg = expected_basic_counts_bgnd(scale=True)
+    expected = src - bg
+    expected[0] = np.nan
+
+    assert_allclose(dset.get_y(), expected,
+                    equal_nan=True)
