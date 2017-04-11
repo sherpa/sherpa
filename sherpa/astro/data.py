@@ -1208,9 +1208,8 @@ class DataPHA(Data1DInt):
                 backscal = self._check_scale(backscal, group=False)
                 bdata = bdata / backscal
 
-            areascal = bkg.areascal
+            areascal = bkg.get_areascal(group=False)
             if areascal is not None:
-                areascal = self._check_scale(areascal, group=False)
                 bdata = bdata / areascal
 
             if bkg.exposure is not None:
@@ -1230,10 +1229,13 @@ class DataPHA(Data1DInt):
             backscal = self._check_scale(backscal, group=False)
             bkgsum = backscal * bkgsum
 
-        areascal = self.areascal
-        if areascal is not None:
-            areascal = self._check_scale(areascal, group=False)
-            bkgsum = areascal * bkgsum
+        # Unlike BACKSCAL, you do not correct the background data by
+        # the AREASCAL values of the data (since it is applied to the
+        # data)
+        # areascal = self.areascal
+        # if areascal is not None:
+        #     areascal = self._check_scale(areascal, group=False)
+        #     bkgsum = areascal * bkgsum
 
         if self.exposure is not None:
             bkgsum = self.exposure * bkgsum

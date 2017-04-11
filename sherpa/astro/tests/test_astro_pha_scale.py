@@ -36,8 +36,6 @@ data and/or model values are shown).
 
 """
 
-import pytest
-
 import numpy as np
 from numpy.testing import assert_allclose
 
@@ -339,7 +337,6 @@ def test_get_y_no_bgnd():
     assert_allclose(dset.get_y(), expected)
 
 
-@pytest.mark.xfail
 def test_get_dep_bgnd():
     """What does get_dep return: background subtracted"""
 
@@ -353,7 +350,6 @@ def test_get_dep_bgnd():
     assert_allclose(dset.get_dep(), expected)
 
 
-@pytest.mark.xfail
 def test_get_y_bgnd():
     """What does get_y return: background but not subtracted"""
 
