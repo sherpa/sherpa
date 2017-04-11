@@ -37,8 +37,6 @@ data and/or model values are shown).
 """
 
 import pytest
-import six
-import warnings
 
 import numpy as np
 from numpy.testing import assert_allclose
@@ -248,10 +246,8 @@ def test_get_dep():
     dset = setup_basic_dataset()
     expected = expected_basic_counts(scale=True)
     expected = expected.astype(np.float64)
-    expected[0] = np.nan
 
-    assert_allclose(dset.get_dep(), expected,
-                    equal_nan=True)
+    assert_allclose(dset.get_dep(), expected)
 
 
 def test_get_y():
@@ -260,7 +256,6 @@ def test_get_y():
     dset = setup_basic_dataset()
     expected = expected_basic_counts(scale=True)
     expected = expected.astype(np.float64)
-    expected[0] = np.nan
 
     assert_allclose(dset.get_y(), expected)
 
@@ -325,10 +320,8 @@ def test_get_dep_no_bgnd():
 
     expected = expected_basic_counts(scale=True)
     expected = expected.astype(np.float64)
-    expected[0] = np.nan
 
-    assert_allclose(dset.get_dep(), expected,
-                    equal_nan=True)
+    assert_allclose(dset.get_dep(), expected)
 
 
 def test_get_y_no_bgnd():
@@ -342,10 +335,8 @@ def test_get_y_no_bgnd():
 
     expected = expected_basic_counts(scale=True)
     expected = expected.astype(np.float64)
-    expected[0] = np.nan
 
-    assert_allclose(dset.get_y(), expected,
-                    equal_nan=True)
+    assert_allclose(dset.get_y(), expected)
 
 
 @pytest.mark.xfail
@@ -358,10 +349,8 @@ def test_get_dep_bgnd():
     src = expected_basic_counts(scale=True)
     bg = expected_basic_counts_bgnd(scale=True)
     expected = src - bg
-    expected[0] = np.nan
 
-    assert_allclose(dset.get_dep(), expected,
-                    equal_nan=True)
+    assert_allclose(dset.get_dep(), expected)
 
 
 @pytest.mark.xfail
@@ -375,7 +364,5 @@ def test_get_y_bgnd():
     src = expected_basic_counts(scale=True)
     bg = expected_basic_counts_bgnd(scale=True)
     expected = src - bg
-    expected[0] = np.nan
 
-    assert_allclose(dset.get_y(), expected,
-                    equal_nan=True)
+    assert_allclose(dset.get_y(), expected)

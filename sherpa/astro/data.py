@@ -22,7 +22,6 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 """
 
 import os.path
-import warnings
 
 import numpy
 from sherpa.data import BaseData, Data1DInt, Data2D, DataND
@@ -1247,22 +1246,16 @@ class DataPHA(Data1DInt):
         # if not self.subtracted:
         #     return self.counts
         # return self.counts - self.sum_background_data()
+
         dep = self.counts
         filter = bool_cast(filter)
 
         # QUS: how to handle area scaling?
         #      could skip if areascal == 1.0
         #
-        areascal = self.areascal
+        areascal = self.get_areascal(group=False)
         if areascal is not None:
-            # Attempt to hide division-by-zero errors from the following
-            # line (e.g. bad-quality points may have a 0 areascal value).
-            # It is unclear whether we should hide such messages from the
-            # user, but they are causing problems with the test suite.
-            #
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                dep = dep / areascal
+            dep = dep / areascal
 
         if self.subtracted:
             bkg = self.sum_background_data()
