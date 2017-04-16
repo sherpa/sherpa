@@ -36,6 +36,8 @@ data and/or model values are shown).
 
 """
 
+import pytest
+
 import numpy as np
 from numpy.testing import assert_allclose
 
@@ -138,6 +140,8 @@ def expected_basic_chisquare_errors():
 
     The calculation is sqrt(observed) / areascaling, so should
     be compared to the Chi2DataVar statistic.
+
+    ignore_bad() is assumed to have been called.
     """
 
     # Calculate the errors based on the counts. There are no
@@ -151,6 +155,32 @@ def expected_basic_chisquare_errors():
 
     expected = np.sqrt(counts) / ascal
     return expected.copy()
+
+
+def expected_basic_chisquare_errors_bgnd():
+    """Return the expected error values (chi square) after bg subtraction.
+
+    The calculation is sqrt(observed) / areascaling, so should
+    be compared to the Chi2DataVar statistic.
+
+    ignore_bad() is assumed to have been called.
+    """
+
+    # Calculate the errors based on the counts. There are no
+    # counts less than 1, so this is just the square root of
+    # the observed data value, which then has to be scaled by
+    # the area scaling.
+    #
+    # Since ignore_bad has been called we ignore the first bin.
+    counts = expected_basic_counts(scale=False)[1:]
+    ascal = expected_basic_areascal()[1:]
+
+    bgcounts = expected_basic_counts_bgnd(scale=False)[1:]
+    bgascal = expected_basic_areascal_bgnd()[1:]
+
+    expected = counts / (ascal * ascal)
+    expected += bgcounts / (bgascal * bgascal)
+    return np.sqrt(expected)
 
 
 def setup_basic_dataset():
@@ -362,3 +392,37 @@ def test_get_y_bgnd():
     expected = src - bg
 
     assert_allclose(dset.get_y(), expected)
+
+
+def test_get_staterror_no_bgnd():
+    """What does get_staterror return when bgnd is not subtracted.
+
+    This is the same as test_get_staterror, as the background is
+    ignored in this case.
+    """
+
+    dset = setup_basic_dataset_bgnd()
+    dset.ignore_bad()
+
+    stat = Chi2DataVar()
+    errors = dset.get_staterror(filter=True,
+                                staterrfunc=stat.calc_staterror)
+
+    expected = expected_basic_chisquare_errors()
+    assert_allclose(errors, expected)
+
+
+@pytest.mark.xfail
+def test_get_staterror_bgnd():
+    """What does get_staterror return when bgnd is subtracted."""
+
+    dset = setup_basic_dataset_bgnd()
+    dset.ignore_bad()
+    dset.subtract()
+
+    stat = Chi2DataVar()
+    errors = dset.get_staterror(filter=True,
+                                staterrfunc=stat.calc_staterror)
+
+    expected = expected_basic_chisquare_errors_bgnd()
+    assert_allclose(errors, expected)
