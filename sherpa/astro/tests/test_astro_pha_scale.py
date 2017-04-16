@@ -36,8 +36,6 @@ data and/or model values are shown).
 
 """
 
-import pytest
-
 import numpy as np
 from numpy.testing import assert_allclose
 
@@ -412,7 +410,6 @@ def test_get_staterror_no_bgnd():
     assert_allclose(errors, expected)
 
 
-@pytest.mark.xfail
 def test_get_staterror_bgnd():
     """What does get_staterror return when bgnd is subtracted."""
 

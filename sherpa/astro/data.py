@@ -1374,6 +1374,10 @@ class DataPHA(Data1DInt):
                     bksl = self._check_scale(bksl, filter=filter)
                     berr = berr / bksl
 
+                # Need to apply filter/grouping of the source dataset
+                # to the background areascal, so can not just say
+                #   area = bkg.get_areascal(filter=filter)
+                #
                 area = bkg.areascal
                 if area is not None:
                     area = self._check_scale(area, filter=filter)
@@ -1397,10 +1401,8 @@ class DataPHA(Data1DInt):
                 bscal = self._check_scale(bscal, filter=filter)
                 bkgsum = (bscal * bscal) * bkgsum
 
-            area = self.areascal
-            if area is not None:
-                area = self._check_scale(area, filter=filter)
-                bkgsum = (area * area) * bkgsum
+            # Note that the background counts are not corrected for
+            # the source's AREASCAL setting.
 
             if self.exposure is not None:
                 bkgsum = (self.exposure * self.exposure) * bkgsum
