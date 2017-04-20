@@ -36,12 +36,14 @@ data and/or model values are shown).
 
 """
 
+import pytest
+
 import numpy as np
 from numpy.testing import assert_allclose
 
 from sherpa.astro.data import DataPHA
 from sherpa.models.basic import Const1D, StepHi1D
-from sherpa.stats import Chi2DataVar
+from sherpa.stats import Chi2DataVar, CStat
 
 
 def expected_basic_areascal():
@@ -376,6 +378,48 @@ def test_chisquare():
     expected = expected.sum()
 
     stat = Chi2DataVar()
+    sval = stat.calc_stat(dset, mdl)
+
+    assert_allclose(sval[0], expected)
+
+
+@pytest.mark.xfail
+def test_ctat():
+    """Is the likelihood correct?
+
+    This uses the CSTAT version of the likelihood.
+    """
+
+    dset = setup_basic_dataset()
+    dset.ignore_bad()
+
+    cpt1 = Const1D()
+    cpt2 = StepHi1D()
+    cpt1.c0 = 20
+    cpt2.ampl = 20
+    cpt2.xcut = 6.5
+    mdl = cpt1 + cpt2
+
+    counts = expected_basic_counts(scale=False)[1:]
+
+    # For the likelihood statistic, the areascal values are
+    # applied to the model counts rather than the source counts.
+    #
+    mvals = mdl(dset.channel[1:])
+    ascal = expected_basic_areascal()[1:]
+    mvals *= ascal
+
+    # Simplifies the analysis if don't have to deal with truncation
+    # values. These asserts mainly serve as a reminder that this
+    # code can simplify the CStat calculation slightly here.
+    #
+    assert (mvals > 0).all()
+    assert (counts > 0).all()
+
+    statval = mvals - counts + counts * np.log(counts / mvals)
+    expected = 2.0 * statval.sum()
+
+    stat = CStat()
     sval = stat.calc_stat(dset, mdl)
 
     assert_allclose(sval[0], expected)
