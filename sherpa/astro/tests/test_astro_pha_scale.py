@@ -181,6 +181,52 @@ def expected_basic_chisquare_errors_bgnd():
     return np.sqrt(expected)
 
 
+def expected_basic_chisquare_errors_scaling_bgnd():
+    """Return the expected error values (chi square) after bg subtraction.
+
+    The errors are calculated using the Chi2DataVar algorithm.
+
+    It assumes:
+       source exposure = 20
+       background exposure = 15
+
+       source backscal = 0.01
+       background backscal = 0.1
+
+    ignore_bad() is assumed to have been called.
+    """
+
+    # Calculate the errors based on the counts. There are no
+    # counts less than 1, so this is just the square root of
+    # the observed data value, which then has to be scaled by
+    # the exposure, backscal, and area scaling.
+    #
+    # Since ignore_bad has been called we ignore the first bin.
+    counts = expected_basic_counts(scale=False)[1:]
+
+    exposure_src = 20.0
+    exposure_bg = 15.0
+
+    backscal_src = 0.01
+    backscal_bg = 0.1
+
+    ascal = expected_basic_areascal()[1:]
+
+    bgcounts = expected_basic_counts_bgnd(scale=False)[1:]
+    bgascal = expected_basic_areascal_bgnd()[1:]
+
+    denom = ascal
+    expected = counts / (denom * denom)
+
+    # The background counts are re-scaled to match the source
+    # settings.
+    denom = bgascal * backscal_bg * exposure_bg / \
+        (backscal_src * exposure_src)
+
+    expected += bgcounts / (denom * denom)
+    return np.sqrt(expected)
+
+
 def setup_basic_dataset():
     """Create a basic PHA data set with an AREASCAL value.
 
@@ -411,7 +457,10 @@ def test_get_staterror_no_bgnd():
 
 
 def test_get_staterror_bgnd():
-    """What does get_staterror return when bgnd is subtracted."""
+    """What does get_staterror return when bgnd is subtracted.
+
+    This is the easy case, since BACKSCAL and EXPOSURE are 1.
+    """
 
     dset = setup_basic_dataset_bgnd()
     dset.ignore_bad()
@@ -422,4 +471,30 @@ def test_get_staterror_bgnd():
                                 staterrfunc=stat.calc_staterror)
 
     expected = expected_basic_chisquare_errors_bgnd()
+    assert_allclose(errors, expected)
+
+
+def test_get_staterror_scaling_bgnd():
+    """What does get_staterror return when bgnd is subtracted.
+
+    This expands on test_get_staterror_bgnd by having different
+    BACKSCAL and EXPOSURE values in the source and background
+    data sets.
+    """
+
+    dset = setup_basic_dataset_bgnd()
+    dset.exposure = 20.0
+    dset.backscal = 0.01
+    dset.ignore_bad()
+    dset.subtract()
+
+    bset = dset.get_background()
+    bset.exposure = 15.0
+    bset.backscal = 0.1
+
+    stat = Chi2DataVar()
+    errors = dset.get_staterror(filter=True,
+                                staterrfunc=stat.calc_staterror)
+
+    expected = expected_basic_chisquare_errors_scaling_bgnd()
     assert_allclose(errors, expected)
