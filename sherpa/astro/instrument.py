@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,22 +21,22 @@ from six import string_types
 
 import numpy
 import sherpa
-from sherpa.utils.err import InstrumentErr, DataErr, PSFErr, ArgumentTypeErr
-from sherpa.models.model import ArithmeticFunctionModel, NestedModel, \
-    ArithmeticModel, CompositeModel, Model
+from sherpa.utils.err import InstrumentErr, DataErr, PSFErr
+from sherpa.models.model import ArithmeticModel, CompositeModel, Model
+
+from sherpa.instrument import PSFModel as _PSFModel
+from sherpa.utils import NoNewAttributesAfterInit
+from sherpa.data import Data1D
+from sherpa.astro.data import DataARF, DataRMF, DataPHA, _notice_resp, \
+    DataIMG
+from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
+from sherpa.astro.utils import compile_energy_grid
+
 WCS = None
 try:
     from sherpa.astro.io.wcs import WCS
 except:
     WCS = None
-
-from sherpa.instrument import PSFModel as _PSFModel
-from sherpa.utils import NoNewAttributesAfterInit
-from sherpa.data import BaseData, Data1D
-from sherpa.astro.data import DataARF, DataRMF, DataPHA, _notice_resp, \
-    DataIMG
-from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
-from sherpa.astro.utils import compile_energy_grid
 
 _tol = numpy.finfo(numpy.float32).eps
 
@@ -906,7 +906,16 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         CompositeModel.startup(self)
 
     def teardown(self):
-        pha = self.pha
+
+        # Note:
+        #
+        # The pha variable was declared but not used, so has been commented
+        # out. It has been kept as a comment for future review, since it
+        # is unclear whether anything should be done to the PHA object
+        # during teardown
+        #
+        # pha = self.pha
+
         rmf = self.rmf
         self.channel = sao_arange(1, rmf.detchans)
         self.mask = numpy.ones(rmf.detchans, dtype=bool)
