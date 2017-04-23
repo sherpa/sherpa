@@ -244,9 +244,60 @@ class DataRMF(Data1DInt):
 
 
 class DataPHA(Data1DInt):
-    "PHA data set, including any associated instrument and background data"
+    """PHA data set, including any associated instrument and background data.
 
-    mask = property(BaseData._get_mask, BaseData._set_mask)
+    The PHA format is described in an OGIP document [1]_.
+
+    Parameters
+    ----------
+    name : str
+        The name of the data set; often set to the name of the file
+        containing the data.
+    channel, counts : array of int
+        The PHA data.
+    staterror, syserror : scalar or array or None, optional
+        The statistical and systematic errors for the data, if
+        defined.
+    bin_lo, bin_hi : array or None, optional
+    grouping : array of int or None, optional
+    quality : array of int or None, optional
+    exposure : number or None, optional
+    backscal : scalar or array or None, optional
+    areascal : scalar or array or None, optional
+    header : dict or None, optional
+
+    Attributes
+    ----------
+    name : str
+        Used to store the file name, for data read from a file.
+    channel
+    counts
+    staterror
+    syserror
+    bin_lo
+    bin_hi
+    grouping
+    quality
+    exposure
+    backscal
+    areascal
+
+    Notes
+    -----
+    The original data is stored in the attributes - e.g. `counts` - and
+    the data-access methods, such as `get_dep` and `get_staterror`,
+    provide any necessary data manipulation to handle cases such as:
+    background subtraction, filtering, and grouping.
+
+    References
+    ----------
+
+    .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+    """
+
+    mask = property(BaseData._get_mask, BaseData._set_mask,
+                    doc=BaseData.mask.__doc__)
 
     def _get_grouped(self):
         return self._grouped
@@ -271,7 +322,8 @@ class DataPHA(Data1DInt):
 
         self._grouped = val
 
-    grouped = property(_get_grouped, _set_grouped, doc='Are the data grouped?')
+    grouped = property(_get_grouped, _set_grouped,
+                       doc='Are the data grouped?')
 
     def _get_subtracted(self):
         return self._subtracted
@@ -320,7 +372,8 @@ class DataPHA(Data1DInt):
 
         self._units = units
 
-    units = property(_get_units, _set_units, doc='Units of independent axis')
+    units = property(_get_units, _set_units,
+                     doc='Units of the independent axis')
 
     def _get_rate(self):
         return self._rate
