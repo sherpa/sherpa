@@ -86,7 +86,8 @@ def _notice_resp(chans, arf, rmf):
 class DataARF(Data1DInt):
     "ARF data set"
 
-    mask = property(BaseData._get_mask, BaseData._set_mask)
+    mask = property(BaseData._get_mask, BaseData._set_mask,
+                    doc=BaseData.mask.__doc__)
 
     def _get_specresp(self):
         return self._specresp
@@ -164,7 +165,8 @@ class DataARF(Data1DInt):
 class DataRMF(Data1DInt):
     "RMF data set"
 
-    mask = property(BaseData._get_mask, BaseData._set_mask)
+    mask = property(BaseData._get_mask, BaseData._set_mask,
+                    doc=BaseData.mask.__doc__)
 
     def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
