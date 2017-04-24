@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -248,7 +248,8 @@ def setup_multiple_1dint(stat, sys):
     return mdata, mmodel
 
 
-def setup_single_pha(stat, sys, background=True):
+def setup_single_pha(stat, sys, background=True,
+                     areascal="none"):
     """Return a single data set and model.
 
     This is aimed at wstat calculation, and so the DataPHA object has
@@ -262,6 +263,10 @@ def setup_single_pha(stat, sys, background=True):
     background : bool
         Should a background data set be included (True) or not (False)?
         The background is *not* subtracted when True.
+    areascal : {'none', 'scalar', 'array'}
+        Is the AREASCAL set and, if so, to a scalar or array value?
+        If background is True then it is also applied to the background
+        data set.
 
     Returns
     -------
@@ -269,6 +274,21 @@ def setup_single_pha(stat, sys, background=True):
         DataPHA and Model objects.
 
     """
+
+    # For the array of areascals, ensure that areascal is not
+    # constant within at least one group
+    #
+    areascals = {'source': {'none': None,
+                            'scalar': 1.0,
+                            'array': np.asarray([0.9, 0.9, 0.8, 0.9, 0.7],
+                                                dtype=np.float32)
+                            },
+                 'background': {'none': None,
+                                'scalar': 0.8,
+                                'array': np.asarray([1.2, 1.2, 1.2, 1.1, 1.4],
+                                                    dtype=np.float32)
+                                }
+                 }
 
     # If used the same bins as setup_single_1dint then could
     # re-use the results, but the bins are different, and it
@@ -295,12 +315,14 @@ def setup_single_pha(stat, sys, background=True):
     exposure = 150.0
     backscal = 0.01
 
+    ascal = areascals['source'][areascal]
+
     # does not set areascal or header
     data = DataPHA(name='tstpha', channel=channels,
                    counts=counts, staterror=staterror,
                    syserror=syserror, grouping=grouping,
                    quality=quality, exposure=exposure,
-                   backscal=backscal)
+                   backscal=backscal, areascal=ascal)
 
     if background:
         bgcounts = np.asarray([2, 1, 0, 2, 2], dtype=np.int16)
@@ -321,11 +343,13 @@ def setup_single_pha(stat, sys, background=True):
         bgexposure = 550.0
         bgbackscal = np.asarray([0.05, 0.06, 0.04, 0.04, 0.07])
 
+        bgascal = areascals['background'][areascal]
+
         bgdata = DataPHA(name='bgpha', channel=channels,
                          counts=bgcounts, staterror=bgstaterror,
                          syserror=bgsyserror, grouping=bggrouping,
                          quality=bgquality, exposure=bgexposure,
-                         backscal=bgbackscal)
+                         backscal=bgbackscal, areascal=bgascal)
 
         data.set_background(bgdata)
 
@@ -1125,6 +1149,93 @@ def test_stats_calc_stat_pha(stat, usestat, usesys,
     """statistic calculates expected values: single PHA dataset"""
 
     data, model = setup_single_pha(usestat, usesys, background=havebg)
+    if usebg:
+        data.subtract()
+
+    statobj = stat()
+    # do not check fvec
+    answer, _ = statobj.calc_stat(data, model)
+    assert_almost_equal(answer, expected)
+
+
+# Do not need to test the areascal="none" setting as that is used
+# in test_stats_calc_stat_pha.
+#
+# At the moment these tests are designed to look for changes in
+# behavior more than to validate that the results are correct.
+# They will be updated to be proper tests (the reason this is not
+# a valid test is that it's currently unclear what the best
+# approach to handling the AREASCAL value is, so things could change)
+#
+# TODO: add in more of the tests from tests_stats_calc_stat_pha_ascal
+#       with ascal=scalar/array?
+#
+
+stat_pha_chi2_ascal_a = 2.759294377739783  # TODO: verify
+
+stat_pha_chi2_bg_ascal_s = 1.3759460338786802  # TODO: verify
+stat_pha_chi2_bg_ascal_a = 2.742655351487837   # TODO: verify
+
+stat_pha_chi2_tf_ascal_a = 4.675917692685026   # TODO: verify
+
+stat_pha_chi2_tftt_ascal_s = 2.181996785102232   # TODO: verify
+stat_pha_chi2_tftt_ascal_a = 4.647497591569904   # TODO: verify
+
+stat_pha_cash_ascal_a = -398.59828932753476  # TODO: verify
+
+stat_pha_cstat_ascal_a = 5.023400836432106   # TODO: verify
+
+stat_pha_wstat_ascal_s = 1.8342104940277668  # TODO: verify
+stat_pha_wstat_ascal_a = 4.9750987445200145  # TODO: verify
+
+
+@pytest.mark.parametrize("stat,usestat,usesys,havebg,usebg,ascal,expected", [
+    (Chi2, True, True, False, False, "scalar", stat_pha_chi2_tt),
+    (Chi2, True, True, False, False, "array", stat_pha_chi2_ascal_a),
+
+    (Chi2, True, True, False, False, "scalar", stat_pha_chi2_tt),
+    (Chi2, True, True, False, False, "array", stat_pha_chi2_ascal_a),
+
+    (Chi2, True, True, True, False, "scalar", stat_pha_chi2_tt),
+    (Chi2, True, True, True, False, "array", stat_pha_chi2_ascal_a),
+
+    (Chi2, True, True, True, True, "scalar", stat_pha_chi2_bg_ascal_s),
+    (Chi2, True, True, True, True, "array", stat_pha_chi2_bg_ascal_a),
+
+    (Chi2, True, False, False, False, "scalar", stat_pha_chi2_tf),
+    (Chi2, True, False, False, False, "array", stat_pha_chi2_tf_ascal_a),
+
+    (Chi2, True, False, True, False, "scalar", stat_pha_chi2_tf),
+    (Chi2, True, False, True, False, "array", stat_pha_chi2_tf_ascal_a),
+
+    (Chi2, True, False, True, True, "scalar", stat_pha_chi2_tftt_ascal_s),
+    (Chi2, True, False, True, True, "array", stat_pha_chi2_tftt_ascal_a),
+
+    (Cash, True, True, False, False, "scalar", stat_pha_cash),
+    (Cash, True, True, False, False, "array", stat_pha_cash_ascal_a),
+
+    (Cash, False, False, False, False, "scalar", stat_pha_cash),
+    (Cash, False, False, False, False, "array", stat_pha_cash_ascal_a),
+
+    (CStat, True, True, False, False, "scalar", stat_pha_cstat),
+    (CStat, True, True, False, False, "array", stat_pha_cstat_ascal_a),
+
+    (CStat, False, False, False, False, "scalar", stat_pha_cstat),
+    (CStat, False, False, False, False, "array", stat_pha_cstat_ascal_a),
+
+    (WStat, False, False, True, False, "scalar", stat_pha_wstat_ascal_s),
+    (WStat, False, False, True, False, "array", stat_pha_wstat_ascal_a),
+
+    (WStat, True, True, True, False, "scalar", stat_pha_wstat_ascal_s),
+    (WStat, True, True, True, False, "array", stat_pha_wstat_ascal_a),
+])
+def test_stats_calc_stat_pha_ascal(stat, usestat, usesys,
+                                   havebg, usebg, ascal, expected):
+    """statistic calculates expected values: single PHA dataset + areascal"""
+
+    data, model = setup_single_pha(usestat, usesys,
+                                   background=havebg,
+                                   areascal=ascal)
     if usebg:
         data.subtract()
 
