@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2009, 2015, 2016  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -113,7 +113,8 @@ namespace sherpa { namespace stats {
               int (*StatFunc)( npy_intp num, const ArrayType& yraw,
                                const ArrayType& model,
                                const iArrayType& data_size,
-                               const ArrayType& exposure_time,
+                               const ArrayType& exposure_src,
+                               const ArrayType& exposure_bkg,
                                const ArrayType& bkg,
                                const ArrayType& backscale_ratio,
                                ArrayType& fvec, DataType& val,
@@ -123,16 +124,18 @@ namespace sherpa { namespace stats {
       ArrayType yraw;
       ArrayType model;
       iArrayType data_size;
-      ArrayType exposure_time;
+      ArrayType exposure_src;
+      ArrayType exposure_bkg;
       ArrayType bkg;
       ArrayType backscale_ratio;
       DataType trunc_value = 1.0e-25;
 
-      if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&O&d",
+      if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&O&O&d",
                               CONVERTME( ArrayType ), &yraw,
                               CONVERTME( ArrayType ), &model,
                               CONVERTME( iArrayType ), &data_size,
-                              CONVERTME( ArrayType ), &exposure_time,
+                              CONVERTME( ArrayType ), &exposure_src,
+                              CONVERTME( ArrayType ), &exposure_bkg,
                               CONVERTME( ArrayType ), &bkg,
                               CONVERTME( ArrayType ), &backscale_ratio,
                               &trunc_value ) )
@@ -164,11 +167,18 @@ namespace sherpa { namespace stats {
         return NULL;
       }
 
-      if ( exposure_time.get_size() != 2 * data_size.get_size() ) {
+      if ( exposure_src.get_size() != nelem ) {
         std::ostringstream err;
-        err << "statistic array mismatch: exposure size=" <<
-          exposure_time.get_size() << " 2*data size=" <<
-          2 * data_size.get_size();
+        err << "statistic array mismatch: data size=" << nelem <<
+          " exposure size (src)=" << exposure_src.get_size();
+        PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+        return NULL;
+      }
+      
+      if ( exposure_bkg.get_size() != nelem ) {
+        std::ostringstream err;
+        err << "statistic array mismatch: data size=" << nelem <<
+          " exposure size (bkg)=" << exposure_bkg.get_size();
         PyErr_SetString( PyExc_TypeError, err.str().c_str() );
         return NULL;
       }
@@ -187,7 +197,8 @@ namespace sherpa { namespace stats {
         return NULL;
       DataType val = 0.0;
       if ( EXIT_SUCCESS != StatFunc( nelem, yraw, model, data_size, 
-                                     exposure_time, bkg, backscale_ratio,
+                                     exposure_src, exposure_bkg,
+                                     bkg, backscale_ratio,
                                      fvec, val, trunc_value ) ) {
         PyErr_SetString( PyExc_ValueError,
                          (char*)"statistic calculation failed");

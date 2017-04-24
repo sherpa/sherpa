@@ -1185,8 +1185,8 @@ stat_pha_cash_ascal_a = -398.59828932753476  # TODO: verify
 
 stat_pha_cstat_ascal_a = 5.023400836432106   # TODO: verify
 
-stat_pha_wstat_ascal_s = 1.8342104940277668  # TODO: verify
-stat_pha_wstat_ascal_a = 4.9750987445200145  # TODO: verify
+stat_pha_wstat_ascal_s = 1.8553805235199778   # TODO: verify, changed
+stat_pha_wstat_ascal_a = 5.001704518726417  # TODO: verify, changed
 
 
 @pytest.mark.parametrize("stat,usestat,usesys,havebg,usebg,ascal,expected", [

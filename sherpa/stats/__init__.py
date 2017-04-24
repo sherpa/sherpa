@@ -822,7 +822,8 @@ class WStat(Likelihood):
         data_model = []
         data_bkg = []
         nelems = []
-        exposures = []
+        exp_src = []
+        exp_bkg = []
         backscales = []
 
         for dset, mexpr in zip(data.datasets, model.parts):
@@ -849,10 +850,14 @@ class WStat(Likelihood):
 
             bset = dset.get_background(bid)
 
+            # TODO: the following should be reviewed to see what
+            # happens if optional information is missing (e.g. if
+            # BACKSCAL is not set we should default to all 1's,
+            # but does this code handle it?)
+            #
+
             data_bkg.append(dset.apply_filter(bset.get_dep(False),
                                               groupfunc=numpy.sum))
-
-            exposures.extend([dset.exposure, bset.exposure])
 
             # The assumption is that the source and background datasets
             # have the same number of channels (before any grouping or
@@ -875,11 +880,41 @@ class WStat(Likelihood):
 
             backscales.append(bkg_backscal / src_backscal)
 
+            # The AREASCAL values are applied to the exposure
+            # times, since this is how XSPEC handles this (at
+            # least that's my undertanding of a conversation with
+            # Keith Arnaud, for XSPEC ~ version 12.9). This requires
+            # turning an exposure into an array if there's no
+            # AREASCAl value
+            #
+            # For now we follow the same approach as the BACKSCAL
+            # values if the data is grouped.
+            #
+            #
+            if dset.areascal is None:
+                ascal = dummy[:dset.get_dep(True).size]
+            else:
+                ascal = dset.apply_filter(dset.areascal * dummy,
+                                          groupfunc=dset._middle)
+
+            exp_src.append(dset.exposure * ascal)
+
+            if bset.areascal is None:
+                ascal = dummy[:dset.get_dep(True).size]
+            else:
+                ascal = dset.apply_filter(bset.areascal * dummy,
+                                          groupfunc=dset._middle)
+
+            exp_bkg.append(bset.exposure * ascal)
+
         data_src = numpy.concatenate(data_src)
         data_model = numpy.concatenate(data_model)
+        exp_src = numpy.concatenate(exp_src)
+        exp_bkg = numpy.concatenate(exp_bkg)
         data_bkg = numpy.concatenate(data_bkg)
         backscales = numpy.concatenate(backscales)
 
         return self._calc(data_src, data_model, nelems,
-                          exposures, data_bkg, backscales,
+                          exp_src, exp_bkg,
+                          data_bkg, backscales,
                           truncation_value)
