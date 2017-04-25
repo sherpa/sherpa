@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -27,11 +27,12 @@ import inspect
 import numpy
 from sherpa.utils.err import DataErr, NotImplementedErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
-     print_fields, create_expr, calc_total_error, bool_cast, \
-     filter_bins
+    print_fields, create_expr, calc_total_error, bool_cast, \
+    filter_bins
 
 
-__all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt', 'Data2D', 'Data2DInt')
+__all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt', 'Data2D',
+           'Data2DInt')
 
 
 class BaseData(NoNewAttributesAfterInit):
@@ -39,14 +40,17 @@ class BaseData(NoNewAttributesAfterInit):
 
     def _get_filter(self):
         return self._filter
+
     def _set_filter(self, val):
         self._filter = val
         self._mask = True
+
     filter = property(_get_filter, _set_filter,
                       doc='Filter for dependent variable')
 
     def _get_mask(self):
         return self._mask
+
     def _set_mask(self, val):
         if (val is True) or (val is False):
             self._mask = val
@@ -55,13 +59,12 @@ class BaseData(NoNewAttributesAfterInit):
         else:
             self._mask = numpy.asarray(val, numpy.bool_)
         self._filter = None
+
     mask = property(_get_mask, _set_mask,
                     doc='Mask array for dependent variable')
 
     def __init__(self):
-        """
-
-        Initialize a data object.  This method can only be called from
+        """Initialize a data object. This method can only be called from
         a derived class constructor.  Attempts to create a BaseData
         instance will raise NotImplementedErr.
 
@@ -76,7 +79,6 @@ class BaseData(NoNewAttributesAfterInit):
         corresponding attribute name will have an underscore prepended
         (meaning the property will use the value directly instead of
         relying on _get_*/_set_* methods).
-
         """
 
         if type(self) is BaseData:
@@ -102,10 +104,8 @@ class BaseData(NoNewAttributesAfterInit):
 
     def __str__(self):
         """
-
         Return a listing of the attributes listed in self._fields and,
         if present, self._extra_fields.
-
         """
 
         fields = self._fields + getattr(self, '_extra_fields', ())
@@ -135,11 +135,11 @@ class BaseData(NoNewAttributesAfterInit):
     def notice(self, mins, maxes, axislist, ignore=False):
 
         ignore = bool_cast(ignore)
-        if( str in [type(min) for min in mins] ):
+        if str in [type(min) for min in mins]:
             raise DataErr('typecheck', 'lower bound')
-        elif( str in [type(max) for max in maxes] ):
+        elif str in [type(max) for max in maxes]:
             raise DataErr('typecheck', 'upper bound')
-        elif( str in [type(axis) for axis in axislist] ):
+        elif str in [type(axis) for axis in axislist]:
             raise DataErr('typecheck', 'grid')
 
         mask = filter_bins(mins, maxes, axislist)
@@ -164,13 +164,11 @@ class Data(BaseData):
 
     def __init__(self, name, indep, dep, staterror=None, syserror=None):
         """
-
         Initialize a Data instance.  indep should be a tuple of
         independent axis arrays, dep should be an array of dependent
         variable values, and staterror and syserror should be arrays
         of statistical and systematic errors, respectively, in the
         dependent variable (or None).
-
         """
 
         BaseData.__init__(self)
@@ -214,7 +212,7 @@ class Data(BaseData):
 
         """
         indep = getattr(self, 'indep', None)
-        filter=bool_cast(filter)
+        filter = bool_cast(filter)
         if filter:
             indep = tuple([self.apply_filter(x) for x in indep])
         return indep
@@ -243,7 +241,7 @@ class Data(BaseData):
 
         """
         dep = getattr(self, 'dep', None)
-        filter=bool_cast(filter)
+        filter = bool_cast(filter)
         if filter:
             dep = self.apply_filter(dep)
         return dep
@@ -276,7 +274,7 @@ class Data(BaseData):
 
         """
         staterror = getattr(self, 'staterror', None)
-        filter=bool_cast(filter)
+        filter = bool_cast(filter)
         if filter:
             staterror = self.apply_filter(staterror)
 
@@ -311,7 +309,7 @@ class Data(BaseData):
 
         """
         syserr = getattr(self, 'syserror', None)
-        filter=bool_cast(filter)
+        filter = bool_cast(filter)
         if filter:
             syserr = self.apply_filter(syserr)
         return syserr
@@ -376,7 +374,7 @@ class Data(BaseData):
         return None
 
     def get_xlabel(self):
-        "Return label for linear view ofindependent axis/axes"
+        "Return label for linear view of independent axis/axes"
         return 'x'
 
     def get_y(self, filter=False, yfunc=None):
@@ -414,9 +412,7 @@ class Data(BaseData):
 
     def get_x1label(self):
         """
-
         Return label for second dimension in 2-D view of independent axis/axes
-
         """
         return 'x1'
 
@@ -535,7 +531,8 @@ class DataSimulFit(Data):
 
         if no_staterror:
             total_staterror = None
-        elif numpy.any([numpy.equal(array, None).any() for array in total_staterror]):
+        elif numpy.any([numpy.equal(array, None).any()
+                        for array in total_staterror]):
             raise DataErr('staterrsimulfit')
         else:
             total_staterror = numpy.concatenate(total_staterror)
@@ -556,7 +553,7 @@ class DataND(Data):
 
     def get_dep(self, filter=False):
         y = self.y
-        filter=bool_cast(filter)
+        filter = bool_cast(filter)
         if filter:
             y = self.apply_filter(y)
         return y
@@ -568,7 +565,7 @@ class DataND(Data):
             dep = numpy.asarray(val, SherpaFloat)
         else:
             val = SherpaFloat(val)
-            dep = numpy.array([val]*len(self.get_indep()[0]))
+            dep = numpy.array([val] * len(self.get_indep()[0]))
         setattr(self, 'y', dep)
 
 
@@ -590,7 +587,7 @@ class Data1D(DataND):
         BaseData.__init__(self)
 
     def get_indep(self, filter=False):
-        filter=bool_cast(filter)
+        filter = bool_cast(filter)
         if filter:
             return (self._x,)
         return (self.x,)
@@ -631,16 +628,16 @@ class Data1D(DataND):
         "Return 1D dependent variable as a 1 x N image"
         y_img = self.get_y(False, yfunc)
         if yfunc is not None:
-            y_img = (y_img[0].reshape(1,y_img[0].size),
-                     y_img[1].reshape(1,y_img[1].size))
+            y_img = (y_img[0].reshape(1, y_img[0].size),
+                     y_img[1].reshape(1, y_img[1].size))
         else:
-            y_img = y_img.reshape(1,y_img.size)
+            y_img = y_img.reshape(1, y_img.size)
         return y_img
 
     def get_imgerr(self):
         err = self.get_error()
         if err is not None:
-            err = err.reshape(1,err.size)
+            err = err.reshape(1, err.size)
         return err
 
     def notice(self, xlo=None, xhi=None, ignore=False):
@@ -668,7 +665,7 @@ class Data1DInt(Data1D):
         BaseData.__init__(self)
 
     def get_indep(self, filter=False):
-        filter=bool_cast(filter)
+        filter = bool_cast(filter)
         if filter:
             return (self._lo, self._hi)
         return (self.xlo, self.xhi)
@@ -678,8 +675,8 @@ class Data1DInt(Data1D):
         return (indep[0] + indep[1]) / 2.0
 
     def get_xerr(self, filter=False):
-        xlo,xhi = self.get_indep(filter)
-        return xhi-xlo
+        xlo, xhi = self.get_indep(filter)
+        return xhi - xlo
 
     def notice(self, xlo=None, xhi=None, ignore=False):
         BaseData.notice(self, (None, xlo), (xhi, None), self.get_indep(),
@@ -708,7 +705,7 @@ class Data2D(DataND):
         BaseData.__init__(self)
 
     def get_indep(self, filter=False):
-        filter=bool_cast(filter)
+        filter = bool_cast(filter)
         if filter:
             return (self._x0, self._x1)
         return (self.x0, self.x1)
@@ -716,17 +713,17 @@ class Data2D(DataND):
     def get_x0(self, filter=False):
         return self.get_indep(filter)[0]
 
-
     def get_x1(self, filter=False):
         return self.get_indep(filter)[1]
 
     def get_axes(self):
         self._check_shape()
         # FIXME: how to filter an axis when self.mask is size of self.y?
-        return (numpy.arange(self.shape[1])+1, numpy.arange(self.shape[0])+1)
+        return (numpy.arange(self.shape[1]) + 1,
+                numpy.arange(self.shape[0]) + 1)
 
     def get_dims(self, filter=False):
-        #self._check_shape()
+        # self._check_shape()
         if self.shape is not None:
             return self.shape[::-1]
         return (len(self.get_x0(filter)), len(self.get_x1(filter)))
@@ -738,7 +735,7 @@ class Data2D(DataND):
 
     def _check_shape(self):
         if self.shape is None:
-            raise DataErr('shape',self.name)
+            raise DataErr('shape', self.name)
 
     def get_max_pos(self, dep=None):
         if dep is None:
@@ -803,7 +800,7 @@ class Data2DInt(Data2D):
         BaseData.__init__(self)
 
     def get_indep(self, filter=False):
-        filter=bool_cast(filter)
+        filter = bool_cast(filter)
         if filter:
             return (self._x0lo, self._x1lo, self._x0hi, self._x1hi)
         return (self.x0lo, self.x1lo, self.x0hi, self.x1hi)
