@@ -1171,57 +1171,49 @@ def test_stats_calc_stat_pha(stat, usestat, usesys,
 #       with ascal=scalar/array?
 #
 
-stat_pha_chi2_ascal_a = 2.759294377739783  # TODO: verify
-
-stat_pha_chi2_bg_ascal_s = 1.3759460338786802  # TODO: verify
-stat_pha_chi2_bg_ascal_a = 2.742655351487837   # TODO: verify
-
-stat_pha_chi2_tf_ascal_a = 4.675917692685026   # TODO: verify
+stat_pha_chi2_tttt_ascal_s = 1.3759460338786802  # TODO: verify
+stat_pha_chi2_tttt_ascal_a = 1.356144947892523   # TODO: verify
 
 stat_pha_chi2_tftt_ascal_s = 2.181996785102232   # TODO: verify
-stat_pha_chi2_tftt_ascal_a = 4.647497591569904   # TODO: verify
+stat_pha_chi2_tftt_ascal_a = 2.1517832313119545  # TODO: verify
 
-stat_pha_cash_ascal_a = -398.59828932753476  # TODO: verify
-
-stat_pha_cstat_ascal_a = 5.023400836432106   # TODO: verify
-
-stat_pha_wstat_ascal_s = 1.8553805235199778   # TODO: verify, changed
-stat_pha_wstat_ascal_a = 5.001704518726417  # TODO: verify, changed
+stat_pha_wstat_ascal_s = 1.834065760993965    # TODO: verify
+stat_pha_wstat_ascal_a = 1.8028391355284863   # TODO: verify
 
 
 @pytest.mark.parametrize("stat,usestat,usesys,havebg,usebg,ascal,expected", [
     (Chi2, True, True, False, False, "scalar", stat_pha_chi2_tt),
-    (Chi2, True, True, False, False, "array", stat_pha_chi2_ascal_a),
+    (Chi2, True, True, False, False, "array", stat_pha_chi2_tt),
 
     (Chi2, True, True, False, False, "scalar", stat_pha_chi2_tt),
-    (Chi2, True, True, False, False, "array", stat_pha_chi2_ascal_a),
+    (Chi2, True, True, False, False, "array", stat_pha_chi2_tt),
 
     (Chi2, True, True, True, False, "scalar", stat_pha_chi2_tt),
-    (Chi2, True, True, True, False, "array", stat_pha_chi2_ascal_a),
+    (Chi2, True, True, True, False, "array", stat_pha_chi2_tt),
 
-    (Chi2, True, True, True, True, "scalar", stat_pha_chi2_bg_ascal_s),
-    (Chi2, True, True, True, True, "array", stat_pha_chi2_bg_ascal_a),
+    (Chi2, True, True, True, True, "scalar", stat_pha_chi2_tttt_ascal_s),
+    (Chi2, True, True, True, True, "array", stat_pha_chi2_tttt_ascal_a),
 
     (Chi2, True, False, False, False, "scalar", stat_pha_chi2_tf),
-    (Chi2, True, False, False, False, "array", stat_pha_chi2_tf_ascal_a),
+    (Chi2, True, False, False, False, "array", stat_pha_chi2_tf),
 
     (Chi2, True, False, True, False, "scalar", stat_pha_chi2_tf),
-    (Chi2, True, False, True, False, "array", stat_pha_chi2_tf_ascal_a),
+    (Chi2, True, False, True, False, "array", stat_pha_chi2_tf),
 
     (Chi2, True, False, True, True, "scalar", stat_pha_chi2_tftt_ascal_s),
     (Chi2, True, False, True, True, "array", stat_pha_chi2_tftt_ascal_a),
 
     (Cash, True, True, False, False, "scalar", stat_pha_cash),
-    (Cash, True, True, False, False, "array", stat_pha_cash_ascal_a),
+    (Cash, True, True, False, False, "array", stat_pha_cash),
 
     (Cash, False, False, False, False, "scalar", stat_pha_cash),
-    (Cash, False, False, False, False, "array", stat_pha_cash_ascal_a),
+    (Cash, False, False, False, False, "array", stat_pha_cash),
 
     (CStat, True, True, False, False, "scalar", stat_pha_cstat),
-    (CStat, True, True, False, False, "array", stat_pha_cstat_ascal_a),
+    (CStat, True, True, False, False, "array", stat_pha_cstat),
 
     (CStat, False, False, False, False, "scalar", stat_pha_cstat),
-    (CStat, False, False, False, False, "array", stat_pha_cstat_ascal_a),
+    (CStat, False, False, False, False, "array", stat_pha_cstat),
 
     (WStat, False, False, True, False, "scalar", stat_pha_wstat_ascal_s),
     (WStat, False, False, True, False, "array", stat_pha_wstat_ascal_a),

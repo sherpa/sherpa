@@ -24,8 +24,9 @@ A PHA file can have AREASCAL and BACKSCAL values (either a scalar or
 column). The BACKSCAL column has tests in other parts of the system,
 so this file concentrates on the area scaling column.
 
-The area scaling is applied to the counts in that channel, rather than
-being factored into the ARF. This complicates data access.
+The handling of AREASCAL is scattered throughout the system: it's
+not just the DataPHA object but also the ARF/RMF/RSP PHA instrument
+objects.
 
 The tests here focus on the object API, rather than the UI layer
 (which, at present, doesn't do much extra with regard to area
@@ -41,9 +42,11 @@ import pytest
 import numpy as np
 from numpy.testing import assert_allclose
 
-from sherpa.astro.data import DataPHA
+from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.instrument import ARFModelPHA, RMFModelPHA, RSPModelPHA
 from sherpa.models.basic import Const1D, StepHi1D
 from sherpa.stats import Chi2DataVar, CStat
+from sherpa.utils.err import ArgumentErr, DataErr
 
 
 def expected_basic_areascal():
@@ -88,6 +91,7 @@ def expected_basic_counts(scale=False):
 
     counts = np.asarray([0, 12, 21, 25, 18, 24, 23, 16, 20, 19],
                         dtype=np.int16)
+
     if scale:
         ascal = expected_basic_areascal()
 
@@ -105,9 +109,8 @@ def expected_basic_counts_bgnd(scale=False):
     Parameters
     ----------
     scale : bool, optional
-        If True then the counts are scaled by areascal, otherwise
-        (when False) it is the value that should be stored in the
-        DataPHA object.
+        If True then the result is scaled by the source AREASCAL
+        value.
 
     Notes
     -----
@@ -135,12 +138,17 @@ def expected_basic_counts_bgnd(scale=False):
     return counts.copy()
 
 
-def expected_basic_chisquare_errors():
+def expected_basic_chisquare_errors(scale=False):
     """Return the expected error values (chi square).
 
-    The calculation is sqrt(observed) / areascaling, so should
-    be compared to the Chi2DataVar statistic.
+    Parameters
+    ----------
+    scale : bool, optional
+        If True then the results are scaled by areascal.
 
+    Notes
+    ------
+    The calculation assumes Chi2DataVar statistic and
     ignore_bad() is assumed to have been called.
     """
 
@@ -151,19 +159,30 @@ def expected_basic_chisquare_errors():
     #
     # Since ignore_bad has been called we ignore the first bin.
     counts = expected_basic_counts(scale=False)[1:]
-    ascal = expected_basic_areascal()[1:]
+    expected = np.sqrt(counts)
 
-    expected = np.sqrt(counts) / ascal
+    if scale:
+        ascal = expected_basic_areascal()[1:]
+        expected /= ascal
+
     return expected.copy()
 
 
-def expected_basic_chisquare_errors_bgnd():
+def expected_basic_chisquare_errors_bgnd(scale=False):
     """Return the expected error values (chi square) after bg subtraction.
 
-    The calculation is sqrt(observed) / areascaling, so should
-    be compared to the Chi2DataVar statistic.
+    Parameters
+    ----------
+    scale : bool, optional
+        If True then the results are scaled by areascal.
 
+    Notes
+    -----
+    The calculation assumes the Chi2DataVar statistic and
     ignore_bad() is assumed to have been called.
+
+    It is not at all clear if this code is doing the right thing
+    at the moment.
     """
 
     # Calculate the errors based on the counts. There are no
@@ -178,14 +197,37 @@ def expected_basic_chisquare_errors_bgnd():
     bgcounts = expected_basic_counts_bgnd(scale=False)[1:]
     bgascal = expected_basic_areascal_bgnd()[1:]
 
-    expected = counts / (ascal * ascal)
-    expected += bgcounts / (bgascal * bgascal)
+    # It is unclear what to do when scale=False, since this
+    # is saying "let's ignore the areascal", but we still
+    # have to include the background areascal term when calculating
+    # the background contribution to the area.
+    #
+    # This mess suggests the abstraction is not ideal.
+    #
+    if scale:
+        expected = counts / (ascal * ascal)
+    else:
+        expected = counts
+
+    if scale:
+        expected += bgcounts / (bgascal * bgascal)
+    else:
+        expected = expected + bgcounts * ascal * ascal / (bgascal * bgascal)
+
     return np.sqrt(expected)
 
 
-def expected_basic_chisquare_errors_scaling_bgnd():
+def expected_basic_chisquare_errors_scaling_bgnd(scale=False):
     """Return the expected error values (chi square) after bg subtraction.
 
+    Parameters
+    ----------
+    scale : bool, optional
+        If True then the results are scaled by areascal.
+        It is unclear what this should be doing.
+
+    Notes
+    -----
     The errors are calculated using the Chi2DataVar algorithm.
 
     It assumes:
@@ -196,6 +238,9 @@ def expected_basic_chisquare_errors_scaling_bgnd():
        background backscal = 0.1
 
     ignore_bad() is assumed to have been called.
+
+    It is not at all clear if this code is doing the right thing
+    at the moment.
     """
 
     # Calculate the errors based on the counts. There are no
@@ -217,15 +262,24 @@ def expected_basic_chisquare_errors_scaling_bgnd():
     bgcounts = expected_basic_counts_bgnd(scale=False)[1:]
     bgascal = expected_basic_areascal_bgnd()[1:]
 
-    denom = ascal
-    expected = counts / (denom * denom)
+    # see comments in expected_basic_chisquare_errors_bgnd
+    # about confusion of what to do when scale = False
+    #
+    if scale:
+        expected = counts / (ascal * ascal)
+    else:
+        expected = 1.0 * counts
 
     # The background counts are re-scaled to match the source
     # settings.
-    denom = bgascal * backscal_bg * exposure_bg / \
+    bgdenom = bgascal * backscal_bg * exposure_bg / \
         (backscal_src * exposure_src)
 
-    expected += bgcounts / (denom * denom)
+    if not scale:
+        bgdenom /= ascal
+
+    expected += bgcounts / (bgdenom * bgdenom)
+
     return np.sqrt(expected)
 
 
@@ -318,7 +372,7 @@ def test_get_dep():
     """What does get_dep return"""
 
     dset = setup_basic_dataset()
-    expected = expected_basic_counts(scale=True)
+    expected = expected_basic_counts(scale=False)
     expected = expected.astype(np.float64)
 
     assert_allclose(dset.get_dep(), expected)
@@ -347,7 +401,24 @@ def test_get_staterror():
     errors = dset.get_staterror(filter=True,
                                 staterrfunc=stat.calc_staterror)
 
-    expected = expected_basic_chisquare_errors()
+    expected = expected_basic_chisquare_errors(scale=False)
+    assert_allclose(errors, expected)
+
+
+def test_get_yerr():
+    """What does get_yerr return?
+
+    This uses the data-variance calculation.
+    """
+
+    dset = setup_basic_dataset()
+    dset.ignore_bad()
+
+    stat = Chi2DataVar()
+    errors = dset.get_yerr(filter=True,
+                           staterrfunc=stat.calc_staterror)
+
+    expected = expected_basic_chisquare_errors(scale=True)
     assert_allclose(errors, expected)
 
 
@@ -370,8 +441,13 @@ def test_chisquare():
     cpt2.xcut = 6.5
     mdl = cpt1 + cpt2
 
-    counts = expected_basic_counts(scale=True)[1:]
-    errors = expected_basic_chisquare_errors()
+    # Since the model does not contain a *PHA instrument model
+    # it will not include the area-scaling, so the data and
+    # errors should not be scaled.
+    #
+    scale = False
+    counts = expected_basic_counts(scale=scale)[1:]
+    errors = expected_basic_chisquare_errors(scale=scale)
     mvals = mdl(dset.channel[1:])
 
     expected = (counts - mvals)**2 / (errors**2)
@@ -383,11 +459,113 @@ def test_chisquare():
     assert_allclose(sval[0], expected)
 
 
-@pytest.mark.xfail
-def test_ctat():
-    """Is the likelihood correct?
+def make_arf(energ_lo, energ_hi, specresp=None, exposure=1.0,
+             name='arf'):
+    """A simple in-memory representation of an ARF.
 
-    This uses the CSTAT version of the likelihood.
+    Parameters
+    ----------
+    energ_lo, energ_hi : array
+        The energy grid over which the ARF is defined. The units are
+        keV and each bin has energ_hi > energ_lo. The arrays are
+        assumed to be ordered, but it is not clear yet whether they
+        have to be in ascending order.
+    specresp : array or None, optional
+        The spectral response (effective area) for each bin, in cm^2.
+        If not given then a value of 1.0 per bin is used.
+    exposure : number, optional
+        The exposure time, in seconds. It must be positive.
+    name : str, optional
+        The name to give to the ARF instance.
+
+    Returns
+    -------
+    arf : sherpa.astro.data.DataARF
+        The ARF.
+    """
+
+    elo = np.asarray(energ_lo)
+    ehi = np.asarray(energ_hi)
+    if elo.size != ehi.size:
+        raise DataErr('mismatch', 'energ_lo', 'energ_hi')
+
+    if specresp is None:
+            specresp = np.ones(elo.size, dtype=np.float32)
+    else:
+        specresp = np.asarray(specresp)
+        if specresp.size != elo.size:
+            raise DataErr('mismatch', 'energy grid', 'effarea')
+
+    if exposure <= 0.0:
+        raise ArgumentErr('bad', 'exposure', 'value must be positive')
+
+    return DataARF(name=name, energ_lo=elo, energ_hi=ehi,
+                   specresp=specresp, exposure=exposure)
+
+
+def make_ideal_rmf(e_min, e_max, offset=1, name='rmf'):
+    """A simple in-memory representation of an ideal RMF.
+
+    This RMF represents a 1-to-1 mapping from channel to energy
+    bin (i.e. there's no blurring or secondary channels).
+
+    Parameters
+    ----------
+    e_min, e_max : array
+        The energy ranges corresponding to the channels. The units are
+        in keV and each bin has energ_hi > energ_lo. The arrays are
+        assumed to be ordered, but it is not clear yet whether they
+        have to be in ascending order. The sizes must match each
+        other. This corresponds to the E_MIN and E_MAX columns of
+        the EBOUNDS extension of the RMF file format.
+    offset : int, optional
+        The value of the first channel (corresponding to the TLMIN
+        value of the F_CHAN column of the 'MATRIX' or 'SPECRESP
+        MATRIX' block. It is expected to be 0 or 1, but the only
+        restriction is that it is 0 or greater.
+    name : str, optional
+        The name to give to the RMF instance.
+
+    Returns
+    -------
+    rmf : sherpa.astro.data.DatAMRF
+        The RMF.
+
+    """
+
+    elo = np.asarray(e_min)
+    ehi = np.asarray(e_max)
+    if elo.size != ehi.size:
+        raise DataErr('mismatch', 'e_min', 'e_max')
+    detchans = elo.size
+
+    if offset < 0:
+        raise ArgumentErr('bad', 'offset', 'value can not be negative')
+
+    # The "ideal" matrix is the identity matrix, which, in compressed
+    # form, is an array of 1.0's (matrix) and an array of locations
+    # giving the column where the element is 1 (fchan). It appears
+    # that this uses 1 indexing.
+    #
+    dummy = np.ones(detchans, dtype=np.int16)
+    matrix = np.ones(detchans, dtype=np.float32)
+    fchan = np.arange(1, detchans + 1, dtype=np.int16)
+
+    return DataRMF(name=name, detchans=detchans,
+                   energ_lo=elo, energ_hi=ehi,
+                   n_grp=dummy, n_chan=dummy,
+                   f_chan=fchan, matrix=matrix,
+                   offset=offset)
+
+
+def setup_likelihood(scale=False):
+    """Create data and models for likelihood-based tests.
+
+    Parameters
+    ----------
+    scale : bool, optional
+        If True the expected statistic value includes the
+        AREASCAL values, otherwise it doesn't.
     """
 
     dset = setup_basic_dataset()
@@ -400,29 +578,165 @@ def test_ctat():
     cpt2.xcut = 6.5
     mdl = cpt1 + cpt2
 
+    # The asserts are used to ensure that any changes to parameter
+    # values (or the models) don't lead to invalid data values
+    # for the CSTAT calculation (i.e. this code does not have
+    # to deal with the truncation value). As this routine is
+    # called multiple times it's a bit wasteful.
+    #
     counts = expected_basic_counts(scale=False)[1:]
-
-    # For the likelihood statistic, the areascal values are
-    # applied to the model counts rather than the source counts.
-    #
-    mvals = mdl(dset.channel[1:])
-    ascal = expected_basic_areascal()[1:]
-    mvals *= ascal
-
-    # Simplifies the analysis if don't have to deal with truncation
-    # values. These asserts mainly serve as a reminder that this
-    # code can simplify the CStat calculation slightly here.
-    #
-    assert (mvals > 0).all()
     assert (counts > 0).all()
 
-    statval = mvals - counts + counts * np.log(counts / mvals)
-    expected = 2.0 * statval.sum()
+    # The model calculation uses the "integrated" version
+    # when scale=True, since this compares the results to
+    # the model evaluated through a response. For the
+    # scale=False case, when the model is evaluated directly,
+    # then the model is evaluated at the bin value, not
+    # integrated over the bin (this is because the instrument
+    # models actually ignore the channel grid sent to them
+    # and do the calculation over the bins, whereas when there
+    # is no instrument model the input arguments are used,
+    # i.e. mdl([1,2,3]) rather than mdl([1,2,3], [2,3,4])
+    #
+    chanlo = dset.channel[1:]
+    chanhi = 1 + chanlo
+    mvals_noascal = mdl(chanlo)
+    assert (mvals_noascal > 0).all()
+
+    def calc_stat(m):
+        statval = m - counts + counts * np.log(counts / m)
+        return 2.0 * statval.sum()
+
+    # Calculate the expected statistics; this should really be
+    # a hard-coded value but is left as a calculation while the
+    # tests are being worked on.
+    #
+    expected_noascal = calc_stat(mvals_noascal)
+
+    ascal = dset.get_areascal(filter=True)
+    mvals_ascal = mdl(chanlo, chanhi) * ascal
+    assert (mvals_ascal > 0).all()
+
+    # Calculate the expected statistics
+    #
+    expected_ascal = calc_stat(mvals_ascal)
+
+    # TODO: remove once the values are hard-coded.
+    #
+    # Just to check that the area scaling is working in the
+    # expected direction.
+    assert (expected_noascal > expected_ascal)
+
+    if scale:
+        expected = expected_ascal
+    else:
+        expected = expected_noascal
+
+    return dset, mdl, expected
+
+
+def test_cstat_nophamodel():
+    """What does CSTAT calculate when there is no PHA instrument model.
+
+    The value here is technically wrong, in that the AREASCAL value
+    is not being included in the calculation, but is included as a
+    test to validate the current approach.
+
+    See Also
+    --------
+    test_cstat_arfpha, test_cstat_rmfpha, test_cstat_rsppha
+    """
+
+    dset, mdl, expected = setup_likelihood(scale=False)
 
     stat = CStat()
-    sval = stat.calc_stat(dset, mdl)
+    sval_noascal = stat.calc_stat(dset, mdl)
 
-    assert_allclose(sval[0], expected)
+    assert_allclose(sval_noascal[0], expected)
+
+
+def test_cstat_arfpha():
+    """What does CSTAT calculate when there is an ARF+PHA instrument model.
+
+    The value here is technically wrong, in that the AREASCAL value
+    is not being included in the calculation, but is included as a
+    test to validate the current approach.
+
+    See Also
+    --------
+    test_cstat_nophamodel, test_cstat_rmfpha, test_cstat_rsppha
+    """
+
+    dset, mdl, expected = setup_likelihood(scale=True)
+
+    # Use the channel grid as the "energy axis".
+    #
+    arf = make_arf(energ_lo=dset.channel,
+                   energ_hi=dset.channel + 1)
+    mdl_ascal = ARFModelPHA(arf, dset, mdl)
+
+    stat = CStat()
+    sval_ascal = stat.calc_stat(dset, mdl_ascal)
+
+    assert_allclose(sval_ascal[0], expected)
+
+
+def test_cstat_rmfpha():
+    """What does CSTAT calculate when there is an RMF+PHA instrument model.
+
+    This includes the AREASCAL when evaluating the model.
+
+    See Also
+    --------
+    test_cstat_nophamodel, test_cstat_arfpha, test_cstat_rsppha
+    """
+
+    dset, mdl, expected = setup_likelihood(scale=True)
+
+    # use the full channel grid; the energy grid has to be
+    # "the same" as the channel values since the model
+    # has a dependency on the independent axis
+    #
+    egrid = 1.0 * np.concatenate((dset.channel,
+                                  [dset.channel.max() + 1]))
+    rmf = make_ideal_rmf(egrid[:-1], egrid[1:])
+
+    mdl_ascal = RMFModelPHA(rmf, dset, mdl)
+
+    stat = CStat()
+    sval_ascal = stat.calc_stat(dset, mdl_ascal)
+
+    assert_allclose(sval_ascal[0], expected)
+
+
+def test_cstat_rsppha():
+    """What does CSTAT calculate when there is an RSP+PHA instrument model.
+
+    This includes the AREASCAL when evaluating the model.
+
+    See Also
+    --------
+    test_cstat_nophamodel, test_cstat_arfpha, test_cstat_rmfpha
+    """
+
+    dset, mdl, expected = setup_likelihood(scale=True)
+
+    # use the full channel grid; the energy grid has to be
+    # "the same" as the channel values since the model
+    # has a dependency on the independent axis
+    #
+    egrid = 1.0 * np.concatenate((dset.channel,
+                                  [dset.channel.max() + 1]))
+    arf = make_arf(energ_lo=egrid[:-1],
+                   energ_hi=egrid[1:])
+    rmf = make_ideal_rmf(e_min=egrid[:-1], e_max=egrid[1:])
+
+    mdl_ascal = RSPModelPHA(arf, rmf, dset, mdl)
+
+    stat = CStat()
+    sval_ascal = stat.calc_stat(dset, mdl_ascal)
+
+    assert_allclose(sval_ascal[0], expected)
 
 
 def test_get_dep_no_bgnd():
@@ -434,7 +748,7 @@ def test_get_dep_no_bgnd():
     dset = setup_basic_dataset_bgnd()
     dset.ignore_bad()
 
-    expected = expected_basic_counts(scale=True)
+    expected = expected_basic_counts(scale=False)
     expected = expected.astype(np.float64)
 
     assert_allclose(dset.get_dep(), expected)
@@ -461,7 +775,7 @@ def test_get_dep_bgnd():
     dset = setup_basic_dataset_bgnd()
     dset.subtract()
 
-    src = expected_basic_counts(scale=True)
+    src = expected_basic_counts(scale=False)
     bg = expected_basic_counts_bgnd(scale=True)
     expected = src - bg
 
@@ -475,9 +789,12 @@ def test_get_y_bgnd():
     dset = setup_basic_dataset_bgnd()
     dset.subtract()
 
-    src = expected_basic_counts(scale=True)
+    src = expected_basic_counts(scale=False)
     bg = expected_basic_counts_bgnd(scale=True)
     expected = src - bg
+    ascal = expected_basic_areascal()
+    ascal[ascal <= 0] = 1.0
+    expected /= ascal
 
     assert_allclose(dset.get_y(), expected)
 
@@ -496,7 +813,25 @@ def test_get_staterror_no_bgnd():
     errors = dset.get_staterror(filter=True,
                                 staterrfunc=stat.calc_staterror)
 
-    expected = expected_basic_chisquare_errors()
+    expected = expected_basic_chisquare_errors(scale=False)
+    assert_allclose(errors, expected)
+
+
+def test_get_yerr_no_bgnd():
+    """What does get_yerr return when bgnd is not subtracted.
+
+    This is the same as test_get_yerr, as the background is
+    ignored in this case.
+    """
+
+    dset = setup_basic_dataset_bgnd()
+    dset.ignore_bad()
+
+    stat = Chi2DataVar()
+    errors = dset.get_yerr(filter=True,
+                           staterrfunc=stat.calc_staterror)
+
+    expected = expected_basic_chisquare_errors(scale=True)
     assert_allclose(errors, expected)
 
 
@@ -514,7 +849,25 @@ def test_get_staterror_bgnd():
     errors = dset.get_staterror(filter=True,
                                 staterrfunc=stat.calc_staterror)
 
-    expected = expected_basic_chisquare_errors_bgnd()
+    expected = expected_basic_chisquare_errors_bgnd(scale=False)
+    assert_allclose(errors, expected)
+
+
+def test_get_yerr_bgnd():
+    """What does get_yerr return when bgnd is subtracted.
+
+    This is the easy case, since BACKSCAL and EXPOSURE are 1.
+    """
+
+    dset = setup_basic_dataset_bgnd()
+    dset.ignore_bad()
+    dset.subtract()
+
+    stat = Chi2DataVar()
+    errors = dset.get_yerr(filter=True,
+                           staterrfunc=stat.calc_staterror)
+
+    expected = expected_basic_chisquare_errors_bgnd(scale=True)
     assert_allclose(errors, expected)
 
 
@@ -540,5 +893,36 @@ def test_get_staterror_scaling_bgnd():
     errors = dset.get_staterror(filter=True,
                                 staterrfunc=stat.calc_staterror)
 
-    expected = expected_basic_chisquare_errors_scaling_bgnd()
+    expected = expected_basic_chisquare_errors_scaling_bgnd(scale=False)
+    assert_allclose(errors, expected)
+
+
+# Marked as xfail since I don't have the energy to resolve this just
+# now, and I want to get a code commit in before something goes too
+# wrong.
+#
+@pytest.mark.xfail
+def test_get_yerr_scaling_bgnd():
+    """What does get_yerr return when bgnd is subtracted.
+
+    This expands on test_get_yerr_bgnd by having different
+    BACKSCAL and EXPOSURE values in the source and background
+    data sets.
+    """
+
+    dset = setup_basic_dataset_bgnd()
+    dset.exposure = 20.0
+    dset.backscal = 0.01
+    dset.ignore_bad()
+    dset.subtract()
+
+    bset = dset.get_background()
+    bset.exposure = 15.0
+    bset.backscal = 0.1
+
+    stat = Chi2DataVar()
+    errors = dset.get_yerr(filter=True,
+                           staterrfunc=stat.calc_staterror)
+
+    expected = expected_basic_chisquare_errors_scaling_bgnd(scale=True)
     assert_allclose(errors, expected)
