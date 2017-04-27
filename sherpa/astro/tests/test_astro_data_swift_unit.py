@@ -36,6 +36,7 @@ from numpy.testing import assert_allclose
 import pytest
 
 from sherpa.utils import requires_data, requires_fits
+from sherpa.utils.err import IOErr
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 
 # Should each test import io instead of this? Also, do we have a
@@ -113,28 +114,30 @@ def test_read_pha(make_data_path):
     assert pha.get_background() is None
 
 
+# In the error checks (i.e. checking that invalid files fail),
+# the error messages and types depend on the backend. An attempt
+# is made to be specific when testing these, primarily to point
+# out when any refactoring changes this (since in many ways it
+# would be nice to have the same error messages between the
+# backends when possible).
+#
 @requires_data
 @requires_fits
 def test_read_pha_fails_arf(make_data_path):
     """Just check in we can't read in an ARF as a PHA file."""
 
-    infile = make_data_path(ARFFILE)
+    if backend == 'pyfits':
+        emsg = " does not appear to be a PHA spectrum"
+        etype = IOErr
+    elif backend == 'crates':
+        emsg = 'File must be a PHA file.'
+        etype == TypeError
 
-    # The error type and message raised depends on the backend:
-    #
-    # Crates:   TypeError: File must be a PHA file.
-    # AstroPy:  IOErr: file '...' does not appear to be a PHA spectrum
-    #
-    # Fortunately both error messages contain PHA so can check for that.
-    #
-    # The Sherpa error hierarchy is based on Exception, so that's the
-    # obvious error to check for. It unfortunately lets through a lot
-    # of errrors.
-    #
-    with pytest.raises(Exception) as excinfo:
+    infile = make_data_path(ARFFILE)
+    with pytest.raises(etype) as excinfo:
         io.read_pha(infile)
 
-    assert 'PHA' in str(excinfo.value)
+    assert emsg in str(excinfo.value)
 
 
 @requires_data
@@ -142,23 +145,18 @@ def test_read_pha_fails_arf(make_data_path):
 def test_read_pha_fails_rmf(make_data_path):
     """Just check in we can't read in a RMF as a PHA file."""
 
-    infile = make_data_path(RMFFILE)
+    if backend == 'pyfits':
+        emsg = " does not appear to be a PHA spectrum"
+        etype = IOErr
+    elif backend == 'crates':
+        emsg = 'File must be a PHA file.'
+        etype = TypeError
 
-    # The error type and message raised depends on the backend:
-    #
-    # Crates:   TypeError: File must be a PHA file.
-    # AstroPy:  IOErr: file '...' does not appear to be a PHA spectrum
-    #
-    # Fortunately both error messages contain PHA so can check for that.
-    #
-    # The Sherpa error hierarchy is based on Exception, so that's the
-    # obvious error to check for. It unfortunately lets through a lot
-    # of errrors.
-    #
-    with pytest.raises(Exception) as excinfo:
+    infile = make_data_path(RMFFILE)
+    with pytest.raises(etype) as excinfo:
         io.read_pha(infile)
 
-    assert 'PHA' in str(excinfo.value)
+    assert emsg in str(excinfo.value)
 
 
 @requires_data
@@ -192,6 +190,40 @@ def test_read_arf(make_data_path):
 
     for field in ['bin_lo', 'bin_hi', 'exposure']:
         assert getattr(arf, field) is None
+
+
+@requires_data
+@requires_fits
+def test_read_arf_fails_pha(make_data_path):
+    """Just check in we can't read in a PHA file as an ARF."""
+
+    if backend == 'pyfits':
+        emsg = ' does not appear to be an ARF'
+    elif backend == 'crates':
+        emsg = "Required column 'ENERG_LO' not found in "
+
+    infile = make_data_path(PHAFILE)
+    with pytest.raises(IOErr) as excinfo:
+        io.read_arf(infile)
+
+    assert emsg in str(excinfo.value)
+
+
+@requires_data
+@requires_fits
+def test_read_arf_fails_rmf(make_data_path):
+    """Just check in we can't read in a RNF as an ARF."""
+
+    if backend == 'pyfits':
+        emsg = ' does not appear to be an ARF'
+    elif backend == 'crates':
+        emsg = "Required column 'SPECRESP' not found in "
+
+    infile = make_data_path(RMFFILE)
+    with pytest.raises(IOErr) as excinfo:
+        io.read_arf(infile)
+
+    assert emsg in str(excinfo.value)
 
 
 @pytest.mark.xfail(backend == 'pyfits',
@@ -246,3 +278,41 @@ def test_read_rmf(make_data_path):
     assert_allclose(rmf.e_max[0], 0.01)
     assert_allclose(rmf.e_min[-1], 10.23)
     assert_allclose(rmf.e_max[-1], 10.24)
+
+
+@requires_data
+@requires_fits
+def test_read_rmf_fails_pha(make_data_path):
+    """Just check in we can't read in a PHA file as a RMF."""
+
+    if backend == 'pyfits':
+        emsg = ' does not appear to be an RMF'
+        etype = IOErr
+    elif backend == 'crates':
+        emsg = ' does not contain a Response Matrix.'
+        etype = TypeError
+
+    infile = make_data_path(PHAFILE)
+    with pytest.raises(etype) as excinfo:
+        io.read_rmf(infile)
+
+    assert emsg in str(excinfo.value)
+
+
+@requires_data
+@requires_fits
+def test_read_rmf_fails_arf(make_data_path):
+    """Just check in we can't read in a ARF as a RMF."""
+
+    if backend == 'pyfits':
+        emsg = " does not have a 'DETCHANS' keyword"
+        etype = IOErr
+    elif backend == 'crates':
+        emsg = ' does not contain a Response Matrix.'
+        etype = TypeError
+
+    infile = make_data_path(ARFFILE)
+    with pytest.raises(etype) as excinfo:
+        io.read_rmf(infile)
+
+    assert emsg in str(excinfo.value)
