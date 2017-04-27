@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -654,8 +654,21 @@ def get_arf_data(arg, make_copy=False):
 
 
 def get_rmf_data(arg, make_copy=False):
-    """
-    arg is a filename or a HDUList object.
+    """arg is a filename or a HDUList object.
+
+    Notes
+    -----
+    The RMF format is described in [1]_.
+
+    References
+    ----------
+
+    .. [1] OGIP Calibration Memo CAL/GEN/92-002, "The Calibration
+           Requirements for Spectral Analysis (Definition of RMF and
+           ARF file formats)", Ian M. George1, Keith A. Arnaud,
+           Bill Pence, Laddawan Ruamsuwan and Michael F. Corcoran,
+           https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+
     """
 
     rmf, filename = _get_file_contents(arg, exptype="BinTableHDU",
@@ -743,19 +756,47 @@ def get_rmf_data(arg, make_copy=False):
     # rows where n_grp[row] > 0.  Zero elements can only be included from
     # rows where n_grp[row] > 0.  SMD 05/23/13
 
-    if not isinstance(data['matrix'], _VLF):
-        data['matrix'] = None
-        raise IOErr('badfile', filename,
-                    " MATRIX column not a variable length field")
-
     good = (data['n_grp'] > 0)
     data['matrix'] = data['matrix'][good]
-    data['matrix'] = numpy.concatenate([numpy.asarray(row) for
-                                        row in data['matrix']])
+
+    if isinstance(data['matrix'], _VLF):
+        data['matrix'] = numpy.concatenate([numpy.asarray(row) for
+                                            row in data['matrix']])
+
+    else:
+        # Flatten the array. There are two cases here:
+        # a) the full matrix is given (that is, n_grp is 1 and n_chan
+        #    = number of channels for each row)
+        # b) a rectangular matrix is given, but a row can contain
+        #    unused data (outside the f_chan range)
+        #
+        # Case a can be handled easily, but it's probably not worth
+        # having a special case for this.
+        #
+        matrix = data['matrix']
+        n_grp = data['n_grp'][good]
+        f_chan = data['f_chan'][good]
+        n_chan = data['n_chan'][good]
+
+        rowdata = []
+        for i, (ng, fcs, ncs) in enumerate(zip(n_grp, f_chan, n_chan)):
+            mrow = matrix[i]
+            if ng == 1:
+                fcs = [fcs]
+                ncs = [ncs]
+            for fc, nc in zip(fcs, ncs):
+                # It appears that F_CHAN is 0-based
+                #
+                rowdata.append(mrow[fc: fc + nc])
+
+        data['matrix'] = numpy.concatenate(rowdata)
+
     data['matrix'] = data['matrix'].astype(SherpaFloat)
 
     # Flatten f_chan and n_chan vectors into 1D arrays as crates does
     # according to group
+    #
+    # TODO: should the n_grp > 0 filter be applied before all this?
     if data['f_chan'].ndim > 1 and data['n_chan'].ndim > 1:
         f_chan = []
         n_chan = []

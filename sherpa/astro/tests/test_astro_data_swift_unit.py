@@ -226,8 +226,6 @@ def test_read_arf_fails_rmf(make_data_path):
     assert emsg in str(excinfo.value)
 
 
-@pytest.mark.xfail(backend == 'pyfits',
-                   reason='RMF reading is broken using AstroPy backend')
 @requires_data
 @requires_fits
 def test_read_rmf(make_data_path):
