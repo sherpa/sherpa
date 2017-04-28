@@ -58,6 +58,8 @@ except ImportError:
     io = None
     backend = None
 
+from sherpa.astro import ui
+
 
 # PHA and ARF are stored uncompressed while RMF is gzip-compressed.
 # Use the same name (no .gz suffix) to access all files.
@@ -314,3 +316,114 @@ def test_read_rmf_fails_arf(make_data_path):
         io.read_rmf(infile)
 
     assert emsg in str(excinfo.value)
+
+
+@requires_data
+@requires_fits
+def test_can_use_swift_data(make_data_path):
+    """A basic check that we can read in and use the Swift data.
+
+    Unlike the previous tests, that directly access the io module,
+    this uses the ui interface.
+    """
+
+    # QUS are there pytest fixtures that ensure the state is
+    # clean on entry and exit?
+    ui.clean()
+
+    # The Swift PHA file does not have the ANCRFILE/RESPFILE keywords
+    # set up, so the responses have to be manually added.
+    #
+    ui.load_pha(make_data_path(PHAFILE))
+    ui.load_rmf(make_data_path(RMFFILE))
+    ui.load_arf(make_data_path(ARFFILE))
+
+    assert ui.get_analysis() == 'energy'
+
+    ui.set_source(ui.xspowerlaw.pl)
+    ui.set_par('pl.norm', 0.0003)
+
+    # The responses have the first bin start at an energy of 0,
+    # which causes issues for Sherpa. There should be a
+    # RuntimeWarning due to a divide by zero.
+    #
+    with pytest.warns(RuntimeWarning) as record:
+        stat = ui.calc_stat()
+
+    assert len(record) == 1
+    assert record[0].message.args[0] == \
+        'divide by zero encountered in divide'
+
+    assert np.isnan(stat)
+
+    # Manually adjust the first bin to avoid this problem.
+    # Add in asserts just in case this gets "fixed" in the
+    # I/O layer (as XSPEC does).
+    #
+    arf = ui.get_arf()
+    rmf = ui.get_rmf()
+    assert arf.energ_lo[0] == 0.0
+    assert rmf.energ_lo[0] == 0.0
+    assert rmf.e_min[0] == 0.0
+
+    # The bin widths are ~ 0.005 or ~ 0.01 keV, so pick a value
+    # smaller than this.
+    #
+    ethresh = 1e-6
+    arf.energ_lo[0] = ethresh
+    rmf.energ_lo[0] = ethresh
+    rmf.e_min[0] = ethresh
+
+    # Pick an energy range which isn't affected by the first
+    # bin.
+    #
+    # Unfortunately, using a range of 0.3-8.0 gives 771 bins
+    # in XSPEC - channels 30 to 800 - but 772 bins in Sherpa.
+    # If I use ignore(None, 0.3); ignore(8.0, None) instead
+    # then the result is 771 bins. This is because the e_min/max
+    # of the RMF has channel widths of 0.01 keV, starting at 0,
+    # so both 0.3 and 8.0 fall on a bin boundary. So, it's either
+    # a difference in < or <= (or > vs >=), or a rounding issue
+    # due to floating-point conversion leading to one bin boundary
+    # being slightly different in Sherpa vs XSPEC).
+    #
+    # When using ui.notice(0.3, 8.0); ui.get_indep(filter=True)
+    # returns 772 channels, 30 to 801.
+    #
+    # Using ui.notice(0.3, 7.995) leaves channels 30 to 800. So
+    # this is used. Alternatively, channel 801 could have been
+    # excluded explicitly.
+    #
+    # ui.notice(0.3, 8.0)
+    ui.notice(0.3, 7.995)
+
+    # XSPEC 12.9.1b calculation of the statistic:
+    #   chi sq = 203.88 from 771 bins with 769 dof
+    #   cstat  = 568.52
+    #
+    # There are known differences between XSPEC and Sherpa
+    # with chi2xspecvar. This only affects data sets where
+    # there is background subtraction, which is not the case
+    # here. See https://github.com/sherpa/sherpa/issues/356
+    #
+    ui.set_stat('chi2xspecvar')
+    stat_xvar = ui.get_stat_info()
+
+    assert len(stat_xvar) == 1
+    stat_xvar = stat_xvar[0]
+    assert stat_xvar.numpoints == 771
+    assert stat_xvar.dof == 769
+    assert_allclose(stat_xvar.statval, 203.88,
+                    rtol=0, atol=0.005)
+
+    ui.set_stat('cstat')
+    stat_cstat = ui.get_stat_info()
+
+    assert len(stat_cstat) == 1
+    stat_cstat = stat_cstat[0]
+    assert stat_cstat.numpoints == 771
+    assert stat_cstat.dof == 769
+    assert_allclose(stat_cstat.statval, 568.52,
+                    rtol=0, atol=0.005)
+
+    ui.clean()
