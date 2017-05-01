@@ -1017,8 +1017,9 @@ def test_cstat_comparison_xspec(make_data_path):
 
     ui.clean()
     ui.set_data(dset)
-    ui.set_source(ui.xspowerlaw.pl)
-    ui.set_par('pl.norm', 1e-4)
+    # use powlaw1d rather than xspowerlaw so do not need XSPEC
+    ui.set_source(ui.powlaw1d.pl)
+    ui.set_par('pl.ampl', 1e-4)
 
     ui.set_stat('cstat')
     ui.set_analysis('channel')
@@ -1063,8 +1064,8 @@ def test_wstat_comparison_xspec(make_data_path):
 
     ui.clean()
     ui.set_data(dset)
-    ui.set_source(ui.xspowerlaw.pl)
-    ui.set_par('pl.norm', 1e-4)
+    ui.set_source(ui.powlaw1d.pl)
+    ui.set_par('pl.ampl', 1e-4)
 
     ui.set_stat('wstat')
     ui.set_analysis('channel')
