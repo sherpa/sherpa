@@ -48,6 +48,10 @@ from sherpa.models.basic import Const1D, StepHi1D
 from sherpa.stats import Chi2DataVar, CStat
 from sherpa.utils.err import ArgumentErr, DataErr
 
+from sherpa.utils import requires_data, requires_fits
+
+from sherpa.astro import ui
+
 
 def expected_basic_areascal():
     """Return the expected areascal values."""
@@ -926,3 +930,154 @@ def test_get_yerr_scaling_bgnd():
 
     expected = expected_basic_chisquare_errors_scaling_bgnd(scale=True)
     assert_allclose(errors, expected)
+
+
+def create_xspec_comparison_dataset(make_data_path,
+                                    keep_background=False):
+    """Hack up the data set used in the XSPEC comparison tests."""
+
+    infile = make_data_path('3c273.pi')
+    dset = ui.unpack_pha(infile)
+
+    # Remove background (if asked), ignore grouping, add bad channels and
+    # an AREASCAL column. Sherpa ignores the error arrays in
+    # the PHA file by default, so should have been read in,
+    # hence the asserts.
+    #
+    assert dset.staterror is None
+    assert dset.syserror is None
+
+    dset.grouped = False
+
+    chans = dset.channel
+    quality = dset.quality
+
+    ascal = np.ones(chans.size)
+    ascal[(chans > 200) & (chans < 300)] = 0.1
+
+    for cnum in [150, 151, 250, 251, 252]:
+        quality[chans == cnum] = 1
+        ascal[chans == cnum] = 0
+
+    dset.areascal = ascal
+
+    if not keep_background:
+        dset.delete_background()
+        return dset
+
+    # Adjust the background
+    #
+    bkg = dset.get_background()
+
+    ascal = np.ones(chans.size) * 1.2
+    ascal[(chans > 150) & (chans < 250)] = 1.4
+
+    bkg.areascal = ascal
+
+    return dset
+
+
+def validate_xspec_result(l, h, npts, ndof, statval):
+    """Check that the stat results match those from XSPEC.
+
+    This assumes the first data set returned by get_stat_info
+    should be used.
+    """
+
+    ui.notice(None, None)
+    ui.ignore(None, l)
+    ui.ignore(h, None)
+    ui.ignore_bad()
+    sinfo = ui.get_stat_info()[0]
+    assert sinfo.numpoints == npts
+    assert sinfo.dof == ndof
+
+    # XSPEC displays results to ~ 2dp, so the tolerance
+    # is quite forgiving here. Or I could use pyxspec to
+    # calculate and display this.
+    #
+    assert_allclose(sinfo.statval, statval, rtol=0, atol=0.005)
+
+
+@requires_data
+@requires_fits
+def test_cstat_comparison_xspec(make_data_path):
+    """Compare CSTAT values for a data set to XSPEC.
+
+    This checks that the "UI layer" works, although ideally there
+    should be a file that can be read in rather than having to
+    manipulate it (the advantage here is that it means there is
+    no messing around with adding a file to the test data set).
+
+    The XSPEC version used was 12.9.0o.
+    """
+
+    dset = create_xspec_comparison_dataset(make_data_path,
+                                           keep_background=False)
+
+    ui.clean()
+    ui.set_data(dset)
+    ui.set_source(ui.xspowerlaw.pl)
+    ui.set_par('pl.norm', 1e-4)
+
+    ui.set_stat('cstat')
+    ui.set_analysis('channel')
+
+    # Test three ranges. These cover
+    #  a) areascal = 1, with bad channels
+    #  b) areascal = 0.1, with bad channels
+    #  c) combination of both
+    #
+    # Note that XSPEC and Sherpa deal differently with bins where the model
+    # value is small. Sherpa replaces model <= 0 by a set value, whereas
+    # XSPEC uses a different value, and a slightly-different replacement
+    # scheme. That means that the ranges used here are chosen to
+    # avoid areas where this replacement happens.
+    #
+    # Since XSPEC ignores bad channels, the equivalent ignore
+    # lines for these ranges are
+    #   ignore **-99, 151-**
+    #   ignore **-209,291-**
+    #   ignore **-7,768-**
+    #
+    for args in [(99, 153, 51, 49, 62.31),
+                 (211, 296, 81, 79, 244.80),
+                 (7, 773, 760, 758, 1063.09)]:
+        validate_xspec_result(*args)
+
+    ui.clean()
+
+
+@requires_data
+@requires_fits
+def test_wstat_comparison_xspec(make_data_path):
+    """Compare WSTAT values for a data set to XSPEC.
+
+    See test_cstat_comparison_xspec.
+
+    The XSPEC version used was 12.9.0o.
+    """
+
+    dset = create_xspec_comparison_dataset(make_data_path,
+                                           keep_background=True)
+
+    ui.clean()
+    ui.set_data(dset)
+    ui.set_source(ui.xspowerlaw.pl)
+    ui.set_par('pl.norm', 1e-4)
+
+    ui.set_stat('wstat')
+    ui.set_analysis('channel')
+
+    # Since XSPEC ignores bad channels, the equivalent ignore
+    # lines for these ranges are
+    #   ignore **-99, 151-**
+    #   ignore **-209,291-**
+    #   ignore **-7,768-**
+    #
+    for args in [(99, 153, 51, 49, 61.82),
+                 (211, 296, 81, 79, 242.89),
+                 (7, 773, 760, 758, 1043.85)]:
+        validate_xspec_result(*args)
+
+    ui.clean()
