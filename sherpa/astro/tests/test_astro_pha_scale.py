@@ -999,9 +999,30 @@ def validate_xspec_result(l, h, npts, ndof, statval):
     assert_allclose(sinfo.statval, statval, rtol=0, atol=0.005)
 
 
+# Test three ranges. These cover
+#  a) areascal = 1, with bad channels
+#  b) areascal = 0.1, with bad channels
+#  c) combination of both
+#
+# Note that XSPEC and Sherpa deal differently with bins where the model
+# value is small. Sherpa replaces model <= 0 by a set value, whereas
+# XSPEC uses a different value, and a slightly-different replacement
+# scheme. That means that the ranges used here are chosen to
+# avoid areas where this replacement happens.
+#
+# Since XSPEC ignores bad channels, the equivalent ignore
+# lines for these ranges are
+#   ignore **-99, 151-**
+#   ignore **-209,291-**
+#   ignore **-7,768-**
+#
 @requires_data
 @requires_fits
-def test_cstat_comparison_xspec(make_data_path):
+@pytest.mark.parametrize("l,h,ndp,ndof,statval",
+                         [(99, 153, 51, 49, 62.31),
+                          (211, 296, 81, 79, 244.80),
+                          (7, 773, 760, 758, 1063.09)])
+def test_cstat_comparison_xspec(make_data_path, l, h, ndp, ndof, statval):
     """Compare CSTAT values for a data set to XSPEC.
 
     This checks that the "UI layer" works, although ideally there
@@ -1024,34 +1045,17 @@ def test_cstat_comparison_xspec(make_data_path):
     ui.set_stat('cstat')
     ui.set_analysis('channel')
 
-    # Test three ranges. These cover
-    #  a) areascal = 1, with bad channels
-    #  b) areascal = 0.1, with bad channels
-    #  c) combination of both
-    #
-    # Note that XSPEC and Sherpa deal differently with bins where the model
-    # value is small. Sherpa replaces model <= 0 by a set value, whereas
-    # XSPEC uses a different value, and a slightly-different replacement
-    # scheme. That means that the ranges used here are chosen to
-    # avoid areas where this replacement happens.
-    #
-    # Since XSPEC ignores bad channels, the equivalent ignore
-    # lines for these ranges are
-    #   ignore **-99, 151-**
-    #   ignore **-209,291-**
-    #   ignore **-7,768-**
-    #
-    for args in [(99, 153, 51, 49, 62.31),
-                 (211, 296, 81, 79, 244.80),
-                 (7, 773, 760, 758, 1063.09)]:
-        validate_xspec_result(*args)
-
+    validate_xspec_result(l, h, ndp, ndof, statval)
     ui.clean()
 
 
 @requires_data
 @requires_fits
-def test_wstat_comparison_xspec(make_data_path):
+@pytest.mark.parametrize("l,h,ndp,ndof,statval",
+                         [(99, 153, 51, 49, 61.82),
+                          (211, 296, 81, 79, 242.89),
+                          (7, 773, 760, 758, 1043.85)])
+def test_wstat_comparison_xspec(make_data_path, l, h, ndp, ndof, statval):
     """Compare WSTAT values for a data set to XSPEC.
 
     See test_cstat_comparison_xspec.
@@ -1070,15 +1074,93 @@ def test_wstat_comparison_xspec(make_data_path):
     ui.set_stat('wstat')
     ui.set_analysis('channel')
 
-    # Since XSPEC ignores bad channels, the equivalent ignore
-    # lines for these ranges are
-    #   ignore **-99, 151-**
-    #   ignore **-209,291-**
-    #   ignore **-7,768-**
-    #
-    for args in [(99, 153, 51, 49, 61.82),
-                 (211, 296, 81, 79, 242.89),
-                 (7, 773, 760, 758, 1043.85)]:
-        validate_xspec_result(*args)
+    validate_xspec_result(l, h, ndp, ndof, statval)
+    ui.clean()
 
+
+# Since XSPEC ignores bad channels, the equivalent ignore
+# lines for these ranges are
+#   ignore **-0.5,2.0-**
+#   ignore **-3.2,4.1-**
+#
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("l,h,ndp,ndof,statval",
+                         [(0.5, 2.0, 101, 99, 201.21),
+                          (3.2, 4.1, 57, 55, 255.23),
+                          (0.5, 7.0, 439, 437, 904.91)])
+def test_xspecvar_no_grouping_no_bg_comparison_xspec(make_data_path,
+                                                     l, h, ndp, ndof, statval):
+    """Compare chi2xspecvar values for a data set to XSPEC.
+
+    The data set has no background.
+
+    See test_cstat_comparison_xspec. Note that at present
+    Sherpa and XSPEC treat bins with 0 values in them differently:
+    see https://github.com/sherpa/sherpa/issues/356
+    so for this test all bins are forced to have at least one
+    count in them (source -> 5 is added per channel,background ->
+    3 is added per channel).
+
+    The XSPEC version used was 12.9.0o.
+    """
+
+    dset = create_xspec_comparison_dataset(make_data_path,
+                                           keep_background=False)
+
+    # Lazy, so add it to "bad" channels too
+    dset.counts += 5
+
+    ui.clean()
+    ui.set_data(dset)
+
+    ui.set_source(ui.powlaw1d.pl)
+    ui.set_par('pl.ampl', 5e-4)
+
+    ui.set_stat('chi2xspecvar')
+    ui.set_analysis('energy')
+
+    validate_xspec_result(l, h, ndp, ndof, statval)
+    ui.clean()
+
+
+# Since XSPEC ignores bad channels, the equivalent ignore
+# lines for these ranges are
+#   ignore **-0.5,2.0-**
+#   ignore **-3.2,4.1-**
+#
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("l,h,ndp,ndof,statval",
+                         [(0.5, 2.0, 101, 99, 228.21),
+                          pytest.mark.xfail((3.2, 4.1, 57, 55, 251.95)),
+                          pytest.mark.xfail((0.5, 7.0, 439, 437, 960.56))])
+def test_xspecvar_no_grouping_comparison_xspec(make_data_path,
+                                               l, h, ndp, ndof, statval):
+    """Compare chi2xspecvar values for a data set to XSPEC.
+
+    The data set has a background. See
+    test_xspecvar_no_grouping_no_bg_comparison_xspec
+
+    The XSPEC version used was 12.9.0o.
+    """
+
+    dset = create_xspec_comparison_dataset(make_data_path,
+                                           keep_background=True)
+
+    # Lazy, so add it to "bad" channels too
+    dset.counts += 5
+    dset.get_background().counts += 3
+
+    ui.clean()
+    ui.set_data(dset)
+    ui.subtract()
+
+    ui.set_source(ui.powlaw1d.pl)
+    ui.set_par('pl.ampl', 5e-4)
+
+    ui.set_stat('chi2xspecvar')
+    ui.set_analysis('energy')
+
+    validate_xspec_result(l, h, ndp, ndof, statval)
     ui.clean()
