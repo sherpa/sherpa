@@ -53,6 +53,52 @@ from sherpa.utils import requires_data, requires_fits
 from sherpa.astro import ui
 
 
+# pytest.mark.parametrize and requires_data do not seem to be playing
+# well together, in that when requires_data should lead to the test
+# being skipped it ends up causing parametrize to error out claiming
+# that a function argument is not being used. Switching to
+# pytest.mark.skipif rather than unittest.skipIf (as used by
+# requires_xxx) in the hope that this fixes things.
+#
+# The sherpa.utils module doesn't provide simple access to the
+# logic used by the decorators, so - rather than copy the
+# implementation which could lead to version skew - use the
+# following scheme.
+#
+@requires_data
+def _datadir_not_set():
+    return False
+
+
+@requires_fits
+def _fits_not_available():
+    return False
+
+try:
+    no_datadir = _datadir_not_set()
+except:
+    no_datadir = True
+
+try:
+    no_fits = _fits_not_available()
+except:
+    no_fits = True
+
+
+def has_data(fn):
+    """A pytest-compatible version of requires_data."""
+
+    return pytest.mark.skipif(no_datadir,
+                              reason='required test data missing')(fn)
+
+
+def has_fits(fn):
+    """A pytest-compatible version of requires_fits."""
+
+    return pytest.mark.skipif(no_fits,
+                              reason='FITS backend required')(fn)
+
+
 def expected_basic_areascal():
     """Return the expected areascal values."""
 
@@ -1016,8 +1062,8 @@ def validate_xspec_result(l, h, npts, ndof, statval):
 #   ignore **-209,291-**
 #   ignore **-7,768-**
 #
-@requires_data
-@requires_fits
+@has_data
+@has_fits
 @pytest.mark.parametrize("l,h,ndp,ndof,statval",
                          [(99, 153, 51, 49, 62.31),
                           (211, 296, 81, 79, 244.80),
@@ -1049,8 +1095,8 @@ def test_cstat_comparison_xspec(make_data_path, l, h, ndp, ndof, statval):
     ui.clean()
 
 
-@requires_data
-@requires_fits
+@has_data
+@has_fits
 @pytest.mark.parametrize("l,h,ndp,ndof,statval",
                          [(99, 153, 51, 49, 61.82),
                           (211, 296, 81, 79, 242.89),
@@ -1083,8 +1129,8 @@ def test_wstat_comparison_xspec(make_data_path, l, h, ndp, ndof, statval):
 #   ignore **-0.5,2.0-**
 #   ignore **-3.2,4.1-**
 #
-@requires_data
-@requires_fits
+@has_data
+@has_fits
 @pytest.mark.parametrize("l,h,ndp,ndof,statval",
                          [(0.5, 2.0, 101, 99, 201.21),
                           (3.2, 4.1, 57, 55, 255.23),
@@ -1129,8 +1175,8 @@ def test_xspecvar_no_grouping_no_bg_comparison_xspec(make_data_path,
 #   ignore **-0.5,2.0-**
 #   ignore **-3.2,4.1-**
 #
-@requires_data
-@requires_fits
+@has_data
+@has_fits
 @pytest.mark.parametrize("l,h,ndp,ndof,statval",
                          [(0.5, 2.0, 101, 99, 228.21),
                           pytest.mark.xfail((3.2, 4.1, 57, 55, 251.95)),
