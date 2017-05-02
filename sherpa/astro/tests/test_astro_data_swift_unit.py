@@ -390,8 +390,8 @@ def test_can_use_swift_data(make_data_path):
     # When using ui.notice(0.3, 8.0); ui.get_indep(filter=True)
     # returns 772 channels, 30 to 801.
     #
-    # Using ui.notice(0.3, 7.995) leaves channels 30 to 800. So
-    # this is used. Alternatively, channel 801 could have been
+    # Using ui.notice(0.3, 7.995) selects channels 30 to 800. So
+    # this range is used. Alternatively, channel 801 could have been
     # excluded explicitly.
     #
     # ui.notice(0.3, 8.0)
