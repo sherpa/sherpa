@@ -91,7 +91,12 @@ if sys.version_info >= (3, 2):
                 # added for sherpa/astro/ui/tests/test_astro_ui_utils_unit.py
                 r"unclosed file .*/dev/null.* closefd=True>",
                 r"unclosed file .*table.txt.* closefd=True>",
-            ]
+            ],
+        RuntimeWarning:
+        [r"invalid value encountered in sqrt",
+         r"divide by zero encountered in true_divide",
+         ],
+
     }
     known_warnings.update(python3_warnings)
 
