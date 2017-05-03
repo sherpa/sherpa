@@ -350,9 +350,15 @@ def test_can_use_swift_data(make_data_path):
     with pytest.warns(RuntimeWarning) as record:
         stat = ui.calc_stat()
 
+    # The exact form of the message depends on the Python version;
+    # this could be checked, but it feels excessive for this
+    # particular test, which is just a regression check, so use a
+    # more lax approach.
+    #
     assert len(record) == 1
-    assert record[0].message.args[0] == \
-        'divide by zero encountered in divide'
+    assert record[0].message.args[0] in \
+        ['divide by zero encountered in divide',
+         'divide by zero encountered in true_divide']
 
     # The stat value depends on what power-law model is used. With
     # xspowerlaw it is NaN, but with powlaw1d it is finite.
