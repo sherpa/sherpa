@@ -340,8 +340,8 @@ def test_can_use_swift_data(make_data_path):
 
     assert ui.get_analysis() == 'energy'
 
-    ui.set_source(ui.xspowerlaw.pl)
-    ui.set_par('pl.norm', 0.0003)
+    ui.set_source(ui.powlaw1d.pl)
+    ui.set_par('pl.ampl', 0.0003)
 
     # The responses have the first bin start at an energy of 0,
     # which causes issues for Sherpa. There should be a
@@ -354,7 +354,14 @@ def test_can_use_swift_data(make_data_path):
     assert record[0].message.args[0] == \
         'divide by zero encountered in divide'
 
-    assert np.isnan(stat)
+    # The stat value depends on what power-law model is used. With
+    # xspowerlaw it is NaN, but with powlaw1d it is finite.
+    #
+    # This check is purely a regression test, so the value has
+    # not been externally validated.
+    #
+    # assert np.isnan(stat)
+    assert_allclose(stat, 58.2813692358182)
 
     # Manually adjust the first bin to avoid this problem.
     # Add in asserts just in case this gets "fixed" in the
