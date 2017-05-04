@@ -1161,22 +1161,30 @@ def test_stats_calc_stat_pha(stat, usestat, usesys,
 # Do not need to test the areascal="none" setting as that is used
 # in test_stats_calc_stat_pha.
 #
-# At the moment these tests are designed to look for changes in
-# behavior more than to validate that the results are correct.
-# TODO: validate the numbers that are labelled as 'verify' below.
-#
 # TODO: add in more of the tests from tests_stats_calc_stat_pha_ascal
 #       with ascal=scalar/array?
 #
+# These values were calculated with commit
+# ff329492e4e4986cfef5d80dedc7ff1c3dfa8d73
+#
+# The chi-square tests with usebg=False should have the same values
+# as the tests with no areascal values - e.g. test_stats_calc_stat_pha.
+# Similarly the Cash and CStat tests should have the same values.
+# So, the only tests which have different values are
+#  - chi-square with usebg=True (since the background contribution is
+#    now different by the ratio of the area scaling)
+#  - wstat, as the area scaling is now included in the statistic
+#    calculation (as an effective exposure-time term)
+#
 
-stat_pha_chi2_tttt_ascal_s = 1.3759460338786802  # TODO: verify
-stat_pha_chi2_tttt_ascal_a = 1.351664185484744   # TODO: verify
+stat_pha_chi2_tttt_ascal_s = 1.3759460338786802
+stat_pha_chi2_tttt_ascal_a = 1.351664185484744
 
-stat_pha_chi2_tftt_ascal_s = 2.181996785102232   # TODO: verify
-stat_pha_chi2_tftt_ascal_a = 2.144959139355457   # TODO: verify
+stat_pha_chi2_tftt_ascal_s = 2.181996785102232
+stat_pha_chi2_tftt_ascal_a = 2.144959139355457
 
-stat_pha_wstat_ascal_s = 1.834065760993965    # TODO: verify
-stat_pha_wstat_ascal_a = 1.8028391355284863   # TODO: verify
+stat_pha_wstat_ascal_s = 1.834065760993965
+stat_pha_wstat_ascal_a = 1.8028391355284863
 
 
 @pytest.mark.parametrize("stat,usestat,usesys,havebg,usebg,ascal,expected", [
