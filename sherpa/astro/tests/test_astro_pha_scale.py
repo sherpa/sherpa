@@ -33,7 +33,13 @@ The tests here focus on the object API, rather than the UI layer
 scaling, so this should catch most problems).
 
 This does *not* test any plots (e.g. to ensure that the correctly-scaled
-data and/or model values are shown).
+data and/or model values are shown), but does test some of the accessor
+methods the plotting code uses (e.g. get_y).
+
+The unit-level tests here (mostly) focus on just the area scaling; the
+more integration-level tests (i.e. those that read in data files)
+are used to check that the scaling is being applied to cases
+where the exposure time or background scaling may not be unity.
 
 """
 
@@ -159,8 +165,8 @@ def expected_basic_counts_bgnd(scale=False):
     Parameters
     ----------
     scale : bool, optional
-        If True then the result is scaled by the source AREASCAL
-        value.
+        If True then the result is scaled by the ratio of the
+        source and background AREASCAL values.
 
     Notes
     -----
@@ -177,11 +183,13 @@ def expected_basic_counts_bgnd(scale=False):
     counts = np.zeros(10, dtype=np.int16) + 10
     counts[0] = 0
     if scale:
-        ascal = expected_basic_areascal_bgnd()
-
         # the first channel has areascal=0, so leave (it is 0).
+        #
+        src_ascal = expected_basic_areascal()[1:]
+        bkg_ascal = expected_basic_areascal_bgnd()[1:]
+
         counts = counts.astype(np.float64)
-        counts[1:] = counts[1:] / ascal[1:]
+        counts[1:] = counts[1:] * src_ascal / bkg_ascal
 
         # counts = counts.astype(np.int16)
 
@@ -231,8 +239,6 @@ def expected_basic_chisquare_errors_bgnd(scale=False):
     The calculation assumes the Chi2DataVar statistic and
     ignore_bad() is assumed to have been called.
 
-    It is not at all clear if this code is doing the right thing
-    at the moment.
     """
 
     # Calculate the errors based on the counts. There are no
@@ -247,24 +253,15 @@ def expected_basic_chisquare_errors_bgnd(scale=False):
     bgcounts = expected_basic_counts_bgnd(scale=False)[1:]
     bgascal = expected_basic_areascal_bgnd()[1:]
 
-    # It is unclear what to do when scale=False, since this
-    # is saying "let's ignore the areascal", but we still
-    # have to include the background areascal term when calculating
-    # the background contribution to the area.
+    # This could be simplified, but left as is to keep the
+    # intent clear.
     #
-    # This mess suggests the abstraction is not ideal.
-    #
+    var = counts + bgcounts * ascal * ascal / (bgascal * bgascal)
+    ans = np.sqrt(var)
     if scale:
-        expected = counts / (ascal * ascal)
-    else:
-        expected = counts
+        ans = ans / ascal
 
-    if scale:
-        expected += bgcounts / (bgascal * bgascal)
-    else:
-        expected = expected + bgcounts * ascal * ascal / (bgascal * bgascal)
-
-    return np.sqrt(expected)
+    return ans
 
 
 def expected_basic_chisquare_errors_scaling_bgnd(scale=False):
@@ -274,7 +271,6 @@ def expected_basic_chisquare_errors_scaling_bgnd(scale=False):
     ----------
     scale : bool, optional
         If True then the results are scaled by areascal.
-        It is unclear what this should be doing.
 
     Notes
     -----
@@ -289,8 +285,6 @@ def expected_basic_chisquare_errors_scaling_bgnd(scale=False):
 
     ignore_bad() is assumed to have been called.
 
-    It is not at all clear if this code is doing the right thing
-    at the moment.
     """
 
     # Calculate the errors based on the counts. There are no
@@ -312,25 +306,14 @@ def expected_basic_chisquare_errors_scaling_bgnd(scale=False):
     bgcounts = expected_basic_counts_bgnd(scale=False)[1:]
     bgascal = expected_basic_areascal_bgnd()[1:]
 
-    # see comments in expected_basic_chisquare_errors_bgnd
-    # about confusion of what to do when scale = False
-    #
+    ratio = backscal_src * exposure_src * ascal / \
+        (backscal_bg * exposure_bg * bgascal)
+    var = counts + bgcounts * ratio * ratio
+    ans = np.sqrt(var)
     if scale:
-        expected = counts / (ascal * ascal)
-    else:
-        expected = 1.0 * counts
+        ans = ans / ascal
 
-    # The background counts are re-scaled to match the source
-    # settings.
-    bgdenom = bgascal * backscal_bg * exposure_bg / \
-        (backscal_src * exposure_src)
-
-    if not scale:
-        bgdenom /= ascal
-
-    expected += bgcounts / (bgdenom * bgdenom)
-
-    return np.sqrt(expected)
+    return ans
 
 
 def setup_basic_dataset():
@@ -710,7 +693,7 @@ def test_cstat_arfpha():
 
     The value here is technically wrong, in that the AREASCAL value
     is not being included in the calculation, but is included as a
-    test to validate the current approach.
+    test to validate this use case.
 
     See Also
     --------
@@ -947,11 +930,6 @@ def test_get_staterror_scaling_bgnd():
     assert_allclose(errors, expected)
 
 
-# Marked as xfail since I don't have the energy to resolve this just
-# now, and I want to get a code commit in before something goes too
-# wrong.
-#
-@pytest.mark.xfail
 def test_get_yerr_scaling_bgnd():
     """What does get_yerr return when bgnd is subtracted.
 
@@ -975,20 +953,24 @@ def test_get_yerr_scaling_bgnd():
                            staterrfunc=stat.calc_staterror)
 
     expected = expected_basic_chisquare_errors_scaling_bgnd(scale=True)
+    expected = expected / dset.exposure
     assert_allclose(errors, expected)
 
 
 def create_xspec_comparison_dataset(make_data_path,
                                     keep_background=False):
-    """Hack up the data set used in the XSPEC comparison tests."""
+    """Hack up the data set used in the XSPEC comparison tests.
+
+    This is to avoid adding a new data set to the sherpa-test-data
+    repository.
+    """
 
     infile = make_data_path('3c273.pi')
     dset = ui.unpack_pha(infile)
 
     # Remove background (if asked), ignore grouping, add bad channels and
     # an AREASCAL column. Sherpa ignores the error arrays in
-    # the PHA file by default, so should have been read in,
-    # hence the asserts.
+    # the PHA file by default; the asserts are to check this.
     #
     assert dset.staterror is None
     assert dset.syserror is None
@@ -1124,10 +1106,12 @@ def test_wstat_comparison_xspec(make_data_path, l, h, ndp, ndof, statval):
     ui.clean()
 
 
-# Since XSPEC ignores bad channels, the equivalent ignore
-# lines for these ranges are
-#   ignore **-0.5,2.0-**
-#   ignore **-3.2,4.1-**
+# This uses energy ranges to filter the data, which makes XSPEC
+# and Sherpa comparison easier (the ranges were chosen so that
+# there is no difference in the start/end bin as it is not 100%
+# clear what the respective filters in Sherpa and XSPEC do
+# for range comparisons [inclusive or exclusive], or if there's
+# some numerical differences in play at times).
 #
 @has_data
 @has_fits
@@ -1170,17 +1154,12 @@ def test_xspecvar_no_grouping_no_bg_comparison_xspec(make_data_path,
     ui.clean()
 
 
-# Since XSPEC ignores bad channels, the equivalent ignore
-# lines for these ranges are
-#   ignore **-0.5,2.0-**
-#   ignore **-3.2,4.1-**
-#
 @has_data
 @has_fits
 @pytest.mark.parametrize("l,h,ndp,ndof,statval",
                          [(0.5, 2.0, 101, 99, 228.21),
-                          pytest.mark.xfail((3.2, 4.1, 57, 55, 251.95)),
-                          pytest.mark.xfail((0.5, 7.0, 439, 437, 960.56))])
+                          (3.2, 4.1, 57, 55, 251.95),
+                          (0.5, 7.0, 439, 437, 960.56)])
 def test_xspecvar_no_grouping_comparison_xspec(make_data_path,
                                                l, h, ndp, ndof, statval):
     """Compare chi2xspecvar values for a data set to XSPEC.

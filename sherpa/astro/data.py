@@ -1301,13 +1301,10 @@ class DataPHA(Data1DInt):
             backscal = self._check_scale(backscal, group=False)
             bkgsum = backscal * bkgsum
 
-        # Unlike BACKSCAL, you do not correct the background data by
-        # the AREASCAL values of the data (since it is applied to the
-        # data)
-        # areascal = self.areascal
-        # if areascal is not None:
-        #     areascal = self._check_scale(areascal, group=False)
-        #     bkgsum = areascal * bkgsum
+        areascal = self.areascal
+        if areascal is not None:
+            areascal = self._check_scale(areascal, group=False)
+            bkgsum = areascal * bkgsum
 
         if self.exposure is not None:
             bkgsum = self.exposure * bkgsum
@@ -1324,12 +1321,12 @@ class DataPHA(Data1DInt):
         dep = self.counts
         filter = bool_cast(filter)
 
-        # The area scaling is not applied to the data since this
-        # is not appropriate for Poisson-based statistics.
-        #
-        # The calculation of the background does include any
-        # background area-scaling terms, but does not scale
-        # by the source area scaling factor.
+        # The area scaling is not applied to the data, since it
+        # should be being applied to the model via the *PHA
+        # instrument model. Note however that the background
+        # contribution does include the source AREASCAL value
+        # (in the same way that the source BACKSCAL value
+        # is used).
         #
         if self.subtracted:
             bkg = self.sum_background_data()

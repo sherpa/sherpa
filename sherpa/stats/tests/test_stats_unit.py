@@ -1163,19 +1163,17 @@ def test_stats_calc_stat_pha(stat, usestat, usesys,
 #
 # At the moment these tests are designed to look for changes in
 # behavior more than to validate that the results are correct.
-# They will be updated to be proper tests (the reason this is not
-# a valid test is that it's currently unclear what the best
-# approach to handling the AREASCAL value is, so things could change)
+# TODO: validate the numbers that are labelled as 'verify' below.
 #
 # TODO: add in more of the tests from tests_stats_calc_stat_pha_ascal
 #       with ascal=scalar/array?
 #
 
 stat_pha_chi2_tttt_ascal_s = 1.3759460338786802  # TODO: verify
-stat_pha_chi2_tttt_ascal_a = 1.356144947892523   # TODO: verify
+stat_pha_chi2_tttt_ascal_a = 1.351664185484744   # TODO: verify
 
 stat_pha_chi2_tftt_ascal_s = 2.181996785102232   # TODO: verify
-stat_pha_chi2_tftt_ascal_a = 2.1517832313119545  # TODO: verify
+stat_pha_chi2_tftt_ascal_a = 2.144959139355457   # TODO: verify
 
 stat_pha_wstat_ascal_s = 1.834065760993965    # TODO: verify
 stat_pha_wstat_ascal_a = 1.8028391355284863   # TODO: verify
