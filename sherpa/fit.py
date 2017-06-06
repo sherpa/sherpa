@@ -653,13 +653,13 @@ class IterFit(NoNewAttributesAfterInit):
         Raises
         ------
         sherpa.utils.err.FitErr
-            This exception is raised if the statistic is not
-            supported. This method can only be used with
-            Chi-Square statistics with errors.
+            This exception is raised if the statistic is not supported.
+            This method can only be used with Chi-Square statistics
+            with errors.
 
         Notes
         -----
-        The following keys are looked for in the ``itermethod_opts``
+        The following keys are looked for in the `itermethod_opts`
         dictionary:
 
         ========  =========  ===========
@@ -670,19 +670,21 @@ class IterFit(NoNewAttributesAfterInit):
         maxiters  int        The maximum number of iterations.
         ========  =========  ===========
 
-        The variance in bin i is estimated to be:
+        The variance in bin i for iteration j is estimated to be:
 
         .. math::
 
-           \sigma(j)_i^2 = S(i, t_s(j-1)) + (A_s/A_b)^2 B_{off}(i, t_b(j-1))
+           \sigma(j)_i^2 = S(t_s(j-1))_i + (A_s/A_b)^2 B(t_b(j-1))_i
 
-        where j is the number of iterations that have been carried out
-        in the fitting process, B_off is the background model
-        amplitude in bin i of the off-source region, and t_s(j-1) and
-        t_b(j-1) are the set of source and background model parameter
-        values derived during the iteration previous to the current
-        one. The variances are set to an array of ones on the first
-        iteration.
+        where the subscript i indicates the bin number, j is the
+        number of iterations that have been carried out in the
+        fitting process, S is the model-predicted amplitude of
+        the source in the bin, B is the background (off-source)
+        model amplitude, A_s and A_b are the source and background
+        areas (or scaling factors), and t_s and t_b are the set
+        of source and background model parameter values derived in
+        the previous iteration (indicated by the j-1 subscipt).
+        The variances are set to an array of ones on the first iteration.
 
         In addition to reducing parameter estimate bias, this
         statistic can be used even when the number of counts in each
@@ -805,7 +807,7 @@ class IterFit(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The following keys are looked for in the ``itermethod_opts``
+        The following keys are looked for in the `itermethod_opts`
         dictionary:
 
         ========  ==========  ===========
