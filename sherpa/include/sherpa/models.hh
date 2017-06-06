@@ -1063,6 +1063,38 @@ namespace sherpa { namespace models {
 
   }
 
+    //
+    // def weibull(pars, x, val):
+    //     location = pars[2]
+    //     if x < location:
+    //         return 0
+    //     scale = pars[1]
+    //     if scale <= 0:
+    //         return EXIT_FAILURE
+    //     shape = pars[0]
+    //     tmp = (x - location) / scale
+    //     val = (shape / scale) * pow(tmp, shape - 1)
+    //     val *= exp(-pow(tmp, shape))
+    //
+  template <typename DataType, typename ConstArrayType>
+  inline int weibull_point( const ConstArrayType& p, DataType x, DataType& val )
+  {
+
+    DataType location = p[2];
+    if ( x < location )
+      val = 0.0;
+    else {
+      DataType scale = p[1];
+      if ( scale <= 0.0 )
+        return EXIT_FAILURE;
+      DataType shape = p[0];
+      DataType tmp = ( x - location ) / scale;
+      val = (shape / scale) * POW( tmp, shape - 1.0 );
+      val *= EXP( - POW( tmp, shape ) );
+    }
+    return EXIT_SUCCESS;
+
+  }
 
   template <typename DataType, typename ConstArrayType>
   inline int poly2d_point( const ConstArrayType& p,

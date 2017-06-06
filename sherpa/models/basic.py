@@ -35,7 +35,7 @@ __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
            'Gauss1D', 'Log', 'Log10', 'LogParabola', 'NormGauss1D', 'Poisson',
            'Polynom1D', 'PowLaw1D', 'Scale1D', 'Sin', 'Sqrt', 'StepHi1D',
            'StepLo1D', 'Tan', 'Box2D', 'Const2D', 'Delta2D', 'Gauss2D',
-           'SigmaGauss2D',
+           'SigmaGauss2D', 'Weibull',
            'NormGauss2D', 'Polynom2D', 'Scale2D', 'UserModel', 'TableModel',
            'Integrate1D')
 
@@ -1644,6 +1644,48 @@ class NormGauss2D(ArithmeticModel):
     def calc(self, *args, **kwargs):
         kwargs['integrate']=bool_cast(self.integrate)
         return _modelfcts.ngauss2d(*args, **kwargs)
+
+
+class Weibull(ArithmeticModel):
+    """
+    def weibull(x, pars):
+        location = pars[2]
+        if x < location:
+            return 0
+        scale = pars[1]
+        if scale <= 0:
+            return numpy.nan
+        shape = pars[0]
+        tmp = (x - location) / scale
+        result = (shape / scale) * math.pow(tmp, shape - 1)
+        result *= numpy.exp(-math.pow(tmp, shape))
+        return result
+
+    References
+    ----------
+
+    .. [1] https://en.wikipedia.org/wiki/Weibull_distribution
+
+    """
+
+    def __init__(self, name='weibull'):
+        self.shape = Parameter(name, 'shape', 2.5, 0.0, hard_min=0.0)
+        self.scale = Parameter(name, 'scale', 1, 0.0, hard_min=0.0)
+        self.location = Parameter(name, 'location', 10)
+        ArithmeticModel.__init__(self, name, (self.shape, self.scale,
+                                              self.location))
+        self.cache = 0
+
+    def calc(self, *args, **kwargs):
+        kwargs['integrate'] = bool_cast(self.integrate)
+        return _modelfcts.weibull(*args, **kwargs)
+
+    # def guess(self, dep, *args, **kwargs):
+    #     scale = numpy.sqrt((dep - dep.mean())**2).mean()
+    #     indep = args[0]
+    #     location = indep.mean()
+    #     self.scale = scale
+    #     self.location = location
 
 
 class Polynom2D(ArithmeticModel):

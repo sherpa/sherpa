@@ -47,6 +47,7 @@ static PyMethodDef ModelFcts[] = {
   MODELFCT1D( stephi1d, 2 ),
   MODELFCT1D( steplo1d, 2 ),
   MODELFCT1D( tan, 3 ),
+  MODELFCT1D_NOINT( weibull, 3 ),
 
   MODELFCT2D( box2d, 5 ),
   MODELFCT2D( const2d, 1 ),
