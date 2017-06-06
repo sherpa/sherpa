@@ -683,8 +683,8 @@ class IterFit(NoNewAttributesAfterInit):
         model amplitude, A_s and A_b are the source and background
         areas (or scaling factors), and t_s and t_b are the set
         of source and background model parameter values derived in
-        the previous iteration (indicated by the j-1 subscipt).
-        The variances are set to an array of ones on the first iteration.
+        the previous iteration (indicated by the j-1 term). The
+        variances are set to an array of ones on the first iteration.
 
         In addition to reducing parameter estimate bias, this
         statistic can be used even when the number of counts in each
