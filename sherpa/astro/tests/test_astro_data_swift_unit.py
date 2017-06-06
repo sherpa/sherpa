@@ -133,7 +133,9 @@ def test_read_pha_fails_arf(make_data_path):
         etype = IOErr
     elif backend == 'crates':
         emsg = 'File must be a PHA file.'
-        etype == TypeError
+        etype = TypeError
+    else:
+        assert False, "Internal error: unknown backend {}".format(backend)
 
     infile = make_data_path(ARFFILE)
     with pytest.raises(etype) as excinfo:
@@ -153,6 +155,8 @@ def test_read_pha_fails_rmf(make_data_path):
     elif backend == 'crates':
         emsg = 'File must be a PHA file.'
         etype = TypeError
+    else:
+        assert False, "Internal error: unknown backend {}".format(backend)
 
     infile = make_data_path(RMFFILE)
     with pytest.raises(etype) as excinfo:
@@ -203,6 +207,8 @@ def test_read_arf_fails_pha(make_data_path):
         emsg = ' does not appear to be an ARF'
     elif backend == 'crates':
         emsg = "Required column 'ENERG_LO' not found in "
+    else:
+        assert False, "Internal error: unknown backend {}".format(backend)
 
     infile = make_data_path(PHAFILE)
     with pytest.raises(IOErr) as excinfo:
@@ -220,6 +226,8 @@ def test_read_arf_fails_rmf(make_data_path):
         emsg = ' does not appear to be an ARF'
     elif backend == 'crates':
         emsg = "Required column 'SPECRESP' not found in "
+    else:
+        assert False, "Internal error: unknown backend {}".format(backend)
 
     infile = make_data_path(RMFFILE)
     with pytest.raises(IOErr) as excinfo:
@@ -291,6 +299,8 @@ def test_read_rmf_fails_pha(make_data_path):
     elif backend == 'crates':
         emsg = ' does not contain a Response Matrix.'
         etype = TypeError
+    else:
+        assert False, "Internal error: unknown backend {}".format(backend)
 
     infile = make_data_path(PHAFILE)
     with pytest.raises(etype) as excinfo:
@@ -310,6 +320,8 @@ def test_read_rmf_fails_arf(make_data_path):
     elif backend == 'crates':
         emsg = ' does not contain a Response Matrix.'
         etype = TypeError
+    else:
+        assert False, "Internal error: unknown backend {}".format(backend)
 
     infile = make_data_path(ARFFILE)
     with pytest.raises(etype) as excinfo:
