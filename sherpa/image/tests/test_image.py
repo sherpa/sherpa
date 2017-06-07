@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,7 @@ import sherpa
 from sherpa.image import Image, DataImage, ModelImage, RatioImage, \
     ResidImage
 
-from sherpa.utils import requires_ds9
+from sherpa.utils import hide_warnings, requires_ds9
 
 
 # Create a rectangular array for the tests just to ensure that
@@ -101,6 +101,16 @@ _atol = 0.0
 _rtol = 1.0e-6
 
 
+# In Python 3.6, a lot of ResourceWarnings are raised with the
+# message "subprocess <n> is stil running". There could be a check
+# to see what version we are running (e.g. if ResourceWarning is
+# defined), but for now do not try to be version specific.
+#
+py36_warnings = hide_warnings([{'message':
+                                "subprocess \d+ is still running"}])
+
+
+@py36_warnings
 @requires_ds9
 def test_ds9():
     ctor = sherpa.image.ds9_backend.DS9.DS9Win
@@ -111,6 +121,8 @@ def test_ds9():
     im.xpaset("quit")
     assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
+
+@py36_warnings
 @requires_ds9
 def test_image():
     im = Image()
@@ -119,6 +131,8 @@ def test_image():
     im.xpaset("quit")
     assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
+
+@py36_warnings
 @requires_ds9
 def test_data_image():
     im = DataImage()
@@ -128,6 +142,8 @@ def test_data_image():
     im.xpaset("quit")
     assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
+
+@py36_warnings
 @requires_ds9
 def test_model_image():
     im = ModelImage()
@@ -137,6 +153,8 @@ def test_model_image():
     im.xpaset("quit")
     assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
+
+@py36_warnings
 @requires_ds9
 def test_ratio_image():
     im = RatioImage()
@@ -151,6 +169,8 @@ def test_ratio_image():
     expval[0, 0] = 0
     assert_allclose(expval, data_out, atol=_atol, rtol=_rtol)
 
+
+@py36_warnings
 @requires_ds9
 def test_resid_image():
     im = ResidImage()
@@ -161,6 +181,8 @@ def test_resid_image():
     # Return value is all zeros
     assert_allclose(data.y * 0, data_out, atol=_atol, rtol=_rtol)
 
+
+@py36_warnings
 @requires_ds9
 def test_connection_with_x_file():
     """Check that the connection works even if there is a
