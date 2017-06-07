@@ -38,11 +38,13 @@ except ImportError:
 
 
 TEST_DATA_OPTION = "--test-data"
-
+SHOW_WARNINGS_OPTION = "--show-warnings"
 
 def pytest_addoption(parser):
     parser.addoption("-D", TEST_DATA_OPTION, action="store",
                      help="Alternative location of test data files")
+    parser.addoption(SHOW_WARNINGS_OPTION, action="store_true",
+                     help="Display the warnings created in a test")
 
 
 # Whilelist of known warnings. One can associate different warning messages
@@ -97,8 +99,11 @@ if have_astropy:
     known_warnings.update(astropy_warnings)
 
 
+# Can this be replaced by the warning support added in pytest 3.1?
+# See https://docs.pytest.org/en/latest/warnings.html#warnings
+#
 @pytest.fixture(scope="function", autouse=True)
-def capture_all_warnings(request, recwarn):
+def capture_all_warnings(request, recwarn, pytestconfig):
     """
     This fixture will run automatically before and after every test function is executed.
     It uses pytest's infrastructure to get all recorded warnings and match them against the while list. If an
@@ -111,6 +116,7 @@ def capture_all_warnings(request, recwarn):
     ----------
     request standard injected service for pytest fixtures
     recwarn injected pytest service for accessing recorded warnings
+    pytestconfig injected service for accessing the configuration data
 
     """
     def known(warning):
@@ -125,7 +131,13 @@ def capture_all_warnings(request, recwarn):
         warnings = [w for w in recwarn.list
                     if type(w.message) not in known_warnings or not known(w)]
 
-        assert 0 == len(warnings)
+        nwarnings = len(warnings)
+        if nwarnings > 0 and pytest.config.getoption(SHOW_WARNINGS_OPTION):
+            print("*** Warnings created: {}".format(nwarnings))
+            for i, w in enumerate(warnings):
+                print("{}/{} {}".format(i + 1, nwarnings, w))
+
+        assert 0 == nwarnings
 
     request.addfinalizer(fin)
 
