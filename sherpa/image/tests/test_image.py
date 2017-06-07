@@ -27,7 +27,7 @@ import sherpa
 from sherpa.image import Image, DataImage, ModelImage, RatioImage, \
     ResidImage
 
-from sherpa.utils import SherpaTestCase, requires_ds9
+from sherpa.utils import requires_ds9
 
 
 # Create a rectangular array for the tests just to ensure that
@@ -102,86 +102,91 @@ _rtol = 1.0e-6
 
 
 @requires_ds9
-class test_image(SherpaTestCase):
-    def test_ds9(self):
-        ctor = sherpa.image.ds9_backend.DS9.DS9Win
-        im = ctor(sherpa.image.ds9_backend.DS9._DefTemplate, False)
-        im.doOpen()
-        im.showArray(data.y)
-        data_out = get_arr_from_imager(im, data.y)
-        im.xpaset("quit")
-        assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+def test_ds9():
+    ctor = sherpa.image.ds9_backend.DS9.DS9Win
+    im = ctor(sherpa.image.ds9_backend.DS9._DefTemplate, False)
+    im.doOpen()
+    im.showArray(data.y)
+    data_out = get_arr_from_imager(im, data.y)
+    im.xpaset("quit")
+    assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
-    def test_image(self):
+@requires_ds9
+def test_image():
+    im = Image()
+    im.image(data.y)
+    data_out = get_arr_from_imager(im, data.y)
+    im.xpaset("quit")
+    assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+
+@requires_ds9
+def test_data_image():
+    im = DataImage()
+    im.prepare_image(data)
+    im.image()
+    data_out = get_arr_from_imager(im, data.y)
+    im.xpaset("quit")
+    assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+
+@requires_ds9
+def test_model_image():
+    im = ModelImage()
+    im.prepare_image(data, 1)
+    im.image()
+    data_out = get_arr_from_imager(im, data.y)
+    im.xpaset("quit")
+    assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+
+@requires_ds9
+def test_ratio_image():
+    im = RatioImage()
+    im.prepare_image(data, 1)
+    im.image()
+    data_out = get_arr_from_imager(im, data.y)
+    im.xpaset("quit")
+    # All values but the first will be 1, because the first
+    # model pixel will be zero, and therefore the ratio function
+    # reassigns the ratio there to be one.
+    expval = np.ones(data.y.shape)
+    expval[0, 0] = 0
+    assert_allclose(expval, data_out, atol=_atol, rtol=_rtol)
+
+@requires_ds9
+def test_resid_image():
+    im = ResidImage()
+    im.prepare_image(data, 1)
+    im.image()
+    data_out = get_arr_from_imager(im, data.y)
+    im.xpaset("quit")
+    # Return value is all zeros
+    assert_allclose(data.y * 0, data_out, atol=_atol, rtol=_rtol)
+
+@requires_ds9
+def test_connection_with_x_file():
+    """Check that the connection works even if there is a
+    file called x (this checks that the xpaset call is properly
+    escaped when 'xpaset sherpa [BITPIX=..,x=..,y=..,]' is
+    called.
+    """
+
+    origdir = os.getcwd()
+    dname = tempfile.mkdtemp()
+    try:
+        os.chdir(dname)
+
+        ofile = 'x'
+        with open(ofile, 'w') as fh:
+            fh.write('')
+
         im = Image()
         im.image(data.y)
         data_out = get_arr_from_imager(im, data.y)
-        im.xpaset("quit")
-        assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
-    def test_data_image(self):
-        im = DataImage()
-        im.prepare_image(data)
-        im.image()
-        data_out = get_arr_from_imager(im, data.y)
-        im.xpaset("quit")
-        assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+    finally:
+        os.unlink(ofile)
+        os.chdir(origdir)
+        os.rmdir(dname)
 
-    def test_model_image(self):
-        im = ModelImage()
-        im.prepare_image(data, 1)
-        im.image()
-        data_out = get_arr_from_imager(im, data.y)
-        im.xpaset("quit")
-        assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+    im.xpaset("quit")
 
-    def test_ratio_image(self):
-        im = RatioImage()
-        im.prepare_image(data, 1)
-        im.image()
-        data_out = get_arr_from_imager(im, data.y)
-        im.xpaset("quit")
-        # All values but the first will be 1, because the first
-        # model pixel will be zero, and therefore the ratio function
-        # reassigns the ratio there to be one.
-        expval = np.ones(data.y.shape)
-        expval[0, 0] = 0
-        assert_allclose(expval, data_out, atol=_atol, rtol=_rtol)
-
-    def test_resid_image(self):
-        im = ResidImage()
-        im.prepare_image(data, 1)
-        im.image()
-        data_out = get_arr_from_imager(im, data.y)
-        im.xpaset("quit")
-        # Return value is all zeros
-        assert_allclose(data.y * 0, data_out, atol=_atol, rtol=_rtol)
-
-    def test_connection_with_x_file(self):
-        """Check that the connection works even if there is a
-        file called x (this checks that the xpaset call is properly
-        escaped when 'xpaset sherpa [BITPIX=..,x=..,y=..,]' is
-        called.
-        """
-
-        origdir = os.getcwd()
-        dname = tempfile.mkdtemp()
-        try:
-            os.chdir(dname)
-
-            ofile = 'x'
-            with open(ofile, 'w') as fh:
-                fh.write('')
-
-            im = Image()
-            im.image(data.y)
-            data_out = get_arr_from_imager(im, data.y)
-
-        finally:
-            os.unlink(ofile)
-            os.chdir(origdir)
-            os.rmdir(dname)
-
-        im.xpaset("quit")
-
-        assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+    assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
