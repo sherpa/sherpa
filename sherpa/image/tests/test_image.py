@@ -111,6 +111,7 @@ def test_ds9():
     im.xpaset("quit")
     assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
+
 @requires_ds9
 def test_image():
     im = Image()
@@ -118,6 +119,7 @@ def test_image():
     data_out = get_arr_from_imager(im, data.y)
     im.xpaset("quit")
     assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+
 
 @requires_ds9
 def test_data_image():
@@ -128,6 +130,7 @@ def test_data_image():
     im.xpaset("quit")
     assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
 
+
 @requires_ds9
 def test_model_image():
     im = ModelImage()
@@ -136,6 +139,7 @@ def test_model_image():
     data_out = get_arr_from_imager(im, data.y)
     im.xpaset("quit")
     assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+
 
 @requires_ds9
 def test_ratio_image():
@@ -151,6 +155,7 @@ def test_ratio_image():
     expval[0, 0] = 0
     assert_allclose(expval, data_out, atol=_atol, rtol=_rtol)
 
+
 @requires_ds9
 def test_resid_image():
     im = ResidImage()
@@ -160,6 +165,7 @@ def test_resid_image():
     im.xpaset("quit")
     # Return value is all zeros
     assert_allclose(data.y * 0, data_out, atol=_atol, rtol=_rtol)
+
 
 @requires_ds9
 def test_connection_with_x_file():

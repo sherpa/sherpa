@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2006-2010, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2006-2010, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -272,26 +272,24 @@ def xpaget(cmd, template=_DefTemplate, doRaise=True):
     # Would be better to make a sequence rather than have to quote arguments
     fullCmd = 'xpaget %s "%s"' % (template, cmd,)
 
-    p = _Popen(
-        args=fullCmd,
-        shell=True,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    try:
-        p.stdin.close()
-        errMsg = p.stderr.read()
-        if errMsg:
-            fullErrMsg = "%r failed: %s" % (fullCmd, errMsg)
-            if doRaise:
-                raise RuntimeErr('cmdfail', fullCmd, errMsg)
-            else:
-                warnings.warn(fullErrMsg)
-        return p.stdout.read()
-    finally:
-        p.stdout.close()
-        p.stderr.close()
+    with _Popen(args=fullCmd,
+                shell=True,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE) as p:
+        try:
+            p.stdin.close()
+            errMsg = p.stderr.read()
+            if errMsg:
+                fullErrMsg = "%r failed: %s" % (fullCmd, errMsg)
+                if doRaise:
+                    raise RuntimeErr('cmdfail', fullCmd, errMsg)
+                else:
+                    warnings.warn(fullErrMsg)
+            return p.stdout.read()
+        finally:
+            p.stdout.close()
+            p.stderr.close()
 
 
 def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate,
@@ -325,40 +323,38 @@ def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate,
     else:
         fullCmd = 'xpaset -p %s "%s"' % (template, cmd)
 
-    p = _Popen(
-        args=fullCmd,
-        shell=True,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    try:
-        # Python 2 vs 3 requires some complexity here.
-        try:  # Python 2 bytes (which are actually strings)
-            unicode(data, "ascii")  # unicode does not exist in Python 3
-            data = bytearray(data, "UTF-8")
-        except:
-            try:  # Python 3 with data passed as string.
+    with _Popen(args=fullCmd,
+                shell=True,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT) as p:
+        try:
+            # Python 2 vs 3 requires some complexity here.
+            try:  # Python 2 bytes (which are actually strings)
+                unicode(data, "ascii")  # unicode does not exist in Python 3
                 data = bytearray(data, "UTF-8")
-            except:  # data is provided as bytes (in Python 3) or is null, so it does not need to be converted.
-                pass
+            except:
+                try:  # Python 3 with data passed as string.
+                    data = bytearray(data, "UTF-8")
+                except:  # data is provided as bytes (in Python 3) or is null, so it does not need to be converted.
+                    pass
 
-        if data:
-            p.stdin.write(data)
-            if data[-1] != b'\n':
-                p.stdin.write(b'\n')
-        p.stdin.close()
-        reply = p.stdout.read()
-        if reply:
-            fullErrMsg = "%r failed: %s" % (fullCmd, reply.strip())
-            if doRaise:
-                raise RuntimeErr('cmdfail', fullCmd,
-                                 reply.strip())
-            else:
-                warnings.warn(fullErrMsg)
-    finally:
-        p.stdin.close()  # redundant
-        p.stdout.close()
+            if data:
+                p.stdin.write(data)
+                if data[-1] != b'\n':
+                    p.stdin.write(b'\n')
+            p.stdin.close()
+            reply = p.stdout.read()
+            if reply:
+                fullErrMsg = "%r failed: %s" % (fullCmd, reply.strip())
+                if doRaise:
+                    raise RuntimeErr('cmdfail', fullCmd,
+                                     reply.strip())
+                else:
+                    warnings.warn(fullErrMsg)
+        finally:
+            p.stdin.close()  # redundant
+            p.stdout.close()
 
 
 def _computeCnvDict():
@@ -454,10 +450,25 @@ class DS9Win:
         if self.isOpen():
             return
 
-        _Popen(
+        # We want to fork ds9. This is possible with os.fork, but
+        # it doesn't work on Windows. At present Sherpa does not
+        # run on Windows, so it is not a serious problem, but it is
+        # not clear if it is an acceptable, or sensible, option.
+        #
+        p = _Popen(
             args=('ds9', '-title', self.template, '-port', "0"),
             cwd=None,
+            close_fds=True, stdin=None, stdout=None, stderr=None
         )
+
+        # Trick to stop a ResourceWarning warning to be created when
+        # running sherpa/tests/test_image.py
+        #
+        # Adapted from https://hg.python.org/cpython/rev/72946937536e
+        # but I am completely mis-using it, so it is unclear how
+        # sensible a hack this is.
+        #
+        p.returncode = 0
 
         startTime = time.time()
         while True:
