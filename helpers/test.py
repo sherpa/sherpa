@@ -44,13 +44,14 @@ try:
             test.finalize_options(self)
             self.test_args = []
             self.test_suite = True
+            if not self.pytest_args:
+                self.pytest_args = 'sherpa'
+            self.pytest_args = self.pytest_args.split(' ')
 
         def run_tests(self):
             set_xspec_chatter()
             # import here, cause outside the eggs aren't loaded
             import pytest
-            if not self.pytest_args:
-                self.pytest_args = ['sherpa',]
             errno = pytest.main(self.pytest_args)
             sys.exit(errno)
 
