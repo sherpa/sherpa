@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -32,10 +32,13 @@ import string
 import sys
 import os
 import importlib
+from functools import wraps
+import warnings
 import unittest
 import numpy
 import numpy.random
 import numpy.fft
+
 # Note: _utils.gsl_fcmp is not exported from this module; is this intentional?
 from unittest import skipIf
 from sherpa.utils._utils import calc_ftest, calc_mlr, igamc, igam, \
@@ -96,6 +99,7 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaTestCase',
            'incbet', 'interpolate', 'is_binary_file', 'Knuth_close',
            'lgam', 'linear_interp', 'nearest_interp',
            'neville', 'neville2d',
+           'hide_warnings',
            'requires_data', 'requires_fits', 'requires_package',
            'new_muller', 'normalize', 'numpy_convolve',
            'pad_bounding_box', 'parallel_map', 'param_apply_limits',
@@ -289,6 +293,46 @@ class SherpaTestCase(unittest.TestCase):
             exec(compile(cts, scriptname, 'exec'), {}, self.locals)
         finally:
             os.chdir(cwd)
+
+
+def hide_warnings(ignore):
+    """Decorator to suppress a warning if raised running the function.
+
+    This is an internal routine, and so the interface should not be
+    considered stable.
+
+    Parameters
+    ----------
+    ignore : sequence of dicts
+        The warnings to ignore, where each dict represents the
+        arguments to pass to warnings.filterwarnings. It is expected
+        that one or both of 'message' or 'category' is set. There is
+        no check to validate these dictionaries.
+
+    Returns
+    -------
+    func : function reference
+        The decorator routine.
+
+    Examples
+    --------
+
+    @hide_warnings([{'message': 'suprocess \d+ is still running'}])
+    def test_foo():
+        ...
+
+    """
+
+    def wrap(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            with warnings.catch_warnings():
+                for filterargs in ignore:
+                    warnings.filterwarnings("ignore", **filterargs)
+                return f(*args, **kwargs)
+        return wrapped
+
+    return wrap
 
 
 def requires_data(test_function):
