@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2015, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 import numpy
 from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import DataPHA
-from sherpa.utils import SherpaTestCase, requires_fits
+from sherpa.utils import SherpaTestCase, requires_data, requires_fits
 
 import logging
 logger = logging.getLogger('sherpa')
@@ -72,7 +72,7 @@ class test_filter_energy_grid(SherpaTestCase):
 
     def test_notice(self):
         #clear mask
-        self.pha.notice()        
+        self.pha.notice()
         self.pha.notice(0.0, 6.0)
         #self.assertEqual(self._notice, self.pha.mask)
         assert (self._notice==numpy.asarray(self.pha.mask)).all()
@@ -245,11 +245,12 @@ class test_filter_wave_grid(SherpaTestCase):
         #clear mask
         self.pha.notice()
         self.pha.ignore(30.01, 225.0)
-        self.pha.ignore(0.1, 6.0)        
+        self.pha.ignore(0.1, 6.0)
         assert (self._ignore==numpy.asarray(self.pha.mask)).all()
 
 
 # It would be nice to add some unit testing here, but it's not trivial and time doesn't allow.
+@requires_data
 @requires_fits
 def test_bug_275(make_data_path):
     session = Session()
@@ -260,4 +261,3 @@ def test_bug_275(make_data_path):
 
     session.load_data(make_data_path('img.fits'))
     str(session.get_data())
-
