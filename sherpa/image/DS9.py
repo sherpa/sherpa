@@ -461,19 +461,15 @@ class DS9Win:
             close_fds=True, stdin=None, stdout=None, stderr=None
         )
 
-        # Trick to stop a ResourceWarning warning to be created when
-        # running sherpa/tests/test_image.py
-        #
-        # Adapted from https://hg.python.org/cpython/rev/72946937536e
-        # but I am completely mis-using it, so it is unclear how
-        # sensible a hack this is.
-        #
-        p.returncode = 0
-
         startTime = time.time()
         while True:
             time.sleep(_OpenCheckInterval)
             if self.isOpen():
+                # Trick to stop a ResourceWarning warning to be created when
+                # running sherpa/tests/test_image.py
+                #
+                # Adapted from https://hg.python.org/cpython/rev/72946937536e
+                p.returncode = 0
                 return
             if time.time() - startTime > _MaxOpenTime:
                 raise RuntimeErr('nowin', self.template)
