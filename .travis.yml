@@ -7,14 +7,12 @@ addons:
     packages: &default_apt
       - gfortran
 
-# Barebone build to check tests pass when most of the tests must be skipped.
-# We need to use TEST=none to remove the test-data submodule.
-# Barebone build with no test data
-env: INSTALL_TYPE=develop TEST=none NUMPYVER=1.11 TRAVIS_PYTHON_VERSION="2.7"
-
 matrix:
   fast_finish: true
   include:
+    # Barebone build to check tests pass when most of the tests must be skipped.
+    # We need to use TEST=none to remove the test-data submodule.
+    - env: INSTALL_TYPE=develop TEST=none NUMPYVER=1.11 TRAVIS_PYTHON_VERSION="2.7"
     # Full build (including ds9 and xspec), Python 2.7, setup.py develop, astropy, matplotlib 1.5
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="2.7"
       sudo: required
