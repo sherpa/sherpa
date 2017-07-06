@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-# Copyright (C) 2014  Smithsonian Astrophysical Observatory
+# Copyright (C) 2014, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -126,6 +126,8 @@ meta = dict(name='sherpa',
                 'Programming Language :: C',
                 'Programming Language :: Fortran',
                 'Programming Language :: Python :: 2.7',
+                'Programming Language :: Python :: 3.5',
+                'Programming Language :: Python :: 3.6',
                 'Programming Language :: Python :: Implementation :: CPython',
                 'Topic :: Scientific/Engineering :: Astronomy',
                 'Topic :: Scientific/Engineering :: Physics'
