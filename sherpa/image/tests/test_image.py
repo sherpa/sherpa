@@ -21,7 +21,6 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 import tempfile
-import unittest
 import os
 import sherpa
 from sherpa.image import Image, DataImage, ModelImage, RatioImage, \
