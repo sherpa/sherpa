@@ -57,8 +57,6 @@ def clean_up(request, ui):
     request.addfinalizer(fin)
 
 
-@requires_data
-@requires_fits
 @pytest.fixture(autouse=True)
 def load_data(ui, make_data_path):
     """
@@ -70,6 +68,8 @@ def load_data(ui, make_data_path):
     ui.fit()
 
 
+@requires_data
+@requires_fits
 @pytest.mark.parametrize("call, args", [
     ("model", ()),
     ("arf", ()),

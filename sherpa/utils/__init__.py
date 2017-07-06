@@ -30,14 +30,12 @@ from types import FunctionType as function
 from types import MethodType as instancemethod
 import string
 import sys
-import os
 import importlib
-import unittest
 import numpy
 import numpy.random
 import numpy.fft
+from . import testing
 # Note: _utils.gsl_fcmp is not exported from this module; is this intentional?
-from unittest import skipIf
 from sherpa.utils._utils import calc_ftest, calc_mlr, igamc, igam, \
     incbet, gamma, lgam, erf, ndtri, sao_fcmp, rebin, \
     hist1d, hist2d, sum_intervals, neville, sao_arange
@@ -96,7 +94,7 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaTestCase',
            'incbet', 'interpolate', 'is_binary_file', 'Knuth_close',
            'lgam', 'linear_interp', 'nearest_interp',
            'neville', 'neville2d',
-           'requires_data', 'requires_fits', 'requires_package',
+           'requires_data', 'requires_fits',
            'new_muller', 'normalize', 'numpy_convolve',
            'pad_bounding_box', 'parallel_map', 'param_apply_limits',
            'parse_expr', 'poisson_noise', 'print_fields', 'rebin',
@@ -164,219 +162,25 @@ class NoNewAttributesAfterInit(object):
 #
 ###############################################################################
 
-def _get_datadir():
-    import os
-    try:
-        import sherpatest
-        datadir = os.path.dirname(sherpatest.__file__)
-    except ImportError:
-        try:
-            import sherpa
-            datadir = os.path.join(os.path.dirname(sherpa.__file__), os.pardir,
-                                   'sherpa-test-data', 'sherpatest')
-            if not os.path.exists(datadir) or not os.listdir(datadir):
-                # The dir is empty, maybe the submodule was not initialized
-                datadir = None
-        except ImportError:
-            # neither sherpatest nor sherpa can be found, falling back to None
-            datadir = None
-    return datadir
+SherpaTestCase = testing.SherpaTestCase
 
+requires_data = testing.requires_data
 
-class SherpaTestCase(unittest.TestCase):
-    "Base class for Sherpa unit tests"
+requires_plotting = testing.requires_plotting
 
-    # The location of the Sherpa test data (it is optional)
-    datadir = _get_datadir()
+requires_pylab = testing.requires_pylab
 
-    def make_path(self, *segments):
-        """Add the segments onto the test data location.
+requires_fits = testing.requires_fits
 
-        Parameters
-        ----------
-        *segments
-           Path segments to combine together with the location of the
-           test data.
+requires_group = testing.requires_group
 
-        Returns
-        -------
-        fullpath : None or string
-           The full path to the repository, or None if the
-           data directory is not set.
+requires_stk = testing.requires_stk
 
-        """
-        if self.datadir is None:
-            return None
-        return os.path.join(self.datadir, *segments)
+requires_ds9 = testing.requires_ds9
 
-    # What is the benefit of this over numpy.testing.assert_allclose(),
-    # which was added in version 1.5 of NumPy?
-    def assertEqualWithinTol(self, first, second, tol=1e-7, msg=None):
-        """Check that the values are equal within an absolute tolerance.
+requires_xspec = testing.requires_xspec
 
-        Parameters
-        ----------
-        first : number or array_like
-           The expected value, or values.
-        second : number or array_like
-           The value, or values, to check. If first is an array, then
-           second must be an array of the same size. If first is
-           a scalar then second can be a scalar or an array.
-        tol : number
-           The absolute tolerance used for comparison.
-        msg : string
-           The message to display if the check fails.
-
-        """
-
-        self.assertFalse(numpy.any(sao_fcmp(first, second, tol)), msg)
-
-    def assertNotEqualWithinTol(self, first, second, tol=1e-7, msg=None):
-        """Check that the values are not equal within an absolute tolerance.
-
-        Parameters
-        ----------
-        first : number or array_like
-           The expected value, or values.
-        second : number or array_like
-           The value, or values, to check. If first is an array, then
-           second must be an array of the same size. If first is
-           a scalar then second can be a scalar or an array.
-        tol : number
-           The absolute tolerance used for comparison.
-        msg : string
-           The message to display if the check fails.
-
-        """
-
-        self.assertTrue(numpy.all(sao_fcmp(first, second, tol)), msg)
-
-    # for running regression tests from sherpa-test-data
-    def run_thread(self, name, scriptname='fit.py'):
-        """Run a regression test from the sherpa-test-data submodule.
-
-        Parameters
-        ----------
-        name : string
-           The name of the science thread to run (e.g., pha_read,
-           radpro). The name should match the corresponding thread
-           name in the sherpa-test-data submodule. See examples below.
-        scriptname : string
-           The suffix of the test script file name, usually "fit.py."
-
-        Examples
-        --------
-        Regression test script file names have the structure
-        "name-scriptname.py." By default, scriptname is set to "fit.py."
-        For example, if one wants to run the regression test
-        "pha_read-fit.py," they would write
-
-        >>> run_thread("pha_read")
-
-        If the regression test name is "lev3fft-bar.py," they would do
-
-        >>> run_thread("lev3fft", scriptname="bar.py")
-
-        """
-
-        scriptname = name + "-" + scriptname
-        self.locals = {}
-        cwd = os.getcwd()
-        os.chdir(self.datadir)
-        try:
-            with open(scriptname, "rb") as fh:
-                cts = fh.read()
-            exec(compile(cts, scriptname, 'exec'), {}, self.locals)
-        finally:
-            os.chdir(cwd)
-
-
-def requires_data(test_function):
-    """
-    Decorator for functions requiring external data (i.e. data not distributed with Sherpa
-    itself) is missing.  This is used to skip tests that require such data.
-    """
-    condition = SherpaTestCase.datadir is None
-    msg = "required test data missing"
-    return skipIf(condition, msg)(test_function)
-
-
-def _has_package_from_list(*packages):
-    """
-    Returns True if at least one of the ``packages`` args is importable.
-    """
-    for package in packages:
-        try:
-            importlib.import_module(package)
-            return True
-        except:
-            pass
-    return False
-
-
-def requires_package(msg=None, *packages):
-    """
-    Decorator for test functions requiring specific packages.
-    """
-    condition = _has_package_from_list(*packages)
-    msg = msg or "required module missing among {}.".format(
-        ", ".join(packages))
-
-    def decorator(test_function):
-        return skipIf(not condition, msg)(test_function)
-    return decorator
-
-
-def requires_xspec(test_function):
-    """Decorator for test functions requiring xspec"""
-    return requires_package('xspec required', 'sherpa.astro.xspec')(test_function)
-
-
-def requires_ds9(test_function):
-    """Decorator for test functions requiring ds9"""
-    return requires_package('ds9 required', 'sherpa.image.ds9_backend')(test_function)
-
-
-def requires_stk(test_function):
-    """Decorator for test functions requiring stk library"""
-    return requires_package("stk library required", 'stk')(test_function)
-
-
-def requires_group(test_function):
-    """Decorator for test functions requiring group library"""
-    return requires_package("group library required", 'group')(test_function)
-
-
-def requires_fits(test_function):
-    """
-    Returns True if there is an importable backend for FITS I/O.
-    Used to skip tests requiring fits_io
-    """
-    packages = ('pyfits',
-                'astropy.io.fits',
-                'pycrates',
-                )
-    msg = "FITS backend required"
-    return requires_package(msg, *packages)(test_function)
-
-
-def requires_pylab(test_function):
-    """
-    Returns True if the pylab module is available (pylab).
-    Used to skip tests requiring matplotlib
-    """
-    packages = ('pylab',
-                )
-    msg = "matplotlib backend required"
-    return requires_package(msg, *packages)(test_function)
-
-
-def requires_plotting(test_function):
-    """Decorator for test functions requiring a plotting library."""
-    packages = ('pylab', 'pychips')
-    msg = "plotting backend required"
-    return requires_package(msg, *packages)(test_function)
-
+has_package_from_list = testing.has_package_from_list
 
 ###############################################################################
 #
