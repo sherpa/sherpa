@@ -67,12 +67,6 @@ known_warnings = {
         ],
     RuntimeWarning:
         [r"invalid value encountered in sqrt",
-         # The following is added for the test_can_use_swift_data
-         # test in sherpa/astro/tests/test_astro_data_swift_unit.py;
-         # as the test checks this warning is created it would be useful
-         # if the test could eitehr clear the warnings, or tell this
-         # fixture to ignore it, rather than making it a global flag
-         r"divide by zero encountered in divide",
          ],
 }
 
@@ -94,7 +88,6 @@ if sys.version_info >= (3, 2):
             ],
         RuntimeWarning:
         [r"invalid value encountered in sqrt",
-         r"divide by zero encountered in true_divide",
          ],
 
     }
