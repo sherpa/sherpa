@@ -20,6 +20,8 @@
 import numpy as np
 import pytest
 
+from pytest import approx
+
 from sherpa.astro import ui
 from sherpa.data import Data1D
 from sherpa.utils.err import StatErr
@@ -43,12 +45,12 @@ def test_user_stat_unit():
     ui.set_model(1, 'polynom1d.p')
 
     ui.load_user_stat('customstat', calc_stat, lambda x: given_stat_error)
-    ui.set_stat(customstat)
+    ui.set_stat(eval('customstat'))
 
     try:
         ui.fit(1)
     except StatErr:
-        pytest.fail("Call should not be throwing and exception (bug #341)")
+        pytest.fail("Call should not be throwing any exception (bug #341)")
 
     # Test the result is what we made the user stat return
     assert 3.235 == ui.get_fit_results().statval
@@ -91,15 +93,15 @@ def test_user_model_stat_docs():
     ui.clean()
     ui.load_arrays(1, x, y)
     ui.load_user_stat("mystat", my_stat_func, my_staterr_func)
-    ui.set_stat(mystat)
+    ui.set_stat(eval('mystat'))
     ui.load_user_model(myline, "myl")
     ui.add_user_pars("myl", ["m", "b"])
-    ui.set_model(myl)
+    ui.set_model(eval('myl'))
 
     ui.fit()
 
-    assert abs(1 - ui.get_par("myl.m").val) < 0.01
-    assert abs(3 - ui.get_par("myl.b").val) < 0.01
+    assert ui.get_par("myl.m").val == approx(1, abs=0.01)
+    assert ui.get_par("myl.b").val == approx(3, abs=0.01)
 
 
 def test_341():
@@ -163,8 +165,9 @@ def test_341():
 
     calc_stat = CalcStat(newmodel)
     ui.load_user_stat('customstat', calc_stat, lambda x: np.ones_like(x))
-    ui.set_stat(customstat)
+    ui.set_stat(eval('customstat'))
 
     ui.fit(1)
-    assert abs(1 - ui.get_par("simplemodel.m").val) < 0.00001
-    assert abs(3 - ui.get_par("simplemodel.b").val) < 0.00001
+
+    assert ui.get_par("simplemodel.m").val == approx(1, abs=0.00001)
+    assert ui.get_par("simplemodel.b").val == approx(3, abs=0.00001)

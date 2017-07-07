@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -192,6 +192,13 @@ class Stat(NoNewAttributesAfterInit):
         self._check_sizes_match(data, model)
         return data, model
 
+    def _get_fit_model_data(self, data, model):
+        data, model = self._validate_inputs(data, model)
+        fitdata = data.to_fit(staterrfunc=self.calc_staterror)
+        modeldata = data.eval_model_to_fit(model)
+
+        return fitdata, modeldata
+
     # TODO:
     #  - should this accept sherpa.data.Data input instead of
     #    "raw" data (i.e. to match calc_stat)
@@ -279,9 +286,7 @@ class Likelihood(Stat):
         return data, model
 
     def calc_stat(self, data, model):
-        data, model = self._validate_inputs(data, model)
-        fitdata = data.to_fit(staterrfunc=self.calc_staterror)
-        modeldata = data.eval_model_to_fit(model)
+        fitdata, modeldata = self._get_fit_model_data(data, model)
 
         return self._calc(fitdata[0], modeldata, None,
                           truncation_value)
@@ -493,11 +498,7 @@ class Chi2(Stat):
         raise StatErr('chi2noerr')
 
     def calc_stat(self, data, model):
-
-        # TODO: HOW TO GET THE WEIGHTS?
-        data, model = self._validate_inputs(data, model)
-        fitdata = data.to_fit(staterrfunc=self.calc_staterror)
-        modeldata = data.eval_model_to_fit(model)
+        fitdata, modeldata = self._get_fit_model_data(data, model)
 
         return self._calc(fitdata[0], modeldata,
                           fitdata[1], fitdata[2],
@@ -735,17 +736,16 @@ class UserStat(Stat):
         return self.errfunc(data)
 
     def calc_stat(self, data, model):
-        data, model = self._validate_inputs(data, model)
-        fitdata = data.to_fit(staterrfunc=self.calc_staterror)
-        modeldata = data.eval_model_to_fit(model)
         if not self._statfuncset:
             raise StatErr('nostat', self.name, 'calc_stat()')
-        else:
-            return self.statfunc(fitdata[0],
-                                 modeldata,
-                                 staterror=fitdata[1],
-                                 syserror=fitdata[2],
-                                 weight=None)  # TODO weights
+
+        fitdata, modeldata = self._get_fit_model_data(data, model)
+
+        return self.statfunc(fitdata[0],
+                             modeldata,
+                             staterror=fitdata[1],
+                             syserror=fitdata[2],
+                             weight=None)  # TODO weights
 
 
 class WStat(Likelihood):
