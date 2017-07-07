@@ -173,20 +173,6 @@ def has_package_from_list(*packages):
     return False
 
 
-def requires_package(msg=None, *packages):
-    """
-    Decorator for test functions requiring specific packages.
-    """
-    condition = has_package_from_list(*packages)
-    msg = msg or "required module missing among {}.".format(
-        ", ".join(packages))
-
-    def decorator(test_function):
-        return pytest.mark.skipif(not condition, reason=msg)(test_function)
-
-    return decorator
-
-
 if HAS_PYTEST:
     #  Pytest cannot be assumed to be installed by the regular user, unlike unittest, which is part of Python's
     #  standard library. The decorator will be defined if pytest is missing, but if the tests are run they throw
@@ -194,6 +180,20 @@ if HAS_PYTEST:
 
     requires_data = pytest.mark.skipif(SherpaTestCase.datadir is None,
                                        reason="required test data missing")
+
+
+    def requires_package(msg=None, *packages):
+        """
+        Decorator for test functions requiring specific packages.
+        """
+        condition = has_package_from_list(*packages)
+        msg = msg or "required module missing among {}.".format(
+            ", ".join(packages))
+
+        def decorator(test_function):
+            return pytest.mark.skipif(not condition, reason=msg)(test_function)
+
+        return decorator
 
 
     def requires_plotting(test_function):
@@ -254,7 +254,7 @@ else:
 
 
     def make_fake():
-        def wrapper(*arg, **kwargs):
+        def wrapper(*args, **kwargs):
             return wrapped
         return wrapper
 
@@ -273,6 +273,9 @@ else:
     requires_ds9 = make_fake()
 
     requires_xspec = make_fake()
+
+    def requires_package(*args):
+        return make_fake()
 
 
 PYTEST_MISSING_MESSAGE = "Package `pytest` is missing. Please install `pytest` before running tests or using the test" \

@@ -180,6 +180,8 @@ requires_ds9 = testing.requires_ds9
 
 requires_xspec = testing.requires_xspec
 
+requires_package = testing.requires_package
+
 has_package_from_list = testing.has_package_from_list
 
 ###############################################################################

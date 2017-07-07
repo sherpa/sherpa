@@ -27,7 +27,7 @@ SKIP_MESSAGE = "This test should have been skipped"
 
 def test_decorator_exception_when_pytest_is_absent(monkeypatch):
     """
-    Test that when pytest is not installed (simulated with monkeypatch) the decorators raise an exception whe
+    Test that when pytest is not installed (simulated with monkeypatch) the decorators raise an exception when
     a test is run.
     """
     import sys
@@ -77,6 +77,10 @@ def test_decorator_exception_when_pytest_is_absent(monkeypatch):
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)
 
+    @utils.requires_package("non.existent.package")
+    def foo():
+        raise RuntimeError(SKIP_MESSAGE)
+    assert_decorated_function(foo)
 
 def assert_decorated_function(function):
     """
