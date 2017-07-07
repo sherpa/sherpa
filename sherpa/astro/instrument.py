@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,27 +16,48 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+"""
+Models of common Astronomical models, particularly in X-rays.
+
+The models in this module include support for instrument models that
+describe how X-ray photons are converted to measurable properties,
+such as Pulse-Height Amplitudes (PHA) or Pulse-Invariant channels.
+These 'responses' are assumed to follow OGIP standards, such as
+[1]_.
+
+References
+----------
+
+.. [1] OGIP Calibration Memo CAL/GEN/92-002, "The Calibration Requirements
+       for Spectral Analysis (Definition of RMF and ARF file formats)",
+       Ian M. George1, Keith A. Arnaud, Bill Pence, Laddawan Ruamsuwan and
+       Michael F. Corcoran,
+       https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+
+"""
+
 from six.moves import zip as izip
 from six import string_types
 
 import numpy
 import sherpa
-from sherpa.utils.err import InstrumentErr, DataErr, PSFErr, ArgumentTypeErr
-from sherpa.models.model import ArithmeticFunctionModel, NestedModel, \
-    ArithmeticModel, CompositeModel, Model
+from sherpa.utils.err import InstrumentErr, DataErr, PSFErr
+from sherpa.models.model import ArithmeticModel, CompositeModel, Model
+
+from sherpa.instrument import PSFModel as _PSFModel
+from sherpa.utils import NoNewAttributesAfterInit
+from sherpa.data import Data1D
+from sherpa.astro.data import DataARF, DataRMF, DataPHA, _notice_resp, \
+    DataIMG
+from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
+from sherpa.astro.utils import compile_energy_grid
+
 WCS = None
 try:
     from sherpa.astro.io.wcs import WCS
 except:
     WCS = None
-
-from sherpa.instrument import PSFModel as _PSFModel
-from sherpa.utils import NoNewAttributesAfterInit
-from sherpa.data import BaseData, Data1D
-from sherpa.astro.data import DataARF, DataRMF, DataPHA, _notice_resp, \
-    DataIMG
-from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
-from sherpa.astro.utils import compile_energy_grid
 
 _tol = numpy.finfo(numpy.float32).eps
 
@@ -49,10 +70,45 @@ __all__ = ('RMFModel', 'ARFModel', 'RSPModel',
            'PSFModel')
 
 
-class RMFModel(CompositeModel, ArithmeticModel):
+def apply_areascal(mdl, pha, instlabel):
+    """Apply the AREASCAL conversion.
 
+    This should be done after applying any RMF or ARF.
+
+    Parameters
+    ----------
+    mdl : array
+        The model values, after being passed through the response.
+        The assumption is that the output is in channel space. No
+        filtering is assumed to have been applied.
+    pha : sherpa.astro.data.DataPHA object
+        The PHA object containing the AREASCAL column, scalar, or
+        None value.
+    instlabel : str
+        The name of the response (expected to be of the form
+        'RMF: filename'). This is only used in case the size of out
+        does not match the AREASCAL vector.
+
+    Returns
+    -------
+    ans : array
+        If AREASCAL is defined then the output is mdl * AREASCAL,
+        otherwise it is just the input array (i.e. mdl).
     """
-    Base class for expressing RMF convolution in model expressions
+
+    ascal = pha.areascal
+    if ascal is None:
+        return mdl
+
+    if numpy.iterable(ascal) and len(ascal) != len(mdl):
+        raise DataErr('mismatch', instlabel,
+                      'AREASCAL: {}'.format(pha.name))
+
+    return mdl * ascal
+
+
+class RMFModel(CompositeModel, ArithmeticModel):
+    """Base class for expressing RMF convolution in model expressions.
     """
 
     def __init__(self, rmf, model):
@@ -103,9 +159,7 @@ class RMFModel(CompositeModel, ArithmeticModel):
 
 
 class ARFModel(CompositeModel, ArithmeticModel):
-
-    """
-    Base class for expressing ARF convolution in model expressions
+    """Base class for expressing ARF convolution in model expressions.
     """
 
     def __init__(self, arf, model):
@@ -154,9 +208,7 @@ class ARFModel(CompositeModel, ArithmeticModel):
 
 
 class RSPModel(CompositeModel, ArithmeticModel):
-
-    """
-    Base class for expressing RMF + ARF convolution in model expressions
+    """Base class for expressing RMF + ARF convolution in model expressions
     """
 
     def __init__(self, arf, rmf, model):
@@ -209,9 +261,12 @@ class RSPModel(CompositeModel, ArithmeticModel):
 
 
 class RMFModelPHA(RMFModel):
+    """RMF convolution model with associated PHA data set.
 
-    """
-    RMF convolution model with associated PHA
+    Notes
+    -----
+    Scaling by the AREASCAL setting (scalar or array) is included in
+    this model.
     """
 
     def __init__(self, rmf, pha, model):
@@ -283,13 +338,19 @@ class RMFModelPHA(RMFModel):
         # x is noticed/full channels here
 
         src = self.model.calc(p, self.xlo, self.xhi)
-        return self.rmf.apply_rmf(src, *self.rmfargs)
+        out = self.rmf.apply_rmf(src, *self.rmfargs)
+
+        return apply_areascal(out, self.pha,
+                              "RMF: {}".format(self.rmf.name))
 
 
 class RMFModelNoPHA(RMFModel):
+    """RMF convolution model without an associated PHA data set.
 
-    """
-    RMF convolution model without associated PHA
+    Notes
+    -----
+    Since there is no PHA data set, there is no correction for any
+    AREASCAL setting associated with the data.
     """
 
     def __init__(self, rmf, model):
@@ -304,9 +365,12 @@ class RMFModelNoPHA(RMFModel):
 
 
 class ARFModelPHA(ARFModel):
+    """ARF convolution model with associated PHA data set.
 
-    """
-    ARF convolution model with associated PHA
+    Notes
+    -----
+    Scaling by the AREASCAL setting (scalar or array) is included in
+    this model. It is not yet clear if this is handled correctly.
     """
 
     def __init__(self, arf, pha, model):
@@ -376,13 +440,19 @@ class ARFModelPHA(ARFModel):
         # x could be channels or x, xhi could be energy|wave
 
         src = self.model.calc(p, self.xlo, self.xhi)
-        return self.arf.apply_arf(src, *self.arfargs)
+        src = self.arf.apply_arf(src, *self.arfargs)
+
+        return apply_areascal(src, self.pha,
+                              "ARF: {}".format(self.arf.name))
 
 
 class ARFModelNoPHA(ARFModel):
+    """ARF convolution model without associated PHA data set.
 
-    """
-    ARF convolution model without associated PHA
+    Notes
+    -----
+    Since there is no PHA data set, there is no correction for any
+    AREASCAL setting associated with the data.
     """
 
     def __init__(self, arf, model):
@@ -402,9 +472,12 @@ class ARFModelNoPHA(ARFModel):
 
 
 class RSPModelPHA(RSPModel):
+    """RMF + ARF convolution model with associated PHA.
 
-    """
-    RMF + ARF convolution model with associated PHA
+    Notes
+    -----
+    Scaling by the AREASCAL setting (scalar or array) is included in
+    this model.
     """
 
     def __init__(self, arf, rmf, pha, model):
@@ -485,13 +558,21 @@ class RSPModelPHA(RSPModel):
 
         src = self.model.calc(p, self.xlo, self.xhi)
         src = self.arf.apply_arf(src, *self.arfargs)
-        return self.rmf.apply_rmf(src, *self.rmfargs)
+        src = self.rmf.apply_rmf(src, *self.rmfargs)
+
+        # Assume any issues with the binning (between AREASCAL
+        # and src) is related to the RMF rather than the ARF.
+        return apply_areascal(src, self.pha,
+                              "RMF: {}".format(self.rmf.name))
 
 
 class RSPModelNoPHA(RSPModel):
+    """RMF + ARF convolution model without associated PHA data set.
 
-    """
-    RMF + ARF convolution model without associated PHA
+    Notes
+    -----
+    Since there is no PHA data set, there is no correction for any
+    AREASCAL setting associated with the data.
     """
 
     def __init__(self, arf, rmf, model):
@@ -815,6 +896,8 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
     def calc(self, p, x, xhi=None, *args, **kwargs):
         pha = self.pha
 
+        # TODO: this should probably include AREASCAL
+
         user_grid = False
         try:
 
@@ -873,6 +956,7 @@ class MultipleResponse1D(Response1D):
 
         model = MultiResponseSumModel(model, pha)
 
+        # TODO: should this include AREASCAL?
         if pha.exposure:
             model = pha.exposure * model
 
@@ -906,7 +990,16 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         CompositeModel.startup(self)
 
     def teardown(self):
-        pha = self.pha
+
+        # Note:
+        #
+        # The pha variable was declared but not used, so has been commented
+        # out. It has been kept as a comment for future review, since it
+        # is unclear whether anything should be done to the PHA object
+        # during teardown
+        #
+        # pha = self.pha
+
         rmf = self.rmf
         self.channel = sao_arange(1, rmf.detchans)
         self.mask = numpy.ones(rmf.detchans, dtype=bool)

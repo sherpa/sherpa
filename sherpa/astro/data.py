@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2015, 2016, 2017 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,7 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 """
 
 import os.path
+
 import numpy
 from sherpa.data import BaseData, Data1DInt, Data2D, DataND
 from sherpa.utils.err import DataErr, ImportErr
@@ -85,7 +86,8 @@ def _notice_resp(chans, arf, rmf):
 class DataARF(Data1DInt):
     "ARF data set"
 
-    mask = property(BaseData._get_mask, BaseData._set_mask)
+    mask = property(BaseData._get_mask, BaseData._set_mask,
+                    doc=BaseData.mask.__doc__)
 
     def _get_specresp(self):
         return self._specresp
@@ -163,7 +165,8 @@ class DataARF(Data1DInt):
 class DataRMF(Data1DInt):
     "RMF data set"
 
-    mask = property(BaseData._get_mask, BaseData._set_mask)
+    mask = property(BaseData._get_mask, BaseData._set_mask,
+                    doc=BaseData.mask.__doc__)
 
     def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
@@ -243,9 +246,76 @@ class DataRMF(Data1DInt):
 
 
 class DataPHA(Data1DInt):
-    "PHA data set, including any associated instrument and background data"
+    """PHA data set, including any associated instrument and background data.
 
-    mask = property(BaseData._get_mask, BaseData._set_mask)
+    The PHA format is described in an OGIP document [1]_.
+
+    Parameters
+    ----------
+    name : str
+        The name of the data set; often set to the name of the file
+        containing the data.
+    channel, counts : array of int
+        The PHA data.
+    staterror, syserror : scalar or array or None, optional
+        The statistical and systematic errors for the data, if
+        defined.
+    bin_lo, bin_hi : array or None, optional
+    grouping : array of int or None, optional
+    quality : array of int or None, optional
+    exposure : number or None, optional
+    backscal : scalar or array or None, optional
+    areascal : scalar or array or None, optional
+    header : dict or None, optional
+
+    Attributes
+    ----------
+    name : str
+        Used to store the file name, for data read from a file.
+    channel
+    counts
+    staterror
+    syserror
+    bin_lo
+    bin_hi
+    grouping
+    quality
+    exposure
+    backscal
+    areascal
+
+    Notes
+    -----
+    The original data is stored in the attributes - e.g. `counts` - and
+    the data-access methods, such as `get_dep` and `get_staterror`,
+    provide any necessary data manipulation to handle cases such as:
+    background subtraction, filtering, and grouping.
+
+    The handling of the AREASCAl value - whether it is a scalar or
+    array - is currently in flux. It is a value that is stored with the
+    PHA file, and the OGIP PHA standard ([1]_) describes the observed
+    counts being divided by the area scaling before comparison to the
+    model. However, this is not valid for Poisson-based statistics, and
+    is also not how XSPEC handles AREASCAL ([2]_); the AREASCAL values
+    are used to scale the exposure times instead. The aim is to add
+    this logic to the instrument models in `sherpa.astro.instrument`,
+    such as `sherpa.astro.instrument.RMFModelPHA`. The area scaling still
+    has to be applied when calculating the background contribution to
+    a spectrum, as well as when calculating the data and model values used
+    for plots (following XSPEC so as to avoid sharp discontinuities where
+    the area-scaling factor changes strongly).
+
+    References
+    ----------
+
+    .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+    .. [2] Private communication with Keith Arnaud
+
+    """
+
+    mask = property(BaseData._get_mask, BaseData._set_mask,
+                    doc=BaseData.mask.__doc__)
 
     def _get_grouped(self):
         return self._grouped
@@ -270,7 +340,8 @@ class DataPHA(Data1DInt):
 
         self._grouped = val
 
-    grouped = property(_get_grouped, _set_grouped, doc='Are the data grouped?')
+    grouped = property(_get_grouped, _set_grouped,
+                       doc='Are the data grouped?')
 
     def _get_subtracted(self):
         return self._subtracted
@@ -319,7 +390,8 @@ class DataPHA(Data1DInt):
 
         self._units = units
 
-    units = property(_get_units, _set_units, doc='Units of independent axis')
+    units = property(_get_units, _set_units,
+                     doc='Units of the independent axis')
 
     def _get_rate(self):
         return self._rate
@@ -327,6 +399,7 @@ class DataPHA(Data1DInt):
     def _set_rate(self, val):
         self._rate = bool_cast(val)
         for id in self.background_ids:
+            # TODO: shouldn't this store bool_cast(val) instead?
             self.get_background(id).rate = val
 
     rate = property(_get_rate, _set_rate,
@@ -1207,9 +1280,8 @@ class DataPHA(Data1DInt):
                 backscal = self._check_scale(backscal, group=False)
                 bdata = bdata / backscal
 
-            areascal = bkg.areascal
+            areascal = bkg.get_areascal(group=False)
             if areascal is not None:
-                areascal = self._check_scale(areascal, group=False)
                 bdata = bdata / areascal
 
             if bkg.exposure is not None:
@@ -1245,18 +1317,41 @@ class DataPHA(Data1DInt):
         # if not self.subtracted:
         #     return self.counts
         # return self.counts - self.sum_background_data()
+
         dep = self.counts
         filter = bool_cast(filter)
+
+        # The area scaling is not applied to the data, since it
+        # should be being applied to the model via the *PHA
+        # instrument model. Note however that the background
+        # contribution does include the source AREASCAL value
+        # (in the same way that the source BACKSCAL value
+        # is used).
+        #
         if self.subtracted:
             bkg = self.sum_background_data()
             if len(dep) != len(bkg):
                 raise DataErr("subtractlength")
             dep = dep - bkg
+
         if filter:
             dep = self.apply_filter(dep)
         return dep
 
     def set_dep(self, val):
+        # QUS: should this "invert" the areascaling to val
+        #      to get the stored values?
+        #
+        #      Otherwise, when areascal /= 1
+        #            y1 = d.get_dep()
+        #            d.set_dep(y1)
+        #            y2 = d.get_dep()
+        #            y1 != y2
+        #
+        # Or perhaps it removes the areascal value in this case?
+        # We already have this split in the API when background data
+        # is available and is subtracted.
+        #
         dep = None
         if numpy.iterable(val):
             dep = numpy.asarray(val, SherpaFloat)
@@ -1266,21 +1361,91 @@ class DataPHA(Data1DInt):
         setattr(self, 'counts', dep)
 
     def get_staterror(self, filter=False, staterrfunc=None):
+        """Return the statistical error.
+
+        The staterror column is used if defined, otherwise the
+        function provided by the staterrfunc argument is used to
+        calculate the values.
+
+        Parameters
+        ----------
+        filter : bool, optional
+            Should the channel filter be applied to the return values?
+        staterrfunc : function reference, optional
+            The function to use to calculate the errors if the
+            staterror field is None. The function takes one argument,
+            the counts (after grouping and filtering), and returns an
+            array of values which represents the one-sigma error for each
+            element of the input array. This argument is designed to
+            work with implementations of the sherpa.stats.Stat.calc_staterror
+            method.
+
+        Returns
+        -------
+        staterror : array or None
+            The statistical error. It will be grouped and,
+            if filter=True, filtered. The contribution from any
+            associated background components will be included if
+            the background-subtraction flag is set.
+
+        Notes
+        -----
+        There is no scaling by the AREASCAL setting, but background
+        values are scaled by their AREASCAL settings. It is not at all
+        obvious that the current code is doing the right thing, or that
+        this is the right approach.
+
+        Examples
+        --------
+
+        >>> dy = dset.get_staterror()
+
+        Ensure that there is no pre-defined statistical-error column
+        and then use the Chi2DataVar statistic to calculate the errors:
+
+        >>> stat = sherpa.stats.Chi2DataVar()
+        >>> dset.set_staterror(None)
+        >>> dy = dset.get_staterror(staterrfunc=stat.calc_staterror)
+
+        """
         staterr = self.staterror
+
         filter = bool_cast(filter)
         if filter:
             staterr = self.apply_filter(staterr, self._sum_sq)
         else:
             staterr = self.apply_grouping(staterr, self._sum_sq)
 
+        # The source AREASCAL is not applied here, but the
+        # background term is.
+        #
         if (staterr is None) and (staterrfunc is not None):
             cnts = self.counts
+
             if filter:
                 cnts = self.apply_filter(cnts)
             else:
                 cnts = self.apply_grouping(cnts)
 
             staterr = staterrfunc(cnts)
+
+            # Need to apply the area scaling to the calculated
+            # errors. Grouping and filtering complicate this; is
+            # _middle the best choice here?
+            #
+            """
+            area = self.areascal
+            if staterr is not None and area is not None:
+                if numpy.isscalar(area):
+                    area = numpy.zeros(self.channel.size) + area
+
+                # TODO: replace with _check_scale?
+                if filter:
+                    area = self.apply_filter(area, self._middle)
+                else:
+                    area = self.apply_grouping(area, self._middle)
+                staterr = staterr / area
+            """
 
         if (staterr is not None) and self.subtracted:
             bkg_staterr_list = []
@@ -1301,6 +1466,8 @@ class DataPHA(Data1DInt):
                     else:
                         bkg_cnts = self.apply_grouping(bkg_cnts)
 
+                    # TODO: shouldn't the following logic be somewhere
+                    #       else more general?
                     if hasattr(staterrfunc, '__name__') and \
                        staterrfunc.__name__ == 'calc_chi2datavar_errors' and \
                        0.0 in bkg_cnts:
@@ -1326,6 +1493,10 @@ class DataPHA(Data1DInt):
                     bksl = self._check_scale(bksl, filter=filter)
                     berr = berr / bksl
 
+                # Need to apply filter/grouping of the source dataset
+                # to the background areascal, so can not just say
+                #   area = bkg.get_areascal(filter=filter)
+                #
                 area = bkg.areascal
                 if area is not None:
                     area = self._check_scale(area, filter=filter)
@@ -1349,10 +1520,12 @@ class DataPHA(Data1DInt):
                 bscal = self._check_scale(bscal, filter=filter)
                 bkgsum = (bscal * bscal) * bkgsum
 
-            area = self.areascal
-            if area is not None:
-                area = self._check_scale(area, filter=filter)
-                bkgsum = (area * area) * bkgsum
+            # Correct the background counts by the source AREASCAL
+            # setting. Is this correct?
+            ascal = self.areascal
+            if ascal is not None:
+                ascal = self._check_scale(ascal, filter=filter)
+                bkgsum = (ascal * ascal) * bkgsum
 
             if self.exposure is not None:
                 bkgsum = (self.exposure * self.exposure) * bkgsum
@@ -1366,6 +1539,23 @@ class DataPHA(Data1DInt):
         return staterr
 
     def get_syserror(self, filter=False):
+        """Return any systematic error.
+
+        Parameters
+        ----------
+        filter : bool, optional
+            Should the channel filter be applied to the return values?
+
+        Returns
+        -------
+        syserror : array or None
+            The systematic error, if set. It will be grouped and,
+            if filter=True, filtered.
+
+        Notes
+        -----
+        There is no scaling by the AREASCAL setting.
+        """
         syserr = self.syserror
         filter = bool_cast(filter)
         if filter:
@@ -1413,6 +1603,8 @@ class DataPHA(Data1DInt):
             self.units = 'energy'
 
     def _fix_y_units(self, val, filter=False, response_id=None):
+        """Rescale the data to match the 'y' axis."""
+
         if val is None:
             return val
 
@@ -1420,12 +1612,17 @@ class DataPHA(Data1DInt):
         # make a copy of data for units manipulation
         val = numpy.array(val, dtype=SherpaFloat)
 
-        if self.rate and self.exposure:
+        if self.rate and self.exposure is not None:
             val /= self.exposure
-            areascal = self.areascal
-            if areascal is not None:
-                areascal = self._check_scale(areascal, filter=filter)
-                val /= areascal
+
+        # TODO: It is not clear if the areascal should always be applied,
+        #       or only if self.rate is set (since it is being considered
+        #       a "correction" to the exposure time, but don't we want
+        #       to apply it in plots even if the Y axis is in counts?)
+        #
+        if self.areascal is not None:
+            areascal = self._check_scale(self.areascal, filter=filter)
+            val /= areascal
 
         if self.grouped or self.rate:
 
@@ -1455,9 +1652,15 @@ class DataPHA(Data1DInt):
 
             val /= numpy.abs(ebin)
 
+        # The final step is to multiply by the X axis self.plot_fac
+        # times.
+        if self.plot_fac <= 0:
+            return val
+
+        scale = self.apply_filter(self.get_x(response_id=response_id),
+                                  self._middle)
         for ii in range(self.plot_fac):
-            val *= self.apply_filter(self.get_x(response_id=response_id),
-                                     self._middle)
+            val *= scale
 
         return val
 

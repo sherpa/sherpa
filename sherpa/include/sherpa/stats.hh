@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -157,13 +157,15 @@ namespace sherpa { namespace stats {
   inline int calc_stat( IndexType num, const ConstArrayType& weight,
                         ArrayType& fvec, DataType& stat ) {
 
-    if ( weight )
+    if ( weight ) {
       for ( IndexType ii = num - 1; ii >= 0; --ii )
-	if ( weight[ ii ] >= 0.0 )
+	if ( weight[ ii ] >= 0.0 ) {
 	  fvec[ ii ] *= std::sqrt( weight[ ii ] );
-	else
+	} else {
 	  return EXIT_FAILURE;
-
+        }
+    }
+    
     stat = sherpa::utils::enorm2< ArrayType, DataType, IndexType >( num, fvec );    
     /*
     stat = 0.0;
@@ -344,8 +346,8 @@ namespace sherpa { namespace stats {
                              const DataType* bkg_raw,
                              const DataType* backscale_ratio,
                              DataType* fvec, 
-                             const DataType src_exp_time,
-                             const DataType my_bkg_exp_time,
+                             const DataType* src_exp_time,
+                             const DataType* my_bkg_exp_time,
                              const DataType trunc_value ) {
 
     // 
@@ -367,22 +369,26 @@ namespace sherpa { namespace stats {
     // t  m  = src_model[ ii ]
     //  s  i
     //
-
+    // The exposure times may be "corrected" by multiplying by
+    // the appropriate AREASCAL value. This is not in the official
+    // "specification" but appears to be how XSPEC handles the
+    // AREASCAL correction (private communication with Keith Arnaud).
+    //
     for ( IndexType ii = num - 1; ii >= 0; --ii ) {
 
       //
       // Must scale the background area to the source area
       //
-      DataType bkg_exp_time = my_bkg_exp_time * backscale_ratio[ ii ];
-      DataType src_bkg_time = src_exp_time + bkg_exp_time;
+      DataType bkg_exp_time = my_bkg_exp_time[ ii ] * backscale_ratio[ ii ];
+      DataType src_bkg_time = src_exp_time[ ii ] + bkg_exp_time;
       DataType ln_ts_div_src_bkg_time = 
-        std::log( src_exp_time / src_bkg_time );
+        std::log( src_exp_time[ ii ] / src_bkg_time );
       DataType ln_tb_div_src_bkg_time = 
         std::log( bkg_exp_time / src_bkg_time );
 
-      DataType msubi = src_model[ ii ] / src_exp_time;
+      DataType msubi = src_model[ ii ] / src_exp_time[ ii ];
       DataType tb_msubi = bkg_exp_time * msubi;
-      DataType ts_msubi = src_exp_time * msubi;
+      DataType ts_msubi = src_exp_time[ ii ] * msubi;
 
       //
       // If any bin has S and/or B  zero then its contribution to W (W )
@@ -450,8 +456,8 @@ namespace sherpa { namespace stats {
         DataType fsubi = ( raw_data - src_bkg_time_msubi + dsubi ) / 
           ( 2.0 * src_bkg_time );
         DataType log_model_srcexptime_fsubi =
-          src_model[ ii ] + src_exp_time * fsubi <= 0 ? trunc_value :
-          std::log( src_model[ ii ] + src_exp_time * fsubi );
+          src_model[ ii ] + src_exp_time[ ii ] * fsubi <= 0 ? trunc_value :
+          std::log( src_model[ ii ] + src_exp_time[ ii ] * fsubi );
         DataType log_bkgexptime_fsubi =
           bkg_exp_time * fsubi <= 0 ? trunc_value : 
           std::log( bkg_exp_time * fsubi );
@@ -507,12 +513,18 @@ template <typename ArrayType, typename ConstArrayType, typename DataType,
   inline int calc_wstat_stat( IndexType num, const ConstArrayType& yraw,
                               const ConstArrayType& model,
                               const iArrayType& data_size,
-                              const ConstArrayType& exposure_time,
+                              const ConstArrayType& exposure_src,
+                              const ConstArrayType& exposure_bkg,
                               const ConstArrayType& bkg,
                               const ConstArrayType& backscale_ratio,
                               ArrayType& fvec, DataType& stat,
                               const DataType trunc_value ) {
 
+  /* The initial attempt at including the areascal correction replaces
+     the exposure_time array (expected to have 2 * ndata elements,
+     alternating source and background values) with exposure_src
+     and exposure_bg arrays (each containing a value for each channel).
+  */
   const IndexType num_data_sets = data_size.get_size( );
 
   int offset = 0;
@@ -524,9 +536,8 @@ template <typename ArrayType, typename ConstArrayType, typename DataType,
     const double* bkg_raw = &bkg[ offset ];
     const double* ratio_backscale = &backscale_ratio[ offset ];
 
-
-    double resp_exp_time = exposure_time[ 2 * ii ];
-    double bkg_exp_time  = exposure_time[ 2 * ii + 1 ];
+    const double* resp_exp_time = &exposure_src[ offset ];
+    const double* bkg_exp_time  = &exposure_bkg[ offset ];
 
     my_calc_w_stat( data_size[ ii ], src_raw,
                     src_model, bkg_raw, ratio_backscale, &fvec[ offset ],
