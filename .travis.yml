@@ -73,8 +73,6 @@ before_install:
      wget --quiet $XPA_SITE$XPA_TAR;
      THIS_DIR=`pwd`;
      cd $MINICONDA/bin; tar xf $THIS_DIR/$DS9_TAR; tar xf $THIS_DIR/$XPA_TAR; cd -;
-     export DISPLAY=:99;
-     /sbin/start-stop-daemon --start --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16;
      sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
      export HEADAS=$MINICONDA/envs/build/Xspec/spectral;
      export LD_LIBRARY_PATH=$MINICONDA/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
