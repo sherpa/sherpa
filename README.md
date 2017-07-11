@@ -113,7 +113,7 @@ and then refer to section [1a](#1a-anaconda).
 Notice that section [1b](#1b-starting-from-scratch). only provides instructions on how to install a minimal
 Anaconda-powered environment, not the full Anaconda distribution.
 
-The Sherpa 4.8.2  release - which is the latest binary release - is
+The Sherpa 4.9.0  release - which is the latest binary release - is
 compatible with Python 2.7 and with Python 3.5.
 
 
@@ -221,8 +221,11 @@ The prerequisites for building from source are:
  - Python: `setuptools`, `numpy`
  - System: `gcc`, `g++`, `gfortran`, `make`, `flex`, `bison`
 
+The full test suite requires the `mock`, `pytest`, and `pytest-xvfb` packages,
+which should be installed automatically if needed.
+
 The current Sherpa code base works with Python 2.7 and 3.5 (as of the
-Sherpa 4.8.2 release); support for versions 3.3 and 3.4 is possible
+Sherpa 4.9.0 release); support for versions 3.3 and 3.4 is possible
 but would require community support.
 
 It is *highly* recommended that [`matplotlib`](http://matplotlib.org/)
@@ -326,6 +329,14 @@ point you can re-install Sherpa.
 
 The same issue may occur if you install the Sherpa binary release and
 then try to build Sherpa from source in the same environment.
+
+When both the [DS9 image viewer](http://ds9.si.edu/site/Home.html) and
+[XPA toolset](http://hea-www.harvard.edu/RD/xpa/) are installed, the
+test suite will include tests that check that DS9 can be used from
+Sherpa. This causes several copies of the DS9 viewer to be created,
+which can be distracting, as it can cause loss of mouse focus (depending
+on how X-windows is set up). This can be avoided by installing the 
+[X virtual-frame buffer (Xvfb)](https://en.wikipedia.org/wiki/Xvfb).
 
 
 Testing Sherpa
@@ -537,8 +548,10 @@ capabilities to the [CIAO](http://cxc.harvard.edu/ciao/) analysis package. It
 has been released onto [GitHub](https://github.com/sherpa/sherpa) for users to
 extend (whether to other areas of Astronomy or in other domains).
 
-Previous releases
------------------
+Release History
+---------------
+
+4.9.0: 27 January 2017 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.260416.svg)](https://doi.org/10.5281/zenodo.260416)
 
 4.8.2: 23 September 2016 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.154744.svg)](https://doi.org/10.5281/zenodo.154744)
 
