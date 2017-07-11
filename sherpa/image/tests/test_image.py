@@ -21,14 +21,12 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 import tempfile
-
 import os
 import sherpa
 from sherpa.image import Image, DataImage, ModelImage, RatioImage, \
     ResidImage
 
 from sherpa.utils import requires_ds9
-
 
 # Create a rectangular array for the tests just to ensure that
 # there are no issues with Fortran/C order.

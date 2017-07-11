@@ -20,8 +20,8 @@
 import unittest
 from tempfile import NamedTemporaryFile
 
-from sherpa.utils import requires_fits, requires_xspec
 from sherpa.astro import ui
+from sherpa.utils import has_package_from_list
 from numpy.testing import assert_almost_equal
 import logging
 import sys
@@ -132,7 +132,9 @@ class SmokeTest(unittest.TestCase):
         observed = [model.c0.val, model.c1.val]
         assert_almost_equal(observed, expected)
 
-    @requires_fits
+    # Using skipIf directly as we need these tests to run when there is no pytest installed, so we can't use
+    # the decorators in sherpa.utils.testing
+    @unittest.skipIf(not has_package_from_list('pyfits', 'astropy.io.fits', 'pycrates'), reason="Requires fits backend")
     def test_fits_io(self):
         """
         Test that basic FITS I/O functions work.
@@ -144,7 +146,7 @@ class SmokeTest(unittest.TestCase):
         with NamedTemporaryFile() as f:
             ui.save_pha(f.name, ascii=False, clobber=True)
 
-    @requires_xspec
+    @unittest.skipIf(not has_package_from_list('sherpa.astro.xspec'), reason="Requires xspec")
     def test_xspec(self):
         """
         Perform a very simple fit with an xspec model.

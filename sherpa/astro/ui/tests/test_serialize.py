@@ -46,14 +46,14 @@ from numpy.testing import assert_array_equal
 
 from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_xspec, \
-    _has_package_from_list, requires_fits, requires_group
+    has_package_from_list, requires_fits, requires_group
 from sherpa.astro import ui
 # from sherpa.astro.ui import serialize
 
 import logging
 logger = logging.getLogger('sherpa')
 
-has_xspec = _has_package_from_list("sherpa.astro.xspec")
+has_xspec = has_package_from_list("sherpa.astro.xspec")
 
 # The tests can either check that the output ASCII is identical
 # to a canonical form, or try to execute the saved file and
