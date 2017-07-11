@@ -537,8 +537,10 @@ capabilities to the [CIAO](http://cxc.harvard.edu/ciao/) analysis package. It
 has been released onto [GitHub](https://github.com/sherpa/sherpa) for users to
 extend (whether to other areas of Astronomy or in other domains).
 
-Previous releases
------------------
+Release History
+---------------
+
+4.9.0: 27 January 2017 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.260416.svg)](https://doi.org/10.5281/zenodo.260416)
 
 4.8.2: 23 September 2016 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.154744.svg)](https://doi.org/10.5281/zenodo.154744)
 
