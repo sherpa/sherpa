@@ -98,7 +98,10 @@ if have_astropy:
     astropy_warnings = {
         AstropyDeprecationWarning:
         [
+            # leave in the 1.3 warning since there was a release version
+            # with this message in
             r".*clobber.*deprecated.*1.3",
+            r".*clobber.*deprecated.*2.0",
         ],
     }
     known_warnings.update(astropy_warnings)
