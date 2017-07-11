@@ -27,8 +27,6 @@ import logging
 import sys
 import os
 
-from sherpa.utils.err import RuntimeErr
-
 logger = logging.getLogger("sherpa")
 
 
