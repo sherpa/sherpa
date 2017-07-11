@@ -103,6 +103,11 @@ if have_astropy:
             r".*clobber.*deprecated.*1.3",
             r".*clobber.*deprecated.*2.0",
         ],
+        # See bug #372 on GitHub
+        ImportWarning:
+        [
+            r"can't resolve.*__spec__.*__package__.*",
+        ],
     }
     known_warnings.update(astropy_warnings)
 
