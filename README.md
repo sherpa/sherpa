@@ -113,7 +113,7 @@ and then refer to section [1a](#1a-anaconda).
 Notice that section [1b](#1b-starting-from-scratch). only provides instructions on how to install a minimal
 Anaconda-powered environment, not the full Anaconda distribution.
 
-The Sherpa 4.8.2  release - which is the latest binary release - is
+The Sherpa 4.9.0  release - which is the latest binary release - is
 compatible with Python 2.7 and with Python 3.5.
 
 
@@ -222,7 +222,7 @@ The prerequisites for building from source are:
  - System: `gcc`, `g++`, `gfortran`, `make`, `flex`, `bison`
 
 The current Sherpa code base works with Python 2.7 and 3.5 (as of the
-Sherpa 4.8.2 release); support for versions 3.3 and 3.4 is possible
+Sherpa 4.9.0 release); support for versions 3.3 and 3.4 is possible
 but would require community support.
 
 It is *highly* recommended that [`matplotlib`](http://matplotlib.org/)
