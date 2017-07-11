@@ -103,7 +103,7 @@ def get_config():
     return os.path.join(os.path.dirname(__file__), filename)
 
 
-def smoke(verbosity=0, require_failure=False, fits=None, xspec=False):
+def smoke(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
     """
     Run Sherpa's "smoke" test. The smoke test is a simple test that
         ensures the Sherpa installation is functioning. It is not a complete
@@ -128,10 +128,10 @@ def smoke(verbosity=0, require_failure=False, fits=None, xspec=False):
     The method raises the SystemExit if errors are found during the smoke test
     """
     from sherpa.astro.utils import smoke
-    smoke.run(verbosity=verbosity, require_failure=require_failure, fits=fits, xspec=xspec)
+    smoke.run(verbosity=verbosity, require_failure=require_failure, fits=fits, xspec=xspec, ds9=ds9)
 
 
-def _smoke_cli(verbosity=0, require_failure=False, fits=None, xspec=False):
+def _smoke_cli(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("-v", "--verbosity", dest="verbosity",
@@ -142,6 +142,8 @@ def _smoke_cli(verbosity=0, require_failure=False, fits=None, xspec=False):
                       help="require a specific fits module to be present")
     parser.add_option("-x", "--require-xspec", dest="xspec", action="store_true",
                       help="require xspec module")
+    parser.add_option("-d", "--require-ds9", dest="ds9", action="store_true",
+                      help="require DS9")
 
     options, _ = parser.parse_args()
 
@@ -149,8 +151,9 @@ def _smoke_cli(verbosity=0, require_failure=False, fits=None, xspec=False):
     verbosity = options.verbosity or verbosity
     require_failure = options.require_failure or require_failure
     fits = options.fits or fits
+    ds9 = options.ds9 or ds9
 
-    smoke(verbosity=verbosity, require_failure=require_failure, fits=fits, xspec=xspec)
+    smoke(verbosity=verbosity, require_failure=require_failure, fits=fits, xspec=xspec, ds9=ds9)
 
 
 def clitest():

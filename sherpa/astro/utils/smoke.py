@@ -27,10 +27,12 @@ import logging
 import sys
 import os
 
+from sherpa.utils.err import RuntimeErr
+
 logger = logging.getLogger("sherpa")
 
 
-def run(verbosity=0, require_failure=False, fits=None, xspec=False):
+def run(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
     """
     Run the smoke tests.
 
@@ -57,29 +59,44 @@ def run(verbosity=0, require_failure=False, fits=None, xspec=False):
     -------
     The function will exit with a non-zero exit status if any errors are detected.
     """
-    test_suite = SmokeTestSuite(require_failure=require_failure)
-    runner = unittest.TextTestRunner(verbosity=int(verbosity))
-    result = runner.run(test_suite)
 
     missing_requirements = []
 
-    if fits:
-        try:
-            __import__(fits, globals(), locals())
-        except ImportError:
-            missing_requirements.append(_import_error(fits, "fits"))
+    class DependencyTest(unittest.TestCase):
 
-    if xspec:
-        try:
-            import sherpa.astro.xspec
-        except ImportError:
-            missing_requirements.append(_import_error("xspec", "xspec"))
+        @unittest.skipIf(not fits, reason="FITS dependency not requested")
+        def test_fits_dependency(self):
+            try:
+                __import__(fits, globals(), locals())
+            except ImportError:
+                missing_requirements.append(_import_error(fits, "fits"))
+                raise
 
-    for missing in missing_requirements:
-        result.addFailure(None, missing)
+        @unittest.skipIf(not xspec, reason="XSPEC dependency not requested")
+        def test_xspec_dependency(self):
+            try:
+                import sherpa.astro.xspec
+            except ImportError:
+                missing_requirements.append(_import_error("xspec", "xspec"))
+                raise
 
+        @unittest.skipIf(not ds9, reason="DS9 dependency not requested")
+        def test_ds9_dependency(self):
+            try:
+                import sherpa.image.ds9_backend
+            except:
+                missing_requirements.append("ERROR: DS9 not usable or not in path")
+                raise
+
+    test_suite = SmokeTestSuite(require_failure=require_failure)
+    test_suite.addTest(unittest.makeSuite(DependencyTest))
+    runner = unittest.TextTestRunner(verbosity=int(verbosity))
+    result = runner.run(test_suite)
+
+    # This makes sure the exit status of the process is not OK, and prints out the
+    # missing dependencies, if any.
     if result is None or result.failures or result.errors or result.unexpectedSuccesses:
-        sys.exit("Test failures were detected")
+        sys.exit("Test failures were detected:\n{}".format("\n".join(missing_requirements)))
 
 
 class SmokeTest(unittest.TestCase):
@@ -221,4 +238,4 @@ class SmokeTestSuite(unittest.TestSuite):
 
 
 def _import_error(module, name):
-    sys.exit("ERROR: Requested {} as {} but module not found".format(module, name))
+    return "ERROR: Requested {} as {} but module not found".format(module, name)

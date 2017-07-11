@@ -96,7 +96,7 @@ install:
 
 script:
   # Build smoke test switches, to ensure requested dependencies are reachable
-  - if [ -n "${XSPECVER}" ]; then XSPECTEST="-x"; fi
+  - if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
   - if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
   - SMOKEVARS="${XSPECTEST} ${FITSTEST} -v 3"
 
