@@ -17,9 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa import smoke
-import pytest
 import mock
+import pytest
+from sherpa import smoke
 
 
 def test_success():
@@ -33,7 +33,7 @@ def test_failure():
     with pytest.raises(SystemExit) as cm:
         smoke(require_failure=True)
 
-    assert "Test failures were detected" == str(cm.value)
+    assert "Test failures were detected" in str(cm.value)
 
 
 @mock.patch.dict('sys.modules', astropy=None)
@@ -41,7 +41,7 @@ def test_fits_failure():
     with pytest.raises(SystemExit) as cm:
         smoke(fits="astropy")
 
-    assert "ERROR: Requested astropy as fits but module not found" == str(cm.value)
+    assert "ERROR: Requested astropy as fits but module not found" in str(cm.value)
 
 
 @mock.patch.dict('sys.modules', values={"sherpa.astro.xspec": None})
@@ -49,4 +49,4 @@ def test_xspec_failure():
     with pytest.raises(SystemExit) as cm:
         smoke(xspec=True)
 
-    assert "ERROR: Requested xspec as xspec but module not found" == str(cm.value)
+    assert "ERROR: Requested xspec as xspec but module not found" in str(cm.value)
