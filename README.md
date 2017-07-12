@@ -27,7 +27,7 @@
   - [XSPEC](#xspec)
   - [Other customization options](#other-customization-options)
 - [History](#history)
-  - [Previous releases](#previous-releases)
+  - [Release History](#release-history)
   
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
