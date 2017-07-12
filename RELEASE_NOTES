@@ -1,5 +1,41 @@
 Release Notes
 
+Sherpa 4.9.1
+============
+
+This version introduces full support for Python 3.6. It also fixes issues with non-Chandra response files, correctly
+handles the AREASCAL column in PHA files, and fixes a significant regression that was preventing user statistics from
+working in v4.8.2. It also introduces a number of smaller improvements and fixes. In particular, quite a few
+improvements have been made to the documentation and to the testing framework, including several new tests to improve
+stability.
+
+Details
+-------
+
+Infrastructure and minor non-functional changes have been omitted.
+
+#335 Fix `setup.py` install command
+  The `setup.py install` command was not enforcing the installation of the dependencies listed in `setup.py`. This has
+  been fixed.
+
+#368 Remove ds9 warnings when run under Python 3.6
+  Update the DS9 code so that external processes are cleaned up properly, so to remove the potential ResourceWarning
+  warnings when running DS9 on Python 3.6.
+
+#351 fix handling of AREASCAL column in PHA files (fix #350)
+  Add support for handling the AREASCAL value (either scalar of vector) for PHA data sets. This array is used in XMM
+  RGS data to handle missing chips.
+
+#358 Properly handle Swift RMF when using Astropy backend (fix #357)
+  A Swift RMF could not be read in when the AstroPy back end was in use. The problem was that the code did not support
+  RMF matrices that were not stored as variable-length arrays. This has now been fixed, and new tests have been added
+  for this kind of files.
+
+#343 Fix user statistics regression (fix #341)
+  A number of regressions were introduced in version 4.8.1 up to version 4.9.0, so user statistics that were properly
+  working in version 4.7 have not been working any more. This has been fixed, and a number of regression tests have
+  been added.
+
 Sherpa 4.9.0
 ============
 
