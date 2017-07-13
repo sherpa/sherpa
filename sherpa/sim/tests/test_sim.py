@@ -22,11 +22,12 @@ from __future__ import print_function
 import numpy
 import logging
 
+from sherpa.models.model import ArithmeticModel, Parameter
 from sherpa.data import Data1D
 from sherpa.models import Gauss1D, PowLaw1D
 from sherpa.fit import Fit
 from sherpa.stats import Cash, Chi2DataVar, CStat
-from sherpa.optmethods import NelderMead, LevMar
+from sherpa.optmethods import NelderMead, LevMar, MonCar
 from sherpa.estmethods import Covariance
 from sherpa.sim import *
 
@@ -55,24 +56,21 @@ class test_sim(SherpaTestCase):
              9.1826254677279469,
              2.5862083052721028,
              2.601619746022207,
-             47.262657692418749])
-        }
+             47.262657692418749])}
 
     _x = numpy.arange(0.1, 10.1, 0.1)
     _y = numpy.array(
-        [ 114, 47, 35, 30, 40, 27, 30, 26, 24, 20, 26, 35,
-          29, 28, 34, 36, 43, 39, 33, 47, 44, 46, 53, 56,
-          52, 53, 49, 57, 49, 36, 33, 42, 49, 45, 42, 32,
-          31, 34, 18, 24, 25, 11, 17, 17, 11,  9,  8,  5,
-           4, 10,  3,  4,  6,  3,  0,  2,  4,  4,  0,  1,
-           2,  0,  3,  3,  0,  2,  1,  2,  3,  0,  1,  0,
-           1,  0,  0,  1,  3,  3,  0,  2,  0,  0,  1,  2,
-           0,  1,  0,  1,  1,  0,  1,  1,  1,  1,  1,  1,
-           1,  0,  1,  0
-          ]
-        )
-    _err = numpy.ones(100)*0.4
-
+        [114, 47, 35, 30, 40, 27, 30, 26, 24, 20, 26, 35,
+         29, 28, 34, 36, 43, 39, 33, 47, 44, 46, 53, 56,
+         52, 53, 49, 57, 49, 36, 33, 42, 49, 45, 42, 32,
+         31, 34, 18, 24, 25, 11, 17, 17, 11, 9, 8, 5,
+         4, 10, 3, 4, 6, 3, 0, 2, 4, 4, 0, 1,
+         2, 0, 3, 3, 0, 2, 1, 2, 3, 0, 1, 0,
+         1, 0, 0, 1, 3, 3, 0, 2, 0, 0, 1, 2,
+         0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1,
+         1, 0, 1, 0
+         ])
+    _err = numpy.ones(100) * 0.4
 
     def setUp(self):
         data = Data1D('fake', self._x, self._y, self._err)
@@ -122,7 +120,6 @@ class test_sim(SherpaTestCase):
         self.mu = numpy.array(results.parvals)
         self.cov = numpy.array(covresults.extra_output)
         self.num = 10
-
 
     def test_student_t(self):
         multivariate_t(self.mu, self.cov, self.dof, self.num)
@@ -186,7 +183,6 @@ class test_sim(SherpaTestCase):
         results = LikelihoodRatioTest.run(self.fit, self.fit.model.lhs,
                                           self.fit.model, niter=25)
 
-
     def test_mh(self):
 
         self.fit.method = NelderMead()
@@ -210,14 +206,11 @@ class test_sim(SherpaTestCase):
 
         opt = mcmc.get_sampler_opt('defaultprior')
         mcmc.set_sampler_opt('defaultprior', opt)
-        #mcmc.set_sampler_opt('verbose', True)
-
         log = logging.getLogger("sherpa")
         level = log.level
         log.setLevel(logging.ERROR)
         stats, accept, params = mcmc.get_draws(self.fit, cov, niter=1e2)
         log.setLevel(level)
-
 
     def test_metropolisMH(self):
 
@@ -229,14 +222,72 @@ class test_sim(SherpaTestCase):
 
         mcmc = MCMC()
         mcmc.set_sampler('MetropolisMH')
-        #mcmc.set_sampler_opt('verbose', True)
-
         log = logging.getLogger("sherpa")
         level = log.level
         log.setLevel(logging.ERROR)
         stats, accept, params = mcmc.get_draws(self.fit, cov, niter=1e2)
         log.setLevel(level)
 
+    def test_get_draws(self):
+        class MyIntensity(ArithmeticModel):
+
+            def __init__(self, name='myintensity'):
+
+                intensities = numpy.array([6.16783998e-14, 0.0, 1.10089656e-14,
+                                           3.05143264e-19])
+                intensity_sigma = numpy.array([3.16762199e-15, 3.61623403e-16,
+                                               1.45172494e-15, 5.12478214e-20])
+                # parmins = numpy.array([4.58402898e-14, -1.80811702e-15,
+                #                        3.75034087e-15, 4.89041566e-20])
+                parmins = numpy.array([4.58402898e-14, 0.0,
+                                       3.75034087e-15, 4.89041566e-20])
+                parmaxs = intensities + 5.0 * intensity_sigma
+                self.s1 = Parameter(name, 's1', intensities[0], parmins[0],
+                                    parmaxs[0])
+                self.s2 = Parameter(name, 's2', intensities[1], parmins[1],
+                                    parmaxs[1])
+                self.s3 = Parameter(name, 's3', intensities[2], parmins[2],
+                                    parmaxs[2])
+                self.b4 = Parameter(name, 'b4', intensities[3], parmins[3],
+                                    parmaxs[3])
+
+                self.matrix = numpy.array([[6.17970278e+15, 8.08528651e+13,
+                                            1.19660778e+12, 2.86373348e+18],
+                                           [9.33040128e+13, 5.60438018e+15,
+                                            8.37625449e+12, 3.30606732e+18],
+                                           [6.13842189e+11, 2.88269978e+12,
+                                            5.34697541e+15, 3.60139047e+18],
+                                           [5.83150080e+14, 3.62945629e+14,
+                                            5.52566884e+14, 2.03622376e+20]])
+                return ArithmeticModel.__init__(self, name,
+                                                (self.s1, self.s2, self.s3,
+                                                 self.b4))
+
+            def calc(self, pars, x, *args, **kwargs):
+                npars = len(pars)
+                calculated_counts = numpy.zeros(npars)
+                for ii in xrange(npars):
+                    for jj in xrange(npars):
+                        calculated_counts[ii] += self.matrix[ii][jj] * pars[jj]
+                return calculated_counts
+
+        y = numpy.array([382, 4, 60, 104])
+        x = numpy.arange(len(y))
+        data = Data1D('test', x, y)
+        model = MyIntensity()
+        fit = Fit(data, model, stat=Cash(), method=MonCar())
+        result = fit.fit()
+        covar = fit.est_errors()
+        covar_matrix = covar.extra_output
+        for par in model.pars:
+            par._hard_min = 0.0
+
+        numpy.random.seed(1943)
+        mcmc = MCMC()
+        stats, accept, params = mcmc.get_draws(fit, covar_matrix, niter=5000)
+        inten2 = params[1]
+        negs = numpy.where(inten2 < 0)
+        assert len(negs[0]) == 0
 
     def tearDown(self):
         pass
