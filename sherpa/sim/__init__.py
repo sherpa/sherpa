@@ -690,8 +690,8 @@ class MCMC(NoNewAttributesAfterInit):
         def calc_stat(proposed_params):
 
             # automatic rejection outside hard limits
-            mins = thawedparmins < proposed_params
-            maxs = proposed_params < thawedparmaxes
+            mins = thawedparmins <= proposed_params
+            maxs = proposed_params <= thawedparmaxes
             if sum(mins) != dof or sum(maxs) != dof:
                 raise LimitError('Sherpa parameter hard limit exception')
 
