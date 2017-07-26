@@ -20,7 +20,6 @@
 
 from .clean import clean
 from .develop import develop
-from .install import install
 from .sdist import sdist
 from .test import PyTest
 from .sherpa_config import sherpa_config
@@ -28,7 +27,6 @@ from .xspec_config import xspec_config
 
 commands = {
     'clean': clean,
-    'install': install,
     'sdist': sdist,
     'develop': develop,
     'test': PyTest,
