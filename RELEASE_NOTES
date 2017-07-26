@@ -36,6 +36,11 @@ Infrastructure and minor non-functional changes have been omitted.
   working in version 4.7 have not been working any more. This has been fixed, and a number of regression tests have
   been added.
 
+#381 Fix `bdist_wheel` command
+  We reviewed our customization of the setuptools commands as we realized that a recent bug fix (#335) introduced a
+  regression in the bdist_wheel command used by pip to build Sherpa from source distributions. Both commands should now
+  properly work.
+
 Sherpa 4.9.0
 ============
 
