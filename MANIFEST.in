@@ -1,5 +1,4 @@
 graft extern
-graft recipes
 
 include versioneer.py
 
