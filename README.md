@@ -27,7 +27,7 @@
   - [XSPEC](#xspec)
   - [Other customization options](#other-customization-options)
 - [History](#history)
-  - [Previous releases](#previous-releases)
+  - [Release History](#release-history)
   
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -74,9 +74,7 @@ How To Install Sherpa
 =====================
 
 Sherpa can be installed from a binary distribution or built from
-sources. The 4.9.0 release is available for both Python 2.7 and 3.5.
-Support for Python 3.5 has greatly improved in version 4.9.0. Sherpa should be
-compatible with Python 3.6, but testing on this platform has been minimal.
+sources. The 4.9.1 release is available for Python 2.7, 3.5, and 3.6.
 
 The binary distribution is available for Linux and Mac OS X via conda installation 
 described in sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch). This is the fastest
@@ -113,7 +111,7 @@ and then refer to section [1a](#1a-anaconda).
 Notice that section [1b](#1b-starting-from-scratch). only provides instructions on how to install a minimal
 Anaconda-powered environment, not the full Anaconda distribution.
 
-The Sherpa 4.9.0  release - which is the latest binary release - is
+The Sherpa 4.9.1  release - which is the latest binary release - is
 compatible with Python 2.7 and with Python 3.5.
 
 
@@ -224,8 +222,8 @@ The prerequisites for building from source are:
 The full test suite requires the `mock`, `pytest`, and `pytest-xvfb` packages,
 which should be installed automatically if needed.
 
-The current Sherpa code base works with Python 2.7 and 3.5 (as of the
-Sherpa 4.9.0 release); support for versions 3.3 and 3.4 is possible
+The current Sherpa code base works with Python 2.7, 3.5, and 3.6 (as of the
+Sherpa 4.9.1 release); support for versions 3.3 and 3.4 is possible
 but would require community support.
 
 It is *highly* recommended that [`matplotlib`](http://matplotlib.org/)
@@ -267,12 +265,12 @@ You can clone the Sherpa repository with:
     $ git clone https://github.com/sherpa/sherpa
     $ cd sherpa
 
-The most stable code is available through the 4.9.0 tag. The main
+The most stable code is available through the 4.9.1 tag. The main
 development code, which is unstable, is available in the `master`
 branch. New features and bug fixes or other, even less stable versions
 of the code may be available in other branches.
 
-The master branch supports both Python 2.7 and Python 3.5 (4.9.0 tag). Note the
+The master branch supports Python 2.7, 3.5, and 3.6 (4.9.1 tag). Note the
 4.8.1 tag and earlier are only compatible with Python 2.7.
 
 ### 2c. Build Sherpa
@@ -360,7 +358,7 @@ was installed.
 The external test data files can be
 installed from GitHub channel by saying:
 
-    $ pip install https://github.com/sherpa/sherpa-test-data/archive/4.9.0.tar.gz
+    $ pip install https://github.com/sherpa/sherpa-test-data/archive/4.9.1.tar.gz
 
 At this point, `sherpa_test` will pick up the data and so run more
 tests.
@@ -550,6 +548,8 @@ extend (whether to other areas of Astronomy or in other domains).
 
 Release History
 ---------------
+
+4.9.1: 01 August 2017 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.825839.svg)](https://doi.org/10.5281/zenodo.825839)
 
 4.9.0: 27 January 2017 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.260416.svg)](https://doi.org/10.5281/zenodo.260416)
 
