@@ -109,7 +109,8 @@ class DataARF(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
+            self._fields = tuple(filter((lambda x: x != 'header'),
+                                        self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -184,7 +185,8 @@ class DataRMF(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
+            self._fields = tuple(filter((lambda x: x != 'header'),
+                                        self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -206,7 +208,8 @@ class DataRMF(Data1DInt):
                 src = rebin(src, pha[0], pha[1], rmf[0], rmf[1])
 
         if len(src) != len(self._lo):
-            raise TypeError("Mismatched filter between ARF and RMF or PHA and RMF")
+            raise TypeError("Mismatched filter between ARF and RMF " +
+                            "or PHA and RMF")
 
         return rmf_fold(src, self._grp, self._fch, self._nch, self._rsp,
                         self.detchans, self.offset)
@@ -474,7 +477,8 @@ class DataPHA(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
+            self._fields = tuple(filter((lambda x: x != 'header'),
+                                        self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -536,7 +540,7 @@ class DataPHA(Data1DInt):
     def set_response(self, arf=None, rmf=None, id=None):
         if (arf is None) and (rmf is None):
             return
-        # Multiple responses re-enabled for CIAOX
+
         id = self._fix_response_id(id)
         self._responses[id] = (arf, rmf)
         ids = self.response_ids[:]
@@ -1087,7 +1091,7 @@ class DataPHA(Data1DInt):
             if (hasattr(bkg, "group_counts")):
                 bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
 
-    ### DOC-TODO: see discussion in astro.ui.utils regarding errorCol
+    # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_snr(self, snr, maxLength=None, tabStops=None, errorCol=None):
         """Group into a minimum signal-to-noise ratio.
 
@@ -1198,7 +1202,7 @@ class DataPHA(Data1DInt):
                 bkg.group_adapt(minimum, maxLength=maxLength,
                                 tabStops=tabStops)
 
-    ### DOC-TODO: see discussion in astro.ui.utils regarding errorCol
+    # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_adapt_snr(self, minimum, maxLength=None, tabStops=None,
                         errorCol=None):
         """Adaptively group to a minimum signal-to-noise ratio.
@@ -2017,7 +2021,8 @@ class DataIMG(Data2D):
         old = self._fields
         ss = old
         try:
-            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
+            self._fields = tuple(filter((lambda x: x != 'header'),
+                                        self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
