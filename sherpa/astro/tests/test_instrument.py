@@ -32,6 +32,8 @@ TODO:
 
 """
 
+import warnings
+
 import numpy as np
 from numpy.testing import assert_allclose
 
@@ -62,6 +64,8 @@ def divbyzero(request, recwarn):
     warnings (unless several such fixtures are used in the
     correct order, but I haven't looked to see if there's any
     guarantee of order of when fixutres are run).
+
+    It also doesn't seem to work with Pyton 2.7.
     """
 
     # Could make this test specific on the Python version, but it
@@ -73,6 +77,20 @@ def divbyzero(request, recwarn):
                             'divide by zero encountered in true_divide']
 
     request.addfinalizer(fin)
+
+
+def validate_divide_by_zero(ws):
+    """Ensure that there is one warning, divide-by-zero."""
+
+    assert len(ws) == 1
+    w = ws[0]
+    assert w.category == RuntimeWarning
+
+    # The following could e made to depend on python 2 or 3, but
+    # for now leave this.
+    emsgs = ["divide by zero encountered in divide",
+             "divide by zero encountered in true_divide"]
+    assert str(w.message) in emsgs
 
 
 # Create instrument responses for testing.
@@ -1445,7 +1463,8 @@ class MyPowLaw1D(PowLaw1D):
         return out
 
 
-def test_arf1d_no_pha_zero_energy_bin(divbyzero):
+# def test_arf1d_no_pha_zero_energy_bin(divbyzero):
+def test_arf1d_no_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
     exposure = 0.1
@@ -1459,16 +1478,20 @@ def test_arf1d_no_pha_zero_energy_bin(divbyzero):
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    wrapped = arf(mdl)
-    out = wrapped([0.1, 0.2])
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        wrapped = arf(mdl)
+        validate_divide_by_zero(ws)
 
+    out = wrapped([0.1, 0.2])
     expected = exposure * specresp * tmdl(elo, ehi)
 
     assert_allclose(out[1:], expected[1:])
     assert np.isnan(out[0])
 
 
-def test_arf1d_pha_zero_energy_bin(divbyzero):
+# def test_arf1d_pha_zero_energy_bin(divbyzero):
+def test_arf1d_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
     # Note: the two exposures are different to check which is
@@ -1494,16 +1517,20 @@ def test_arf1d_pha_zero_energy_bin(divbyzero):
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    wrapped = ARFModelPHA(arf, pha, mdl)
-    out = wrapped([0.1, 0.2])
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        wrapped = ARFModelPHA(arf, pha, mdl)
+        validate_divide_by_zero(ws)
 
+    out = wrapped([0.1, 0.2])
     expected = specresp * tmdl(elo, ehi)
 
     assert_allclose(out[1:], expected[1:])
     assert np.isnan(out[0])
 
 
-def test_rmf1d_delta_no_pha_zero_energy_bin(divbyzero):
+# def test_rmf1d_delta_no_pha_zero_energy_bin(divbyzero):
+def test_rmf1d_delta_no_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
     egrid = np.asarray([0.0, 0.1, 0.2, 0.4, 0.5, 0.7, 0.8])
@@ -1515,16 +1542,20 @@ def test_rmf1d_delta_no_pha_zero_energy_bin(divbyzero):
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    wrapped = rmf(mdl)
-    out = wrapped([0.1, 0.2])
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        wrapped = rmf(mdl)
+        validate_divide_by_zero(ws)
 
+    out = wrapped([0.1, 0.2])
     expected = tmdl(elo, ehi)
 
     assert_allclose(out[1:], expected[1:])
     assert np.isnan(out[0])
 
 
-def test_rmf1d_delta_pha_zero_energy_bin(divbyzero):
+# def test_rmf1d_delta_pha_zero_energy_bin(divbyzero):
+def test_rmf1d_delta_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
     egrid = np.asarray([0.0, 0.1, 0.2, 0.4, 0.5, 0.7, 0.8])
@@ -1544,16 +1575,20 @@ def test_rmf1d_delta_pha_zero_energy_bin(divbyzero):
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    wrapped = RMFModelPHA(rdata, pha, mdl)
-    out = wrapped([0.1, 0.2])
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        wrapped = RMFModelPHA(rdata, pha, mdl)
+        validate_divide_by_zero(ws)
 
+    out = wrapped([0.1, 0.2])
     expected = tmdl(elo, ehi)
 
     assert_allclose(out[1:], expected[1:])
     assert np.isnan(out[0])
 
 
-def test_rsp1d_delta_no_pha_zero_energy_bin(divbyzero):
+# def test_rsp1d_delta_no_pha_zero_energy_bin(divbyzero):
+def test_rsp1d_delta_no_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
     exposure = 0.1
@@ -1567,16 +1602,20 @@ def test_rsp1d_delta_no_pha_zero_energy_bin(divbyzero):
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    wrapped = RSPModelNoPHA(adata, rdata, mdl)
-    out = wrapped([0.1, 0.2])
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        wrapped = RSPModelNoPHA(adata, rdata, mdl)
+        validate_divide_by_zero(ws)
 
+    out = wrapped([0.1, 0.2])
     expected = specresp * tmdl(elo, ehi)
 
     assert_allclose(out[1:], expected[1:])
     assert np.isnan(out[0])
 
 
-def test_rsp1d_delta_pha_zero_energy_bin(divbyzero):
+# def test_rsp1d_delta_pha_zero_energy_bin(divbyzero):
+def test_rsp1d_delta_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
     # PHA and ARF have different exposure ties
@@ -1601,16 +1640,20 @@ def test_rsp1d_delta_pha_zero_energy_bin(divbyzero):
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    wrapped = RSPModelPHA(adata, rdata, pha, mdl)
-    out = wrapped([0.1, 0.2])
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        wrapped = RSPModelPHA(adata, rdata, pha, mdl)
+        validate_divide_by_zero(ws)
 
+    out = wrapped([0.1, 0.2])
     expected = specresp * tmdl(elo, ehi)
 
     assert_allclose(out[1:], expected[1:])
     assert np.isnan(out[0])
 
 
-def test_rsp1d_matrix_pha_zero_energy_bin(divbyzero):
+# def test_rsp1d_matrix_pha_zero_energy_bin(divbyzero):
+def test_rsp1d_matrix_pha_zero_energy_bin():
     """What happens when the first bin starts at 0?
 
     Unlike test_rsp1d_delta_pha_zero_energy_bin this directly
@@ -1643,13 +1686,13 @@ def test_rsp1d_matrix_pha_zero_energy_bin(divbyzero):
     pha.set_analysis('energy')
 
     mdl = MyPowLaw1D()
-    tmdl = PowLaw1D()
 
     rsp = Response1D(pha)
 
-    # This raises a division-by-zero error, which the divbyzero fixture
-    # checks for.
-    wrapped = rsp(mdl)
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        wrapped = rsp(mdl)
+        validate_divide_by_zero(ws)
 
     # Evaluate the statistic / model to get NaN
     #
