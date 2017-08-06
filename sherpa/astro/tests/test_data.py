@@ -17,9 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
+import numpy as np
 from sherpa.astro.ui.utils import Session
-from sherpa.astro.data import DataPHA
+from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.utils.testing import SherpaTestCase, requires_data, requires_fits
 
 import logging
@@ -28,13 +28,13 @@ logger = logging.getLogger('sherpa')
 
 class test_filter_energy_grid(SherpaTestCase):
 
-    _notice = numpy.ones(46, dtype=bool)
+    _notice = np.ones(46, dtype=bool)
     _notice[44:46] = False
 
-    _ignore = numpy.zeros(46, dtype=bool)
+    _ignore = np.zeros(46, dtype=bool)
     _ignore[14:33] = True
 
-    _emin = numpy.array([
+    _emin = np.array([
         1.46000006e-03, 2.48199999e-01, 3.06600004e-01, 4.67200011e-01,
         5.69400012e-01, 6.42400026e-01, 7.00800002e-01, 7.44599998e-01,
         7.88399994e-01, 8.17600012e-01, 8.61400008e-01, 8.90600026e-01,
@@ -46,9 +46,9 @@ class test_filter_energy_grid(SherpaTestCase):
         2.71560001e+00, 2.86159992e+00, 3.08060002e+00, 3.38720012e+00,
         3.56240010e+00, 3.79600000e+00, 4.02960014e+00, 4.24860001e+00,
         4.71579981e+00, 5.02239990e+00, 5.37279987e+00, 5.89839983e+00,
-        6.57000017e+00, 9.86960030e+00], numpy.float)
+        6.57000017e+00, 9.86960030e+00], np.float)
 
-    _emax = numpy.array([
+    _emax = np.array([
         0.2482    , 0.3066    , 0.46720001, 0.56940001, 0.64240003,
         0.7008    , 0.7446    , 0.78839999, 0.81760001, 0.86140001,
         0.89060003, 0.949     , 0.9928    , 1.03659999, 1.09500003,
@@ -58,13 +58,13 @@ class test_filter_energy_grid(SherpaTestCase):
         2.58419991, 2.71560001, 2.86159992, 3.08060002, 3.38720012,
         3.5624001 , 3.796     , 4.02960014, 4.24860001, 4.71579981,
         5.0223999 , 5.37279987, 5.89839983, 6.57000017, 9.8696003 ,
-        14.95040035], numpy.float)
+        14.95040035], np.float)
 
     def setUp(self):
         self.old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
-        self.pha = DataPHA('', numpy.arange(46, dtype=float) + 1.,
-                           numpy.zeros(46),
+        self.pha = DataPHA('', np.arange(46, dtype=float) + 1.,
+                           np.zeros(46),
                            bin_lo=self._emin,
                            bin_hi=self._emax)
         self.pha.units = "energy"
@@ -75,25 +75,25 @@ class test_filter_energy_grid(SherpaTestCase):
     def test_notice(self):
         self.pha.notice()
         self.pha.notice(0.0, 6.0)
-        assert (self._notice == numpy.asarray(self.pha.mask)).all()
+        assert (self._notice == np.asarray(self.pha.mask)).all()
 
     def test_ignore(self):
         self.pha.notice()
         self.pha.ignore(0.0, 1.0)
         self.pha.ignore(3.0, 15.0)
-        assert (self._ignore == numpy.asarray(self.pha.mask)).all()
+        assert (self._ignore == np.asarray(self.pha.mask)).all()
 
 
 class test_filter_energy_grid_reversed(SherpaTestCase):
 
-    _notice = numpy.zeros(204, dtype=bool)
+    _notice = np.zeros(204, dtype=bool)
     _notice[0:42] = True
 
-    _ignore = numpy.ones(204, dtype=bool)
+    _ignore = np.ones(204, dtype=bool)
     _ignore[66:70] = False
     _ignore[0:17] = False
 
-    _emin = numpy.array([
+    _emin = np.array([
         2.39196181, 2.35973215, 2.34076023, 2.30973101, 2.2884388,
         2.25861454, 2.22371697, 2.20662117, 2.18140674, 2.14317489,
         2.12185216, 2.09055495, 2.06256914, 2.04509854, 2.02788448,
@@ -134,9 +134,9 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.37154216, 0.36742872, 0.3641032 , 0.36167556, 0.35983625,
         0.35634032, 0.35248783, 0.35085678, 0.34843227, 0.34669766,
         0.34418666, 0.33912122, 0.33720407, 0.33505177, 0.33279634,
-        0.33081138, 0.32847831, 0.32592943, 0.3111549 ], numpy.float)
+        0.33081138, 0.32847831, 0.32592943, 0.3111549 ], np.float)
 
-    _emax = numpy.array([
+    _emax = np.array([
         3.06803656, 2.39196181, 2.35973215, 2.34076023, 2.30973101,
         2.2884388 , 2.25861454, 2.22371697, 2.20662117, 2.18140674,
         2.14317489, 2.12185216, 2.09055495, 2.06256914, 2.04509854,
@@ -177,11 +177,11 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
         0.37347662, 0.37154216, 0.36742872, 0.3641032 , 0.36167556,
         0.35983625, 0.35634032, 0.35248783, 0.35085678, 0.34843227,
         0.34669766, 0.34418666, 0.33912122, 0.33720407, 0.33505177,
-        0.33279634, 0.33081138, 0.32847831, 0.32592943], numpy.float)
+        0.33279634, 0.33081138, 0.32847831, 0.32592943], np.float)
 
     def setUp(self):
-        self.pha = DataPHA('', numpy.arange(204, dtype=float) + 1.,
-                           numpy.zeros(204),
+        self.pha = DataPHA('', np.arange(204, dtype=float) + 1.,
+                           np.zeros(204),
                            bin_lo=self._emin,
                            bin_hi=self._emax)
         self.pha.units = "energy"
@@ -192,32 +192,32 @@ class test_filter_energy_grid_reversed(SherpaTestCase):
     def test_notice(self):
         self.pha.notice()
         self.pha.notice(4., 8.3)
-        assert (self._notice == numpy.asarray(self.pha.mask)).all()
+        assert (self._notice == np.asarray(self.pha.mask)).all()
 
     def test_ignore(self):
         self.pha.notice()
         self.pha.ignore(10.3, 13.8)
         self.pha.ignore(4.6, 6.2)
-        assert (self._ignore == numpy.asarray(self.pha.mask)).all()
+        assert (self._ignore == np.asarray(self.pha.mask)).all()
 
 
 class test_filter_wave_grid(SherpaTestCase):
 
-    _notice = numpy.ones(16384, dtype=bool)
+    _notice = np.ones(16384, dtype=bool)
     _notice[8465:16384] = False
 
-    _ignore = numpy.zeros(16384, dtype=bool)
+    _ignore = np.zeros(16384, dtype=bool)
     _ignore[14064:15984] = True
 
-    _emin = numpy.arange(205.7875, 0.9875, -0.0125)
+    _emin = np.arange(205.7875, 0.9875, -0.0125)
 
     _emax = _emin + 0.0125
 
     def setUp(self):
         self.old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
-        self.pha = DataPHA('', numpy.arange(16384, dtype=float) + 1,
-                           numpy.zeros(16384),
+        self.pha = DataPHA('', np.arange(16384, dtype=float) + 1,
+                           np.zeros(16384),
                            bin_lo=self._emin,
                            bin_hi=self._emax)
 
@@ -228,14 +228,14 @@ class test_filter_wave_grid(SherpaTestCase):
         self.pha.units = 'wavelength'
         self.pha.notice()
         self.pha.notice(100.0, 225.0)
-        assert (self._notice == numpy.asarray(self.pha.mask)).all()
+        assert (self._notice == np.asarray(self.pha.mask)).all()
 
     def test_ignore(self):
         self.pha.units = 'wavelength'
         self.pha.notice()
         self.pha.ignore(30.01, 225.0)
         self.pha.ignore(0.1, 6.0)
-        assert (self._ignore == numpy.asarray(self.pha.mask)).all()
+        assert (self._ignore == np.asarray(self.pha.mask)).all()
 
 
 # It would be nice to add some unit testing here, but it's not trivial
@@ -251,3 +251,165 @@ def test_bug_275(make_data_path):
 
     session.load_data(make_data_path('img.fits'))
     str(session.get_data())
+
+
+# Test some simple "invalid input" cases. Unfortunately some of them
+# are seen with released data products, so it is not sensible to
+# error out for all errors.
+#
+# The create_arf/create_delta_rmf routines are similar to those in
+# test_instrument.py
+#
+def create_arf(elo, ehi, specresp=None, exposure=None):
+    """Create an ARF.
+
+    Parameters
+    ----------
+    elo, ehi : array
+        The energy bins (low and high, in keV) for the ARF. It is
+        assumed that ehi_i > elo_i, elo_j > 0, the energy bins are
+        either ascending - so elo_i+1 > elo_i - or descending
+        (elo_i+1 < elo_i), and that there are no overlaps.
+    specresp : None or array, optional
+        The spectral response (in cm^2) for the ARF. It is assumed
+        to be >= 0. If not given a flat response of 1.0 is used.
+    exposure : number or None, optional
+        If not None, the exposure of the ARF in seconds.
+
+    Returns
+    -------
+    arf : DataARF instance
+
+    """
+
+    assert elo.size == ehi.size
+    assert (exposure is None) or (exposure > 0.0)
+
+    if specresp is None:
+        specresp = np.ones(elo.size, dtype=np.float32)
+
+    return DataARF('test-arf', energ_lo=elo, energ_hi=ehi,
+                   specresp=specresp, exposure=exposure)
+
+
+def create_delta_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None):
+    """Create a RMF for a delta-function response.
+
+    This is a "perfect" (delta-function) response.
+
+    Parameters
+    ----------
+    rmflo, rmfhi : array
+        The energy bins (low and high, in keV) for the RMF.
+        It is assumed that emfhi_i > rmflo_i, rmflo_j > 0, that the energy
+        bins are either ascending, so rmflo_i+1 > rmflo_i or descending
+        (rmflo_i+1 < rmflo_i), and that there are no overlaps.
+        These correspond to the Elow and Ehigh columns (represented
+        by the ENERG_LO and ENERG_HI columns of the MATRIX block) of
+        the OGIP standard.
+    startchan : int, optional
+        The starting channel number: expected to be 0 or 1 but this is
+        not enforced.
+    e_min, e_max : None or array, optional
+        The E_MIN and E_MAX columns of the EBOUNDS block of the
+        RMF.
+
+    Returns
+    -------
+    rmf : DataRMF instance
+
+    Notes
+    -----
+    I do not think I have the startchan=0 case correct (does the
+    f_chan array have to change?).
+    """
+
+    assert rmflo.size == rmfhi.size
+    assert startchan >= 0
+
+    # Set up the delta-function response.
+    # TODO: should f_chan start at startchan?
+    #
+    nchans = rmflo.size
+    matrix = np.ones(nchans, dtype=np.float32)
+    dummy = np.ones(nchans, dtype=np.int16)
+    f_chan = np.arange(1, nchans + 1, dtype=np.int16)
+
+    return DataRMF('delta-rmf', detchans=nchans,
+                   energ_lo=rmflo, energ_hi=rmfhi,
+                   n_grp=dummy, n_chan=dummy,
+                   f_chan=f_chan, matrix=matrix,
+                   offset=startchan,
+                   e_min=e_min, e_max=e_max)
+
+
+def test_arf_with_zero_energy_elem():
+    """What happens creating an ARf with a zero-energy element.
+
+    This is for the invalid, but not uncommon, case where the
+    first bin starts at E=0 keV.
+    """
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+    specresp = energ_lo * 0 + 1.0
+
+    adata = create_arf(energ_lo, energ_hi, specresp)
+    assert isinstance(adata, DataARF)
+    assert adata.energ_lo[0] <= 0.0
+
+
+def test_rmf_with_zero_energy_elem():
+    """What happens creating a RMf with a zero-energy element.
+
+    This is for the invalid, but not uncommon, case where the
+    first bin starts at E=0 keV.
+    """
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    rdata = create_delta_rmf(energ_lo, energ_hi)
+    assert isinstance(rdata, DataRMF)
+    assert rdata.energ_lo[0] <= 0.0
+
+
+def test_arf_with_negative_energy_elem():
+    """What happens creating an ARf with negative energies.
+
+    Hopefully we do not have files like this in use.
+    """
+
+    # Special case it so that the first in ends at 0 keV
+    energy = np.arange(0, 1.0, 0.1, dtype=np.float32)
+    energy = energy - energy[1]
+
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+    specresp = energ_lo * 0 + 1.0
+
+    adata = create_arf(energ_lo, energ_hi, specresp)
+    assert isinstance(adata, DataARF)
+    assert adata.energ_lo[0] < 0.0
+    assert adata.energ_hi[0] <= 0.0
+
+
+def test_rmf_with_negative_energy_elem():
+    """What happens creating an ARf with negative energies.
+
+    Hopefully we do not have files like this in use.
+    """
+
+    # Special case it so that the first in ends at 0 keV
+    energy = np.arange(0, 1.0, 0.1, dtype=np.float32)
+    energy = energy - energy[1]
+
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    rdata = create_delta_rmf(energ_lo, energ_hi)
+    assert isinstance(rdata, DataRMF)
+    assert rdata.energ_lo[0] < 0.0
+    assert rdata.energ_hi[0] <= 0.0
