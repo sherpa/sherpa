@@ -84,14 +84,14 @@ def _notice_resp(chans, arf, rmf):
             arf.notice(bin_mask)
 
 
-def validate_ogip_energy_ranges(rtype, label, elo, ehi, emin=None):
+def validate_ogip_energy_ranges(rtype, label, elo, ehi, ethresh=None):
     """Check the lo/hi values are > 0, handling common error case.
 
     Several checks are made, to make sure the parameters follow
     the OGIP standard. If the checks fail a DataErr is raised.
-    When emin is set, the case where the low-edge of the start bin
+    When ethresh is set, the case where the low-edge of the start bin
     is zero is treated as a special case rather than an error.
-    If a replacement is made (i.e. the low edge is set to emin) then
+    If a replacement is made (i.e. the low edge is set to ethresh) then
     a warning is displayed.
 
     Parameters
@@ -103,10 +103,10 @@ def validate_ogip_energy_ranges(rtype, label, elo, ehi, emin=None):
     elo, ehi : numpy arrays
         The input ENERG_LO and ENERG_HI arrays. They are assumed
         to be one-dimensional and have the same number of elements.
-    emin : None or float, optional
+    ethresh : None or float, optional
         If None, then elo must be greater than 0. When set, the
         start bin can have a low-energy edge of 0; it is replaced
-        by emin. If set, emin must be greater than 0.
+        by ethresh. If set, ethresh must be greater than 0.
 
     Returns
     -------
@@ -127,14 +127,14 @@ def validate_ogip_energy_ranges(rtype, label, elo, ehi, emin=None):
       - elo is monotonic (ascending or descending)
       - when emin is set, the lowest value in elo is >= 0,
         otherwise it is > 0.
-      - emin (if set) is less than the minimum value in ENERG_HI
+      - ethresh (if set) is less than the minimum value in ENERG_HI
 
     A failed check raises a DataErr exception.
 
     """
 
-    if emin is not None and emin <= 0.0:
-        raise ValueError("emin is None or > 0")
+    if ethresh is not None and ethresh <= 0.0:
+        raise ValueError("ethresh is None or > 0")
 
     if (elo >= ehi).any():
         raise DataErr('ogip-error', rtype, label,
@@ -157,7 +157,7 @@ def validate_ogip_energy_ranges(rtype, label, elo, ehi, emin=None):
         startidx = 0
 
     e0 = elo[startidx]
-    if emin is None:
+    if ethresh is None:
         if e0 <= 0.0:
             raise DataErr('ogip-error', rtype, label,
                           'has an ENERG_LO value <= 0')
@@ -165,16 +165,16 @@ def validate_ogip_energy_ranges(rtype, label, elo, ehi, emin=None):
         # TODO: should this equality be replaced by an approximation test?
         if e0 == 0.0:
 
-            if ehi[startidx] <= emin:
+            if ehi[startidx] <= ethresh:
                 raise DataErr('ogip-error', rtype, label,
                               'has an ENERG_HI value <= the replacement ' +
-                              'value of {}'.format(emin))
+                              'value of {}'.format(ethresh))
 
             elo = elo.copy()
-            elo[startidx] = emin
+            elo[startidx] = ethresh
             wmsg = "The minimum ENERG_LO in the " + \
                    "{} '{}' was 0 and has been ".format(rtype, label) + \
-                   "replaced by {}".format(emin)
+                   "replaced by {}".format(ethresh)
             warnings.warn(wmsg)
 
         elif e0 < 0.0:
@@ -194,7 +194,7 @@ class DataARF(Data1DInt):
     name : str
         The name of the data set; often set to the name of the file
         containing the data.
-    energ_lo, energ_hi, sepcresp : array
+    energ_lo, energ_hi, specresp : array
         The values of the ENERG_LO, ENERG_HI, and SPECRESP columns
         for the ARF. The ENERG_HI values must be greater than the
         ENERG_LO values for each bin, and the energy arrays must be
@@ -203,7 +203,7 @@ class DataARF(Data1DInt):
     exposure : number or None, optional
         The exposure time for the ARF, in seconds.
     header : dict or None, optional
-    emin : number or None, optional
+    ethresh : number or None, optional
         If set it must be greater than 0 and is the replacement value
         to use if the lowest-energy value is 0.0.
 
@@ -241,12 +241,12 @@ class DataARF(Data1DInt):
     specresp = property(_get_specresp, _set_specresp)
 
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
-                 bin_hi=None, exposure=None, header=None, emin=None):
+                 bin_hi=None, exposure=None, header=None, ethresh=None):
 
         energ_lo, energ_hi = validate_ogip_energy_ranges('ARF', name,
                                                          energ_lo,
                                                          energ_hi,
-                                                         emin=emin)
+                                                         ethresh=ethresh)
         self._lo, self._hi = energ_lo, energ_hi
 
         BaseData.__init__(self)
@@ -311,14 +311,62 @@ class DataARF(Data1DInt):
 
 
 class DataRMF(Data1DInt):
-    "RMF data set"
+    """RMF data set.
+
+    The RMF format is described in OGIP documents [1]_ and [2]_.
+
+    Parameters
+    ----------
+    name : str
+        The name of the data set; often set to the name of the file
+        containing the data.
+    detchans : int
+    energ_lo, energ_hi : array
+        The values of the ENERG_LO, ENERG_HI, and SPECRESP columns
+        for the ARF. The ENERG_HI values must be greater than the
+        ENERG_LO values for each bin, and the energy arrays must be
+        in increasing or decreasing order.
+    n_grp, f_chan, n_chan, matrix : array-like
+    offset : int, optional
+    e_min, e_max : array-like or None, optional
+    header : dict or None, optional
+    ethresh : number or None, optional
+        If set it must be greater than 0 and is the replacement value
+        to use if the lowest-energy value is 0.0.
+
+    Raises
+    ------
+    sherpa.utils.err.DataErr
+        This is raised if the energy arrays do not follow some of the
+        OGIP standards.
+
+    Notes
+    -----
+    There is limited checking that the RMF matches the OGIP standard,
+    but as there are cases of released data products that do not follow
+    the standard, these checks can not cover all cases.
+
+    References
+    ----------
+
+    .. [1] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+
+    .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
+
+    """
 
     mask = property(BaseData._get_mask, BaseData._set_mask,
                     doc=BaseData.mask.__doc__)
 
     def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
-                 header=None):
+                 header=None, ethresh=None):
+
+        energ_lo, energ_hi = validate_ogip_energy_ranges('RMF', name,
+                                                         energ_lo,
+                                                         energ_hi,
+                                                         ethresh=ethresh)
+
         self._fch = f_chan
         self._nch = n_chan
         self._grp = n_grp

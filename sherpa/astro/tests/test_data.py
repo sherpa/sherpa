@@ -266,7 +266,7 @@ def test_bug_275(make_data_path):
 # The create_arf/create_delta_rmf routines are similar to those in
 # test_instrument.py
 #
-def create_arf(elo, ehi, specresp=None, exposure=None, emin=None):
+def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None):
     """Create an ARF.
 
     Parameters
@@ -281,7 +281,7 @@ def create_arf(elo, ehi, specresp=None, exposure=None, emin=None):
         to be >= 0. If not given a flat response of 1.0 is used.
     exposure : number or None, optional
         If not None, the exposure of the ARF in seconds.
-    emin : number or None, optional
+    ethresh : number or None, optional
         Passed through to the DataARF call. It controls whether
         zero-energy bins are replaced.
 
@@ -298,10 +298,11 @@ def create_arf(elo, ehi, specresp=None, exposure=None, emin=None):
         specresp = np.ones(elo.size, dtype=np.float32)
 
     return DataARF('test-arf', energ_lo=elo, energ_hi=ehi,
-                   specresp=specresp, exposure=exposure, emin=emin)
+                   specresp=specresp, exposure=exposure, ethresh=ethresh)
 
 
-def create_delta_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None):
+def create_delta_rmf(rmflo, rmfhi, startchan=1,
+                     e_min=None, e_max=None, ethresh=None):
     """Create a RMF for a delta-function response.
 
     This is a "perfect" (delta-function) response.
@@ -322,6 +323,9 @@ def create_delta_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None):
     e_min, e_max : None or array, optional
         The E_MIN and E_MAX columns of the EBOUNDS block of the
         RMF.
+    ethresh : number or None, optional
+        Passed through to the DataARF call. It controls whether
+        zero-energy bins are replaced.
 
     Returns
     -------
@@ -349,14 +353,14 @@ def create_delta_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None):
                    n_grp=dummy, n_chan=dummy,
                    f_chan=f_chan, matrix=matrix,
                    offset=startchan,
-                   e_min=e_min, e_max=e_max)
+                   e_min=e_min, e_max=e_max,
+                   ethresh=ethresh)
 
 
 def test_arf_with_zero_energy_elem():
     """What happens creating an ARf with a zero-energy element.
 
-    This is for the invalid, but not uncommon, case where the
-    first bin starts at E=0 keV.
+    This is for the case where the first bin starts at E=0 keV.
     """
 
     energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
@@ -374,12 +378,11 @@ def test_arf_with_zero_energy_elem():
 def test_arf_with_zero_energy_elem_replace():
     """What happens creating an ARf with a zero-energy element.
 
-    This is for the invalid, but not uncommon, case where the
-    first bin starts at E=0 keV. In this case the ARF is allowed
-    to replace the 0 value.
+    This is for the case where the first bin starts at E=0 keV.
+    In this case the ARF is allowed to replace the 0 value.
     """
 
-    emin = 1.0e-5
+    ethresh = 1.0e-5
 
     energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
     energ_lo = energy[:-1]
@@ -388,33 +391,62 @@ def test_arf_with_zero_energy_elem_replace():
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
-        adata = create_arf(energ_lo, energ_hi, specresp, emin=emin)
+        adata = create_arf(energ_lo, energ_hi, specresp, ethresh=ethresh)
 
     assert len(ws) == 1
     w = ws[0]
     assert w.category == UserWarning
     emsg = "The minimum ENERG_LO in the ARF 'test-arf' was 0 " + \
-           "and has been replaced by {}".format(emin)
+           "and has been replaced by {}".format(ethresh)
     assert str(w.message) == emsg
 
     assert isinstance(adata, DataARF)
-    assert adata.energ_lo[0] == pytest.approx(emin)
+    assert adata.energ_lo[0] == pytest.approx(ethresh)
 
 
 def test_rmf_with_zero_energy_elem():
     """What happens creating a RMf with a zero-energy element.
 
-    This is for the invalid, but not uncommon, case where the
-    first bin starts at E=0 keV.
+    This is for the case where the first bin starts at E=0 keV.
     """
 
     energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
-    rdata = create_delta_rmf(energ_lo, energ_hi)
+    with pytest.raises(DataErr) as exc:
+        create_delta_rmf(energ_lo, energ_hi)
+
+    emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
+    assert str(exc.value) == emsg
+
+
+def test_rmf_with_zero_energy_elem_replace():
+    """What happens creating a RMf with a zero-energy element.
+
+    This is for the case where the first bin starts at E=0 keV.
+    In this case the RMF is allowed to replace the 0 value.
+    """
+
+    ethresh = 1.0e-4
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        rdata = create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
+
+    assert len(ws) == 1
+    w = ws[0]
+    assert w.category == UserWarning
+    emsg = "The minimum ENERG_LO in the RMF 'delta-rmf' was 0 " + \
+           "and has been replaced by {}".format(ethresh)
+    assert str(w.message) == emsg
+
     assert isinstance(rdata, DataRMF)
-    assert rdata.energ_lo[0] <= 0.0
+    assert rdata.energ_lo[0] == pytest.approx(ethresh)
 
 
 def test_arf_with_negative_energy_elem():
@@ -445,7 +477,7 @@ def test_arf_with_negative_energy_elem_replace():
     this errors out even with the replacement value set.
     """
 
-    emin = 1.0e-5
+    ethresh = 1.0e-5
 
     # Special case it so that the first in ends at 0 keV
     energy = np.arange(0, 1.0, 0.1, dtype=np.float32)
@@ -456,7 +488,7 @@ def test_arf_with_negative_energy_elem_replace():
     specresp = energ_lo * 0 + 1.0
 
     with pytest.raises(DataErr) as exc:
-        create_arf(energ_lo, energ_hi, specresp, emin=emin)
+        create_arf(energ_lo, energ_hi, specresp, ethresh=ethresh)
 
     emsg = "The ARF 'test-arf' has an ENERG_LO value < 0"
     assert str(exc.value) == emsg
@@ -475,7 +507,30 @@ def test_rmf_with_negative_energy_elem():
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
-    rdata = create_delta_rmf(energ_lo, energ_hi)
-    assert isinstance(rdata, DataRMF)
-    assert rdata.energ_lo[0] < 0.0
-    assert rdata.energ_hi[0] <= 0.0
+    with pytest.raises(DataErr) as exc:
+        create_delta_rmf(energ_lo, energ_hi)
+
+    emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
+    assert str(exc.value) == emsg
+
+
+def test_rmf_with_negative_energy_elem_replace():
+    """What happens creating an ARf with negative energies.
+
+    Hopefully we do not have files like this in use.
+    """
+
+    ethresh = 0.001
+
+    # Special case it so that the first in ends at 0 keV
+    energy = np.arange(0, 1.0, 0.1, dtype=np.float32)
+    energy = energy - energy[1]
+
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    with pytest.raises(DataErr) as exc:
+        create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
+
+    emsg = "The RMF 'delta-rmf' has an ENERG_LO value < 0"
+    assert str(exc.value) == emsg

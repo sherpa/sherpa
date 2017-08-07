@@ -16,9 +16,9 @@ trunc_value: 1.0e-25
 
 [ogip]
 # The value used to replace energy bin edges (the ENERG_LO column) in
-# ARF files which are set to 0? The field can either be "None" - in which
-# case no replacement is made but an error is raised - or replaced by
-# this value, which must be a float greater than 0 (and is in keV).
+# ARF and RMF files which are set to 0? The field can either be "None" -
+# in which case no replacement is made but an error is raised - or replaced
+# by this value, which must be a float greater than 0 (and is in keV).
 minimum_energy: 1.0e-10
 
 [verbosity]

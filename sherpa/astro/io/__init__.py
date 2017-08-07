@@ -366,7 +366,7 @@ def read_arf(arg):
     # it to override the config setting.
     #
     if 'emin' not in data:
-        data['emin'] = ogip_emin
+        data['ethresh'] = ogip_emin
 
     return DataARF(filename, **data)
 
@@ -387,6 +387,13 @@ def read_rmf(arg):
 
     """
     data, filename = backend.get_rmf_data(arg)
+
+    # It is unlikely that the backend will set this, but allow
+    # it to override the config setting.
+    #
+    if 'emin' not in data:
+        data['ethresh'] = ogip_emin
+
     return DataRMF(filename, **data)
 
 

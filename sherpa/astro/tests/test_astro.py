@@ -577,14 +577,26 @@ class test_threads(SherpaTestCase):
             warnings.simplefilter("always")
             self.run_thread('xmm2')
 
-        assert len(ws) == 1
-        w = ws[0]
-        assert w.category == UserWarning
+        assert len(ws) == 2
+        cats = set([w.category for w in ws])
+        assert cats == set([UserWarning])
 
+        # The order of reading the ARF and RMF is not guaranteed,
+        # so do not force it here when testing the two warning
+        # messages.
+        #
         arffile = 'MNLup_2138_0670580101_EMOS1_S001_spec.arf'
-        emsg = "The minimum ENERG_LO in the ARF '{}' ".format(arffile) + \
-               "was 0 and has been replaced by {}".format(EMIN)
-        assert str(w.message) == emsg
+        rmffile = 'MNLup_2138_0670580101_EMOS1_S001_spec.rmf'
+        emsg_arf = "The minimum ENERG_LO in the ARF " + \
+                   "'{}' ".format(arffile) + \
+                   "was 0 and has been replaced by {}".format(EMIN)
+        emsg_rmf = "The minimum ENERG_LO in the RMF " + \
+                   "'{}' ".format(rmffile) + \
+                   "was 0 and has been replaced by {}".format(EMIN)
+
+        emsgs = set([emsg_arf, emsg_rmf])
+        wmsgs = set([str(w.message) for w in ws])
+        assert wmsgs == emsgs
 
         self.assertEqualWithinTol(ui.get_data().channel[0], 1.0, 1e-4)
         rmf = ui.get_rmf()
@@ -604,5 +616,5 @@ class test_threads(SherpaTestCase):
         self.assertEqual(len(arf.specresp), 2400)
 
         etol = EMIN / 100.0
-        self.assertEqualWithinTol(rmf.energ_lo[0], 0.0, etol)
+        self.assertEqualWithinTol(rmf.energ_lo[0], EMIN, etol)
         self.assertEqualWithinTol(arf.energ_lo[0], EMIN, etol)

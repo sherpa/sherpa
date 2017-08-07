@@ -56,21 +56,7 @@ except ImportError:
     XSConstant = None
 
 
-def validate_divide_by_zero(ws):
-    """Ensure that there is one warning, divide-by-zero."""
-
-    assert len(ws) == 1
-    w = ws[0]
-    assert w.category == RuntimeWarning
-
-    # The following could e made to depend on python 2 or 3, but
-    # for now leave this.
-    emsgs = ["divide by zero encountered in divide",
-             "divide by zero encountered in true_divide"]
-    assert str(w.message) in emsgs
-
-
-def validate_zero_replacement(ws, rtype, label, emin):
+def validate_zero_replacement(ws, rtype, label, ethresh):
     """Ensure that there is one warning about replacing a 0 energy bin"""
 
     assert len(ws) == 1
@@ -78,13 +64,13 @@ def validate_zero_replacement(ws, rtype, label, emin):
     assert w.category == UserWarning
 
     emsg = "The minimum ENERG_LO in the {} '{}' ".format(rtype, label) + \
-           "was 0 and has been replaced by {}".format(emin)
+           "was 0 and has been replaced by {}".format(ethresh)
     assert str(w.message) == emsg
 
 
 # Create instrument responses for testing.
 #
-def create_arf(elo, ehi, specresp=None, exposure=None, emin=None):
+def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None):
     """Create an ARF.
 
     Parameters
@@ -99,7 +85,7 @@ def create_arf(elo, ehi, specresp=None, exposure=None, emin=None):
         to be >= 0. If not given a flat response of 1.0 is used.
     exposure : number or None, optional
         If not None, the exposure of the ARF in seconds.
-    emin : number or None, optional
+    ethresh : number or None, optional
         Passed through to the DataARF call. It controls whether
         zero-energy bins are replaced.
 
@@ -116,10 +102,11 @@ def create_arf(elo, ehi, specresp=None, exposure=None, emin=None):
         specresp = np.ones(elo.size, dtype=np.float32)
 
     return DataARF('test-arf', energ_lo=elo, energ_hi=ehi,
-                   specresp=specresp, exposure=exposure, emin=emin)
+                   specresp=specresp, exposure=exposure, ethresh=ethresh)
 
 
-def create_delta_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None):
+def create_delta_rmf(rmflo, rmfhi, startchan=1,
+                     e_min=None, e_max=None, ethresh=None):
     """Create a RMF for a delta-function response.
 
     This is a "perfect" (delta-function) response.
@@ -140,6 +127,9 @@ def create_delta_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None):
     e_min, e_max : None or array, optional
         The E_MIN and E_MAX columns of the EBOUNDS block of the
         RMF.
+    ethresh : number or None, optional
+        Passed through to the DataARF call. It controls whether
+        zero-energy bins are replaced.
 
     Returns
     -------
@@ -167,7 +157,8 @@ def create_delta_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None):
                    n_grp=dummy, n_chan=dummy,
                    f_chan=f_chan, matrix=matrix,
                    offset=startchan,
-                   e_min=e_min, e_max=e_max)
+                   e_min=e_min, e_max=e_max,
+                   ethresh=ethresh)
 
 
 def get_non_delta_matrix():
@@ -1478,7 +1469,7 @@ def test_arf1d_no_pha_zero_energy_bin():
 def test_arf1d_no_pha_zero_energy_bin_replace():
     "What happens when the first bin starts at 0, with replacement"
 
-    emin = 1e-5
+    ethresh = 1e-5
 
     exposure = 0.1
     egrid = np.asarray([0.0, 0.1, 0.2, 0.4, 0.5, 0.7, 0.8])
@@ -1489,9 +1480,9 @@ def test_arf1d_no_pha_zero_energy_bin_replace():
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
         adata = create_arf(elo, ehi, specresp, exposure=exposure,
-                           emin=emin)
+                           ethresh=ethresh)
 
-    validate_zero_replacement(ws, 'ARF', 'test-arf', emin)
+    validate_zero_replacement(ws, 'ARF', 'test-arf', ethresh)
 
     arf = ARF1D(adata)
 
@@ -1502,7 +1493,7 @@ def test_arf1d_no_pha_zero_energy_bin_replace():
 
     out = wrapped([0.1, 0.2])
 
-    elo[0] = emin
+    elo[0] = ethresh
     expected = exposure * specresp * tmdl(elo, ehi)
 
     assert_allclose(out, expected)
@@ -1512,7 +1503,7 @@ def test_arf1d_no_pha_zero_energy_bin_replace():
 def test_arf1d_pha_zero_energy_bin():
     "What happens when the first bin starts at 0, with replacement"
 
-    emin = 1.0e-10
+    ethresh = 1.0e-10
 
     # Note: the two exposures are different to check which is
     #       used (the answer is neither, which seems surprising)
@@ -1525,9 +1516,10 @@ def test_arf1d_pha_zero_energy_bin():
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
-        adata = create_arf(elo, ehi, specresp, exposure=exposure1, emin=emin)
+        adata = create_arf(elo, ehi, specresp, exposure=exposure1,
+                           ethresh=ethresh)
 
-    validate_zero_replacement(ws, 'ARF', 'test-arf', emin)
+    validate_zero_replacement(ws, 'ARF', 'test-arf', ethresh)
 
     arf = ARF1D(adata)
 
@@ -1546,7 +1538,7 @@ def test_arf1d_pha_zero_energy_bin():
     wrapped = ARFModelPHA(arf, pha, mdl)
 
     out = wrapped([0.1, 0.2])
-    elo[0] = emin
+    elo[0] = ethresh
     expected = specresp * tmdl(elo, ehi)
 
     assert_allclose(out, expected)
@@ -1554,36 +1546,66 @@ def test_arf1d_pha_zero_energy_bin():
 
 
 def test_rmf1d_delta_no_pha_zero_energy_bin():
-    "What happens when the first bin starts at 0?"
+    "What happens when the first bin starts at 0, no replacement"
+
+    ethresh = None
 
     egrid = np.asarray([0.0, 0.1, 0.2, 0.4, 0.5, 0.7, 0.8])
     elo = egrid[:-1]
     ehi = egrid[1:]
-    rdata = create_delta_rmf(elo, ehi)
+
+    with pytest.raises(DataErr) as exc:
+        create_delta_rmf(elo, ehi, ethresh=ethresh)
+
+    emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
+    assert str(exc.value) == emsg
+
+
+def test_rmf1d_delta_no_pha_zero_energy_bin_replace():
+    "What happens when the first bin starts at 0, with replacement"
+
+    ethresh = 1e-8
+
+    egrid = np.asarray([0.0, 0.1, 0.2, 0.4, 0.5, 0.7, 0.8])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        rdata = create_delta_rmf(elo, ehi, ethresh=ethresh)
+
+    validate_zero_replacement(ws, 'RMF', 'delta-rmf', ethresh)
+
     rmf = RMF1D(rdata)
 
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    with warnings.catch_warnings(record=True) as ws:
-        warnings.simplefilter("always")
-        wrapped = rmf(mdl)
-        validate_divide_by_zero(ws)
+    wrapped = rmf(mdl)
 
     out = wrapped([0.1, 0.2])
+
+    elo[0] = ethresh
     expected = tmdl(elo, ehi)
 
-    assert_allclose(out[1:], expected[1:])
-    assert np.isnan(out[0])
+    assert_allclose(out, expected)
+    assert not np.isnan(out[0])
 
 
 def test_rmf1d_delta_pha_zero_energy_bin():
-    "What happens when the first bin starts at 0?"
+    "What happens when the first bin starts at 0, with replacement"
+
+    ethresh = 2e-7
 
     egrid = np.asarray([0.0, 0.1, 0.2, 0.4, 0.5, 0.7, 0.8])
     elo = egrid[:-1]
     ehi = egrid[1:]
-    rdata = create_delta_rmf(elo, ehi)
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        rdata = create_delta_rmf(elo, ehi, ethresh=ethresh)
+
+    validate_zero_replacement(ws, 'RMF', 'delta-rmf', ethresh)
 
     exposure = 2.4
     channels = np.arange(1, 7, dtype=np.int16)
@@ -1597,22 +1619,21 @@ def test_rmf1d_delta_pha_zero_energy_bin():
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    with warnings.catch_warnings(record=True) as ws:
-        warnings.simplefilter("always")
-        wrapped = RMFModelPHA(rdata, pha, mdl)
-        validate_divide_by_zero(ws)
+    wrapped = RMFModelPHA(rdata, pha, mdl)
 
     out = wrapped([0.1, 0.2])
+
+    elo[0] = ethresh
     expected = tmdl(elo, ehi)
 
-    assert_allclose(out[1:], expected[1:])
-    assert np.isnan(out[0])
+    assert_allclose(out, expected)
+    assert not np.isnan(out[0])
 
 
 def test_rsp1d_delta_no_pha_zero_energy_bin():
     "What happens when the first bin starts at 0, with replacement"
 
-    emin = 1.0e-9
+    ethresh = 1.0e-9
 
     exposure = 0.1
     egrid = np.asarray([0.0, 0.1, 0.2, 0.4, 0.5, 0.7, 0.8])
@@ -1622,11 +1643,16 @@ def test_rsp1d_delta_no_pha_zero_energy_bin():
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
-        adata = create_arf(elo, ehi, specresp, exposure=exposure, emin=emin)
+        adata = create_arf(elo, ehi, specresp, exposure=exposure,
+                           ethresh=ethresh)
 
-    validate_zero_replacement(ws, 'ARF', 'test-arf', emin)
+    validate_zero_replacement(ws, 'ARF', 'test-arf', ethresh)
 
-    rdata = create_delta_rmf(elo, ehi)
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        rdata = create_delta_rmf(elo, ehi, ethresh=ethresh)
+
+    validate_zero_replacement(ws, 'RMF', 'delta-rmf', ethresh)
 
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
@@ -1635,7 +1661,7 @@ def test_rsp1d_delta_no_pha_zero_energy_bin():
 
     out = wrapped([0.1, 0.2])
 
-    elo[0] = emin
+    elo[0] = ethresh
     expected = specresp * tmdl(elo, ehi)
 
     assert_allclose(out, expected)
@@ -1645,7 +1671,7 @@ def test_rsp1d_delta_no_pha_zero_energy_bin():
 def test_rsp1d_delta_pha_zero_energy_bin():
     "What happens when the first bin starts at 0, with replacement"
 
-    emin = 2.0e-7
+    ethresh = 2.0e-7
 
     # PHA and ARF have different exposure ties
     exposure1 = 0.1
@@ -1657,11 +1683,16 @@ def test_rsp1d_delta_pha_zero_energy_bin():
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
-        adata = create_arf(elo, ehi, specresp, exposure=exposure1, emin=emin)
+        adata = create_arf(elo, ehi, specresp, exposure=exposure1,
+                           ethresh=ethresh)
 
-    validate_zero_replacement(ws, 'ARF', 'test-arf', emin)
+    validate_zero_replacement(ws, 'ARF', 'test-arf', ethresh)
 
-    rdata = create_delta_rmf(elo, ehi)
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        rdata = create_delta_rmf(elo, ehi, ethresh=ethresh)
+
+    validate_zero_replacement(ws, 'RMF', 'delta-rmf', ethresh)
 
     channels = np.arange(1, 7, dtype=np.int16)
     counts = np.ones(6, dtype=np.int16)
@@ -1679,7 +1710,7 @@ def test_rsp1d_delta_pha_zero_energy_bin():
 
     out = wrapped([0.1, 0.2])
 
-    elo[0] = emin
+    elo[0] = ethresh
     expected = specresp * tmdl(elo, ehi)
 
     assert_allclose(out, expected)
@@ -1693,7 +1724,7 @@ def test_rsp1d_matrix_pha_zero_energy_bin():
     calls Response1D to create the model.
     """
 
-    emin = 1.0e-5
+    ethresh = 1.0e-5
 
     rdata = create_non_delta_rmf()
 
@@ -1712,9 +1743,9 @@ def test_rsp1d_matrix_pha_zero_energy_bin():
                            rdata.energ_hi,
                            specresp,
                            exposure=exposure_arf,
-                           emin=emin)
+                           ethresh=ethresh)
 
-    validate_zero_replacement(ws, 'ARF', 'test-arf', emin)
+    validate_zero_replacement(ws, 'ARF', 'test-arf', ethresh)
 
     nchans = rdata.e_min.size
     channels = np.arange(1, nchans + 1, dtype=np.int16)

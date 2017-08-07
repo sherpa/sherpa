@@ -266,7 +266,13 @@ def test_read_rmf(make_data_path):
     """Can we read in a Swift RMF."""
 
     infile = make_data_path(RMFFILE)
-    rmf = io.read_rmf(infile)
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        rmf = io.read_rmf(infile)
+
+    validate_replacement_warning(ws, 'RMF', infile)
+
     assert isinstance(rmf, DataRMF)
 
     nchans = 1024
@@ -301,7 +307,7 @@ def test_read_rmf(make_data_path):
     assert_allclose(rmf.energ_lo[1:], rmf.energ_hi[:-1])
     assert_allclose(rmf.e_min[1:], rmf.e_max[:-1])
 
-    assert_allclose(rmf.energ_lo[0], 0.0)
+    assert_allclose(rmf.energ_lo[0], EMIN)
     assert_allclose(rmf.energ_hi[0], 0.005)
     assert_allclose(rmf.energ_lo[-1], 11.995)
     assert_allclose(rmf.energ_hi[-1], 12.0)
@@ -371,7 +377,13 @@ def test_can_use_swift_data(make_data_path):
     # set up, so the responses have to be manually added.
     #
     ui.load_pha(make_data_path(PHAFILE))
-    ui.load_rmf(make_data_path(RMFFILE))
+
+    rmffile = make_data_path(RMFFILE)
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        ui.load_rmf(rmffile)
+
+    validate_replacement_warning(ws, 'RMF', rmffile)
 
     arffile = make_data_path(ARFFILE)
     with warnings.catch_warnings(record=True) as ws:
@@ -385,7 +397,7 @@ def test_can_use_swift_data(make_data_path):
     arf = ui.get_arf()
     rmf = ui.get_rmf()
     assert arf.energ_lo[0] == EMIN
-    assert rmf.energ_lo[0] == 0.0
+    assert rmf.energ_lo[0] == EMIN
     assert rmf.e_min[0] == 0.0
 
     ui.set_source(ui.powlaw1d.pl)
