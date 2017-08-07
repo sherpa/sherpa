@@ -22,6 +22,7 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 """
 
 import os.path
+import warnings
 
 import numpy
 from sherpa.data import BaseData, Data1DInt, Data2D, DataND
@@ -83,8 +84,149 @@ def _notice_resp(chans, arf, rmf):
             arf.notice(bin_mask)
 
 
+def validate_ogip_energy_ranges(rtype, label, elo, ehi, emin=None):
+    """Check the lo/hi values are > 0, handling common error case.
+
+    Several checks are made, to make sure the parameters follow
+    the OGIP standard. If the checks fail a DataErr is raised.
+    When emin is set, the case where the low-edge of the start bin
+    is zero is treated as a special case rather than an error.
+    If a replacement is made (i.e. the low edge is set to emin) then
+    a warning is displayed.
+
+    Parameters
+    ----------
+    rtype : {'ARF', 'RMF'}
+        The response containing the energy columns.
+    label : str
+        The identifier to use for the error message.
+    elo, ehi : numpy arrays
+        The input ENERG_LO and ENERG_HI arrays. They are assumed
+        to be one-dimensional and have the same number of elements.
+    emin : None or float, optional
+        If None, then elo must be greater than 0. When set, the
+        start bin can have a low-energy edge of 0; it is replaced
+        by emin. If set, emin must be greater than 0.
+
+    Returns
+    -------
+    elo, ehi : numpy arrays
+        The validated energy limits. These can be the input arrays
+        or a copy of them. At present the ehi array is the same as
+        the input array, but this may change in the future.
+
+    Notes
+    -----
+    Only some of the constraints provided by the OGIP standard are
+    checked here, since there are issues involving numerical effects
+    (e.g. when checking that two bins do not overlap), as well as
+    uncertainty over what possible  behavior is seen in released
+    data products for missions. The current set of checks are:
+
+      - ehi > elo for each bin
+      - elo is monotonic (ascending or descending)
+      - when emin is set, the lowest value in elo is >= 0,
+        otherwise it is > 0.
+      - emin (if set) is less than the minimum value in ENERG_HI
+
+    A failed check raises a DataErr exception.
+
+    """
+
+    if emin is not None and emin <= 0.0:
+        raise ValueError("emin is None or > 0")
+
+    if (elo >= ehi).any():
+        raise DataErr('ogip-error', rtype, label,
+                      'has at least one bin with ENERG_HI < ENERG_LO')
+
+    # if elo is monotonically increasing, all elements will be True
+    #                         decreasing,                      False
+    #
+    # so the sum will be number of elements or 0
+    #
+    increasing = numpy.diff(elo, n=1) > 0.0
+    nincreasing = increasing.sum()
+    if nincreasing > 0 and nincreasing != len(increasing):
+        raise DataErr('ogip-error', rtype, label,
+                      'has a non-monotonic ENERG_LO array')
+
+    if nincreasing == 0:
+        startidx = -1
+    else:
+        startidx = 0
+
+    e0 = elo[startidx]
+    if emin is None:
+        if e0 <= 0.0:
+            raise DataErr('ogip-error', rtype, label,
+                          'has an ENERG_LO value <= 0')
+    else:
+        # TODO: should this equality be replaced by an approximation test?
+        if e0 == 0.0:
+
+            if ehi[startidx] <= emin:
+                raise DataErr('ogip-error', rtype, label,
+                              'has an ENERG_HI value <= the replacement ' +
+                              'value of {}'.format(emin))
+
+            elo = elo.copy()
+            elo[startidx] = emin
+            wmsg = "The minimum ENERG_LO in the " + \
+                   "{} '{}' was 0 and has been ".format(rtype, label) + \
+                   "replaced by {}".format(emin)
+            warnings.warn(wmsg)
+
+        elif e0 < 0.0:
+            raise DataErr('ogip-error', rtype, label,
+                          'has an ENERG_LO value < 0')
+
+    return elo, ehi
+
+
 class DataARF(Data1DInt):
-    "ARF data set"
+    """ARF data set.
+
+    The ARF format is described in OGIP documents [1]_ and [2]_.
+
+    Parameters
+    ----------
+    name : str
+        The name of the data set; often set to the name of the file
+        containing the data.
+    energ_lo, energ_hi, sepcresp : array
+        The values of the ENERG_LO, ENERG_HI, and SPECRESP columns
+        for the ARF. The ENERG_HI values must be greater than the
+        ENERG_LO values for each bin, and the energy arrays must be
+        in increasing or decreasing order.
+    bin_lo, bin_hi : array or None, optional
+    exposure : number or None, optional
+        The exposure time for the ARF, in seconds.
+    header : dict or None, optional
+    emin : number or None, optional
+        If set it must be greater than 0 and is the replacement value
+        to use if the lowest-energy value is 0.0.
+
+    Raises
+    ------
+    sherpa.utils.err.DataErr
+        This is raised if the energy arrays do not follow some of the
+        OGIP standards.
+
+    Notes
+    -----
+    There is limited checking that the ARF matches the OGIP standard,
+    but as there are cases of released data products that do not follow
+    the standard, these checks can not cover all cases.
+
+    References
+    ----------
+
+    .. [1] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+
+    .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
+
+    """
 
     mask = property(BaseData._get_mask, BaseData._set_mask,
                     doc=BaseData.mask.__doc__)
@@ -99,9 +241,14 @@ class DataARF(Data1DInt):
     specresp = property(_get_specresp, _set_specresp)
 
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
-                 bin_hi=None, exposure=None, header=None):
-        self._lo = energ_lo
-        self._hi = energ_hi
+                 bin_hi=None, exposure=None, header=None, emin=None):
+
+        energ_lo, energ_hi = validate_ogip_energy_ranges('ARF', name,
+                                                         energ_lo,
+                                                         energ_hi,
+                                                         emin=emin)
+        self._lo, self._hi = energ_lo, energ_hi
+
         BaseData.__init__(self)
 
     def __str__(self):
@@ -267,6 +414,7 @@ class DataPHA(Data1DInt):
     grouping : array of int or None, optional
     quality : array of int or None, optional
     exposure : number or None, optional
+        The exposure time for the PHA data set, in seconds.
     backscal : scalar or array or None, optional
     areascal : scalar or array or None, optional
     header : dict or None, optional

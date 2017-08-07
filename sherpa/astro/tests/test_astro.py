@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,11 @@
 #
 
 import logging
-from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_data, requires_fits, requires_xspec, requires_group
+import warnings
+
+from sherpa.utils.testing import SherpaTestCase, requires_data, \
+    requires_fits, requires_xspec, requires_group
+
 import sherpa.astro.ui as ui
 from sherpa.astro.data import DataPHA
 
@@ -31,7 +34,14 @@ try:
 except ImportError:
     has_xspec = False
 
+
+# This value should match the [ogip] minimum_energy setting in the
+# Sherpa configuration file.
+#
+EMIN = 1.0e-10
+
 # has_xspec = has_package_from_list("sherpa.astro.xspec")
+
 
 @requires_data
 class test_threads(SherpaTestCase):
@@ -509,21 +519,40 @@ class test_threads(SherpaTestCase):
     @requires_fits
     @requires_xspec
     def test_xmm2(self):
-        self.run_thread('xmm2')
+
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+            self.run_thread('xmm2')
+
+        assert len(ws) == 1
+        w = ws[0]
+        assert w.category == UserWarning
+
+        arffile = 'MNLup_2138_0670580101_EMOS1_S001_spec.arf'
+        emsg = "The minimum ENERG_LO in the ARF '{}' ".format(arffile) + \
+               "was 0 and has been replaced by {}".format(EMIN)
+        assert str(w.message) == emsg
+
         self.assertEqualWithinTol(ui.get_data().channel[0], 1.0, 1e-4)
-        self.assertEqual(ui.get_rmf().detchans, 800)
-        self.assertEqual(len(ui.get_rmf().energ_lo), 2400)
-        self.assertEqual(len(ui.get_rmf().energ_hi), 2400)
-        self.assertEqual(len(ui.get_rmf().n_grp), 2400)
-        self.assertEqual(len(ui.get_rmf().f_chan), 2394)
-        self.assertEqual(len(ui.get_rmf().n_chan), 2394)
-        self.assertEqual(len(ui.get_rmf().matrix), 1281216)
-        self.assertEqual(ui.get_rmf().offset, 0)
-        self.assertEqual(len(ui.get_rmf().e_min), 800)
-        self.assertEqual(len(ui.get_rmf().e_max), 800)
-        self.assertEqual(len(ui.get_arf().energ_lo), 2400)
-        self.assertEqual(len(ui.get_arf().energ_hi), 2400)
-        self.assertEqual(len(ui.get_arf().specresp), 2400)
+        rmf = ui.get_rmf()
+        arf = ui.get_arf()
+        self.assertEqual(rmf.detchans, 800)
+        self.assertEqual(len(rmf.energ_lo), 2400)
+        self.assertEqual(len(rmf.energ_hi), 2400)
+        self.assertEqual(len(rmf.n_grp), 2400)
+        self.assertEqual(len(rmf.f_chan), 2394)
+        self.assertEqual(len(rmf.n_chan), 2394)
+        self.assertEqual(len(rmf.matrix), 1281216)
+        self.assertEqual(rmf.offset, 0)
+        self.assertEqual(len(rmf.e_min), 800)
+        self.assertEqual(len(rmf.e_max), 800)
+        self.assertEqual(len(arf.energ_lo), 2400)
+        self.assertEqual(len(arf.energ_hi), 2400)
+        self.assertEqual(len(arf.specresp), 2400)
+
+        etol = EMIN / 100.0
+        self.assertEqualWithinTol(rmf.energ_lo[0], 0.0, etol)
+        self.assertEqualWithinTol(arf.energ_lo[0], EMIN, etol)
 
 if __name__ == '__main__':
 

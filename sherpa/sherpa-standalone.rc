@@ -1,4 +1,4 @@
-# SHERPA_VERSION 4.4.1
+# SHERPA_VERSION 4.10.0
 [options]
 # Plotting packages available- pylab, chips
 plot_pkg   : pylab
@@ -13,6 +13,13 @@ truncate   : True
 # Truncation value for Cash, C-stat (ignored if
 # truncate option is False)
 trunc_value: 1.0e-25
+
+[ogip]
+# The value used to replace energy bin edges (the ENERG_LO column) in
+# ARF files which are set to 0? The field can either be "None" - in which
+# case no replacement is made but an error is raised - or replaced by
+# this value, which must be a float greater than 0 (and is in keV).
+minimum_energy: 1.0e-10
 
 [verbosity]
 # Sherpa Chatter level

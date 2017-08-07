@@ -30,6 +30,8 @@ References
 
 """
 
+import warnings
+
 import numpy as np
 from numpy.testing import assert_allclose
 
@@ -67,6 +69,11 @@ from sherpa.astro import ui
 PHAFILE = 'target_sr.pha'
 ARFFILE = 'target_sr.arf'
 RMFFILE = 'swxpc0to12s6_20130101v014.rmf'
+
+# The minimum energy value for ENERG_LO bins. This should match the
+# value in the [ogip] minimum_energy field of the configuration file.
+#
+EMIN = 1.0e-10
 
 
 @requires_data
@@ -165,13 +172,30 @@ def test_read_pha_fails_rmf(make_data_path):
     assert emsg in str(excinfo.value)
 
 
+def validate_replacement_warning(ws, rtype, label):
+
+    assert len(ws) == 1
+    w = ws[0]
+    assert w.category == UserWarning
+
+    emsg = "The minimum ENERG_LO in the {} '{}' ".format(rtype, label) + \
+           "was 0 and has been replaced by {}".format(EMIN)
+    assert str(w.message) == emsg
+
+
 @requires_data
 @requires_fits
 def test_read_arf(make_data_path):
     """Can we read in a Swift ARF."""
 
     infile = make_data_path(ARFFILE)
-    arf = io.read_arf(infile)
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        arf = io.read_arf(infile)
+
+    validate_replacement_warning(ws, 'ARF', infile)
+
     assert isinstance(arf, DataARF)
 
     nbins = 2400
@@ -181,7 +205,7 @@ def test_read_arf(make_data_path):
     #
     assert len(arf.energ_lo) == nbins
     assert_allclose(arf.energ_lo[1:], arf.energ_hi[:-1])
-    assert_allclose(arf.energ_lo[0], 0.0)
+    assert_allclose(arf.energ_lo[0], EMIN)
     assert_allclose(arf.energ_hi[0], 0.005)
     assert_allclose(arf.energ_lo[-1], 11.995)
     assert_allclose(arf.energ_hi[-1], 12.0)
@@ -348,56 +372,31 @@ def test_can_use_swift_data(make_data_path):
     #
     ui.load_pha(make_data_path(PHAFILE))
     ui.load_rmf(make_data_path(RMFFILE))
-    ui.load_arf(make_data_path(ARFFILE))
+
+    arffile = make_data_path(ARFFILE)
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        ui.load_arf(arffile)
+
+    validate_replacement_warning(ws, 'ARF', arffile)
 
     assert ui.get_analysis() == 'energy'
+
+    arf = ui.get_arf()
+    rmf = ui.get_rmf()
+    assert arf.energ_lo[0] == EMIN
+    assert rmf.energ_lo[0] == 0.0
+    assert rmf.e_min[0] == 0.0
 
     ui.set_source(ui.powlaw1d.pl)
     ui.set_par('pl.ampl', 0.0003)
 
-    # The responses have the first bin start at an energy of 0,
-    # which causes issues for Sherpa. There should be a
-    # RuntimeWarning due to a divide by zero.
-    #
-    with pytest.warns(RuntimeWarning) as record:
-        stat = ui.calc_stat()
+    stat = ui.calc_stat()
 
-    # The exact form of the message depends on the Python version;
-    # this could be checked, but it feels excessive for this
-    # particular test, which is just a regression check, so use a
-    # more lax approach.
-    #
-    assert len(record) == 1
-    assert record[0].message.args[0] in \
-        ['divide by zero encountered in divide',
-         'divide by zero encountered in true_divide']
-
-    # The stat value depends on what power-law model is used. With
-    # xspowerlaw it is NaN, but with powlaw1d it is finite.
-    #
     # This check is purely a regression test, so the value has
     # not been externally validated.
     #
-    # assert np.isnan(stat)
     assert_allclose(stat, 58.2813692358182)
-
-    # Manually adjust the first bin to avoid this problem.
-    # Add in asserts just in case this gets "fixed" in the
-    # I/O layer (as XSPEC does).
-    #
-    arf = ui.get_arf()
-    rmf = ui.get_rmf()
-    assert arf.energ_lo[0] == 0.0
-    assert rmf.energ_lo[0] == 0.0
-    assert rmf.e_min[0] == 0.0
-
-    # The bin widths are ~ 0.005 or ~ 0.01 keV, so pick a value
-    # smaller than this.
-    #
-    ethresh = 1e-6
-    arf.energ_lo[0] = ethresh
-    rmf.energ_lo[0] = ethresh
-    rmf.e_min[0] = ethresh
 
     # Pick an energy range which isn't affected by the first
     # bin.

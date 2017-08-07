@@ -70,9 +70,21 @@ def validate_divide_by_zero(ws):
     assert str(w.message) in emsgs
 
 
+def validate_zero_replacement(ws, rtype, label, emin):
+    """Ensure that there is one warning about replacing a 0 energy bin"""
+
+    assert len(ws) == 1
+    w = ws[0]
+    assert w.category == UserWarning
+
+    emsg = "The minimum ENERG_LO in the {} '{}' ".format(rtype, label) + \
+           "was 0 and has been replaced by {}".format(emin)
+    assert str(w.message) == emsg
+
+
 # Create instrument responses for testing.
 #
-def create_arf(elo, ehi, specresp=None, exposure=None):
+def create_arf(elo, ehi, specresp=None, exposure=None, emin=None):
     """Create an ARF.
 
     Parameters
@@ -87,6 +99,9 @@ def create_arf(elo, ehi, specresp=None, exposure=None):
         to be >= 0. If not given a flat response of 1.0 is used.
     exposure : number or None, optional
         If not None, the exposure of the ARF in seconds.
+    emin : number or None, optional
+        Passed through to the DataARF call. It controls whether
+        zero-energy bins are replaced.
 
     Returns
     -------
@@ -101,7 +116,7 @@ def create_arf(elo, ehi, specresp=None, exposure=None):
         specresp = np.ones(elo.size, dtype=np.float32)
 
     return DataARF('test-arf', energ_lo=elo, energ_hi=ehi,
-                   specresp=specresp, exposure=exposure)
+                   specresp=specresp, exposure=exposure, emin=emin)
 
 
 def create_delta_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None):
@@ -1441,33 +1456,63 @@ class MyPowLaw1D(PowLaw1D):
 
 
 def test_arf1d_no_pha_zero_energy_bin():
-    "What happens when the first bin starts at 0?"
+    """What happens when the first bin starts at 0, no replacement
+
+    This replicates a test in test_data.py; note that this test
+    is left here, but other tests below only include the "with
+    replacement" version, to avoid duplication.
+    """
 
     exposure = 0.1
     egrid = np.asarray([0.0, 0.1, 0.2, 0.4, 0.5, 0.7, 0.8])
     elo = egrid[:-1]
     ehi = egrid[1:]
     specresp = np.asarray([10.2, 9.8, 10.0, 12.0, 8.0, 10.0])
-    adata = create_arf(elo, ehi, specresp, exposure=exposure)
+    with pytest.raises(DataErr) as exc:
+        create_arf(elo, ehi, specresp, exposure=exposure)
+
+    emsg = "The ARF 'test-arf' has an ENERG_LO value <= 0"
+    assert str(exc.value) == emsg
+
+
+def test_arf1d_no_pha_zero_energy_bin_replace():
+    "What happens when the first bin starts at 0, with replacement"
+
+    emin = 1e-5
+
+    exposure = 0.1
+    egrid = np.asarray([0.0, 0.1, 0.2, 0.4, 0.5, 0.7, 0.8])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    specresp = np.asarray([10.2, 9.8, 10.0, 12.0, 8.0, 10.0])
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        adata = create_arf(elo, ehi, specresp, exposure=exposure,
+                           emin=emin)
+
+    validate_zero_replacement(ws, 'ARF', 'test-arf', emin)
+
     arf = ARF1D(adata)
 
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    with warnings.catch_warnings(record=True) as ws:
-        warnings.simplefilter("always")
-        wrapped = arf(mdl)
-        validate_divide_by_zero(ws)
+    wrapped = arf(mdl)
 
     out = wrapped([0.1, 0.2])
+
+    elo[0] = emin
     expected = exposure * specresp * tmdl(elo, ehi)
 
-    assert_allclose(out[1:], expected[1:])
-    assert np.isnan(out[0])
+    assert_allclose(out, expected)
+    assert not np.isnan(out[0])
 
 
 def test_arf1d_pha_zero_energy_bin():
-    "What happens when the first bin starts at 0?"
+    "What happens when the first bin starts at 0, with replacement"
+
+    emin = 1.0e-10
 
     # Note: the two exposures are different to check which is
     #       used (the answer is neither, which seems surprising)
@@ -1477,7 +1522,13 @@ def test_arf1d_pha_zero_energy_bin():
     elo = egrid[:-1]
     ehi = egrid[1:]
     specresp = np.asarray([10.2, 9.8, 10.0, 12.0, 8.0, 10.0])
-    adata = create_arf(elo, ehi, specresp, exposure=exposure1)
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        adata = create_arf(elo, ehi, specresp, exposure=exposure1, emin=emin)
+
+    validate_zero_replacement(ws, 'ARF', 'test-arf', emin)
+
     arf = ARF1D(adata)
 
     exposure2 = 2.4
@@ -1492,16 +1543,14 @@ def test_arf1d_pha_zero_energy_bin():
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    with warnings.catch_warnings(record=True) as ws:
-        warnings.simplefilter("always")
-        wrapped = ARFModelPHA(arf, pha, mdl)
-        validate_divide_by_zero(ws)
+    wrapped = ARFModelPHA(arf, pha, mdl)
 
     out = wrapped([0.1, 0.2])
+    elo[0] = emin
     expected = specresp * tmdl(elo, ehi)
 
-    assert_allclose(out[1:], expected[1:])
-    assert np.isnan(out[0])
+    assert_allclose(out, expected)
+    assert not np.isnan(out[0])
 
 
 def test_rmf1d_delta_no_pha_zero_energy_bin():
@@ -1561,33 +1610,42 @@ def test_rmf1d_delta_pha_zero_energy_bin():
 
 
 def test_rsp1d_delta_no_pha_zero_energy_bin():
-    "What happens when the first bin starts at 0?"
+    "What happens when the first bin starts at 0, with replacement"
+
+    emin = 1.0e-9
 
     exposure = 0.1
     egrid = np.asarray([0.0, 0.1, 0.2, 0.4, 0.5, 0.7, 0.8])
     elo = egrid[:-1]
     ehi = egrid[1:]
     specresp = np.asarray([10.2, 9.8, 10.0, 12.0, 8.0, 10.0])
-    adata = create_arf(elo, ehi, specresp, exposure=exposure)
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        adata = create_arf(elo, ehi, specresp, exposure=exposure, emin=emin)
+
+    validate_zero_replacement(ws, 'ARF', 'test-arf', emin)
+
     rdata = create_delta_rmf(elo, ehi)
 
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    with warnings.catch_warnings(record=True) as ws:
-        warnings.simplefilter("always")
-        wrapped = RSPModelNoPHA(adata, rdata, mdl)
-        validate_divide_by_zero(ws)
+    wrapped = RSPModelNoPHA(adata, rdata, mdl)
 
     out = wrapped([0.1, 0.2])
+
+    elo[0] = emin
     expected = specresp * tmdl(elo, ehi)
 
-    assert_allclose(out[1:], expected[1:])
-    assert np.isnan(out[0])
+    assert_allclose(out, expected)
+    assert not np.isnan(out[0])
 
 
 def test_rsp1d_delta_pha_zero_energy_bin():
-    "What happens when the first bin starts at 0?"
+    "What happens when the first bin starts at 0, with replacement"
+
+    emin = 2.0e-7
 
     # PHA and ARF have different exposure ties
     exposure1 = 0.1
@@ -1596,7 +1654,13 @@ def test_rsp1d_delta_pha_zero_energy_bin():
     elo = egrid[:-1]
     ehi = egrid[1:]
     specresp = np.asarray([10.2, 9.8, 10.0, 12.0, 8.0, 10.0])
-    adata = create_arf(elo, ehi, specresp, exposure=exposure1)
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        adata = create_arf(elo, ehi, specresp, exposure=exposure1, emin=emin)
+
+    validate_zero_replacement(ws, 'ARF', 'test-arf', emin)
+
     rdata = create_delta_rmf(elo, ehi)
 
     channels = np.arange(1, 7, dtype=np.int16)
@@ -1611,24 +1675,25 @@ def test_rsp1d_delta_pha_zero_energy_bin():
     mdl = MyPowLaw1D()
     tmdl = PowLaw1D()
 
-    with warnings.catch_warnings(record=True) as ws:
-        warnings.simplefilter("always")
-        wrapped = RSPModelPHA(adata, rdata, pha, mdl)
-        validate_divide_by_zero(ws)
+    wrapped = RSPModelPHA(adata, rdata, pha, mdl)
 
     out = wrapped([0.1, 0.2])
+
+    elo[0] = emin
     expected = specresp * tmdl(elo, ehi)
 
-    assert_allclose(out[1:], expected[1:])
-    assert np.isnan(out[0])
+    assert_allclose(out, expected)
+    assert not np.isnan(out[0])
 
 
 def test_rsp1d_matrix_pha_zero_energy_bin():
-    """What happens when the first bin starts at 0?
+    """What happens when the first bin starts at 0, with replacement.
 
     Unlike test_rsp1d_delta_pha_zero_energy_bin this directly
     calls Response1D to create the model.
     """
+
+    emin = 1.0e-5
 
     rdata = create_non_delta_rmf()
 
@@ -1640,10 +1705,16 @@ def test_rsp1d_matrix_pha_zero_energy_bin():
     exposure_pha = 2.4
 
     specresp = create_non_delta_specresp()
-    adata = create_arf(rdata.energ_lo,
-                       rdata.energ_hi,
-                       specresp,
-                       exposure=exposure_arf)
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        adata = create_arf(rdata.energ_lo,
+                           rdata.energ_hi,
+                           specresp,
+                           exposure=exposure_arf,
+                           emin=emin)
+
+    validate_zero_replacement(ws, 'ARF', 'test-arf', emin)
 
     nchans = rdata.e_min.size
     channels = np.arange(1, nchans + 1, dtype=np.int16)
@@ -1658,14 +1729,12 @@ def test_rsp1d_matrix_pha_zero_energy_bin():
     mdl = MyPowLaw1D()
 
     rsp = Response1D(pha)
+    wrapped = rsp(mdl)
 
-    with warnings.catch_warnings(record=True) as ws:
-        warnings.simplefilter("always")
-        wrapped = rsp(mdl)
-        validate_divide_by_zero(ws)
-
-    # Evaluate the statistic / model to get NaN
+    # Evaluate the statistic / model. The value was calculated using
+    # commit a65fb94004664eab219cc09652172ffe1dad80a6 on a linux
+    # system (Ubuntu 17.04).
     #
     f = Fit(pha, wrapped)
     ans = f.calc_stat()
-    assert np.isnan(ans)
+    assert ans == pytest.approx(37971.8716151947)
