@@ -56,29 +56,6 @@ except ImportError:
     XSConstant = None
 
 
-@pytest.fixture(scope="function")
-def divbyzero(request, recwarn):
-    """Enforce that a division-by-zero warning was raised.
-
-    This is probably not suitable for code that generated multiple
-    warnings (unless several such fixtures are used in the
-    correct order, but I haven't looked to see if there's any
-    guarantee of order of when fixutres are run).
-
-    It also doesn't seem to work with Pyton 2.7.
-    """
-
-    # Could make this test specific on the Python version, but it
-    # does not feel like it's worth it
-    #
-    def fin():
-        msg = recwarn.pop(RuntimeWarning).message
-        assert str(msg) in ['divide by zero encountered in divide',
-                            'divide by zero encountered in true_divide']
-
-    request.addfinalizer(fin)
-
-
 def validate_divide_by_zero(ws):
     """Ensure that there is one warning, divide-by-zero."""
 
@@ -1463,7 +1440,6 @@ class MyPowLaw1D(PowLaw1D):
         return out
 
 
-# def test_arf1d_no_pha_zero_energy_bin(divbyzero):
 def test_arf1d_no_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
@@ -1490,7 +1466,6 @@ def test_arf1d_no_pha_zero_energy_bin():
     assert np.isnan(out[0])
 
 
-# def test_arf1d_pha_zero_energy_bin(divbyzero):
 def test_arf1d_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
@@ -1529,7 +1504,6 @@ def test_arf1d_pha_zero_energy_bin():
     assert np.isnan(out[0])
 
 
-# def test_rmf1d_delta_no_pha_zero_energy_bin(divbyzero):
 def test_rmf1d_delta_no_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
@@ -1554,7 +1528,6 @@ def test_rmf1d_delta_no_pha_zero_energy_bin():
     assert np.isnan(out[0])
 
 
-# def test_rmf1d_delta_pha_zero_energy_bin(divbyzero):
 def test_rmf1d_delta_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
@@ -1587,7 +1560,6 @@ def test_rmf1d_delta_pha_zero_energy_bin():
     assert np.isnan(out[0])
 
 
-# def test_rsp1d_delta_no_pha_zero_energy_bin(divbyzero):
 def test_rsp1d_delta_no_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
@@ -1614,7 +1586,6 @@ def test_rsp1d_delta_no_pha_zero_energy_bin():
     assert np.isnan(out[0])
 
 
-# def test_rsp1d_delta_pha_zero_energy_bin(divbyzero):
 def test_rsp1d_delta_pha_zero_energy_bin():
     "What happens when the first bin starts at 0?"
 
@@ -1652,7 +1623,6 @@ def test_rsp1d_delta_pha_zero_energy_bin():
     assert np.isnan(out[0])
 
 
-# def test_rsp1d_matrix_pha_zero_energy_bin(divbyzero):
 def test_rsp1d_matrix_pha_zero_energy_bin():
     """What happens when the first bin starts at 0?
 
