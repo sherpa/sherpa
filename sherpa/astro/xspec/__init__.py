@@ -1136,7 +1136,7 @@ class XSc6pvmkl(XSAdditiveModel):
     by using the exponential of the 6th order Chebyshev polynomial.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` will be removed in the next release as it has been
+              ``switch`` might be removed in future releases as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
@@ -1213,7 +1213,7 @@ class XSc6vmekl(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` will be removed in the next release as it has been
+              ``switch`` might be removed in future releases as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
@@ -1290,7 +1290,7 @@ class XScemekl(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` will be removed in the next release as it has been
+              ``switch`` might be removed in future releases as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
@@ -1352,7 +1352,7 @@ class XScevmkl(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` will be removed in the next release as it has been
+              ``switch`` might be removed in future releases as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
@@ -1543,7 +1543,7 @@ class XScompPS(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``tauy`` and ``HRcyl`` will be removed in the next release as
+              ``tauy`` and ``HRcyl`` might be removed in future releases as
               they have been replaced by ``tau_y`` and ``HovR_cyl``
               respectively, to match the XSPEC naming convention.
 
@@ -1756,7 +1756,7 @@ class XSdisk(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``NSmass`` will be removed in the next release as it has been
+              ``NSmass`` might be removed in future releases as it has been
               replaced by ``CenMass``, to match the XSPEC naming convention.
 
     Attributes
@@ -1807,7 +1807,7 @@ class XSdiskir(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``LcLd`` will be removed in the next release as it has been
+              ``LcLd`` might be removed in future releases as it has been
               replaced by ``LcovrLd``, to match the XSPEC naming convention.
 
     Attributes
@@ -1911,7 +1911,7 @@ class XSdiskline(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``RinM`` and ``RoutM`` will be removed in the next release as
+              ``RinM`` and ``RoutM`` might be removed in future releases as
               they have been replaced by ``Rin_M`` and ``Rout_M``
               respectively, to match the XSPEC naming convention.
 
@@ -2121,7 +2121,7 @@ class XSequil(XSAdditiveModel):
     particular the keyword "NEIVERS".
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``kT_ave`` will be removed in the next release as it has been
+              ``kT_ave`` might be removed in future releases as it has been
               replaced by ``meankT``, to match the XSPEC naming convention.
 
     Attributes
@@ -2313,7 +2313,7 @@ class XSgrad(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``TclTef`` will be removed in the next release as it has been
+              ``TclTef`` might be removed in future releases as it has been
               replaced by ``TclovTef``, to match the XSPEC naming convention.
 
     Attributes
@@ -2377,7 +2377,7 @@ class XSgrbm(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``temp`` will be removed in the next release as it has been
+              ``temp`` might be removed in future releases as it has been
               replaced by ``tem``, to match the XSPEC naming convention.
 
     Attributes
@@ -2490,7 +2490,7 @@ class XSkerrd(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``TcolTeff`` will be removed in the next release as it has been
+              ``TcolTeff`` might be removed in future releases as it has been
               replaced by ``TcoloTeff``, to match the XSPEC naming convention.
 
     Attributes
@@ -2637,7 +2637,7 @@ class XSlaor(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``RinG`` and ``RoutG`` will be removed in the next release as
+              ``RinG`` and ``RoutG`` might be removed in future releases as
               they have been replaced by ``Rin_G`` and ``Rout_G``
               respectively, to match the XSPEC naming convention.
 
@@ -2700,7 +2700,7 @@ class XSlaor2(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``RinG`` and ``RoutG`` will be removed in the next release as
+              ``RinG`` and ``RoutG`` might be removed in future releases as
               they have been replaced by ``Rin_G`` and ``Rout_G``
               respectively, to match the XSPEC naming convention.
 
@@ -2808,7 +2808,7 @@ class XSmeka(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` will be removed in the next release as it has been
+              ``switch`` might be removed in future releases as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
@@ -2912,7 +2912,7 @@ class XSmkcflow(XSAdditiveModel):
     on the cosmology settings set with ``set_xscosmo``.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` will be removed in the next release as it has been
+              ``switch`` might be removed in future releases as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
@@ -3371,7 +3371,7 @@ class XSnsmax(XSAdditiveModel):
     ``XSnsmaxg``.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``specfile`` will be removed in the next release as it has been
+              ``specfile`` might be removed in future releases as it has been
               replaced by ``_specfile``, to match the XSPEC naming convention.
 
     Attributes
@@ -3421,7 +3421,7 @@ class XSnsmaxg(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``specfile`` will be removed in the next release as it has been
+              ``specfile`` might be removed in future releases as it has been
               replaced by ``_specfile``, to match the XSPEC naming convention.
 
     Attributes
@@ -3477,7 +3477,7 @@ class XSnsx(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``specfile`` will be removed in the next release as it has been
+              ``specfile`` might be removed in future releases as it has been
               replaced by ``_specfile``, to match the XSPEC naming convention.
 
     Attributes
@@ -3819,7 +3819,7 @@ class XSplcabs(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``nmax`` and ``FAST`` will be removed in the next release as
+              ``nmax`` and ``FAST`` might be removed in future releases as
               they have been replaced by ``_nmax`` and ``_FAST``
               respectively, to match the XSPEC naming convention.
 
@@ -4244,7 +4244,7 @@ class XSsrcut(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``breakfreq`` will be removed in the next release as it has
+              ``breakfreq`` might be removed in future releases as it has
               been replaced by ``break_``, to match the XSPEC naming
               convention.
 
@@ -4419,7 +4419,7 @@ class XSvbremss(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``HeH`` will be removed in the next release as it has been
+              ``HeH`` might be removed in future releases as it has been
               replaced by ``HeovrH``, to match the XSPEC naming convention.
 
     Attributes
@@ -4469,7 +4469,7 @@ class XSvequil(XSAdditiveModel):
     particular the keyword "NEIVERS".
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``kT_ave`` will be removed in the next release as it has been
+              ``kT_ave`` might be removed in future releases as it has been
               replaced by ``meankT``, to match the XSPEC naming convention.
 
     Attributes
@@ -4524,7 +4524,7 @@ class XSvgnei(XSAdditiveModel):
     particular the keyword "NEIVERS".
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``kT_ave`` will be removed in the next release as it has been
+              ``kT_ave`` might be removed in future releases as it has been
               replaced by ``meankT``, to match the XSPEC naming convention.
 
     Attributes
@@ -4683,7 +4683,7 @@ class XSvmeka(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` will be removed in the next release as it has been
+              ``switch`` might be removed in future releases as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
@@ -4811,7 +4811,7 @@ class XSvmcflow(XSAdditiveModel):
     on the cosmology settings set with ``set_xscosmo``.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` will be removed in the next release as it has been
+              ``switch`` might be removed in future releases as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
@@ -5928,7 +5928,7 @@ class XSgabs(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``Tau`` will be removed in the next release as it has been
+              ``Tau`` might be removed in future releases as it has been
               replaced by ``Strength``, to match the XSPEC namin
               convention.
 
@@ -6224,7 +6224,7 @@ class XSredden(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``EBV`` will be removed in the next release as it has been
+              ``EBV`` might be removed in future releases as it has been
               replaced by ``E_BmV``, to match the XSPEC naming convention.
 
     Attributes
@@ -6392,7 +6392,7 @@ class XSswind1(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``logxi`` will be removed in the next release as it has been
+              ``logxi`` might be removed in future releases as it has been
               replaced by ``log_xi``, to match the XSPEC naming convention.
 
     Attributes
@@ -6612,7 +6612,7 @@ class XSuvred(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``EBV`` will be removed in the next release as it has been
+              ``EBV`` might be removed in future releases as it has been
               replaced by ``E_BmV``, to match the XSPEC naming convention.
 
     Attributes
@@ -6812,7 +6812,7 @@ class XSxion(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``lxld`` will be removed in the next release as it has been
+              ``lxld`` might be removed in future releases as it has been
               replaced by ``lxovrld``, to match the XSPEC naming convention.
 
     Attributes
@@ -6885,7 +6885,7 @@ class XSzdust(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``method`` and ``EBV`` will be removed in the next release as
+              ``method`` and ``EBV`` might be removed in future releases as
               they have been replaced by ``_method`` and ``E_BmV``
               respectively, to match the XSPEC naming convention.
 
@@ -7077,7 +7077,7 @@ class XSzxipcf(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``logxi`` will be removed in the next release as it has been
+              ``logxi`` might be removed in future releases as it has been
               replaced by ``log_xi``, to match the XSPEC naming convention.
 
     Attributes
@@ -7123,7 +7123,7 @@ class XSzredden(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``EBV`` will be removed in the next release as it has been
+              ``EBV`` might be removed in future releases as it has been
               replaced by ``E_BmV``, to match the XSPEC naming convention.
 
     Attributes
@@ -7167,7 +7167,7 @@ class XSzsmdust(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``EBV`` will be removed in the next release as it has been
+              ``EBV`` might be removed in future releases as it has been
               replaced by ``E_BmV``, to match the XSPEC naming convention.
 
     Attributes
@@ -7781,7 +7781,7 @@ class XScompth(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``AbHe`` will be removed in the next release as it has been
+              ``AbHe`` might be removed in future releases as it has been
               replaced by ``Ab_met``, to match the XSPEC naming convention.
 
     Attributes
@@ -8253,7 +8253,7 @@ class XSlogpar(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``pivotE`` will be removed in the next release as it has been
+              ``pivotE`` might be removed in future releases as it has been
               replaced by ``_pivotE``, to match the XSPEC naming convention.
 
     Attributes
@@ -8303,7 +8303,7 @@ class XSoptxagn(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``logLLEdd`` will be removed in the next release as it has
+              ``logLLEdd`` might be removed in future releases as it has
               been replaced by ``logLoLedd``, to match the XSPEC naming
               convention.
 
@@ -8392,7 +8392,7 @@ class XSoptxagnf(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``logLLEdd`` will be removed in the next release as it has
+              ``logLLEdd`` might be removed in future releases as it has
               been replaced by ``logLoLedd``, to match the XSPEC naming
               convention.
 
@@ -8701,7 +8701,7 @@ class XSheilin(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``redshift`` will be removed in the next release as it has
+              ``redshift`` might be removed in future releases as it has
               been replaced by ``z``, to match the XSPEC naming
               convention.
 
@@ -8800,7 +8800,7 @@ class XSzbabs(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``redshift`` will be removed in the next release as it has
+              ``redshift`` might be removed in future releases as it has
               been replaced by ``z``, to match the XSPEC naming
               convention.
 
