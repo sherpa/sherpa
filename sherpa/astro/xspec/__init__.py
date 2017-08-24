@@ -1050,8 +1050,8 @@ class XSc6mekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
-              ``switch`` will be removed in the next release as it has been
+    .. note:: Deprecated in Sherpa 4.10.0
+              ``switch`` might be removed in future releases as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
@@ -1078,7 +1078,7 @@ class XSc6mekl(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
     ``_switch``. It can still be accessed using ``switch`` for the time
     being, but this attribute has been deprecated.
 
@@ -1115,8 +1115,8 @@ class XSc6pmekl(XSAdditiveModel):
     The model is described at [1]_. It differs from ``XSc6mekl`` by
     by using the exponential of the 6th order Chebyshev polynomial.
 
-    .. note:: Deprecated in Sherpa 4.9.0
-              ``switch`` will be removed in the next release as it has been
+    .. note:: Deprecated in Sherpa 4.10.0
+              ``switch`` might be removed in future releases as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
@@ -1143,7 +1143,7 @@ class XSc6pmekl(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
     ``_switch``. It can still be accessed using ``switch`` for the time
     being, but this attribute has been deprecated.
 
@@ -1180,7 +1180,7 @@ class XSc6pvmkl(XSAdditiveModel):
     The model is described at [1]_. It differs from ``XSc6vmekl`` by
     by using the exponential of the 6th order Chebyshev polynomial.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``switch`` will be removed in the next release as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
@@ -1208,7 +1208,7 @@ class XSc6pvmkl(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
     ``_switch``. It can still be accessed using ``switch`` for the time
     being, but this attribute has been deprecated.
 
@@ -1257,7 +1257,7 @@ class XSc6vmekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``switch`` will be removed in the next release as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
@@ -1285,7 +1285,7 @@ class XSc6vmekl(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
     ``_switch``. It can still be accessed using ``switch`` for the time
     being, but this attribute has been deprecated.
 
@@ -1334,7 +1334,7 @@ class XScemekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``switch`` will be removed in the next release as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
@@ -1364,7 +1364,7 @@ class XScemekl(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
     ``_switch``. It can still be accessed using ``switch`` for the time
     being, but this attribute has been deprecated.
 
@@ -1396,7 +1396,7 @@ class XScevmkl(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``switch`` will be removed in the next release as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
@@ -1426,7 +1426,7 @@ class XScevmkl(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
     ``_switch``. It can still be accessed using ``switch`` for the time
     being, but this attribute has been deprecated.
 
@@ -1587,7 +1587,7 @@ class XScompPS(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``tauy`` and ``HRcyl`` will be removed in the next release as
               they have been replaced by ``tau_y`` and ``HovR_cyl``
               respectively, to match the XSPEC naming convention.
@@ -1645,7 +1645,7 @@ class XScompPS(XSAdditiveModel):
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
 
-    In Sherpa 4.9.0 ``tauy`` has been renamed to ``tau_y`` and
+    In Sherpa 4.10.0 ``tauy`` has been renamed to ``tau_y`` and
     ``HRcyl`` to ``HovR_cyl``. They can still be accessed using the old
     names for the time being, but these attributes have been deprecated.
 
@@ -1800,7 +1800,7 @@ class XSdisk(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``NSmass`` will be removed in the next release as it has been
               replaced by ``CenMass``, to match the XSPEC naming convention.
 
@@ -1822,7 +1822,7 @@ class XSdisk(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``NSmass`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``NSmass`` parameter has been renamed to
     ``CenMass``. It can still be accessed using ``NSMass`` for the time
     being, but this attribute has been deprecated.
 
@@ -1851,7 +1851,7 @@ class XSdiskir(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``LcLd`` will be removed in the next release as it has been
               replaced by ``LcovrLd``, to match the XSPEC naming convention.
 
@@ -1890,7 +1890,7 @@ class XSdiskir(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``LcLd`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``LcLd`` parameter has been renamed to
     ``LcovrLd``. It can still be accessed using ``LcLd`` for the time
     being, but this attribute has been deprecated.
 
@@ -1955,7 +1955,7 @@ class XSdiskline(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``RinM`` and ``RoutM`` will be removed in the next release as
               they have been replaced by ``Rin_M`` and ``Rout_M``
               respectively, to match the XSPEC naming convention.
@@ -1977,7 +1977,7 @@ class XSdiskline(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 ``RinM`` has been renamed to ``Rin_M`` and
+    In Sherpa 4.10.0 ``RinM`` has been renamed to ``Rin_M`` and
     ``RoutM`` to ``Rout_M``. They can still be accessed using the old
     names for the time being, but these attributes have been deprecated.
 
@@ -2165,7 +2165,7 @@ class XSequil(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``kT_ave`` will be removed in the next release as it has been
               replaced by ``meankT``, to match the XSPEC naming convention.
 
@@ -2326,7 +2326,7 @@ class XSgnei(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``kT_ave`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``kT_ave`` parameter has been renamed to
     ``meankT``. It can still be accessed using ``kT_ave`` for the time
     being, but this attribute has been deprecated.
 
@@ -2357,7 +2357,7 @@ class XSgrad(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``TclTef`` will be removed in the next release as it has been
               replaced by ``TclovTef``, to match the XSPEC naming convention.
 
@@ -2389,7 +2389,7 @@ class XSgrad(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``TclTef`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``TclTef`` parameter has been renamed to
     ``TclovTef``. It can still be accessed using ``TclTef`` for the time
     being, but this attribute has been deprecated.
 
@@ -2421,7 +2421,7 @@ class XSgrbm(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``temp`` will be removed in the next release as it has been
               replaced by ``tem``, to match the XSPEC naming convention.
 
@@ -2438,7 +2438,7 @@ class XSgrbm(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``temp`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``temp`` parameter has been renamed to
     ``tem``. It can still be accessed using ``temp`` for the time
     being, but this attribute has been deprecated.
 
@@ -2534,7 +2534,7 @@ class XSkerrd(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``TcolTeff`` will be removed in the next release as it has been
               replaced by ``TcoloTeff``, to match the XSPEC naming convention.
 
@@ -2566,7 +2566,7 @@ class XSkerrd(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``TcolTeff`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``TcolTeff`` parameter has been renamed to
     ``TcoloTeff``. It can still be accessed using ``TcolTeff`` for the time
     being, but this attribute has been deprecated.
 
@@ -2599,7 +2599,7 @@ class XSkerrdisk(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``r_brg``, ``Rinms``, and ``Routms`` will be removed in the
               next release as they have been replaced by ``r_br_g``,
               ``Rin_ms``, and ``Rout_ms`` respectively, to match the XSPEC
@@ -2638,7 +2638,7 @@ class XSkerrdisk(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 ``r_brg`` has been renamed to ``r_br_g``, ``Rinms``
+    In Sherpa 4.10.0 ``r_brg`` has been renamed to ``r_br_g``, ``Rinms``
     to ``Rin_ms``, and ``Routms`` to ``Rout_ms``. They can still be
     accessed using the old names for the time being, but these attributes
     have been deprecated.
@@ -2681,7 +2681,7 @@ class XSlaor(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``RinG`` and ``RoutG`` will be removed in the next release as
               they have been replaced by ``Rin_G`` and ``Rout_G``
               respectively, to match the XSPEC naming convention.
@@ -2708,7 +2708,7 @@ class XSlaor(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 ``RinG`` has been renamed to ``Rin_G`` and
+    In Sherpa 4.10.0 ``RinG`` has been renamed to ``Rin_G`` and
     ``RoutG`` to ``Rout_G``. They can still be accessed using the old
     names for the time being, but these attributes have been deprecated.
 
@@ -2744,7 +2744,7 @@ class XSlaor2(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``RinG`` and ``RoutG`` will be removed in the next release as
               they have been replaced by ``Rin_G`` and ``Rout_G``
               respectively, to match the XSPEC naming convention.
@@ -2775,7 +2775,7 @@ class XSlaor2(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 ``RinG`` has been renamed to ``Rin_G`` and
+    In Sherpa 4.10.0 ``RinG`` has been renamed to ``Rin_G`` and
     ``RoutG`` to ``Rout_G``. They can still be accessed using the old
     names for the time being, but these attributes have been deprecated.
 
@@ -2852,7 +2852,7 @@ class XSmeka(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``switch`` will be removed in the next release as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
@@ -2924,7 +2924,7 @@ class XSmekal(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
     ``_switch``. It can still be accessed using ``switch`` for the time
     being, but this attribute has been deprecated.
 
@@ -2956,7 +2956,7 @@ class XSmkcflow(XSAdditiveModel):
     The model is described at [1]_. The results of this model depend
     on the cosmology settings set with ``set_xscosmo``.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``switch`` will be removed in the next release as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
@@ -2984,7 +2984,7 @@ class XSmkcflow(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
     ``_switch``. It can still be accessed using ``switch`` for the time
     being, but this attribute has been deprecated.
 
@@ -3415,7 +3415,7 @@ class XSnsmax(XSAdditiveModel):
     The model is described at [1]_. It has been superceeded by
     ``XSnsmaxg``.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``specfile`` will be removed in the next release as it has been
               replaced by ``_specfile``, to match the XSPEC naming convention.
 
@@ -3436,7 +3436,7 @@ class XSnsmax(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``specfile`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``specfile`` parameter has been renamed to
     ``_specfile``. It can still be accessed using ``specfile`` for the
     time being, but this attribute has been deprecated.
 
@@ -3465,7 +3465,7 @@ class XSnsmaxg(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``specfile`` will be removed in the next release as it has been
               replaced by ``_specfile``, to match the XSPEC naming convention.
 
@@ -3490,7 +3490,7 @@ class XSnsmaxg(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``specfile`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``specfile`` parameter has been renamed to
     ``_specfile``. It can still be accessed using ``specfile`` for the
     time being, but this attribute has been deprecated.
 
@@ -3521,7 +3521,7 @@ class XSnsx(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``specfile`` will be removed in the next release as it has been
               replaced by ``_specfile``, to match the XSPEC naming convention.
 
@@ -3546,7 +3546,7 @@ class XSnsx(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``specfile`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``specfile`` parameter has been renamed to
     ``_specfile``. It can still be accessed using ``specfile`` for the
     time being, but this attribute has been deprecated.
 
@@ -3863,7 +3863,7 @@ class XSplcabs(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``nmax`` and ``FAST`` will be removed in the next release as
               they have been replaced by ``_nmax`` and ``_FAST``
               respectively, to match the XSPEC naming convention.
@@ -3898,7 +3898,7 @@ class XSplcabs(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 ``nmax`` has been renamed to ``_nmax`` and
+    In Sherpa 4.10.0 ``nmax`` has been renamed to ``_nmax`` and
     ``FAST`` to ``_FAST``. They can still be accessed using the old
     names for the time being, but these attributes have been deprecated.
 
@@ -4288,7 +4288,7 @@ class XSsrcut(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``breakfreq`` will be removed in the next release as it has
               been replaced by ``break_``, to match the XSPEC naming
               convention.
@@ -4309,7 +4309,7 @@ class XSsrcut(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``breakfreq`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``breakfreq`` parameter has been renamed to
     ``break_``. It can still be accessed using ``breakfreq`` for the time
     being, but this attribute has been deprecated.
 
@@ -4463,7 +4463,7 @@ class XSvbremss(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``HeH`` will be removed in the next release as it has been
               replaced by ``HeovrH``, to match the XSPEC naming convention.
 
@@ -4483,7 +4483,7 @@ class XSvbremss(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``HeH`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``HeH`` parameter has been renamed to
     ``HeovrH``. It can still be accessed using ``HeH`` for the time
     being, but this attribute has been deprecated.
 
@@ -4513,7 +4513,7 @@ class XSvequil(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``kT_ave`` will be removed in the next release as it has been
               replaced by ``meankT``, to match the XSPEC naming convention.
 
@@ -4568,7 +4568,7 @@ class XSvgnei(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``kT_ave`` will be removed in the next release as it has been
               replaced by ``meankT``, to match the XSPEC naming convention.
 
@@ -4597,7 +4597,7 @@ class XSvgnei(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``kT_ave`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``kT_ave`` parameter has been renamed to
     ``meankT``. It can still be accessed using ``kT_ave`` for the time
     being, but this attribute has been deprecated.
 
@@ -4668,7 +4668,7 @@ class XSvvgnei(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``kT_ave`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``kT_ave`` parameter has been renamed to
     ``meankT``. It can still be accessed using ``kT_ave`` for the time
     being, but this attribute has been deprecated.
 
@@ -4727,7 +4727,7 @@ class XSvmeka(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``switch`` will be removed in the next release as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
@@ -4810,7 +4810,7 @@ class XSvmekal(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
     ``_switch``. It can still be accessed using ``switch`` for the time
     being, but this attribute has been deprecated.
 
@@ -4855,7 +4855,7 @@ class XSvmcflow(XSAdditiveModel):
     The model is described at [1]_. The results of this model depend
     on the cosmology settings set with ``set_xscosmo``.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``switch`` will be removed in the next release as it has been
               replaced by ``_switch``, to match the XSPEC naming convention.
 
@@ -4883,7 +4883,7 @@ class XSvmcflow(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``switch`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
     ``_switch``. It can still be accessed using ``switch`` for the time
     being, but this attribute has been deprecated.
 
@@ -5972,7 +5972,7 @@ class XSgabs(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``Tau`` will be removed in the next release as it has been
               replaced by ``Strength``, to match the XSPEC namin
               convention.
@@ -5989,7 +5989,7 @@ class XSgabs(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``Tau`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``Tau`` parameter has been renamed to
     ``Strength``. It can still be accessed using ``Tau`` for the time
     being, but this attribute has been deprecated.
 
@@ -6268,7 +6268,7 @@ class XSredden(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``EBV`` will be removed in the next release as it has been
               replaced by ``E_BmV``, to match the XSPEC naming convention.
 
@@ -6283,7 +6283,7 @@ class XSredden(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``EBV`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``EBV`` parameter has been renamed to
     ``E_Bmv``. It can still be accessed using ``EBV`` for the time
     being, but this attribute has been deprecated.
 
@@ -6436,7 +6436,7 @@ class XSswind1(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``logxi`` will be removed in the next release as it has been
               replaced by ``log_xi``, to match the XSPEC naming convention.
 
@@ -6453,7 +6453,7 @@ class XSswind1(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``logxi`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``logxi`` parameter has been renamed to
     ``log_xi``. It can still be accessed using ``logxi`` for the time
     being, but this attribute has been deprecated.
 
@@ -6656,7 +6656,7 @@ class XSuvred(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``EBV`` will be removed in the next release as it has been
               replaced by ``E_BmV``, to match the XSPEC naming convention.
 
@@ -6667,7 +6667,7 @@ class XSuvred(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``EBV`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``EBV`` parameter has been renamed to
     ``E_Bmv``. It can still be accessed using ``EBV`` for the time
     being, but this attribute has been deprecated.
 
@@ -6856,7 +6856,7 @@ class XSxion(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``lxld`` will be removed in the next release as it has been
               replaced by ``lxovrld``, to match the XSPEC naming convention.
 
@@ -6891,7 +6891,7 @@ class XSxion(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``lxld`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``lxld`` parameter has been renamed to
     ``lxovrld``. It can still be accessed using ``lxld`` for the time
     being, but this attribute has been deprecated.
 
@@ -6929,7 +6929,7 @@ class XSzdust(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``method`` and ``EBV`` will be removed in the next release as
               they have been replaced by ``_method`` and ``E_BmV``
               respectively, to match the XSPEC naming convention.
@@ -6948,7 +6948,7 @@ class XSzdust(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 ``method`` has been renamed to ``_method`` and
+    In Sherpa 4.10.0 ``method`` has been renamed to ``_method`` and
     ``EBV`` to ``E_BmV``. They can still be accessed using the old
     names for the time being, but these attributes have been deprecated.
 
@@ -7121,7 +7121,7 @@ class XSzxipcf(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``logxi`` will be removed in the next release as it has been
               replaced by ``log_xi``, to match the XSPEC naming convention.
 
@@ -7138,7 +7138,7 @@ class XSzxipcf(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``logxi`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``logxi`` parameter has been renamed to
     ``log_xi``. It can still be accessed using ``logxi`` for the time
     being, but this attribute has been deprecated.
 
@@ -7167,7 +7167,7 @@ class XSzredden(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``EBV`` will be removed in the next release as it has been
               replaced by ``E_BmV``, to match the XSPEC naming convention.
 
@@ -7184,7 +7184,7 @@ class XSzredden(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``EBV`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``EBV`` parameter has been renamed to
     ``E_Bmv``. It can still be accessed using ``EBV`` for the time
     being, but this attribute has been deprecated.
 
@@ -7211,7 +7211,7 @@ class XSzsmdust(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``EBV`` will be removed in the next release as it has been
               replaced by ``E_BmV``, to match the XSPEC naming convention.
 
@@ -7228,7 +7228,7 @@ class XSzsmdust(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``EBV`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``EBV`` parameter has been renamed to
     ``E_Bmv``. It can still be accessed using ``EBV`` for the time
     being, but this attribute has been deprecated.
 
@@ -7507,7 +7507,7 @@ class XScplinear(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               The ``energy01`` to ``energy09`` attributes will be removed in
               the next release as they has been replaced by ``_energy01``
               to ``_energy09``, to match the XSPEC naming convention.
@@ -7525,7 +7525,7 @@ class XScplinear(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``energy01`` to ``energy09`` attributes have been
+    In Sherpa 4.10.0 the ``energy01`` to ``energy09`` attributes have been
     renamed to ``_energy01`` to ``_energy09``. They can still be
     accessed using the old names, but they have been deprecated.
 
@@ -7574,7 +7574,7 @@ class XSeqpair(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``l_hl_s``, ``l_ntl_h``, and ``AbHe`` will be removed in the
               next release as they have been replaced by ``l_hovl_s``,
               ``l_ntol_h``, and ``Ab_met`` respectively, to match the XSPEC
@@ -7649,7 +7649,7 @@ class XSeqpair(XSAdditiveModel):
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
 
-    In Sherpa 4.9.0 ``l_hl_s`` has been renamed to ``l_hovl_s``,
+    In Sherpa 4.10.0 ``l_hl_s`` has been renamed to ``l_hovl_s``,
     ``l_ntl_h`` to ``l_ntol_h``, and ``AbHe`` to ``Ab_met``. They can still
     be accessed using the old names for the time being, but these attributes
     have been deprecated.
@@ -7698,7 +7698,7 @@ class XSeqtherm(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``l_hl_s``, ``l_ntl_h``, and ``AbHe`` will be removed in the
               next release as they have been replaced by ``l_hovl_s``,
               ``l_ntol_h``, and ``Ab_met`` respectively, to match the XSPEC
@@ -7773,7 +7773,7 @@ class XSeqtherm(XSAdditiveModel):
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
 
-    In Sherpa 4.9.0 ``l_hl_s`` has been renamed to ``l_hovl_s``,
+    In Sherpa 4.10.0 ``l_hl_s`` has been renamed to ``l_hovl_s``,
     ``l_ntl_h`` to ``l_ntol_h``, and ``AbHe`` to ``Ab_met``. They can still
     be accessed using the old names for the time being, but these attributes
     have been deprecated.
@@ -7825,7 +7825,7 @@ class XScompth(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``AbHe`` will be removed in the next release as it has been
               replaced by ``Ab_met``, to match the XSPEC naming convention.
 
@@ -7894,7 +7894,7 @@ class XScompth(XSAdditiveModel):
     keyword, which defines the fractional precision. The default is 0.01
     (1%).
 
-    In Sherpa 4.9.0 the ``AbHe`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``AbHe`` parameter has been renamed to
     ``Ab_met``. It can still be accessed using ``AbHe`` for the time
     being, but this attribute has been deprecated.
 
@@ -8081,7 +8081,7 @@ class XSzigm(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``redshift``, ``model``, and ``lyman_limit`` will be removed
                in the next release as they have been replaced by
                ``_redshift``, ``_model``, and ``_lyman_limit``
@@ -8101,7 +8101,7 @@ class XSzigm(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 all the parameters have been renamed so that they
+    In Sherpa 4.10.0 all the parameters have been renamed so that they
     start with an underscore character. They can still be accessed using
     the old names for the time being, but these attributes have been
     deprecated.
@@ -8297,7 +8297,7 @@ class XSlogpar(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``pivotE`` will be removed in the next release as it has been
               replaced by ``_pivotE``, to match the XSPEC naming convention.
 
@@ -8318,7 +8318,7 @@ class XSlogpar(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``pivotE`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``pivotE`` parameter has been renamed to
     ``_pivotE``. It can still be accessed using ``pivotE`` for the time
     being, but this attribute has been deprecated.
 
@@ -8347,7 +8347,7 @@ class XSoptxagn(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``logLLEdd`` will be removed in the next release as it has
               been replaced by ``logLoLedd``, to match the XSPEC naming
               convention.
@@ -8397,7 +8397,7 @@ class XSoptxagn(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``logLLEdd`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``logLLEdd`` parameter has been renamed to
     ``logLoLedd``. It can still be accessed using ``logLLEdd`` for the
     time being, but this attribute has been deprecated.
 
@@ -8436,7 +8436,7 @@ class XSoptxagnf(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``logLLEdd`` will be removed in the next release as it has
               been replaced by ``logLoLedd``, to match the XSPEC naming
               convention.
@@ -8480,7 +8480,7 @@ class XSoptxagnf(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``logLLEdd`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``logLLEdd`` parameter has been renamed to
     ``logLoLedd``. It can still be accessed using ``logLLEdd`` for the
     time being, but this attribute has been deprecated.
 
@@ -8745,7 +8745,7 @@ class XSheilin(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``redshift`` will be removed in the next release as it has
               been replaced by ``z``, to match the XSPEC naming
               convention.
@@ -8765,7 +8765,7 @@ class XSheilin(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``redshift`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``redshift`` parameter has been renamed to
     ``z``. It can still be accessed using ``redshift`` for the time
     being, but this attribute has been deprecated.
 
@@ -8793,7 +8793,7 @@ class XSlyman(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``nHeI`` and ``redshift`` will be removed in the next
               release as they have been replaced by ``n`` and ``z``
               respectively, to match the XSPEC naming convention.
@@ -8815,7 +8815,7 @@ class XSlyman(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 ``nHeI`` has been renamed to ``n`` and ``redshift``
+    In Sherpa 4.10.0 ``nHeI`` has been renamed to ``n`` and ``redshift``
     to ``z``. They can still be accessed using the old names for the
     time being, but these attributes have been deprecated.
 
@@ -8844,7 +8844,7 @@ class XSzbabs(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.9.0
+    .. note:: Deprecated in Sherpa 4.10.0
               ``redshift`` will be removed in the next release as it has
               been replaced by ``z``, to match the XSPEC naming
               convention.
@@ -8862,7 +8862,7 @@ class XSzbabs(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``redshift`` parameter has been renamed to
+    In Sherpa 4.10.0 the ``redshift`` parameter has been renamed to
     ``z``. It can still be accessed using ``redshift`` for the time
     being, but this attribute has been deprecated.
 
