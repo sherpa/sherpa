@@ -875,7 +875,7 @@ class XSbmc(XSAdditiveModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.9.0
-              ``logA`` will be removed in the next release as it has been
+              ``logA`` may be removed in future releases as it has been
               replaced by ``log_A``, to match the XSPEC naming convention.
 
     Attributes
@@ -892,9 +892,9 @@ class XSbmc(XSAdditiveModel):
 
     Notes
     -----
-    In Sherpa 4.9.0 the ``logA`` parameter has been renamed to ``log_A``.
-    It can still be accessed using ``log_A`` for the time being, but this
-    attribute has been deprecated.
+    In Sherpa 4.10.0 the ``logA`` parameter has been renamed to ``log_A``.
+    It can still be accessed using ``logA`` for the time being, but this
+    attribute name has been deprecated.
 
     References
     ----------
