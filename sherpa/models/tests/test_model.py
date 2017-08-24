@@ -210,8 +210,8 @@ class ParameterCase(ArithmeticModel):
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
         self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
         self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0)
-        pars = (self.perioD, self.oFFSEt, self.AMPL)
         self._renamedpars = [('NORM', 'ampl')]
+        pars = (self.perioD, self.oFFSEt, self.NORM)
 
         self._basemodel = Sin()
 
@@ -232,3 +232,4 @@ class test_model_parametercase_instance(test_model_renamed):
 
     def test_name(self):
         self.assertEqual(self.m.name, 'parametercase')
+        self.assertEqual(self.m.NORM.name, 'ampl')

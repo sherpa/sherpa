@@ -206,12 +206,8 @@ class Model(NoNewAttributesAfterInit):
 
         else:
             for key in self.__dict__:
-                try:
-                    kname = key.lower()
-                except AttributeError:
-                    continue
 
-                if lname == kname:
+                if lname == key.lower():
                     val = self.__dict__.get(key)
                     if isinstance(val, Parameter):
                         return val
