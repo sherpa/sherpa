@@ -131,7 +131,6 @@ class Model(NoNewAttributesAfterInit):
         self.type = self.__class__.__name__.lower()
         self.pars = tuple(pars)
         self.is_discrete = False
-        # Should this set up the _renamedpars attribute if not set?
         NoNewAttributesAfterInit.__init__(self)
 
     def __repr__(self):
@@ -171,7 +170,13 @@ class Model(NoNewAttributesAfterInit):
 
     def __getattr__(self, name):
         """Access to parameters is case insensitive."""
-        lname = name.lower()
+
+        if "_par_index" == name:
+            if self.__dict__.get('_par_index') is None:
+                self.__dict__['_par_index'] = {}
+            return self.__dict__['_par_index']
+
+        lowered_name = name.lower()
 
         def warn(oname, nname):
             wmsg = 'Parameter name {} is deprecated'.format(oname) + \
@@ -179,60 +184,30 @@ class Model(NoNewAttributesAfterInit):
                 'use {} instead'.format(nname)
             warnings.warn(wmsg, DeprecationWarning)
 
-        # If .pars is set up, use this as it is a micro-optimisation,
-        # otherwise (e.g. during calls to __init__), fall back to
-        # scanning through the dictionary for any code called during
-        # model initialisation (alternatively it could be considered
-        # to be an error to use the wrong capitalisation during the
-        # construction phase, but this would be a policy change so is
-        # not enforced here).
-        #
-        # How much of this should be cached?
-        #
-        pars = self.__dict__.get('pars')
-        if pars is not None:
-            for par in pars:
-                if par.name.lower() == lname:
-                    return par
+        parameter = self._par_index.get(lowered_name)
 
-            rpars = self.__dict__.get('_renamedpars')
-            if rpars is not None:
-                for (oname, nname) in rpars:
-                    if oname.lower() == lname:
-                        for par in pars:
-                            if par.name == nname:
-                                warn(oname, nname)
-                                return par
+        if parameter is not None:
+            if lowered_name in parameter.aliases:
+                warn(lowered_name, parameter.name)
+            return parameter
 
-        else:
-            for key in self.__dict__:
-
-                if lname == key.lower():
-                    val = self.__dict__.get(key)
-                    if isinstance(val, Parameter):
-                        return val
-
-            rpars = self.__dict__.get('_renamedpars')
-            if rpars is not None:
-                for (oname, nname) in rpars:
-                    if oname.lower() == lname:
-                        # Easier to call itself with the proper name
-                        # than to loop through __dict__ again. This
-                        # should not be a common case.
-                        ans = getattr(self, nname)
-                        warn(oname, nname)
-                        return ans
-
-        # this must be AttributeError for 'getattr' to work
-        raise AttributeError("'%s' object has no attribute '%s'" %
-                             (type(self).__name__, name))
+        NoNewAttributesAfterInit.__getattribute__(self, name)
 
     def __setattr__(self, name, val):
         par = getattr(self, name.lower(), None)
         if (par is not None) and isinstance(par, Parameter):
+            # When setting an attribute that is a Parameter, set the parameter's
+            # value instead.
             par.val = val
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
+            if isinstance(val, Parameter):
+                # Update parameter index
+                self._par_index[val.name.lower()] = val
+                if val.aliases:
+                    # Update index of aliases, if necessary
+                    for alias in val.aliases:
+                        self._par_index[alias] = val
 
     def startup(self):
         """Called before a model may be evaluated multiple times.

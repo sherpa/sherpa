@@ -242,7 +242,7 @@ class Parameter(NoNewAttributesAfterInit):
 
     def __init__(self, modelname, name, val, min=-hugeval, max=hugeval,
                  hard_min=-hugeval, hard_max=hugeval, units='',
-                 frozen=False, alwaysfrozen=False, hidden=False):
+                 frozen=False, alwaysfrozen=False, hidden=False, aliases=None):
         self.modelname = modelname
         self.name = name
         self.fullname = '%s.%s' % (modelname, name)
@@ -269,6 +269,8 @@ class Parameter(NoNewAttributesAfterInit):
         self.default_val = val
         self.link = None
         self._guessed = False
+
+        self.aliases = [a.lower() for a in aliases] if aliases is not None else []
 
         NoNewAttributesAfterInit.__init__(self)
 
