@@ -190,17 +190,19 @@ class test_model_renamed(test_model):
 
     def test_getpar_rename(self):
         with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter("always", DeprecationWarning)
             for par in (self.m.norm, self.m.NorM, self.m.NOrm):
                 self.assertIs(par, self.m.pars[2])
             if self.__class__ == test_model_renamed:
-                validate_warning(warn, "norm", "RenamedPars")
+                validate_warning(warn, "norm", "RenamedPars", num=3)
             else:
-                validate_warning(warn)
+                validate_warning(warn, num=3)
 
     def test_setpar_rename(self):
         self.m.ampl = 1
         self.assertNotEqual(self.m.ampl.val, 12.0)
         with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter("always", DeprecationWarning)
             self.m.norm = 12
             if (self.__class__ == test_model_renamed):
                 validate_warning(warn, "norm", "RenamedPars")
@@ -210,6 +212,7 @@ class test_model_renamed(test_model):
         self.assertEqual(self.m.ampl.val, 12.0)
 
         with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter("always", DeprecationWarning)
             self.m.NoRM = 18
             if self.__class__ == test_model_renamed:
                 validate_warning(warn, "norm", "RenamedPars")
@@ -234,6 +237,7 @@ class ParameterCase(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0, aliases=["NORM"])
 
         with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter("always", DeprecationWarning)
             pars = (self.perioD, self.oFFSEt, self.NORM)
             validate_warning(warn)
 
@@ -248,14 +252,14 @@ class ParameterCase(ArithmeticModel):
         return self._basemodel.calc(*args, **kwargs)
 
 
-def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase"):
-    assert 1 == len(warning_capturer)
-    warning = warning_capturer[-1]
-    assert issubclass(warning.category, DeprecationWarning)
-    expected_warning_message = 'Parameter name {} is deprecated for model {}, use ampl instead'.format(
-        parameter_name, model_name
-    )
-    assert expected_warning_message == str(warning.message)
+def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase", num=1):
+    assert num == len(warning_capturer)
+    for warning in warning_capturer:
+        assert issubclass(warning.category, DeprecationWarning)
+        expected_warning_message = 'Parameter name {} is deprecated for model {}, use ampl instead'.format(
+            parameter_name, model_name
+        )
+        assert expected_warning_message == str(warning.message)
 
 
 class test_model_parametercase_instance(test_model_renamed):
