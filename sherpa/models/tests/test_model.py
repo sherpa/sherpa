@@ -20,7 +20,8 @@
 import logging
 import operator
 import numpy
-from sherpa.utils import SherpaFloat, SherpaTestCase
+import warnings
+from sherpa.utils import SherpaTestCase
 from sherpa.utils.err import ModelErr
 from sherpa.models.model import *
 from sherpa.models.model import ArithmeticModel
@@ -184,15 +185,33 @@ class test_model_renamed(test_model):
         self.m = RenamedPars('m')
 
     def test_getpar_rename(self):
-        for par in (self.m.norm, self.m.NorM, self.m.NOrm):
-            self.assertIs(par, self.m.pars[2])
+        with warnings.catch_warnings(record=True) as warn:
+            for par in (self.m.norm, self.m.NorM, self.m.NOrm):
+                self.assertIs(par, self.m.pars[2])
+            if self.__class__ == test_model_renamed:
+                validate_warning(warn, "norm", "RenamedPars")
+            else:
+                validate_warning(warn)
 
     def test_setpar_rename(self):
         self.m.ampl = 1
         self.assertNotEqual(self.m.ampl.val, 12.0)
-        self.m.norm = 12
+        with warnings.catch_warnings(record=True) as warn:
+            self.m.norm = 12
+            if (self.__class__ == test_model_renamed):
+                validate_warning(warn, "norm", "RenamedPars")
+            else:
+                validate_warning(warn)
+
         self.assertEqual(self.m.ampl.val, 12.0)
-        self.m.NoRM = 18
+
+        with warnings.catch_warnings(record=True) as warn:
+            self.m.NoRM = 18
+            if self.__class__ == test_model_renamed:
+                validate_warning(warn, "norm", "RenamedPars")
+            else:
+                validate_warning(warn)
+
         self.assertEqual(self.m.ampl.val, 18.0)
         self.m.ampl = 1
         self.assertEqual(self.m.ampl.val, 1.0)
@@ -206,15 +225,16 @@ class ParameterCase(ArithmeticModel):
     """Re-implemenent Sin model so can copy tests"""
 
     def __init__(self, name='parametercase'):
-
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
         self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
         self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0)
         self._renamedpars = [('NORM', 'ampl')]
-        pars = (self.perioD, self.oFFSEt, self.NORM)
+
+        with warnings.catch_warnings(record=True) as warn:
+            pars = (self.perioD, self.oFFSEt, self.NORM)
+            validate_warning(warn)
 
         self._basemodel = Sin()
-
         ArithmeticModel.__init__(self, name, pars)
 
     def calc(self, *args, **kwargs):
@@ -225,6 +245,16 @@ class ParameterCase(ArithmeticModel):
         return self._basemodel.calc(*args, **kwargs)
 
 
+def validate_warning(warning_capturer, parameter_name="NORM", model_name="ParameterCase"):
+    assert 1 == len(warning_capturer)
+    warning = warning_capturer[-1]
+    assert issubclass(warning.category, DeprecationWarning)
+    expected_warning_message = 'Parameter name {} is deprecated for model {}, use ampl instead'.format(
+        parameter_name, model_name
+    )
+    assert expected_warning_message == str(warning.message)
+
+
 class test_model_parametercase_instance(test_model_renamed):
 
     def setUp(self):
@@ -232,4 +262,3 @@ class test_model_parametercase_instance(test_model_renamed):
 
     def test_name(self):
         self.assertEqual(self.m.name, 'parametercase')
-        self.assertEqual(self.m.NORM.name, 'ampl')
