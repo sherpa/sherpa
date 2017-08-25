@@ -37,11 +37,8 @@ class test_sim(SherpaTestCase):
     @requires_fits
     @requires_xspec
     def setUp(self):
-        try:
-            from sherpa.astro.io import read_pha
-            from sherpa.astro.xspec import XSwabs, XSpowerlaw
-        except:
-            return
+        from sherpa.astro.io import read_pha
+        from sherpa.astro.xspec import XSwabs, XSpowerlaw
         # self.startdir = os.getcwd()
         self.old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.CRITICAL)
