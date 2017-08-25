@@ -173,10 +173,14 @@ class test_composite_model(SherpaTestCase):
 # the Sin model (which lets the tests be re-used).
 #
 class RenamedPars(Sin):
+    # The only reason I am extending Sin is to inherit the method implementations
 
     def __init__(self, name='renamedpars'):
-        self._renamedpars = [('norm', 'ampl')]
-        Sin.__init__(self, name)
+        self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
+        self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
+        self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0, aliases=['norm'])
+        ArithmeticModel.__init__(self, name,
+                                 (self.period, self.offset, self.ampl))
 
 
 class test_model_renamed(test_model):
@@ -227,8 +231,7 @@ class ParameterCase(ArithmeticModel):
     def __init__(self, name='parametercase'):
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
         self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
-        self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0)
-        self._renamedpars = [('NORM', 'ampl')]
+        self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0, aliases=["NORM"])
 
         with warnings.catch_warnings(record=True) as warn:
             pars = (self.perioD, self.oFFSEt, self.NORM)
@@ -245,7 +248,7 @@ class ParameterCase(ArithmeticModel):
         return self._basemodel.calc(*args, **kwargs)
 
 
-def validate_warning(warning_capturer, parameter_name="NORM", model_name="ParameterCase"):
+def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase"):
     assert 1 == len(warning_capturer)
     warning = warning_capturer[-1]
     assert issubclass(warning.category, DeprecationWarning)
