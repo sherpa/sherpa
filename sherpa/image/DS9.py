@@ -655,11 +655,15 @@ class DS9Win:
 
         Raises RuntimeError if anything is written to stderr.
         """
-        return xpaget(
+        return_value = xpaget(
             cmd=cmd,
             template=self.template,
             doRaise=self.doRaise,
         )
+        if six.PY2:
+            return return_value
+        else:
+            return return_value.decode()
 
     def xpaset(self, cmd, data=None, dataFunc=None):
         """Executes a simple xpaset command:
