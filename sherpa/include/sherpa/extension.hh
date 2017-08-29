@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2016, 2017  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,7 @@ typedef double SherpaFloat;
 typedef sherpa::Array< double, NPY_DOUBLE > DoubleArray;
 typedef DoubleArray SherpaFloatArray;
 
-typedef sherpa::Array< char, NPY_CHAR > CharArray;
+typedef sherpa::Array< char, NPY_STRING > CharArray;
 typedef sherpa::Array< int, NPY_INT > IntArray;
 
 typedef int (*converter)( PyObject*, void* );
