@@ -2,7 +2,7 @@
 #define tstoptfct_hh
 
 // 
-//  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2017  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -205,8 +205,9 @@ namespace tstoptfct {
   void Booth( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
 
     if ( 2 != npar ) {
-    if ( npar % 2 )
-      throw std::runtime_error( "npar for the Booth func must be 2\n" );
+      if ( npar % 2 ) {
+        throw std::runtime_error( "npar for the Booth func must be 2\n" );
+      }
       return;
     }
 
