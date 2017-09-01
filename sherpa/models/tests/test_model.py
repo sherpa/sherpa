@@ -38,6 +38,7 @@ class test_model(SherpaTestCase):
 
     def setUp(self):
         self.m = Sin('m')
+        self.expected_names = ['period', 'offset', 'ampl']
 
     def test_name(self):
         self.assertEqual(self.m.name, 'm')
@@ -51,7 +52,7 @@ class test_model(SherpaTestCase):
 
     def test_par_names(self):
         self.assertEqual([p.name for p in self.m.pars],
-                         ['period', 'offset', 'ampl'])
+                         self.expected_names)
 
     def test_getpar(self):
         for par in (self.m.period, self.m.PerioD, self.m.PERIod):
@@ -186,6 +187,7 @@ class RenamedPars(Sin):
 class test_model_renamed(test_model):
 
     def setUp(self):
+        test_model.setUp(self)
         self.m = RenamedPars('m')
 
     def test_getpar_rename(self):
@@ -194,7 +196,7 @@ class test_model_renamed(test_model):
             for par in (self.m.norm, self.m.NorM, self.m.NOrm):
                 self.assertIs(par, self.m.pars[2])
             if self.__class__ == test_model_renamed:
-                validate_warning(warn, "norm", "RenamedPars", num=3)
+                validate_warning(warn, "norm", "RenamedPars", "ampl", num=3)
             else:
                 validate_warning(warn, num=3)
 
@@ -205,7 +207,7 @@ class test_model_renamed(test_model):
             warnings.simplefilter("always", DeprecationWarning)
             self.m.norm = 12
             if (self.__class__ == test_model_renamed):
-                validate_warning(warn, "norm", "RenamedPars")
+                validate_warning(warn, "norm", "RenamedPars", "ampl")
             else:
                 validate_warning(warn)
 
@@ -215,7 +217,7 @@ class test_model_renamed(test_model):
             warnings.simplefilter("always", DeprecationWarning)
             self.m.NoRM = 18
             if self.__class__ == test_model_renamed:
-                validate_warning(warn, "norm", "RenamedPars")
+                validate_warning(warn, "norm", "RenamedPars", "ampl")
             else:
                 validate_warning(warn)
 
@@ -232,9 +234,9 @@ class ParameterCase(ArithmeticModel):
     """Re-implemenent Sin model so can copy tests"""
 
     def __init__(self, name='parametercase'):
-        self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
-        self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
-        self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0, aliases=["NORM"])
+        self.period = Parameter(name, 'Period', 1, 1e-10, 10, tinyval)
+        self.offset = Parameter(name, 'Offset', 0, 0, hard_min=0)
+        self.ampl = Parameter(name, 'Ampl', 1, 1e-05, hard_min=0, aliases=["NORM"])
 
         with warnings.catch_warnings(record=True) as warn:
             warnings.simplefilter("always", DeprecationWarning)
@@ -252,12 +254,12 @@ class ParameterCase(ArithmeticModel):
         return self._basemodel.calc(*args, **kwargs)
 
 
-def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase", num=1):
+def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase", actual_name="Ampl", num=1):
     assert num == len(warning_capturer)
     for warning in warning_capturer:
         assert issubclass(warning.category, DeprecationWarning)
-        expected_warning_message = 'Parameter name {} is deprecated for model {}, use ampl instead'.format(
-            parameter_name, model_name
+        expected_warning_message = 'Parameter name {} is deprecated for model {}, use {} instead'.format(
+            parameter_name, model_name, actual_name
         )
         assert expected_warning_message == str(warning.message)
 
@@ -266,6 +268,7 @@ class test_model_parametercase_instance(test_model_renamed):
 
     def setUp(self):
         self.m = ParameterCase()
+        self.expected_names = ['Period', 'Offset', 'Ampl']
 
     def test_name(self):
         self.assertEqual(self.m.name, 'parametercase')
