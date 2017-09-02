@@ -29,7 +29,6 @@ typedef double SherpaFloat;
 typedef sherpa::Array< double, NPY_DOUBLE > DoubleArray;
 typedef DoubleArray SherpaFloatArray;
 
-typedef sherpa::Array< char, NPY_STRING > CharArray;
 typedef sherpa::Array< int, NPY_INT > IntArray;
 
 typedef int (*converter)( PyObject*, void* );
