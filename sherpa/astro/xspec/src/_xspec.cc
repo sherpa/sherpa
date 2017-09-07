@@ -1,6 +1,4 @@
-// 
-//  Copyright (C) 2007, 2015, 2016, 2017
-//     Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -68,18 +66,15 @@ int _sherpa_init_xspec_library();
 // TODO: is this defined in an XSPEC header file?
 #define ABUND_SIZE (30) // number of elements in Solar Abundance table
 
+// C_<model> are declared here
+#include "funcWrappers.h"
+
 extern "C" {
 
 void xsaped_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbape_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsblbd_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbbrd_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-//void xsbexrav_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xsbexrav(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_xsbexriv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_brokenPowerLaw(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_broken2PowerLaw(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_sirf(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsbmc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbrms_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbvpe_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -88,16 +83,10 @@ void c6pmekl_(float* ear, int* ne, float* param, int* ifl, float* photar, float*
 void c6pvmkl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void c6vmekl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void cemekl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_cemVMekal(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void xscflw_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xscflw(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void compbb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void compls_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xscompps_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xscompps(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void compst_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xstitg_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_cutoffPowerLaw(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void disk_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void diskir_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsdskb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -106,81 +95,35 @@ void diskm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* p
 void disko_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void diskpbb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsdiskpn_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// was  void xeq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_equil(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsxpdec_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void ezdiskbb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsgaul_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xnneq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_gnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void grad_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsgrbm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_kerrbb(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_kerrdisk(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void spin_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xslaor(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void laor2_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_laor2(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xslorz_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsmeka_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsmekl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xsmkcf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xsmkcf(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void C_xneq(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_nei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_nlapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void xshock_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_npshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void nsa_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void nsagrav_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void nsatmos_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void nsmax_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xsnteea_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xsnteea(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void nthcomp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_nthcomp(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xspegp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xspexrav_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xspexrav(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_xspexriv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsp1tr_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_powerLaw(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsposm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xneqs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_pshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsrays_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xredge_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsrefsch_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xsedov_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_sedov(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void srcut_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void sresc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsstep_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvape_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbrmv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xseq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_vequil(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void xsnneq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_vgnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsvmek_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvmkl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xsvmcf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xsvmcf(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void C_xsneq(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_vnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void xsshock_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_vnpshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void xsneqs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_vpshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsvrys_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xssedov_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_vsedov(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xszbod_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszbrm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xszgau_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xszgau(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_zpowerLaw(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_xsabsori(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void acisabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xscnst_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xscabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -189,28 +132,17 @@ void xsdust_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void xsedge_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsabsc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsexp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xsgabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_gaussianAbsorptionLine(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xshecu_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xshrfl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsntch_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsabsp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsphab_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsplab_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void xspwab_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xspwab(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xscred_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xssmdg_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_superExpCutoff(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsspln_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xssssi_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void swind1_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void tbabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_tbabs(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void tbgrain_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_tbgrain(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void tbvabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_tbvabs(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsred_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsabsv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvphb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -225,8 +157,6 @@ void xszphb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void zxipcf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszcrd_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void msldst_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-// void ztbabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_ztbabs(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xszvab_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszvfe_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszvph_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -235,21 +165,12 @@ void xszwnb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 
 // New XSPEC 12.7 models
 
-void C_cplinear(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void xseqpair_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xseqpair(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void xseqth_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xseqth(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-// void xscompth_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_xscompth(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xsbvvp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvvap_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void zigm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 
 // New XSPEC 12.7.1 models
 
-void C_gaussDem(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_vgaussDem(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void logpar_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void eplogpar_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void optxagn_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -259,20 +180,10 @@ void pexmon_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 // Models from 12.8.0, 12.8.1, and 12.8.2
 
 // additive
-void C_agauss(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_zagauss(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xscompmag(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xscomptb(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void nsmaxg_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void nsx_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void C_rnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_vrnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_vvrnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_vvgnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_vvnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_vvnpshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_vvpshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-void C_vvsedov(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 
 //multiplicative
 void xsphei_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
