@@ -81,8 +81,10 @@ before_install:
      sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
      export HEADAS=$MINICONDA/envs/build/Xspec/spectral;
      export LD_LIBRARY_PATH=$MINICONDA/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
+     export XSPEC_INCLUDE_PATH=$MINICONDA/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/include/;
      sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
      sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=$LD_LIBRARY_PATH|g" setup.cfg;
+     sed -i.orig "s|#xspec_include_dirs = None|xspec_include_dirs=$XSPEC_INCLUDE_PATH|g" setup.cfg;
     fi
 
   # No test data, then remove submodule (git automatically clones recursively)

@@ -29,32 +29,46 @@ int _sherpa_init_xspec_library();
 #include <iostream>
 #include <fstream>
 
+// The symbols listed in XSPEC version 12.9.1
+// at https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixExternal.html
+// are given below. Note that this is the C/FORTRAN interface, not the
+// more-featureful FunctionUtility module.
+//
+// Functions which are used below:
+// FNINIT	Initializes data directory locations needed by the models. See below for a fuller description.
+// FGABND	Get an element abundance.
+// FGCHAT	Get current chatter level setting for model functions' output verbosity.
+// FPCHAT	Set the chatter level. Default is 10, higher chatter levels produce more output.
+// FGMSTR	Get a model string value (see XSPEC xset command).
+// FPMSTR	Set a model string value.
+// FPSLFL	Load values of a file solar abundance table (see abund command).
+// FGSOLR	Get the solar abundance table setting.
+// FPSOLR	Set the solar abundance table.
+// FGXSCT	Get the cross section table setting.
+// FPXSCT	Set the cross section table.
+// csmgh0	Get the cosmology H$_0$ setting (see the cosmo command).
+// csmph0	Set H$_0$.
+// csmgl0	Get $\Lambda_0$.
+// csmpl0	Set $\Lambda_0$.
+// csmgq0	Get q$_0$.
+// csmpq0	Put q$_0$.
+// xs_getVersion (or xgvers)	Retrieve XSPEC's version string.
+//
+// Functions which are currently not wrapped:
+// FGDATD	Get the model .dat files path.
+// FPDATD	Set the model .dat files path.
+// FGMODF	Get the model ion data path.
+// RFLABD	Read abundance data from a file, then load and set this to be the current abundance table. (Essentially this combines a file read with the FPSLFL and FPSOLR functions.)
+// fzsq	Computes the luminosity distance, (c/H$_0$)*fzsq. The function is valid for small values of q$_0$*z for the case of no cosmological constant and uses the approximation of Pen (1999 ApJS 120, 49) for the case of a cosmological constant and a flat Universe. The function is not valid for non-zero cosmological constant if the Universe is not flat.
+// DGFILT	Get a particular XFLT keyword value from a data file.
+// DGNFLT	Get the number of XFLT keywords in a data file.
+//
+#include "xsFortran.h"
+
+// TODO: is this defined in an XSPEC header file?
 #define ABUND_SIZE (30) // number of elements in Solar Abundance table
 
 extern "C" {
-
-// Lifted from XSPEC 12 include directory
-char* FGXSCT(void); 
-char* FGSOLR(void);
-
-char* FGMSTR(char* dname);
-float FGABND(char* element);
-
-void FPSOLR(const char* table, int* ierr);
-void FPXSCT(const char* csection, int* ierr);
-void FPMSTR(const char* value1, const char* value2);
-void FPSLFL(float rvalue[], int nvalue, int *ierr);
-
-void FNINIT(void);
-float csmgq0(void);
-float csmgh0(void);
-float csmgl0(void);
-void csmpq0(float q0);
-void csmph0(float H0);
-void csmpl0(float lambda0);
-int FGCHAT();
-void FPCHAT(int chat);
-int xs_getVersion(char* buffer, int buffSize);
 
 void xsaped_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbape_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
