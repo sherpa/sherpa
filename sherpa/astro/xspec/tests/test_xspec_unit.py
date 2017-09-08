@@ -21,7 +21,7 @@
 #
 
 import os
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, gettempdir
 
 import pytest
 import six
@@ -282,6 +282,8 @@ def validate_xspec_setting(getfunc, setfunc, newval, altval):
         setfunc(oval)
 
     assert xval == nval
+
+    # As a sanity check ensure we are back at the starting point
     assert getfunc() == oval
 
 
@@ -417,6 +419,19 @@ def test_cosmo_change():
     assert nval_h0 == pytest.approx(new_h0)
     assert nval_q0 == pytest.approx(new_q0)
     assert nval_l0 == pytest.approx(new_l0)
+
+
+@requires_xspec
+def test_path_manager_change():
+    """Can we change the manager-path setting?
+    """
+
+    from sherpa.astro.xspec import _xspec
+
+    validate_xspec_setting(_xspec.get_xspath_manager,
+                           _xspec.set_xspath_manager,
+                           '/dev/null',
+                           gettempdir())
 
 
 @requires_data

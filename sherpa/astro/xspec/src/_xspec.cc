@@ -39,6 +39,9 @@ int _sherpa_init_xspec_library();
 // FPCHAT	Set the chatter level. Default is 10, higher chatter levels produce more output.
 // FGMSTR	Get a model string value (see XSPEC xset command).
 // FPMSTR	Set a model string value.
+// FGDATD	Get the model .dat files path.
+// FPDATD	Set the model .dat files path.
+// FGMODF	Get the model ion data path.
 // FPSLFL	Load values of a file solar abundance table (see abund command).
 // FGSOLR	Get the solar abundance table setting.
 // FPSOLR	Set the solar abundance table.
@@ -53,9 +56,6 @@ int _sherpa_init_xspec_library();
 // xs_getVersion (or xgvers)	Retrieve XSPEC's version string.
 //
 // Functions which are currently not wrapped:
-// FGDATD	Get the model .dat files path.
-// FPDATD	Set the model .dat files path.
-// FGMODF	Get the model ion data path.
 // RFLABD	Read abundance data from a file, then load and set this to be the current abundance table. (Essentially this combines a file read with the FPSLFL and FPSOLR functions.)
 // fzsq	Computes the luminosity distance, (c/H$_0$)*fzsq. The function is valid for small values of q$_0$*z for the case of no cosmological constant and uses the approximation of Pen (1999 ApJS 120, 49) for the case of a cosmological constant and a flat Universe. The function is not valid for non-zero cosmological constant if the Universe is not flat.
 // DGFILT	Get a particular XFLT keyword value from a data file.
@@ -721,7 +721,7 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
     return NULL;
   }
 
-  Py_RETURN_NONE;  
+  Py_RETURN_NONE;
 
 }
 
@@ -756,7 +756,7 @@ static PyObject* set_xset( PyObject *self, PyObject *args )
     return NULL;
   }
 
-  Py_RETURN_NONE;  
+  Py_RETURN_NONE;
 
 }
 
@@ -823,6 +823,34 @@ static PyObject* get_manager_data_path( PyObject *self )
 static PyObject* get_model_data_path( PyObject *self )
 {
   return get_xspec_path("model", FGMODF);
+}
+
+static PyObject* set_manager_data_path( PyObject *self, PyObject *args )
+{
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  char* path = NULL;
+
+  if ( !PyArg_ParseTuple( args, (char*)"s", &path ) )
+    return NULL;
+
+  try {
+
+    FPDATD( path );
+
+  } catch(...) {
+
+    std::ostringstream emsg;
+    emsg << "could not set XSPEC manager path to '" << path << "'";
+    PyErr_SetString( PyExc_ValueError,
+                     emsg.str().c_str() );
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+
 }
 
 // for documentation
@@ -1130,7 +1158,8 @@ static PyMethodDef XSpecMethods[] = {
             "   The path to the manager directory containing the various\n"
             "   *.dat files used by XSPEC.\n"
             SEEALSODOC
-            "set_xspath_model : Return the path to the model data files.\n"
+            "get_xspath_model : Return the path to the model data files.\n"
+            "set_xspath_manager : Set the path to the files describing the XSPEC models.\n"
             EXAMPLESDOC "\n"
             ">>> get_xspath_manager()\n"
             "'/usr/local/heasoft-6.22/x86_64-unknown-linux-gnu-libc2.24/../spectral/manager'\n\n"},
@@ -1144,10 +1173,22 @@ static PyMethodDef XSpecMethods[] = {
             "   The path to the directory containing the files used by\n"
             "   the XSPEC models.\n"
             SEEALSODOC
-            "set_xspath_manager : Return the path to the files describing the XSPEC models.\n"
+            "get_xspath_manager : Return the path to the files describing the XSPEC models.\n"
             EXAMPLESDOC "\n"
             ">>> get_xspath_model()\n"
             "'/usr/local/heasoft-6.22/x86_64-unknown-linux-gnu-libc2.24/../spectral/modelData'\n\n"},
+
+  { (char*)"set_xspath_manager",
+    (PyCFunction)set_manager_data_path, METH_VARARGS,
+    (char*) "set_xspath_manager(path)\n\n"
+            "Set the path to the files describing the XSPEC models.\n"
+            PARAMETERSDOC
+            "path : str\n"
+            "   The new path.\n"
+            SEEALSODOC
+            "get_xspath_manager : Return the path to the files describing the XSPEC models.\n"
+            EXAMPLESDOC "\n"
+            ">>> set_xspath_manager('/data/xspec/spectral/manager')\n\n"},
 
   XSPECMODELFCT_NORM( xsaped, 4 ),
   XSPECMODELFCT_NORM( xsbape, 5 ),
