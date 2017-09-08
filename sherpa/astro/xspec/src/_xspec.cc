@@ -789,6 +789,42 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 
 }
 
+// Perhaps this should be expanded to some of the other routines
+// that return a string, rather than just the paths?
+//
+static PyObject* get_xspec_path( const char *label, char *getfunc() )
+{
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return NULL;
+
+  char* str_value = NULL;
+  try {
+    str_value = getfunc();
+  } catch(...) {
+
+    std::ostringstream emsg;
+    emsg << "could not get XSPEC " << label << " path";
+    PyErr_SetString( PyExc_LookupError,
+                     emsg.str().c_str() );
+    return NULL;
+
+  }
+
+  return Py_BuildValue( (char*)"s", str_value );
+
+}
+
+static PyObject* get_manager_data_path( PyObject *self )
+{
+  return get_xspec_path("manager", FGDATD);
+}
+
+static PyObject* get_model_data_path( PyObject *self )
+{
+  return get_xspec_path("model", FGMODF);
+}
+
 // for documentation
 #define SEEALSODOC "\nSee also\n--------\n"
 #define NOTESDOC "\nNotes\n-----\n"
@@ -1084,6 +1120,34 @@ static PyMethodDef XSpecMethods[] = {
             "will only return a value if it has previously been set\n"
             "with a call to `set_xsxset`. There is no way to retrive\n"
             "the default value of a setting.\n\n"},
+
+  { (char*)"get_xspath_manager",
+    (PyCFunction)get_manager_data_path, METH_NOARGS,
+    (char*) "get_xspath_manager()\n\n"
+            "Return the path to the files describing the XSPEC models.\n"
+            RETURNSDOC
+            "path : str\n"
+            "   The path to the manager directory containing the various\n"
+            "   *.dat files used by XSPEC.\n"
+            SEEALSODOC
+            "set_xspath_model : Return the path to the model data files.\n"
+            EXAMPLESDOC "\n"
+            ">>> get_xspath_manager()\n"
+            "'/usr/local/heasoft-6.22/x86_64-unknown-linux-gnu-libc2.24/../spectral/manager'\n\n"},
+
+  { (char*)"get_xspath_model",
+    (PyCFunction)get_model_data_path, METH_NOARGS,
+    (char*) "get_xspath_model()\n\n"
+            "Return the path to the model data files.\n"
+            RETURNSDOC
+            "path : str\n"
+            "   The path to the directory containing the files used by\n"
+            "   the XSPEC models.\n"
+            SEEALSODOC
+            "set_xspath_manager : Return the path to the files describing the XSPEC models.\n"
+            EXAMPLESDOC "\n"
+            ">>> get_xspath_model()\n"
+            "'/usr/local/heasoft-6.22/x86_64-unknown-linux-gnu-libc2.24/../spectral/modelData'\n\n"},
 
   XSPECMODELFCT_NORM( xsaped, 4 ),
   XSPECMODELFCT_NORM( xsbape, 5 ),

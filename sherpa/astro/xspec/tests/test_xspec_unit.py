@@ -20,6 +20,7 @@
 # Supplement test_xspec.py with py.test tests
 #
 
+import os
 from tempfile import NamedTemporaryFile
 
 import pytest
@@ -153,6 +154,44 @@ def test_xsect_default():
 
     oval = xspec.get_xsxsect()
     assert oval == DEFAULT_XSECT
+
+
+@requires_xspec
+def test_manager_path_default():
+    """Check the expected default setting for the manager path.
+
+    Ideally this test would be run before any other
+    tests of XSPEC are made (i.e. any XSPEC code is called).
+    """
+
+    # Is this always going to be correct?
+    default_path = os.path.join(os.environ['HEADAS'],
+                                '../spectral/manager')
+
+    # At present this is not exposed in the xspec module
+    from sherpa.astro.xspec import _xspec
+
+    oval = _xspec.get_xspath_manager()
+    assert oval == default_path
+
+
+@requires_xspec
+def test_model_path_default():
+    """Check the expected default setting for the model data path.
+
+    Ideally this test would be run before any other
+    tests of XSPEC are made (i.e. any XSPEC code is called).
+    """
+
+    # Is this always going to be correct?
+    default_path = os.path.join(os.environ['HEADAS'],
+                                '../spectral/modelData/')
+
+    # At present this is not exposed in the xspec module
+    from sherpa.astro.xspec import _xspec
+
+    oval = _xspec.get_xspath_model()
+    assert oval == default_path
 
 
 @requires_xspec
