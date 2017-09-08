@@ -55,9 +55,14 @@ int _sherpa_init_xspec_library();
 // csmpq0	Put q$_0$.
 // xs_getVersion (or xgvers)	Retrieve XSPEC's version string.
 //
-// Functions which are currently not wrapped:
+// Functions which are not wrapped as their functionality is available:
 // RFLABD	Read abundance data from a file, then load and set this to be the current abundance table. (Essentially this combines a file read with the FPSLFL and FPSOLR functions.)
+//
+// Functions not wrapped as not felt to be that useful:
 // fzsq	Computes the luminosity distance, (c/H$_0$)*fzsq. The function is valid for small values of q$_0$*z for the case of no cosmological constant and uses the approximation of Pen (1999 ApJS 120, 49) for the case of a cosmological constant and a flat Universe. The function is not valid for non-zero cosmological constant if the Universe is not flat.
+//
+// Functions not wrapped since they are not useful as is (they need
+// functionality from 12.9.1 to set the XFLT keywords):
 // DGFILT	Get a particular XFLT keyword value from a data file.
 // DGNFLT	Get the number of XFLT keywords in a data file.
 //
@@ -266,6 +271,12 @@ void C_btapec(const double* energy, int nFlux, const double* params, int spectru
 
 }
 
+// This routine could be called when the module is being initialized,
+// but this would cause XSPEC module initialization even if XSPEC
+// functionality is not used. So each function/model has to ensure
+// that they call _sherpa_init_xspec_library before calling any
+// XSPEC routine.
+//
 // Sun's C++ compiler complains if this is declared static
 int _sherpa_init_xspec_library()
 {
