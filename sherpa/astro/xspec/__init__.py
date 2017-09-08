@@ -185,11 +185,12 @@ def get_xsstate():
     set_xsstate
     """
 
+    # Do not return the internal dictionary but a copy of it.
     return {"abund": get_xsabund(),
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
-            "modelstrings": modelstrings}
+            "modelstrings": modelstrings.copy()}
 
 
 def set_xsstate(state):
