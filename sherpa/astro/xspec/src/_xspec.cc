@@ -61,6 +61,39 @@ int _sherpa_init_xspec_library();
 // DGFILT	Get a particular XFLT keyword value from a data file.
 // DGNFLT	Get the number of XFLT keywords in a data file.
 //
+// Other symbols in xsFortran.h are:
+// DGQFLT       Does a XFLT keyword exist?
+// PDBVAL       Set a database value
+//
+// Symbols in 12.9.1/HEASOFT 6.22 but not in 12.9.0/HEASOFT 6.19
+// FGABNZ
+// FGTABN
+// FGTABZ
+// FGELTI
+// FGNELT
+// FGABFL
+// FPABFL
+// FGAPTH
+// FPAPTH
+// csmpall
+// DPFILT
+// DCLFLT
+// GDBVAL
+// CDBASE
+// FGATDV
+// FPATDV
+//
+// These seem unlikely to be useful for Sherpa
+// xs_getChat
+// xs_write
+// xs_read
+//
+// These are numeric functions which we should have available elsewhere
+// xs_erf
+// xs_erfc
+// gammap
+// gammq
+//
 #include "xsFortran.h"
 
 // TODO: is this defined in an XSPEC header file?
