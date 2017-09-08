@@ -183,12 +183,16 @@ def test_model_path_default():
     tests of XSPEC are made (i.e. any XSPEC code is called).
     """
 
-    # Is this always going to be correct?
-    default_path = os.path.join(os.environ['HEADAS'],
-                                '../spectral/modelData/')
-
     # At present this is not exposed in the xspec module
     from sherpa.astro.xspec import _xspec
+
+    # Is this always going to be correct?
+    #
+    try:
+        default_path = os.environ['XSPEC_MDATA_DIR']
+    except KeyError:
+        default_path = os.path.join(os.environ['HEADAS'],
+                                    '../spectral/modelData/')
 
     oval = _xspec.get_xspath_model()
     assert oval == default_path
