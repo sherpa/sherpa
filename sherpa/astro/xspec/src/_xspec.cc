@@ -285,6 +285,14 @@ void C_reflct(const double* energy, int nFlux, const double* params, int spectru
 void C_simpl(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_zashift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_zmshift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
+// Models from 12.9.1
+//
+//
+#ifdef XSPEC_12_9_1
+void C_btapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#endif
+
 }
 
 // Sun's C++ compiler complains if this is declared static
@@ -1298,6 +1306,13 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_simpl, 3),
   XSPECMODELFCT_CON(C_zashift, 1),
   XSPECMODELFCT_CON(C_zmshift, 1),
+
+  // Models from 12.9.1
+  //
+  //
+  #ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C(C_btapec, 5),
+  #endif
   
   { NULL, NULL, 0, NULL }
 

@@ -28,6 +28,7 @@ from sherpa.models.parameter import hugeval
 from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
 from sherpa.astro.utils import get_xspec_position
 
+from .utils import ModelFunction, version_at_least
 from . import _xspec
 from ._xspec import get_xschatter, get_xsabund, get_xscosmo, \
     get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, \
@@ -307,6 +308,17 @@ class XSModel(ArithmeticModel):
     ``n`` values, but the last element will be zero.
     """
 
+    version_enabled = True
+
+    def __new__(cls, *args, **kwargs):
+        """
+        Take the `__function__` class member (if any) and use it to instantiate a
+        `sherpa.astro.xspec.utils.ModelWrapper` instance.
+        """
+        if hasattr(cls, '__function__') and cls.version_enabled:
+            cls._calc = ModelFunction(cls.__function__)
+        return ArithmeticModel.__new__(cls)
+
     @modelCacher1d
     def calc(self, *args, **kwargs):
         # Ensure output is finite (Keith Arnaud mentioned that XSPEC
@@ -502,7 +514,7 @@ class XSapec(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsaped
+    __function__ = "xsaped"
 
     def __init__(self, name='apec'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
@@ -547,7 +559,7 @@ class XSnlapec(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_nlapec
+    __function__ = "C_nlapec"
 
     def __init__(self, name='nlapec'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
@@ -593,7 +605,7 @@ class XSbapec(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsbape
+    __function__ = "xsbape"
 
     def __init__(self, name='bapec'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
@@ -628,7 +640,7 @@ class XSbbody(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsblbd
+    __function__ = "xsblbd"
 
     def __init__(self, name='bbody'):
         self.kT = Parameter(name, 'kT', 3.0, 1.e-2, 100., 0.0, hugeval, 'keV')
@@ -660,7 +672,7 @@ class XSbbodyrad(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsbbrd
+    __function__ = "xsbbrd"
 
     def __init__(self, name='bbodyrad'):
         self.kT = Parameter(name, 'kT', 3., 1e-3, 100, 0.0, hugeval, 'keV')
@@ -720,7 +732,7 @@ class XSbexrav(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xsbexrav
+    __function__ = "C_xsbexrav"
 
     def __init__(self, name='bexrav'):
         self.Gamma1 = Parameter(name, 'Gamma1', 2., -9., 9., -hugeval, hugeval)
@@ -795,7 +807,7 @@ class XSbexriv(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xsbexriv
+    __function__ = "C_xsbexriv"
 
     def __init__(self, name='bexriv'):
         self.Gamma1 = Parameter(name, 'Gamma1', 2., -9., 9., -hugeval, hugeval)
@@ -847,7 +859,7 @@ class XSbknpower(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_brokenPowerLaw
+    __function__ = "C_brokenPowerLaw"
 
     def __init__(self, name='bknpower'):
         self.PhoIndx1 = Parameter(name, 'PhoIndx1', 1., -2., 9., -hugeval, hugeval)
@@ -896,7 +908,7 @@ class XSbkn2pow(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_broken2PowerLaw
+    __function__ = "C_broken2PowerLaw"
 
     def __init__(self, name='bkn2pow'):
         self.PhoIndx1 = Parameter(name, 'PhoIndx1', 1., -2., 9., -hugeval, hugeval)
@@ -938,7 +950,7 @@ class XSbmc(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsbmc
+    __function__ = "xsbmc"
 
     def __init__(self, name='bmc'):
         self.kT = Parameter(name, 'kT', 1., 1.e-2, 100., 0.0, hugeval, 'keV')
@@ -972,7 +984,7 @@ class XSbremss(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsbrms
+    __function__ = "xsbrms"
 
     def __init__(self, name='bremss'):
         self.kT = Parameter(name, 'kT', 7.0, 1.e-4, 100., 0.0, hugeval, 'keV')
@@ -1011,7 +1023,7 @@ class XSbvapec(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsbvpe
+    __function__ = "xsbvpe"
 
     def __init__(self, name='bvapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
@@ -1068,7 +1080,7 @@ class XSc6mekl(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.c6mekl
+    __function__ = "c6mekl"
 
     def __init__(self, name='c6mekl'):
         self.CPcoef1 = Parameter(name, 'CPcoef1', 1.0, -1, 1, -hugeval, hugeval)
@@ -1120,7 +1132,7 @@ class XSc6pmekl(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.c6pmekl
+    __function__ = "c6pmekl"
 
     def __init__(self, name='c6pmekl'):
         self.CPcoef1 = Parameter(name, 'CPcoef1', 1.0, -1, 1, -hugeval, hugeval)
@@ -1172,7 +1184,7 @@ class XSc6pvmkl(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.c6pvmkl
+    __function__ = "c6pvmkl"
 
     def __init__(self, name='c6pvmkl'):
         self.CPcoef1 = Parameter(name, 'CPcoef1', 1.0, -1, 1, -hugeval, hugeval)
@@ -1236,7 +1248,7 @@ class XSc6vmekl(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.c6vmekl
+    __function__ = "c6vmekl"
 
     def __init__(self, name='c6vmekl'):
         self.CPcoef1 = Parameter(name, 'CPcoef1', 1.0, -1, 1, -hugeval, hugeval)
@@ -1302,7 +1314,7 @@ class XScemekl(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.cemekl
+    __function__ = "cemekl"
 
     def __init__(self, name='cemekl'):
         self.alpha = Parameter(name, 'alpha', 1.0, 0.01, 10, 0.0, hugeval, frozen=True)
@@ -1351,7 +1363,7 @@ class XScevmkl(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_cemVMekal
+    __function__ = "C_cemVMekal"
 
     def __init__(self, name='cevmkl'):
         self.alpha = Parameter(name, 'alpha', 1.0, 0.01, 10, 0.0, hugeval, frozen=True)
@@ -1409,7 +1421,7 @@ class XScflow(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xscflw
+    __function__ = "C_xscflw"
 
     def __init__(self, name='cflow'):
         self.slope = Parameter(name, 'slope', 0., -5., 5., -hugeval, hugeval)
@@ -1449,7 +1461,7 @@ class XScompbb(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.compbb
+    __function__ = "compbb"
 
     def __init__(self, name='compbb'):
         self.kT = Parameter(name, 'kT', 1.0, 1.e-2, 100., 0.0, hugeval, 'keV')
@@ -1480,7 +1492,7 @@ class XScompLS(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.compls
+    __function__ = "compls"
 
     def __init__(self, name='compls'):
         self.kT = Parameter(name, 'kT', 2., .01, 10., 0.0, hugeval, 'keV')
@@ -1558,7 +1570,7 @@ class XScompPS(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xscompps
+    __function__ = "C_xscompps"
 
     def __init__(self, name='compps'):
         self.kTe = Parameter(name, 'kTe', 100., 20., 1.e5, 0.0, hugeval, 'keV')
@@ -1605,7 +1617,7 @@ class XScompST(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.compst
+    __function__ = "compst"
 
     def __init__(self, name='compst'):
         self.kT = Parameter(name, 'kT', 2., .01, 100., 0.0, hugeval, 'keV')
@@ -1646,7 +1658,7 @@ class XScompTT(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xstitg
+    __function__ = "xstitg"
 
     def __init__(self, name='comptt'):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
@@ -1685,7 +1697,7 @@ class XScutoffpl(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_cutoffPowerLaw
+    __function__ = "C_cutoffPowerLaw"
 
     def __init__(self, name='cutoffpl'):
         self.PhoIndex = Parameter(name, 'PhoIndex', 1., -2., 9., -hugeval, hugeval)
@@ -1722,7 +1734,7 @@ class XSdisk(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.disk
+    __function__ = "disk"
 
     def __init__(self, name='disk'):
         self.accrate = Parameter(name, 'accrate', 1., 1e-3, 9., 0.0, hugeval)
@@ -1777,7 +1789,7 @@ class XSdiskir(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.diskir
+    __function__ = "diskir"
 
     def __init__(self, name='diskir'):
         self.kT_disk = Parameter(name, 'kT_disk', 1.0, 0.01, 5., 0.0, hugeval, 'keV')
@@ -1815,7 +1827,7 @@ class XSdiskbb(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsdskb
+    __function__ = "xsdskb"
 
     def __init__(self, name='diskbb'):
         self.Tin = Parameter(name, 'Tin', 1., 0., 1000., 0.0, hugeval, 'keV')
@@ -1850,7 +1862,7 @@ class XSdiskline(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsdili
+    __function__ = "xsdili"
 
     def __init__(self, name='diskline'):
         self.LineE = Parameter(name, 'LineE', 6.7, 0., 100., 0.0, hugeval, 'keV')
@@ -1897,7 +1909,7 @@ class XSdiskm(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.diskm
+    __function__ = "diskm"
 
     def __init__(self, name='diskm'):
         self.accrate = Parameter(name, 'accrate', 1., 1e-3, 9., 0.0, hugeval)
@@ -1938,7 +1950,7 @@ class XSdisko(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.disko
+    __function__ = "disko"
 
     def __init__(self, name='disko'):
         self.accrate = Parameter(name, 'accrate', 1., 1e-3, 9., 0.0, hugeval)
@@ -1974,7 +1986,7 @@ class XSdiskpbb(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.diskpbb
+    __function__ = "diskpbb"
 
     def __init__(self, name='diskpbb'):
         self.Tin = Parameter(name, 'Tin', 1.0, 0.1, 10.0, 0.0, hugeval, 'keV')
@@ -2008,7 +2020,7 @@ class XSdiskpn(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsdiskpn
+    __function__ = "xsdiskpn"
 
     def __init__(self, name='diskpn'):
         self.T_max = Parameter(name, 'T_max', 1., 1e-3, 100, 0.0, hugeval, 'keV')
@@ -2048,7 +2060,7 @@ class XSequil(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_equil
+    __function__ = "C_equil"
 
     def __init__(self, name='equil'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -2077,7 +2089,7 @@ class XSexpdec(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsxpdec
+    __function__ = "xsxpdec"
 
     def __init__(self, name='expdec'):
         self.factor = Parameter(name, 'factor', 1.0, 0., 100.0, 0.0, hugeval)
@@ -2104,7 +2116,7 @@ class XSezdiskbb(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.ezdiskbb
+    __function__ = "ezdiskbb"
 
     def __init__(self, name='ezdiskbb'):
         self.T_max = Parameter(name, 'T_max', 1., 0.01, 100., 0.0, hugeval, 'keV')
@@ -2137,7 +2149,7 @@ class XSgaussian(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsgaul
+    __function__ = "xsgaul"
 
     def __init__(self, name='gaussian'):
         self.LineE = Parameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, hugeval, 'keV')
@@ -2186,7 +2198,7 @@ class XSgnei(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_gnei
+    __function__ = "C_gnei"
 
     def __init__(self, name='gnei'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -2236,7 +2248,7 @@ class XSgrad(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.grad
+    __function__ = "grad"
 
     def __init__(self, name='grad'):
         self.D = Parameter(name, 'D', 10.0, 0.0, 10000., 0.0, hugeval, 'kpc', True)
@@ -2272,7 +2284,7 @@ class XSgrbm(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsgrbm
+    __function__ = "xsgrbm"
 
     def __init__(self, name='grbm'):
         self.alpha = Parameter(name, 'alpha', -1., -3., +2., -hugeval, hugeval)
@@ -2333,7 +2345,7 @@ class XSkerrbb(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_kerrbb
+    __function__ = "C_kerrbb"
 
     def __init__(self, name='kerrbb'):
         self.eta = Parameter(name, 'eta', 0., 0., 1.0, 0.0, hugeval, frozen=True)
@@ -2387,7 +2399,7 @@ class XSkerrd(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_kerrdisk
+    __function__ = "C_kerrdisk"
 
     def __init__(self, name='kerrd'):
         self.distance = Parameter(name, 'distance', 1., 0.01, 1000., 0.0, hugeval, 'kpc', True)
@@ -2444,7 +2456,7 @@ class XSkerrdisk(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.spin
+    __function__ = "spin"
 
     def __init__(self, name='kerrdisk'):
         self.lineE = Parameter(name, 'lineE', 6.4, 0.1, 100., 0.0, hugeval, 'keV')
@@ -2497,7 +2509,7 @@ class XSlaor(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xslaor
+    __function__ = "C_xslaor"
 
     def __init__(self, name='laor'):
         self.lineE = Parameter(name, 'lineE', 6.4, 0., 100., 0.0, hugeval, 'keV')
@@ -2550,7 +2562,7 @@ class XSlaor2(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_laor2
+    __function__ = "C_laor2"
 
     def __init__(self, name='laor2'):
         self.lineE = Parameter(name, 'lineE', 6.4, 0., 100., 0.0, hugeval, 'keV')
@@ -2594,7 +2606,7 @@ class XSlorentz(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xslorz
+    __function__ = "xslorz"
 
     def __init__(self, name='lorentz'):
         self.LineE = Parameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, hugeval, 'keV')
@@ -2639,7 +2651,7 @@ class XSmeka(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsmeka
+    __function__ = "xsmeka"
 
     def __init__(self, name='meka'):
         self.kT = Parameter(name, 'kT', 1., 1.e-3, 1.e2, 0.0, hugeval, 'keV')
@@ -2686,7 +2698,7 @@ class XSmekal(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsmekl
+    __function__ = "xsmekl"
 
     def __init__(self, name='mekal'):
         self.kT = Parameter(name, 'kT', 1., 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -2733,7 +2745,7 @@ class XSmkcflow(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xsmkcf
+    __function__ = "C_xsmkcf"
 
     def __init__(self, name='mkcflow'):
         self.lowT = Parameter(name, 'lowT', 0.1, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -2778,7 +2790,7 @@ class XSnei(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_nei
+    __function__ = "C_nei"
 
     def __init__(self, name='nei'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -2824,7 +2836,7 @@ class XSrnei(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_rnei
+    __function__ = "C_rnei"
 
     def __init__(self, name='rnei'):
         self.kT = Parameter(name, 'kT', 0.5, 0.0808, 79.9, 0.0808, 79.9, units='keV')
@@ -2873,7 +2885,7 @@ class XSvrnei(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vrnei
+    __function__ = "C_vrnei"
 
     def __init__(self, name='vrnei'):
         self.kT = Parameter(name, 'kT', 0.5, 0.0808, 79.9, 0.0808, 79.9, units='keV')
@@ -2935,7 +2947,7 @@ class XSvvrnei(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vvrnei
+    __function__ = "C_vvrnei"
 
     def __init__(self, name='vvrnei'):
         self.kT = Parameter(name, 'kT', 0.5, 0.0808, 79.9, 0.0808, 79.9, units='keV')
@@ -3015,7 +3027,7 @@ class XSnpshock(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_npshock
+    __function__ = "C_npshock"
 
     def __init__(self, name='npshock'):
         self.kT_a = Parameter(name, 'kT_a', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -3059,7 +3071,7 @@ class XSnsa(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.nsa
+    __function__ = "nsa"
 
     def __init__(self, name='nsa'):
         self.LogT_eff = Parameter(name, 'LogT_eff', 6.0, 5.0, 7.0, 0.0, hugeval, 'K')
@@ -3098,7 +3110,7 @@ class XSnsagrav(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.nsagrav
+    __function__ = "nsagrav"
 
     def __init__(self, name='nsagrav'):
         self.LogT_eff = Parameter(name, 'LogT_eff', 6.0, 5.5, 6.5, 0.0, hugeval, 'K')
@@ -3133,7 +3145,7 @@ class XSnsatmos(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.nsatmos
+    __function__ = "nsatmos"
 
     def __init__(self, name='nsatmos'):
         self.LogT_eff = Parameter(name, 'LogT_eff', 6.0, 5.0, 6.5, 0.0, hugeval, 'K')
@@ -3172,7 +3184,7 @@ class XSnsmax(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.nsmax
+    __function__ = "nsmax"
 
     def __init__(self, name='nsmax'):
         self.logTeff = Parameter(name, 'logTeff', 6.0, 5.5, 6.8, 0.0, hugeval, 'K')
@@ -3213,7 +3225,7 @@ class XSnsmaxg(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.nsmaxg
+    __function__ = "nsmaxg"
 
     def __init__(self, name='nsmaxg'):
         self.logTeff = Parameter(name, 'logTeff', 6.0, 5.5, 6.9, 5.5, 6.9, units='K')
@@ -3256,7 +3268,7 @@ class XSnsx(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.nsx
+    __function__ = "nsx"
 
     def __init__(self, name='nsx'):
         self.logTeff = Parameter(name, 'logTeff', 6.0, 5.5, 6.7, 5.5, 6.7, units='K')
@@ -3325,7 +3337,7 @@ class XSnteea(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xsnteea
+    __function__ = "C_xsnteea"
 
     def __init__(self, name='nteea'):
         self.l_nth = Parameter(name, 'l_nth', 100., 0., 1.e4, 0.0, hugeval)
@@ -3375,7 +3387,7 @@ class XSnthComp(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_nthcomp
+    __function__ = "C_nthcomp"
 
     def __init__(self, name='nthcomp'):
         self.Gamma = Parameter(name, 'Gamma', 1.7, 1.001, 5., 1.001, 10.)
@@ -3416,7 +3428,7 @@ class XSpegpwrlw(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xspegp
+    __function__ = "xspegp"
 
     def __init__(self, name='pegpwrlw'):
         self.PhoIndex = Parameter(name, 'PhoIndex', 1., -2., 9., -hugeval, hugeval)
@@ -3473,7 +3485,7 @@ class XSpexrav(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xspexrav
+    __function__ = "C_xspexrav"
 
     def __init__(self, name='pexrav'):
         self.PhoIndex = Parameter(name, 'PhoIndex', 2., -9., 9., -hugeval, hugeval)
@@ -3538,7 +3550,7 @@ class XSpexriv(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xspexriv
+    __function__ = "C_xspexriv"
 
     def __init__(self, name='pexriv'):
         self.PhoIndex = Parameter(name, 'PhoIndex', 2., -9., 9., -hugeval, hugeval)
@@ -3594,7 +3606,7 @@ class XSplcabs(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsp1tr
+    __function__ = "xsp1tr"
 
     def __init__(self, name='plcabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -3636,7 +3648,7 @@ class XSpowerlaw(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_powerLaw
+    __function__ = "C_powerLaw"
 
     def __init__(self, name='powerlaw'):
         self.PhoIndex = Parameter(name, 'PhoIndex', 1., -2., 9., -hugeval, hugeval)
@@ -3661,7 +3673,7 @@ class XSposm(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsposm
+    __function__ = "xsposm"
 
     def __init__(self, name='posm'):
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
@@ -3703,7 +3715,7 @@ class XSpshock(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_pshock
+    __function__ = "C_pshock"
 
     def __init__(self, name='pshock'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -3744,7 +3756,7 @@ class XSraymond(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsrays
+    __function__ = "xsrays"
 
     def __init__(self, name='raymond'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
@@ -3775,7 +3787,7 @@ class XSredge(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xredge
+    __function__ = "xredge"
 
     def __init__(self, name='redge'):
         self.edge = Parameter(name, 'edge', 1.4, 0.001, 100., 0.0, hugeval, 'keV')
@@ -3841,7 +3853,7 @@ class XSrefsch(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsrefsch
+    __function__ = "xsrefsch"
 
     def __init__(self, name='refsch'):
         self.PhoIndex = Parameter(name, 'PhoIndex', 2., -9., 9., -hugeval, hugeval)
@@ -3898,7 +3910,7 @@ class XSsedov(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_sedov
+    __function__ = "C_sedov"
 
     def __init__(self, name='sedov'):
         self.kT_a = Parameter(name, 'kT_a', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -3948,7 +3960,7 @@ class XSsirf(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_sirf
+    __function__ = "C_sirf"
 
     def __init__(self, name='sirf'):
         self.tin = Parameter(name,    'tin', 1., 0.01, 100., 0.01, 1000., 'keV')
@@ -3991,7 +4003,7 @@ class XSsrcut(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.srcut
+    __function__ = "srcut"
 
     def __init__(self, name='srcut'):
         self.alpha = Parameter(name, 'alpha', 0.5, 0.3, 0.8, 0.0, hugeval)
@@ -4027,7 +4039,7 @@ class XSsresc(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.sresc
+    __function__ = "sresc"
 
     def __init__(self, name='sresc'):
         self.alpha = Parameter(name, 'alpha', 0.5, 0.3, 0.8, 0.0, hugeval)
@@ -4061,7 +4073,7 @@ class XSstep(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsstep
+    __function__ = "xsstep"
 
     def __init__(self, name='step'):
         self.Energy = Parameter(name, 'Energy', 6.5, 0., 100., 0.0, hugeval, 'keV')
@@ -4104,7 +4116,7 @@ class XSvapec(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsvape
+    __function__ = "xsvape"
 
     def __init__(self, name='vapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
@@ -4152,7 +4164,7 @@ class XSvbremss(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsbrmv
+    __function__ = "xsbrmv"
 
     def __init__(self, name='vbremss'):
         self.kT = Parameter(name, 'kT', 3.0, 1.e-2, 100., 0.0, hugeval, 'keV')
@@ -4191,7 +4203,7 @@ class XSvequil(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vequil
+    __function__ = "C_vequil"
 
     def __init__(self, name='vequil'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -4249,7 +4261,7 @@ class XSvgnei(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vgnei
+    __function__ = "C_vgnei"
 
     def __init__(self, name='vgnei'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -4311,7 +4323,7 @@ class XSvvgnei(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vvgnei
+    __function__ = "C_vvgnei"
 
     def __init__(self, name='vvgnei'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -4381,7 +4393,7 @@ class XSvmeka(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsvmek
+    __function__ = "xsvmek"
 
     def __init__(self, name='vmeka'):
         self.kT = Parameter(name, 'kT', 1., 1.e-3, 1.e2, 0.0, hugeval, 'keV')
@@ -4440,7 +4452,7 @@ class XSvmekal(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsvmkl
+    __function__ = "xsvmkl"
 
     def __init__(self, name='vmekal'):
         self.kT = Parameter(name, 'kT', 1., 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -4500,7 +4512,7 @@ class XSvmcflow(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xsvmcf
+    __function__ = "C_xsvmcf"
 
     def __init__(self, name='vmcflow'):
         self.lowT = Parameter(name, 'lowT', 0.1, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -4560,7 +4572,7 @@ class XSvnei(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vnei
+    __function__ = "C_vnei"
 
     def __init__(self, name='vnei'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -4619,7 +4631,7 @@ class XSvvnei(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vvnei
+    __function__ = "C_vvnei"
 
     def __init__(self, name='vvnei'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
@@ -4700,7 +4712,7 @@ class XSvnpshock(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vnpshock
+    __function__ = "C_vnpshock"
 
     def __init__(self, name='vnpshock'):
         self.kT_a = Parameter(name, 'kT_a', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -4767,7 +4779,7 @@ class XSvvnpshock(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vvnpshock
+    __function__ = "C_vvnpshock"
 
     def __init__(self, name='vvnpshock'):
         self.kT_a = Parameter(name, 'kT_a', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
@@ -4846,7 +4858,7 @@ class XSvpshock(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vpshock
+    __function__ = "C_vpshock"
 
     def __init__(self, name='vpshock'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -4908,7 +4920,7 @@ class XSvvpshock(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vvpshock
+    __function__ = "C_vvpshock"
 
     def __init__(self, name='vvpshock'):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
@@ -4977,7 +4989,7 @@ class XSvraymond(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsvrys
+    __function__ = "xsvrys"
 
     def __init__(self, name='vraymond'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -5037,7 +5049,7 @@ class XSvsedov(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vsedov
+    __function__ = "C_vsedov"
 
     def __init__(self, name='vsedov'):
         self.kT_a = Parameter(name, 'kT_a', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -5101,7 +5113,7 @@ class XSvvsedov(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vvsedov
+    __function__ = "C_vvsedov"
 
     def __init__(self, name='vvsedov'):
         self.kT_a = Parameter(name, 'kT_a', 1.0, 0.0808, 79.9, 0.0808, hugeval, 'keV')
@@ -5168,7 +5180,7 @@ class XSzbbody(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xszbod
+    __function__ = "xszbod"
 
     def __init__(self, name='zbbody'):
         self.kT = Parameter(name, 'kT', 3.0, 1.e-2, 100., 0.0, hugeval, 'keV')
@@ -5203,7 +5215,7 @@ class XSzbremss(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xszbrm
+    __function__ = "xszbrm"
 
     def __init__(self, name='zbremss'):
         self.kT = Parameter(name, 'kT', 7.0, 1.e-4, 100., 0.0, hugeval, 'keV')
@@ -5239,7 +5251,7 @@ class XSzgauss(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xszgau
+    __function__ = "C_xszgau"
 
     def __init__(self, name='zgauss'):
         self.LineE = Parameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, hugeval, 'keV')
@@ -5281,7 +5293,7 @@ class XSzpowerlw(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_zpowerLaw
+    __function__ = "C_zpowerLaw"
 
     def __init__(self, name='zpowerlw'):
         self.PhoIndex = Parameter(name, 'PhoIndex', 1., -2., 9., -hugeval, hugeval)
@@ -5318,7 +5330,7 @@ class XSabsori(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.C_xsabsori
+    __function__ = "C_xsabsori"
 
     def __init__(self, name='absori'):
         self.PhoIndex = Parameter(name, 'PhoIndex', 2., 0., 4., 0.0, hugeval, frozen=True)
@@ -5360,7 +5372,7 @@ class XSacisabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.acisabs
+    __function__ = "acisabs"
 
     def __init__(self, name='acisabs'):
         self.Tdays = Parameter(name, 'Tdays', 850., 0., 10000., 0.0, hugeval, 'days', True)
@@ -5391,7 +5403,7 @@ class XSconstant(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xscnst
+    __function__ = "xscnst"
 
     def __init__(self, name='constant'):
         self.factor = Parameter(name, 'factor', 1., 0.0, 1.e10, 0.0, hugeval)
@@ -5415,7 +5427,7 @@ class XScabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xscabs
+    __function__ = "xscabs"
 
     def __init__(self, name='cabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -5447,7 +5459,7 @@ class XScyclabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xscycl
+    __function__ = "xscycl"
 
     def __init__(self, name='cyclabs'):
         self.Depth0 = Parameter(name, 'Depth0', 2.0, 0., 100., 0.0, hugeval)
@@ -5477,7 +5489,7 @@ class XSdust(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsdust
+    __function__ = "xsdust"
 
     def __init__(self, name='dust'):
         self.Frac = Parameter(name, 'Frac', 0.066, 0., 1., 0.0, hugeval, frozen=True)
@@ -5508,7 +5520,7 @@ class XSedge(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsedge
+    __function__ = "xsedge"
 
     def __init__(self, name='edge'):
         self.edgeE = Parameter(name, 'edgeE', 7.0, 0., 100., 0.0, hugeval, 'keV')
@@ -5533,7 +5545,7 @@ class XSexpabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsabsc
+    __function__ = "xsabsc"
 
     def __init__(self, name='expabs'):
         self.LowECut = Parameter(name, 'LowECut', 2., 0., 100., 0.0, hugeval, 'keV')
@@ -5561,7 +5573,7 @@ class XSexpfac(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsexp
+    __function__ = "xsexp"
 
     def __init__(self, name='expfac'):
         self.Ampl = Parameter(name, 'Ampl', 1., 0., 1.e5, 0.0, hugeval)
@@ -5592,7 +5604,7 @@ class XSgabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.C_gaussianAbsorptionLine
+    __function__ = "C_gaussianAbsorptionLine"
 
     def __init__(self, name='gabs'):
         self.LineE = Parameter(name, 'LineE', 1.0, 0., 1.e6, 0.0, hugeval, 'keV')
@@ -5628,7 +5640,7 @@ class XShighecut(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xshecu
+    __function__ = "xshecu"
 
     def __init__(self, name='highecut'):
         self.cutoffE = Parameter(name, 'cutoffE', 10., 1.e-2, 1.e6, 0.0, hugeval, 'keV')
@@ -5676,7 +5688,7 @@ class XShrefl(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xshrfl
+    __function__ = "xshrfl"
 
     def __init__(self, name='hrefl'):
         self.thetamin = Parameter(name, 'thetamin', 0., 0.0, 90., 0.0, hugeval, frozen=True)
@@ -5711,7 +5723,7 @@ class XSnotch(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsntch
+    __function__ = "xsntch"
 
     def __init__(self, name='notch'):
         self.LineE = Parameter(name, 'LineE', 3.5, 0., 20., 0.0, hugeval, 'keV')
@@ -5747,7 +5759,7 @@ class XSpcfabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsabsp
+    __function__ = "xsabsp"
 
     def __init__(self, name='pcfabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -5782,7 +5794,7 @@ class XSphabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsphab
+    __function__ = "xsphab"
 
     def __init__(self, name='phabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -5808,7 +5820,7 @@ class XSplabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsplab
+    __function__ = "xsplab"
 
     def __init__(self, name='plabs'):
         self.index = Parameter(name, 'index', 2.0, 0.0, 5., 0.0, hugeval)
@@ -5843,7 +5855,7 @@ class XSpwab(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.C_xspwab
+    __function__ = "C_xspwab"
 
     def __init__(self, name='pwab'):
         self.nHmin = Parameter(name, 'nHmin', 1., 1.e-7, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -5873,7 +5885,7 @@ class XSredden(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xscred
+    __function__ = "xscred"
 
     def __init__(self, name='redden'):
         self.EBV = Parameter(name, 'EBV', 0.05, 0., 10., 0.0, hugeval)
@@ -5907,7 +5919,7 @@ class XSsmedge(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xssmdg
+    __function__ = "xssmdg"
 
     def __init__(self, name='smedge'):
         self.edgeE = Parameter(name, 'edgeE', 7.0, 0.1, 100., 0.0, hugeval, 'keV')
@@ -5936,7 +5948,7 @@ class XSspexpcut(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.C_superExpCutoff
+    __function__ = "C_superExpCutoff"
 
     def __init__(self, name='spexpcut'):
         self.Ecut = Parameter(name, 'Ecut', 10.0, 0.0, 1e6, 0.0, hugeval, 'keV')
@@ -5971,7 +5983,7 @@ class XSspline(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsspln
+    __function__ = "xsspln"
 
     def __init__(self, name='spline'):
         self.Estart = Parameter(name, 'Estart', 0.1, 0., 100., 0.0, hugeval, 'keV')
@@ -6000,7 +6012,7 @@ class XSSSS_ice(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xssssi
+    __function__ = "xssssi"
 
     def __init__(self, name='sss_ice'):
         self.clumps = Parameter(name, 'clumps', 0.0, 0., 10., 0.0, hugeval)
@@ -6030,7 +6042,7 @@ class XSswind1(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.swind1
+    __function__ = "swind1"
 
     def __init__(self, name='swind1'):
         self.column = Parameter(name, 'column', 6., 3., 50., 0.0, hugeval)
@@ -6066,7 +6078,7 @@ class XSTBabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.C_tbabs
+    __function__ = "C_tbabs"
 
     def __init__(self, name='tbabs'):
         self.nH = Parameter(name, 'nH', 1., 0., 1E5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6110,7 +6122,7 @@ class XSTBgrain(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.C_tbgrain
+    __function__ = "C_tbgrain"
 
     def __init__(self, name='tbgrain'):
         self.nH = Parameter(name, 'nH', 1., 0., 1E5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6166,7 +6178,7 @@ class XSTBvarabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.C_tbvabs
+    __function__ = "C_tbvabs"
 
     def __init__(self, name='tbvarabs'):
         self.nH = Parameter(name, 'nH', 1., 0., 1E5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6231,7 +6243,7 @@ class XSuvred(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsred
+    __function__ = "xsred"
 
     def __init__(self, name='uvred'):
         self.EBV = Parameter(name, 'EBV', 0.05, 0., 10., 0.0, hugeval)
@@ -6265,7 +6277,7 @@ class XSvarabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsabsv
+    __function__ = "xsabsv"
 
     def __init__(self, name='varabs'):
         self.H = Parameter(name, 'H', 1., 0., 1000., 0.0, hugeval, 'sH22', True)
@@ -6318,7 +6330,7 @@ class XSvphabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsvphb
+    __function__ = "xsvphb"
 
     def __init__(self, name='vphabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6363,7 +6375,7 @@ class XSwabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsabsw
+    __function__ = "xsabsw"
 
     def __init__(self, name='wabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6393,7 +6405,7 @@ class XSwndabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xswnab
+    __function__ = "xswnab"
 
     def __init__(self, name='wndabs'):
         self.nH = Parameter(name, 'nH', 1., 0., 10., 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6442,7 +6454,7 @@ class XSxion(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsxirf
+    __function__ = "xsxirf"
 
     def __init__(self, name='xion'):
         self.height = Parameter(name, 'height', 5., 0.0, 1.e2, 0.0, hugeval, 'r_s')
@@ -6485,7 +6497,7 @@ class XSzdust(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.mszdst
+    __function__ = "mszdst"
 
     def __init__(self, name='zdust'):
         self.method = Parameter(name, 'method', 1, 1, 3, 1, 3, alwaysfrozen=True)
@@ -6520,7 +6532,7 @@ class XSzedge(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszedg
+    __function__ = "xszedg"
 
     def __init__(self, name='zedge'):
         self.edgeE = Parameter(name, 'edgeE', 7.0, 0., 100., 0.0, hugeval, 'keV')
@@ -6554,7 +6566,7 @@ class XSzhighect(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszhcu
+    __function__ = "xszhcu"
 
     def __init__(self, name='zhighect'):
         self.cutoffE = Parameter(name, 'cutoffE', 10., 1.e-2, 100., 0.0, hugeval, 'keV')
@@ -6592,7 +6604,7 @@ class XSzpcfabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszabp
+    __function__ = "xszabp"
 
     def __init__(self, name='zpcfabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6630,7 +6642,7 @@ class XSzphabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszphb
+    __function__ = "xszphb"
 
     def __init__(self, name='zphabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6661,7 +6673,7 @@ class XSzxipcf(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.zxipcf
+    __function__ = "zxipcf"
 
     def __init__(self, name='zxipcf'):
         self.Nh = Parameter(name, 'Nh', 10, 0.05, 500, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6694,7 +6706,7 @@ class XSzredden(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszcrd
+    __function__ = "xszcrd"
 
     def __init__(self, name='zredden'):
         self.EBV = Parameter(name, 'EBV', 0.05, 0., 10., 0.0, hugeval)
@@ -6725,7 +6737,7 @@ class XSzsmdust(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.msldst
+    __function__ = "msldst"
 
     def __init__(self, name='zsmdust'):
         self.EBV = Parameter(name, 'EBV', 0.1, 0.0, 100., 0.0, hugeval)
@@ -6763,7 +6775,7 @@ class XSzTBabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.C_ztbabs
+    __function__ = "C_ztbabs"
 
     def __init__(self, name='ztbabs'):
         self.nH = Parameter(name, 'nH', 1., 0., 1E5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6800,7 +6812,7 @@ class XSzvarabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszvab
+    __function__ = "xszvab"
 
     def __init__(self, name='zvarabs'):
         self.H = Parameter(name, 'H', 1., 0., 1000., 0.0, hugeval, 'sH22', True)
@@ -6850,7 +6862,7 @@ class XSzvfeabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszvfe
+    __function__ = "xszvfe"
 
     def __init__(self, name='zvfeabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6892,7 +6904,7 @@ class XSzvphabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszvph
+    __function__ = "xszvph"
 
     def __init__(self, name='zvphabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6940,7 +6952,7 @@ class XSzwabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszabs
+    __function__ = "xszabs"
 
     def __init__(self, name='zwabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
@@ -6973,7 +6985,7 @@ class XSzwndabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszwnb
+    __function__ = "xszwnb"
 
     def __init__(self, name='zwndabs'):
         self.nH = Parameter(name, 'nH', 1., 0., 10., 0.0, hugeval, '10^22 atoms / cm^2')
@@ -7008,7 +7020,7 @@ class XScplinear(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_cplinear
+    __function__ = "C_cplinear"
 
     def __init__(self, name='cplinear'):
         self.energy00 = Parameter(name, 'energy00', 0.5, min=0.0, max=10.0, units='keV', alwaysfrozen=True)
@@ -7116,7 +7128,7 @@ class XSeqpair(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xseqpair
+    __function__ = "C_xseqpair"
 
     def __init__(self, name='eqpair'):
         self.l_hl_s = Parameter(name, 'l_hl_s', 1., 1e-6, 1.e6, 0.0, hugeval)
@@ -7224,7 +7236,7 @@ class XSeqtherm(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xseqth
+    __function__ = "C_xseqth"
 
     def __init__(self, name='eqtherm'):
         self.l_hl_s = Parameter(name, 'l_hl_s', 1., 1e-6, 1.e6, 0.0, hugeval)
@@ -7332,7 +7344,7 @@ class XScompth(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_xscompth
+    __function__ = "C_xscompth"
 
     def __init__(self, name='compth'):
         self.theta = Parameter(name, 'theta', 1., 1e-6, 1.e6, 0.0, hugeval, 'keV')
@@ -7391,7 +7403,7 @@ class XSbvvapec(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsbvvp
+    __function__ = "xsbvvp"
 
     def __init__(self, name='bvvapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
@@ -7461,7 +7473,7 @@ class XSvvapec(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xsvvap
+    __function__ = "xsvvap"
 
     def __init__(self, name='vvapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
@@ -7524,7 +7536,7 @@ class XSzigm(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.zigm
+    __function__ = "zigm"
 
     def __init__(self, name='zigm'):
         self.redshift = Parameter(name, 'redshift', 0.0, alwaysfrozen=True)
@@ -7578,7 +7590,7 @@ class XSgadem(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_gaussDem
+    __function__ = "C_gaussDem"
 
     def __init__(self, name='gadem'):
         self.Tmean = Parameter(name, 'Tmean', 4.0, 0.01, 10, 0.0, hugeval, 'keV', True)
@@ -7632,7 +7644,7 @@ class XSvgadem(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_vgaussDem
+    __function__ = "C_vgaussDem"
 
     def __init__(self, name='vgadem'):
         self.Tmean = Parameter(name, 'Tmean', 4.0, 0.01, 10, 0.0, hugeval, 'keV', True)
@@ -7683,7 +7695,7 @@ class XSeplogpar(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.eplogpar
+    __function__ = "eplogpar"
 
     def __init__(self, name='eplogpar'):
         self.Ep = Parameter(name, 'Ep', .1, 1.e-6, 1.e2, 0.0, hugeval, 'keV')
@@ -7719,7 +7731,7 @@ class XSlogpar(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.logpar
+    __function__ = "logpar"
 
     def __init__(self, name='logpar'):
         self.alpha = Parameter(name, 'alpha', 1.5, 0., 4., 0.0, hugeval)
@@ -7784,7 +7796,7 @@ class XSoptxagn(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.optxagn
+    __function__ = "optxagn"
 
     def __init__(self, name='optxagn'):
         self.mass = Parameter(name, 'mass', 1e7, 1.0, 1.e9, 0.0, hugeval, 'solar', True)
@@ -7853,7 +7865,7 @@ class XSoptxagnf(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.optxagnf
+    __function__ = "optxagnf"
 
     def __init__(self, name='optxagnf'):
         self.mass = Parameter(name, 'mass', 1e7, 1.0, 1.e9, 0.0, hugeval, 'solar', True)
@@ -7915,7 +7927,7 @@ class XSpexmon(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.pexmon
+    __function__ = "pexmon"
 
     def __init__(self, name='pexmon'):
         self.PhoIndex = Parameter(name, 'PhoIndex', 2., 1.1, 2.5, 0.0, hugeval)
@@ -7953,7 +7965,7 @@ class XSagauss(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_agauss
+    __function__ = "C_agauss"
 
     def __init__(self, name='agauss'):
         self.LineE = Parameter(name, 'LineE', 10.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
@@ -7988,7 +8000,7 @@ class XSzagauss(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.C_zagauss
+    __function__ = "C_zagauss"
 
     def __init__(self, name='zagauss'):
         self.LineE = Parameter(name, 'LineE', 10.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
@@ -8037,7 +8049,7 @@ class XScompmag(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xscompmag
+    __function__ = "xscompmag"
 
     def __init__(self, name='compmag'):
         self.kTbb = Parameter(name, 'kTbb', 1.0, 0.2, 10.0, 0.2, 10.0, 'keV')
@@ -8086,7 +8098,7 @@ class XScomptb(XSAdditiveModel):
 
     """
 
-    _calc = _xspec.xscomptb
+    __function__ = "xscomptb"
 
     def __init__(self, name='comptb'):
         self.kTs = Parameter(name, 'kTs', 1.0, 0.1, 10.0, 0.1, 10.0, units='keV')
@@ -8124,7 +8136,7 @@ class XSheilin(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xsphei
+    __function__ = "xsphei"
 
     def __init__(self, name='heilin'):
         self.nHeI = Parameter(name, 'nHeI', 1.e-5, 0.0, 1.e6, 0.0, 1.0e6, '10^22 atoms / cm^2')
@@ -8159,7 +8171,7 @@ class XSlyman(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xslyman
+    __function__ = "xslyman"
 
     def __init__(self, name='lyman'):
         self.nHeI = Parameter(name, 'nHeI', 1.e-5, 0.0, 1.0e6, 0.0, 1.0e6, '10^22 atoms / cm^2')
@@ -8167,6 +8179,7 @@ class XSlyman(XSMultiplicativeModel):
         self.redshift = Parameter(name, 'redshift', 0.0, -1.0e-3, 1.0e5, -1.0e-3, 1.0e5)
         self.ZA = Parameter(name, 'ZA', 1.0, 1.0, 2.0, 1.0, 2.0)
         XSMultiplicativeModel.__init__(self, name, (self.nHeI, self.b, self.redshift, self.ZA))
+
 
 class XSzbabs(XSMultiplicativeModel):
     """The XSPEC lyman model: Voigt absorption profiles for H I or He II Lyman series.
@@ -8191,7 +8204,7 @@ class XSzbabs(XSMultiplicativeModel):
 
     """
 
-    _calc = _xspec.xszbabs
+    __function__ =  "xszbabs"
 
     def __init__(self, name='zbabs'):
         self.nH = Parameter(name, 'nH', 1.e-4, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
@@ -8199,6 +8212,24 @@ class XSzbabs(XSMultiplicativeModel):
         self.nHeII = Parameter(name, 'nHeII', 1.e-6, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
         self.redshift = Parameter(name, 'redshift', 0.0, 0.0, 1.0e5, 0.0, 1.0e6)
         XSMultiplicativeModel.__init__(self, name, (self.nH, self.nHeI, self.nHeII, self.redshift))
+
+
+@version_at_least("12.9.1")
+class XSbtapec(XSAdditiveModel):
+    """
+
+    """
+
+    __function__ = "C_btapec"
+
+    def __init__(self, name='btapec'):
+        # These parameter values are made up!
+        self.kT = Parameter(name, 'nH', 1.e-4, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
+        self.kTi = Parameter(name, 'nHeI', 1.e-5, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
+        self.Abundanc = Parameter(name, 'nHeII', 1.e-6, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
+        self.Redshift = Parameter(name, 'redshift', 0.0, 0.0, 1.0e5, 0.0, 1.0e6)
+        self.Velocity = Parameter(name, 'redshift', 0.0, 0.0, 1.0e5, 0.0, 1.0e6)
+        XSAdditiveModel.__init__(self, name, (self.kT, self.kTi, self.Abundanc, self.Redshift, self.Velocity))
 
 # Add model classes to __all__
 __all__ += tuple(n for n in globals() if n.startswith('XS'))

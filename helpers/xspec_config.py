@@ -84,10 +84,45 @@ class xspec_config(Command):
             inc = clean(inc1 + inc2 + inc3 + inc4 + inc5)
             l = clean(l1 + l2 + l3 + l4 + l5)
 
-            self.distribution.ext_modules.append(build_ext('xspec', ld, inc, l))
+            from distutils.version import LooseVersion
+            xspec_raw_version = self._find_xspec_version(ld)
+
+            macros = []
+
+            if xspec_raw_version:
+                self.announce("Found XSPEC version: {}".format(xspec_raw_version), 2)
+                xspec_version = LooseVersion(xspec_raw_version)
+
+                if xspec_version < LooseVersion("12.9.0"):
+                    self.warn("XSPEC Version is less than 12.9.0, which is the minimal supported version for Sherpa")
+                else:
+                    macros += [('XSPEC_12_9_0', None)]
+
+                if xspec_version > LooseVersion("12.9.1"):
+                    macros += [('XSPEC_12_9_1', None)]
+
+                if xspec_version >= LooseVersion("12.9.2"):
+                    self.warn("XSPEC Version is greater than 12.9.1, which is the latest supported version for Sherpa")
+
+            extension = build_ext('xspec', ld, inc, l, define_macros=macros)
+
+            self.distribution.ext_modules.append(extension)
 
         else:
             if package in dist_packages:
                 dist_packages.remove(package)
             if package in dist_data:
                 del dist_data[package]
+
+    def _find_xspec_version(self, library_folders):
+        import ctypes
+        import os
+        for folder in library_folders:
+            try:
+                xsutil = ctypes.CDLL(os.path.join(folder, 'libXSUtil.so'))  # Less general than rest of code
+                version = b" "*256  # Is there a better way?
+                xsutil.xs_getVersion(version, len(version))
+                return version.decode('ascii').rstrip(' \t\r\n\0')
+            except:
+                pass
+        return None
