@@ -1045,7 +1045,7 @@ static PyMethodDef XSpecMethods[] = {
     (char*) "get_xscosmo()\n\n"
             "Return the X-Spec cosmology settings.\n"
             RETURNSDOC
-            "(h0,q0,l0)\n"
+            "(h0, q0, l0)\n"
             "   The Hubble constant, in km/s/Mpc, the deceleration\n"
             "   parameter, and the cosmological constant.\n"
             SEEALSODOC

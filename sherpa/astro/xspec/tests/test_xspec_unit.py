@@ -20,6 +20,7 @@
 # Supplement test_xspec.py with py.test tests
 #
 
+import copy
 import os
 from tempfile import NamedTemporaryFile, gettempdir
 
@@ -168,10 +169,9 @@ def test_manager_path_default():
     default_path = os.path.join(os.environ['HEADAS'],
                                 '../spectral/manager')
 
-    # At present this is not exposed in the xspec module
-    from sherpa.astro.xspec import _xspec
+    from sherpa.astro import xspec
 
-    oval = _xspec.get_xspath_manager()
+    oval = xspec.get_xspath_manager()
     assert oval == default_path
 
 
@@ -183,8 +183,7 @@ def test_model_path_default():
     tests of XSPEC are made (i.e. any XSPEC code is called).
     """
 
-    # At present this is not exposed in the xspec module
-    from sherpa.astro.xspec import _xspec
+    from sherpa.astro import xspec
 
     # Is this always going to be correct?
     #
@@ -194,7 +193,7 @@ def test_model_path_default():
         default_path = os.path.join(os.environ['HEADAS'],
                                     '../spectral/modelData/')
 
-    oval = _xspec.get_xspath_model()
+    oval = xspec.get_xspath_model()
     assert oval == default_path
 
 
@@ -285,6 +284,37 @@ def validate_xspec_setting(getfunc, setfunc, newval, altval):
 
     # As a sanity check ensure we are back at the starting point
     assert getfunc() == oval
+
+
+def validate_xspec_state_setting(key, newval, altval):
+    """Check we can change an XSPEC setting via the state mechanism
+
+    Parameters
+    ----------
+    key : string
+        The name of the setting (e.g. 'abund' or 'xsect').
+    newval, altval
+        The value to use (newval) and an alternative (altval) if
+        the current setting is already at newval (this is perhaps
+        a bit excessive but it avoids issues if other tests have
+        changed things).
+    """
+
+    from sherpa.astro import xspec
+
+    ostate = xspec.get_xsstate()
+
+    def getfunc():
+        return xspec.get_xsstate()[key]
+
+    def setfunc(val):
+        nstate = ostate.copy()
+        nstate[key] = val
+        xspec.set_xsstate(nstate)
+
+    validate_xspec_setting(getfunc, setfunc, newval, altval)
+
+    assert xspec.get_xsstate() == ostate
 
 
 @requires_xspec
@@ -426,12 +456,188 @@ def test_path_manager_change():
     """Can we change the manager-path setting?
     """
 
-    from sherpa.astro.xspec import _xspec
+    from sherpa.astro import xspec
 
-    validate_xspec_setting(_xspec.get_xspath_manager,
-                           _xspec.set_xspath_manager,
+    validate_xspec_setting(xspec.get_xspath_manager,
+                           xspec.set_xspath_manager,
                            '/dev/null',
                            gettempdir())
+
+
+# Note that the XSPEC state is used in test_xspec.py, but only
+# to save/restore the state after each test. There is no
+# explicit test there of the functionality. The state tests here
+# are very basic.
+#
+
+@requires_xspec
+def test_get_xsstate_keys():
+    """Check get_xsstate returns the expected keys.
+
+    Checking the values here are hard, unless we save/restore
+    the state in the requires_xspec decorator or essentially
+    replicate the implementation of get_xsstate.
+    """
+
+    from sherpa.astro import xspec
+
+    ostate = xspec.get_xsstate()
+    assert isinstance(ostate, dict)
+
+    for key in ["abund", "chatter", "cosmo", "xsect",
+                "modelstrings", "paths"]:
+        assert key in ostate
+
+
+@requires_xspec
+def test_set_xsstate_missing_key():
+    """Check set_xsstate does nothing if required key is missing.
+
+    """
+
+    from sherpa.astro import xspec
+
+    ostate = xspec.get_xsstate()
+
+    for val in ostate.values():
+        assert val is not None
+
+    # paths is not a required key
+    #
+    req_keys = ["abund", "chatter", "cosmo", "xsect",
+                "modelstrings"]
+
+    fake = {'abund': ostate['abund'] + '_copy',
+            'xsect': ostate['xsect'] + '_copy',
+            'chatter': -10,
+            'cosmo': (0.0, 0.0),  # two elements will cause a failure
+            'modelstrings': {'foo': 2, 'bar': None},
+            'paths': {'manager': '/dev/null'}}
+
+    for key in req_keys:
+
+        copy = fake.copy()
+        del copy[key]
+        xspec.set_xsstate(copy)
+
+        nstate = xspec.get_xsstate()
+        assert nstate == ostate
+
+
+@requires_xspec
+def test_set_xsstate_abund():
+    """Check set_xsstate works for abundance.
+    """
+
+    validate_xspec_state_setting('abund', 'lodd', 'wilm')
+
+
+@requires_xspec
+def test_set_xsstate_xsect():
+    """Check set_xsstate works for cross sections.
+    """
+
+    validate_xspec_state_setting('xsect', 'vern', 'obcm')
+
+
+@requires_xspec
+def test_set_xsstate_chatter():
+    """Check set_xsstate works for chatter.
+    """
+
+    validate_xspec_state_setting('chatter', 5, 15)
+
+
+@requires_xspec
+def test_set_xsstate_xset():
+    """Check set_xsstate works for an xset command.
+    """
+
+    from sherpa.astro import xspec
+
+    ostate = xspec.get_xsstate()
+
+    key = 'a-test-keyword'
+    val = '/foo/bar/baz.pha'
+    while key in ostate['modelstrings']:
+        key += "a"
+
+    ukey = key.upper()
+
+    # There should be no value for this key (since it isn't
+    # in modelstrings by construction).
+    #
+    assert key not in xspec.modelstrings
+    assert xspec.get_xsxset(key) == ''
+
+    nstate = copy.deepcopy(ostate)
+    nstate['modelstrings'][key] = val
+    xspec.set_xsstate(nstate)
+
+    assert xspec.get_xsxset(key) == val
+    assert ukey in xspec.modelstrings
+    assert xspec.modelstrings[ukey] == val
+
+    xspec.set_xsstate(ostate)
+
+    # Unfortunately, due to there being no attempt at clearing out the
+    # XSET settings (e.g. removing existing settings before restoring
+    # the state), the following tests fail.
+    #
+    # TODO: the code should probably be updated to fix this
+    #
+    # assert xspec.get_xsxset(key) == ''
+    # assert xspec.get_xsstate() == ostate
+
+    xspec.set_xsxset(key, '')
+    del xspec.modelstrings[ukey]
+    assert xspec.get_xsstate() == ostate
+
+
+@requires_xspec
+def test_set_xsstate_path_manager():
+    """Check set_xsstate works for the manager path
+    """
+
+    from sherpa.astro import xspec
+
+    ostate = xspec.get_xsstate()
+    opath = xspec.get_xspath_manager()
+
+    spath = ostate['paths'].get('manager', None)
+
+    # This is just an internal validation check
+    if spath is not None:
+        assert spath == opath
+
+    if opath == 'b/a':
+        npath = 'a/b'
+    else:
+        npath = 'b/a'
+
+    nstate = copy.deepcopy(ostate)
+    nstate['paths']['manager'] = npath
+    xspec.set_xsstate(nstate)
+
+    assert xspec.get_xspath_manager() == npath
+
+    xspec.set_xsstate(ostate)
+
+    # Similar to the state xset tests, using an empty
+    # dictionary for paths does not clear out/reset the
+    # manager path. In this case it's not obvious what
+    # should be done (as there's no obvious default value
+    # to use, unless we fall back to the FNINIT-created
+    # value, which is not ideal since there's no guarantee
+    # that we will notice any changes to that logic).
+    #
+    # This is an edge case.
+    #
+    # assert xspec.get_xspath_manager() == opath
+    # assert xspec.get_xsstate() == ostate
+
+    xspec.set_xspath_manager(opath)
+    # should really clear out xspec.xspecpaths
 
 
 @requires_data
