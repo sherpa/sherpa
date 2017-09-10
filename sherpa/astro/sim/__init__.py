@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -47,20 +47,26 @@ References
 from sherpa.sim import MCMC as _MCMC
 from sherpa.sim import _samplers as __samplers
 from sherpa.sim import _walkers as __walkers
-from sherpa.astro.sim.pragbayes import *
-from sherpa.astro.sim.fullbayes import *
+
+from sherpa.astro.sim import pragbayes
+from sherpa.astro.sim import fullbayes
+
 
 _samplers = __samplers.copy()
-_samplers.update(dict(pragbayes=PragBayes, fullbayes=FullBayes))
+_samplers.update(dict(pragbayes=pragbayes.PragBayes,
+                      fullbayes=fullbayes.FullBayes))
 
 _walkers = __walkers.copy()
-_walkers.update(dict(pragbayes=WalkWithSubIters, fullbayes=WalkWithSubIters))
+_walkers.update(dict(pragbayes=pragbayes.WalkWithSubIters,
+                     fullbayes=pragbayes.WalkWithSubIters))
+
 
 class MCMC(_MCMC):
     """
     High-level UI to pyBLoCXS that joins the loop in 'Walk' with the jumping
     rule in 'Sampler'.  Implements a user interface for configuration.  This
-    class implements a calc_stat() function using the Sherpa interface to 'Fit'.
+    class implements a calc_stat() function using the Sherpa interface to
+    'Fit'.
 
     Overrides the base class with an astronomy specific class for incorporating
     uncertainties in the calibration information in Ancillary Response files
