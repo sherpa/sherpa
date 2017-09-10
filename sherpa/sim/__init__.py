@@ -421,7 +421,7 @@ class MCMC(NoNewAttributesAfterInit):
         ['metropolismh', 'fullbayes', 'mh', 'pragbayes']
 
         """
-        return self.__samplers.keys()
+        return list(self.__samplers.keys())
 
     def set_sampler(self, sampler):
         """Set the MCMC sampler.
