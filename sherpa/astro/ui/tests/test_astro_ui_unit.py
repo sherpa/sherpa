@@ -18,11 +18,10 @@
 #
 
 """
-See sherpa/astro/sim/tests_astro_sim_unit.py for the astro-specific
-version of this.
+Should these tests be moved to test_astro_session.py?
 """
 
-from sherpa import sim
+from sherpa.astro import ui
 
 
 # This is part of #397
@@ -30,8 +29,7 @@ from sherpa import sim
 def test_list_samplers():
     """Ensure list_samplers returns a list."""
 
-    mcmc = sim.MCMC()
-    samplers = mcmc.list_samplers()
+    samplers = ui.list_samplers()
 
     assert isinstance(samplers, list)
     assert len(samplers) > 0
@@ -41,8 +39,9 @@ def test_list_samplers_contents():
     """Are the expected values included"""
 
     # Test that the expected values exist in this list,
-    # but do not enforce these are the only values.
+    # but do not enforce these are the only values. This is
+    # a slightly-different return list to the non-astro version.
     #
-    samplers = sim.MCMC().list_samplers()
-    for expected in ['mh', 'metropolismh']:
+    samplers = ui.list_samplers()
+    for expected in ['mh', 'metropolismh', 'pragbayes', 'fullbayes']:
         assert expected in samplers

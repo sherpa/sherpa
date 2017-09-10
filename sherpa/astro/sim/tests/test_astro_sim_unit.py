@@ -35,9 +35,14 @@ def test_list_samplers():
     assert isinstance(samplers, list)
     assert len(samplers) > 0
 
+
+def test_list_samplers_contents():
+    """Are the expected values included"""
+
     # Test that the expected values exist in this list,
     # but do not enforce these are the only values. This is
     # a slightly-different return list to the non-astro version.
     #
+    samplers = sim.MCMC().list_samplers()
     for expected in ['mh', 'metropolismh', 'pragbayes', 'fullbayes']:
         assert expected in samplers
