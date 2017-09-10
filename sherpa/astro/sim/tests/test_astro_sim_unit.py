@@ -18,11 +18,10 @@
 #
 
 """
-See sherpa/astro/sim/tests_astro_sim_unit.py for the astro-specific
-version of this.
+This is based on sherpa/sim/tests_sim_unit.py.
 """
 
-from sherpa import sim
+from sherpa.astro import sim
 
 
 # This is part of #397
@@ -37,7 +36,8 @@ def test_list_samplers():
     assert len(samplers) > 0
 
     # Test that the expected values exist in this list,
-    # but do not enforce these are the only values.
+    # but do not enforce these are the only values. This is
+    # a slightly-different return list to the non-astro version.
     #
-    for expected in ['mh', 'metropolismh']:
+    for expected in ['mh', 'metropolismh', 'pragbayes', 'fullbayes']:
         assert expected in samplers

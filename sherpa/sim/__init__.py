@@ -414,11 +414,17 @@ class MCMC(NoNewAttributesAfterInit):
         get_sampler_name : Return the name of the current MCMC sampler.
         set_sampler : Set the MCMC sampler.
 
+        Notes
+        -----
+        The available samplers depends on what modules have been
+        loaded, and may be more extensive than the example output
+        below.
+
         Examples
         --------
 
         >>> list_samplers()
-        ['metropolismh', 'fullbayes', 'mh', 'pragbayes']
+        ['metropolismh', 'mh']
 
         """
         return list(self.__samplers.keys())
