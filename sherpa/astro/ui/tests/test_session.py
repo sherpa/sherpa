@@ -18,12 +18,15 @@
 #
 
 """
-There is a copy of this test in sherpa/ui/astro/tests/ that needs
-to be kept up to date.
+This is a copy of sherpa/ui/tests/test_session changed to use
+the astro Session object.
+
+If we want to do this then some way of factoring out the common
+code and tests is likely needed.
 """
 
 from sherpa.utils.testing import requires_plotting
-from sherpa.ui.utils import Session
+from sherpa.astro.ui.utils import Session
 from numpy.testing import assert_array_equal
 
 TEST = [1, 2, 3]
