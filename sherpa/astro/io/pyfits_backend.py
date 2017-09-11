@@ -929,7 +929,17 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             #     channel += 1
 
             counts = _try_vec(hdu, 'COUNTS', num, fix_type=True)
-            if None in counts:
+            # This was
+            #   if None in counts:
+            # but that caused a FutureWarning about
+            # 'comparison to `None` will result in an elementwise
+            #  object comparison in the future.'
+            # so it has been changed to the following, which I think
+            # is the intended meaning. If the counts array does contain
+            # "None" values then the data isn't a valid OGIP file
+            # (I think).
+            #
+            if counts is None:
                 counts = _require_vec(hdu, 'RATE', num,
                                       fix_type=True) * data['exposure']
             staterror = _try_vec(hdu, 'STAT_ERR', num)
