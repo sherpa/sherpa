@@ -5615,60 +5615,66 @@ class Session(NoNewAttributesAfterInit):
 
     def _runparamprompt(self, pars):
 
-        # paramprompt
-        if self._paramprompt:
-            for par in pars:
-                while True:
-                    input = raw_input("%s parameter value [%g] " %
-                                      (par.fullname, par.val))
-                    if input != "":
-                        val = min = max = None
-                        count = input.count(',')
+        if not self._paramprompt:
+            return
 
-                        if count == 0:
-                            try:
-                                val = float(input)
-                            except Exception as e:
-                                info("Please provide a float value; " + str(e))
-                                continue
+        try:
+            get_user_input = raw_input
+        except NameError:
+            get_user_input = input
 
-                        elif count == 1:
-                            try:
-                                str_val, str_min = input.split(',')
-                                if str_val != "":
-                                    val = float(str_val)
-                                if str_min != "":
-                                    min = float(str_min)
-                            except Exception as e:
-                                info("Please provide a float value; " + str(e))
-                                continue
+        for par in pars:
+            while True:
+                inval = get_user_input("%s parameter value [%g] " %
+                                       (par.fullname, par.val))
+                if inval == "":
+                    break
 
-                        elif count == 2:
-                            try:
-                                str_val, str_min, str_max = input.split(',')
+                val = min = max = None
+                count = inval.count(',')
 
-                                if str_val != "":
-                                    val = float(str_val)
-                                if str_min != "":
-                                    min = float(str_min)
-                                if str_max != "":
-                                    max = float(str_max)
-                            except Exception as e:
-                                info("Please provide a float value; " + str(e))
-                                continue
-                        else:
-                            info("Error: Please provide a comma separated list" +
-                                 " of floats; e.g. val,min,max")
-                            continue
+                if count == 0:
+                    try:
+                        val = float(inval)
+                    except Exception as e:
+                        info("Please provide a float value; " + str(e))
+                        continue
 
-                        try:
-                            self.set_par(par, val, min, max)
-                            break
-                        except Exception as e:
-                            info(str(e))
-                            continue
-                    else:
-                        break
+                elif count == 1:
+                    try:
+                        str_val, str_min = inval.split(',')
+                        if str_val != "":
+                            val = float(str_val)
+                        if str_min != "":
+                            min = float(str_min)
+                    except Exception as e:
+                        info("Please provide a float value; " + str(e))
+                        continue
+
+                elif count == 2:
+                    try:
+                        str_val, str_min, str_max = inval.split(',')
+
+                        if str_val != "":
+                            val = float(str_val)
+                        if str_min != "":
+                            min = float(str_min)
+                        if str_max != "":
+                            max = float(str_max)
+                    except Exception as e:
+                        info("Please provide a float value; " + str(e))
+                        continue
+                else:
+                    info("Error: Please provide a comma-separated " +
+                         "list of floats; e.g. val,min,max")
+                    continue
+
+                try:
+                    self.set_par(par, val, min, max)
+                    break
+                except Exception as e:
+                    info(str(e))
+                    continue
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: what examples/info should be talked about here?
