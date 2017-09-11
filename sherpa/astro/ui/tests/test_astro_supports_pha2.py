@@ -30,6 +30,7 @@ the sherpa.astro.ui module, which is why the tests are placed here.
 import pytest
 
 from sherpa.utils import requires_data, requires_fits
+from sherpa.utils.err import IdentifierErr
 
 from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
@@ -228,7 +229,11 @@ def test_load_pha2_compare_meg_order1(make_data_path):
     assert s9 == pytest.approx(1005.4378559390879)
     assert s10 == pytest.approx(1119.980439489647)
 
+    ui.clean()
 
+
+# See #397
+#
 @requires_data
 @requires_fits
 def test_list_bkg_ids(make_data_path):
@@ -254,3 +259,102 @@ def test_list_bkg_ids(make_data_path):
     for i in range(1, 13):
         bids = ui.list_bkg_ids(i)
         validate(bids)
+
+    ui.clean()
+
+
+# See #397
+#
+@requires_data
+@requires_fits
+def test_list_response_ids_pha2(make_data_path):
+    """Does list_response_ids return a list when input is pha2"""
+
+    basename = '3c120_pha2'
+    fakeid = 3
+
+    ui.clean()
+    infile = make_data_path(basename)
+    ui.load_pha(infile)
+
+    def validate(rids):
+        "No response is read in with PHA2"
+        assert rids == []
+
+    def validate_err(i, excinfo):
+        emsg = "background data set {} ".format(fakeid) + \
+               "in PHA data set {} has not been set".format(i)
+        assert str(excinfo.value) == emsg
+
+    rids = ui.list_response_ids()
+    validate(rids)
+
+    with pytest.raises(IdentifierErr) as excinfo:
+        ui.list_response_ids(bkg_id=fakeid)
+
+    validate_err(1, excinfo)
+
+    for i in range(1, 13):
+        rids = ui.list_response_ids(i)
+        validate(rids)
+
+        for bkgid in [1, 2]:
+            rids = ui.list_response_ids(i, bkg_id=bkgid)
+            validate(rids)
+
+        with pytest.raises(IdentifierErr) as excinfo:
+            ui.list_response_ids(i, bkg_id=fakeid)
+
+        validate_err(i, excinfo)
+
+    ui.clean()
+
+
+# See #397
+#
+@requires_data
+@requires_fits
+def test_list_response_ids_pha1(make_data_path):
+    """Does list_response_ids return a list when input is pha1"""
+
+    basename = '3c120_heg_1.pha'
+    fakeid = 3
+
+    ui.clean()
+    infile = make_data_path(basename)
+    ui.load_pha(infile)
+
+    def validate(rids):
+        assert len(rids) == 1
+        assert 1 in rids
+        assert isinstance(rids, list)
+
+    def validate_err(i, excinfo):
+        emsg = "background data set {} ".format(fakeid) + \
+               "in PHA data set {} has not been set".format(i)
+        assert str(excinfo.value) == emsg
+
+    rids = ui.list_response_ids()
+    validate(rids)
+
+    for bid in [1, 2]:
+        rids = ui.list_response_ids(bkg_id=bid)
+        validate(rids)
+
+    with pytest.raises(IdentifierErr) as excinfo:
+        ui.list_response_ids(bkg_id=fakeid)
+
+    validate_err(1, excinfo)
+
+    ui.load_pha('heg1', infile)
+    rids = ui.list_response_ids('heg1')
+    validate(rids)
+
+    for bid in [1, 2]:
+        rids = ui.list_response_ids('heg1', bkg_id=bid)
+        validate(rids)
+
+    with pytest.raises(IdentifierErr) as excinfo:
+        ui.list_response_ids('heg1', bkg_id=fakeid)
+
+    validate_err('heg1', excinfo)
