@@ -227,3 +227,30 @@ def test_load_pha2_compare_meg_order1(make_data_path):
     #
     assert s9 == pytest.approx(1005.4378559390879)
     assert s10 == pytest.approx(1119.980439489647)
+
+
+@requires_data
+@requires_fits
+def test_list_bkg_ids(make_data_path):
+    """Does list_bkg_ids return a list"""
+
+    basename = '3c120_pha2'
+
+    ui.clean()
+    infile = make_data_path(basename)
+    ui.load_pha(infile)
+
+    def validate(bids):
+        """The documentation doesn't promise that the ids are
+        listed in order, so do not assume so in the test.
+        """
+        assert len(bids) == 2
+        assert set(bids) == set([1, 2])
+        assert isinstance(bids, list)
+
+    bids = ui.list_bkg_ids()
+    validate(bids)
+
+    for i in range(1, 13):
+        bids = ui.list_bkg_ids(i)
+        validate(bids)
