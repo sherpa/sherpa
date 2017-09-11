@@ -177,3 +177,24 @@ def test_paramprompt():
 
     # TODO: test multiple parameter handling
     #
+
+
+def test_list_model_ids():
+    """Does list_model_ids work?"""
+
+    # This issue was found when developing the paramprompt test.
+    s = Session()
+
+    import sherpa.models.basic
+    s._add_model_types(sherpa.models.basic)
+
+    assert s.list_model_ids() == []
+
+    s.set_model('ma', 'const1d.mdla')
+    assert s.list_model_ids() == ['ma']
+
+    s.set_model('mb', 'const1d.mdla')
+    assert set(s.list_model_ids()) == set(['ma', 'mb'])
+
+    s.set_model('const1d.mdla')
+    assert set(s.list_model_ids()) == set([1, 'ma', 'mb'])
