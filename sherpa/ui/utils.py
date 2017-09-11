@@ -5471,8 +5471,7 @@ class Session(NoNewAttributesAfterInit):
         keys = list(self._models.keys())
         keys.extend(list(self._sources.keys()))
         keys = list(set(keys))
-        keys.sort()
-        return keys
+        return sorted(keys, key=str)
 
     # Return full model for fitting, plotting, etc.  Expects a corresponding
     # data set to be available.
