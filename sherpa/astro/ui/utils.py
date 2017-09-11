@@ -644,8 +644,8 @@ class Session(sherpa.ui.utils.Session):
         if dstype is sherpa.astro.data.DataPHA:
             channel = numpy.arange(1, len(xlo) + 1, dtype=float)
             args = [channel, y]
-            #kwargs['bin_lo'] = xlo
-            #kwargs['bin_hi'] = xhi
+            # kwargs['bin_lo'] = xlo
+            # kwargs['bin_hi'] = xhi
         elif dstype is not sherpa.data.Data1DInt:
             args = [xlo, y]
 
@@ -5158,15 +5158,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
 # if type(filenames) not in (list, tuple):
-##             raise ArgumentError('Filenames must be contained in a list')
+#             raise ArgumentError('Filenames must be contained in a list')
 # if type(resp_ids) not in (list, tuple):
-##             raise ArgumentError('Response IDs must be contained in a list')
+#             raise ArgumentError('Response IDs must be contained in a list')
 
         if resp_ids is None:
             id, filenames, resp_ids = resp_ids, id, filenames
 
-        filenames = list(filenames)[:]
-        resp_ids = list(resp_ids)[:]
+        filenames = list(filenames)
+        resp_ids = list(resp_ids)
 
         if (len(filenames) != len(resp_ids)):
             raise ArgumentErr('multirsp')
@@ -5592,15 +5592,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
 # if type(filenames) not in (list, tuple):
-##             raise ArgumentError('Filenames must be contained in a list')
+#             raise ArgumentError('Filenames must be contained in a list')
 # if type(resp_ids) not in (list, tuple):
-##             raise ArgumentError('Response IDs must be contained in a list')
+#             raise ArgumentError('Response IDs must be contained in a list')
 
         if resp_ids is None:
             id, filenames, resp_ids = resp_ids, id, filenames
 
-        filenames = list(filenames)[:]
-        resp_ids = list(resp_ids)[:]
+        filenames = list(filenames)
+        resp_ids = list(resp_ids)
 
         if (len(filenames) != len(resp_ids)):
             raise ArgumentErr('multirsp')
@@ -7482,7 +7482,7 @@ class Session(sherpa.ui.utils.Session):
         data.group_counts(num, maxLength, tabStops)
 
     # DOC-TODO: check the Poisson stats claim; I'm guessing it means
-    ###           gaussian (i.e. sqrt(n))
+    #           gaussian (i.e. sqrt(n))
     def group_snr(self, id, snr=None, bkg_id=None,
                   maxLength=None, tabStops=None, errorCol=None):
         """Group into a minimum signal-to-noise ratio.
@@ -8856,7 +8856,8 @@ class Session(sherpa.ui.utils.Session):
                 x = data.get_x()
                 y = data.get_y()
 
-            # we have to check for the case of a *single* column in a fits table
+            # we have to check for the case of a *single* column in a
+            # fits table
             # extract the single array from the read and bypass the dataset
             except TypeError:
                 y = sherpa.astro.io.backend.get_table_data(filename, *args,
@@ -8866,7 +8867,7 @@ class Session(sherpa.ui.utils.Session):
                     # unpack_data doesn't include a call to try
                     # getting data from image, so try that here.
                     data = self.unpack_image(filename, *args, **kwargs)
-                    #x = data.get_x()
+                    # x = data.get_x()
                     y = data.get_y()
                 except:
                     raise
@@ -9218,7 +9219,7 @@ class Session(sherpa.ui.utils.Session):
         fit_to_ids, datasets, models = self._prepare_bkg_fit(id, otherids)
 
         # Do not add backgrounds to backgrounds.
-        #self._add_extra_data_and_models(fit_to_ids, datasets, models)
+        # self._add_extra_data_and_models(fit_to_ids, datasets, models)
 
         fit_to_ids = tuple(fit_to_ids)
 
@@ -10174,7 +10175,7 @@ class Session(sherpa.ui.utils.Session):
                 # Using _get_fit becomes very complicated using simulfit
                 # models and datasets
                 #
-                #ids, f = self._get_fit(id)
+                # ids, f = self._get_fit(id)
                 plotobj.prepare(self.get_data(id), self.get_model(id),
                                 self.get_stat())
 

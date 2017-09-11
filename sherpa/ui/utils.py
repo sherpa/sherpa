@@ -348,7 +348,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._compmdlplot = sherpa.plot.ComponentModelPlot()
         self._compsrcplot = sherpa.plot.ComponentSourcePlot()
-        #self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
+        # self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
         self._comptmplsrcplot = sherpa.plot.ComponentTemplateSourcePlot()
 
         self._sourceplot = sherpa.plot.SourcePlot()
@@ -937,7 +937,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         all = ''
-        #all += self._get_show_kernel(id)
+        # all += self._get_show_kernel(id)
         all += self._get_show_psf(id)
         all += self._get_show_model(id)
         _send_to_pager(all, outfile, clobber)
@@ -1109,7 +1109,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         all = ''
-        #all += self._get_show_kernel(id)
+        # all += self._get_show_kernel(id)
         all += self._get_show_psf(id)
         _send_to_pager(all, outfile, clobber)
 
@@ -1486,9 +1486,7 @@ class Session(NoNewAttributesAfterInit):
         ['gridsearch', 'levmar', 'moncar', 'neldermead', 'simplex']
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._methods.keys())[:]
+        keys = list(self._methods.keys())
         keys.sort()
         return keys
 
@@ -1829,9 +1827,7 @@ class Session(NoNewAttributesAfterInit):
         ['none', 'primini', 'sigmarej']
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._itermethods.keys())[:]
+        keys = list(self._itermethods.keys())
         keys.sort()
         return keys
 
@@ -2037,9 +2033,7 @@ class Session(NoNewAttributesAfterInit):
          'wstat']
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._stats.keys())[:]
+        keys = list(self._stats.keys())
         keys.sort()
         return keys
 
@@ -2248,9 +2242,7 @@ class Session(NoNewAttributesAfterInit):
         ['nucleus', 'jet']
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._data.keys())[:]
+        keys = list(self._data.keys())
         keys.sort(key=str)  # always sort by string value.
         return keys
 
@@ -5094,9 +5086,7 @@ class Session(NoNewAttributesAfterInit):
          'accretiondisk']
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._model_types.keys())[:]
+        keys = list(self._model_types.keys())
         keys.sort()
 
         show = show.strip().lower()
@@ -5164,9 +5154,7 @@ class Session(NoNewAttributesAfterInit):
         True
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._model_components.keys())[:]
+        keys = list(self._model_components.keys())
         keys.sort()
         return keys
 
@@ -5392,12 +5380,11 @@ class Session(NoNewAttributesAfterInit):
         if id is None:
             ids = self._sources.keys()
 
-        if model is None:
-            for id in ids:
-                model = self._get_source(id)
-                model.reset()
-        elif model is not None:
+        if model is not None:
             model.reset()
+        else:
+            for id in ids:
+                self._get_source(id).reset()
 
     def delete_model_component(self, name):
         """Delete a model component.
@@ -5453,7 +5440,7 @@ class Session(NoNewAttributesAfterInit):
             raise IdentifierErr('nomodelcmpt', name)
 
     # Back-compatibility
-    #create_model = create_model_component
+    # create_model = create_model_component
 
     #
     # Source models
@@ -5481,10 +5468,8 @@ class Session(NoNewAttributesAfterInit):
         set_model : Set the source model expression for a data set.
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._models.keys())[:]
-        keys.extend(list(self._sources.keys())[:])
+        keys = list(self._models.keys())
+        keys.extend(list(self._sources.keys()))
         keys = list(set(keys))
         keys.sort()
         return keys
@@ -6576,19 +6561,19 @@ class Session(NoNewAttributesAfterInit):
         pars = []
         vals = None
         if parvals is not None:
-            vals = list(parvals)[:]
+            vals = list(parvals)
         mins = None
         if parmins is not None:
-            mins = list(parmins)[:]
+            mins = list(parmins)
         maxs = None
         if parmaxs is not None:
-            maxs = list(parmaxs)[:]
+            maxs = list(parmaxs)
         units = None
         if parunits is not None:
-            units = list(parunits)[:]
+            units = list(parunits)
         frozen = None
         if parfrozen is not None:
-            frozen = list(parfrozen)[:]
+            frozen = list(parfrozen)
 
         for name in parnames:
             par = sherpa.models.Parameter(modelname, name, 0.0)
@@ -6698,7 +6683,7 @@ class Session(NoNewAttributesAfterInit):
         _assign_obj_to_main(statname, userstat)
 
     # Back-compatibility
-    #set_source = set_model
+    # set_source = set_model
 
     #
     # Conv
@@ -10096,7 +10081,7 @@ class Session(NoNewAttributesAfterInit):
         # Allow the user to jump from a user defined point in parameter space?
         # Meaning let the user set up parameter space without fitting first.
 
-        #fit_results = self.get_fit_results()
+        # fit_results = self.get_fit_results()
         # if fit_results is None:
         #    raise TypeError("Fit has not been run")
 
