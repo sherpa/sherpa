@@ -25,6 +25,13 @@ to be kept up to date.
 from sherpa.utils.testing import requires_plotting
 from sherpa.ui.utils import Session
 from numpy.testing import assert_array_equal
+from sherpa.models import parameter
+
+import pytest
+
+from unittest.mock import patch
+from io import StringIO
+
 
 TEST = [1, 2, 3]
 TEST2 = [4, 5, 6]
@@ -76,3 +83,97 @@ def test_save_restore(tmpdir):
     assert {1, } == set(session.list_data_ids())
     assert_array_equal(TEST, session.get_data(1).get_indep()[0])
     assert_array_equal(TEST2, session.get_data(1).get_dep())
+
+
+def test_default_models():
+    """There are no models available by default"""
+
+    s = Session()
+    assert s.list_models() == []
+
+
+def test_paramprompt_function():
+    """Does paramprompt toggle the state setting?"""
+
+    s = Session()
+    assert not s._paramprompt
+
+    s.paramprompt(True)
+    assert s._paramprompt
+
+    s.paramprompt(False)
+    assert not s._paramprompt
+
+
+def test_paramprompt():
+    """Does paramprompt work?"""
+
+    s = Session()
+    assert s.list_model_ids() == []
+    assert s.list_model_components() == []
+
+    # Add in some models
+    import sherpa.models.basic
+    s._add_model_types(sherpa.models.basic)
+    assert s.list_models() != []
+
+    s.create_model_component('const1d', 'm1')
+    assert s.list_model_ids() == []
+    assert s.list_model_components() == ['m1']
+
+    # Now there are multiple components do not rely on any ordering
+    # provided by list_model_components()
+    #
+    s.paramprompt(True)
+
+    # paramprompt doesn't affect create_model_component
+    s.create_model_component('const1d', 'm2')
+    assert s.list_model_ids() == []
+    assert set(s.list_model_components()) == set(['m1', 'm2'])
+
+    # it does affect set_model
+    #
+    # pytest errors out if you try to read from stdin in a test, so
+    # try to work around this here using
+    # https://stackoverflow.com/questions/13238566/python-equivalent-of-input-using-sys-stdin
+    # An alternative would be just to check that the error is
+    # raised, and the text, but then we don't get to test the
+    # behaviour of the paramprompt code.
+    #
+    with patch("sys.stdin", StringIO("2.1")):
+        s.set_model('const1d.mx')
+
+    assert s.list_model_ids() == [1]
+    assert set(s.list_model_components()) == set(['m1', 'm2', 'mx'])
+
+    mx = s.get_model_component('mx')
+    assert mx.c0.val == pytest.approx(2.1)
+
+    # Note: list_model_ids fails if mid is a string
+    # mid = 'x'
+    mid = 2
+    with patch("sys.stdin", StringIO("2.1e-3 , 2.0e-3, 1.2e-2")):
+        s.set_model(mid, 'const1d.my')
+
+    assert set(s.list_model_ids()) == set([1, mid])
+    assert set(s.list_model_components()) == set(['m1', 'm2', 'mx', 'my'])
+
+    my = s.get_model_component('my')
+    assert my.c0.val == pytest.approx(2.1e-3)
+    assert my.c0.min == pytest.approx(2.0e-3)
+    assert my.c0.max == pytest.approx(1.2e-2)
+
+    mid = 2
+    with patch("sys.stdin", StringIO("2.1e-3 ,, 1.2e-2")):
+        s.set_model(mid, 'const1d.mz')
+
+    assert set(s.list_model_ids()) == set([1, mid])
+    assert set(s.list_model_components()) == set(['m1', 'm2', 'mx', 'my', 'mz'])
+
+    mz = s.get_model_component('mz')
+    assert mz.c0.val == pytest.approx(2.1e-3)
+    assert mz.c0.min == pytest.approx(- parameter.hugeval)
+    assert mz.c0.max == pytest.approx(1.2e-2)
+
+    # TODO: test multiple parameter handling
+    #
