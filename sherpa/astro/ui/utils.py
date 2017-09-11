@@ -5757,8 +5757,7 @@ class Session(sherpa.ui.utils.Session):
         load_bkg : Load the background of a PHA data set.
 
         """
-        # return self._get_pha_data(id).background_ids
-        return self._get_pha_data(id)._backgrounds.keys()
+        return list(self._get_pha_data(id)._backgrounds.keys())
 
     def list_response_ids(self, id=None, bkg_id=None):
         """List all the response identifiers of a data set.
@@ -5792,8 +5791,8 @@ class Session(sherpa.ui.utils.Session):
         data = self._get_pha_data(id)
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
-        # return data.response_ids
-        return data._responses.keys()
+
+        return list(data._responses.keys())
 
     # DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
     # DOC-TODO: should the arguments be renamed to better match optional
