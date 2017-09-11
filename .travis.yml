@@ -25,6 +25,10 @@ matrix:
     - env: XSPECVER="12.9.0i" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.6"
       sudo: required
       dist: trusty
+    # As above, xspec 12.9.1n
+    - env: XSPECVER="12.9.1" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="3.6"
+      sudo: required
+      dist: trusty
     # Install sherpatest package rather than relying on relative location of the submodule
     # Also, install matplotlib 2.0 and do not install astropy (checks tests are properly skipped)
     - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="2.7"
