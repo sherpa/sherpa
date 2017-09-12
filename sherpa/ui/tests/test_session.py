@@ -119,17 +119,23 @@ def test_paramprompt():
 
     s.create_model_component('const1d', 'm1')
     assert s.list_model_ids() == []
-    assert s.list_model_components() == ['m1']
+
+    expected = ['m1']
+    assert s.list_model_components() == expected
 
     # Now there are multiple components do not rely on any ordering
     # provided by list_model_components()
     #
     s.paramprompt(True)
 
-    # paramprompt doesn't affect create_model_component
+    # paramprompt doesn't affect create_model_component (as shown
+    # by the fact that we don't have to mock stdin)
+    #
     s.create_model_component('const1d', 'm2')
     assert s.list_model_ids() == []
-    assert set(s.list_model_components()) == set(['m1', 'm2'])
+    expected = set(expected)
+    expected.add('m2')
+    assert set(s.list_model_components()) == expected
 
     # it does affect set_model
     #
@@ -144,38 +150,77 @@ def test_paramprompt():
         s.set_model('const1d.mx')
 
     assert s.list_model_ids() == [1]
-    assert set(s.list_model_components()) == set(['m1', 'm2', 'mx'])
+    expected.add('mx')
+    assert set(s.list_model_components()) == expected
 
     mx = s.get_model_component('mx')
     assert mx.c0.val == pytest.approx(2.1)
 
-    # Note: list_model_ids fails if mid is a string
-    # mid = 'x'
-    mid = 2
     with patch("sys.stdin", StringIO("2.1e-3 , 2.0e-3, 1.2e-2")):
-        s.set_model(mid, 'const1d.my')
+        s.set_model('x', 'const1d.my')
 
-    assert set(s.list_model_ids()) == set([1, mid])
-    assert set(s.list_model_components()) == set(['m1', 'm2', 'mx', 'my'])
+    assert set(s.list_model_ids()) == set([1, 'x'])
+    expected.add('my')
+    assert set(s.list_model_components()) == expected
 
     my = s.get_model_component('my')
     assert my.c0.val == pytest.approx(2.1e-3)
     assert my.c0.min == pytest.approx(2.0e-3)
     assert my.c0.max == pytest.approx(1.2e-2)
 
-    mid = 2
     with patch("sys.stdin", StringIO("2.1e-3 ,, 1.2e-2")):
-        s.set_model(mid, 'const1d.mz')
+        s.set_model(2, 'const1d.mz')
 
-    assert set(s.list_model_ids()) == set([1, mid])
-    assert set(s.list_model_components()) == set(['m1', 'm2', 'mx', 'my', 'mz'])
+    assert set(s.list_model_ids()) == set([1, 2, 'x'])
+    expected.add('mz')
+    assert set(s.list_model_components()) == expected
 
     mz = s.get_model_component('mz')
     assert mz.c0.val == pytest.approx(2.1e-3)
     assert mz.c0.min == pytest.approx(- parameter.hugeval)
     assert mz.c0.max == pytest.approx(1.2e-2)
 
-    # TODO: test multiple parameter handling
+    with patch("sys.stdin", StringIO("-12.1,-12.1")):
+        s.set_model('const1d.f1')
+
+    assert set(s.list_model_ids()) == set([1, 2, 'x'])
+    expected.add('f1')
+    assert set(s.list_model_components()) == expected
+
+    f1 = s.get_model_component('f1')
+    assert f1.c0.val == pytest.approx(-12.1)
+    assert f1.c0.min == pytest.approx(-12.1)
+    assert f1.c0.max == pytest.approx(parameter.hugeval)
+
+    with patch("sys.stdin", StringIO(" ,-12.1")):
+        s.set_model('const1d.f2')
+
+    # stop checking list_model_ids
+    expected.add('f2')
+    assert set(s.list_model_components()) == expected
+
+    f2 = s.get_model_component('f2')
+    assert f2.c0.val == pytest.approx(1.0)
+    assert f2.c0.min == pytest.approx(-12.1)
+    assert f2.c0.max == pytest.approx(parameter.hugeval)
+
+    with patch("sys.stdin", StringIO(" ,")):
+        s.set_model('const1d.f3')
+
+    f3 = s.get_model_component('f3')
+    assert f3.c0.val == pytest.approx(1.0)
+    assert f3.c0.min == pytest.approx(- parameter.hugeval)
+    assert f3.c0.max == pytest.approx(parameter.hugeval)
+
+    with patch("sys.stdin", StringIO(" ,, ")):
+        s.set_model('const1d.f4')
+
+    f4 = s.get_model_component('f4')
+    assert f4.c0.val == pytest.approx(1.0)
+    assert f4.c0.min == pytest.approx(- parameter.hugeval)
+    assert f4.c0.max == pytest.approx(parameter.hugeval)
+
+    # TODO: test error cases
     #
 
 

@@ -5629,47 +5629,40 @@ class Session(NoNewAttributesAfterInit):
                 if inval == "":
                     break
 
-                val = min = max = None
-                count = inval.count(',')
+                val = None
+                minval = None
+                maxval = None
+                tokens = [t.strip() for t in inval.split(',')]
+                ntokens = len(tokens)
 
-                if count == 0:
-                    try:
-                        val = float(inval)
-                    except Exception as e:
-                        info("Please provide a float value; " + str(e))
-                        continue
-
-                elif count == 1:
-                    try:
-                        str_val, str_min = inval.split(',')
-                        if str_val != "":
-                            val = float(str_val)
-                        if str_min != "":
-                            min = float(str_min)
-                    except Exception as e:
-                        info("Please provide a float value; " + str(e))
-                        continue
-
-                elif count == 2:
-                    try:
-                        str_val, str_min, str_max = inval.split(',')
-
-                        if str_val != "":
-                            val = float(str_val)
-                        if str_min != "":
-                            min = float(str_min)
-                        if str_max != "":
-                            max = float(str_max)
-                    except Exception as e:
-                        info("Please provide a float value; " + str(e))
-                        continue
-                else:
+                if ntokens > 3:
                     info("Error: Please provide a comma-separated " +
                          "list of floats; e.g. val,min,max")
                     continue
 
+                if tokens[0] != '':
+                    try:
+                        val = float(tokens[0])
+                    except Exception as e:
+                        info("Please provide a float value; " + str(e))
+                        continue
+
+                if ntokens > 1 and tokens[1] != '':
+                    try:
+                        minval = float(tokens[1])
+                    except Exception as e:
+                        info("Please provide a float value; " + str(e))
+                        continue
+
+                if ntokens > 2 and tokens[2] != '':
+                    try:
+                        maxval = float(tokens[2])
+                    except Exception as e:
+                        info("Please provide a float value; " + str(e))
+                        continue
+
                 try:
-                    self.set_par(par, val, min, max)
+                    self.set_par(par, val, minval, maxval)
                     break
                 except Exception as e:
                     info(str(e))
