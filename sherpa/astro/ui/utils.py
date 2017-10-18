@@ -11323,7 +11323,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: should this accept the confidence parameter?
     def sample_energy_flux(self, lo=None, hi=None, id=None, num=1, scales=None,
-                           correlated=False, numcores=None, bkg_id=None):
+                           correlated=False, numcores=None, bkg_id=None, est_method_args=None):
         """Return the energy flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -11421,12 +11421,12 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.flux.sample_flux(fit, data, src,
                                              sherpa.astro.utils.calc_energy_flux,
                                              correlated, num, lo, hi, numcores,
-                                             scales)
+                                             scales, est_method_args=est_method_args)
 
     # DOC-NOTE: are scales the variance or standard deviation?
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                     num=1, scales=None, correlated=False,
-                    numcores=None, bkg_id=None, Xrays=True, confidence=68):
+                    numcores=None, bkg_id=None, Xrays=True, confidence=68, est_method_args=None):
         """Return the flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -11559,7 +11559,7 @@ class Session(sherpa.ui.utils.Session):
                                               scales=scales,
                                               correlated=correlated,
                                               numcores=numcores,
-                                              bkg_id=bkg_id)
+                                              bkg_id=bkg_id, est_method_args=est_method_args)
 
         return sherpa.astro.flux.calc_sample_flux(id, lo, hi, self, fit, data,
                                                   samples, modelcomponent,
