@@ -24,7 +24,8 @@ import pytest
 
 from sherpa.models.model import Model, ArithmeticModel, CompositeModel, \
     ArithmeticFunctionModel
-from sherpa.models.basic import Const1D, Gauss1D, Const2D, Gauss2D, StepLo1D
+from sherpa.models.basic import Const1D, Gauss1D, Const2D, Gauss2D, \
+    PowLaw1D, StepLo1D
 from sherpa.models.parameter import Parameter
 from sherpa.instrument import PSFModel
 from sherpa.data import Data1D
@@ -580,26 +581,32 @@ def _test_regrid1d_interpolation(rtol,
     assert_allclose(ygot, yexp, atol=0, rtol=rtol)
 
 
-def _test_regrid1d_int_interpolation(rtol, method=None):
-    """Test interpolation case for integrated grids.
+def _test_regrid1d_int(rtol,
+                       eval_incr=True,
+                       req_incr=True):
+    """Test with for integrated grids.
 
     Parameters
     ----------
     rtol : number
         The relative tolerance, passed through to assert_allclose.
-    method : function reference, optional
-        The interpolator to use, which should match
-        sherpa.utils.linear_interp's API. If None then
-        use the default method (which is sherpa.utils.neville)
+    eval_incr : bool, optional
+        Does the evaluation grid increase or decrease?
+        CURRENTLY UNSUPPORTED IF False.
+    req_incr : bool, optional
+        Does the requested grid increase or decrease?
+        CURRENTLY UNSUPPORTED IF False.
 
     Notes
     -----
-    Should this logic be added to _test_regrid1d_interpolation - e.g.
-    controlled by an interpolate parameter - or are there more differences,
-    such as the interpolation method? For integrated models it isn't
-    quite interpolation that is wanted, so perhaps the function
-    name needs changing?
+    This is very similar to  _test_regrid1d_interpolation except that
+    it does not support the method parameter.
     """
+
+    # have not coded this, since need xlo[0] > xlo[1] but xhi[0] > xlo[0]
+    # (I think).
+    assert eval_incr
+    assert req_incr
 
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
@@ -609,8 +616,6 @@ def _test_regrid1d_int_interpolation(rtol, method=None):
 
     rmdl = Regrid1D()
     rmdl.set_grid(grid_evaluate[:-1], grid_evaluate[1:])
-    if method is not None:
-        rmdl.method = method
 
     mdl = rmdl(internal_mdl)
 
@@ -638,12 +643,74 @@ def test_regrid1d_interpolation(eincr, rincr, margs):
                                  eval_incr=eincr, req_incr=rincr)
 
 
-@pytest.mark.xfail(reason="1D integration support not written")
-def test_regrid1d_int_interpolation_default():
+def test_regrid1d_int():
+    _test_regrid1d_int(rtol=0.015)
 
-    # The tolerance will likely need changing
-    #
-    _test_regrid1d_int_interpolation(rtol=1e-5)
+
+# Can use a "calculate the flux" style model (e.g. XSPEC's c[p]flux)
+# to test out the 1D integrated case.
+#
+class ReNormalizerKernel1DInt(Model):
+    """A convolution-style model which renormalizes supplied model.
+
+    The signal between the lo and hi values is forced to equal
+    the flux parameter.
+    """
+    def __init__(self, name='renormalizerkernel1d'):
+        self.flux = Parameter(name, 'flux', 1.0)
+        self.lo = Parameter(name, 'lo', 0, alwaysfrozen=True)
+        self.hi = Parameter(name, 'hi', 100, alwaysfrozen=True)
+        Model.__init__(self, name, (self.flux, self.lo, self.hi))
+
+    def __call__(self, model):
+        return ReNormalizerModel1DInt(model, self)
+
+    def calc(self, pars, rhs, *args, **kwargs):
+
+        flux, lo, hi = pars[0:3]
+        rpars = pars[3:]
+
+        if len(args) == 2:
+            xlo = args[0]
+            xhi = args[1]
+            nargs = (xlo, xhi)
+        else:
+            raise ValueError("1D Int only")
+
+        # In a real-world version edge effects would be an issue,
+        # but here just worry about whether a bin is in or out.
+        # Can also just worry about the grids used in the test!
+        #
+        # Assumes the grid is increasing, and that idx is not empty.
+        #
+        idx = (xhi > lo) & (xlo < hi)
+        if not idx.any():
+            return np.zeros(xlo.size)
+
+        yorig = rhs(rpars, *nargs, **kwargs)
+        yflux = yorig[idx].sum()
+        return yorig * flux / yflux
+
+
+class ReNormalizerModel1DInt(CompositeModel, ArithmeticModel):
+
+    @staticmethod
+    def wrapobj(obj):
+        if isinstance(obj, ArithmeticModel):
+            return obj
+        else:
+            return ArithmeticFunctionModel(obj)
+
+    def __init__(self, model, wrapper):
+        self.model = self.wrapobj(model)
+        self.wrapper = wrapper
+        CompositeModel.__init__(self,
+                                "{}({})".format(self.wrapper.name,
+                                                self.model.name),
+                                (self.wrapper, self.model))
+
+    def calc(self, p, *args, **kwargs):
+        return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
 
 
 # TODO: more tests when regridding the models
@@ -841,3 +908,49 @@ def test_regrid1d_works_with_convolution_style():
     y_check = smoothed(xout)
     y_expected = np.zeros(xout.size) + cmdl.c0.val
     assert_allclose(y_check, y_expected, rtol=0, atol=1e-7)
+
+
+def test_regrid1d_int_flux():
+    """Check integration models using an XSPEC-style c[p]flux model.
+    """
+
+    gamma = 1.7
+    pmdl = PowLaw1D()
+    pmdl.gamma = gamma
+
+    fluxmdl = ReNormalizerKernel1DInt()
+    fluxmdl.flux = 20.0
+    fluxmdl.lo = 10.0
+    fluxmdl.hi = 20
+
+    grid = np.arange(1.0, 9.0, 0.01)
+    glo = grid[:-1]
+    ghi = grid[1:]
+
+    mdl = fluxmdl(pmdl)
+
+    # Without any regridding, the model should be zero
+    yzero = mdl(glo, ghi)
+    assert_allclose(yzero, np.zeros(glo.size), atol=1e-10, rtol=0)
+
+    regrid = Regrid1D()
+    rmdl = regrid(mdl)
+
+    # ensure it covers the 10 - 20 range as well as 1-9. Pick
+    # a smaller grid size than the output grid.
+    #
+    xfull = np.arange(0, 22, 0.005)
+    regrid.set_grid(xfull[:-1], xfull[1:])
+
+    y_regrid = rmdl(glo, ghi)
+    assert y_regrid.shape == glo.shape
+
+    # Model flux in lo/hi range is int_lo^hi x^-gamma dx (since norm
+    # and reference of the power law are both 1.0). This is, since
+    # gamma is not 1, [x^(1-gamma)]^hi_lo / (1 - gamma).
+    #
+    term = 1.0 - gamma
+    renorm = (20**term - 10**term) / term
+    y_expected = pmdl(glo, ghi) * 20 / renorm
+
+    assert_allclose(y_regrid, y_expected, atol=1e-10, rtol=0)

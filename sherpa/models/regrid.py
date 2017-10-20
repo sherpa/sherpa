@@ -36,7 +36,7 @@ import numpy as np
 
 from sherpa.models.model import Model, ArithmeticModel, \
     ArithmeticFunctionModel, CompositeModel
-from sherpa.utils import interpolate, neville
+from sherpa.utils import interpolate, neville, rebin
 from sherpa.utils.err import ModelErr
 
 
@@ -240,7 +240,14 @@ class Regrid1D(Model):
                                function=self.method)
 
         else:
-            raise NotImplementedError()
+            # TODO: should there be some check that the grid size
+            #       is "compatible"? Note that test_regrid1d_int_flux
+            #       appears to fail if the grid width used for modelfunc
+            #       is larger than the output.
+            #
+            y = modelfunc(pars, self.grid[0], self.grid[1])
+            return rebin(y, self.grid[0], self.grid[1],
+                         args[0], args[1])
 
 
 class Regrid2D(Model):
