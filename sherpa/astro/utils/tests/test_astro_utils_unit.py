@@ -25,7 +25,6 @@ from sherpa.utils import requires_data, requires_fits
 
 
 # See https://github.com/sherpa/sherpa/issues/405
-@pytest.mark.xfail
 def test_filter_resp_nochans():
     """What happens if no channels?
 
@@ -49,7 +48,6 @@ def test_filter_resp_nochans():
 # See https://github.com/sherpa/sherpa/issues/405
 @requires_data
 @requires_fits
-@pytest.mark.xfail
 def test_rmf_filter_no_chans(make_data_path):
     """This is not really a unit test but placed here as it
     is related to test_filter_resp_nochans.

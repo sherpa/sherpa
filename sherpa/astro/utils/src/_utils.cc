@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2009, 2017  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -252,6 +252,12 @@ namespace sherpa { namespace astro { namespace utils {
 			    &matrix,
 			    &offset) )
       return NULL;
+
+    if (0 == noticed_chans.get_size()) {
+      PyErr_SetString( PyExc_ValueError,
+		       (char*)"There are no noticed channels" );
+      return NULL;
+    }
 
     if( EXIT_SUCCESS != mask.zeros( 1, n_grp.get_dims() ))
       return NULL;
