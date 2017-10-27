@@ -65,6 +65,9 @@ known_warnings = {
         ],
     RuntimeWarning:
         [r"invalid value encountered in sqrt",
+         # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
+         r"numpy.dtype size changed, may indicate binary " +
+         r"incompatibility. Expected 96, got 88"
          ],
 }
 
@@ -85,8 +88,11 @@ if sys.version_info >= (3, 2):
                 r"unclosed file .*table.txt.* closefd=True>",
             ],
         RuntimeWarning:
-        [r"invalid value encountered in sqrt",
-         ],
+            [r"invalid value encountered in sqrt",
+             # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
+             r"numpy.dtype size changed, may indicate binary " +
+             r"incompatibility. Expected 96, got 88"
+             ],
 
     }
     known_warnings.update(python3_warnings)
