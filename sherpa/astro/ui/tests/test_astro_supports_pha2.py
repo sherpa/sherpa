@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,9 @@ grating dataset).
 At present most of the specialized handling of PHA2 files is found in
 the sherpa.astro.ui module, which is why the tests are placed here.
 
+It is also a place to test the handling of multiple datasets, in
+particular backgrounds, since even the PHA1 versions of the grating
+data have two background components.
 """
 
 import pytest

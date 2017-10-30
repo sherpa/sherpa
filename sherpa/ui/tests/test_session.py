@@ -29,7 +29,12 @@ from sherpa.models import parameter
 
 import pytest
 
-from unittest.mock import patch
+try:
+    from unittest.mock import patch
+except ImportError:
+    # Python 2.7 fall through
+    from mock import patch
+
 from io import StringIO
 
 
@@ -146,7 +151,7 @@ def test_paramprompt():
     # raised, and the text, but then we don't get to test the
     # behaviour of the paramprompt code.
     #
-    with patch("sys.stdin", StringIO("2.1")):
+    with patch("sys.stdin", StringIO(u"2.1")):
         s.set_model('const1d.mx')
 
     assert s.list_model_ids() == [1]
@@ -156,7 +161,7 @@ def test_paramprompt():
     mx = s.get_model_component('mx')
     assert mx.c0.val == pytest.approx(2.1)
 
-    with patch("sys.stdin", StringIO("2.1e-3 , 2.0e-3, 1.2e-2")):
+    with patch("sys.stdin", StringIO(u"2.1e-3 , 2.0e-3, 1.2e-2")):
         s.set_model('x', 'const1d.my')
 
     assert set(s.list_model_ids()) == set([1, 'x'])
@@ -168,7 +173,7 @@ def test_paramprompt():
     assert my.c0.min == pytest.approx(2.0e-3)
     assert my.c0.max == pytest.approx(1.2e-2)
 
-    with patch("sys.stdin", StringIO("2.1e-3 ,, 1.2e-2")):
+    with patch("sys.stdin", StringIO(u"2.1e-3 ,, 1.2e-2")):
         s.set_model(2, 'const1d.mz')
 
     assert set(s.list_model_ids()) == set([1, 2, 'x'])
@@ -180,7 +185,7 @@ def test_paramprompt():
     assert mz.c0.min == pytest.approx(- parameter.hugeval)
     assert mz.c0.max == pytest.approx(1.2e-2)
 
-    with patch("sys.stdin", StringIO("-12.1,-12.1")):
+    with patch("sys.stdin", StringIO(u"-12.1,-12.1")):
         s.set_model('const1d.f1')
 
     assert set(s.list_model_ids()) == set([1, 2, 'x'])
@@ -192,7 +197,7 @@ def test_paramprompt():
     assert f1.c0.min == pytest.approx(-12.1)
     assert f1.c0.max == pytest.approx(parameter.hugeval)
 
-    with patch("sys.stdin", StringIO(" ,-12.1")):
+    with patch("sys.stdin", StringIO(u" ,-12.1")):
         s.set_model('const1d.f2')
 
     # stop checking list_model_ids
@@ -204,7 +209,7 @@ def test_paramprompt():
     assert f2.c0.min == pytest.approx(-12.1)
     assert f2.c0.max == pytest.approx(parameter.hugeval)
 
-    with patch("sys.stdin", StringIO(" ,")):
+    with patch("sys.stdin", StringIO(u" ,")):
         s.set_model('const1d.f3')
 
     f3 = s.get_model_component('f3')
@@ -212,7 +217,7 @@ def test_paramprompt():
     assert f3.c0.min == pytest.approx(- parameter.hugeval)
     assert f3.c0.max == pytest.approx(parameter.hugeval)
 
-    with patch("sys.stdin", StringIO(" ,, ")):
+    with patch("sys.stdin", StringIO(u" ,, ")):
         s.set_model('const1d.f4')
 
     f4 = s.get_model_component('f4')
