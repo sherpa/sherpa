@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,6 +18,7 @@
 #
 
 from numpy import arange, array
+import numpy as np
 import sherpa.astro.optical as models
 from sherpa.utils import SherpaFloat, SherpaTestCase
 from sherpa.models.model import ArithmeticModel
@@ -118,13 +119,13 @@ class test_models(SherpaTestCase):
 
         self.assertEqualWithinTol(standard, models.CCM()(x), 1.0e-4)
 
-
     def test_emissiongaussian(self):
-        standard = array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5632678013191489, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        standard = np.zeros(25)
+        standard[15] = 0.5632678013191489
 
-        x = arange(2000.0,7000.0,200,SherpaFloat)
-
-        self.assertEqualWithinTol(standard, models.EmissionGaussian()(x), 1.0e-4)
+        x = arange(2000.0, 7000.0, 200, SherpaFloat)
+        y = models.EmissionGaussian()(x)
+        self.assertEqualWithinTol(standard, y, 1.0e-4)
 
     def test_emissionlorentz(self):
         standard = array([2.9493539159312757e-08, 3.3857378749894552e-08, 3.9266545212663451e-08, 4.6083652933497467e-08, 5.4843354298635128e-08, 6.6360456699082159e-08, 8.1926486410991892e-08, 1.0368820345249175e-07, 1.3542947896188593e-07, 1.8433454496972647e-07, 2.6544168835398889e-07, 4.1475247581613886e-07, 7.3733711165262667e-07, 1.6590044953853394e-06, 6.6359314568841271e-06, 3.8170761273895537e-01, 6.6359314568841271e-06, 1.6590044953853394e-06, 7.3733711165262667e-07, 4.1475247581613886e-07, 2.6544168835398889e-07, 1.8433454496972647e-07, 1.3542947896188593e-07, 1.0368820345249175e-07, 8.1926486410991892e-08])
