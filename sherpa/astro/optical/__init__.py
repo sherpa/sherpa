@@ -612,16 +612,16 @@ class EmissionGaussian(ArithmeticModel):
         idx = (delta < self.limit.val)
 
         arg = - delta * delta / 2.0
+        s2 = 2.50662828 * sigma
         if sao_fcmp(skew, 1.0, _tol) == 0:
-            y[idx] = flux * numpy.exp(arg[idx]) / sigma / 2.50662828
+            y[idx] = flux * numpy.exp(arg[idx]) / s2
 
         else:
-            left = (arg <= pos)
+            left = (x <= pos)
             arg[left] = numpy.exp(arg[left])
             right = ~left
             arg[right] = numpy.exp(arg[right] / skew / skew)
-            y[idx] = 2.0 * flux * arg[idx] / sigma / 2.50662828 / \
-                (1.0 + skew)
+            y[idx] = 2.0 * flux * arg[idx] / s2 / (1.0 + skew)
 
         return y
 

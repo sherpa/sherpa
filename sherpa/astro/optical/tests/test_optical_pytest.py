@@ -21,8 +21,6 @@
 This adds additional tests to test_optical but uses pytest.
 """
 
-import pytest
-
 import numpy as np
 from numpy.testing import assert_allclose
 
@@ -49,7 +47,6 @@ def test_emissiongaussian_skew1():
     assert_allclose(expected, y, atol=1.0e-4, rtol=0)
 
 
-@pytest.mark.xfail
 def test_emissiongaussian_skew3():
     # This currently applies several expected properties of the
     # result (i.e. is it peaked at the right place and skewed)
@@ -85,7 +82,6 @@ def test_emissiongaussian_skew3():
     assert lsum < hsum
 
 
-@pytest.mark.xfail
 def test_emissiongaussian_skew025():
     # Since the skew is < 1 the lower-x values should now be
     # higher.
