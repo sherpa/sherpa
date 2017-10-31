@@ -38,13 +38,11 @@ except ImportError:
 
 
 TEST_DATA_OPTION = "--test-data"
-SHOW_WARNINGS_OPTION = "--show-warnings"
+
 
 def pytest_addoption(parser):
     parser.addoption("-D", TEST_DATA_OPTION, action="store",
                      help="Alternative location of test data files")
-    parser.addoption(SHOW_WARNINGS_OPTION, action="store_true",
-                     help="Display the warnings created in a test")
 
 
 # Whilelist of known warnings. One can associate different warning messages
@@ -67,6 +65,9 @@ known_warnings = {
         ],
     RuntimeWarning:
         [r"invalid value encountered in sqrt",
+         # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
+         r"numpy.dtype size changed, may indicate binary " +
+         r"incompatibility. Expected 96, got 88"
          ],
 }
 
@@ -87,8 +88,11 @@ if sys.version_info >= (3, 2):
                 r"unclosed file .*table.txt.* closefd=True>",
             ],
         RuntimeWarning:
-        [r"invalid value encountered in sqrt",
-         ],
+            [r"invalid value encountered in sqrt",
+             # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
+             r"numpy.dtype size changed, may indicate binary " +
+             r"incompatibility. Expected 96, got 88"
+             ],
 
     }
     known_warnings.update(python3_warnings)
@@ -145,10 +149,20 @@ def capture_all_warnings(request, recwarn, pytestconfig):
                     if type(w.message) not in known_warnings or not known(w)]
 
         nwarnings = len(warnings)
-        if nwarnings > 0 and pytest.config.getoption(SHOW_WARNINGS_OPTION):
+        if nwarnings > 0:
+            # Only print out the first time a warning is seen; we could
+            # report this to the user explicitly, but rely on the
+            # counter information (i.e. i+1/nwarnings) to show that
+            # there were repeats.
+            #
+            swarnings = set([])
             print("*** Warnings created: {}".format(nwarnings))
             for i, w in enumerate(warnings):
+                sw = str(w)
+                if sw in swarnings:
+                    continue
                 print("{}/{} {}".format(i + 1, nwarnings, w))
+                swarnings.add(sw)
 
         assert 0 == nwarnings
 
