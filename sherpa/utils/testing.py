@@ -178,8 +178,16 @@ if HAS_PYTEST:
     #  standard library. The decorator will be defined if pytest is missing, but if the tests are run they throw
     #  and exception prompting users to install pytest, in those cases where pytest is not installed automatically.
 
-    requires_data = pytest.mark.skipif(SherpaTestCase.datadir is None,
-                                       reason="required test data missing")
+    def requires_data(test_function):
+        """
+         Decorator for functions requiring external data (i.e. data not distributed with Sherpa
+         itself) is missing.  This is used to skip tests that require such data.
+
+         See PR #391 for why this is a function: https://github.com/sherpa/sherpa/pull/391
+         """
+        condition = SherpaTestCase.datadir is None
+        msg = "required test data missing"
+        return pytest.mark.skipif(condition, reason=msg)(test_function)
 
 
     def requires_package(msg=None, *packages):
