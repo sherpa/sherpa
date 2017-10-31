@@ -250,7 +250,7 @@ class AbsorptionGaussian(ArithmeticModel):
         sigma = pos * fwhm / (2.354820044 * c)
 
     and for integrated data sets the low-edge of the grid is used.
-    The calculation is only done for those points that line in the
+    The calculation is only done for those points that are in the
     range::
 
         |x - pos| < limit * sigma
@@ -473,7 +473,7 @@ class OpticalGaussian(ArithmeticModel):
         sigma = pos * fwhm / (2.9979e5 * 2.354820044)
 
     and for integrated data sets the low-edge of the grid is used.
-    The calculation is only done for those points that line in the
+    The calculation is only done for those points that are in the
     range::
 
         |x - pos| < limit * sigma
@@ -535,7 +535,7 @@ class EmissionGaussian(ArithmeticModel):
     limit
         The model is only evaluated for points that lie within
         limit sigma of pos. It is a hidden parameter, with a
-        value fixed at 4.
+        default value of 4.
 
     See Also
     --------
@@ -555,7 +555,7 @@ class EmissionGaussian(ArithmeticModel):
 
         d2(x) = d(x)                  if x <= pos
 
-              = d(x) / s              otherwise
+              = d(x) / skew           otherwise
 
         s2 = 2.50662828 * s
 
@@ -563,7 +563,7 @@ class EmissionGaussian(ArithmeticModel):
 
     and for integrated data sets the low-edge of the grid is used.
 
-    The calculation is only done for those points that line in the
+    The calculation is only done for those points that are in the
     range::
 
         |x - pos| < limit * sigma
