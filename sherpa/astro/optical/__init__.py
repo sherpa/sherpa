@@ -590,33 +590,38 @@ class EmissionGaussian(ArithmeticModel):
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
 
-        if 0.0 == p[0]:
+        fwhm = p[0]
+        pos = p[1]
+        flux = p[2]
+        skew = p[3]
+        if 0.0 == fwhm:
             raise ValueError('model evaluation failed, ' +
                              '%s fwhm cannot be zero' % self.name)
 
-        if 0.0 == p[1]:
+        if 0.0 == pos:
             raise ValueError('model evaluation failed, ' +
                              '%s pos cannot be zero' % self.name)
 
-        if 0.0 == p[3]:
+        if 0.0 == skew:
             raise ValueError('model evaluation failed, ' +
                              '%s skew cannot be zero' % self.name)
 
         y = numpy.zeros_like(x)
-        sigma = p[1] * p[0] / 705951.5     # = 2.9979e5 / 2.354820044
-        delta = numpy.abs((x - p[1]) / sigma)
+        sigma = pos * fwhm / 705951.5     # = 2.9979e5 / 2.354820044
+        delta = numpy.abs((x - pos) / sigma)
         idx = (delta < self.limit.val)
 
         arg = - delta * delta / 2.0
-        if sao_fcmp(p[3], 1.0, _tol) == 0:
-            y[idx] = p[2] * numpy.exp(arg[idx]) / sigma / 2.50662828
+        if sao_fcmp(skew, 1.0, _tol) == 0:
+            y[idx] = flux * numpy.exp(arg[idx]) / sigma / 2.50662828
 
         else:
-            left = (arg <= p[1])
+            left = (arg <= pos)
             arg[left] = numpy.exp(arg[left])
             right = ~left
-            arg[right] = numpy.exp(arg[right] / p[3] / p[3])
-            y[idx] = 2.0 * p[2] * arg[idx] / sigma / 2.50662828 / (1.0 + p[3])
+            arg[right] = numpy.exp(arg[right] / skew / skew)
+            y[idx] = 2.0 * flux * arg[idx] / sigma / 2.50662828 / \
+                (1.0 + skew)
 
         return y
 
