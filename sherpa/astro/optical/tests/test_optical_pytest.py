@@ -51,6 +51,12 @@ def test_emissiongaussian_skew1():
 
 @pytest.mark.xfail
 def test_emissiongaussian_skew3():
+    # This currently applies several expected properties of the
+    # result (i.e. is it peaked at the right place and skewed)
+    # and does not do an explicit check of the expected values as
+    # it is not clear what they are.
+    #
+
     mdl = models.EmissionGaussian()
     mdl.skew = 3
 
@@ -58,6 +64,9 @@ def test_emissiongaussian_skew3():
     # values in multiple bins
     x = np.arange(4995.0, 5006.0, 1.0)
     y = mdl(x)
+
+    # sanity check
+    assert (y >= 0.0).all()
 
     # Check subset is working (i.e. that the outer bins
     # are zero).
@@ -74,3 +83,37 @@ def test_emissiongaussian_skew3():
     lsum = y[x < 5000].sum()
     hsum = y[x > 5000].sum()
     assert lsum < hsum
+
+
+@pytest.mark.xfail
+def test_emissiongaussian_skew025():
+    # Since the skew is < 1 the lower-x values should now be
+    # higher.
+    #
+
+    mdl = models.EmissionGaussian()
+    mdl.skew = 0.25
+
+    # select an x-axis range which leads to non-zero
+    # values in multiple bins
+    x = np.arange(4995.0, 5006.0, 1.0)
+    y = mdl(x)
+
+    # sanity check
+    assert (y >= 0.0).all()
+
+    # Check subset is working (i.e. that the outer bins
+    # are zero).
+    #
+    idx0 = np.where((x < 4998) | (x > 5002))
+    assert_allclose(np.zeros(6), y[idx0])
+
+    # This should be asymmetrical about x=5000, with x>5000
+    # being smaller than x<5000, and the peak at 5000.
+    #
+    midval = y[5]
+    assert (midval > y[x != 5000]).all()
+
+    lsum = y[x < 5000].sum()
+    hsum = y[x > 5000].sum()
+    assert lsum > hsum
