@@ -182,6 +182,8 @@ if HAS_PYTEST:
         """
          Decorator for functions requiring external data (i.e. data not distributed with Sherpa
          itself) is missing.  This is used to skip tests that require such data.
+
+         See PR #391 for why this is a function: https://github.com/sherpa/sherpa/pull/391
          """
         condition = SherpaTestCase.datadir is None
         msg = "required test data missing"
