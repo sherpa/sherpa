@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,11 +19,21 @@ from __future__ import absolute_import
 #
 
 """
-Provide I/O routines to Sherpa, focussing on FITS.
+Provide Astornomy-specific I/O routines for Sherpa.
+
+This module contains read and write routines for handling FITS [1]_
+and ASCII format data. The actual support is provided by
+the selected I/O backend package (currently Crates, provided
+by CIAO, or the FITS support in the AstroPy package, if installed).
 
 This module should not be imported directly if there is no
-FITS support present (i.e. neither the crates or astropy
-back ends are in use).
+I/O backend available.
+
+References
+----------
+
+.. [1] Flexible Image Transport System, https://en.wikipedia.org/wiki/FITS
+
 """
 
 from six.moves import zip as izip
@@ -79,12 +89,46 @@ def _is_subclass(t1, t2):
 
 
 def read_arrays(*args):
-    """
-    read_table( *NumPy_args [, dstype = Data1D ] )
+    """Create a dataset from multiple arrays.
 
-    read_table( *CrateData_args [, dstype = Data1D ] )
+    The return value defaults to a `sherpa.data.Data1D` instance,
+    but this can be changed by supplying the required class
+    as the last argument (anything that is derived from
+    `sherpa.data.BaseData`).
 
-    read_table( *NumPy_and_CrateData_args [, dstype = Data1D ] )
+    Parameters
+    ----------
+    *args
+        There must be at least one argument. The number of
+        arguments depends on the data type being read in.
+        The supported argument types depends on the I/O backend
+        in use (as supported by the ``get_column_data`` routine
+        provided by the backend).
+
+    Returns
+    -------
+    data : a sherpa.data.BaseData derived object
+
+    Examples
+    --------
+    The following examples do not contain argument types specific to
+    a particular I/O backend.
+
+    Create a `sherpa.data.Data1D` instance from the data in the
+    arrays ``x`` and ``y`` (taken to be the independent and
+    dependent axes respectively):
+
+    >>> d = read_arrays(x, y)
+
+    As in the previous example, but explicitly declaring the data type:
+
+    >>> d = read_arrays(x, y, sherpa.data.Data1D)
+
+    Create a `sherpa.data.Data2D` instance with the independent
+    axes ``x0`` and ``x1``, and dependent axis ``y``:
+
+    >>> d = read_arrays(x0, x1, y, sherpa.data.Data2D)
+
     """
     args = list(args)
     if len(args) == 0:
@@ -103,10 +147,50 @@ def read_arrays(*args):
 
 
 def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
-    """
-    read_table( filename [, ncols=2 [, colkeys=None [, dstype=Data1D ]]] )
+    """Create a dataset from a tabular file.
 
-    read_table( TABLECrate [, ncols=2 [, colkeys=None [, dstype=Data1D ]]] )
+    The supported file types (e.g. ASCII or FITS) depends on the
+    selected I/O backend.
+
+    Parameters
+    ----------
+    arg
+        The name of the file or a representation of the file
+        (the type depends on the I/O backend).
+    ncols : int, optional
+        The first ncols columns are read from the file.
+    colkeys : None or list of strings, optional
+        If given, select these columns from the file.
+    dstype : optional
+        The data type to create (it is expected to follow the
+        `sherpa.data.BaseData` interface).
+
+    Returns
+    -------
+    data : a sherpa.data.BaseData derived object
+
+    Examples
+    --------
+    The following examples do not contain argument types specific to
+    a particular I/O backend.
+
+    Create a `sherpa.data.Data1D` object from the first two
+    columns in the file ``src.fits``:
+
+    >>> d = read_table('src.fits')
+
+    Create A `sherpa.data.Data1DInt` object from the first three
+    columns in the file ``src.fits``:
+
+    >>> d = read_table('src.fits', ncols=3, dstype=Data1DInt)
+
+    Create a `sherpa.data.Data1D` data set from the specified
+    columns in ``tbl.fits``, where ``WLEN`` is used for the
+    independent axis, ``FLUX`` the dependent axis, and
+    ``FLUXERR`` for the statistical error on the dependent axis:
+
+    >>> d = read_table('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
+
     """
     colnames, cols, name, hdr = backend.get_table_data(arg, ncols, colkeys)
 
@@ -117,9 +201,53 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
 
 
 def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
-    """
-    read_ascii( filename [, ncols=2 [, colkeys=None [, sep=' ' [,
-                dstype=Data1D [, comment='#' ]]]]] )
+    """Create a dataset from an ASCII tabular file.
+
+    Parameters
+    ----------
+    filename : str
+        The name of the file or a representation of the file
+        (the type depends on the I/O backend).
+    ncols : int, optional
+        The first ncols columns are read from the file.
+    colkeys : None or list of strings, optional
+        If given, select these columns from the file.
+    dstype : optional
+        The data type to create (it is expected to follow the
+        `sherpa.data.BaseData` interface).
+    **kwargs
+        The remaining arguments are passed through to the
+        ``get_ascii_data`` routine of the I/O backend. It is
+        expected that these include ``sep`` and ``comment``,
+        which describe the column separators and indicator of
+        a comment line, respectively.
+
+    Returns
+    -------
+    data : a sherpa.data.BaseData derived object
+
+    Examples
+    --------
+    The following examples do not contain argument types specific to
+    a particular I/O backend.
+
+    Create a `sherpa.data.Data1D` object from the first two
+    columns in the file ``src.dat``:
+
+    >>> d = read_ascii('src.dat')
+
+    Create A `sherpa.data.Data1DInt` object from the first three
+    columns in the file ``src.dat``:
+
+    >>> d = read_ascii('src.dat', ncols=3, dstype=Data1DInt)
+
+    Create a `sherpa.data.Data1D` data set from the specified
+    columns in ``tbl.fits``, where ``WLEN`` is used for the
+    independent axis, ``FLUX`` the dependent axis, and
+    ``FLUXERR`` for the statistical error on the dependent axis:
+
+    >>> d = read_ascii('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
+
     """
     colnames, cols, name = backend.get_ascii_data(filename, ncols=ncols,
                                                   colkeys=colkeys,
@@ -132,10 +260,39 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
 
 
 def read_image(arg, coord='logical', dstype=DataIMG):
-    """
-    read_image( filename [, coord='logical' [, dstype=DataIMG ]])
+    """Create an image dataset from a file.
 
-    read_image( IMAGECrate [, coord='logical' [, dstype=DataIMG ]])
+    Parameters
+    ----------
+    arg
+        The name of the file or a representation of the file
+        (the type depends on the I/O backend).
+    coord : {'logical', 'physical', 'world'}, optional
+        The type of axis coordinates to use. An error is raised if the
+        file does not contain the necessary metadata for the selected
+        coordinate system.
+    dstype : optional
+        The data type to create (it is expected to follow the
+        `sherpa.data.BaseData` interface).
+
+    Returns
+    -------
+    data : a sherpa.data.BaseData derived object
+
+    Examples
+    --------
+    The following examples do not contain argument types specific to
+    a particular I/O backend.
+
+    Create a `sherpa.astro.data.DataIMG` object from the FITS file
+    ``img.fits``:
+
+    >>> d = read_image('img.fits')
+
+    Select the physical coordinate system from the file:
+
+    >>> d = read_image('img.fits', coord='physical')
+
     """
     data, filename = backend.get_image_data(arg)
     axlens = data['y'].shape
@@ -165,20 +322,38 @@ def read_image(arg, coord='logical', dstype=DataIMG):
 
 
 def read_arf(arg):
-    """
-    read_arf( filename )
+    """Create a DataARF object.
 
-    read_arf( ARFCrate )
+    Parameters
+    ----------
+    arg
+        The name of the file or a representation of the file
+        (the type depends on the I/O backend) containing the
+        ARF data.
+
+    Returns
+    -------
+    data : sherpa.astro.data.DataARF
+
     """
     data, filename = backend.get_arf_data(arg)
     return DataARF(filename, **data)
 
 
 def read_rmf(arg):
-    """
-    read_rmf( filename )
+    """Create a DataRMF object.
 
-    read_rmf( RMFCrate )
+    Parameters
+    ----------
+    arg
+        The name of the file or a representation of the file
+        (the type depends on the I/O backend) containing the
+        RMF data.
+
+    Returns
+    -------
+    data : sherpa.astro.data.DataRMF
+
     """
     data, filename = backend.get_rmf_data(arg)
     return DataRMF(filename, **data)
@@ -186,12 +361,33 @@ def read_rmf(arg):
 
 def _read_ancillary(data, key, label, dname,
                     read_func, output_once=True):
-    """Read in the file, if the key in data is set,
-    replacing the value with the full path to the file,
-    and return the resulf of calling read_func on the
-    file. dname is the directory where the input file is,
-    and is used to create the full path if it is not an
-    absolute path.
+    """Read in a file if the keyword is set.
+
+    Parameters
+    ----------
+    data
+        The header information, which behaves like a dictionary.
+    key
+        The key to look for in data. If not set, or its value compares
+        case insensitively to "none" then nothing is read in.
+    label : str
+        This is used to identify the file being read in. It is only
+        used if output_once is set.
+    dname : str
+        The location of the file containing the metadata. This is prepended
+        to  the value read from the data argument if it is not an
+        absolute path.
+    read_func
+        The function used to read in the file: it expects one argument,
+        the file to read in, and returns the data object.
+    output_once : bool, optional
+        If set then the routine uses the Sherpa logger to display
+        informational or warning information.
+
+    Returns
+    -------
+    data : None or a sherpa.data.BaseData derived object
+
     """
 
     if not(data[key]) or data[key].lower() == 'none':
@@ -214,10 +410,26 @@ def _read_ancillary(data, key, label, dname,
 
 
 def read_pha(arg, use_errors=False, use_background=False):
-    """
-    read_pha( filename [, use_errors=False [, use_background=False]] )
+    """Create a DataPHA object.
 
-    read_pha( PHACrate [, use_errors=False [, use_background=False]] )
+    Parameters
+    ----------
+    arg
+        The name of the file or a representation of the file
+        (the type depends on the I/O backend) containing the
+        PHA data.
+    use_errors : bool, optional
+        If the PHA file contains statistical error values for the
+        count (or count rate) column, should it be read in. This
+        defaults to ``False``.
+    use_background : bool, optional
+        Should the background PHA data (and optional responses) also
+        be read in and associated with the data set?
+
+    Returns
+    -------
+    data : sherpa.astro.data.DataPHA
+
     """
     datasets, filename = backend.get_pha_data(arg,
                                               use_background=use_background)
