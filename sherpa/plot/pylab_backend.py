@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -250,11 +250,25 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
         if val is not None:
             getattr(line, 'set_' + var)(val)
 
+    # Should the color for these lines be taken from the current axes?
+    #
+    # Using black (color='k') and the default line width (of 1) in
+    # matplotlib 2.0 produces a slightly-discrepant plot, since the
+    # axis (and tick labels) are drawn with a thickness of 0.8.
+    #
+    #
+    try:
+        lw = axes.spines['left'].get_linewidth()
+    except:
+        # should restrict to a particular error, but I do not know
+        # the axis structure enough to know what can go wrong
+        lw = 1.0
+
     if xaxis:
-        axes.axhspan(ymin=0, ymax=0, xmin=0, xmax=1)
+        axes.axhline(y=0, xmin=0, xmax=1, color='k', linewidth=lw)
 
     if ratioline:
-        axes.axhspan(ymin=1, ymax=1, xmin=0, xmax=1)
+        axes.axhline(y=1, xmin=0, xmax=1, color='k', linewidth=lw)
 
     #pylab.draw()
 
