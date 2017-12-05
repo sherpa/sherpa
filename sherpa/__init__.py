@@ -169,9 +169,13 @@ def _install_test_deps():
             """)
             raise
 
-    deps = ['pytest', 'mock']
-    pytest_plugins =  ['pytest-catchlog',]
+    deps = ['pytest', 'mock']  # List of packages to be installed
+    pytest_plugins = ['pytest-catchlog',]  # List of pytest plugins to be installed
 
+    # If the plugins are installed "now", pytest won't load them because they are not registered as python packages
+    # by the time this code runs. So we need to keep track of the plugins and explicitly pass them to `pytest.main()`.
+    # Note that explicitly passing plugins that were already registered would result in an error, hence this
+    # complexity seems to be required.
     installed_plugins = []
 
     for dep in deps:
@@ -196,5 +200,5 @@ def clitest():
     import pytest
     import os
     sherpa_dir = os.path.dirname(__file__)
-    errno = pytest.main([sherpa_dir, '-rs'], plugins=plugins)
+    errno = pytest.main([sherpa_dir, '-rs'], plugins=plugins)  # passing the plugins that have been installed "now".
     sys.exit(errno)
