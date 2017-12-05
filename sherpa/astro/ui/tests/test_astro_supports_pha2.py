@@ -29,7 +29,7 @@ It is also a place to test the handling of multiple datasets, in
 particular backgrounds, since even the PHA1 versions of the grating
 data have two background components.
 """
-
+import logging
 import pytest
 
 from sherpa.utils import requires_data, requires_fits
@@ -117,7 +117,7 @@ def validate_pha(d, bkg=True):
 
 @requires_data
 @requires_fits
-def test_load_pha2(make_data_path):
+def test_load_pha2(make_data_path, caplog):
     """Basic test that a pha2 file can be read in."""
 
     basename = '3c120_pha2'
@@ -157,10 +157,21 @@ def test_load_pha2(make_data_path):
         validate_pha(b, bkg=False)
         assert b.name == infile
 
+    # Test Log messages
+    msg_one = "systematic errors were not found in file '{}'".format(infile)
+    msg_two = """statistical errors were found in file '{}' 
+but not used; to use them, re-read with use_errors=True""".format(infile)
+    msg_three = "read background_up into a dataset from file {}".format(infile)
+    msg_four = "read background_down into a dataset from file {}".format(infile)
+    msg_five = "Multiple data sets have been input: 1-12"
 
-
-# TODO: how to test what messages are logged when load_pha is
-#       called with a pha2 file?
+    assert caplog.record_tuples == [
+        ('sherpa.astro.io', logging.WARNING, msg_one),
+        ('sherpa.astro.io', logging.INFO, msg_two),
+        ('sherpa.astro.io', logging.INFO, msg_three),
+        ('sherpa.astro.io', logging.INFO, msg_four),
+        ('sherpa.astro.ui.utils', logging.INFO, msg_five),
+    ]
 
 
 @requires_data
