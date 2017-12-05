@@ -39,6 +39,16 @@ from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 
 
+@pytest.fixture(autouse=True)
+def setup(request):
+    ui.clean()
+
+    def fin():
+        ui.clean()
+
+    request.addfinalizer(fin)
+
+
 def validate_pha(d, bkg=True):
     """Check the data is a PHA with expected structure.
 
@@ -112,7 +122,6 @@ def test_load_pha2(make_data_path):
 
     basename = '3c120_pha2'
 
-    ui.clean()
     orig_ids = ui.list_data_ids()
     assert orig_ids == []
 
@@ -148,7 +157,6 @@ def test_load_pha2(make_data_path):
         validate_pha(b, bkg=False)
         assert b.name == infile
 
-    ui.clean()
 
 
 # TODO: how to test what messages are logged when load_pha is
@@ -167,7 +175,6 @@ def test_load_pha2_compare_meg_order1(make_data_path):
     meg_p1file = make_data_path('3c120_meg_1.pha')
     meg_m1file = make_data_path('3c120_meg_-1.pha')
 
-    ui.clean()
     ui.load_pha('meg_p1', meg_p1file)
     ui.load_pha('meg_m1', meg_m1file)
 
@@ -232,8 +239,6 @@ def test_load_pha2_compare_meg_order1(make_data_path):
     assert s9 == pytest.approx(1005.4378559390879)
     assert s10 == pytest.approx(1119.980439489647)
 
-    ui.clean()
-
 
 # See #397
 #
@@ -244,7 +249,6 @@ def test_list_bkg_ids(make_data_path):
 
     basename = '3c120_pha2'
 
-    ui.clean()
     infile = make_data_path(basename)
     ui.load_pha(infile)
 
@@ -263,8 +267,6 @@ def test_list_bkg_ids(make_data_path):
         bids = ui.list_bkg_ids(i)
         validate(bids)
 
-    ui.clean()
-
 
 # See #397
 #
@@ -276,7 +278,6 @@ def test_list_response_ids_pha2(make_data_path):
     basename = '3c120_pha2'
     fakeid = 3
 
-    ui.clean()
     infile = make_data_path(basename)
     ui.load_pha(infile)
 
@@ -310,8 +311,6 @@ def test_list_response_ids_pha2(make_data_path):
 
         validate_err(i, excinfo)
 
-    ui.clean()
-
 
 # See #397
 #
@@ -323,7 +322,6 @@ def test_list_response_ids_pha1(make_data_path):
     basename = '3c120_heg_1.pha'
     fakeid = 3
 
-    ui.clean()
     infile = make_data_path(basename)
     ui.load_pha(infile)
 
