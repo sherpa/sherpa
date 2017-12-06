@@ -113,6 +113,7 @@ void xsmekl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void C_xsmkcf(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 // void C_xneq(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_nei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_nlapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 // void xshock_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void C_npshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void nsa_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -1155,6 +1156,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( xsmekl, 6 ),
   XSPECMODELFCT_C_NORM( C_xsmkcf, 6 ),
   XSPECMODELFCT_C_NORM( C_nei, 5 ),
+  XSPECMODELFCT_C_NORM( C_nlapec, 4 ),
   XSPECMODELFCT_C_NORM( C_npshock, 7 ),
   XSPECMODELFCT_NORM( nsa, 5 ),
   XSPECMODELFCT_NORM( nsagrav, 4 ),

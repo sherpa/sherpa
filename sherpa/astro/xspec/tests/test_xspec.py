@@ -24,6 +24,9 @@ from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_fits, requires_xspec
 
 
+# How many models should there be?
+XSPEC_MODELS_COUNT = 165
+
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh
 #
@@ -181,7 +184,7 @@ class test_xspec(SherpaTestCase):
                 cls()
                 count += 1
 
-        self.assertEqual(count, 164)
+        self.assertEqual(count, XSPEC_MODELS_COUNT)
 
     def test_norm_works(self):
         # Check that the norm parameter for additive models

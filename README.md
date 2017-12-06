@@ -433,14 +433,15 @@ Then, build Sherpa in the standard way:
 XSPEC
 -----
 
-Sherpa does not support
-[`XSPEC`](https://heasarc.gsfc.nasa.gov/xanadu/xspec/) models by
-default. However, it is possible to instruct Sherpa to build its
-`XSPEC` extension module by changing the build configuration options.
+Sherpa can be built with support for
+[`XSPEC`](https://heasarc.gsfc.nasa.gov/xanadu/xspec/), although
+support is not enabled by default. The current supported XSPEC versions
+are 12.9.0 and 12.9.1, and it is expected that it will build against
+newer versions, but without support for new models or features.
 
-The `xspec_config` section of the `setup.cfg` file will need
-changing to point to the libraries, and to turn on the extension.
-In all cases, set
+To build the XSPEC support in Sherpa, the `xspec_config` section of the
+`setup.cfg` file will need changing to point to the libraries, and to
+turn on the extension. In all cases, set
 
     with-xspec=True
 
@@ -499,11 +500,6 @@ Sherpa and XSPEC, in order to avoid possible incompatibilities.
 If there are problems building, or using, the module, then the other
 options may need to be set - in particular the `gfortran_lib_dirs` and
 `gfortran_libraries` settings.
-
-The XSPEC module is designed for use with XSPEC versions 12.9.0 and
-12.8.2, although 12.9.0 is the preferred version. Use with other
-versions may lead to build problems or incomplete support for the
-XSPEC models.
 
 In order for the module to work, the `HEADAS` environment variable has
 to be set in the shell from which the Python session is started.  For
