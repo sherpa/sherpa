@@ -148,8 +148,8 @@ using Sherpa through Anaconda.
 Download the Miniconda (a minimal distribution of Anaconda) installer for your
 platform:
 
-- Linux 64 bit - [http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh](http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh)
-- OS X 64 bit (10.7 and forward) - [http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh](http://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh)
+- Linux 64 bit - [https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh](https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh)
+- OS X 64 bit (10.7 and forward) - [https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh](https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh)
 
 Decide where you are going to install Miniconda, e.g.:
 
