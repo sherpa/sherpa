@@ -348,7 +348,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._compmdlplot = sherpa.plot.ComponentModelPlot()
         self._compsrcplot = sherpa.plot.ComponentSourcePlot()
-        #self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
+        # self._comptmplmdlplot = sherpa.plot.ComponentTemplateModelPlot()
         self._comptmplsrcplot = sherpa.plot.ComponentTemplateSourcePlot()
 
         self._sourceplot = sherpa.plot.SourcePlot()
@@ -937,7 +937,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         all = ''
-        #all += self._get_show_kernel(id)
+        # all += self._get_show_kernel(id)
         all += self._get_show_psf(id)
         all += self._get_show_model(id)
         _send_to_pager(all, outfile, clobber)
@@ -1109,7 +1109,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         all = ''
-        #all += self._get_show_kernel(id)
+        # all += self._get_show_kernel(id)
         all += self._get_show_psf(id)
         _send_to_pager(all, outfile, clobber)
 
@@ -1486,9 +1486,7 @@ class Session(NoNewAttributesAfterInit):
         ['gridsearch', 'levmar', 'moncar', 'neldermead', 'simplex']
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._methods.keys())[:]
+        keys = list(self._methods.keys())
         keys.sort()
         return keys
 
@@ -1829,9 +1827,7 @@ class Session(NoNewAttributesAfterInit):
         ['none', 'primini', 'sigmarej']
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._itermethods.keys())[:]
+        keys = list(self._itermethods.keys())
         keys.sort()
         return keys
 
@@ -2037,9 +2033,7 @@ class Session(NoNewAttributesAfterInit):
          'wstat']
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._stats.keys())[:]
+        keys = list(self._stats.keys())
         keys.sort()
         return keys
 
@@ -2248,9 +2242,7 @@ class Session(NoNewAttributesAfterInit):
         ['nucleus', 'jet']
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._data.keys())[:]
+        keys = list(self._data.keys())
         keys.sort(key=str)  # always sort by string value.
         return keys
 
@@ -5094,9 +5086,7 @@ class Session(NoNewAttributesAfterInit):
          'accretiondisk']
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._model_types.keys())[:]
+        keys = list(self._model_types.keys())
         keys.sort()
 
         show = show.strip().lower()
@@ -5164,9 +5154,7 @@ class Session(NoNewAttributesAfterInit):
         True
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._model_components.keys())[:]
+        keys = list(self._model_components.keys())
         keys.sort()
         return keys
 
@@ -5392,12 +5380,11 @@ class Session(NoNewAttributesAfterInit):
         if id is None:
             ids = self._sources.keys()
 
-        if model is None:
-            for id in ids:
-                model = self._get_source(id)
-                model.reset()
-        elif model is not None:
+        if model is not None:
             model.reset()
+        else:
+            for id in ids:
+                self._get_source(id).reset()
 
     def delete_model_component(self, name):
         """Delete a model component.
@@ -5453,7 +5440,7 @@ class Session(NoNewAttributesAfterInit):
             raise IdentifierErr('nomodelcmpt', name)
 
     # Back-compatibility
-    #create_model = create_model_component
+    # create_model = create_model_component
 
     #
     # Source models
@@ -5481,13 +5468,10 @@ class Session(NoNewAttributesAfterInit):
         set_model : Set the source model expression for a data set.
 
         """
-        # TODO3: I have left the explicit copy in (the "[:]" suffix)
-        # when converting to Python 3, but it is probably unnescessary
-        keys = list(self._models.keys())[:]
-        keys.extend(list(self._sources.keys())[:])
+        keys = list(self._models.keys())
+        keys.extend(list(self._sources.keys()))
         keys = list(set(keys))
-        keys.sort()
-        return keys
+        return sorted(keys, key=str)
 
     # Return full model for fitting, plotting, etc.  Expects a corresponding
     # data set to be available.
@@ -5630,60 +5614,59 @@ class Session(NoNewAttributesAfterInit):
 
     def _runparamprompt(self, pars):
 
-        # paramprompt
-        if self._paramprompt:
-            for par in pars:
-                while True:
-                    input = raw_input("%s parameter value [%g] " %
-                                      (par.fullname, par.val))
-                    if input != "":
-                        val = min = max = None
-                        count = input.count(',')
+        if not self._paramprompt:
+            return
 
-                        if count == 0:
-                            try:
-                                val = float(input)
-                            except Exception as e:
-                                info("Please provide a float value; " + str(e))
-                                continue
+        try:
+            get_user_input = raw_input
+        except NameError:
+            get_user_input = input
 
-                        elif count == 1:
-                            try:
-                                str_val, str_min = input.split(',')
-                                if str_val != "":
-                                    val = float(str_val)
-                                if str_min != "":
-                                    min = float(str_min)
-                            except Exception as e:
-                                info("Please provide a float value; " + str(e))
-                                continue
+        for par in pars:
+            while True:
+                inval = get_user_input("%s parameter value [%g] " %
+                                       (par.fullname, par.val))
+                if inval == "":
+                    break
 
-                        elif count == 2:
-                            try:
-                                str_val, str_min, str_max = input.split(',')
+                val = None
+                minval = None
+                maxval = None
+                tokens = [t.strip() for t in inval.split(',')]
+                ntokens = len(tokens)
 
-                                if str_val != "":
-                                    val = float(str_val)
-                                if str_min != "":
-                                    min = float(str_min)
-                                if str_max != "":
-                                    max = float(str_max)
-                            except Exception as e:
-                                info("Please provide a float value; " + str(e))
-                                continue
-                        else:
-                            info("Error: Please provide a comma separated list" +
-                                 " of floats; e.g. val,min,max")
-                            continue
+                if ntokens > 3:
+                    info("Error: Please provide a comma-separated " +
+                         "list of floats; e.g. val,min,max")
+                    continue
 
-                        try:
-                            self.set_par(par, val, min, max)
-                            break
-                        except Exception as e:
-                            info(str(e))
-                            continue
-                    else:
-                        break
+                if tokens[0] != '':
+                    try:
+                        val = float(tokens[0])
+                    except Exception as e:
+                        info("Please provide a float value; " + str(e))
+                        continue
+
+                if ntokens > 1 and tokens[1] != '':
+                    try:
+                        minval = float(tokens[1])
+                    except Exception as e:
+                        info("Please provide a float value; " + str(e))
+                        continue
+
+                if ntokens > 2 and tokens[2] != '':
+                    try:
+                        maxval = float(tokens[2])
+                    except Exception as e:
+                        info("Please provide a float value; " + str(e))
+                        continue
+
+                try:
+                    self.set_par(par, val, minval, maxval)
+                    break
+                except Exception as e:
+                    info(str(e))
+                    continue
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: what examples/info should be talked about here?
@@ -6576,19 +6559,19 @@ class Session(NoNewAttributesAfterInit):
         pars = []
         vals = None
         if parvals is not None:
-            vals = list(parvals)[:]
+            vals = list(parvals)
         mins = None
         if parmins is not None:
-            mins = list(parmins)[:]
+            mins = list(parmins)
         maxs = None
         if parmaxs is not None:
-            maxs = list(parmaxs)[:]
+            maxs = list(parmaxs)
         units = None
         if parunits is not None:
-            units = list(parunits)[:]
+            units = list(parunits)
         frozen = None
         if parfrozen is not None:
-            frozen = list(parfrozen)[:]
+            frozen = list(parfrozen)
 
         for name in parnames:
             par = sherpa.models.Parameter(modelname, name, 0.0)
@@ -6698,7 +6681,7 @@ class Session(NoNewAttributesAfterInit):
         _assign_obj_to_main(statname, userstat)
 
     # Back-compatibility
-    #set_source = set_model
+    # set_source = set_model
 
     #
     # Conv
@@ -10096,7 +10079,7 @@ class Session(NoNewAttributesAfterInit):
         # Allow the user to jump from a user defined point in parameter space?
         # Meaning let the user set up parameter space without fitting first.
 
-        #fit_results = self.get_fit_results()
+        # fit_results = self.get_fit_results()
         # if fit_results is None:
         #    raise TypeError("Fit has not been run")
 

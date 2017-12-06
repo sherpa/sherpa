@@ -156,7 +156,7 @@ def _smoke_cli(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=F
     smoke(verbosity=verbosity, require_failure=require_failure, fits=fits, xspec=xspec, ds9=ds9)
 
 
-def clitest():
+def _install_test_deps():
     def install(package_name):
         try:
             import pip
@@ -169,20 +169,36 @@ def clitest():
             """)
             raise
 
-    def install_deps():
-        try:
-            import pytest
-        except ImportError:
-            install('pytest')
-        try:
-            import mock
-        except ImportError:
-            install('mock')
+    deps = ['pytest', 'mock']  # List of packages to be installed
+    pytest_plugins = ['pytest-catchlog',]  # List of pytest plugins to be installed
 
-    install_deps()
+    # If the plugins are installed "now", pytest won't load them because they are not registered as python packages
+    # by the time this code runs. So we need to keep track of the plugins and explicitly pass them to `pytest.main()`.
+    # Note that explicitly passing plugins that were already registered would result in an error, hence this
+    # complexity seems to be required.
+    installed_plugins = []
+
+    for dep in deps:
+        try:
+            __import__(dep)
+        except ImportError:
+            install(dep)
+
+    for plugin_name in pytest_plugins:
+        module = plugin_name.replace("-", "_")
+        try:
+            __import__(module)
+        except ImportError:
+            install(plugin_name)
+            installed_plugins.append(module)
+
+    return installed_plugins
+
+
+def clitest():
+    plugins = _install_test_deps()
     import pytest
     import os
     sherpa_dir = os.path.dirname(__file__)
-
-    errno = pytest.main([sherpa_dir, '-rs'])
+    errno = pytest.main([sherpa_dir, '-rs'], plugins=plugins)  # passing the plugins that have been installed "now".
     sys.exit(errno)

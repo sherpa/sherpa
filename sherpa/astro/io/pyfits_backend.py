@@ -929,7 +929,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             #     channel += 1
 
             counts = _try_vec(hdu, 'COUNTS', num, fix_type=True)
-            if None in counts:
+            if numpy.equal(counts, None).any():  # _try_vec can return an array of Nones
                 counts = _require_vec(hdu, 'RATE', num,
                                       fix_type=True) * data['exposure']
             staterror = _try_vec(hdu, 'STAT_ERR', num)
