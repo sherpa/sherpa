@@ -540,10 +540,6 @@ class XSnlapec(XSAdditiveModel):
     --------
     XSapec, XSbapec, XSbvapec, XSbvvapec, XSvapec, XSvvapec
 
-    Notes
-    -----
-    This model is only available for XSPEC version 12.9.0 and higher.
-
     References
     ----------
 
