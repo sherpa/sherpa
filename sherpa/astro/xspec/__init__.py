@@ -19,6 +19,7 @@
 
 from __future__ import absolute_import
 
+import six
 from six.moves import xrange
 
 import string
@@ -28,7 +29,7 @@ from sherpa.models.parameter import hugeval
 from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
 from sherpa.astro.utils import get_xspec_position
 
-from .utils import ModelFunction, version_at_least
+from .utils import ModelMeta, version_at_least
 from . import _xspec
 from ._xspec import get_xschatter, get_xsabund, get_xscosmo, \
     get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, \
@@ -280,6 +281,7 @@ __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'get_xsstate')
 
 
+@six.add_metaclass(ModelMeta)
 class XSModel(ArithmeticModel):
     """The base class for XSPEC models.
 
@@ -309,15 +311,6 @@ class XSModel(ArithmeticModel):
     """
 
     version_enabled = True
-
-    def __new__(cls, *args, **kwargs):
-        """
-        Take the `__function__` class member (if any) and use it to instantiate a
-        `sherpa.astro.xspec.utils.ModelWrapper` instance.
-        """
-        if hasattr(cls, '__function__') and cls.version_enabled:
-            cls._calc = ModelFunction(cls.__function__)
-        return ArithmeticModel.__new__(cls)
 
     @modelCacher1d
     def calc(self, *args, **kwargs):

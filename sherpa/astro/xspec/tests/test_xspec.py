@@ -542,7 +542,7 @@ class test_xspec(SherpaTestCase):
 @pytest.mark.skipif(GREATER_THAN_120901, reason="This test only makes sense with earlier versions of XSPEC")
 def test_nonexistent_model():
     from sherpa.models import Parameter
-    from sherpa.astro.xspec.utils import version_at_least, NOT_COMPILED_FUNCTION_MESSAGE, DISABLED_MODEL_MESSAGE
+    from sherpa.astro.xspec.utils import version_at_least
     from sherpa.astro.xspec import XSAdditiveModel
 
     @version_at_least("12.9.1")
@@ -558,7 +558,7 @@ def test_nonexistent_model():
     with pytest.raises(AttributeError) as exc:
         m([])
 
-    assert DISABLED_MODEL_MESSAGE.format("XSbtapec") == str(exc.value)
+    assert version_at_least.DISABLED_MODEL_MESSAGE.format("XSbtapec") == str(exc.value)
 
 
 @requires_xspec
@@ -577,7 +577,7 @@ def test_not_compiled_model():
     function that had not been compiled.
     """
     from sherpa.models import Parameter
-    from sherpa.astro.xspec.utils import include_if, NOT_COMPILED_FUNCTION_MESSAGE
+    from sherpa.astro.xspec.utils import include_if, ModelMeta
     from sherpa.astro.xspec import get_xsversion, XSAdditiveModel
 
     @include_if(get_xsversion() >= "0.0.0")  # Use the lowest version possible, so this is always true.
@@ -593,7 +593,7 @@ def test_not_compiled_model():
     with pytest.raises(AttributeError) as exc:
         m([])
 
-    assert NOT_COMPILED_FUNCTION_MESSAGE == str(exc.value)
+    assert ModelMeta.NOT_COMPILED_FUNCTION_MESSAGE == str(exc.value)
 
 
 @requires_xspec

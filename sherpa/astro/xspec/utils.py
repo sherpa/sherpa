@@ -18,33 +18,32 @@
 #
 from . import _xspec
 
-__all__ = ['ModelFunction', 'include_if', 'version_at_least']
-
-NOT_COMPILED_FUNCTION_MESSAGE = "Calling an xspec function that was not compiled"
-DISABLED_MODEL_MESSAGE = "Model {} is disabled because of an unmet condition"
+__all__ = ['ModelMeta', 'include_if', 'version_at_least']
 
 
-class ModelFunction(object):
+class ModelMeta(type):
     """
-    This class for xspec model function strings. The string is interpreted as an xspec function
-    during the creation of the xspec model python class. This wrapper ensures that Sherpa graciously informs
-    the user when they are trying to use an xspec model that is not available in the version they have installed.
+    Metaclass for xspec models. The __function__ member in xspec model classes is seamlessly
+    transformed from a string representing the low level function in the sherpa xspec extension
+    into a proper call, taking into account error cases (e.g. the function cannot be found in the
+    xspec extension at runtime).
     """
-    def __init__(self, function_name):
-        try:
-            self.function = getattr(_xspec, function_name)
-        except AttributeError:
-            self.function = None
+    NOT_COMPILED_FUNCTION_MESSAGE = "Calling an xspec function that was not compiled"
 
-    def __call__(self, *args, **kwargs):
-        """
-        There may be edge cases where the model meets the condition expressed in the decorator, but the model is not
-        included in the xspec build. We need to handle this error case before we just delegate the
-        """
-        if not self.function:
-            raise AttributeError(NOT_COMPILED_FUNCTION_MESSAGE)
+    def __init__(cls, *args, **kwargs):
+        if hasattr(cls, '__function__'):
+            try:
+                cls._calc = getattr(_xspec, cls.__function__)
+            except AttributeError:
+                # Error handling: the model meets the condition expressed in the decorator
+                # but the low level function is not included in the xspec extension
+                cls._calc = ModelMeta._not_compiled
 
-        return self.function(*args, **kwargs)
+        super(ModelMeta, cls).__init__(*args, **kwargs)
+
+    @staticmethod
+    def _not_compiled(*args, **kwargs):
+        raise AttributeError(ModelMeta.NOT_COMPILED_FUNCTION_MESSAGE)
 
 
 class include_if(object):
@@ -55,18 +54,24 @@ class include_if(object):
 
     If the model is disabled, then its class's `version_enabled` attribute is set to `False`.
     """
+    DISABLED_MODEL_MESSAGE = "Model {} is disabled because of an unmet condition"
+
     def __init__(self, condition):
         self.condition = condition
 
     def __call__(self, model_class):
-        def throw(*args, **kwargs):
-            raise AttributeError(DISABLED_MODEL_MESSAGE.format(model_class.__name__))
-
         if not self.condition:
-            model_class._calc = throw
             model_class.version_enabled = False
+            model_class._calc = self._disabled(model_class.__name__)
 
         return model_class
+
+    @staticmethod
+    def _disabled(cls_name):
+        def wrapped(*args, **kwargs):
+            raise AttributeError(include_if.DISABLED_MODEL_MESSAGE.format(cls_name))
+
+        return wrapped
 
 
 class version_at_least(include_if):
