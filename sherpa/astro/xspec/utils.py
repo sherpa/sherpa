@@ -39,6 +39,19 @@ class ModelMeta(type):
                 # but the low level function is not included in the xspec extension
                 cls._calc = ModelMeta._not_compiled
 
+        # The `__function__` member signals that `cls` is a model that needs the `_calc` method
+        # to be generated.
+        # If the class does not have the `__function__` member, the we assume the class provides
+        # a `_calc` method itself, or it does not need it to begin with. This is the case for
+        # some classes extending `XSModel` but that are base classes themselves,
+        # like `XSAdditiveModel`, or they have a more complex `_calc` implementation, like `XSTableModel`.
+        # In principle there is room for mistakes, i.e. a proper model class might be defined without
+        # the `__function__` member. Tests should make sure this is not the case. `test_xspec_models`
+        # is indeed such a test, because it calls all models making sure they are usable. A model without
+        # the `_calc_ method or the `__function__` member would fail the test.
+        # The alternative would be to include more logic to handle the error cases, but that would require
+        # more tests, making this choice impractical.
+
         super(ModelMeta, cls).__init__(*args, **kwargs)
 
     @staticmethod
