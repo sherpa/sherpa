@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014-2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -93,12 +93,12 @@ class xspec_config(Command):
                 self.announce("Found XSPEC version: {}".format(xspec_raw_version), 2)
                 xspec_version = LooseVersion(xspec_raw_version)
 
-                if xspec_version < LooseVersion("12.9.0"):
-                    self.warn("XSPEC Version is less than 12.9.0, which is the minimal supported version for Sherpa")
-                else:
+                if xspec_version >= LooseVersion("12.9.0"):
                     macros += [('XSPEC_12_9_0', None)]
+                else:
+                    self.warn("XSPEC Version is less than 12.9.0, which is the minimal supported version for Sherpa")
 
-                if xspec_version > LooseVersion("12.9.1"):
+                if xspec_version >= LooseVersion("12.9.1"):
                     macros += [('XSPEC_12_9_1', None)]
 
                 if xspec_version >= LooseVersion("12.9.2"):
