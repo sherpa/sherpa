@@ -17,7 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import mock
+try:
+    import mock # Python 2
+except ImportError:
+    from unittest import mock # Python 3
+
 import pytest
 from sherpa import smoke
 
