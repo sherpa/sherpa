@@ -21,7 +21,6 @@ import numpy
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
-from sherpa.astro.xspec.utils import include_if
 from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_fits, requires_xspec
 
@@ -540,7 +539,7 @@ class test_xspec(SherpaTestCase):
 @requires_xspec
 def test_nonexistent_model():
     from sherpa.models import Parameter
-    from sherpa.astro.xspec.utils import version_at_least
+    from sherpa.astro.xspec.utils import include_if
     from sherpa.astro.xspec import XSAdditiveModel
 
     @include_if(False)
@@ -556,7 +555,7 @@ def test_nonexistent_model():
     with pytest.raises(AttributeError) as exc:
         m([])
 
-    assert version_at_least.DISABLED_MODEL_MESSAGE.format("XSbtapec") == str(exc.value)
+    assert include_if.DISABLED_MODEL_MESSAGE.format("XSbtapec") == str(exc.value)
 
 
 @requires_xspec
