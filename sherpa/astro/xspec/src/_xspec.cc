@@ -1311,7 +1311,7 @@ static PyMethodDef XSpecMethods[] = {
   //
   //
   #ifdef XSPEC_12_9_1
-  XSPECMODELFCT_C(C_btapec, 5),
+  XSPECMODELFCT_C_NORM(C_btapec, 6),
   #endif
   
   { NULL, NULL, 0, NULL }
