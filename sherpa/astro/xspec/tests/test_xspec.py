@@ -33,6 +33,11 @@ except:
 
 
 # How many models should there be?
+# This number includes all additive and multiplicative models, even the ones
+# that would be disabled by a decoration from .utils.
+# The number can be calculated by counting the occurrences of the string
+# '(XSAdditiveModel)' and adding it to the number of occurrences of the
+# string '(XSMultiplicativeModel)' in `xspec/__init__.py`
 XSPEC_MODELS_COUNT = 166
 
 # Conversion between wavelength (Angstrom) and energy (keV)
