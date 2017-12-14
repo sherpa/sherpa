@@ -96,8 +96,8 @@ def get_xspec_models(xs):
     # so it will hopefully be fixed in one of ther 12.9.0 patches.
     remove_item(model_names, 'XSsirf')
 
-    models = list(map(lambda model_name: getattr(xs, model_name), model_names))
-    models = [model for model in models if model.version_enabled]
+    models = [getattr(xs, model_name) for model_name in model_names]
+    models = list(filter(lambda mod: mod.version_enabled, models))
 
     return models
 
