@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,6 +16,19 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+"""Support for XSPEC models.
+
+Sherpa supports versions 12.9.0 and 12.9.1 of XSPEC [1]_, and can be built
+against the model library or the full application. There is no guarantee
+of support for older or newer versions of XSPEC.
+
+References
+----------
+
+.. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/index.html
+
+"""
 
 from __future__ import absolute_import
 
@@ -589,7 +602,7 @@ class XSbapec(XSAdditiveModel):
 
     See Also
     --------
-    XSapec, XSbvapec, XSbvvapec, XSvapec, XSvvapec
+    XSapec, XSbtapec, XSbvapec, XSbvvapec, XSvapec, XSvvapec
 
     References
     ----------
@@ -8209,17 +8222,53 @@ class XSzbabs(XSMultiplicativeModel):
 
 @version_at_least("12.9.1")
 class XSbtapec(XSAdditiveModel):
-    """
+    """The XSPEC btapec model: velocity broadened APEC emission spectrum with separate continuum and line temperatures.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keywords "APECROOT" and "APEC_TRACE_ABUND".
+
+    Attributes
+    ----------
+    kT
+        Continuum temperature, in keV.
+    kTi
+        Line temperature, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
+        keyword.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbapec
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBtapec.html
 
     """
 
     __function__ = "C_btapec"
 
     def __init__(self, name='btapec'):
-        # These parameter values are made up!
         self.kT = Parameter(name, 'kT', 1.0, 0.008, 64.0, 0.008, 64.0, 'keV')
         self.kTi = Parameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, 'keV')
-        self.Abundanc = Parameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, '10^22 atoms / cm^2')
+        self.Abundanc = Parameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0)
         self.Redshift = Parameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
         self.Velocity = Parameter(name, 'Velocity', 0.0, 0.0, 1.0e6, 0.0, 1.0e6, 'km/s')
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
