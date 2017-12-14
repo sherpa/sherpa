@@ -559,15 +559,6 @@ def test_nonexistent_model():
 
 
 @requires_xspec
-def test_existent_model():
-    from sherpa.astro.xspec import XSzbabs
-
-    m = XSzbabs()
-
-    m([1, 2, 3])
-
-
-@requires_xspec
 def test_not_compiled_model():
     """
     Test the error handling case where a model is included according to the conditional decorator, but it wraps a
