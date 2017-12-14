@@ -21,6 +21,7 @@ import numpy
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
+from sherpa.astro.xspec.utils import include_if
 from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_fits, requires_xspec
 
@@ -542,7 +543,7 @@ def test_nonexistent_model():
     from sherpa.astro.xspec.utils import version_at_least
     from sherpa.astro.xspec import XSAdditiveModel
 
-    @version_at_least("99.9.9")
+    @include_if(False)
     class XSbtapec(XSAdditiveModel):
         __function__ = "foo"
 
@@ -568,7 +569,7 @@ def test_not_compiled_model():
     from sherpa.astro.xspec.utils import include_if, ModelMeta
     from sherpa.astro.xspec import get_xsversion, XSAdditiveModel
 
-    @include_if(get_xsversion() >= "0.0.0")  # Use the lowest version possible, so this is always true.
+    @include_if(True)
     class XSfoo(XSAdditiveModel):
         __function__ = "C_foo"
 
