@@ -8217,12 +8217,14 @@ class XSbtapec(XSAdditiveModel):
 
     def __init__(self, name='btapec'):
         # These parameter values are made up!
-        self.kT = Parameter(name, 'nH', 1.e-4, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
-        self.kTi = Parameter(name, 'nHeI', 1.e-5, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
-        self.Abundanc = Parameter(name, 'nHeII', 1.e-6, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
-        self.Redshift = Parameter(name, 'redshift', 0.0, 0.0, 1.0e5, 0.0, 1.0e6)
-        self.Velocity = Parameter(name, 'redshift', 0.0, 0.0, 1.0e5, 0.0, 1.0e6)
-        XSAdditiveModel.__init__(self, name, (self.kT, self.kTi, self.Abundanc, self.Redshift, self.Velocity))
+        self.kT = Parameter(name, 'kT', 1.0, 0.008, 64.0, 0.008, 64.0, 'keV')
+        self.kTi = Parameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, 'keV')
+        self.Abundanc = Parameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, '10^22 atoms / cm^2')
+        self.Redshift = Parameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
+        self.Velocity = Parameter(name, 'Velocity', 0.0, 0.0, 1.0e6, 0.0, 1.0e6, 'km/s')
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.kT, self.kTi, self.Abundanc, self.Redshift, self.Velocity, self.norm))
 
 # Add model classes to __all__
 __all__ += tuple(n for n in globals() if n.startswith('XS'))
