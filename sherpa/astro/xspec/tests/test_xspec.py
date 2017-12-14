@@ -19,18 +19,10 @@
 
 import numpy
 import pytest
-from distutils.version import LooseVersion
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
 from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_fits, requires_xspec
-
-try:
-    from sherpa.astro.xspec import get_xsversion
-    GREATER_THAN_120901 = LooseVersion(get_xsversion()) > LooseVersion('12.9.1')
-except:
-    GREATER_THAN_120901 = True # on error, skip it anyway
-
 
 # How many models should there be?
 # This number includes all additive and multiplicative models, even the ones
@@ -545,17 +537,16 @@ class test_xspec(SherpaTestCase):
 
 
 @requires_xspec
-@pytest.mark.skipif(GREATER_THAN_120901, reason="This test only makes sense with earlier versions of XSPEC")
 def test_nonexistent_model():
     from sherpa.models import Parameter
     from sherpa.astro.xspec.utils import version_at_least
     from sherpa.astro.xspec import XSAdditiveModel
 
-    @version_at_least("12.9.1")
+    @version_at_least("99.9.9")
     class XSbtapec(XSAdditiveModel):
-        __function__ = "C_btapec"
+        __function__ = "foo"
 
-        def __init__(self, name='btapec'):
+        def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
             XSAdditiveModel.__init__(self, name, (self.kT))
 
