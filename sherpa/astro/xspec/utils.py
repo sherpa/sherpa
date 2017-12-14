@@ -16,6 +16,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+from distutils.version import LooseVersion
+
 from . import _xspec
 
 __all__ = ['ModelMeta', 'include_if', 'version_at_least']
@@ -93,4 +95,5 @@ class version_at_least(include_if):
     the xspec version detected at runtime is equal or greater than the one provided to the decorator.
     """
     def __init__(self, version_string):
-        include_if.__init__(self, _xspec.get_xsversion() >= version_string)
+        xspec_version = LooseVersion(_xspec.get_xsversion())
+        include_if.__init__(self, xspec_version >= LooseVersion(version_string))

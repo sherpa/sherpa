@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
+from distutils.version import LooseVersion
 from numpy.distutils.core import Command
 from .extensions import build_ext, build_lib_arrays
 
@@ -84,7 +84,6 @@ class xspec_config(Command):
             inc = clean(inc1 + inc2 + inc3 + inc4 + inc5)
             l = clean(l1 + l2 + l3 + l4 + l5)
 
-            from distutils.version import LooseVersion
             xspec_raw_version = self._find_xspec_version(ld)
 
             macros = []

@@ -19,6 +19,7 @@
 
 import numpy
 import pytest
+from distutils.version import LooseVersion
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
 from sherpa.utils import SherpaTestCase
@@ -26,7 +27,7 @@ from sherpa.utils import requires_data, requires_fits, requires_xspec
 
 try:
     from sherpa.astro.xspec import get_xsversion
-    GREATER_THAN_120901 = get_xsversion() > '12.9.1'
+    GREATER_THAN_120901 = LooseVersion(get_xsversion()) > LooseVersion('12.9.1')
 except:
     GREATER_THAN_120901 = True # on error, skip it anyway
 
