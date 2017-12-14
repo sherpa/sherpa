@@ -837,7 +837,7 @@ static PyMethodDef XSpecMethods[] = {
             REFERENCESDOC "\n"
             ".. [1] http://heasarc.nasa.gov/docs/xanadu/xspec/\n"
             EXAMPLESDOC "\n"
-            ">>> get_xscosmo()\n'12.8.2e'\n\n"},
+            ">>> get_xsversion()\n'12.9.1p'\n\n"},
 
   { (char*)"get_xschatter", (PyCFunction)get_chatter, METH_NOARGS,
     (char*) "get_xschatter()\n\n"

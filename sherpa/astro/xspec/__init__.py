@@ -23,6 +23,14 @@ Sherpa supports versions 12.9.0 and 12.9.1 of XSPEC [1]_, and can be built
 against the model library or the full application. There is no guarantee
 of support for older or newer versions of XSPEC.
 
+To be able to use most routines from this module, the HEADAS environment
+variable must be set. The `get_xsversion` function can be used to return the
+XSPEC version - including patch level - the module is using::
+
+   >>> from sherpa.astro import xspec
+   >>> xspec.get_xsversion()
+   '12.9.1p'
+
 References
 ----------
 
