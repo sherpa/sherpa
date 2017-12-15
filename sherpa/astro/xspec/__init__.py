@@ -3411,7 +3411,7 @@ class XSnsmax(XSAdditiveModel):
     def __init__(self, name='nsmax'):
         self.logTeff = Parameter(name, 'logTeff', 6.0, 5.5, 6.8, 0.0, hugeval, 'K')
         self.redshift = Parameter(name, 'redshift', 0.1, 0.0, 1.5, 0.0, 2.0)
-        self._specfile = Parameter(name, '_specfile', 1200, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True, aliases=["specfile"])
+        self.specfile = Parameter(name, 'specfile', 1200, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
         XSAdditiveModel.__init__(self, name, (self.logTeff, self.redshift, self._specfile, self.norm))
@@ -3465,7 +3465,7 @@ class XSnsmaxg(XSAdditiveModel):
         self.M_ns = Parameter(name, 'M_ns', 1.4, 0.5, 3.0, 0.5, 3.0, units='Msun')
         self.R_ns = Parameter(name, 'R_ns', 10.0, 5.0, 30.0, 5.0, 30.0, units='km')
         self.dist = Parameter(name, 'dist', 1.0, 0.01, 100.0, 0.01, 100.0, units='kpc')
-        self._specfile = Parameter(name, '_specfile', 1200, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True, aliases=["specfile"])
+        self.specfile = Parameter(name, 'specfile', 1200, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
         XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self._specfile, self.norm))
@@ -3519,7 +3519,7 @@ class XSnsx(XSAdditiveModel):
         self.M_ns = Parameter(name, 'M_ns', 1.4, 0.5, 3.0, 0.5, 3.0, units='Msun')
         self.R_ns = Parameter(name, 'R_ns', 10.0, 5.0, 30.0, 5.0, 30.0, units='km')
         self.dist = Parameter(name, 'dist', 1.0, 0.01, 100.0, 0.01, 100.0, units='kpc')
-        self._specfile = Parameter(name, '_specfile', 6, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True, aliases=["specfile"])
+        self.specfile = Parameter(name, 'specfile', 6, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
         XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self._specfile, self.norm))
@@ -3866,14 +3866,14 @@ class XSplcabs(XSAdditiveModel):
 
     def __init__(self, name='plcabs'):
         self.nH = Parameter(name, 'nH', 1., 0.0, 1.e5, 0.0, hugeval, '10^22 atoms / cm^2')
-        self._nmax = Parameter(name, '_nmax', 1, alwaysfrozen=True, aliases=["nmax"])
+        self.nmax = Parameter(name, 'nmax', 1, alwaysfrozen=True)
         self.FeAbun = Parameter(name, 'FeAbun', 1.0, 0., 10., 0.0, hugeval, frozen=True)
         self.FeKedge = Parameter(name, 'FeKedge', 7.11, 7., 10., 0.0, hugeval, 'KeV', True)
         self.PhoIndex = Parameter(name, 'PhoIndex', 2., -2., 9., -hugeval, hugeval)
         self.HighECut = Parameter(name, 'HighECut', 25., 1., 50., 0.0, 90., 'keV', True)
         self.foldE = Parameter(name, 'foldE', 100., 1., 1.e6, 0.0, hugeval, frozen=True)
         self.acrit = Parameter(name, 'acrit', 1., 0.0, 1.0, 0.0, hugeval, frozen=True)
-        self._FAST = Parameter(name, '_FAST', 0, alwaysfrozen=True, aliases=["FAST"])
+        self.FAST = Parameter(name, 'FAST', 0, alwaysfrozen=True)
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
@@ -6892,7 +6892,7 @@ class XSzdust(XSMultiplicativeModel):
     _calc = _xspec.mszdst
 
     def __init__(self, name='zdust'):
-        self._method = Parameter(name, '_method', 1, 1, 3, 1, 3, alwaysfrozen=True, aliases=["method"])
+        self.method = Parameter(name, 'method', 1, 1, 3, 1, 3, alwaysfrozen=True)
         self.E_BmV = Parameter(name, 'E_BmV', 0.1, 0.0, 100., 0.0, hugeval, aliases=["EBV"])
         self.Rv = Parameter(name, 'Rv', 3.1, 0.0, 10., 0.0, hugeval, frozen=True)
         self.redshift = Parameter(name, 'redshift', 0.0, 0.0, 20., 0.0, hugeval, 'z', True)
@@ -7460,16 +7460,16 @@ class XScplinear(XSAdditiveModel):
     _calc = _xspec.C_cplinear
 
     def __init__(self, name='cplinear'):
-        self._energy00 = Parameter(name, '_energy00', 0.5, min=0.0, max=10.0, units='keV', alwaysfrozen=True, aliases=["energy00"])
-        self._energy01 = Parameter(name, '_energy01', 1., min=0.0, max=10.0, units='keV', alwaysfrozen=True, aliases=["energy01"])
-        self._energy02 = Parameter(name, '_energy02', 1.5, min=0.0, max=10.0, units='keV', alwaysfrozen=True, aliases=["energy02"])
-        self._energy03 = Parameter(name, '_energy03', 2., min=0.0, max=10.0, units='keV', alwaysfrozen=True, aliases=["energy03"])
-        self._energy04 = Parameter(name, '_energy04', 3., min=0.0, max=10.0, units='keV', alwaysfrozen=True, aliases=["energy04"])
-        self._energy05 = Parameter(name, '_energy05', 4., min=0.0, max=10.0, units='keV', alwaysfrozen=True, aliases=["energy05"])
-        self._energy06 = Parameter(name, '_energy06', 5., min=0.0, max=10.0, units='keV', alwaysfrozen=True, aliases=["energy06"])
-        self._energy07 = Parameter(name, '_energy07', 6., min=0.0, max=10.0, units='keV', alwaysfrozen=True, aliases=["energy07"])
-        self._energy08 = Parameter(name, '_energy08', 7., min=0.0, max=10.0, units='keV', alwaysfrozen=True, aliases=["energy08"])
-        self._energy09 = Parameter(name, '_energy09', 8., min=0.0, max=10.0, units='keV', alwaysfrozen=True, aliases=["energy09"])
+        self.energy00 = Parameter(name, 'energy00', 0.5, min=0.0, max=10.0, units='keV', alwaysfrozen=True)
+        self.energy01 = Parameter(name, 'energy01', 1., min=0.0, max=10.0, units='keV', alwaysfrozen=True)
+        self.energy02 = Parameter(name, 'energy02', 1.5, min=0.0, max=10.0, units='keV', alwaysfrozen=True)
+        self.energy03 = Parameter(name, 'energy03', 2., min=0.0, max=10.0, units='keV', alwaysfrozen=True)
+        self.energy04 = Parameter(name, 'energy04', 3., min=0.0, max=10.0, units='keV', alwaysfrozen=True)
+        self.energy05 = Parameter(name, 'energy05', 4., min=0.0, max=10.0, units='keV', alwaysfrozen=True)
+        self.energy06 = Parameter(name, 'energy06', 5., min=0.0, max=10.0, units='keV', alwaysfrozen=True)
+        self.energy07 = Parameter(name, 'energy07', 6., min=0.0, max=10.0, units='keV', alwaysfrozen=True)
+        self.energy08 = Parameter(name, 'energy08', 7., min=0.0, max=10.0, units='keV', alwaysfrozen=True)
+        self.energy09 = Parameter(name, 'energy09', 8., min=0.0, max=10.0, units='keV', alwaysfrozen=True)
         self.log_rate00 = Parameter(name, 'log_rate00', 0., -19.0, 19.0, -hugeval, hugeval, frozen=True)
         self.log_rate01 = Parameter(name, 'log_rate01', 1., -19.0, 19.0, -hugeval, hugeval, frozen=True)
         self.log_rate02 = Parameter(name, 'log_rate02', 0., -19.0, 19.0, -hugeval, hugeval, frozen=True)
@@ -8022,9 +8022,9 @@ class XSzigm(XSMultiplicativeModel):
     _calc = _xspec.zigm
 
     def __init__(self, name='zigm'):
-        self._redshift = Parameter(name, '_redshift', 0.0, alwaysfrozen=True, aliases=["redshift"])
-        self._model = Parameter(name, '_model', 0, 0, 1, 0, 1, alwaysfrozen=True, aliases=["model"])
-        self._lyman_limit = Parameter(name, '_lyman_limit', 1, 0, 1, 0, 1, alwaysfrozen=True, aliases=["lyman_limit"])
+        self.redshift = Parameter(name, 'redshift', 0.0, alwaysfrozen=True)
+        self.model = Parameter(name, 'model', 0, 0, 1, 0, 1, alwaysfrozen=True)
+        self.lyman_limit = Parameter(name, 'lyman_limit', 1, 0, 1, 0, 1, alwaysfrozen=True)
 
         XSMultiplicativeModel.__init__(self, name, (self._redshift, self._model, self._lyman_limit))
 
@@ -8232,7 +8232,7 @@ class XSlogpar(XSAdditiveModel):
     def __init__(self, name='logpar'):
         self.alpha = Parameter(name, 'alpha', 1.5, 0., 4., 0.0, hugeval)
         self.beta = Parameter(name, 'beta', 0.2, -4., 4., -hugeval, hugeval)
-        self._pivotE = Parameter(name, '_pivotE', 1.0, units='keV', alwaysfrozen=True, aliases=["pivotE"])
+        self.pivotE = Parameter(name, 'pivotE', 1.0, units='keV', alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
         XSAdditiveModel.__init__(self, name, (self.alpha, self.beta, self._pivotE, self.norm))
