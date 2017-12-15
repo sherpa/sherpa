@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2010, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -119,11 +119,6 @@ class Model(NoNewAttributesAfterInit):
 
         mdl.norm = 1.2e-3
 
-    Support is provided to allow parameter names to be changed,
-    while still providing access to the old name (as a deprecated
-    interface). This is handled by creating an array of (old name,
-    new name) pairs - where old and new names are strings - and storing
-    it in the ``_renamedpars`` attribute when initialising the model.
     """
 
     def __init__(self, name, pars=()):
