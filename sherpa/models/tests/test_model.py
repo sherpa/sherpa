@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,17 +21,17 @@ import logging
 import operator
 import numpy
 import warnings
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.testing import SherpaTestCase
 from sherpa.utils.err import ModelErr
-from sherpa.models.model import *
-from sherpa.models.model import ArithmeticModel
+from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
+    BinaryOpModel, FilterModel, NestedModel, UnaryOpModel
 from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.basic import Sin, Const1D
 
 
 def my_sin(pars, x):
     return (pars[2].val *
-            numpy.sin(2.0*numpy.pi * (x - pars[1].val) / pars[0].val))
+            numpy.sin(2.0 * numpy.pi * (x - pars[1].val) / pars[0].val))
 
 
 class test_model(SherpaTestCase):
@@ -143,7 +143,7 @@ class test_composite_model(SherpaTestCase):
                operator.floordiv, operator.truediv, operator.mod,
                operator.pow]
 
-        if hasattr(operator, 'div'): # Python 2
+        if hasattr(operator, 'div'):  # Python 2
             ops.append(operator.div)
 
         for op in ops:
@@ -156,7 +156,7 @@ class test_composite_model(SherpaTestCase):
         cmplx = (3 * self.m + self.m2) / (self.m ** 3.2)
         m = self.m(self.x)
         m2 = self.m2(self.x)
-        self.assertEqual(cmplx(self.x), (3*m + m2) / (m ** 3.2))
+        self.assertEqual(cmplx(self.x), (3 * m + m2) / (m ** 3.2))
 
     def test_filter(self):
         m = self.s[::2]
@@ -174,7 +174,8 @@ class test_composite_model(SherpaTestCase):
 # the Sin model (which lets the tests be re-used).
 #
 class RenamedPars(Sin):
-    # The only reason I am extending Sin is to inherit the method implementations
+    # The only reason I am extending Sin is to inherit the method
+    # implementations
 
     def __init__(self, name='renamedpars'):
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
