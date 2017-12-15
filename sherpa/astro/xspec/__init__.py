@@ -1049,10 +1049,6 @@ class XSc6mekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` might be removed in future releases as it has been
-              replaced by ``_switch``, to match the XSPEC naming convention.
-
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -1063,7 +1059,7 @@ class XSc6mekl(XSAdditiveModel):
         The abundance relative to Solar, as set by ``set_xsabund``.
     redshift
         The redshift of the plasma.
-    _switch
+    switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1074,12 +1070,6 @@ class XSc6mekl(XSAdditiveModel):
     See Also
     --------
     XSc6pmekl, XSc6pvmkl, XSc6vmekl
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
-    ``_switch``. It can still be accessed using ``switch`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1103,7 +1093,9 @@ class XSc6mekl(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH, self.abundanc, self.redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5,
+                                              self.CPcoef6, self.nH, self.abundanc, self.redshift, self.switch,
+                                              self.norm))
 
 
 class XSc6pmekl(XSAdditiveModel):
@@ -1111,10 +1103,6 @@ class XSc6pmekl(XSAdditiveModel):
 
     The model is described at [1]_. It differs from ``XSc6mekl`` by
     by using the exponential of the 6th order Chebyshev polynomial.
-
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` might be removed in future releases as it has been
-              replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -1126,7 +1114,7 @@ class XSc6pmekl(XSAdditiveModel):
         The abundance relative to Solar, as set by ``set_xsabund``.
     redshift
         The redshift of the plasma.
-    _switch
+    switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1137,12 +1125,6 @@ class XSc6pmekl(XSAdditiveModel):
     See Also
     --------
     XSc6mekl, XSc6pvmkl, XSc6vmekl
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
-    ``_switch``. It can still be accessed using ``switch`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1166,7 +1148,9 @@ class XSc6pmekl(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH, self.abundanc, self.redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5,
+                                              self.CPcoef6, self.nH, self.abundanc, self.redshift, self.switch,
+                                              self.norm))
 
 
 class XSc6pvmkl(XSAdditiveModel):
@@ -1174,10 +1158,6 @@ class XSc6pvmkl(XSAdditiveModel):
 
     The model is described at [1]_. It differs from ``XSc6vmekl`` by
     by using the exponential of the 6th order Chebyshev polynomial.
-
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` might be removed in future releases as it has been
-              replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -1189,7 +1169,7 @@ class XSc6pvmkl(XSAdditiveModel):
         The abundance relative to Solar.
     redshift
         The redshift of the plasma.
-    _switch
+    switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1200,12 +1180,6 @@ class XSc6pvmkl(XSAdditiveModel):
     See Also
     --------
     XSc6mekl, XSc6pmekl, XSc6vmekl
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
-    ``_switch``. It can still be accessed using ``switch`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1242,17 +1216,16 @@ class XSc6pvmkl(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5,
+                                              self.CPcoef6, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                                              self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                                              self.redshift, self.switch, self.norm))
 
 
 class XSc6vmekl(XSAdditiveModel):
     """The XSPEC c6vmekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
 
     The model is described at [1]_.
-
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` might be removed in future releases as it has been
-              replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -1264,7 +1237,7 @@ class XSc6vmekl(XSAdditiveModel):
         The abundance relative to Solar.
     redshift
         The redshift of the plasma.
-    _switch
+    switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1275,12 +1248,6 @@ class XSc6vmekl(XSAdditiveModel):
     See Also
     --------
     XSc6mekl, XSc6pmekl, XSc6pvmkl
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
-    ``_switch``. It can still be accessed using ``switch`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1317,17 +1284,16 @@ class XSc6vmekl(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5,
+                                              self.CPcoef6, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                                              self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                                              self.redshift, self.switch, self.norm))
 
 
 class XScemekl(XSAdditiveModel):
     """The XSPEC cemekl model: plasma emission, multi-temperature using mekal.
 
     The model is described at [1]_.
-
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` might be removed in future releases as it has been
-              replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -1341,7 +1307,7 @@ class XScemekl(XSAdditiveModel):
         The abundance relative to Solar, as set by ``set_xsabund``.
     redshift
         The redshift of the plasma.
-    _switch
+    switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1352,12 +1318,6 @@ class XScemekl(XSAdditiveModel):
     See Also
     --------
     XScevmkl
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
-    ``_switch``. It can still be accessed using ``switch`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1377,17 +1337,14 @@ class XScemekl(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.alpha, self.Tmax, self.nH, self.abundanc, self.redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.alpha, self.Tmax, self.nH, self.abundanc, self.redshift,
+                                              self.switch, self.norm))
 
 
 class XScevmkl(XSAdditiveModel):
     """The XSPEC cevmkl model: plasma emission, multi-temperature using mekal.
 
     The model is described at [1]_.
-
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` might be removed in future releases as it has been
-              replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -1401,7 +1358,7 @@ class XScevmkl(XSAdditiveModel):
         The abundance relative to Solar.
     redshift
         The redshift of the plasma.
-    _switch
+    switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -1412,12 +1369,6 @@ class XScevmkl(XSAdditiveModel):
     See Also
     --------
     XScemekl
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
-    ``_switch``. It can still be accessed using ``switch`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -1450,7 +1401,9 @@ class XScevmkl(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.alpha, self.Tmax, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.alpha, self.Tmax, self.nH, self.He, self.C, self.N, self.O, self.Ne,
+                                              self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe,
+                                              self.Ni, self.redshift, self.switch, self.norm))
 
 
 class XScflow(XSAdditiveModel):
@@ -2815,10 +2768,6 @@ class XSmeka(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` might be removed in future releases as it has been
-              replaced by ``_switch``, to match the XSPEC naming convention.
-
     Attributes
     ----------
     kT
@@ -2872,7 +2821,7 @@ class XSmekal(XSAdditiveModel):
         ``set_xsabund`` function.
     redshift
         The redshift of the plasma.
-    _switch
+    switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -2884,12 +2833,6 @@ class XSmekal(XSAdditiveModel):
     See Also
     --------
     XSapec, XSvmekal
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
-    ``_switch``. It can still be accessed using ``switch`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -2908,7 +2851,7 @@ class XSmekal(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.kT, self.nH, self.Abundanc, self.redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.kT, self.nH, self.Abundanc, self.redshift, self.switch, self.norm))
 
 
 class XSmkcflow(XSAdditiveModel):
@@ -2916,10 +2859,6 @@ class XSmkcflow(XSAdditiveModel):
 
     The model is described at [1]_. The results of this model depend
     on the cosmology settings set with ``set_xscosmo``.
-
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` might be removed in future releases as it has been
-              replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -2931,7 +2870,7 @@ class XSmkcflow(XSAdditiveModel):
         The abundance relative to Solar, as set by ``set_xsabund``.
     redshift
         The redshift of the plasma.
-    _switch
+    switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -2942,12 +2881,6 @@ class XSmkcflow(XSAdditiveModel):
     See Also
     --------
     XSapec, XScflow, XScevmkl, XSvmcflow
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
-    ``_switch``. It can still be accessed using ``switch`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -2966,7 +2899,8 @@ class XSmkcflow(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.lowT, self.highT, self.Abundanc, self.redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.lowT, self.highT, self.Abundanc, self.redshift, self.switch,
+                                              self.norm))
 
 
 class XSnei(XSAdditiveModel):
@@ -3374,17 +3308,13 @@ class XSnsmax(XSAdditiveModel):
     The model is described at [1]_. It has been superceeded by
     ``XSnsmaxg``.
 
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``specfile`` might be removed in future releases as it has been
-              replaced by ``_specfile``, to match the XSPEC naming convention.
-
     Attributes
     ----------
     LogTeff
         The log of Teff, the unredshifted surface effective temperature.
     redshift
         This is 1 + zg, the gravitational redshift.
-    _specfile
+    specfile
         Which model to use: see [1]_ for more details.
     norm
         The normalization of the model: see [1]_ for more details.
@@ -3392,12 +3322,6 @@ class XSnsmax(XSAdditiveModel):
     See Also
     --------
     XSnsmaxg
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``specfile`` parameter has been renamed to
-    ``_specfile``. It can still be accessed using ``specfile`` for the
-    time being, but this attribute has been deprecated.
 
     References
     ----------
@@ -3414,17 +3338,13 @@ class XSnsmax(XSAdditiveModel):
         self.specfile = Parameter(name, 'specfile', 1200, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.logTeff, self.redshift, self._specfile, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.logTeff, self.redshift, self.specfile, self.norm))
 
 
 class XSnsmaxg(XSAdditiveModel):
     """The XSPEC nsmaxg model: neutron star with a magnetic atmosphere.
 
     The model is described at [1]_.
-
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``specfile`` might be removed in future releases as it has been
-              replaced by ``_specfile``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -3436,7 +3356,7 @@ class XSnsmaxg(XSAdditiveModel):
         The neutron star radius, in km.
     dist
         The distance to the neutron star, in kpc.
-    _specfile
+    specfile
         Which model to use: see [1]_ for more details.
     norm
         The normalization: see [1]_ for more details.
@@ -3444,12 +3364,6 @@ class XSnsmaxg(XSAdditiveModel):
     See Also
     --------
     XSnsmax, XSnsx
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``specfile`` parameter has been renamed to
-    ``_specfile``. It can still be accessed using ``specfile`` for the
-    time being, but this attribute has been deprecated.
 
     References
     ----------
@@ -3468,17 +3382,13 @@ class XSnsmaxg(XSAdditiveModel):
         self.specfile = Parameter(name, 'specfile', 1200, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self._specfile, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self.specfile, self.norm))
 
 
 class XSnsx(XSAdditiveModel):
     """The XSPEC nsx model: neutron star with a non-magnetic atmosphere.
 
     The model is described at [1]_.
-
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``specfile`` might be removed in future releases as it has been
-              replaced by ``_specfile``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -3490,7 +3400,7 @@ class XSnsx(XSAdditiveModel):
         The neutron star radius, in km.
     dist
         The distance to the neutron star, in kpc.
-    _specfile
+    specfile
         Which model to use: see [1]_ for more details.
     norm
         The normalization: see [1]_ for more details.
@@ -3498,12 +3408,6 @@ class XSnsx(XSAdditiveModel):
     See Also
     --------
     XSnsmaxg
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``specfile`` parameter has been renamed to
-    ``_specfile``. It can still be accessed using ``specfile`` for the
-    time being, but this attribute has been deprecated.
 
     References
     ----------
@@ -3522,7 +3426,7 @@ class XSnsx(XSAdditiveModel):
         self.specfile = Parameter(name, 'specfile', 6, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self._specfile, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self.specfile, self.norm))
 
 class XSnteea(XSAdditiveModel):
     """The XSPEC nteea model: non-thermal pair plasma.
@@ -3816,16 +3720,11 @@ class XSplcabs(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``nmax`` and ``FAST`` might be removed in future releases as
-              they have been replaced by ``_nmax`` and ``_FAST``
-              respectively, to match the XSPEC naming convention.
-
     Attributes
     ----------
     nH
         The column density, in units of 10^22 cm^-2.
-    _nmax
+    nmax
         The maximum number of scatterings. This parameter can not be
         thawed.
     FeAbun
@@ -3841,19 +3740,13 @@ class XSplcabs(XSAdditiveModel):
     acrit
         The critical albedo for switching to elastic scattering. See
         [1]_ for more details.
-    _FAST
+    FAST
         If set to a value above 1, use a mean energy shift instead of
         integration. This parameter can not be thawed.
     redshift
         The redshift of the source.
     norm
         The normalization of the model.
-
-    Notes
-    -----
-    In Sherpa 4.10.0 ``nmax`` has been renamed to ``_nmax`` and
-    ``FAST`` to ``_FAST``. They can still be accessed using the old
-    names for the time being, but these attributes have been deprecated.
 
     References
     ----------
@@ -3877,7 +3770,9 @@ class XSplcabs(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.nH, self._nmax, self.FeAbun, self.FeKedge, self.PhoIndex, self.HighECut, self.foldE, self.acrit, self._FAST, self.redshift, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.nH, self.nmax, self.FeAbun, self.FeKedge, self.PhoIndex,
+                                              self.HighECut, self.foldE, self.acrit, self.FAST, self.redshift,
+                                              self.norm))
 
 
 class XSpowerlaw(XSAdditiveModel):
@@ -4670,10 +4565,6 @@ class XSvmeka(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` might be removed in future releases as it has been
-              replaced by ``_switch``, to match the XSPEC naming convention.
-
     Attributes
     ----------
     kT
@@ -4738,7 +4629,7 @@ class XSvmekal(XSAdditiveModel):
         The abundance relative to Solar.
     redshift
         The redshift of the plasma.
-    _switch
+    switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -4750,12 +4641,6 @@ class XSvmekal(XSAdditiveModel):
     See Also
     --------
     XSapec, XSvmekal
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
-    ``_switch``. It can still be accessed using ``switch`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -4787,7 +4672,9 @@ class XSvmekal(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.kT, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.kT, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                                              self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                                              self.redshift, self.switch, self.norm))
 
 
 class XSvmcflow(XSAdditiveModel):
@@ -4795,10 +4682,6 @@ class XSvmcflow(XSAdditiveModel):
 
     The model is described at [1]_. The results of this model depend
     on the cosmology settings set with ``set_xscosmo``.
-
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``switch`` might be removed in future releases as it has been
-              replaced by ``_switch``, to match the XSPEC naming convention.
 
     Attributes
     ----------
@@ -4810,7 +4693,7 @@ class XSvmcflow(XSAdditiveModel):
         The abundance relative to Solar.
     redshift
         The redshift of the plasma.
-    _switch
+    switch
         If 0, the mekal code is run to evaluate the model; if 1
         then interpolation of the mekal data is used; if 2 then
         interpolation of APEC data is used. See [1]_ for more details.
@@ -4821,12 +4704,6 @@ class XSvmcflow(XSAdditiveModel):
     See Also
     --------
     XSapec, XScflow, XScevmkl, XSmkcflow
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``switch`` parameter has been renamed to
-    ``_switch``. It can still be accessed using ``switch`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -4858,7 +4735,9 @@ class XSvmcflow(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.lowT, self.highT, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.lowT, self.highT, self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                                              self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                                              self.redshift, self.switch, self.norm))
 
 
 class XSvnei(XSAdditiveModel):
@@ -6859,13 +6738,12 @@ class XSzdust(XSMultiplicativeModel):
     The model is described at [1]_.
 
     .. note:: Deprecated in Sherpa 4.10.0
-              ``method`` and ``EBV`` might be removed in future releases as
-              they have been replaced by ``_method`` and ``E_BmV``
-              respectively, to match the XSPEC naming convention.
+              ``EBV`` might be removed in future releases as
+              it has been replaced by ``E_BmV`` to match the XSPEC naming convention.
 
     Attributes
     ----------
-    _method
+    method
         The model to use: 1 is Milky Way, 2 is LMC, 3 is SMC.
         This parameter can not be thawed.
     E_BmV
@@ -6877,8 +6755,8 @@ class XSzdust(XSMultiplicativeModel):
 
     Notes
     -----
-    In Sherpa 4.10.0 ``method`` has been renamed to ``_method`` and
-    ``EBV`` to ``E_BmV``. They can still be accessed using the old
+    In Sherpa 4.10.0
+    ``EBV`` has been renamed to ``E_BmV``. It can still be accessed using the old
     names for the time being, but these attributes have been deprecated.
 
 
@@ -6897,7 +6775,7 @@ class XSzdust(XSMultiplicativeModel):
         self.Rv = Parameter(name, 'Rv', 3.1, 0.0, 10., 0.0, hugeval, frozen=True)
         self.redshift = Parameter(name, 'redshift', 0.0, 0.0, 20., 0.0, hugeval, 'z', True)
 
-        XSMultiplicativeModel.__init__(self, name, (self._method, self.E_BmV, self.Rv, self.redshift))
+        XSMultiplicativeModel.__init__(self, name, (self.method, self.E_BmV, self.Rv, self.redshift))
 
 
 class XSzedge(XSMultiplicativeModel):
@@ -7428,27 +7306,16 @@ class XScplinear(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.10.0
-              The ``energy01`` to ``energy09`` attributes will be removed in
-              the next release as they has been replaced by ``_energy01``
-              to ``_energy09``, to match the XSPEC naming convention.
-
     Attributes
     ----------
-    _energy00, _energy01, _energy02, _energy03, _energy04, _energy05,
-    _energy06, _energy07, _energy08, _energy09
+    energy00, energy01, energy02, energy03, energy04, energy05,
+    energy06, energy07, energy08, energy09
         Energy in keV.
     log_rate01, log_rate02, log_rate03, log_rate04, log_rate05,
     log_rate06, log_rate07, log_rate08, log_rate09
         Log of the rate.
     norm
         The normalization of the model.
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``energy01`` to ``energy09`` attributes have been
-    renamed to ``_energy01`` to ``_energy09``. They can still be
-    accessed using the old names, but they have been deprecated.
 
     References
     ----------
@@ -7482,7 +7349,12 @@ class XScplinear(XSAdditiveModel):
         self.log_rate09 = Parameter(name, 'log_rate09', 1., -19.0, 19.0, -hugeval, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self._energy00, self._energy01, self._energy02, self._energy03, self._energy04, self._energy05, self._energy06, self._energy07, self._energy08, self._energy09, self.log_rate00, self.log_rate01, self.log_rate02, self.log_rate03, self.log_rate04, self.log_rate05, self.log_rate06, self.log_rate07, self.log_rate08, self.log_rate09, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.energy00, self.energy01, self.energy02, self.energy03,
+                                              self.energy04, self.energy05, self.energy06, self.energy07,
+                                              self.energy08, self.energy09, self.log_rate00, self.log_rate01,
+                                              self.log_rate02, self.log_rate03, self.log_rate04, self.log_rate05,
+                                              self.log_rate06, self.log_rate07, self.log_rate08, self.log_rate09,
+                                              self.norm))
 
 
 class XSeqpair(XSAdditiveModel):
@@ -7987,21 +7859,15 @@ class XSzigm(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``redshift``, ``model``, and ``lyman_limit`` will be removed
-               in the next release as they have been replaced by
-               ``_redshift``, ``_model``, and ``_lyman_limit``
-              respectively, to match the XSPEC naming convention.
-
     Attributes
     ----------
-    _redshift
+    redshift
         The redshift of the absorber.
         This parameter can not be thawed.
-    _model
+    model
         The model to use: 0 is Madau, 1 is Meiksin.
         This parameter can not be thawed.
-    _lyman_limit
+    lyman_limit
         Should photoelectric absorption be included (1), or not (0).
         This parameter can not be thawed.
 
@@ -8026,7 +7892,7 @@ class XSzigm(XSMultiplicativeModel):
         self.model = Parameter(name, 'model', 0, 0, 1, 0, 1, alwaysfrozen=True)
         self.lyman_limit = Parameter(name, 'lyman_limit', 1, 0, 1, 0, 1, alwaysfrozen=True)
 
-        XSMultiplicativeModel.__init__(self, name, (self._redshift, self._model, self._lyman_limit))
+        XSMultiplicativeModel.__init__(self, name, (self.redshift, self.model, self.lyman_limit))
 
 
 ## Here are the seven new additive models from XSPEC 12.7.1
@@ -8038,7 +7904,7 @@ class XSgadem(XSAdditiveModel):
     The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
     functions change and return the current settings for the relative
     abundances of the metals. See the ``XSapec`` documentation for settings
-    relevant to the APEC model (i.e. when ``_switch=2``).
+    relevant to the APEC model (i.e. when ``switch=2``).
 
     Attributes
     ----------
@@ -8085,7 +7951,8 @@ class XSgadem(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 2, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.Tmean, self.Tsigma, self.nH, self.abundanc, self.Redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.Tmean, self.Tsigma, self.nH, self.abundanc, self.Redshift,
+                                              self.switch, self.norm))
 
 
 class XSvgadem(XSAdditiveModel):
@@ -8094,7 +7961,7 @@ class XSvgadem(XSAdditiveModel):
     The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
     functions change and return the current settings for the relative
     abundances of the metals. See the ``XSapec`` documentation for settings
-    relevant to the APEC model (i.e. when ``_switch=2``).
+    relevant to the APEC model (i.e. when ``switch=2``).
 
     Attributes
     ----------
@@ -8153,7 +8020,9 @@ class XSvgadem(XSAdditiveModel):
         self.switch = Parameter(name, 'switch', 2, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.Tmean, self.Tsigma, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Redshift, self._switch, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.Tmean, self.Tsigma, self.nH, self.He, self.C, self.N, self.O,
+                                              self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                                              self.Fe, self.Ni, self.Redshift, self.switch, self.norm))
 
 
 class XSeplogpar(XSAdditiveModel):
@@ -8195,17 +8064,13 @@ class XSlogpar(XSAdditiveModel):
 
     The model is described at [1]_.
 
-    .. note:: Deprecated in Sherpa 4.10.0
-              ``pivotE`` might be removed in future releases as it has been
-              replaced by ``_pivotE``, to match the XSPEC naming convention.
-
     Attributes
     ----------
     alpha
         The slope at the pivot energy.
     beta
         The curvature term.
-    _pivotE
+    pivotE
         The pivot energy, in keV.
     norm
         The normalization of the model: see [1]_ for more details.
@@ -8213,12 +8078,6 @@ class XSlogpar(XSAdditiveModel):
     See Also
     --------
     XSeplogpar
-
-    Notes
-    -----
-    In Sherpa 4.10.0 the ``pivotE`` parameter has been renamed to
-    ``_pivotE``. It can still be accessed using ``pivotE`` for the time
-    being, but this attribute has been deprecated.
 
     References
     ----------
@@ -8235,7 +8094,7 @@ class XSlogpar(XSAdditiveModel):
         self.pivotE = Parameter(name, 'pivotE', 1.0, units='keV', alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.alpha, self.beta, self._pivotE, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.alpha, self.beta, self.pivotE, self.norm))
 
 
 class XSoptxagn(XSAdditiveModel):
