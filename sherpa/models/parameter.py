@@ -17,6 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Support for model parameter values.
+"""
+
 import logging
 import numpy
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
@@ -96,6 +99,33 @@ def _make_binop(op, opstr):
 
 
 class Parameter(NoNewAttributesAfterInit):
+    """Represent a model parameter.
+
+    Parameters
+    ----------
+    modelname : str
+        The name of the model component containing the parameter.
+    name : str
+        The name of the parameter. It should be considered to be
+        matched in a case-insensitive manner.
+    val : number
+        The default value for the parameter.
+    min, max, hard_min, hard_max: number, optional
+        The soft and hard limits for the parameter value.
+    units : str, optional
+        The units for the parameter value.
+    frozen : bool, optional
+        Does the parameter default to being frozen?
+    alwaysfrozen : bool, optional
+        If set then the parameter can never be thawed.
+    hidden : bool, optional
+        Should the parameter be included when displaying the model
+        contents?
+    aliases : None or list of str
+        If not None then alternative names for the parameter (these
+        are expected to be matched in a case-insensitive manner).
+
+    """
 
     #
     # Read-only properties
@@ -329,9 +359,21 @@ class Parameter(NoNewAttributesAfterInit):
     __pow__, __rpow__ = _make_binop(numpy.power, '**')
 
     def freeze(self):
+        """Set the `frozen` attribute for the parameter.
+
+        See Also
+        --------
+        thaw
+        """
         self.frozen = True
 
     def thaw(self):
+        """Unset the `frozen` attribute for the parameter.
+
+        See Also
+        --------
+        frozen
+        """
         self.frozen = False
 
     def unlink(self):
@@ -348,6 +390,7 @@ class Parameter(NoNewAttributesAfterInit):
 
     def set(self, val=None, min=None, max=None, frozen=None,
             default_val=None, default_min=None, default_max=None):
+        """Change a parameter setting."""
 
         if max is not None and max > self.max:
             self.max = max
