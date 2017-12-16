@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -7870,13 +7870,6 @@ class XSzigm(XSMultiplicativeModel):
     lyman_limit
         Should photoelectric absorption be included (1), or not (0).
         This parameter can not be thawed.
-
-    Notes
-    -----
-    In Sherpa 4.10.0 all the parameters have been renamed so that they
-    start with an underscore character. They can still be accessed using
-    the old names for the time being, but these attributes have been
-    deprecated.
 
     References
     ----------
