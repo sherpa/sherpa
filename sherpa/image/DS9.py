@@ -308,7 +308,11 @@ def xpaget(cmd, template=_DefTemplate, doRaise=True):
                     raise RuntimeErr('cmdfail', fullCmd, errMsg)
                 else:
                     warnings.warn(fullErrMsg)
-            return p.stdout.read()
+            return_value = p.stdout.read()
+            if six.PY2:
+                return return_value
+            else:
+                return return_value.decode()
         finally:
             p.stdout.close()
             p.stderr.close()
@@ -655,15 +659,11 @@ class DS9Win:
 
         Raises RuntimeError if anything is written to stderr.
         """
-        return_value = xpaget(
+        return xpaget(
             cmd=cmd,
             template=self.template,
             doRaise=self.doRaise,
         )
-        if six.PY2:
-            return return_value
-        else:
-            return return_value.decode()
 
     def xpaset(self, cmd, data=None, dataFunc=None):
         """Executes a simple xpaset command:
