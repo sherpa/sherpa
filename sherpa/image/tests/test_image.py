@@ -20,6 +20,8 @@
 import numpy as np
 from numpy.testing import assert_allclose
 
+import pytest
+
 import tempfile
 import os
 import sherpa
@@ -74,9 +76,9 @@ def get_arr_from_imager(im, yexp):
     def proc(s):
         """Convert 'i,j = z' to a tuple (i, j, z)"""
         # no error checking
-        toks = s.split(b'=')
+        toks = s.split('=')
         z = dtype(toks[1])
-        toks = toks[0].split(b',')
+        toks = toks[0].split(',')
         i = int(toks[0])
         j = int(toks[1])
         return (i, j, z)
@@ -86,8 +88,8 @@ def get_arr_from_imager(im, yexp):
     # so it doesn't need to be efficient).
     out = np.zeros((ny, nx), dtype=dtype)
     d = im.xpaget("data image 1 1 {} {} no".format(nx, ny))
-    for l in d.split(b'\n'):
-        if l.strip() == b'':
+    for l in d.split('\n'):
+        if l.strip() == '':
             continue
         i, j, z = proc(l)
         out[j - 1, i - 1] = z
@@ -194,3 +196,43 @@ def test_connection_with_x_file():
     im.xpaset("quit")
 
     assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+
+
+@requires_ds9
+@pytest.mark.parametrize('coordsys', ['', 'image', 'physical'])
+def test_image_getregion(coordsys):
+    """Test issue #319.
+
+    Check that image_getregion returns a string, not a byte string.
+    Since the data set has no coordinate systems, the image and
+    physical systems return the same region. Actually, at present
+    it does *not* directly check the image_getregion call, since
+    that is in the sherpa.ui module. This is a test of the lower-level
+    code, and it's not clear if this is the best idea.
+    """
+
+    # This is not ideal.
+    from sherpa.image import ds9_backend
+
+    ctor = sherpa.image.ds9_backend.DS9.DS9Win
+    im = ctor(sherpa.image.ds9_backend.DS9._DefTemplate, False)
+    im.doOpen()
+    im.showArray(data.y)
+
+    # Use XPA to set a region in the imager
+    imshape = 'image; circle 8.5 7.0 0.8'
+    im.xpaset('regions', data=imshape)
+
+    rval = ds9_backend.get_region(coordsys)
+
+    im.xpaset("quit")
+
+    # extract the coordinates to allow for numeric testing.
+    #
+    assert rval.startswith('circle(')
+    assert rval.endswith(');')
+    toks = rval[7:-2].split(',')
+    assert len(toks) == 3
+
+    vals = [float(t) for t in toks]
+    assert_allclose(vals, [8.5, 7.0, 0.8])

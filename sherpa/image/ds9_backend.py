@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,11 @@ from sherpa.utils.err import DS9Err
 
 imager = DS9.DS9Win(DS9._DefTemplate, False)
 
+
+# TODO: the except blocks would ideally catch explicit errors; the present
+#       catch-anything approach means that we lose potentially-useful
+#       information on the type of error.
+#
 
 def close():
     if imager.isOpen():
@@ -57,6 +62,7 @@ def get_region(coord):
 
         regionstr = imager.xpaget(regionstr)
         return regionstr
+
     except:
         raise DS9Err('retreg')
 

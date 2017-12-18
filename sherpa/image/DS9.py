@@ -308,7 +308,11 @@ def xpaget(cmd, template=_DefTemplate, doRaise=True):
                     raise RuntimeErr('cmdfail', fullCmd, errMsg)
                 else:
                     warnings.warn(fullErrMsg)
-            return p.stdout.read()
+            return_value = p.stdout.read()
+            if six.PY2:
+                return return_value
+            else:
+                return return_value.decode()
         finally:
             p.stdout.close()
             p.stderr.close()
