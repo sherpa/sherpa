@@ -452,9 +452,8 @@ used, but the full path should be in your own copy of the file):
  1. If the full XSPEC system has been built, then use
 
         xspec_lib_dirs=$HEADAS/lib
-        xspec_libraries=XSFunctions XSModel XSUtil XS wcs-4.20
-        cfitsio_libraries=cfitsio_3.38
         ccfits_libraries=CCfits_2.5
+        wcs_libraries=wcs-5.16
 
     The environment variable `$HEADAS` should be expanded out, and the
     version numbers of the `wcs`, `cfitsio`, and `CCfits` libraries
@@ -466,19 +465,15 @@ used, but the full path should be in your own copy of the file):
     [CCfits](http://heasarc.gsfc.nasa.gov/docs/software/fitsio/ccfits/),
     and
     [WCSLIB](http://www.atnf.csiro.au/people/mcalabre/WCS/wcslib/)
-    libraries (it is not clear if version 5 is supported, since
-    XSPEC 12.9.0 uses version 4.20). If all the libraries are installed
-    into the same location ($HEADAS/lib), then a similar set up to the
-    full XSPEC build is used
+    libraries. If all the libraries are installed into the same location
+    ($HEADAS/lib), then a similar set up to the full XSPEC build is used
 
         xspec_lib_dirs=$HEADAS/lib
-        xspec_libraries=XSFunctions XSModel XSUtil XS wcs
 
-    except that the library names (`cfitiso`, `CCfits`, and
-    `wcs`) do not need version numbers. If placed in different
-    directories then the `cfitsio_lib_dirs`, `ccfits_lib_dirs`,
-    and (possibly) `gfortran_lib_dirs` values should be set
-    appropriately.
+    and the appropriate `*_libraries` may need to be set. If the libraries
+    are placed in different directories then the `cfitsio_lib_dirs`,
+    `ccfits_lib_dirs`, and (possibly) `gfortran_lib_dirs` values should be
+    set appropriately.
 
  3. or point to the XSPEC libraries provided by
     [CIAO](http://cxc.harvard.edu/ciao/). In this case the
@@ -487,7 +482,6 @@ used, but the full path should be in your own copy of the file):
     CIAO.
 
         xspec_lib_dirs=$ASCDS_INSTALL/ots/lib
-        xspec_libraries=XSFunctions XSModel XSUtil XS
 
     **NOTE** Although this is possible, it is strongly recommended
     that either of the first two approaches is used instead. There
@@ -514,7 +508,7 @@ such as:
 
     >>> from sherpa.astro import xspec
     >>> xspec.get_xsversion()
-    '12.9.0m'
+    '12.9.1p'
 
 Other customization options
 ---------------------------
