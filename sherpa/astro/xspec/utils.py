@@ -22,6 +22,8 @@ from . import _xspec
 
 __all__ = ['ModelMeta', 'include_if', 'version_at_least']
 
+XSPEC_VERSION = LooseVersion(_xspec.get_xsversion())
+
 
 class ModelMeta(type):
     """
@@ -73,8 +75,7 @@ def equal_or_greater_than(version_string):
     :param version_string: the version against which to compare the current xspec version
     :return: `True` if the version of xspec is equal or greater than the argument, `False` otherwise
     """
-    xspec_version = LooseVersion(_xspec.get_xsversion())
-    return xspec_version >= LooseVersion(version_string)
+    return XSPEC_VERSION >= LooseVersion(version_string)
 
 
 class include_if(object):
@@ -117,6 +118,7 @@ class version_at_least(include_if):
 
     def __init__(self, version_string):
         include_if.__init__(self, equal_or_greater_than(version_string))
+        self.version_string = version_string
 
     def get_message(self, model_class):
         return self.DISABLED_MODEL_MESSAGE.format(model_class.__name__, self.version_string)
