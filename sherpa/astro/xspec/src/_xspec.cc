@@ -1,5 +1,6 @@
 // 
-//  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015, 2016, 2017
+//     Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -270,8 +271,14 @@ void xsatbl(float* ear, int ne, float* param, const char* filenm, int ifl,
 void xsmtbl(float* ear, int ne, float* param, const char* filenm, int ifl, 
 	    float* photar, float* photer);
 
-// XSPEC convolution models
+// XSPEC convolution models: ordering below matches that of model.dat
+//
+// Models added in 12.9.1 are commented out as we don't yet have a
+// sensible way to support different sets of functions for different
+// versions.
+//
 void C_cflux(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+  // void C_clumin(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);  12.9.1
 void C_cpflux(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_xsgsmt(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_ireflct(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
@@ -282,7 +289,13 @@ void C_xslsmt(const double* energy, int nFlux, const double* params, int spectru
 void C_PartialCovering(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_rdblur(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_reflct(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+  // void C_rfxconv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);   12.9.1
+// rgsxsrc is the only convolution-style model that uses the Fortran interface
+void rgsxsrc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void C_simpl(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+  // void C_vashift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);   12.9.1
+  // void C_vmshift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);   12.9.1
+  // void C_xilconv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);   12.9.1
 void C_zashift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_zmshift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 
@@ -1293,6 +1306,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECTABLEMODEL_NORM( xsmtbl ),
   // XSPEC convolution models
   XSPECMODELFCT_CON(C_cflux, 3),
+  // XSPECMODELFCT_CON(C_clumin, 4),  12.9.1
   XSPECMODELFCT_CON(C_cpflux, 3),
   XSPECMODELFCT_CON(C_xsgsmt, 2),
   XSPECMODELFCT_CON(C_ireflct, 7),
@@ -1303,7 +1317,12 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_PartialCovering, 1),
   XSPECMODELFCT_CON(C_rdblur, 4),
   XSPECMODELFCT_CON(C_reflct, 5),
+  // XSPECMODELFCT_CON(C_rfxconv, 5),  12.9.1
+  XSPECMODELFCT_CON_F77(rgsxsrc, 1),
   XSPECMODELFCT_CON(C_simpl, 3),
+  // XSPECMODELFCT_CON(C_vashift, 1),  12.9.1
+  // XSPECMODELFCT_CON(C_vmshift, 1),  12.9.1
+  // XSPECMODELFCT_CON(C_xilconv, 6),  12.9.1
   XSPECMODELFCT_CON(C_zashift, 1),
   XSPECMODELFCT_CON(C_zmshift, 1),
 
@@ -1313,7 +1332,7 @@ static PyMethodDef XSpecMethods[] = {
   #ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM(C_btapec, 6),
   #endif
-  
+
   { NULL, NULL, 0, NULL }
 
 };
