@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -88,18 +88,19 @@ def build_region_ext(library_dirs, include_dirs, libraries):
                  libraries=(libraries),
                  depends=get_deps(['extension']))
 
-def build_xspec_ext(library_dirs, include_dirs, libraries):
+def build_xspec_ext(library_dirs, include_dirs, libraries, define_macros=None):
     return Extension('sherpa.astro.xspec._xspec',
                   ['sherpa/astro/xspec/src/_xspec.cc'],
                   sherpa_inc + include_dirs,
                   library_dirs=library_dirs,
                   runtime_library_dirs=library_dirs,
                   libraries=libraries,
+                  define_macros=define_macros,
                   depends=(get_deps(['astro/xspec_extension'])))
 
-def build_ext(name, library_dirs, include_dirs, libraries):
+def build_ext(name, library_dirs, include_dirs, libraries, **kwargs):
     func = globals().get('build_'+name+'_ext')
-    return func(library_dirs, include_dirs, libraries)
+    return func(library_dirs, include_dirs, libraries, **kwargs)
 
 
 def build_lib_arrays(command, libname):

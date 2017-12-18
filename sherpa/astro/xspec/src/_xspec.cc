@@ -285,6 +285,14 @@ void C_reflct(const double* energy, int nFlux, const double* params, int spectru
 void C_simpl(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_zashift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_zmshift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
+// Models from 12.9.1
+//
+//
+#ifdef XSPEC_12_9_1
+void C_btapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#endif
+
 }
 
 // Sun's C++ compiler complains if this is declared static
@@ -829,7 +837,7 @@ static PyMethodDef XSpecMethods[] = {
             REFERENCESDOC "\n"
             ".. [1] http://heasarc.nasa.gov/docs/xanadu/xspec/\n"
             EXAMPLESDOC "\n"
-            ">>> get_xscosmo()\n'12.8.2e'\n\n"},
+            ">>> get_xsversion()\n'12.9.1p'\n\n"},
 
   { (char*)"get_xschatter", (PyCFunction)get_chatter, METH_NOARGS,
     (char*) "get_xschatter()\n\n"
@@ -1298,6 +1306,13 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_simpl, 3),
   XSPECMODELFCT_CON(C_zashift, 1),
   XSPECMODELFCT_CON(C_zmshift, 1),
+
+  // Models from 12.9.1
+  //
+  //
+  #ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C_NORM(C_btapec, 6),
+  #endif
   
   { NULL, NULL, 0, NULL }
 

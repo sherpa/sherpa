@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,14 +18,19 @@
 #
 
 import numpy
+import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
 from sherpa.utils import SherpaTestCase
 from sherpa.utils import requires_data, requires_fits, requires_xspec
 
-
 # How many models should there be?
-XSPEC_MODELS_COUNT = 165
+# This number includes all additive and multiplicative models, even the ones
+# that would be disabled by a decoration from .utils.
+# The number can be calculated by counting the occurrences of the string
+# '(XSAdditiveModel)' and adding it to the number of occurrences of the
+# string '(XSMultiplicativeModel)' in `xspec/__init__.py`
+XSPEC_MODELS_COUNT = 166
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh
@@ -67,30 +72,24 @@ def get_xspec_models(xs):
     # The alternate approach is to use that taken by
     # test_create_model_instances
     #
-    models = [model for model in dir(xs) if model.startswith('XS')]
+    model_names = [model_name for model_name in dir(xs) if model_name.startswith('XS')]
 
     # Could just exclude any names that end in 'Model', but this
     # could remove valid model names, so be explicit.
-    remove_item(models, 'XSModel')
-    remove_item(models, 'XSMultiplicativeModel')
-    remove_item(models, 'XSAdditiveModel')
-    remove_item(models, 'XSTableModel')
+    remove_item(model_names, 'XSModel')
+    remove_item(model_names, 'XSMultiplicativeModel')
+    remove_item(model_names, 'XSAdditiveModel')
+    remove_item(model_names, 'XSTableModel')
 
     # The sirf model - in 12.8.2 and up to 12.9.0d at least - includes
     # a read outside of an array. This has been seen to cause occasional
     # errors in the Sherpa test case, so it is removed from the test
     # for now. This problem has been reported to the XSPEC developers,
     # so it will hopefully be fixed in one of ther 12.9.0 patches.
-    remove_item(models, 'XSsirf')
+    remove_item(model_names, 'XSsirf')
 
-    # In XSPEC 12.8.2, the nteea model is written in such a way that
-    # it fails in Sherpa (but not from within XSPEC). This has
-    # been fixed in 12.9.0, but can cause problems for Sherpa tests
-    # when the model is evaluated multiple times.
-    #
-    version = [int(v) for v in xs.get_xsversion().split('.')[0:2]]
-    if tuple(version) < (12, 9):
-        remove_item(models, 'XSnteea')
+    models = [getattr(xs, model_name) for model_name in model_names]
+    models = list(filter(lambda mod: mod.version_enabled, models))
 
     return models
 
@@ -241,9 +240,8 @@ class test_xspec(SherpaTestCase):
 
         egrid, elo, ehi, wgrid, wlo, whi = make_grid()
         for model in models:
-            cls = getattr(xs, model)
             # use an identifier in case there is an error
-            mdl = cls(model)
+            mdl = model()
 
             # The model checks that the values are all finite,
             # so there is no need to check that the output of
@@ -294,9 +292,8 @@ class test_xspec(SherpaTestCase):
 
         elo, ehi, wlo, whi = make_grid_noncontig2()
         for model in models:
-            cls = getattr(xs, model)
             # use an identifier in case there is an error
-            mdl = cls(model)
+            mdl = model()
 
             evals2 = mdl(elo, ehi)
             wvals2 = mdl(wlo, whi)
@@ -539,17 +536,76 @@ class test_xspec(SherpaTestCase):
         self.assertEqual('somevalue', xs.get_xsxset('Foobar'))
 
 
-if __name__ == '__main__':
-    import os
-    import sys
-    import sherpa.astro.xspec as xs
-    from sherpa.utils import SherpaTest
+@requires_xspec
+def test_nonexistent_model():
+    from sherpa.models import Parameter
+    from sherpa.astro.xspec.utils import include_if
+    from sherpa.astro.xspec import XSAdditiveModel
 
-    if len(sys.argv) > 1:
-        datadir = sys.argv[1]
-        if not os.path.exists(datadir):
-            datadir = None
-    else:
-        datadir = None
+    @include_if(False)
+    class XSbtapec(XSAdditiveModel):
+        __function__ = "foo"
 
-    SherpaTest(xs).test(datadir=datadir)
+        def __init__(self, name='foo'):
+            self.kT = Parameter(name, 'kT', 1.0)
+            XSAdditiveModel.__init__(self, name, (self.kT))
+
+    m = XSbtapec()
+
+    with pytest.raises(AttributeError) as exc:
+        m([])
+
+    assert include_if.DISABLED_MODEL_MESSAGE.format("XSbtapec") == str(exc.value)
+
+
+@requires_xspec
+def test_not_compiled_model():
+    """
+    Test the error handling case where a model is included according to the conditional decorator, but it wraps a
+    function that had not been compiled.
+    """
+    from sherpa.models import Parameter
+    from sherpa.astro.xspec.utils import include_if, ModelMeta
+    from sherpa.astro.xspec import get_xsversion, XSAdditiveModel
+
+    @include_if(True)
+    class XSfoo(XSAdditiveModel):
+        __function__ = "C_foo"
+
+        def __init__(self, name='foo'):
+            self.kT = Parameter(name, 'kT', 1.0)
+            XSAdditiveModel.__init__(self, name, (self.kT))
+
+    m = XSfoo()
+
+    with pytest.raises(AttributeError) as exc:
+        m([])
+
+    assert ModelMeta.NOT_COMPILED_FUNCTION_MESSAGE == str(exc.value)
+
+
+@requires_xspec
+def test_old_style_xspec_class():
+    """
+    We changed the way xspec models are declared, but just in case let's make sure old-style declarations still work.
+    """
+    from sherpa.models import Parameter
+    from sherpa.astro.xspec import XSzbabs, XSMultiplicativeModel, _xspec
+
+    class XSfoo(XSMultiplicativeModel):
+        _calc = _xspec.xszbabs
+
+        def __init__(self, name='zbabs'):
+            self.nH = Parameter(name, 'nH', 1.e-4, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
+            self.nHeI = Parameter(name, 'nHeI', 1.e-5, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
+            self.nHeII = Parameter(name, 'nHeII', 1.e-6, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
+            self.redshift = Parameter(name, 'redshift', 0.0, 0.0, 1.0e5, 0.0, 1.0e6)
+            XSMultiplicativeModel.__init__(self, name, (self.nH, self.nHeI, self.nHeII, self.redshift))
+
+    m = XSfoo()
+
+    actual = m([1, 2, 3])
+
+    expected = XSzbabs()([1, 2, 3])
+
+    assert_array_equal(expected, actual)
