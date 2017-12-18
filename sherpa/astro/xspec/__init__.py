@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -919,13 +919,19 @@ class XSbmc(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``logA`` parameter has been renamed ``log_A`` to match the
+       XSPEC definition. The name ``logA`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     kT
         The temperature of the thermal photon source in keV.
     alpha
         The energy spectral index.
-    logA
+    log_A
         The log of the A parameter: see [1]_ for more details.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -943,9 +949,9 @@ class XSbmc(XSAdditiveModel):
     def __init__(self, name='bmc'):
         self.kT = Parameter(name, 'kT', 1., 1.e-2, 100., 0.0, hugeval, 'keV')
         self.alpha = Parameter(name, 'alpha', 1., 1.e-2, 4.0, 0.0, hugeval)
-        self.logA = Parameter(name, 'logA', 0.0, -6.0, 6.0, -hugeval, hugeval)
+        self.log_A = Parameter(name, 'log_A', 0.0, -6.0, 6.0, -hugeval, hugeval, aliases=["logA"])
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.kT, self.alpha, self.logA, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.kT, self.alpha, self.log_A, self.norm))
 
 
 class XSbremss(XSAdditiveModel):
@@ -1082,7 +1088,10 @@ class XSc6mekl(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH, self.abundanc, self.redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5,
+                                              self.CPcoef6, self.nH, self.abundanc, self.redshift, self.switch,
+                                              self.norm))
 
 
 class XSc6pmekl(XSAdditiveModel):
@@ -1134,7 +1143,10 @@ class XSc6pmekl(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH, self.abundanc, self.redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5,
+                                              self.CPcoef6, self.nH, self.abundanc, self.redshift, self.switch,
+                                              self.norm))
 
 
 class XSc6pvmkl(XSAdditiveModel):
@@ -1199,7 +1211,11 @@ class XSc6pvmkl(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5,
+                                              self.CPcoef6, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                                              self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                                              self.redshift, self.switch, self.norm))
 
 
 class XSc6vmekl(XSAdditiveModel):
@@ -1263,7 +1279,11 @@ class XSc6vmekl(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.CPcoef1, self.CPcoef2, self.CPcoef3, self.CPcoef4, self.CPcoef5,
+                                              self.CPcoef6, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                                              self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                                              self.redshift, self.switch, self.norm))
 
 
 class XScemekl(XSAdditiveModel):
@@ -1312,7 +1332,9 @@ class XScemekl(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.alpha, self.Tmax, self.nH, self.abundanc, self.redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.alpha, self.Tmax, self.nH, self.abundanc, self.redshift,
+                                              self.switch, self.norm))
 
 
 class XScevmkl(XSAdditiveModel):
@@ -1374,7 +1396,10 @@ class XScevmkl(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.alpha, self.Tmax, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.alpha, self.Tmax, self.nH, self.He, self.C, self.N, self.O, self.Ne,
+                                              self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe,
+                                              self.Ni, self.redshift, self.switch, self.norm))
 
 
 class XScflow(XSAdditiveModel):
@@ -1498,6 +1523,13 @@ class XScompPS(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``tauy`` and ``HRcyl`` parameters have been renamed to ``tau_y``
+       and ``HovR_cyl`` respectively to match the XSPEC definition. The names
+       ``tauy`` and ``HRcyl`` can still be used to access the parameters, but
+       they will be removed in a future release.
+
     Attributes
     ----------
     kTe
@@ -1510,12 +1542,12 @@ class XScompPS(XSAdditiveModel):
         The maximum Lorentz factor gamma: see [1]_ for more details.
     kTbb
         The temperature of the soft photons, in keV.
-    tauy
+    tau_y
         The vertical optical depth of the corona: see [1]_ for more
         details.
     geom
         The geometry to use; see [1]_ for more details.
-    HRcyl
+    HovR_cyl
         The value of H/R, when a cylinder geometry is used
         (abs(geom) = 2).
     cosIncl
@@ -1566,9 +1598,9 @@ class XScompPS(XSAdditiveModel):
         self.Gmin = Parameter(name, 'Gmin', -1., -1., 10., -hugeval, hugeval, frozen=True)
         self.Gmax = Parameter(name, 'Gmax', 1.e3, 10., 1.e4, 0.0, hugeval, frozen=True)
         self.kTbb = Parameter(name, 'kTbb', 0.1, 0.001, 10., 0.0, hugeval, 'keV', True)
-        self.tauy = Parameter(name, 'tauy', 1.0, 0.05, 3.0, 0.0, hugeval)
+        self.tau_y = Parameter(name, 'tau_y', 1.0, 0.05, 3.0, 0.0, hugeval, aliases=["tauy"])
         self.geom = Parameter(name, 'geom', 0.0, -5.0, 4.0, -hugeval, hugeval, frozen=True)
-        self.HRcyl = Parameter(name, 'HRcyl', 1.0, 0.5, 2.0, 0.0, hugeval, frozen=True)
+        self.HovR_cyl = Parameter(name, 'HovR_cyl', 1.0, 0.5, 2.0, 0.0, hugeval, frozen=True, aliases=["HRcyl"])
         self.cosIncl = Parameter(name, 'cosIncl', 0.5, 0.05, 0.95, 0.0, hugeval, frozen=True)
         self.cov_frac = Parameter(name, 'cov_frac', 1.0, 0.0, 1.0, 0.0, hugeval, frozen=True)
         self.rel_refl = Parameter(name, 'rel_refl', 0., 0., 1.e4, 0.0, hugeval, frozen=True)
@@ -1581,7 +1613,8 @@ class XScompPS(XSAdditiveModel):
         self.Rout = Parameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, hugeval, 'Rs', True)
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.kTe, self.EleIndex, self.Gmin, self.Gmax, self.kTbb, self.tauy, self.geom, self.HRcyl, self.cosIncl, self.cov_frac, self.rel_refl, self.Fe_ab_re, self.Me_ab, self.xi, self.Tdisk, self.Betor10, self.Rin, self.Rout, self.redshift, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.kTe, self.EleIndex, self.Gmin, self.Gmax, self.kTbb, self.tau_y, self.geom, self.HovR_cyl, self.cosIncl, self.cov_frac, self.rel_refl, self.Fe_ab_re, self.Me_ab, self.xi, self.Tdisk, self.Betor10, self.Rin, self.Rout, self.redshift, self.norm))
 
 
 class XScompST(XSAdditiveModel):
@@ -1699,11 +1732,18 @@ class XSdisk(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``NSmass`` parameter has been renamed to ``CenMass`` to match
+       the XSPEC definition. The name ``NSmass`` can still be used to
+       access the parameter, but this name will be removed in a future
+       release.
+
     Attributes
     ----------
     accrate
         The accretion rate, in Eddington luminosities.
-    NSmass
+    CenMass
         The central mass, in solar mass units.
     Rinn
         The inner disk radius in gravitational units (three
@@ -1726,16 +1766,23 @@ class XSdisk(XSAdditiveModel):
 
     def __init__(self, name='disk'):
         self.accrate = Parameter(name, 'accrate', 1., 1e-3, 9., 0.0, hugeval)
-        self.NSmass = Parameter(name, 'NSmass', 1.4, .4, 10., 0.0, hugeval, units='Msun', frozen=True)
+        self.CenMass = Parameter(name, 'CenMass', 1.4, .4, 10., 0.0, hugeval, units='Msun', frozen=True, aliases=["NSmass"])
         self.Rinn = Parameter(name, 'Rinn', 1.03, 1.01, 1.03, 0.0, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.accrate, self.NSmass, self.Rinn, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.accrate, self.CenMass, self.Rinn, self.norm))
 
 
 class XSdiskir(XSAdditiveModel):
     """The XSPEC diskir model: Irradiated inner and outer disk.
 
     The model is described at [1]_.
+
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``LcLd`` parameter has been renamed ``LcovrLd`` to match the
+       XSPEC definition. The name ``LcLd`` can still be used to access
+       the parameter, but this name will be removed in a future release.
 
     Attributes
     ----------
@@ -1746,7 +1793,7 @@ class XSdiskir(XSAdditiveModel):
         The asymptotic power-law photon index.
     kT_e
         The electron temperature (high-energy rollover) in keV.
-    LcLd
+    LcovrLd
         The ratio of the luminosity in the Compton tail to that of
         the unilluminated disk.
     fin
@@ -1783,13 +1830,14 @@ class XSdiskir(XSAdditiveModel):
         self.kT_disk = Parameter(name, 'kT_disk', 1.0, 0.01, 5., 0.0, hugeval, 'keV')
         self.Gamma = Parameter(name, 'Gamma', 1.7, 1.001, 5., 0.0, hugeval)
         self.kT_e = Parameter(name, 'kT_e', 100., 5., 1.e3, 0.0, hugeval, 'keV')
-        self.LcLd = Parameter(name, 'LcLd', 0.1, 0., 10., 0.0, hugeval)
+        self.LcovrLd = Parameter(name, 'LcovrLd', 0.1, 0., 10., 0.0, hugeval, aliases=["LcLd"])
         self.fin = Parameter(name, 'fin', 1.e-1, 0.0, 1., 0.0, hugeval, frozen=True)
         self.rirr = Parameter(name, 'rirr', 1.2, 1.0001, 10., 1.0001, hugeval)
         self.fout = Parameter(name, 'fout', 1.e-4, 0.0, 1.e-1, 0.0, hugeval)
         self.logrout = Parameter(name, 'logrout', 5.0, 3.0, 7.0, 0.0, hugeval)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.kT_disk, self.Gamma, self.kT_e, self.LcLd, self.fin, self.rirr, self.fout, self.logrout, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.kT_disk, self.Gamma, self.kT_e, self.LcovrLd, self.fin, self.rirr, self.fout, self.logrout, self.norm))
 
 
 class XSdiskbb(XSAdditiveModel):
@@ -1828,15 +1876,22 @@ class XSdiskline(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``RinM`` and ``RoutM`` parameters have been renamed ``Rin_M``
+       and ``Rout_M`` respectively to match the XSPEC definition. The names
+       ``RinM`` and ``RoutM`` can still be used to access the parameters,
+       but they will be removed in a future release.
+
     Attributes
     ----------
     LineE
         The line energy in keV.
     Betor10
         The power law dependence of emissivity: see [1]_ for more details.
-    RinM
+    Rin_M
         The inner radius, in units of GM^2/c.
-    RoutM
+    Rout_M
         The outer radius, in units of GM^2/c.
     Incl
         The inclination, in degrees.
@@ -1855,11 +1910,12 @@ class XSdiskline(XSAdditiveModel):
     def __init__(self, name='diskline'):
         self.LineE = Parameter(name, 'LineE', 6.7, 0., 100., 0.0, hugeval, 'keV')
         self.Betor10 = Parameter(name, 'Betor10', -2., -10., 20., -hugeval, hugeval, frozen=True)
-        self.RinM = Parameter(name, 'RinM', 10., 6., 1000., 0.0, hugeval, frozen=True)
-        self.RoutM = Parameter(name, 'RoutM', 1000., 0., 1000000., 0.0, hugeval, frozen=True)
+        self.Rin_M = Parameter(name, 'Rin_M', 10., 6., 1000., 0.0, hugeval, frozen=True, aliases=["RinM"])
+        self.Rout_M = Parameter(name, 'Rout_M', 1000., 0., 1000000., 0.0, hugeval, frozen=True, aliases=["RoutM"])
         self.Incl = Parameter(name, 'Incl', 30., 0., 90., 0.0, hugeval, 'deg')
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.LineE, self.Betor10, self.RinM, self.RoutM, self.Incl, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.LineE, self.Betor10, self.Rin_M, self.Rout_M, self.Incl, self.norm))
 
     def guess(self, dep, *args, **kwargs):
         XSAdditiveModel.guess(self, dep, *args, **kwargs)
@@ -2158,6 +2214,12 @@ class XSgnei(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``kT_ave`` parameter has been renamed ``meanKT`` to match the
+       XSPEC definition. The name ``kT_ave`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     kT
@@ -2167,7 +2229,7 @@ class XSgnei(XSAdditiveModel):
         ``set_xsabund`` function.
     Tau
         The ionization timescale in units of s/cm^3.
-    kT_ave
+    meankT
         The ionization timescale averaged plasma temperature in keV.
     redshift
         The redshift of the plasma.
@@ -2192,16 +2254,23 @@ class XSgnei(XSAdditiveModel):
         self.kT = Parameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
         self.Abundanc = Parameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
         self.Tau = Parameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 0.0, hugeval, 's/cm^3')
-        self.kT_ave = Parameter(name, 'kT_ave', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
+        self.meankT = Parameter(name, 'meankT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV', aliases=["kT_ave"])
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.kT, self.Abundanc, self.Tau, self.kT_ave, self.redshift, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.kT, self.Abundanc, self.Tau, self.meankT, self.redshift, self.norm))
 
 
 class XSgrad(XSAdditiveModel):
     """The XSPEC grad model: accretion disk, Schwarzschild black hole.
 
     The model is described at [1]_.
+
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``TclTef`` parameter has been renamed ``TclovTef`` to match the
+       XSPEC definition. The name ``logA`` can still be used to access
+       the parameter, but this name will be removed in a future release.
 
     Attributes
     ----------
@@ -2214,7 +2283,7 @@ class XSgrad(XSAdditiveModel):
         The mass of the central object, in solar masses.
     Mdot
         The mass accretion rate in units of 10^18 g/s.
-    TclTef
+    TclovTef
         The spectral hardening factor, Tcol/Teff. See [1]_ for more
         details.
     refflag
@@ -2243,10 +2312,11 @@ class XSgrad(XSAdditiveModel):
         self.i = Parameter(name, 'i', 0.0, 0.0, 90.0, 0.0, hugeval, 'deg', True)
         self.Mass = Parameter(name, 'Mass', 1.0, 0.0, 100.0, 0.0, hugeval, 'solar')
         self.Mdot = Parameter(name, 'Mdot', 1.0, 0.0, 100.0, 0.0, hugeval, '1e18')
-        self.TclTef = Parameter(name, 'TclTef', 1.7, 1.0, 10.0, 0.0, hugeval, frozen=True)
+        self.TclovTef = Parameter(name, 'TclovTef', 1.7, 1.0, 10.0, 0.0, hugeval, frozen=True, aliases=["TclTef"])
         self.refflag = Parameter(name, 'refflag', 1.0, -1.0, 1.0, -hugeval, hugeval, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.D, self.i, self.Mass, self.Mdot, self.TclTef, self.refflag, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.D, self.i, self.Mass, self.Mdot, self.TclovTef, self.refflag, self.norm))
 
 
 class XSgrbm(XSAdditiveModel):
@@ -2254,13 +2324,19 @@ class XSgrbm(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``temp`` parameter has been renamed ``tem`` to match the
+       XSPEC definition. The name ``temp`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     alpha
         The first powerlaw index.
     beta
         The second powerlaw index.
-    temp
+    tem
         The characteristic energy, in keV.
     norm
         The normalization of the model.
@@ -2277,9 +2353,10 @@ class XSgrbm(XSAdditiveModel):
     def __init__(self, name='grbm'):
         self.alpha = Parameter(name, 'alpha', -1., -3., +2., -hugeval, hugeval)
         self.beta = Parameter(name, 'beta', -2., -5., +2., -hugeval, hugeval)
-        self.temp = Parameter(name, 'temp', +300., +50., +1000., 0.0, hugeval, 'keV')
+        self.tem = Parameter(name, 'tem', +300., +50., +1000., 0.0, hugeval, 'keV', aliases=["temp"])
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.alpha, self.beta, self.temp, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.alpha, self.beta, self.tem, self.norm))
 
 
 class XSkerrbb(XSAdditiveModel):
@@ -2354,11 +2431,17 @@ class XSkerrd(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``TcolTeff`` parameter has been renamed ``TcoloTeff`` to match the
+       XSPEC definition. The name ``TcolTeff`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     distance
         The distance, in units of kpc.
-    TcollTeff
+    TcoloTeff
         The spectral hardening factor, Tcol/Teff. See [1]_ for more
         details.
     M
@@ -2391,20 +2474,29 @@ class XSkerrd(XSAdditiveModel):
 
     def __init__(self, name='kerrd'):
         self.distance = Parameter(name, 'distance', 1., 0.01, 1000., 0.0, hugeval, 'kpc', True)
-        self.TcolTeff = Parameter(name, 'TcolTeff', 1.5, 1.0, 2.0, 0.0, hugeval, frozen=True)
+        self.TcoloTeff = Parameter(name, 'TcoloTeff', 1.5, 1.0, 2.0, 0.0, hugeval, frozen=True, aliases=["TcolTeff"])
         self.M = Parameter(name, 'M', 1.0, 0.1, 100., 0.0, hugeval, 'solar')
         self.Mdot = Parameter(name, 'Mdot', 1.0, 0.01, 100., 0.0, hugeval, '1e18')
         self.Incl = Parameter(name, 'Incl', 30., 0., 90., 0.0, hugeval, 'deg', True)
         self.Rin = Parameter(name, 'Rin', 1.235, 1.235, 100., 0.0, hugeval, 'Rg', True)
         self.Rout = Parameter(name, 'Rout', 1e5, 1e4, 1e8, 0.0, hugeval, 'Rg', True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.distance, self.TcolTeff, self.M, self.Mdot, self.Incl, self.Rin, self.Rout, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.distance, self.TcoloTeff, self.M, self.Mdot, self.Incl, self.Rin, self.Rout, self.norm))
 
 
 class XSkerrdisk(XSAdditiveModel):
     """The XSPEC kerrdisk model: accretion disk line emission with BH spin as free parameter.
 
     The model is described at [1]_.
+
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``r_brg``, ``Rinms``, and ``Routms`` parameters have been
+       renamed to ``r_br_g``, ``Rin_ms``, and ``Rout_ms`` respectively
+       to match the XSPEC definition. The names ``r_brg``, ``Rinms``,
+       and ``Routms`` can still be used to access the parameters, but
+       they will be removed in a future release.
 
     Attributes
     ----------
@@ -2414,7 +2506,7 @@ class XSkerrdisk(XSAdditiveModel):
         The emissivity index for the inner disk.
     Index2
         The emissivity index for the outer disk.
-    r_brg
+    r_br_g
         The break radius separating the inner and outer portions of the
         disk, in gravitational radii.
     a
@@ -2422,10 +2514,10 @@ class XSkerrdisk(XSAdditiveModel):
     Incl
         The disk inclination angle, in degrees. A face-on disk has
         Incl=0.
-    Rinms
+    Rin_ms
         The inner radius of the disk, in units of the radius of
         marginal stability.
-    Routms
+    Rout_ms
         The outer radius of the disk, in units of the radius of
         marginal stability.
     z
@@ -2450,14 +2542,15 @@ class XSkerrdisk(XSAdditiveModel):
         self.lineE = Parameter(name, 'lineE', 6.4, 0.1, 100., 0.0, hugeval, 'keV')
         self.Index1 = Parameter(name, 'Index1', 3., -10., 10., -hugeval, hugeval, frozen=True)
         self.Index2 = Parameter(name, 'Index2', 3., -10., 10., -hugeval, hugeval, frozen=True)
-        self.r_brg = Parameter(name, 'r_brg', 6.0, 1.0, 400., 0.0, hugeval, frozen=True)
+        self.r_br_g = Parameter(name, 'r_br_g', 6.0, 1.0, 400., 0.0, hugeval, frozen=True, aliases=["r_brg"])
         self.a = Parameter(name, 'a', 0.998, 0.0, 0.998, 0.0, hugeval)
         self.Incl = Parameter(name, 'Incl', 30., 0., 90., 0.0, hugeval, 'deg', True)
-        self.Rinms = Parameter(name, 'Rinms', 1.0, 1.0, 400., 0.0, hugeval, frozen=True)
-        self.Routms = Parameter(name, 'Routms', 400., 1.0, 400., 0.0, hugeval, frozen=True)
+        self.Rin_ms = Parameter(name, 'Rin_ms', 1.0, 1.0, 400., 0.0, hugeval, frozen=True, aliases=["Rinms"])
+        self.Rout_ms = Parameter(name, 'Rout_ms', 400., 1.0, 400., 0.0, hugeval, frozen=True, aliases=["Routms"])
         self.z = Parameter(name, 'z', 0., 0., 10., 0.0, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.lineE, self.Index1, self.Index2, self.r_brg, self.a, self.Incl, self.Rinms, self.Routms, self.z, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.lineE, self.Index1, self.Index2, self.r_br_g, self.a, self.Incl, self.Rin_ms, self.Rout_ms, self.z, self.norm))
 
     def guess(self, dep, *args, **kwargs):
         XSAdditiveModel.guess(self, dep, *args, **kwargs)
@@ -2470,15 +2563,22 @@ class XSlaor(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``RinG`` and ``RoutG`` parameters have been renamed to
+       ``Rin_G`` and ``Rout_G`` respectively to match the XSPEC definition.
+       The names ``RinG`` and ``RoutG`` can still be used to access the
+       parameters, but they will be removed in a future release.
+
     Attributes
     ----------
     lineE
         The rest-frame line energy, in keV.
     Index
         The power law dependence of emissivity (scales as R^-Index).
-    RinG
+    Rin_G
         The inner radius, in units of GM/c^2.
-    RoutG
+    Rout_G
         The outer radius, in units of GM/c^2.
     Incl
         The disk inclination angle, in degrees. A face-on disk has
@@ -2502,11 +2602,12 @@ class XSlaor(XSAdditiveModel):
     def __init__(self, name='laor'):
         self.lineE = Parameter(name, 'lineE', 6.4, 0., 100., 0.0, hugeval, 'keV')
         self.Index = Parameter(name, 'Index', 3., -10., 10., -hugeval, hugeval, frozen=True)
-        self.RinG = Parameter(name, 'RinG', 1.235, 1.235, 400., 0.0, hugeval, frozen=True)
-        self.RoutG = Parameter(name, 'RoutG', 400., 1.235, 400., 0.0, hugeval, frozen=True)
+        self.Rin_G = Parameter(name, 'Rin_G', 1.235, 1.235, 400., 0.0, hugeval, frozen=True, aliases=["RinG"])
+        self.Rout_G = Parameter(name, 'Rout_G', 400., 1.235, 400., 0.0, hugeval, frozen=True, aliases=[""])
         self.Incl = Parameter(name, 'Incl', 30., 0., 90., 0.0, hugeval, 'deg', True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.lineE, self.Index, self.RinG, self.RoutG, self.Incl, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.lineE, self.Index, self.Rin_G, self.Rout_G, self.Incl, self.norm))
 
     def guess(self, dep, *args, **kwargs):
         XSAdditiveModel.guess(self, dep, *args, **kwargs)
@@ -2519,15 +2620,22 @@ class XSlaor2(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``RinG`` and ``RoutG`` parameters have been renamed to
+       ``Rin_G`` and ``Rout_G`` respectively to match the XSPEC definition.
+       The names ``RinG`` and ``RoutG`` can still be used to access the
+       parameters, but they will be removed in a future release.
+
     Attributes
     ----------
     lineE
         The rest-frame line energy, in keV.
     Index
         The power law dependence of emissivity (scales as R^-Index).
-    RinG
+    Rin_G
         The inner radius, in units of GM/c^2.
-    RoutG
+    Rout_G
         The outer radius, in units of GM/c^2.
     Incl
         The disk inclination angle, in degrees. A face-on disk has
@@ -2555,13 +2663,14 @@ class XSlaor2(XSAdditiveModel):
     def __init__(self, name='laor2'):
         self.lineE = Parameter(name, 'lineE', 6.4, 0., 100., 0.0, hugeval, 'keV')
         self.Index = Parameter(name, 'Index', 3., -10., 10., -hugeval, hugeval, frozen=True)
-        self.RinG = Parameter(name, 'RinG', 1.235, 1.235, 400., 0.0, hugeval, frozen=True)
-        self.RoutG = Parameter(name, 'RoutG', 400., 1.235, 400., 0.0, hugeval, frozen=True)
+        self.Rin_G = Parameter(name, 'Rin_G', 1.235, 1.235, 400., 0.0, hugeval, frozen=True, aliases=["RinG"])
+        self.Rout_G = Parameter(name, 'Rout_G', 400., 1.235, 400., 0.0, hugeval, frozen=True, aliases=["RoutG"])
         self.Incl = Parameter(name, 'Incl', 30., 0., 90., 0.0, hugeval, 'deg', True)
         self.Rbreak = Parameter(name, 'Rbreak', 20., 1.235, 400., 0.0, hugeval, frozen=True)
         self.Index1 = Parameter(name, 'Index1', 3., -10., 10., -hugeval, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.lineE, self.Index, self.RinG, self.RoutG, self.Incl, self.Rbreak, self.Index1, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.lineE, self.Index, self.Rin_G, self.Rout_G, self.Incl, self.Rbreak, self.Index1, self.norm))
 
     def guess(self, dep, *args, **kwargs):
         XSAdditiveModel.guess(self, dep, *args, **kwargs)
@@ -2695,6 +2804,7 @@ class XSmekal(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
         XSAdditiveModel.__init__(self, name, (self.kT, self.nH, self.Abundanc, self.redshift, self.switch, self.norm))
 
 
@@ -2742,7 +2852,9 @@ class XSmkcflow(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.lowT, self.highT, self.Abundanc, self.redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.lowT, self.highT, self.Abundanc, self.redshift, self.switch,
+                                              self.norm))
 
 
 class XSnei(XSAdditiveModel):
@@ -3179,6 +3291,7 @@ class XSnsmax(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0.1, 0.0, 1.5, 0.0, 2.0)
         self.specfile = Parameter(name, 'specfile', 1200, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
         XSAdditiveModel.__init__(self, name, (self.logTeff, self.redshift, self.specfile, self.norm))
 
 
@@ -3222,6 +3335,7 @@ class XSnsmaxg(XSAdditiveModel):
         self.dist = Parameter(name, 'dist', 1.0, 0.01, 100.0, 0.01, 100.0, units='kpc')
         self.specfile = Parameter(name, 'specfile', 1200, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
         XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self.specfile, self.norm))
 
 
@@ -3265,6 +3379,7 @@ class XSnsx(XSAdditiveModel):
         self.dist = Parameter(name, 'dist', 1.0, 0.01, 100.0, 0.01, 100.0, units='kpc')
         self.specfile = Parameter(name, 'specfile', 6, 0, 1.0e6, 0, 1.0e6, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
         XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self.specfile, self.norm))
 
 class XSnteea(XSAdditiveModel):
@@ -3563,7 +3678,7 @@ class XSplcabs(XSAdditiveModel):
     ----------
     nH
         The column density, in units of 10^22 cm^-2.
-    nMax
+    nmax
         The maximum number of scatterings. This parameter can not be
         thawed.
     FeAbun
@@ -3608,7 +3723,10 @@ class XSplcabs(XSAdditiveModel):
         self.FAST = Parameter(name, 'FAST', 0, alwaysfrozen=True)
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.nH, self.nmax, self.FeAbun, self.FeKedge, self.PhoIndex, self.HighECut, self.foldE, self.acrit, self.FAST, self.redshift, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.nH, self.nmax, self.FeAbun, self.FeKedge, self.PhoIndex,
+                                              self.HighECut, self.foldE, self.acrit, self.FAST, self.redshift,
+                                              self.norm))
 
 
 class XSpowerlaw(XSAdditiveModel):
@@ -3970,11 +4088,17 @@ class XSsrcut(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``breakfreq`` parameter has been renamed ``break_`` to match the
+       XSPEC definition. The name ``breakfreq`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     alpha
         The radio spectral index.
-    breakfreq
+    break_
         The break frequency: approximately the frequency at which the
         flux has dropped by a factor of 10 from a straight power law.
     norm
@@ -3995,9 +4119,10 @@ class XSsrcut(XSAdditiveModel):
 
     def __init__(self, name='srcut'):
         self.alpha = Parameter(name, 'alpha', 0.5, 0.3, 0.8, 0.0, hugeval)
-        self.breakfreq = Parameter(name, 'breakfreq', 2.42E17, 1.E15, 1.E19, 0.0, hugeval, 'Hz')
+        self.break_ = Parameter(name, 'break_', 2.42E17, 1.E15, 1.E19, 0.0, hugeval, 'Hz', aliases=["breakfreq"])
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.alpha, self.breakfreq, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.alpha, self.break_, self.norm))
 
 
 class XSsresc(XSAdditiveModel):
@@ -4131,11 +4256,17 @@ class XSvbremss(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``HeH`` parameter has been renamed ``HeovrH`` to match the
+       XSPEC definition. The name ``HeH`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     kT
         The plasma temperature in keV.
-    HeH
+    HeovrH
         The ratio n(He) / n(H).
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -4156,9 +4287,10 @@ class XSvbremss(XSAdditiveModel):
 
     def __init__(self, name='vbremss'):
         self.kT = Parameter(name, 'kT', 3.0, 1.e-2, 100., 0.0, hugeval, 'keV')
-        self.HeH = Parameter(name, 'HeH', 1.0, 0., 100., 0.0, hugeval)
+        self.HeovrH = Parameter(name, 'HeovrH', 1.0, 0., 100., 0.0, hugeval, aliases=["HeH"])
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.kT, self.HeH, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.kT, self.HeovrH, self.norm))
 
 
 class XSvequil(XSAdditiveModel):
@@ -4219,6 +4351,12 @@ class XSvgnei(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``kT_ave`` parameter has been renamed ``meanKT`` to match the
+       XSPEC definition. The name ``kT_ave`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     kT
@@ -4230,7 +4368,7 @@ class XSvgnei(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    kT_ave
+    meankT
         The ionization timescale averaged plasma temperature in keV.
     redshift
         The redshift of the plasma.
@@ -4267,10 +4405,11 @@ class XSvgnei(XSAdditiveModel):
         self.Fe = Parameter(name, 'Fe', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
         self.Ni = Parameter(name, 'Ni', 1.0, 0., 1000., 0.0, hugeval, frozen=True)
         self.Tau = Parameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 0.0, hugeval, 's/cm^3')
-        self.kT_ave = Parameter(name, 'kT_ave', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV')
+        self.meankT = Parameter(name, 'meankT', 1.0, 0.0808, 79.9, 0.0, hugeval, 'keV', aliases=["kT_ave"])
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.kT, self.H, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Tau, self.kT_ave, self.redshift, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.kT, self.H, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Tau, self.meankT, self.redshift, self.norm))
 
 
 class XSvvgnei(XSAdditiveModel):
@@ -4279,6 +4418,12 @@ class XSvvgnei(XSAdditiveModel):
     The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
+
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``kT_ave`` parameter has been renamed ``meanKT`` to match the
+       XSPEC definition. The name ``kT_ave`` can still be used to access
+       the parameter, but this name will be removed in a future release.
 
     Attributes
     ----------
@@ -4292,7 +4437,7 @@ class XSvvgnei(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    kT_ave
+    meankT
         The ionization timescale averaged plasma temperature in keV.
     redshift
         The redshift of the plasma.
@@ -4346,10 +4491,11 @@ class XSvvgnei(XSAdditiveModel):
         self.Cu = Parameter(name, 'Cu', 1., 0., 1000., 0.0, 10000.0, frozen=True)
         self.Zn = Parameter(name, 'Zn', 1., 0., 1000., 0.0, 10000.0, frozen=True)
         self.Tau = Parameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.kT_ave = Parameter(name, 'kT_ave', 1.0, 0.0808, 79.9, 0.0808, 79.9, 'keV')
+        self.meankT = Parameter(name, 'meankT', 1.0, 0.0808, 79.9, 0.0808, 79.9, 'keV', aliases=["kT_ave"])
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.kT, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Tau, self.kT_ave, self.redshift, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.kT, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Tau, self.meankT, self.redshift, self.norm))
 
 class XSvmeka(XSAdditiveModel):
     """The XSPEC vmeka model: emission, hot diffuse gas (Mewe-Gronenschild).
@@ -4462,7 +4608,10 @@ class XSvmekal(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.kT, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.kT, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                                              self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                                              self.redshift, self.switch, self.norm))
 
 
 class XSvmcflow(XSAdditiveModel):
@@ -4522,7 +4671,10 @@ class XSvmcflow(XSAdditiveModel):
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.lowT, self.highT, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.lowT, self.highT, self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                                              self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                                              self.redshift, self.switch, self.norm))
 
 
 class XSvnei(XSAdditiveModel):
@@ -5575,15 +5727,21 @@ class XSgabs(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``Tau`` parameter has been renamed ``Strength`` to match the
+       XSPEC definition. The name ``Tau`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     LineE
         The line energy, in keV.
     Sigma
         The line width (sigma), in keV.
-    Tau
+    Strength
         The line depth. The optical depth at the line center is
-        Tau / (sqrt(2 pi) * Sigma).
+        Strength / (sqrt(2 pi) * Sigma).
 
     References
     ----------
@@ -5597,8 +5755,9 @@ class XSgabs(XSMultiplicativeModel):
     def __init__(self, name='gabs'):
         self.LineE = Parameter(name, 'LineE', 1.0, 0., 1.e6, 0.0, hugeval, 'keV')
         self.Sigma = Parameter(name, 'Sigma', 0.01, 0., 10., 0.0, hugeval, 'keV')
-        self.Tau = Parameter(name, 'Tau', 1.0, 0., 1.e6, 0.0, hugeval)
-        XSMultiplicativeModel.__init__(self, name, (self.LineE, self.Sigma, self.Tau))
+        self.Strength = Parameter(name, 'Strength', 1.0, 0., 1.e6, 0.0, hugeval, aliases=["Tau"])
+
+        XSMultiplicativeModel.__init__(self, name, (self.LineE, self.Sigma, self.Strength))
 
     def guess(self, dep, *args, **kwargs):
         pos = get_xspec_position(dep, *args)
@@ -5857,9 +6016,15 @@ class XSredden(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``EBV`` parameter has been renamed ``E_BmV`` to match the
+       XSPEC definition. The name ``EBV`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
-    EBV
+    E_BmV
         The value of E(B-v) for the line of sight to the source.
 
     See Also
@@ -5876,8 +6041,9 @@ class XSredden(XSMultiplicativeModel):
     _calc = _xspec.xscred
 
     def __init__(self, name='redden'):
-        self.EBV = Parameter(name, 'EBV', 0.05, 0., 10., 0.0, hugeval)
-        XSMultiplicativeModel.__init__(self, name, (self.EBV,))
+        self.E_BmV = Parameter(name, 'E_BmV', 0.05, 0., 10., 0.0, hugeval, aliases=["EBV"])
+
+        XSMultiplicativeModel.__init__(self, name, (self.E_BmV,))
 
 
 class XSsmedge(XSMultiplicativeModel):
@@ -6012,11 +6178,17 @@ class XSswind1(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``logxi`` parameter has been renamed ``log_xi`` to match the
+       XSPEC definition. The name ``logxi`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     column
         The column density, in units of 10^22 cm^2.
-    logxi
+    log_xi
         The log of xi: see [1]_ for more details.
     sigma
         The gaussian sigma for velocity smearing (v/c).
@@ -6034,10 +6206,11 @@ class XSswind1(XSMultiplicativeModel):
 
     def __init__(self, name='swind1'):
         self.column = Parameter(name, 'column', 6., 3., 50., 0.0, hugeval)
-        self.logxi = Parameter(name, 'logxi', 2.5, 2.1, 4.1, 0.0, hugeval)
+        self.log_xi = Parameter(name, 'log_xi', 2.5, 2.1, 4.1, 0.0, hugeval, aliases=["logxi"])
         self.sigma = Parameter(name, 'sigma', 0.1, 0., .5, 0.0, hugeval)
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.column, self.logxi, self.sigma, self.redshift))
+
+        XSMultiplicativeModel.__init__(self, name, (self.column, self.log_xi, self.sigma, self.redshift))
 
 
 class XSTBabs(XSMultiplicativeModel):
@@ -6219,9 +6392,15 @@ class XSuvred(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``EBV`` parameter has been renamed ``E_BmV`` to match the
+       XSPEC definition. The name ``EBV`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
-    EBV
+    E_BmV
         The value of E(B-v) for the line of sight to the source.
 
     References
@@ -6234,8 +6413,9 @@ class XSuvred(XSMultiplicativeModel):
     _calc = _xspec.xsred
 
     def __init__(self, name='uvred'):
-        self.EBV = Parameter(name, 'EBV', 0.05, 0., 10., 0.0, hugeval)
-        XSMultiplicativeModel.__init__(self, name, (self.EBV,))
+        self.E_BmV = Parameter(name, 'E_BmV', 0.05, 0., 10., 0.0, hugeval, aliases=["EBV"])
+
+        XSMultiplicativeModel.__init__(self, name, (self.E_BmV,))
 
 
 class XSvarabs(XSMultiplicativeModel):
@@ -6406,11 +6586,17 @@ class XSxion(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``lxld`` parameter has been renamed ``lxovrld`` to match the
+       XSPEC definition. The name ``lxld`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     height
         The height of the source above the disk (in Schwarzschild radii).
-    lxld
+    lxovrld
         The ratio of the X-ray source luminosity to that of the disk.
     rate
         The accretion rate (in Eddington units).
@@ -6446,7 +6632,7 @@ class XSxion(XSMultiplicativeModel):
 
     def __init__(self, name='xion'):
         self.height = Parameter(name, 'height', 5., 0.0, 1.e2, 0.0, hugeval, 'r_s')
-        self.lxld = Parameter(name, 'lxld', 0.3, 0.02, 100, 0.0, hugeval)
+        self.lxovrld = Parameter(name, 'lxovrld', 0.3, 0.02, 100, 0.0, hugeval, aliases=["lxld"])
         self.rate = Parameter(name, 'rate', 0.05, 1.e-3, 1., 0.0, hugeval)
         self.cosAng = Parameter(name, 'cosAng', 0.9, 0., 1., 0.0, hugeval)
         self.inner = Parameter(name, 'inner', 3., 2., 1.e3, 0.0, hugeval, 'r_s')
@@ -6458,7 +6644,8 @@ class XSxion(XSMultiplicativeModel):
         self.Ref_type = Parameter(name, 'Ref_type', 1., 1., 3., 0.0, hugeval, frozen=True)
         self.Rel_smear = Parameter(name, 'Rel_smear', 4., 1., 4., 0.0, hugeval, frozen=True)
         self.Geometry = Parameter(name, 'Geometry', 1., 1., 4., 0.0, hugeval, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.height, self.lxld, self.rate, self.cosAng, self.inner, self.outer, self.index, self.redshift, self.Feabun, self.E_cut, self.Ref_type, self.Rel_smear, self.Geometry))
+
+        XSMultiplicativeModel.__init__(self, name, (self.height, self.lxovrld, self.rate, self.cosAng, self.inner, self.outer, self.index, self.redshift, self.Feabun, self.E_cut, self.Ref_type, self.Rel_smear, self.Geometry))
 
 
 class XSzdust(XSMultiplicativeModel):
@@ -6466,12 +6653,18 @@ class XSzdust(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``EBV`` parameter has been renamed ``E_BmV`` to match the
+       XSPEC definition. The name ``EBV`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     method
         The model to use: 1 is Milky Way, 2 is LMC, 3 is SMC.
         This parameter can not be thawed.
-    EBV
+    E_BmV
         The color excess, E(B-V).
     Rv
         The ratio of total to selective extinction.
@@ -6489,10 +6682,11 @@ class XSzdust(XSMultiplicativeModel):
 
     def __init__(self, name='zdust'):
         self.method = Parameter(name, 'method', 1, 1, 3, 1, 3, alwaysfrozen=True)
-        self.EBV = Parameter(name, 'EBV', 0.1, 0.0, 100., 0.0, hugeval)
+        self.E_BmV = Parameter(name, 'E_BmV', 0.1, 0.0, 100., 0.0, hugeval, aliases=["EBV"])
         self.Rv = Parameter(name, 'Rv', 3.1, 0.0, 10., 0.0, hugeval, frozen=True)
         self.redshift = Parameter(name, 'redshift', 0.0, 0.0, 20., 0.0, hugeval, 'z', True)
-        XSMultiplicativeModel.__init__(self, name, (self.method, self.EBV, self.Rv, self.redshift))
+
+        XSMultiplicativeModel.__init__(self, name, (self.method, self.E_BmV, self.Rv, self.redshift))
 
 
 class XSzedge(XSMultiplicativeModel):
@@ -6643,11 +6837,17 @@ class XSzxipcf(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``logxi`` parameter has been renamed ``log_xi`` to match the
+       XSPEC definition. The name ``logxi`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     nH
         The column density, in units of 10^22 cm^2.
-    logxi
+    log_xi
         The log of xi: see [1]_ for more details.
     CvrFract
         The covering fraction.
@@ -6665,10 +6865,11 @@ class XSzxipcf(XSMultiplicativeModel):
 
     def __init__(self, name='zxipcf'):
         self.Nh = Parameter(name, 'Nh', 10, 0.05, 500, 0.0, hugeval, '10^22 atoms / cm^2')
-        self.logxi = Parameter(name, 'logxi', 3, -3, 6, -hugeval, hugeval)
+        self.log_xi = Parameter(name, 'log_xi', 3, -3, 6, -hugeval, hugeval, aliases=["logxi"])
         self.CvrFract = Parameter(name, 'CvrFract', 0.5, 0., 1., 0.0, hugeval)
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.Nh, self.logxi, self.CvrFract, self.redshift))
+
+        XSMultiplicativeModel.__init__(self, name, (self.Nh, self.log_xi, self.CvrFract, self.redshift))
 
 
 class XSzredden(XSMultiplicativeModel):
@@ -6676,9 +6877,15 @@ class XSzredden(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``EBV`` parameter has been renamed ``E_BmV`` to match the
+       XSPEC definition. The name ``EBV`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
-    EBV
+    E_BmV
         The value of E(B-v) for the line of sight to the source.
     redshift
         The redshift of the absorber.
@@ -6697,9 +6904,10 @@ class XSzredden(XSMultiplicativeModel):
     _calc = _xspec.xszcrd
 
     def __init__(self, name='zredden'):
-        self.EBV = Parameter(name, 'EBV', 0.05, 0., 10., 0.0, hugeval)
+        self.E_BmV = Parameter(name, 'E_BmV', 0.05, 0., 10., 0.0, hugeval, aliases=["EBV"])
         self.redshift = Parameter(name, 'redshift', 0., -0.999, 10., -0.999, hugeval, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.EBV, self.redshift))
+
+        XSMultiplicativeModel.__init__(self, name, (self.E_BmV, self.redshift))
 
 
 class XSzsmdust(XSMultiplicativeModel):
@@ -6707,9 +6915,15 @@ class XSzsmdust(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``EBV`` parameter has been renamed ``E_BmV`` to match the
+       XSPEC definition. The name ``EBV`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
-    EBV
+    E_BmV
         The value of E(B-v) for the line of sight to the source.
     ExtIndex
         The spectral index of the extinction curve.
@@ -6728,11 +6942,12 @@ class XSzsmdust(XSMultiplicativeModel):
     _calc = _xspec.msldst
 
     def __init__(self, name='zsmdust'):
-        self.EBV = Parameter(name, 'EBV', 0.1, 0.0, 100., 0.0, hugeval)
+        self.E_BmV = Parameter(name, 'E_BmV', 0.1, 0.0, 100., 0.0, hugeval, aliases=["EBV"])
         self.ExtIndex = Parameter(name, 'ExtIndex', 1.0, -10.0, 10., -hugeval, hugeval)
         self.Rv = Parameter(name, 'Rv', 3.1, 0.0, 10., 0.0, hugeval, frozen=True)
         self.redshift = Parameter(name, 'redshift', 0.0, 0.0, 20., 0.0, hugeval, 'z', True)
-        XSMultiplicativeModel.__init__(self, name, (self.EBV, self.ExtIndex, self.Rv, self.redshift))
+
+        XSMultiplicativeModel.__init__(self, name, (self.E_BmV, self.ExtIndex, self.Rv, self.redshift))
 
 
 class XSzTBabs(XSMultiplicativeModel):
@@ -7032,7 +7247,13 @@ class XScplinear(XSAdditiveModel):
         self.log_rate08 = Parameter(name, 'log_rate08', 0., -19.0, 19.0, -hugeval, hugeval, frozen=True)
         self.log_rate09 = Parameter(name, 'log_rate09', 1., -19.0, 19.0, -hugeval, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.energy00, self.energy01, self.energy02, self.energy03, self.energy04, self.energy05, self.energy06, self.energy07, self.energy08, self.energy09, self.log_rate00, self.log_rate01, self.log_rate02, self.log_rate03, self.log_rate04, self.log_rate05, self.log_rate06, self.log_rate07, self.log_rate08, self.log_rate09, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.energy00, self.energy01, self.energy02, self.energy03,
+                                              self.energy04, self.energy05, self.energy06, self.energy07,
+                                              self.energy08, self.energy09, self.log_rate00, self.log_rate01,
+                                              self.log_rate02, self.log_rate03, self.log_rate04, self.log_rate05,
+                                              self.log_rate06, self.log_rate07, self.log_rate08, self.log_rate09,
+                                              self.norm))
 
 
 class XSeqpair(XSAdditiveModel):
@@ -7040,9 +7261,17 @@ class XSeqpair(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``l_hl_s``, ``l_ntl_h``, and ``AbHe`` parameters have been
+       renamed to ``l_hovl_s``, ``l_ntol_h``, and ``Ab_met`` respectively
+       to match the XSPEC definition. The names ``l_hl_s``, ``l_ntl_h``,
+       and ``AbHe`` can still be used to access the parameters, but
+       they will be removed in a future release.
+
     Attributes
     ----------
-    l_hl_s
+    l_hovl_s
         The ratio of the hard to soft compactness, l_h / l_s.
     l_bb
         The soft photon compactness.
@@ -7051,7 +7280,7 @@ class XSeqpair(XSAdditiveModel):
         When less than zero then the absolute value is used as
         the T_max parameter of the ``XSdispkpn`` model. The units
         are in eV.
-    l_ntl_h
+    l_ntol_h
         The fraction of power supplied to energetic particles which
         goes into accelerating non-thermal particles, l_nt / l_h.
     tau_p
@@ -7078,7 +7307,7 @@ class XSeqpair(XSAdditiveModel):
         by reflecting material.
     Fe_abund
         The iron abundance with respect to solar.
-    AbHe
+    Ab_met
         The abundance of the other metals with respect to solar.
     T_disk
         The temperature of the reflecting disk, in K.
@@ -7119,10 +7348,10 @@ class XSeqpair(XSAdditiveModel):
     _calc = _xspec.C_xseqpair
 
     def __init__(self, name='eqpair'):
-        self.l_hl_s = Parameter(name, 'l_hl_s', 1., 1e-6, 1.e6, 0.0, hugeval)
+        self.l_hovl_s = Parameter(name, 'l_hovl_s', 1., 1e-6, 1.e6, 0.0, hugeval, aliases=["l_hl_s"])
         self.l_bb = Parameter(name, 'l_bb', 100., 0., 1.e4, 0.0, hugeval)
         self.kT_bb = Parameter(name, 'kT_bb', 200., 1., 4e5, 0.0, hugeval, 'eV', True)
-        self.l_ntl_h = Parameter(name, 'l_ntl_h', 0.5, 0., 0.9999, 0.0, hugeval)
+        self.l_ntol_h = Parameter(name, 'l_ntol_h', 0.5, 0., 0.9999, 0.0, hugeval, aliases=["l_ntl_h"])
         self.tau_p = Parameter(name, 'tau_p', 0.1, 1e-4, 10., 0.0, hugeval, frozen=True)
         self.radius = Parameter(name, 'radius', 1.e7, 1.e5, 1.e16, 0.0, hugeval, 'cm', True)
         self.g_min = Parameter(name, 'g_min', 1.3, 1.2, 1.e3, 0.0, hugeval, frozen=True)
@@ -7132,7 +7361,7 @@ class XSeqpair(XSAdditiveModel):
         self.cosIncl = Parameter(name, 'cosIncl', 0.50, 0.05, 0.95, 0.0, hugeval, frozen=True)
         self.Refl = Parameter(name, 'Refl', 1., 0., 2., 0.0, hugeval, frozen=True)
         self.Fe_abund = Parameter(name, 'Fe_abund', 1., 0.1, 10., 0.0, hugeval, frozen=True)
-        self.AbHe = Parameter(name, 'AbHe', 1.0, 0.1, 10., 0.0, hugeval, frozen=True)
+        self.Ab_met = Parameter(name, 'Ab_met', 1.0, 0.1, 10., 0.0, hugeval, frozen=True, aliases=["AbHe"])
         self.T_disk = Parameter(name, 'T_disk', 1.e6, 1e4, 1e6, 0.0, hugeval, 'K', True)
         self.xi = Parameter(name, 'xi', 0.0, 0.0, 1000.0, 0.0, hugeval)
         self.Beta = Parameter(name, 'Beta', -10., -10., 10., -hugeval, hugeval, frozen=True)
@@ -7140,7 +7369,8 @@ class XSeqpair(XSAdditiveModel):
         self.Rout = Parameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, hugeval, 'M', True)
         self.redshift = Parameter(name, 'redshift', 0., 0., 4., 0.0, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.l_hl_s, self.l_bb, self.kT_bb, self.l_ntl_h, self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj, self.pairinj, self.cosIncl, self.Refl, self.Fe_abund, self.AbHe, self.T_disk, self.xi, self.Beta, self.Rin, self.Rout, self.redshift, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.l_hovl_s, self.l_bb, self.kT_bb, self.l_ntol_h, self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj, self.pairinj, self.cosIncl, self.Refl, self.Fe_abund, self.Ab_met, self.T_disk, self.xi, self.Beta, self.Rin, self.Rout, self.redshift, self.norm))
 
 
 class XSeqtherm(XSAdditiveModel):
@@ -7148,9 +7378,17 @@ class XSeqtherm(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``l_hl_s``, ``l_ntl_h``, and ``AbHe`` parameters have been
+       renamed to ``l_hovl_s``, ``l_ntol_h``, and ``Ab_met`` respectively
+       to match the XSPEC definition. The names ``l_hl_s``, ``l_ntl_h``,
+       and ``AbHe`` can still be used to access the parameters, but
+       they will be removed in a future release.
+
     Attributes
     ----------
-    l_hl_s
+    l_hovl_s
         The ratio of the hard to soft compactness, l_h / l_s.
     l_bb
         The soft photon compactness.
@@ -7159,7 +7397,7 @@ class XSeqtherm(XSAdditiveModel):
         When less than zero then the absolute value is used as
         the T_max parameter of the ``XSdispkpn`` model. The units
         are in eV.
-    l_ntl_h
+    l_ntol_h
         The fraction of power supplied to energetic particles which
         goes into accelerating non-thermal particles, l_nt / l_h.
     tau_p
@@ -7186,7 +7424,7 @@ class XSeqtherm(XSAdditiveModel):
         by reflecting material.
     Fe_abund
         The iron abundance with respect to solar.
-    AbHe
+    Ab_met
         The abundance of the other metals with respect to solar.
     T_disk
         The temperature of the reflecting disk, in K.
@@ -7227,10 +7465,10 @@ class XSeqtherm(XSAdditiveModel):
     _calc = _xspec.C_xseqth
 
     def __init__(self, name='eqtherm'):
-        self.l_hl_s = Parameter(name, 'l_hl_s', 1., 1e-6, 1.e6, 0.0, hugeval)
+        self.l_hovl_s = Parameter(name, 'l_hovl_s', 1., 1e-6, 1.e6, 0.0, hugeval, aliases=["l_hl_s"])
         self.l_bb = Parameter(name, 'l_bb', 100., 0., 1.e4, 0.0, hugeval)
         self.kT_bb = Parameter(name, 'kT_bb', 200., 1., 4e5, 0.0, hugeval, 'eV', True)
-        self.l_ntl_h = Parameter(name, 'l_ntl_h', 0.5, 0., 0.9999, 0.0, hugeval)
+        self.l_ntol_h = Parameter(name, 'l_ntol_h', 0.5, 0., 0.9999, 0.0, hugeval, aliases=["l_ntl_h"])
         self.tau_p = Parameter(name, 'tau_p', 0.1, 1e-4, 10., 0.0, hugeval, frozen=True)
         self.radius = Parameter(name, 'radius', 1.e7, 1.e5, 1.e16, 0.0, hugeval, 'cm', True)
         self.g_min = Parameter(name, 'g_min', 1.3, 1.2, 1.e3, 0.0, hugeval, frozen=True)
@@ -7240,7 +7478,7 @@ class XSeqtherm(XSAdditiveModel):
         self.cosIncl = Parameter(name, 'cosIncl', 0.50, 0.05, 0.95, 0.0, hugeval, frozen=True)
         self.Refl = Parameter(name, 'Refl', 1., 0., 2., 0.0, hugeval, frozen=True)
         self.Fe_abund = Parameter(name, 'Fe_abund', 1., 0.1, 10., 0.0, hugeval, frozen=True)
-        self.AbHe = Parameter(name, 'AbHe', 1.0, 0.1, 10., 0.0, hugeval, frozen=True)
+        self.Ab_met = Parameter(name, 'Ab_met', 1.0, 0.1, 10., 0.0, hugeval, frozen=True, aliases=["AbHe"])
         self.T_disk = Parameter(name, 'T_disk', 1.e6, 1e4, 1e6, 0.0, hugeval, 'K', True)
         self.xi = Parameter(name, 'xi', 0.0, 0.0, 1000.0, 0.0, hugeval)
         self.Beta = Parameter(name, 'Beta', -10., -10., 10., -hugeval, hugeval, frozen=True)
@@ -7248,28 +7486,34 @@ class XSeqtherm(XSAdditiveModel):
         self.Rout = Parameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, hugeval, 'M', True)
         self.redshift = Parameter(name, 'redshift', 0., 0., 4., 0.0, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.l_hl_s, self.l_bb, self.kT_bb, self.l_ntl_h, self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj, self.pairinj, self.cosIncl, self.Refl, self.Fe_abund, self.AbHe, self.T_disk, self.xi, self.Beta, self.Rin, self.Rout, self.redshift, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.l_hovl_s, self.l_bb, self.kT_bb, self.l_ntol_h, self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj, self.pairinj, self.cosIncl, self.Refl, self.Fe_abund, self.Ab_met, self.T_disk, self.xi, self.Beta, self.Rin, self.Rout, self.redshift, self.norm))
 
 
+# It is not obvious from the XSPEC documentation what theta, showbb,
+# and RefOn are.
+#
 class XScompth(XSAdditiveModel):
     """The XSPEC compth model: Paolo Coppi's hybrid (thermal/non-thermal) hot plasma emission models.
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``AbHe`` parameter has been renamed ``Ab_met`` to match the
+       XSPEC definition. The name ``AbHe`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
-    l_hl_s
-        The ratio of the hard to soft compactness, l_h / l_s.
-    l_bb
-        The soft photon compactness.
+    theta
+    showbb
     kT_bb
         The temperature of the blackbody if greater than 0.
         When less than zero then the absolute value is used as
         the T_max parameter of the ``XSdispkpn`` model. The units
         are in eV.
-    l_ntl_h
-        The fraction of power supplied to energetic particles which
-        goes into accelerating non-thermal particles, l_nt / l_h.
+    RefOn
     tau_p
         The Thomson scattering depth.
     radius
@@ -7294,7 +7538,7 @@ class XScompth(XSAdditiveModel):
         by reflecting material.
     Fe_abund
         The iron abundance with respect to solar.
-    AbHe
+    Ab_met
         The abundance of the other metals with respect to solar.
     T_disk
         The temperature of the reflecting disk, in K.
@@ -7348,7 +7592,7 @@ class XScompth(XSAdditiveModel):
         self.cosIncl = Parameter(name, 'cosIncl', 0.50, 0.05, 0.95, 0.0, hugeval, frozen=True)
         self.Refl = Parameter(name, 'Refl', 1., 0., 2., 0.0, hugeval, frozen=True)
         self.Fe_abund = Parameter(name, 'Fe_abund', 1., 0.1, 10., 0.0, hugeval, frozen=True)
-        self.AbHe = Parameter(name, 'AbHe', 1.0, 0.1, 10., 0.0, hugeval, frozen=True)
+        self.Ab_met = Parameter(name, 'Ab_met', 1.0, 0.1, 10., 0.0, hugeval, frozen=True, aliases=["AbHe"])
         self.T_disk = Parameter(name, 'T_disk', 1.e6, 1e4, 1e6, 0.0, hugeval, 'K', True)
         self.xi = Parameter(name, 'xi', 0.0, 0.0, 1000.0, 0.0, hugeval)
         self.Beta = Parameter(name, 'Beta', -10., -10., 10., -hugeval, hugeval, frozen=True)
@@ -7356,7 +7600,8 @@ class XScompth(XSAdditiveModel):
         self.Rout = Parameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, hugeval, 'M', True)
         self.redshift = Parameter(name, 'redshift', 0., 0., 4., 0.0, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.theta, self.showbb, self.kT_bb, self.RefOn, self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj, self.pairinj, self.cosIncl, self.Refl, self.Fe_abund, self.AbHe, self.T_disk, self.xi, self.Beta, self.Rin, self.Rout, self.redshift, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.theta, self.showbb, self.kT_bb, self.RefOn, self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj, self.pairinj, self.cosIncl, self.Refl, self.Fe_abund, self.Ab_met, self.T_disk, self.xi, self.Beta, self.Rin, self.Rout, self.redshift, self.norm))
 
 
 class XSbvvapec(XSAdditiveModel):
@@ -7530,6 +7775,7 @@ class XSzigm(XSMultiplicativeModel):
         self.redshift = Parameter(name, 'redshift', 0.0, alwaysfrozen=True)
         self.model = Parameter(name, 'model', 0, 0, 1, 0, 1, alwaysfrozen=True)
         self.lyman_limit = Parameter(name, 'lyman_limit', 1, 0, 1, 0, 1, alwaysfrozen=True)
+
         XSMultiplicativeModel.__init__(self, name, (self.redshift, self.model, self.lyman_limit))
 
 
@@ -7588,7 +7834,9 @@ class XSgadem(XSAdditiveModel):
         self.Redshift = Parameter(name, 'Redshift', 0., -0.999, 10., -hugeval, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 2, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.Tmean, self.Tsigma, self.nH, self.abundanc, self.Redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.Tmean, self.Tsigma, self.nH, self.abundanc, self.Redshift,
+                                              self.switch, self.norm))
 
 
 class XSvgadem(XSAdditiveModel):
@@ -7655,7 +7903,10 @@ class XSvgadem(XSAdditiveModel):
         self.Redshift = Parameter(name, 'Redshift', 0., -0.999, 10., -hugeval, hugeval, frozen=True)
         self.switch = Parameter(name, 'switch', 2, 0, 2, 0, 2, alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.Tmean, self.Tsigma, self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Redshift, self.switch, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.Tmean, self.Tsigma, self.nH, self.He, self.C, self.N, self.O,
+                                              self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                                              self.Fe, self.Ni, self.Redshift, self.switch, self.norm))
 
 
 class XSeplogpar(XSAdditiveModel):
@@ -7726,6 +7977,7 @@ class XSlogpar(XSAdditiveModel):
         self.beta = Parameter(name, 'beta', 0.2, -4., 4., -hugeval, hugeval)
         self.pivotE = Parameter(name, 'pivotE', 1.0, units='keV', alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
         XSAdditiveModel.__init__(self, name, (self.alpha, self.beta, self.pivotE, self.norm))
 
 
@@ -7734,13 +7986,20 @@ class XSoptxagn(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``logLLEdd`` parameter has been renamed ``logLoLedd`` to match
+       the XSPEC definition. The name ``logLLEdd`` can still be used to
+       access the parameter, but this name will be removed in a future
+       release.
+
     Attributes
     ----------
     mass
         The black hole mass in solar masses.
     dist
         The comoving (proper) distance in Mpc.
-    logLLEdd
+    logLoLEdd
         The Eddington ratio.
     astar
         The dimensionless black hole spin.
@@ -7789,7 +8048,7 @@ class XSoptxagn(XSAdditiveModel):
     def __init__(self, name='optxagn'):
         self.mass = Parameter(name, 'mass', 1e7, 1.0, 1.e9, 0.0, hugeval, 'solar', True)
         self.dist = Parameter(name, 'dist', 100, 0.01, 1.e9, 0.0, hugeval, 'Mpc', True)
-        self.logLLEdd = Parameter(name, 'logLLEdd', -1., -10., 2, -hugeval, hugeval)
+        self.logLoLEdd = Parameter(name, 'logLoLEdd', -1., -10., 2, -hugeval, hugeval, aliases=["logLLEdd"])
         self.astar = Parameter(name, 'astar', 0.0, 0., 0.998, 0.0, hugeval, frozen=True)
         self.rcor = Parameter(name, 'rcor', 10.0, 1., 100., 0.0, hugeval, 'rg')
         self.logrout = Parameter(name, 'logrout', 5.0, 3.0, 7.0, 0.0, hugeval, frozen=True)
@@ -7801,7 +8060,8 @@ class XSoptxagn(XSAdditiveModel):
         self.tscat = Parameter(name, 'tscat', 1.e5, 1e4, 1e5, 0.0, hugeval, frozen=True)
         self.Redshift = Parameter(name, 'Redshift', 0., 0., 10., 0.0, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval, frozen=True)
-        XSAdditiveModel.__init__(self, name, (self.mass, self.dist, self.logLLEdd, self.astar, self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma, self.fpl, self.fcol, self.tscat, self.Redshift, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.mass, self.dist, self.logLoLEdd, self.astar, self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma, self.fpl, self.fcol, self.tscat, self.Redshift, self.norm))
 
 
 class XSoptxagnf(XSAdditiveModel):
@@ -7809,13 +8069,20 @@ class XSoptxagnf(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``logLLEdd`` parameter has been renamed ``logLoLedd`` to match
+       the XSPEC definition. The name ``logLLEdd`` can still be used to
+       access the parameter, but this name will be removed in a future
+       release.
+
     Attributes
     ----------
     mass
         The black hole mass in solar masses.
     dist
         The comoving (proper) distance in Mpc.
-    logLLEdd
+    logLoLEdd
         The Eddington ratio.
     astar
         The dimensionless black hole spin.
@@ -7858,7 +8125,7 @@ class XSoptxagnf(XSAdditiveModel):
     def __init__(self, name='optxagnf'):
         self.mass = Parameter(name, 'mass', 1e7, 1.0, 1.e9, 0.0, hugeval, 'solar', True)
         self.dist = Parameter(name, 'dist', 100, 0.01, 1.e9, 0.0, hugeval, 'Mpc', True)
-        self.logLLEdd = Parameter(name, 'logLLEdd', -1., -10., 2, -hugeval, hugeval)
+        self.logLoLEdd = Parameter(name, 'logLoLEdd', -1., -10., 2, -hugeval, hugeval, aliases=["logLLEdd"])
         self.astar = Parameter(name, 'astar', 0.0, 0., 0.998, 0.0, hugeval, frozen=True)
         self.rcor = Parameter(name, 'rcor', 10.0, 1., 100., 0.0, hugeval, 'rg')
         self.logrout = Parameter(name, 'logrout', 5.0, 3.0, 7.0, 0.0, hugeval, frozen=True)
@@ -7868,7 +8135,8 @@ class XSoptxagnf(XSAdditiveModel):
         self.fpl = Parameter(name, 'fpl', 1.e-4, 0.0, 1., 0.0, hugeval)
         self.Redshift = Parameter(name, 'Redshift', 0., 0., 10., 0.0, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval, frozen=True)
-        XSAdditiveModel.__init__(self, name, (self.mass, self.dist, self.logLLEdd, self.astar, self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma, self.fpl, self.Redshift, self.norm))
+
+        XSAdditiveModel.__init__(self, name, (self.mass, self.dist, self.logLoLEdd, self.astar, self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma, self.fpl, self.Redshift, self.norm))
 
 
 # DOC-NOTE: the parameter order in the XSPEC documentation is very different
@@ -8104,13 +8372,19 @@ class XSheilin(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``redshift`` parameter has been renamed ``z`` to match the
+       XSPEC definition. The name ``redshift`` can still be used to access
+       the parameter, but this name will be removed in a future release.
+
     Attributes
     ----------
     nHeI
         The He I column density, in 10^22 atoms/cm^2.
     b
         The b value, in km/s.
-    redshift
+    z
         The redshift of the absorber.
 
     See Also
@@ -8129,21 +8403,30 @@ class XSheilin(XSMultiplicativeModel):
     def __init__(self, name='heilin'):
         self.nHeI = Parameter(name, 'nHeI', 1.e-5, 0.0, 1.e6, 0.0, 1.0e6, '10^22 atoms / cm^2')
         self.b = Parameter(name, 'b', 10.0, 1.0, 1.0e5, 1.0, 1.0e6, units='km/s')
-        self.redshift = Parameter(name, 'redshift', 0.0, -1.0e-3, 1.0e5, -1.0e-3, 1.0e5)
-        XSMultiplicativeModel.__init__(self, name, (self.nHei, self.b, self.redshift))
+        self.z = Parameter(name, 'z', 0.0, -1.0e-3, 1.0e5, -1.0e-3, 1.0e5, aliases=["redshift"])
+
+        # TODO: correct self.nHei to self.nHeI
+        XSMultiplicativeModel.__init__(self, name, (self.nHei, self.b, self.z))
 
 class XSlyman(XSMultiplicativeModel):
     """The XSPEC lyman model: Voigt absorption profiles for H I or He II Lyman series.
 
     The model is described at [1]_.
 
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``nHeI`` and ``redshift`` parameters have been renamed to
+       ``n`` and ``z`` respectively to match the XSPEC definition. The
+       names ``nHeI`` and ``redshift`` can still be used to access the
+       parameters, but they will be removed in a future release.
+
     Attributes
     ----------
-    nHeI
+    n
         The H I or He II column density, in 10^22 atoms/cm^2.
     b
         The b value, in km/s.
-    redshift
+    z
         The redshift of the absorber.
     ZA
         The atomic number of the species being calculated.
@@ -8162,16 +8445,23 @@ class XSlyman(XSMultiplicativeModel):
     _calc = _xspec.xslyman
 
     def __init__(self, name='lyman'):
-        self.nHeI = Parameter(name, 'nHeI', 1.e-5, 0.0, 1.0e6, 0.0, 1.0e6, '10^22 atoms / cm^2')
+        self.n = Parameter(name, 'n', 1.e-5, 0.0, 1.0e6, 0.0, 1.0e6, '10^22 atoms / cm^2', aliases=["nHeI"])
         self.b = Parameter(name, 'b', 10.0, 1.0, 1.0e5, 1.0, 1.0e6, units='km/s')
-        self.redshift = Parameter(name, 'redshift', 0.0, -1.0e-3, 1.0e5, -1.0e-3, 1.0e5)
+        self.z = Parameter(name, 'z', 0.0, -1.0e-3, 1.0e5, -1.0e-3, 1.0e5, aliases=["redshift"])
         self.ZA = Parameter(name, 'ZA', 1.0, 1.0, 2.0, 1.0, 2.0)
-        XSMultiplicativeModel.__init__(self, name, (self.nHeI, self.b, self.redshift, self.ZA))
+
+        XSMultiplicativeModel.__init__(self, name, (self.n, self.b, self.z, self.ZA))
 
 class XSzbabs(XSMultiplicativeModel):
     """The XSPEC lyman model: Voigt absorption profiles for H I or He II Lyman series.
 
     The model is described at [1]_.
+
+    .. note:: Deprecated in Sherpa 4.10.0
+
+       The ``redshift`` parameter has been renamed ``z`` to match the
+       XSPEC definition. The name ``redshift`` can still be used to access
+       the parameter, but this name will be removed in a future release.
 
     Attributes
     ----------
@@ -8181,7 +8471,7 @@ class XSzbabs(XSMultiplicativeModel):
         The He I column density, in 10^22 atoms/cm^2.
     nHeI
         The He II column density, in 10^22 atoms/cm^2.
-    redshift
+    z
         The redshift of the absorber.
 
     References
@@ -8197,8 +8487,9 @@ class XSzbabs(XSMultiplicativeModel):
         self.nH = Parameter(name, 'nH', 1.e-4, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
         self.nHeI = Parameter(name, 'nHeI', 1.e-5, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
         self.nHeII = Parameter(name, 'nHeII', 1.e-6, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
-        self.redshift = Parameter(name, 'redshift', 0.0, 0.0, 1.0e5, 0.0, 1.0e6)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.nHeI, self.nHeII, self.redshift))
+        self.z = Parameter(name, 'z', 0.0, 0.0, 1.0e5, 0.0, 1.0e6, aliases=["redshift"])
+
+        XSMultiplicativeModel.__init__(self, name, (self.nH, self.nHeI, self.nHeII, self.z))
 
 # Add model classes to __all__
 __all__ += tuple(n for n in globals() if n.startswith('XS'))

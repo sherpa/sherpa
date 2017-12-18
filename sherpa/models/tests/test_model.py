@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,32 +20,43 @@
 import logging
 import operator
 import numpy
-from sherpa.utils import SherpaFloat, SherpaTestCase
+import warnings
+from sherpa.utils.testing import SherpaTestCase
 from sherpa.utils.err import ModelErr
-from sherpa.models.model import *
+from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
+    BinaryOpModel, FilterModel, NestedModel, UnaryOpModel
+from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.basic import Sin, Const1D
 
 
 def my_sin(pars, x):
     return (pars[2].val *
-            numpy.sin(2.0*numpy.pi * (x - pars[1].val) / pars[0].val))
+            numpy.sin(2.0 * numpy.pi * (x - pars[1].val) / pars[0].val))
 
 
 class test_model(SherpaTestCase):
 
     def setUp(self):
         self.m = Sin('m')
+        self.expected_names = ['period', 'offset', 'ampl']
 
     def test_name(self):
         self.assertEqual(self.m.name, 'm')
 
     def test_iter(self):
         for part in self.m:
-            self.assertTrue(part is self.m)
+            self.assertIs(part, self.m)
+
+    def test_num_pars(self):
+        self.assertEqual(len(self.m.pars), 3)
+
+    def test_par_names(self):
+        self.assertEqual([p.name for p in self.m.pars],
+                         self.expected_names)
 
     def test_getpar(self):
         for par in (self.m.period, self.m.PerioD, self.m.PERIod):
-            self.assertTrue(par is self.m.pars[0])
+            self.assertIs(par, self.m.pars[0])
         self.assertRaises(AttributeError, getattr, self.m, 'perio')
 
     def test_setpar(self):
@@ -116,10 +127,10 @@ class test_composite_model(SherpaTestCase):
     def test_iter(self):
         m = 3 * self.m + self.m2
         parts = list(m)
-        self.assertTrue(type(parts[0]) is BinaryOpModel)
-        self.assertTrue(type(parts[1]) is ArithmeticConstantModel)
-        self.assertTrue(parts[2] is self.m)
-        self.assertTrue(parts[3] is self.m2)
+        self.assertIs(type(parts[0]), BinaryOpModel)
+        self.assertIs(type(parts[1]), ArithmeticConstantModel)
+        self.assertIs(parts[2], self.m)
+        self.assertIs(parts[3], self.m2)
 
     def test_unop(self):
         for op in (abs, operator.neg):
@@ -132,7 +143,7 @@ class test_composite_model(SherpaTestCase):
                operator.floordiv, operator.truediv, operator.mod,
                operator.pow]
 
-        if hasattr(operator, 'div'): # Python 2
+        if hasattr(operator, 'div'):  # Python 2
             ops.append(operator.div)
 
         for op in ops:
@@ -145,15 +156,120 @@ class test_composite_model(SherpaTestCase):
         cmplx = (3 * self.m + self.m2) / (self.m ** 3.2)
         m = self.m(self.x)
         m2 = self.m2(self.x)
-        self.assertEqual(cmplx(self.x), (3*m + m2) / (m ** 3.2))
+        self.assertEqual(cmplx(self.x), (3 * m + m2) / (m ** 3.2))
 
     def test_filter(self):
         m = self.s[::2]
-        self.assertTrue(type(m) is FilterModel)
+        self.assertIs(type(m), FilterModel)
         self.assertTrue(numpy.all(m(self.xx) == self.s(self.xx)[::2]))
 
     def test_nested(self):
         for func in (numpy.sin, self.s):
             m = self.m.apply(func)
-            self.assertTrue(type(m) is NestedModel)
+            self.assertIs(type(m), NestedModel)
             self.assertEqual(m(self.x), func(self.m(self.x)))
+
+
+# Test support for renamed parameters by sub-classing
+# the Sin model (which lets the tests be re-used).
+#
+class RenamedPars(Sin):
+    # The only reason I am extending Sin is to inherit the method
+    # implementations
+
+    def __init__(self, name='renamedpars'):
+        self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
+        self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
+        self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0, aliases=['norm'])
+        ArithmeticModel.__init__(self, name,
+                                 (self.period, self.offset, self.ampl))
+
+
+class test_model_renamed(test_model):
+
+    def setUp(self):
+        test_model.setUp(self)
+        self.m = RenamedPars('m')
+
+    def test_getpar_rename(self):
+        with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter("always", DeprecationWarning)
+            for par in (self.m.norm, self.m.NorM, self.m.NOrm):
+                self.assertIs(par, self.m.pars[2])
+            if self.__class__ == test_model_renamed:
+                validate_warning(warn, "norm", "RenamedPars", "ampl", num=3)
+            else:
+                validate_warning(warn, num=3)
+
+    def test_setpar_rename(self):
+        self.m.ampl = 1
+        self.assertNotEqual(self.m.ampl.val, 12.0)
+        with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter("always", DeprecationWarning)
+            self.m.norm = 12
+            if (self.__class__ == test_model_renamed):
+                validate_warning(warn, "norm", "RenamedPars", "ampl")
+            else:
+                validate_warning(warn)
+
+        self.assertEqual(self.m.ampl.val, 12.0)
+
+        with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter("always", DeprecationWarning)
+            self.m.NoRM = 18
+            if self.__class__ == test_model_renamed:
+                validate_warning(warn, "norm", "RenamedPars", "ampl")
+            else:
+                validate_warning(warn)
+
+        self.assertEqual(self.m.ampl.val, 18.0)
+        self.m.ampl = 1
+        self.assertEqual(self.m.ampl.val, 1.0)
+
+
+# During testing an XSPEC model was found to refer to one of its
+# parameters with a different case to how it was created, which
+# caused problems. Replicate this problem case here.
+#
+class ParameterCase(ArithmeticModel):
+    """Re-implemenent Sin model so can copy tests"""
+
+    def __init__(self, name='parametercase'):
+        self.period = Parameter(name, 'Period', 1, 1e-10, 10, tinyval)
+        self.offset = Parameter(name, 'Offset', 0, 0, hard_min=0)
+        self.ampl = Parameter(name, 'Ampl', 1, 1e-05, hard_min=0, aliases=["NORM"])
+
+        with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter("always", DeprecationWarning)
+            pars = (self.perioD, self.oFFSEt, self.NORM)
+            validate_warning(warn)
+
+        self._basemodel = Sin()
+        ArithmeticModel.__init__(self, name, pars)
+
+    def calc(self, *args, **kwargs):
+        for par in self.pars:
+            setattr(self._basemodel, par.name, par.val)
+
+        self._basemodel.integrate = self.integrate
+        return self._basemodel.calc(*args, **kwargs)
+
+
+def validate_warning(warning_capturer, parameter_name="norm", model_name="ParameterCase", actual_name="Ampl", num=1):
+    assert num == len(warning_capturer)
+    for warning in warning_capturer:
+        assert issubclass(warning.category, DeprecationWarning)
+        expected_warning_message = 'Parameter name {} is deprecated for model {}, use {} instead'.format(
+            parameter_name, model_name, actual_name
+        )
+        assert expected_warning_message == str(warning.message)
+
+
+class test_model_parametercase_instance(test_model_renamed):
+
+    def setUp(self):
+        self.m = ParameterCase()
+        self.expected_names = ['Period', 'Offset', 'Ampl']
+
+    def test_name(self):
+        self.assertEqual(self.m.name, 'parametercase')

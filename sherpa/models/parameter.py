@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,6 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Support for model parameter values.
+"""
+
 import logging
 import numpy
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
@@ -30,12 +33,15 @@ __all__ = ('Parameter', 'CompositeParameter', 'ConstantParameter',
 
 
 # Default minimum and maximum magnitude for parameters
-#tinyval = 1.0e-120
-#hugeval = 1.0e+120
-tinyval = numpy.float(numpy.finfo(numpy.float32).tiny) # FLT_TINY
-hugeval = numpy.float(numpy.finfo(numpy.float32).max)  # FLT_MAX
-#tinyval = 1.0e-38
-#hugeval = 1.0e+38
+# tinyval = 1.0e-120
+# hugeval = 1.0e+120
+# tinyval = 1.0e-38
+# hugeval = 1.0e+38
+#
+# Use FLT_TINY and FLT_MAX
+tinyval = numpy.float(numpy.finfo(numpy.float32).tiny)
+hugeval = numpy.float(numpy.finfo(numpy.float32).max)
+
 
 def _make_set_limit(name):
     def _set_limit(self, val):
@@ -43,9 +49,12 @@ def _make_set_limit(name):
         # Ensure that we don't try to set any value that is outside
         # the hard parameter limits.
         if val < self._hard_min:
-            raise ParameterErr('edge', self.fullname, 'hard minimum', self._hard_min)
+            raise ParameterErr('edge', self.fullname,
+                               'hard minimum', self._hard_min)
         if val > self._hard_max:
-            raise ParameterErr('edge', self.fullname, 'hard maximum', self._hard_max)
+            raise ParameterErr('edge', self.fullname,
+                               'hard maximum', self._hard_max)
+
         # Ensure that we don't try to set a parameter range, such that
         # the minimum will be greater than the current parameter value,
         # or that the maximum will be less than the current parameter value.
@@ -59,34 +68,64 @@ def _make_set_limit(name):
         # Due to complaints about having to rewrite existing user scripts,
         # downgrade the ParameterErr issued here to mere warnings.  Also,
         # set the value to the appropriate soft limit.
-        if (hasattr(self, "_NoNewAttributesAfterInit__initialized") == True and
-            self._NoNewAttributesAfterInit__initialized == True):
-            if (name == "_min"):
-                if (val > self.val):
-                    self.val = val
-                    warning(('parameter %s less than new minimum; %s reset to %g') % (self.fullname, self.fullname, self.val))
-            if (name == "_max"):
-                if (val < self.val):
-                    self.val = val
-                    warning(('parameter %s greater than new maximum; %s reset to %g') % (self.fullname, self.fullname, self.val))
+        if hasattr(self, "_NoNewAttributesAfterInit__initialized") and \
+           self._NoNewAttributesAfterInit__initialized:
+            if name == "_min" and (val > self.val):
+                self.val = val
+                warning(('parameter %s less than new minimum; %s reset to %g') % (self.fullname, self.fullname, self.val))
+            if name == "_max" and (val < self.val):
+                self.val = val
+                warning(('parameter %s greater than new maximum; %s reset to %g') % (self.fullname, self.fullname, self.val))
 
         setattr(self, name, val)
+
     return _set_limit
+
 
 def _make_unop(op, opstr):
     def func(self):
         return UnaryOpParameter(self, op, opstr)
     return func
 
+
 def _make_binop(op, opstr):
     def func(self, rhs):
         return BinaryOpParameter(self, rhs, op, opstr)
+
     def rfunc(self, lhs):
         return BinaryOpParameter(lhs, self, op, opstr)
+
     return (func, rfunc)
 
 
 class Parameter(NoNewAttributesAfterInit):
+    """Represent a model parameter.
+
+    Parameters
+    ----------
+    modelname : str
+        The name of the model component containing the parameter.
+    name : str
+        The name of the parameter. It should be considered to be
+        matched in a case-insensitive manner.
+    val : number
+        The default value for the parameter.
+    min, max, hard_min, hard_max: number, optional
+        The soft and hard limits for the parameter value.
+    units : str, optional
+        The units for the parameter value.
+    frozen : bool, optional
+        Does the parameter default to being frozen?
+    alwaysfrozen : bool, optional
+        If set then the parameter can never be thawed.
+    hidden : bool, optional
+        Should the parameter be included when displaying the model
+        contents?
+    aliases : None or list of str
+        If not None then alternative names for the parameter (these
+        are expected to be matched in a case-insensitive manner).
+
+    """
 
     #
     # Read-only properties
@@ -113,7 +152,7 @@ class Parameter(NoNewAttributesAfterInit):
             return self.eval()
         if self.link is not None:
             return self.link.val
-        return self._val    
+        return self._val
 
     def _set_val(self, val):
         if isinstance(val, Parameter):
@@ -143,7 +182,7 @@ class Parameter(NoNewAttributesAfterInit):
             return self.eval()
         if self.link is not None:
             return self.link.default_val
-        return self._default_val    
+        return self._default_val
 
     def _set_default_val(self, default_val):
         if isinstance(default_val, Parameter):
@@ -196,6 +235,7 @@ class Parameter(NoNewAttributesAfterInit):
         if self.link is not None:
             return True
         return self._frozen
+
     def _set_frozen(self, val):
         val = bool(val)
         if self._alwaysfrozen and (not val):
@@ -209,6 +249,7 @@ class Parameter(NoNewAttributesAfterInit):
 
     def _get_link(self):
         return self._link
+
     def _set_link(self, link):
         if link is not None:
             if self._alwaysfrozen:
@@ -242,7 +283,7 @@ class Parameter(NoNewAttributesAfterInit):
 
     def __init__(self, modelname, name, val, min=-hugeval, max=hugeval,
                  hard_min=-hugeval, hard_max=hugeval, units='',
-                 frozen=False, alwaysfrozen=False, hidden=False):
+                 frozen=False, alwaysfrozen=False, hidden=False, aliases=None):
         self.modelname = modelname
         self.name = name
         self.fullname = '%s.%s' % (modelname, name)
@@ -269,6 +310,8 @@ class Parameter(NoNewAttributesAfterInit):
         self.default_val = val
         self.link = None
         self._guessed = False
+
+        self.aliases = [a.lower() for a in aliases] if aliases is not None else []
 
         NoNewAttributesAfterInit.__init__(self)
 
@@ -298,8 +341,8 @@ class Parameter(NoNewAttributesAfterInit):
                  'default_min = %s\n' +
                  'default_max = %s') %
                 (str(self.val), str(self.min), str(self.max), self.units,
-                 self.frozen, linkstr, str(self.default_val), str(self.default_min),
-                 str(self.default_max)))
+                 self.frozen, linkstr, str(self.default_val),
+                 str(self.default_min), str(self.default_max)))
 
     # Unary operations
     __neg__ = _make_unop(numpy.negative, '-')
@@ -316,9 +359,21 @@ class Parameter(NoNewAttributesAfterInit):
     __pow__, __rpow__ = _make_binop(numpy.power, '**')
 
     def freeze(self):
+        """Set the `frozen` attribute for the parameter.
+
+        See Also
+        --------
+        thaw
+        """
         self.frozen = True
 
     def thaw(self):
+        """Unset the `frozen` attribute for the parameter.
+
+        See Also
+        --------
+        frozen
+        """
         self.frozen = False
 
     def unlink(self):
@@ -333,21 +388,19 @@ class Parameter(NoNewAttributesAfterInit):
             self._guessed = False
         self._val = self.default_val
 
-
     def set(self, val=None, min=None, max=None, frozen=None,
             default_val=None, default_min=None, default_max=None):
+        """Change a parameter setting."""
 
         if max is not None and max > self.max:
             self.max = max
         if default_max is not None and default_max > self.default_max:
             self.default_max = default_max
 
-
         if min is not None and min < self.min:
             self.min = min
         if default_min is not None and default_min < self.default_min:
             self.default_min = default_min
-
 
         if val is not None:
             self.val = val
@@ -427,7 +480,7 @@ class BinaryOpParameter(CompositeParameter):
     def wrapobj(obj):
         if isinstance(obj, Parameter):
             return obj
-        return ConstantParameter(obj) 
+        return ConstantParameter(obj)
 
     def __init__(self, lhs, rhs, op, opstr):
         self.lhs = self.wrapobj(lhs)

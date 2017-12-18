@@ -858,7 +858,7 @@ class DeVaucouleurs2D(ArithmeticModel):
     References
     ----------
 
-    .. [1] de Vaucouleurs G., 1948, Ann. d’Astroph. 11, 247
+    .. [1] de Vaucouleurs G., 1948, Ann. d'Astroph. 11, 247
            http://adsabs.harvard.edu/abs/1948AnAp...11..247D
 
     .. [2] http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
