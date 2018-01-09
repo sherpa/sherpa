@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -34,8 +34,8 @@ logger = logging.getLogger("sherpa")
 info = logger.info
 
 
-__all__=['PragBayes', 'PCA1DAdd', 'SIM1DAdd', 'ARFSIMFactory',
-         'WalkWithSubIters']
+__all__ = ['PragBayes', 'PCA1DAdd', 'SIM1DAdd', 'ARFSIMFactory',
+           'WalkWithSubIters']
 
 
 class ARFSIMFactory(object):
@@ -68,7 +68,6 @@ class ARFSIMFactory(object):
         raise TypeError("Unknown simulation ARF '%s'" % filename)
 
 
-
 class PCA1DAdd(object):
 
     def __init__(self, bias, component, fvariance, eigenval, eigenvec):
@@ -89,7 +88,9 @@ class PCA1DAdd(object):
             rrout = rrin + rrsig * rrout
         self.rrout = rrout
 
-        tmp = self.eigenvec * self.eigenval[:,np.newaxis] * rrout[:,np.newaxis]
+        tmp = self.eigenvec * \
+            self.eigenval[:, np.newaxis] * \
+            rrout[:, np.newaxis]
         return np.add(new_arf, tmp.sum(axis=0), new_arf)
 
 
@@ -100,7 +101,6 @@ class SIM1DAdd(object):
         self.component = component
         self.simcomp   = simcomp
         self.ncomp     = len(self.component)
-
 
     def add_deviations(self, specresp):
         # copy the old ARF (use new memory for deviations)
@@ -120,7 +120,6 @@ def search_arfs(fit):
 
     for ii, data in enumerate(datasets):
         if not hasattr(data, 'response_ids'):
-            #raise TypeError("dataset does not contain an ARF, dataset must be PHA")
             continue
 
         srcarfs[ii] = {}
@@ -160,7 +159,6 @@ def flatten_arfs(src, bkg):
     return arfs
 
 
-
 class WalkWithSubIters(Walk):
 
     def __init__(self, sampler=None, niter=1000):
@@ -178,7 +176,7 @@ class WalkWithSubIters(Walk):
             self.nsubiter = int(subiters)
 
         if self._sampler is None:
-            raise AttributeError("sampler object has not been set, "+
+            raise AttributeError("sampler object has not been set, " +
                                  "please use set_sampler()")
 
         pars, stat = self._sampler.init(**kwargs)
@@ -187,9 +185,9 @@ class WalkWithSubIters(Walk):
         npars = len(pars)
         nsubiter = int(self.nsubiter)
         niter = self.niter
-        nelem = niter+1
+        nelem = niter + 1
 
-        proposals = np.zeros((nelem,npars), dtype=np.float)
+        proposals = np.zeros((nelem, npars), dtype=np.float)
         proposals[0] = pars.copy()
 
         stats = np.zeros(nelem, dtype=np.float)
@@ -205,11 +203,11 @@ class WalkWithSubIters(Walk):
         #   rejecting a huge number of proposals, which would indicate
         #   that the limits need increasing or very low s/n data?
         #
-        #tstart = time.time()
+        # tstart = time.time()
 
         try:
             for ii in xrange(niter):
-                jump = ii+1
+                jump = ii + 1
 
                 current_params = proposals[ii]
                 current_stat   = stats[ii]
@@ -227,13 +225,16 @@ class WalkWithSubIters(Walk):
 
                 for jj in xrange(nsubiter):
 
-                    #progress_bar(ii*nsubiter+jj, niter*nsubiter, tstart, self._sampler.__class__.__name__)
+                    # progress_bar(ii*nsubiter+jj, niter*nsubiter,
+                    #              tstart,
+                    #              self._sampler.__class__.__name__)
 
                     # Draw a proposal
                     try:
                         proposed_params = self._sampler.draw(current_params)
                     except CovarError:
-                        info("Draw rejected: covariance matrix failed. " + str(proposed_params))
+                        info("Draw rejected: covariance matrix failed. " +
+                             str(proposed_params))
                         # automatically reject if the covar is malformed
                         self._sampler.reject()
                         continue
@@ -242,14 +243,17 @@ class WalkWithSubIters(Walk):
                     try:
                         proposed_stat = self._sampler.calc_stat(proposed_params)
                     except LimitError:
-                        info("Draw rejected: parameter boundary exception: " + str(proposed_params))
-                        # automatically reject the proposal if outside hard limits
+                        info("Draw rejected: parameter boundary exception: " +
+                             str(proposed_params))
+
+                        # automatically reject the proposal if outside
+                        # hard limits
                         self._sampler.reject()
                         continue
 
                     # Accept this proposal?
                     if self._sampler.accept(current_params, current_stat,
-                                             proposed_params, proposed_stat):
+                                            proposed_params, proposed_stat):
                         proposals[jump] = np.array(proposed_params)
                         stats[jump] = proposed_stat
                         acceptflag[jump] = True
@@ -262,8 +266,9 @@ class WalkWithSubIters(Walk):
                         self._sampler.reject()
                         acceptflag[jump] = False
 
-                        # If acceptance fails do we start back at the last accepted
-                        # iteration or the last accepted subiteration?
+                        # If acceptance fails do we start back at the last
+                        # accepted iteration or the last accepted
+                        # subiteration?
                         current_params = proposals[ii]
                         current_stat   = stats[ii]
 
@@ -271,14 +276,13 @@ class WalkWithSubIters(Walk):
                         proposals[jump] = np.array(current_params)
                         stats[jump]  = current_stat
 
-
         finally:
             self._sampler.tear_down()
-            #progress_bar(niter, niter, tstart, self._sampler.__class__.__name__)
+            # progress_bar(niter, niter, tstart,
+            #              self._sampler.__class__.__name__)
 
         params = proposals.transpose()
         return (stats, acceptflag, params)
-
 
 
 class PragBayes(MetropolisMH):
@@ -297,13 +301,12 @@ class PragBayes(MetropolisMH):
 
         self.simarf = None
 
-
     def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
              priors=(), originalscale=True, scale=1, sigma_m=False, p_M=.5,
              simarf=None, nsubiters=10):
 
-        # Note that nsubiters is used as a dummy parameter to indicate the default
-        # value.  See the function WalkWithSubIters.__call__()
+        # Note that nsubiters is used as a dummy parameter to indicate the
+        # default value.  See the function WalkWithSubIters.__call__()
 
         if isinstance(simarf, (PCA1DAdd, SIM1DAdd)):
             self.simarf = simarf
@@ -313,7 +316,6 @@ class PragBayes(MetropolisMH):
         return MetropolisMH.init(self, log, inv, defaultprior, priorshape,
                                  priors, originalscale, scale, sigma_m, p_M)
 
-
     def fit(self, current):
         self._fit.model.thawedpars = current
 
@@ -321,17 +323,19 @@ class PragBayes(MetropolisMH):
         # nm.config['iquad'] = 0
         # nm.config['finalsimplex'] = 1
 
-        #lm = LevMar()
-        #lm.config['maxfev'] = 5
+        # lm = LevMar()
+        # lm.config['maxfev'] = 5
 
         cv = Covariance()
 
-        # Use the fit method defined before called get_draws().  This way the user
-        # does not have to pass in the fitting method and method options.
-        fit = Fit(self._fit.data, self._fit.model, self._fit.stat, self._fit.method,
-                  cv)
+        # Use the fit method defined before called get_draws().  This way
+        # the user does not have to pass in the fitting method and method
+        # options.
+        fit = Fit(self._fit.data, self._fit.model, self._fit.stat,
+                  self._fit.method, cv)
 
-        fit_result = fit.fit()
+        # Note: there is no check that the fit has converged
+        fit.fit()
         covar_result = fit.est_errors()
         sigma = np.array(covar_result.extra_output)
 
@@ -340,7 +344,6 @@ class PragBayes(MetropolisMH):
 
         # cache the fitting scales
         self._sigma = sigma
-
 
     def mh(self, current):
         """ MH jumping rule """
@@ -359,7 +362,6 @@ class PragBayes(MetropolisMH):
         proposal = rmvt(current, self._sigma, self._dof)
         return proposal
 
-
     def perturb_arf(self, current_params, current_stat):
         if self.simarf is not None:
             # add deviations starting with original ARF for each iter
@@ -369,10 +371,10 @@ class PragBayes(MetropolisMH):
             # When ARF is updated, set scale to None
             self._sigma = None
 
-
     def tear_down(self):
         MetropolisMH.tear_down(self)
-        fit = self._fit
+
+        self._fit
 
         # Restore ARF to original state
         for specresp, arf in zip(self.backup_arfs, self.arfs):
