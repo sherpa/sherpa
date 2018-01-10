@@ -26,7 +26,7 @@ matrix:
       sudo: required
       dist: trusty
     # As above, xspec 12.9.1n
-    - env: XSPECVER="12.9.1" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="3.6"
+    - env: XSPECVER="12.9.1" NUMPYVER=1.13 FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="3.6"
       sudo: required
       dist: trusty
     # Install sherpatest package rather than relying on relative location of the submodule

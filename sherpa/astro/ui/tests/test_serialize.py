@@ -816,6 +816,11 @@ _canonical_usermodel += _canonical_extra
 class test_ui(SherpaTestCase):
 
     def setUp(self):
+        try:
+            numpy.set_printoptions(legacy='1.13')
+        except TypeError:  # numpy < 1.14
+            pass
+
         ui.clean()  # I thought the test harness did this anyway
         self._old_logging_level = logger.level
         logger.setLevel(logging.ERROR)
@@ -825,6 +830,10 @@ class test_ui(SherpaTestCase):
             ui.set_xschatter(0)
 
     def tearDown(self):
+        try:
+            numpy.set_printoptions(legacy=False)
+        except TypeError:  # numpy < 1.14
+            pass
         logger.setLevel(self._old_logging_level)
         if has_xspec:
             from sherpa.astro import xspec
