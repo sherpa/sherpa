@@ -524,6 +524,31 @@ def test_arf_with_grid_below_thresh_zero():
     assert str(exc.value) == emsg
 
 
+def test_arf_with_decreasing_energies():
+    """ENERG_LO < ENERG_HI for each row, but in decreasing order.
+
+    This does not appear to be a valid OGIP file: are there
+    examples in the real world that do this?
+    """
+
+    energy = np.arange(0.1, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    # Reverse the arrays
+    energ_lo = energ_lo[::-1]
+    energ_hi = energ_hi[::-1]
+
+    # Programmer sanity check...
+    assert energ_lo[1] < energ_lo[0]
+    assert energ_hi[1] < energ_hi[0]
+
+    adata = create_arf(energ_lo, energ_hi)
+    assert isinstance(adata, DataARF)
+    assert np.all(adata.energ_lo == energ_lo)
+    assert np.all(adata.energ_hi == energ_hi)
+
+
 @pytest.mark.parametrize("ethresh", [0.0, -1e-10, -100])
 def test_rmf_with_non_positive_thresh(ethresh):
     """Check the error-handling works when ethresh <= 0"""
