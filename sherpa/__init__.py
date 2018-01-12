@@ -169,8 +169,8 @@ def _install_test_deps():
             """)
             raise
 
-    deps = ['pytest', 'mock']  # List of packages to be installed
-    pytest_plugins = ['pytest-catchlog',]  # List of pytest plugins to be installed
+    deps = ['pytest>=3.3', 'mock']  # List of packages to be installed
+    pytest_plugins = []  # List of pytest plugins to be installed
 
     # If the plugins are installed "now", pytest won't load them because they are not registered as python packages
     # by the time this code runs. So we need to keep track of the plugins and explicitly pass them to `pytest.main()`.

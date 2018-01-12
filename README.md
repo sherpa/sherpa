@@ -219,7 +219,7 @@ The prerequisites for building from source are:
  - Python: `setuptools`, `numpy`
  - System: `gcc`, `g++`, `gfortran`, `make`, `flex`, `bison`
 
-The full test suite requires the `mock`, `pytest`, and `pytest-xvfb` packages,
+The full test suite requires the `mock`, `pytest >=3.3.0`, and `pytest-xvfb` packages,
 which should be installed automatically if needed.
 
 The current Sherpa code base works with Python 2.7, 3.5, and 3.6 (as of the
@@ -293,7 +293,7 @@ are expected - as some of the tests require optional packages to be
 installed alongside Sherpa. These warnings may be ignored, as long as
 the test ends with an `OK` message.
 
-**NOTE:** the `sherpa_test` command requires `pytest` to run. If `pytest`
+**NOTE:** the `sherpa_test` command requires `pytest >=3.3.0` to run. If `pytest`
 is not installed `sherpa_test` will try to install it.
 
 ### 2e. Development mode

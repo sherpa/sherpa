@@ -1,4 +1,3 @@
-pytest
+pytest>=3.3
 mock
 pytest-xvfb
-pytest-catchlog
