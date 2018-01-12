@@ -456,7 +456,7 @@ def test_arf_with_zero_energy_elem():
 
 
 def test_arf_with_zero_energy_elem_replace():
-    """What happens creating an ARf with a zero-energy element.
+    """What happens creating an ARf with a zero-energy element?
 
     This is for the case where the first bin starts at E=0 keV.
     In this case the ARF is allowed to replace the 0 value.
@@ -482,6 +482,46 @@ def test_arf_with_zero_energy_elem_replace():
 
     assert isinstance(adata, DataARF)
     assert adata.energ_lo[0] == pytest.approx(ethresh)
+
+
+def test_arf_with_grid_below_thresh():
+    """The first bin starts above 0 but ends below the threshold.
+
+    This is a valid grid (other than the fact it is not
+    consecutive), so the ARF can be created. See
+    test_arf_with_grid_below_thresh_zero() for the
+    case when the bin starts at 0.
+    """
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    energ_lo[0] = 1e-7
+    energ_hi[0] = 2e-7
+
+    # The test is to make sure that the call does not
+    # error out
+    adata = create_arf(energ_lo, energ_hi, ethresh=1e-5)
+    assert isinstance(adata, DataARF)
+
+
+def test_arf_with_grid_below_thresh_zero():
+    """The first bin starts at 0 but ends below the threshold."""
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    energ_lo[0] = 0.0
+    energ_hi[0] = 1e-7
+
+    with pytest.raises(DataErr) as exc:
+        create_arf(energ_lo, energ_hi, ethresh=1e-5)
+
+    emsg = "The ARF 'test-arf' has an ENERG_HI value <= " + \
+           "the replacement value of 1e-05"
+    assert str(exc.value) == emsg
 
 
 @pytest.mark.parametrize("ethresh", [0.0, -1e-10, -100])
@@ -689,4 +729,44 @@ def test_rmf_with_negative_energy_elem_replace():
         create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
 
     emsg = "The RMF 'delta-rmf' has an ENERG_LO value < 0"
+    assert str(exc.value) == emsg
+
+
+def test_rmf_with_grid_below_thresh():
+    """The first bin starts above 0 but ends below the threshold.
+
+    This is a valid grid (other than the fact it is not
+    consecutive), so the RMF can be created. See
+    test_rmf_with_grid_below_thresh_zero() for the
+    case when the bin starts at 0.
+    """
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    energ_lo[0] = 1e-7
+    energ_hi[0] = 2e-7
+
+    # The test is to make sure that the call does not
+    # error out
+    rdata = create_delta_rmf(energ_lo, energ_hi, ethresh=1e-5)
+    assert isinstance(rdata, DataRMF)
+
+
+def test_rmf_with_grid_below_thresh_zero():
+    """The first bin starts at 0 but ends below the threshold."""
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    energ_lo[0] = 0.0
+    energ_hi[0] = 1e-7
+
+    with pytest.raises(DataErr) as exc:
+        create_delta_rmf(energ_lo, energ_hi, ethresh=1e-5)
+
+    emsg = "The RMF 'delta-rmf' has an ENERG_HI value <= " + \
+           "the replacement value of 1e-05"
     assert str(exc.value) == emsg
