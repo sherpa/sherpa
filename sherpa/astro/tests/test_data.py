@@ -374,6 +374,34 @@ def test_arf_with_non_positive_thresh(ethresh):
     assert str(exc.value) == emsg
 
 
+@pytest.mark.parametrize("idx", [0, 1, 5, -2, -1])
+def test_arf_with_swapped_energy_bounds(idx):
+    """What happens if elo >= ehi?
+
+    The bin edges are swapped at position idx.
+    """
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+    specresp = energ_lo * 0 + 1.0
+
+    # test energ_hi < energ_lo
+    energ_lo[idx], energ_hi[idx] = energ_hi[idx], energ_lo[idx]
+    with pytest.raises(DataErr) as exc:
+        create_arf(energ_lo, energ_hi, specresp)
+
+    emsg = "The ARF 'test-arf' has at least one bin with ENERG_HI < ENERG_LO"
+    assert str(exc.value) == emsg
+
+    # test energ_hi == energ_lo
+    energ_lo[idx] = energ_hi[idx]
+    with pytest.raises(DataErr) as exc:
+        create_arf(energ_lo, energ_hi, specresp)
+
+    assert str(exc.value) == emsg
+
+
 def test_arf_with_zero_energy_elem():
     """What happens creating an ARf with a zero-energy element.
 
@@ -433,6 +461,33 @@ def test_rmf_with_non_positive_thresh(ethresh):
         create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
 
     emsg = "ethresh is None or > 0"
+    assert str(exc.value) == emsg
+
+
+@pytest.mark.parametrize("idx", [0, 1, 5, -2, -1])
+def test_rmf_with_swapped_energy_bounds(idx):
+    """What happens if elo >= ehi?
+
+    The bin edges are swapped at position idx.
+    """
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    # test energ_hi < energ_lo
+    energ_lo[idx], energ_hi[idx] = energ_hi[idx], energ_lo[idx]
+    with pytest.raises(DataErr) as exc:
+        create_delta_rmf(energ_lo, energ_hi)
+
+    emsg = "The RMF 'delta-rmf' has at least one bin with ENERG_HI < ENERG_LO"
+    assert str(exc.value) == emsg
+
+    # test energ_hi == energ_lo
+    energ_lo[idx] = energ_hi[idx]
+    with pytest.raises(DataErr) as exc:
+        create_delta_rmf(energ_lo, energ_hi)
+
     assert str(exc.value) == emsg
 
 
