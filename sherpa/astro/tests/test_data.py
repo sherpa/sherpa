@@ -402,6 +402,41 @@ def test_arf_with_swapped_energy_bounds(idx):
     assert str(exc.value) == emsg
 
 
+@pytest.mark.parametrize("idx", [0, 1, 5, -3, -2])
+def test_arf_with_non_monotonic_grid(idx):
+    """What happens if the grid is not monotonic?"""
+
+    # For this test we want the ehi values to be larger than the
+    # corresponding elo values (otherwise a different condition)
+    # is triggered, but for energ_lo or energ_hi itself to
+    # be non-monotonic. A non-consecutive array is picked as
+    # this is a form not used much in these tests.
+    #
+    energ_lo = np.asarray([0.1, 0.4, 0.8, 1.0, 1.2, 2.0, 3.0, 4.1, 4.8, 5.2])
+    energ_hi = np.asarray([0.3, 0.7, 0.9, 1.1, 1.9, 2.1, 3.5, 4.6, 5.1, 5.4])
+    specresp = energ_lo * 0 + 1.0
+
+    idx1 = idx + 1
+    energ_lo[idx], energ_lo[idx1] = energ_lo[idx1], energ_lo[idx]
+    energ_hi[idx], energ_hi[idx1] = energ_hi[idx1], energ_hi[idx]
+
+    with pytest.raises(DataErr) as exc:
+        create_arf(energ_lo, energ_hi, specresp)
+
+    emsg = "The ARF 'test-arf' has a non-monotonic ENERG_LO array"
+    assert str(exc.value) == emsg
+
+    # now make the two consecutive bin edges be the same
+    #
+    energ_lo[idx] = energ_lo[idx1]
+    energ_hi[idx] = energ_hi[idx1]
+
+    with pytest.raises(DataErr) as exc:
+        create_arf(energ_lo, energ_hi, specresp)
+
+    assert str(exc.value) == emsg
+
+
 def test_arf_with_zero_energy_elem():
     """What happens creating an ARf with a zero-energy element.
 
@@ -485,6 +520,40 @@ def test_rmf_with_swapped_energy_bounds(idx):
 
     # test energ_hi == energ_lo
     energ_lo[idx] = energ_hi[idx]
+    with pytest.raises(DataErr) as exc:
+        create_delta_rmf(energ_lo, energ_hi)
+
+    assert str(exc.value) == emsg
+
+
+@pytest.mark.parametrize("idx", [0, 1, 5, -3, -2])
+def test_rmf_with_non_monotonic_grid(idx):
+    """What happens if the grid is not monotonic?"""
+
+    # For this test we want the ehi values to be larger than the
+    # corresponding elo values (otherwise a different condition)
+    # is triggered, but for energ_lo or energ_hi itself to
+    # be non-monotonic. A non-consecutive array is picked as
+    # this is a form not used much in these tests.
+    #
+    energ_lo = np.asarray([0.1, 0.4, 0.8, 1.0, 1.2, 2.0, 3.0, 4.1, 4.8, 5.2])
+    energ_hi = np.asarray([0.3, 0.7, 0.9, 1.1, 1.9, 2.1, 3.5, 4.6, 5.1, 5.4])
+
+    idx1 = idx + 1
+    energ_lo[idx], energ_lo[idx1] = energ_lo[idx1], energ_lo[idx]
+    energ_hi[idx], energ_hi[idx1] = energ_hi[idx1], energ_hi[idx]
+
+    with pytest.raises(DataErr) as exc:
+        create_delta_rmf(energ_lo, energ_hi)
+
+    emsg = "The RMF 'delta-rmf' has a non-monotonic ENERG_LO array"
+    assert str(exc.value) == emsg
+
+    # now make the two consecutive bin edges be the same
+    #
+    energ_lo[idx] = energ_lo[idx1]
+    energ_hi[idx] = energ_hi[idx1]
+
     with pytest.raises(DataErr) as exc:
         create_delta_rmf(energ_lo, energ_hi)
 
