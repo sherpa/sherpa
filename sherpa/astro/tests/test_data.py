@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2017, 2018
+#        Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -357,6 +358,22 @@ def create_delta_rmf(rmflo, rmfhi, startchan=1,
                    ethresh=ethresh)
 
 
+@pytest.mark.parametrize("ethresh", [0.0, -1e-10, -100])
+def test_arf_with_non_positive_thresh(ethresh):
+    """Check the error-handling works when ethresh <= 0"""
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+    specresp = energ_lo * 0 + 1.0
+
+    with pytest.raises(ValueError) as exc:
+        create_arf(energ_lo, energ_hi, specresp, ethresh=ethresh)
+
+    emsg = "ethresh is None or > 0"
+    assert str(exc.value) == emsg
+
+
 def test_arf_with_zero_energy_elem():
     """What happens creating an ARf with a zero-energy element.
 
@@ -402,6 +419,21 @@ def test_arf_with_zero_energy_elem_replace():
 
     assert isinstance(adata, DataARF)
     assert adata.energ_lo[0] == pytest.approx(ethresh)
+
+
+@pytest.mark.parametrize("ethresh", [0.0, -1e-10, -100])
+def test_rmf_with_non_positive_thresh(ethresh):
+    """Check the error-handling works when ethresh <= 0"""
+
+    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    energ_lo = energy[:-1]
+    energ_hi = energy[1:]
+
+    with pytest.raises(ValueError) as exc:
+        create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
+
+    emsg = "ethresh is None or > 0"
+    assert str(exc.value) == emsg
 
 
 def test_rmf_with_zero_energy_elem():
