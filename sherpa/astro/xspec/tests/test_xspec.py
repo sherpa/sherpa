@@ -31,7 +31,7 @@ from sherpa.utils import requires_data, requires_fits, requires_xspec
 # The number can be calculated by counting the occurrences of the string
 # '(XSAdditiveModel)' and adding it to the number of occurrences of the
 # string '(XSMultiplicativeModel)' in `xspec/__init__.py`
-XSPEC_MODELS_COUNT = 180
+XSPEC_MODELS_COUNT = 181
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh

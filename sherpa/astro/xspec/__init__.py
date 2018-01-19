@@ -9207,6 +9207,80 @@ class XSismabs(XSMultiplicativeModel):
 
 
 @version_at_least("12.9.1")
+class XSslimbh(XSAdditiveModel):
+    """The XSPEC slimbh model: Stationary slim accretion disk.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET "SLIMBB_DEBUG",
+    "SLIMBB_DIR", and "SLIMBB_TABLE" parameters.
+
+    Attributes
+    ----------
+    M
+        The mass of the black hole, in M_sol.
+    a
+        The black hole spin parameter.
+    lumin
+        The total disk luminosity in Eddington units.
+    alpha
+        alpha-viscosity
+    inc
+        The inclination, in degrees.
+    D
+        The distance to the source, in kpc.
+    f_hard
+        The hardening factor. A negative value means to use TLUSTY spectra.
+    lflag
+        A flag to control the effect of limb-darkening. If greater than
+        zero then the disk emission is limb-darkened, otherwise it is assumed
+        to be isotropic.
+    vflag
+        A flag to contorl the surface profile. If greater than zero,
+        raytracing is done from the actual photosphere, otherwise the
+        spectrum is raytraced from the equatorial plane ignoring the
+        height profile of the disk.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSlimbh.html
+
+    """
+
+    __function__ = "slimbbmodel"
+
+    def __init__(self, name='slimbh'):
+        self.M = Parameter(name, 'M', 10.0, 0.0, 1000.0, 0.0, 1000.0, 'Msun',
+                           frozen=True)
+        self.a = Parameter(name, 'a', 0.0, 0.0, 0.999, 0.0, 0.999, 'GM/c')
+        self.lumin = Parameter(name, 'lumin', 0.5, 0.05, 1.0, 0.05, 1.0,
+                               'L_Edd')
+        self.alpha = Parameter(name, 'alpha', 0.1, 0.005, 0.1, 0.001, 0.1,
+                               frozen=True)
+        self.inc = Parameter(name, 'inc', 60.0, 0.0, 85.0, 0.0, 85.0,
+                             'deg', frozen=True)
+        self.D = Parameter(name, 'D', 10.0, 0.0, 1e4, 0.0, 1e4, 'kpc',
+                           frozen=True)
+        self.f_hard = Parameter(name, 'f_hard', -1.0, -10.0, 10.0, -10.0, 10.0,
+                                frozen=True)
+        self.lflag = Parameter(name, 'lflag', 1.0, -1, 1, alwaysfrozen=True)
+        self.vflag = Parameter(name, 'vflag', 1.0, -1, 1, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval,
+                              frozen=True)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.M, self.a, self.lumin, self.alpha,
+                                  self.inc, self.D, self.f_hard,
+                                  self.lflag, self.vflag, self.norm))
+
+
+@version_at_least("12.9.1")
 class XSsnapec(XSAdditiveModel):
     """The XSPEC snapec model: galaxy cluster spectrum using SN yields.
 
