@@ -2277,7 +2277,7 @@ class XSgaussian(XSAdditiveModel):
 
     See Also
     --------
-    XSagauss, XSlorentz, XSzagauss, XSzgauss
+    XSagauss, XSlorentz, XSvoigt, XSzagauss, XSzgauss
 
     References
     ----------
@@ -2787,7 +2787,7 @@ class XSlorentz(XSAdditiveModel):
 
     See Also
     --------
-    XSgaussian
+    XSgaussian, XSvoigt
 
     References
     ----------
@@ -9395,6 +9395,45 @@ class XSTBrel(XSMultiplicativeModel):
                 self.Ar_dep, self.Ca_dep, self.Cr_dep, self.Fe_dep,
                 self.Co_dep, self.Ni_dep, self.redshift)
         XSMultiplicativeModel.__init__(self, name, pars)
+
+
+class XSvoigt(XSAdditiveModel):
+    """The XSPEC voigt model: Voigt line profile.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Sigma
+        The gaussian line width, in keV.
+    Gamma
+        The lorentzian FWHM line width, in keV.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSgauss, XSlorentz
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVoigt.html
+
+    """
+
+    __function__ = "C_voigtLine"
+
+    def __init__(self, name='voigt'):
+        self.LineE = Parameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, hugeval, 'keV')
+        self.Sigma = Parameter(name, 'Sigma', 0.01, 0., 10., 0.0, hugeval, 'keV')
+        self.Gamma = Parameter(name, 'Gamma', 0.01, 0., 10., 0.0, hugeval, 'keV')
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.LineE, self.Sigma, self.Gamma,
+                                  self.norm))
 
 
 # Add model classes to __all__
