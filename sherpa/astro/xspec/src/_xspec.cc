@@ -1426,10 +1426,10 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM(C_hatm, 4),
 
   XSPECMODELFCT_C_NORM(C_snapec, 7),
-  XSPECMODELFCT_C_NORM(C_tbfeo, 4),
-  XSPECMODELFCT_C_NORM(C_tbgas, 2),
-  XSPECMODELFCT_C_NORM(C_tbpcf, 3),
-  XSPECMODELFCT_C_NORM(C_tbrel, 42),
+  XSPECMODELFCT_C(C_tbfeo, 4),
+  XSPECMODELFCT_C(C_tbgas, 2),
+  XSPECMODELFCT_C(C_tbpcf, 3),
+  XSPECMODELFCT_C(C_tbrel, 42),
 
   XSPECMODELFCT_CON(C_clumin, 4),
   XSPECMODELFCT_CON(C_rfxconv, 5),
