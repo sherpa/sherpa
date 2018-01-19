@@ -586,7 +586,7 @@ class XSapec(XSAdditiveModel):
 
     See Also
     --------
-    XSbapec, XSbvapec, XSbvvapec, XSnlapec, XSvapec, XSvvapec
+    XSbapec, XSbvapec, XSbvvapec, XSnlapec, XSsnapec, XSvapec, XSvvapec
 
     References
     ----------
@@ -9084,6 +9084,67 @@ class XShatm(XSAdditiveModel):
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
                                  (self.T, self.NSmass, self.NSrad, self.norm))
+
+
+@version_at_least("12.9.1")
+class XSsnapec(XSAdditiveModel):
+    """The XSPEC snapec model: galaxy cluster spectrum using SN yields.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters to control
+    the APEC model.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    N_SNe
+        The number of SNe (in units of 10^9).
+    R
+        The percentage of SN1a.
+    SNIModelIndex
+        SNIa yield model: see [1]_ for more details.
+    SNIIModelIndex
+        SNIIa yield model: see [1]_ for more details.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSnapec.html
+
+    """
+
+    __function__ = "C_snapec"
+
+    def __init__(self, name='snapec'):
+        self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64.0, 'keV')
+        self.N_SNe = Parameter(name, 'N_SNe', 1., 0.0, 1e20, 0, 1e20, '10^9')
+        # QUS: if this is a percentage, why is the maximum not 100?
+        self.R = Parameter(name, 'R', 1., 0.0, 1e20, 0, 1e20)
+        self.SNIModelIndex = Parameter(name, 'SNIModelIndex', 1.,
+                                       0.0, 125, 0, 125, alwaysfrozen=True)
+        self.SNIIModelIndex = Parameter(name, 'SNIIModelIndex', 1.,
+                                        0.0, 125, 0, 125, alwaysfrozen=True)
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., 0.0, 10.0,
+                                  frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.kT, self.N_SNe, self.R,
+                                  self.SNIModelIndex, self.SNIIModelIndex,
+                                  self.redshift, self.norm))
 
 
 # Add model classes to __all__
