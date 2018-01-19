@@ -277,6 +277,7 @@ void C_tbgas(const double* energy, int nFlux, const double* params, int spectrum
 void C_tbpcf(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_tbrel(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_voigtLine(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_xscatmodel(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 
 void C_clumin(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_rfxconv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
@@ -1434,6 +1435,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_tbpcf, 3),
   XSPECMODELFCT_C(C_tbrel, 42),
   XSPECMODELFCT_C_NORM(C_voigtLine, 4),
+  XSPECMODELFCT_C(C_xscatmodel, 4),
 
   XSPECMODELFCT_CON(C_clumin, 4),
   XSPECMODELFCT_CON(C_rfxconv, 5),

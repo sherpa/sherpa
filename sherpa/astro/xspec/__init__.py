@@ -9635,5 +9635,48 @@ class XSvoigt(XSAdditiveModel):
                                   self.norm))
 
 
+@version_at_least("12.9.1")
+class XSxscat(XSMultiplicativeModel):
+    """The XSPEC xscat model: dust scattering.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    NH
+        Interstellar hydrogen column density (in units of 10^22 atoms/cm^2).
+    Xpos
+        The relative position of the dust along the line of sight. A value
+        of 0 means the dust is at the observer, and of 0.95 means that the
+        dust is 5% from the source.
+    Rext
+        The radius of the circular extraction region, in arcsec.
+    DustModel
+        The dust model used: see [1]_ for more information.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelXscat.html
+
+    """
+
+    __function__ = "C_xscatmodel"
+
+    def __init__(self, name='xscat'):
+        self.NH = Parameter(name, 'NH', 1., 0., 1000.0, 0.0, 1000.0, '10^22')
+        self.Xpos = Parameter(name, 'Xpos', 0.5, 0, 0.95, 0, 0.95)
+        self.Rext = Parameter(name, 'Rext', 10.0, 0, 115.0, 0, 119.0, 'arcsec',
+                              frozen=True)
+        # The maxmimum number of models depends on the data file, so pick
+        # a value that is unlikely to be exceeded (the max at the time
+        # of writing was 3).
+        self.DustModel = Parameter(name, 'DustModel', 1, 1, 100, 1, 100,
+                                   alwaysfrozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.NH, self.Xpos, self.Rext,
+                                        self.DustModel))
+
+
 # Add model classes to __all__
 __all__ += tuple(n for n in globals() if n.startswith('XS'))
