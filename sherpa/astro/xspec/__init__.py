@@ -9397,6 +9397,7 @@ class XSTBrel(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, pars)
 
 
+@version_at_least("12.9.1")
 class XSvoigt(XSAdditiveModel):
     """The XSPEC voigt model: Voigt line profile.
 
