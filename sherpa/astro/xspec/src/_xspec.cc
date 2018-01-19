@@ -266,6 +266,9 @@ void C_tapec(const double* energy, int nFlux, const double* params, int spectrum
 void C_vtapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_vvtapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 
+void C_carbatm(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_hatm(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
 void C_clumin(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_rfxconv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_vashift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
@@ -1411,6 +1414,9 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM(C_tapec, 5),
   XSPECMODELFCT_C_NORM(C_vtapec, 17),
   XSPECMODELFCT_C_NORM(C_vvtapec, 34),
+
+  XSPECMODELFCT_C_NORM(C_carbatm, 4),
+  XSPECMODELFCT_C_NORM(C_hatm, 4),
 
   XSPECMODELFCT_CON(C_clumin, 4),
   XSPECMODELFCT_CON(C_rfxconv, 5),

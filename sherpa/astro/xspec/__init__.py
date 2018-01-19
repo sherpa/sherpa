@@ -8991,5 +8991,100 @@ class XSvvtapec(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name,
                                  (self.kT, self.kTi, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.norm))
 
+
+@version_at_least("12.9.1")
+class XScarbatm(XSAdditiveModel):
+    """The XSPEC carbatm model: Nonmagnetic carbon atmosphere of a neutron star.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET "CARBATM"
+    parameter.
+
+    Attributes
+    ----------
+    T
+        Effective temperature, in MK.
+    NSmass
+        Neutron star mass, in M_sol.
+    NSrad
+        Neutron star radius, in km.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XShatm
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCarbatm.html
+
+    """
+
+    __function__ = "C_carbatm"
+
+    def __init__(self, name='carbatm'):
+        self.T = Parameter(name, 'T', 2.0, 1.0, 4.0, 1.0, 4.0, 'MK')
+        self.NSmass = Parameter(name, 'NSmass', 1.4, 0.6, 2.8, 0.6, 2.8,
+                                'Msun')
+        self.NSrad = Parameter(name, 'NSrad', 10.0, 6.0, 23.0, 6.0, 23.0, 'km')
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.T, self.NSmass, self.NSrad, self.norm))
+
+
+@version_at_least("12.9.1")
+class XShatm(XSAdditiveModel):
+    """The XSPEC hatm model: Nonmagnetic hydrogen atmosphere of a neutron star.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET "HATM"
+    parameter.
+
+    Attributes
+    ----------
+    T
+        Effective temperature, in MK.
+    NSmass
+        Neutron star mass, in M_sol.
+    NSrad
+        Neutron star radius, in km.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XScarbatm
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelHatm.html
+
+    """
+
+    __function__ = "C_hatm"
+
+    def __init__(self, name='hatm'):
+        self.T = Parameter(name, 'T', 3.0, 0.5, 10.0, 0.5, 10.0, 'MK')
+        self.NSmass = Parameter(name, 'NSmass', 1.4, 0.6, 2.8, 0.6, 2.8,
+                                'Msun')
+        self.NSrad = Parameter(name, 'NSrad', 10.0, 5.0, 23.0, 5.0, 23.0, 'km')
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.T, self.NSmass, self.NSrad, self.norm))
+
+
 # Add model classes to __all__
 __all__ += tuple(n for n in globals() if n.startswith('XS'))
