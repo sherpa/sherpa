@@ -6318,7 +6318,7 @@ class XSTBabs(XSMultiplicativeModel):
 
     See Also
     --------
-    XSTBgrain, XSTBvarabs, XSzTBabs
+    XSTBfeo, XSTBgas, XSTBgrain, XSTBpcf, XSTBrel, XSTBvarabs, XSzTBabs
 
     Notes
     -----
@@ -6362,7 +6362,7 @@ class XSTBgrain(XSMultiplicativeModel):
 
     See Also
     --------
-    XSTBabs, XSTBvarabs, XSzTBabs
+    XSTBabs, XSTBfeo, XSTBgas, XSTBpcf, XSTBrel, XSTBvarabs, XSzTBabs
 
     Notes
     -----
@@ -6418,7 +6418,7 @@ class XSTBvarabs(XSMultiplicativeModel):
 
     See Also
     --------
-    XSTBabs, XSTBgrain, XSzTBabs
+    XSTBabs, XSTBfeo, XSTBgas, XSTBgrain, XSTBpcf, XSTBrel, XSzTBabs
 
     Notes
     -----
@@ -7057,7 +7057,7 @@ class XSzTBabs(XSMultiplicativeModel):
 
     See Also
     --------
-    XSTBabs, XSTBgrain, XSTBvarabs
+    XSTBabs, XSTBfeo, XSTBgas, XSTBgrain, XSTBpcf, XSTBrel, XSTBvarabs
 
     Notes
     -----
@@ -9145,6 +9145,256 @@ class XSsnapec(XSAdditiveModel):
                                  (self.kT, self.N_SNe, self.R,
                                   self.SNIModelIndex, self.SNIIModelIndex,
                                   self.redshift, self.norm))
+
+
+@version_at_least("12.9.1")
+class XSTBfeo(XSMultiplicativeModel):
+    """The XSPEC TBfeo model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    O
+        Oxygen abundance relative to Solar.
+    Fe
+        Iron abundance relative to Solar.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSTBabs, XSTBgas, XSTBgrain, XSTBpcf, XSTBrel, XSTBvarabs, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
+
+    __function__ = "C_tbfeo"
+
+    def __init__(self, name='tbfeo'):
+        self.nH = Parameter(name, 'nH', 1., 0., 1.e5, 0.0, 1.0e6, '10^22')
+        self.O = Parameter(name, 'O', 1., 0.0, 5.0, -1.0e38, 1.0e38)
+        self.Fe = Parameter(name, 'Fe', 1., 0.0, 5.0, -1.0e38, 1.0e38)
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.nH, self.O, self.Fe,
+                                        self.redshift))
+
+
+@version_at_least("12.9.1")
+class XSTBgas(XSMultiplicativeModel):
+    """The XSPEC TBgas model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSTBabs, XSTBfeo, XSTBgrain, XSTBpcf, XSTBrel, XSTBvarabs, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
+
+    __function__ = "C_tbgas"
+
+    def __init__(self, name='tbgas'):
+        self.nH = Parameter(name, 'nH', 1., 0., 1.e5, 0.0, 1.0e6, '10^22')
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.nH, self.redshift))
+
+
+@version_at_least("12.9.1")
+class XSTBpcf(XSMultiplicativeModel):
+    """The XSPEC TBpcf model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    pcf
+        Partial covering fraction of the absorber.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSTBabs, XSTBfeo, XSTBgas, XSTBgrain, XSTBrel, XSTBvarabs, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
+
+    __function__ = "C_tbpcf"
+
+    def __init__(self, name='tbpcf'):
+        self.nH = Parameter(name, 'nH', 1., 0., 1.e5, 0.0, 1.0e6, '10^22')
+        self.pcf = Parameter(name, 'pcf', 0.5, 0, 1.0, 0, 1.0)
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.nH, self.pcf, self.redshift))
+
+
+@version_at_least("12.9.1")
+class XSTBrel(XSMultiplicativeModel):
+    """The XSPEC TBrel model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
+        The abundance of the element in solar units.
+    H2
+        The equivalent molecular hydrogen column (in units of
+         10^22 atoms/cm^2).
+    rho
+        The grain density, in g/cm^3.
+    amin
+        The minimum grain size, in micro-meters.
+    amax
+        The maximum grain size, in micro-meters.
+    PL
+        The power-law index of grain sizes.
+    H_dep, He_dep, C_dep, N_dep, O_dep, Ne_dep, Na_dep, Mg_dep, Al_dep,
+    Si_dep, S_dep, Cl_dep, Ar_dep, Ca_dep, Cr_dep, Fe_dep, Co_dep, Ni_dep
+        The grain depletion fraction of the element.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSTBabs, XSTBfeo, XSTBgas, XSTBgrain, XSTBpcf, XSTBvarabs, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
+
+    __function__ = "C_tbrel"
+
+    def __init__(self, name='tbrel'):
+        self.nH = Parameter(name, 'nH', 1., -1e5, 1e5, -1e6, 1.0e6, '10^22')
+        self.He = Parameter(name, 'He', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.C = Parameter(name, 'C', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.N = Parameter(name, 'N', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.O = Parameter(name, 'O', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Ne = Parameter(name, 'Ne', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Na = Parameter(name, 'Na', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Mg = Parameter(name, 'Mg', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Al = Parameter(name, 'Al', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Si = Parameter(name, 'Si', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.S = Parameter(name, 'S', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Cl = Parameter(name, 'Cl', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Ar = Parameter(name, 'Ar', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Ca = Parameter(name, 'Ca', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Cr = Parameter(name, 'Cr', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Fe = Parameter(name, 'Fe', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Co = Parameter(name, 'Co', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Ni = Parameter(name, 'Ni', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.H2 = Parameter(name, 'H2', 0.2, 0., 1., 0.0, 1.0, frozen=True)
+        self.rho = Parameter(name, 'rho', 1., 0., 5., 0.0, 5.0, 'g/cm^3',
+                             frozen=True)
+        self.amin = Parameter(name, 'amin', 0.025, 0., 0.25, 0.0, 0.25,
+                              'mum', frozen=True)
+        self.amax = Parameter(name, 'amax', 0.25, 0., 1., 0.0, 1.0,
+                              'mum', frozen=True)
+        self.PL = Parameter(name, 'PL', 3.5, 0., 5., 0.0, 5.0, frozen=True)
+        self.H_dep = Parameter(name, 'H_dep', 1., 0., 1., 0.0, 1.0,
+                               frozen=True)
+        self.He_dep = Parameter(name, 'He_dep', 1., 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.C_dep = Parameter(name, 'C_dep', 0.5, 0., 1., 0.0, 1.0,
+                               frozen=True)
+        self.N_dep = Parameter(name, 'N_dep', 1., 0., 1., 0.0, 1.0,
+                               frozen=True)
+        self.O_dep = Parameter(name, 'O_dep', 0.6, 0., 1., 0.0, 1.0,
+                               frozen=True)
+        self.Ne_dep = Parameter(name, 'Ne_dep', 1., 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Na_dep = Parameter(name, 'Na_dep', 0.25, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Mg_dep = Parameter(name, 'Mg_dep', 0.2, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Al_dep = Parameter(name, 'Al_dep', 0.02, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Si_dep = Parameter(name, 'Si_dep', 0.1, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.S_dep = Parameter(name, 'S_dep', 0.6, 0., 1., 0.0, 1.0,
+                               frozen=True)
+        self.Cl_dep = Parameter(name, 'Cl_dep', 0.5, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Ar_dep = Parameter(name, 'Ar_dep', 1., 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Ca_dep = Parameter(name, 'Ca_dep', 0.003, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Cr_dep = Parameter(name, 'Cr_dep', 0.03, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Fe_dep = Parameter(name, 'Fe_dep', 0.3, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Co_dep = Parameter(name, 'Co_dep', 0.05, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Ni_dep = Parameter(name, 'Ni_dep', 0.04, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        pars = (self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca,
+                self.Cr, self.Fe, self.Co, self.Ni, self.H2, self.rho,
+                self.amin, self.amax, self.PL, self.H_dep, self.He_dep,
+                self.C_dep, self.N_dep, self.O_dep, self.Ne_dep, self.Na_dep,
+                self.Mg_dep, self.Al_dep, self.Si_dep, self.S_dep, self.Cl_dep,
+                self.Ar_dep, self.Ca_dep, self.Cr_dep, self.Fe_dep,
+                self.Co_dep, self.Ni_dep, self.redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 # Add model classes to __all__
