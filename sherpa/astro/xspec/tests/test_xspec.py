@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018
+#         Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -30,7 +31,7 @@ from sherpa.utils import requires_data, requires_fits, requires_xspec
 # The number can be calculated by counting the occurrences of the string
 # '(XSAdditiveModel)' and adding it to the number of occurrences of the
 # string '(XSMultiplicativeModel)' in `xspec/__init__.py`
-XSPEC_MODELS_COUNT = 166
+XSPEC_MODELS_COUNT = 168
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh

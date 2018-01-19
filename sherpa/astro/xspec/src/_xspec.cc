@@ -1,4 +1,4 @@
-//  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015-2018  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -260,6 +260,8 @@ void C_zmshift(const double* energy, int nFlux, const double* params, int spectr
 //
 #ifdef XSPEC_12_9_1
 void C_btapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_bvtapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_bvvtapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 
 void C_clumin(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_rfxconv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
@@ -1401,6 +1403,8 @@ static PyMethodDef XSpecMethods[] = {
   //
   #ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM(C_btapec, 6),
+  XSPECMODELFCT_C_NORM(C_bvtapec, 18),
+  XSPECMODELFCT_C_NORM(C_bvvtapec, 35),
 
   XSPECMODELFCT_CON(C_clumin, 4),
   XSPECMODELFCT_CON(C_rfxconv, 5),
