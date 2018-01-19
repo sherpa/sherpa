@@ -9092,6 +9092,10 @@ class XSismabs(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    This model is currently broken because the case insensitivity of the
+    parameter names means that we can not tell the difference between
+    SII and SiI or SIII and SiII.
+
     Attributes
     ----------
     H
