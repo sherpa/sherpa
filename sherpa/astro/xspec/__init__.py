@@ -9087,6 +9087,126 @@ class XShatm(XSAdditiveModel):
 
 
 @version_at_least("12.9.1")
+class XSismabs(XSMultiplicativeModel):
+    """The XSPEC ismabs model: A high resolution ISM absorption model with variable columns for individual ions.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    H
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    HeII, CI, CII, CIII, NI, NII, NIII, OI, OII, OIII, NeI, NeII, NeIII,
+    MgI, MgII, MgIII, SiI, SiII, SiIII, SI, SII, SIII, ArI, ArII, ArIII,
+    CaI, CaII, CaIII, Fe
+        The column for the species (in units of 10^16 atoms/cm^2).
+    redshift
+        The redshift of the absorber.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelIsmabs.html
+
+    """
+
+    __function__ = "ismabs"
+
+    def __init__(self, name='ismabs'):
+
+        self.H = Parameter(name, 'H', 0.1, 0.0, 1e5, 0, 1e6, '10^22')
+        self.HeII = Parameter(name, 'HeII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.CI = Parameter(name, 'CI', 33.1, 0.0, 1e5, 0, 1e6,
+                            '10^16')
+        self.CII = Parameter(name, 'CII', 0.0, 0.0, 1e5, 0, 1e6,
+                             '10^16', frozen=True)
+        self.CIII = Parameter(name, 'CIII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.NI = Parameter(name, 'NI', 8.32, 0.0, 1e5, 0, 1e6,
+                            '10^16')
+        self.NII = Parameter(name, 'NII', 0.0, 0.0, 1e5, 0, 1e6,
+                             '10^16', frozen=True)
+        self.NIII = Parameter(name, 'NIII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.OI = Parameter(name, 'OI', 67.6, 0.0, 1e5, 0, 1e6,
+                            '10^16')
+        self.OII = Parameter(name, 'OII', 0.0, 0.0, 1e5, 0, 1e6,
+                             '10^16', frozen=True)
+        self.OIII = Parameter(name, 'OIII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.NeI = Parameter(name, 'NeI', 12.0, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.NeII = Parameter(name, 'NeII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.NeIII = Parameter(name, 'NeIII', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        self.MgI = Parameter(name, 'MgI', 3.8, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.MgII = Parameter(name, 'MgII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.MgIII = Parameter(name, 'MgIII', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        self.SiI = Parameter(name, 'SiI', 3.35, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.SiII = Parameter(name, 'SiII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.SiIII = Parameter(name, 'SiIII', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        self.SI = Parameter(name, 'SI', 2.14, 0.0, 1e5, 0, 1e6,
+                            '10^16')
+        self.SII = Parameter(name, 'SII', 0.0, 0.0, 1e5, 0, 1e6,
+                             '10^16', frozen=True)
+        self.SIII = Parameter(name, 'SIII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.ArI = Parameter(name, 'ArI', 0.25, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.ArII = Parameter(name, 'ArII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.ArIII = Parameter(name, 'ArIII', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        self.CaI = Parameter(name, 'CaI', 0.22, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.CaII = Parameter(name, 'CaII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.CaIII = Parameter(name, 'CaIII', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        self.Fe = Parameter(name, 'Fe', 3.16, 0.0, 1e5, 0, 1e6, '10^16')
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.H, self.HeII,
+                                        self.CI,
+                                        self.CII,
+                                        self.CIII,
+                                        self.NI,
+                                        self.NII,
+                                        self.NIII,
+                                        self.OI,
+                                        self.OII,
+                                        self.OIII,
+                                        self.NeI,
+                                        self.NeII,
+                                        self.NeIII,
+                                        self.MgI,
+                                        self.MgII,
+                                        self.MgIII,
+                                        self.SiI,
+                                        self.SiII,
+                                        self.SiIII,
+                                        self.SI,
+                                        self.SII,
+                                        self.SIII,
+                                        self.ArI,
+                                        self.ArII,
+                                        self.ArIII,
+                                        self.CaI,
+                                        self.CaII,
+                                        self.CaIII,
+                                        self.Fe, self.redshift))
+
+
+@version_at_least("12.9.1")
 class XSsnapec(XSAdditiveModel):
     """The XSPEC snapec model: galaxy cluster spectrum using SN yields.
 

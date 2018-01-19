@@ -268,7 +268,7 @@ void C_vvtapec(const double* energy, int nFlux, const double* params, int spectr
 
 void C_carbatm(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_hatm(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-  // void ismabs(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);  // is this the Fortran interface?
+void ismabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
   // void c_slimbh(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr); // note the lower-case c in the prefix
 void C_snapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_tbfeo(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
@@ -1425,7 +1425,7 @@ static PyMethodDef XSpecMethods[] = {
 
   XSPECMODELFCT_C_NORM(C_carbatm, 4),
   XSPECMODELFCT_C_NORM(C_hatm, 4),
-
+  XSPECMODELFCT_NORM(ismabs, 31),
   XSPECMODELFCT_C_NORM(C_snapec, 7),
   XSPECMODELFCT_C(C_tbfeo, 4),
   XSPECMODELFCT_C(C_tbgas, 2),
