@@ -58,7 +58,8 @@ class Regrid1D(Model):
     method
         The function that interpolates the data from the internal
         grid onto the requested grid. The default is
-        sherpa.utils.neville.
+        sherpa.utils.neville. This is *only* used for point
+        grids, as integrated grids use a simple rebinning scheme.
 
     Examples
     --------
@@ -73,7 +74,7 @@ class Regrid1D(Model):
 
     >>> internal_mdl = Gauss1D() + Const1D()
     >>> rmdl = Regrid1D()
-    >>> rmdl.grid = np.arange(0, 10, 0.5)
+    >>> rmdl.set_grid(np.arange(0, 10, 0.5))
     >>> mdl = rmdl(internal_mdl)
     >>> x = np.arange(1, 8, 0.7)
     >>> y = mdl(x)
@@ -209,8 +210,9 @@ class Regrid1D(Model):
         #
         # Perhaps we should just let this through, and let the
         # interpolation or extrapolation happen.
-        x1 = args[0][0]
-        x2 = args[0][-1]
+        x = args[0]
+        x1 = x[0]
+        x2 = x[-1]
         if x2 > x1:
             x1, x2 = x2, x1
 
@@ -226,7 +228,7 @@ class Regrid1D(Model):
             g1, g2 = g2, g1
 
         if (g1 > x2) or (g2 < x1):
-            return np.zeros(args[0].size)
+            return np.zeros(x.size)
 
         # Evaluate the model on the user-defined grid and then interpolate
         # onto the desired grid. This is based on sherpa.models.TableModel
@@ -234,6 +236,226 @@ class Regrid1D(Model):
         #
         # TODO: can we use _modelfcts.integrate1d at all here?
         #
+        if requested_grid_point:
+            y = modelfunc(pars, self.grid)
+            return interpolate(x, self.grid, y,
+                               function=self.method)
+
+        else:
+            # TODO: should there be some check that the grid size
+            #       is "compatible"? Note that test_regrid1d_int_flux
+            #       appears to fail if the grid width used for modelfunc
+            #       is larger than the output.
+            #
+            y = modelfunc(pars, self.grid[0], self.grid[1])
+            return rebin(y, self.grid[0], self.grid[1],
+                         args[0], args[1])
+
+
+class Regrid2D(Model):
+    """Allow 2D models to be evaluated on a different grid.
+
+    Currently this is restricted to 2D point grids (i.e. the
+    model is evaluated at a point (X0,X1) and not over a cell).
+    This class is not used directly in a model expression;
+    instead it creates an instance that is used to evaluate
+    the model.
+
+    Attributes
+    ----------
+    method
+        The function that interpolates the data from the internal
+        grid onto the requested grid. The default is
+        sherpa.utils.neville. This is *only* used for point
+        grids.
+
+    Examples
+    --------
+
+    The "internal" model (gaussian plus constant) will be
+    evaluated on the grid 0 to 10 (spacing of 0.5) for X0
+    and -5 to 14 (spacing 0.4) for X1, and then interpolated
+    onto the grid that the model is called with (as defined by
+    the ``x0`` and ``x1`` arrays below). In this example there
+    is no benefit to this approach - it is easier just to evaluate
+    ``internal_mdl`` on the grid ``x0, x1`` - but it illustrates
+    the approach.
+
+    >>> internal_mdl = Gauss2D() + Const2D()
+    >>> rmdl = Regrid2D()
+    >>> g0 = np.arange(0, 10, 0.5)
+    >>> g1 = np.arange(-5, 15, 0.4)
+    >>> rmdl.set_grid)(g0, g1)
+    >>> mdl = rmdl(internal_mdl)
+    >>> x0 = np.arange(1, 8, 0.7)
+    >>> x1 = np.arange(-2, 12, 0.7)
+    >>> y = mdl(x0, x1)
+
+    """
+
+    def __init__(self, name='regrid2d'):
+        self.__grid = None
+        self.__grid_is_integrated = None
+        self.__grid_is_ascending = None
+
+        # TODO: what methods so we have for 2D interpolation?
+        self.method = None
+
+        Model.__init__(self, name, ())
+
+    @property
+    def grid_is_integrated(self):
+        """Is the grid integrated (True) or point (False)?"""
+        return self.__grid_is_integrated
+
+    @property
+    def grid_is_ascending(self):
+        """Is the grid in ascending (True) or descending (False) order?
+
+        The returned value is ``None`` or a tuple, for the X0 and X1
+        axes.
+        """
+        return self.__grid_is_ascending
+
+    @property
+    def grid(self):
+        """Return the grid on which the model is to be evaluate."""
+        return self.__grid
+
+    def set_grid(self, x0, x1):
+        """Set the grid.
+
+        At present only point grids are supported.
+
+        Parameters
+        ----------
+        x0, x1 : array or None
+            The grids for the X0 and X1 independent axes.
+            Each array is assumed to be 1D and monotonic: that is,
+            the first and last bins define the start and end of that
+            grid. The arrays can be in descending order (or at least,
+            that is the current plan). There is no requirement that
+            the two grids have to have the same length or spacing.
+            Either both arguments are set, or both are None.
+        """
+
+        if x0 is None and x1 is None:
+            self.__grid_is_integrated = None
+            self.__grid_is_ascending = None
+            self.__grid = None
+            return
+
+        if x0 is None or x1 is None:
+            # Do not want to add a ModelErr for this at the moment
+            raise ValueError("Both x0 and x1 are None or both are set")
+
+        x0 = np.asarray(x0)
+        x1 = np.asarray(x1)
+        self.__grid_is_integrated = False
+        self.__grid_is_ascending = (x0[-1] > x0[0],
+                                    x1[-1] > x1[0])
+        self.__grid = (x0, x1)
+
+    def __call__(self, model):
+        """Evaluate a model on a different grid."""
+        return RegridModel2D(model, self)
+
+    def calc(self, pars, modelfunc, *args, **kwargs):
+        """Evaluate and regrid a model
+
+        Evaluate the model on the internal grid and then
+        interpolate onto the desired grid.
+
+        Parameters
+        ----------
+        pars : sequence of numbers
+            The parameter values of the model.
+        modelfunc
+            The model to evaluate (the calc attribute of the model)
+            TODO: should this be model as we call model.calc here?
+        args
+            The grid to interpolate the model onto. This must match the
+            format of the grid attribute of the model. At present this
+            means a point-grid, so x0 and x1 arrays.
+        kwargs
+            Keyword arguments for the model.
+
+        Notes
+        -----
+        If the requested grid (i.e. that defined by args) does not overlap
+        the stored grid (the grid attribute) then all values are set to 0.
+        However, if the grids partially overlap then there will be
+        extrapolation (depending on the method).
+
+        """
+
+        nargs = len(args)
+        if nargs == 0:
+            raise ModelErr('nogrid')
+
+        if self.grid is None:
+            # There is no need for a regrid, so just evaluate
+            # the model with the input grid
+            #
+            return modelfunc(pars, *args, **kwargs)
+
+        if nargs < 2:
+            raise ValueError("Expected a 2D grid")
+
+        # For now we know that self.grid_is_integrated is False
+        requested_grid_point = nargs == 2
+        if requested_grid_point and self.grid_is_integrated:
+            raise ModelErr('needsint')
+        if not requested_grid_point and not self.grid_is_integrated:
+            raise ModelErr('needspoint')
+
+        # NOTE: for the moment focussing on both grids in ascending
+        #       order. Will need to add tests to check if there is
+        #       a mis-match.
+        #
+
+        # Check if there is any overlap. For now just rely on
+        # the first array (even if integrated).
+        #
+        # Perhaps we should just let this through, and let the
+        # interpolation or extrapolation happen.
+        x0 = args[0]
+        x1 = args[1]
+
+        x01 = x0[0]
+        x02 = x0[-1]
+        if x02 > x01:
+            x01, x02 = x02, x01
+
+        x11 = x1[0]
+        x12 = x1[-1]
+        if x12 > x11:
+            x11, x12 = x12, x11
+
+        if requested_grid_point:
+            g0, g1 = self.grid
+        else:
+            raise NotImplementedError("No support for 2D integrated grids")
+
+        g01 = g0[0]
+        g02 = g0[-1]
+        if not self.grid_is_ascending[0]:
+            g01, g02 = g02, g01
+
+        g11 = g1[0]
+        g12 = g1[-1]
+        if not self.grid_is_ascending[1]:
+            g11, g12 = g12, g11
+
+        if ((g01 > x02) or (g02 < x01)) and ((g11 > x12) or (g12 < x11)):
+            return np.zeros(x0.size, x1.size)
+
+        # Evaluate the model on the user-defined grid and then interpolate
+        # onto the desired grid. This is based on sherpa.models.TableModel
+        # but is simplified as we do not provide a fold method.
+        #
+        #
+        QUS: what does TableModel2D do? Do we have that? NOPE
         if requested_grid_point:
             y = modelfunc(pars, self.grid)
             return interpolate(args[0], self.grid, y,
@@ -250,10 +472,6 @@ class Regrid1D(Model):
                          args[0], args[1])
 
 
-class Regrid2D(Model):
-
-    def __init__(self):
-        raise NotImplementedError
 
 
 class RegridModel1D(CompositeModel, ArithmeticModel):

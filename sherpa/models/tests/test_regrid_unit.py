@@ -63,20 +63,23 @@ def _setup_2d():
     return gmdl, cmdl
 
 
-# TODO: should there be equivalent tests for Regrid2D?
+@pytest.mark.parametrize("cls,name",
+                         [(Regrid1D, "regrid1d"),
+                          (Regrid2D, "regrid2d")])
+def test_default_model_name(cls, name):
+    mdl = cls()
+    assert mdl.name == name
 
-def test_regrid1d_default_model_name():
-    mdl = Regrid1D()
-    assert mdl.name == "regrid1d"
 
-
-def test_regrid1d_given_model_name():
-    mdl = Regrid1D('linGrid')
+@pytest.mark.parametrize("cls", [Regrid1D])
+def test_given_model_name(cls):
+    mdl = cls('linGrid')
     assert mdl.name == "linGrid"  # TODO: why is this not lower-cased?
 
 
-def test_regrid1d_default_grid_is_empty():
-    mdl = Regrid1D()
+@pytest.mark.parametrize("cls", [Regrid1D])
+def test_default_grid_is_empty(cls):
+    mdl = cls()
     assert mdl.grid is None
 
 
@@ -88,16 +91,20 @@ def test_regrid1d_default_grid_is_empty():
 #     assert isinstance(mdl, Model)
 
 
-def test_regrid1d_wrapping_create_model_instance():
-    cmdl = Const1D()
-    rmdl = Regrid1D()
+@pytest.mark.parametrize("cls,mdl,inst",
+                         [(Regrid1D, Const1D, RegridModel1D)])
+def test_wrapping_create_model_instance(cls, mdl, inst):
+    rmdl = cls()
+    cmdl = mdl()
     mdl = rmdl(cmdl)
-    assert isinstance(mdl, RegridModel1D)
+    assert isinstance(mdl, inst)
 
 
-def test_regrid1d_wrapping_create_arithmetic_instance():
-    cmdl = Const1D()
-    rmdl = Regrid1D()
+@pytest.mark.parametrize("cls,mdl",
+                         [(Regrid1D, Const1D)])
+def test_wrapping_create_arithmetic_instance(cls, mdl):
+    rmdl = cls()
+    cmdl = mdl()
     mdl = rmdl(cmdl)
     assert isinstance(mdl, ArithmeticModel)
 
