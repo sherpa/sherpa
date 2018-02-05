@@ -389,6 +389,8 @@ class Regrid2D(Model):
 
         """
 
+        raise NotImplementedError("2D support not written yet")
+
         nargs = len(args)
         if nargs == 0:
             raise ModelErr('nogrid')
@@ -455,7 +457,10 @@ class Regrid2D(Model):
         # but is simplified as we do not provide a fold method.
         #
         #
-        QUS: what does TableModel2D do? Do we have that? NOPE
+        # QUS: what does TableModel2D do? Do we have that? NOPE
+        #
+        # GOT TO HERE and then got distracted
+        #
         if requested_grid_point:
             y = modelfunc(pars, self.grid)
             return interpolate(args[0], self.grid, y,
