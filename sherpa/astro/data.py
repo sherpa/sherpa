@@ -84,107 +84,110 @@ def _notice_resp(chans, arf, rmf):
             arf.notice(bin_mask)
 
 
-def validate_ogip_energy_ranges(rtype, label, elo, ehi, ethresh=None):
-    """Check the lo/hi values are > 0, handling common error case.
+class DataResponse(Data1DInt):
+    _ui_name = "Response"
 
-    Several checks are made, to make sure the parameters follow
-    the OGIP standard. If the checks fail a DataErr is raised.
-    When ethresh is set, the case where the low-edge of the start bin
-    is zero is treated as a special case rather than an error.
-    If a replacement is made (i.e. the low edge is set to ethresh) then
-    a warning is displayed.
+    def _validate_ogip_energy_ranges(self, label, elo, ehi, ethresh):
+        """Check the lo/hi values are > 0, handling common error case.
 
-    Parameters
-    ----------
-    rtype : {'ARF', 'RMF'}
-        The response containing the energy columns.
-    label : str
-        The identifier to use for the error message.
-    elo, ehi : numpy arrays
-        The input ENERG_LO and ENERG_HI arrays. They are assumed
-        to be one-dimensional and have the same number of elements.
-    ethresh : None or float, optional
-        If None, then elo must be greater than 0. When set, the
-        start bin can have a low-energy edge of 0; it is replaced
-        by ethresh. If set, ethresh must be greater than 0.
+            Several checks are made, to make sure the parameters follow
+            the OGIP standard. If the checks fail a DataErr is raised.
+            When ethresh is set, the case where the low-edge of the start bin
+            is zero is treated as a special case rather than an error.
+            If a replacement is made (i.e. the low edge is set to ethresh) then
+            a warning is displayed.
 
-    Returns
-    -------
-    elo, ehi : numpy arrays
-        The validated energy limits. These can be the input arrays
-        or a copy of them. At present the ehi array is the same as
-        the input array, but this may change in the future.
+            Parameters
+            ----------
+            label : str
+                The response file identifier.
+            elo, ehi : numpy arrays
+                The input ENERG_LO and ENERG_HI arrays. They are assumed
+                to be one-dimensional and have the same number of elements.
+            ethresh : None or float, optional
+                If None, then elo must be greater than 0. When set, the
+                start bin can have a low-energy edge of 0; it is replaced
+                by ethresh. If set, ethresh must be greater than 0.
 
-    Notes
-    -----
-    Only some of the constraints provided by the OGIP standard are
-    checked here, since there are issues involving numerical effects
-    (e.g. when checking that two bins do not overlap), as well as
-    uncertainty over what possible  behavior is seen in released
-    data products for missions. The current set of checks are:
+            Returns
+            -------
+            elo, ehi : numpy arrays
+                The validated energy limits. These can be the input arrays
+                or a copy of them. At present the ehi array is the same as
+                the input array, but this may change in the future.
 
-      - ehi > elo for each bin
-      - elo is monotonic (ascending or descending)
-      - when emin is set, the lowest value in elo is >= 0,
-        otherwise it is > 0.
-      - ethresh (if set) is less than the minimum value in ENERG_HI
+            Notes
+            -----
+            Only some of the constraints provided by the OGIP standard are
+            checked here, since there are issues involving numerical effects
+            (e.g. when checking that two bins do not overlap), as well as
+            uncertainty over what possible  behavior is seen in released
+            data products for missions. The current set of checks are:
 
-    A failed check raises a DataErr exception.
+              - ehi > elo for each bin
+              - elo is monotonic (ascending or descending)
+              - when emin is set, the lowest value in elo is >= 0,
+                otherwise it is > 0.
+              - ethresh (if set) is less than the minimum value in ENERG_HI
 
-    """
+            A failed check raises a DataErr exception.
 
-    if ethresh is not None and ethresh <= 0.0:
-        raise ValueError("ethresh is None or > 0")
+            """
 
-    if (elo >= ehi).any():
-        raise DataErr('ogip-error', rtype, label,
-                      'has at least one bin with ENERG_HI < ENERG_LO')
+        rtype = self._ui_name
 
-    # if elo is monotonically increasing, all elements will be True
-    #                         decreasing,                      False
-    #
-    # so the sum will be number of elements or 0
-    #
-    increasing = numpy.diff(elo, n=1) > 0.0
-    nincreasing = increasing.sum()
-    if nincreasing > 0 and nincreasing != len(increasing):
-        raise DataErr('ogip-error', rtype, label,
-                      'has a non-monotonic ENERG_LO array')
+        if ethresh is not None and ethresh <= 0.0:
+            raise ValueError("ethresh is None or > 0")
 
-    if nincreasing == 0:
-        startidx = -1
-    else:
-        startidx = 0
-
-    e0 = elo[startidx]
-    if ethresh is None:
-        if e0 <= 0.0:
+        if (elo >= ehi).any():
             raise DataErr('ogip-error', rtype, label,
-                          'has an ENERG_LO value <= 0')
-    else:
-        # TODO: should this equality be replaced by an approximation test?
-        if e0 == 0.0:
+                          'has at least one bin with ENERG_HI < ENERG_LO')
 
-            if ehi[startidx] <= ethresh:
+        # if elo is monotonically increasing, all elements will be True
+        #                         decreasing,                      False
+        #
+        # so the sum will be number of elements or 0
+        #
+        increasing = numpy.diff(elo, n=1) > 0.0
+        nincreasing = increasing.sum()
+        if nincreasing > 0 and nincreasing != len(increasing):
+            raise DataErr('ogip-error', rtype, label,
+                          'has a non-monotonic ENERG_LO array')
+
+        if nincreasing == 0:
+            startidx = -1
+        else:
+            startidx = 0
+
+        e0 = elo[startidx]
+        if ethresh is None:
+            if e0 <= 0.0:
                 raise DataErr('ogip-error', rtype, label,
-                              'has an ENERG_HI value <= the replacement ' +
-                              'value of {}'.format(ethresh))
+                              'has an ENERG_LO value <= 0')
+        else:
+            # TODO: should this equality be replaced by an approximation test?
+            if e0 == 0.0:
 
-            elo = elo.copy()
-            elo[startidx] = ethresh
-            wmsg = "The minimum ENERG_LO in the " + \
-                   "{} '{}' was 0 and has been ".format(rtype, label) + \
-                   "replaced by {}".format(ethresh)
-            warnings.warn(wmsg)
+                if ehi[startidx] <= ethresh:
+                    raise DataErr('ogip-error', rtype, label,
+                                  'has an ENERG_HI value <= the replacement ' +
+                                  'value of {}'.format(ethresh))
 
-        elif e0 < 0.0:
-            raise DataErr('ogip-error', rtype, label,
-                          'has an ENERG_LO value < 0')
+                elo = elo.copy()
+                elo[startidx] = ethresh
+                wmsg = "The minimum ENERG_LO in the " + \
+                       "{} '{}' was 0 and has been ".format(rtype, label) + \
+                       "replaced by {}".format(ethresh)
+                warnings.warn(wmsg)
 
-    return elo, ehi
+            elif e0 < 0.0:
+                raise DataErr('ogip-error', rtype, label,
+                              'has an ENERG_LO value < 0')
+
+        return elo, ehi
 
 
-class DataARF(Data1DInt):
+class DataARF(DataResponse):
     """ARF data set.
 
     The ARF format is described in OGIP documents [1]_ and [2]_.
@@ -227,6 +230,7 @@ class DataARF(Data1DInt):
     .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
 
     """
+    _ui_name = "ARF"
 
     mask = property(BaseData._get_mask, BaseData._set_mask,
                     doc=BaseData.mask.__doc__)
@@ -243,10 +247,7 @@ class DataARF(Data1DInt):
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
                  bin_hi=None, exposure=None, header=None, ethresh=None):
 
-        energ_lo, energ_hi = validate_ogip_energy_ranges('ARF', name,
-                                                         energ_lo,
-                                                         energ_hi,
-                                                         ethresh=ethresh)
+        energ_lo, energ_hi = self._validate_ogip_energy_ranges(name, energ_lo, energ_hi, ethresh)
         self._lo, self._hi = energ_lo, energ_hi
 
         BaseData.__init__(self)
@@ -310,7 +311,7 @@ class DataARF(Data1DInt):
         return 'cm' + backend.get_latex_for_string('^2')
 
 
-class DataRMF(Data1DInt):
+class DataRMF(DataResponse):
     """RMF data set.
 
     The RMF format is described in OGIP documents [1]_ and [2]_.
@@ -354,6 +355,7 @@ class DataRMF(Data1DInt):
     .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
 
     """
+    _ui_name = "RMF"
 
     mask = property(BaseData._get_mask, BaseData._set_mask,
                     doc=BaseData.mask.__doc__)
@@ -362,10 +364,7 @@ class DataRMF(Data1DInt):
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
                  header=None, ethresh=None):
 
-        energ_lo, energ_hi = validate_ogip_energy_ranges('RMF', name,
-                                                         energ_lo,
-                                                         energ_hi,
-                                                         ethresh=ethresh)
+        energ_lo, energ_hi = self._validate_ogip_energy_ranges(name, energ_lo, energ_hi, ethresh)
 
         self._fch = f_chan
         self._nch = n_chan
