@@ -84,10 +84,22 @@ def _notice_resp(chans, arf, rmf):
             arf.notice(bin_mask)
 
 
-class DataResponse(Data1DInt):
-    _ui_name = "Response"
+class DataOgipResponse(Data1DInt):
+    """
+    Parent class for OGIP responses, in particular ARF and RMF. This class implements some common validation code that
+    inheriting classes can call in their initializers.
 
-    def _validate_ogip_energy_ranges(self, label, elo, ehi, ethresh):
+    Inheriting classes should override the protected class field `_ui_name` to provide a more specific label for user
+    messages.
+    """
+    _ui_name = "OGIP Response"
+
+    # FIXME For a future time when we'll review this code in a deeper way: we could have better separation of concerns
+    # if the initializers of `DataARF` and `DataRMF` did not rely on the `BaseData` initializer, and if the class
+    # hierarchy was better organized (e.g. it looks like children must not call their super's initializer.
+    # Also, I'd expect validation to happen in individual methods rather than in a large one, and nested ifs should be
+    # avoided if possible.
+    def _validate_energy_ranges(self, label, elo, ehi, ethresh):
         """Check the lo/hi values are > 0, handling common error case.
 
             Several checks are made, to make sure the parameters follow
@@ -187,7 +199,7 @@ class DataResponse(Data1DInt):
         return elo, ehi
 
 
-class DataARF(DataResponse):
+class DataARF(DataOgipResponse):
     """ARF data set.
 
     The ARF format is described in OGIP documents [1]_ and [2]_.
@@ -247,7 +259,7 @@ class DataARF(DataResponse):
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
                  bin_hi=None, exposure=None, header=None, ethresh=None):
 
-        energ_lo, energ_hi = self._validate_ogip_energy_ranges(name, energ_lo, energ_hi, ethresh)
+        energ_lo, energ_hi = self._validate_energy_ranges(name, energ_lo, energ_hi, ethresh)
         self._lo, self._hi = energ_lo, energ_hi
 
         BaseData.__init__(self)
@@ -311,7 +323,7 @@ class DataARF(DataResponse):
         return 'cm' + backend.get_latex_for_string('^2')
 
 
-class DataRMF(DataResponse):
+class DataRMF(DataOgipResponse):
     """RMF data set.
 
     The RMF format is described in OGIP documents [1]_ and [2]_.
@@ -364,7 +376,7 @@ class DataRMF(DataResponse):
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
                  header=None, ethresh=None):
 
-        energ_lo, energ_hi = self._validate_ogip_energy_ranges(name, energ_lo, energ_hi, ethresh)
+        energ_lo, energ_hi = self._validate_energy_ranges(name, energ_lo, energ_hi, ethresh)
 
         self._fch = f_chan
         self._nch = n_chan
