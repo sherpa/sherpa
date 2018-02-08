@@ -297,13 +297,6 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args )
           XSpecFunc( &fear[0], &npts, &pars[0], &ifl,
                      &result[0], &error[0] );
 
-	} catch(std::exception& exc) {
-
-          std::ostringstream err;
-          err << "XSPEC model evaluation failed: " << exc.what();
-          PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-          return NULL;
-
 	} catch(...) {
 
           PyErr_SetString( PyExc_ValueError,
@@ -535,13 +528,6 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args )
           int npts = ngrid - 1;
           XSpecFunc( &ear[0], npts, &pars[0], ifl,
                      &result[0], &error[0], NULL );
-
-	} catch(std::exception& exc) {
-
-          std::ostringstream err;
-          err << "XSPEC model evaluation failed: " << exc.what();
-          PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-          return NULL;
 
 	} catch(...) {
 
@@ -1251,13 +1237,6 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
           int npts = ngrid - 1;
           XSpecFunc( &fear[0], npts, &pars[0], filename, ifl,
                      &result[0], &error[0] );
-
-	} catch(std::exception& exc) {
-
-          std::ostringstream err;
-          err << "XSPEC model evaluation failed: " << exc.what();
-          PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-          return NULL;
 
 	} catch(...) {
 
