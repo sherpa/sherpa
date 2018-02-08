@@ -9097,8 +9097,8 @@ class XSismabs(XSMultiplicativeModel):
     H
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
     HeII, CI, CII, CIII, NI, NII, NIII, OI, OII, OIII, NeI, NeII, NeIII,
-    MgI, MgII, MgIII, SiliconI, SiliconII, SiliconIII, SulfurI, SulfurII,
-    SulfurIII, ArI, ArII, ArIII, CaI, CaII, CaIII, Fe
+    MgI, MgII, MgIII, Si_I, Si_II, Si_III, S_I, S_II, S_III,
+    ArI, ArII, ArIII, CaI, CaII, CaIII, Fe
         The column for the species (in units of 10^16 atoms/cm^2).
     redshift
         The redshift of the absorber.
@@ -9106,9 +9106,9 @@ class XSismabs(XSMultiplicativeModel):
     Notes
     -----
     As Sherpa parameter names are case insensitive the parameters
-    for Silicon and Sulfur are named in full, rather than with the
-    symbols Si and S, to avoid confusion between SiI and SII (and
-    SiII and SIII).
+    for Silicon and Sulfur include an underscore character after the
+    element name to avoid conflict: that is Si_I and S_I refer to
+    the XSPEC SiI and SI parameters respectively.
 
     References
     ----------
@@ -9154,34 +9154,20 @@ class XSismabs(XSMultiplicativeModel):
                               '10^16', frozen=True)
         self.MgIII = Parameter(name, 'MgIII', 0.0, 0.0, 1e5, 0, 1e6,
                                '10^16', frozen=True)
-        # SiI and SI conflict, so spell out the elements, which is
-        # not ideal.
-        """
-        self.SiI = Parameter(name, 'SiI', 3.35, 0.0, 1e5, 0, 1e6,
-                             '10^16')
-        self.SiII = Parameter(name, 'SiII', 0.0, 0.0, 1e5, 0, 1e6,
-                              '10^16', frozen=True)
-        self.SiIII = Parameter(name, 'SiIII', 0.0, 0.0, 1e5, 0, 1e6,
+        # SiI and SI conflict, so add in underscores to differentiate.
+        #
+        self.Si_I = Parameter(name, 'Si_I', 3.35, 0.0, 1e5, 0, 1e6,
+                              '10^16')
+        self.Si_II = Parameter(name, 'Si_II', 0.0, 0.0, 1e5, 0, 1e6,
                                '10^16', frozen=True)
-        self.SI = Parameter(name, 'SI', 2.14, 0.0, 1e5, 0, 1e6,
-                            '10^16')
-        self.SII = Parameter(name, 'SII', 0.0, 0.0, 1e5, 0, 1e6,
-                             '10^16', frozen=True)
-        self.SIII = Parameter(name, 'SIII', 0.0, 0.0, 1e5, 0, 1e6,
+        self.Si_III = Parameter(name, 'Si_III', 0.0, 0.0, 1e5, 0, 1e6,
+                                '10^16', frozen=True)
+        self.S_I = Parameter(name, 'S_I', 2.14, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.S_II = Parameter(name, 'S_II', 0.0, 0.0, 1e5, 0, 1e6,
                               '10^16', frozen=True)
-        """
-        self.SiliconI = Parameter(name, 'SiliconI', 3.35, 0.0, 1e5, 0, 1e6,
-                                  '10^16')
-        self.SiliconII = Parameter(name, 'SiliconII', 0.0, 0.0, 1e5, 0, 1e6,
-                                   '10^16', frozen=True)
-        self.SiliconIII = Parameter(name, 'SiliconIII', 0.0, 0.0, 1e5, 0, 1e6,
-                                    '10^16', frozen=True)
-        self.SulfurI = Parameter(name, 'SulfurI', 2.14, 0.0, 1e5, 0, 1e6,
-                                 '10^16')
-        self.SulfurII = Parameter(name, 'SulfurII', 0.0, 0.0, 1e5, 0, 1e6,
-                                  '10^16', frozen=True)
-        self.SulfurIII = Parameter(name, 'SulfurIII', 0.0, 0.0, 1e5, 0, 1e6,
-                                   '10^16', frozen=True)
+        self.S_III = Parameter(name, 'S_III', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
         self.ArI = Parameter(name, 'ArI', 0.25, 0.0, 1e5, 0, 1e6,
                              '10^16')
         self.ArII = Parameter(name, 'ArII', 0.0, 0.0, 1e5, 0, 1e6,
@@ -9214,18 +9200,12 @@ class XSismabs(XSMultiplicativeModel):
                                         self.MgI,
                                         self.MgII,
                                         self.MgIII,
-                                        # self.SiI,
-                                        # self.SiII,
-                                        # self.SiIII,
-                                        # self.SI,
-                                        # self.SII,
-                                        # self.SIII,
-                                        self.SiliconI,
-                                        self.SiliconII,
-                                        self.SiliconIII,
-                                        self.SulfurI,
-                                        self.SulfurII,
-                                        self.SulfurIII,
+                                        self.Si_I,
+                                        self.Si_II,
+                                        self.Si_III,
+                                        self.S_I,
+                                        self.S_II,
+                                        self.S_III,
                                         self.ArI,
                                         self.ArII,
                                         self.ArIII,

@@ -691,9 +691,9 @@ def test_ismabs_parameter_name_clashes():
 
     The model.dat for ismabs has parameter names SiI and SII, which
     refer to different parameters (also SiII and SIII), but which
-    Sherpa would treat as linked parameters. The solution is to
-    explicitly spell out the parameter names. This test is just to
-    check that this works (and is technically not needed, but is
+    Sherpa would treat as linked parameters. This test is provided to
+    make sure that any documentation/code is updated if the chosen
+    scheme to address this is updated (it is technically not needed, but is
     left in as a check that any future auto-generated XSPEC model
     handles these parameter names).
 
@@ -709,7 +709,7 @@ def test_ismabs_parameter_name_clashes():
     # List of expected names taken from XSPEC 12.9.1 model.dat file.
     #
     names = ["H", "HeII"]
-    for el in ["C", "N", "O", "Ne", "Mg", "Silicon", "Sulfur", "Ar", "Ca"]:
+    for el in ["C", "N", "O", "Ne", "Mg", "Si_", "S_", "Ar", "Ca"]:
         for i in ["I", "II", "III"]:
             names.append(el + i)
     names.extend(["Fe", "redshift"])
