@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2017  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -231,6 +231,7 @@ class DataErr(SherpaErr):
             'normffake': 'An RMF has not been found or supplied for data set %s',
             'noenerg': 'no energy grid found in PHA response',
             'norsp': 'No instrument response found for dataset %s',
+            'ogip-error': "The %s '%s' %s"
             }
 
     def __init__(self, key, *args):

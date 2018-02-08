@@ -22,6 +22,7 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 """
 
 import os.path
+import warnings
 
 import numpy
 from sherpa.data import BaseData, Data1DInt, Data2D, DataND
@@ -83,8 +84,165 @@ def _notice_resp(chans, arf, rmf):
             arf.notice(bin_mask)
 
 
-class DataARF(Data1DInt):
-    "ARF data set"
+class DataOgipResponse(Data1DInt):
+    """
+    Parent class for OGIP responses, in particular ARF and RMF. This class implements some common validation code that
+    inheriting classes can call in their initializers.
+
+    Inheriting classes should override the protected class field `_ui_name` to provide a more specific label for user
+    messages.
+    """
+    _ui_name = "OGIP Response"
+
+    # FIXME For a future time when we'll review this code in a deeper way: we could have better separation of concerns
+    # if the initializers of `DataARF` and `DataRMF` did not rely on the `BaseData` initializer, and if the class
+    # hierarchy was better organized (e.g. it looks like children must not call their super's initializer.
+    # Also, I'd expect validation to happen in individual methods rather than in a large one, and nested ifs should be
+    # avoided if possible.
+    def _validate_energy_ranges(self, label, elo, ehi, ethresh):
+        """Check the lo/hi values are > 0, handling common error case.
+
+            Several checks are made, to make sure the parameters follow
+            the OGIP standard. If the checks fail a DataErr is raised.
+            When ethresh is set, the case where the low-edge of the start bin
+            is zero is treated as a special case rather than an error.
+            If a replacement is made (i.e. the low edge is set to ethresh) then
+            a warning is displayed.
+
+            Parameters
+            ----------
+            label : str
+                The response file identifier.
+            elo, ehi : numpy arrays
+                The input ENERG_LO and ENERG_HI arrays. They are assumed
+                to be one-dimensional and have the same number of elements.
+            ethresh : None or float, optional
+                If None, then elo must be greater than 0. When set, the
+                start bin can have a low-energy edge of 0; it is replaced
+                by ethresh. If set, ethresh must be greater than 0.
+
+            Returns
+            -------
+            elo, ehi : numpy arrays
+                The validated energy limits. These can be the input arrays
+                or a copy of them. At present the ehi array is the same as
+                the input array, but this may change in the future.
+
+            Notes
+            -----
+            Only some of the constraints provided by the OGIP standard are
+            checked here, since there are issues involving numerical effects
+            (e.g. when checking that two bins do not overlap), as well as
+            uncertainty over what possible  behavior is seen in released
+            data products for missions. The current set of checks are:
+
+              - ehi > elo for each bin
+              - elo is monotonic (ascending or descending)
+              - when emin is set, the lowest value in elo is >= 0,
+                otherwise it is > 0.
+              - ethresh (if set) is less than the minimum value in ENERG_HI
+
+            A failed check raises a DataErr exception.
+
+            """
+
+        rtype = self._ui_name
+
+        if ethresh is not None and ethresh <= 0.0:
+            raise ValueError("ethresh is None or > 0")
+
+        if (elo >= ehi).any():
+            raise DataErr('ogip-error', rtype, label,
+                          'has at least one bin with ENERG_HI < ENERG_LO')
+
+        # if elo is monotonically increasing, all elements will be True
+        #                         decreasing,                      False
+        #
+        # so the sum will be number of elements or 0
+        #
+        increasing = numpy.diff(elo, n=1) > 0.0
+        nincreasing = increasing.sum()
+        if nincreasing > 0 and nincreasing != len(increasing):
+            raise DataErr('ogip-error', rtype, label,
+                          'has a non-monotonic ENERG_LO array')
+
+        if nincreasing == 0:
+            startidx = -1
+        else:
+            startidx = 0
+
+        e0 = elo[startidx]
+        if ethresh is None:
+            if e0 <= 0.0:
+                raise DataErr('ogip-error', rtype, label,
+                              'has an ENERG_LO value <= 0')
+        else:
+            # TODO: should this equality be replaced by an approximation test?
+            if e0 == 0.0:
+
+                if ehi[startidx] <= ethresh:
+                    raise DataErr('ogip-error', rtype, label,
+                                  'has an ENERG_HI value <= the replacement ' +
+                                  'value of {}'.format(ethresh))
+
+                elo = elo.copy()
+                elo[startidx] = ethresh
+                wmsg = "The minimum ENERG_LO in the " + \
+                       "{} '{}' was 0 and has been ".format(rtype, label) + \
+                       "replaced by {}".format(ethresh)
+                warnings.warn(wmsg)
+
+            elif e0 < 0.0:
+                raise DataErr('ogip-error', rtype, label,
+                              'has an ENERG_LO value < 0')
+
+        return elo, ehi
+
+
+class DataARF(DataOgipResponse):
+    """ARF data set.
+
+    The ARF format is described in OGIP documents [1]_ and [2]_.
+
+    Parameters
+    ----------
+    name : str
+        The name of the data set; often set to the name of the file
+        containing the data.
+    energ_lo, energ_hi, specresp : array
+        The values of the ENERG_LO, ENERG_HI, and SPECRESP columns
+        for the ARF. The ENERG_HI values must be greater than the
+        ENERG_LO values for each bin, and the energy arrays must be
+        in increasing or decreasing order.
+    bin_lo, bin_hi : array or None, optional
+    exposure : number or None, optional
+        The exposure time for the ARF, in seconds.
+    header : dict or None, optional
+    ethresh : number or None, optional
+        If set it must be greater than 0 and is the replacement value
+        to use if the lowest-energy value is 0.0.
+
+    Raises
+    ------
+    sherpa.utils.err.DataErr
+        This is raised if the energy arrays do not follow some of the
+        OGIP standards.
+
+    Notes
+    -----
+    There is limited checking that the ARF matches the OGIP standard,
+    but as there are cases of released data products that do not follow
+    the standard, these checks can not cover all cases.
+
+    References
+    ----------
+
+    .. [1] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+
+    .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
+
+    """
+    _ui_name = "ARF"
 
     mask = property(BaseData._get_mask, BaseData._set_mask,
                     doc=BaseData.mask.__doc__)
@@ -99,9 +257,11 @@ class DataARF(Data1DInt):
     specresp = property(_get_specresp, _set_specresp)
 
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
-                 bin_hi=None, exposure=None, header=None):
-        self._lo = energ_lo
-        self._hi = energ_hi
+                 bin_hi=None, exposure=None, header=None, ethresh=None):
+
+        energ_lo, energ_hi = self._validate_energy_ranges(name, energ_lo, energ_hi, ethresh)
+        self._lo, self._hi = energ_lo, energ_hi
+
         BaseData.__init__(self)
 
     def __str__(self):
@@ -109,7 +269,8 @@ class DataARF(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
+            self._fields = tuple(filter((lambda x: x != 'header'),
+                                        self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -162,15 +323,61 @@ class DataARF(Data1DInt):
         return 'cm' + backend.get_latex_for_string('^2')
 
 
-class DataRMF(Data1DInt):
-    "RMF data set"
+class DataRMF(DataOgipResponse):
+    """RMF data set.
+
+    The RMF format is described in OGIP documents [1]_ and [2]_.
+
+    Parameters
+    ----------
+    name : str
+        The name of the data set; often set to the name of the file
+        containing the data.
+    detchans : int
+    energ_lo, energ_hi : array
+        The values of the ENERG_LO, ENERG_HI, and SPECRESP columns
+        for the ARF. The ENERG_HI values must be greater than the
+        ENERG_LO values for each bin, and the energy arrays must be
+        in increasing or decreasing order.
+    n_grp, f_chan, n_chan, matrix : array-like
+    offset : int, optional
+    e_min, e_max : array-like or None, optional
+    header : dict or None, optional
+    ethresh : number or None, optional
+        If set it must be greater than 0 and is the replacement value
+        to use if the lowest-energy value is 0.0.
+
+    Raises
+    ------
+    sherpa.utils.err.DataErr
+        This is raised if the energy arrays do not follow some of the
+        OGIP standards.
+
+    Notes
+    -----
+    There is limited checking that the RMF matches the OGIP standard,
+    but as there are cases of released data products that do not follow
+    the standard, these checks can not cover all cases.
+
+    References
+    ----------
+
+    .. [1] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+
+    .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
+
+    """
+    _ui_name = "RMF"
 
     mask = property(BaseData._get_mask, BaseData._set_mask,
                     doc=BaseData.mask.__doc__)
 
     def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
-                 header=None):
+                 header=None, ethresh=None):
+
+        energ_lo, energ_hi = self._validate_energy_ranges(name, energ_lo, energ_hi, ethresh)
+
         self._fch = f_chan
         self._nch = n_chan
         self._grp = n_grp
@@ -184,7 +391,8 @@ class DataRMF(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
+            self._fields = tuple(filter((lambda x: x != 'header'),
+                                        self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -206,7 +414,8 @@ class DataRMF(Data1DInt):
                 src = rebin(src, pha[0], pha[1], rmf[0], rmf[1])
 
         if len(src) != len(self._lo):
-            raise TypeError("Mismatched filter between ARF and RMF or PHA and RMF")
+            raise TypeError("Mismatched filter between ARF and RMF " +
+                            "or PHA and RMF")
 
         return rmf_fold(src, self._grp, self._fch, self._nch, self._rsp,
                         self.detchans, self.offset)
@@ -264,6 +473,7 @@ class DataPHA(Data1DInt):
     grouping : array of int or None, optional
     quality : array of int or None, optional
     exposure : number or None, optional
+        The exposure time for the PHA data set, in seconds.
     backscal : scalar or array or None, optional
     areascal : scalar or array or None, optional
     header : dict or None, optional
@@ -474,7 +684,8 @@ class DataPHA(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
+            self._fields = tuple(filter((lambda x: x != 'header'),
+                                        self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -536,7 +747,7 @@ class DataPHA(Data1DInt):
     def set_response(self, arf=None, rmf=None, id=None):
         if (arf is None) and (rmf is None):
             return
-        # Multiple responses re-enabled for CIAOX
+
         id = self._fix_response_id(id)
         self._responses[id] = (arf, rmf)
         ids = self.response_ids[:]
@@ -1087,7 +1298,7 @@ class DataPHA(Data1DInt):
             if (hasattr(bkg, "group_counts")):
                 bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
 
-    ### DOC-TODO: see discussion in astro.ui.utils regarding errorCol
+    # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_snr(self, snr, maxLength=None, tabStops=None, errorCol=None):
         """Group into a minimum signal-to-noise ratio.
 
@@ -1198,7 +1409,7 @@ class DataPHA(Data1DInt):
                 bkg.group_adapt(minimum, maxLength=maxLength,
                                 tabStops=tabStops)
 
-    ### DOC-TODO: see discussion in astro.ui.utils regarding errorCol
+    # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_adapt_snr(self, minimum, maxLength=None, tabStops=None,
                         errorCol=None):
         """Adaptively group to a minimum signal-to-noise ratio.
@@ -2017,7 +2228,8 @@ class DataIMG(Data2D):
         old = self._fields
         ss = old
         try:
-            self._fields = tuple(filter((lambda x: x != 'header'), self._fields))
+            self._fields = tuple(filter((lambda x: x != 'header'),
+                                        self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old

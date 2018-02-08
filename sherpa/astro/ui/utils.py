@@ -1668,6 +1668,12 @@ class Session(sherpa.ui.utils.Session):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        The `minimum_energy` setting of the `ogip` section of the
+        Sherpa configuration file determines the behavior when an
+        ARF with a minimum energy of 0 is read in. The default is
+        to replace the 0 by the value 1e-10, which will also cause
+        a warning message to be displayed.
+
         Examples
         --------
 
@@ -4906,6 +4912,14 @@ class Session(sherpa.ui.utils.Session):
         load_rmf : Load a RMF from a file and add it to a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
 
+        Notes
+        -----
+        The `minimum_energy` setting of the `ogip` section of the
+        Sherpa configuration file determines the behavior when an
+        ARF with a minimum energy of 0 is read in. The default is
+        to replace the 0 by the value 1e-10, which will also cause
+        a warning message to be displayed.
+
         Examples
         --------
 
@@ -4983,6 +4997,12 @@ class Session(sherpa.ui.utils.Session):
         data (i.e. it includes any response information; that is the
         ARF and RMF, if set). To include the ARF explicitly, use
         `set_full_model`.
+
+        The `minimum_energy` setting of the `ogip` section of the
+        Sherpa configuration file determines the behavior when an
+        ARF with a minimum energy of 0 is read in. The default is
+        to replace the 0 by the value 1e-10, which will also cause
+        a warning message to be displayed.
 
         Examples
         --------
@@ -5089,6 +5109,12 @@ class Session(sherpa.ui.utils.Session):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        The `minimum_energy` setting of the `ogip` section of the
+        Sherpa configuration file determines the behavior when an
+        ARF with a minimum energy of 0 is read in. The default is
+        to replace the 0 by the value 1e-10, which will also cause
+        a warning message to be displayed.
+
         Examples
         --------
 
@@ -5141,6 +5167,12 @@ class Session(sherpa.ui.utils.Session):
         When called with two arguments, they are assumed to be
         ``filenames`` and ``resp_ids``, and three positional arguments
         means `id`, ``filenames``, and ``resp_ids``.
+
+        The `minimum_energy` setting of the `ogip` section of the
+        Sherpa configuration file determines the behavior when an
+        ARF with a minimum energy of 0 is read in. The default is
+        to replace the 0 by the value 1e-10, which will also cause
+        a warning message to be displayed.
 
         Examples
         --------
@@ -5345,6 +5377,14 @@ class Session(sherpa.ui.utils.Session):
         load_rmf : Load a RMF from a file and add it to a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
 
+        Notes
+        -----
+        The `minimum_energy` setting of the `ogip` section of the
+        Sherpa configuration file determines the behavior when an
+        RMF with a minimum energy of 0 is read in. The default is
+        to replace the 0 by the value 1e-10, which will also cause
+        a warning message to be displayed.
+
         Examples
         --------
 
@@ -5422,6 +5462,12 @@ class Session(sherpa.ui.utils.Session):
         data (i.e. it includes any response information; that is the
         ARF and RMF, if set). To include the RMF explicitly, use
         `set_full_model`.
+
+        The `minimum_energy` setting of the `ogip` section of the
+        Sherpa configuration file determines the behavior when an
+        RMF with a minimum energy of 0 is read in. The default is
+        to replace the 0 by the value 1e-10, which will also cause
+        a warning message to be displayed.
 
         Examples
         --------
@@ -5523,6 +5569,12 @@ class Session(sherpa.ui.utils.Session):
         respectively. The remaining parameters are expected to be
         given as named arguments.
 
+        The `minimum_energy` setting of the `ogip` section of the
+        Sherpa configuration file determines the behavior when an
+        RMF with a minimum energy of 0 is read in. The default is
+        to replace the 0 by the value 1e-10, which will also cause
+        a warning message to be displayed.
+
         Examples
         --------
 
@@ -5575,6 +5627,12 @@ class Session(sherpa.ui.utils.Session):
         When called with two arguments, they are assumed to be
         ``filenames`` and ``resp_ids``, and three positional arguments
         means `id`, ``filenames``, and ``resp_ids``.
+
+        The `minimum_energy` setting of the `ogip` section of the
+        Sherpa configuration file determines the behavior when an
+        RMF with a minimum energy of 0 is read in. The default is
+        to replace the 0 by the value 1e-10, which will also cause
+        a warning message to be displayed.
 
         Examples
         --------
