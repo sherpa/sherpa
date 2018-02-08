@@ -109,13 +109,25 @@ int _sherpa_init_xspec_library();
 
 extern "C" {
 
+#ifdef XSPEC_12_9_1
+void C_apec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_bapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#else
 void xsaped_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbape_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+
 void xsblbd_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbbrd_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbmc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbrms_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+
+#ifdef XSPEC_12_9_1
+void C_bvapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#else
 void xsbvpe_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+
 void c6mekl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void c6pmekl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void c6pvmkl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -135,13 +147,39 @@ void diskpbb_(float* ear, int* ne, float* param, int* ifl, float* photar, float*
 void xsdiskpn_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsxpdec_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void ezdiskbb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+
+#ifdef XSPEC_12_9_1
+void C_gaussianLine(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#else
 void xsgaul_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif  
+
+// void xnneq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_gnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void grad_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsgrbm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void spin_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_xslaor(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+// void laor2_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_laor2(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
+#ifdef XSPEC_12_9_1
+void C_lorentzianLine(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_meka(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_mekal(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#else
 void xslorz_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsmeka_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsmekl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+  
+// void xsmkcf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_xsmkcf(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+// void C_xneq(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_nei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_nlapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+// void xshock_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_npshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void nsa_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void nsagrav_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void nsatmos_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -149,17 +187,58 @@ void nsmax_(float* ear, int* ne, float* param, int* ifl, float* photar, float* p
 void xspegp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsp1tr_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsposm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+// void xneqs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_pshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
+#ifdef XSPEC_12_9_1
+void C_raysmith(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#else
 void xsrays_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+  
 void xredge_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsrefsch_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void srcut_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void sresc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsstep_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+
+#ifdef XSPEC_12_9_1
+void C_vapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#else
 void xsvape_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
-void xsbrmv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+  
+  void xsbrmv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+// void xseq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_vequil(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+// void xsnneq_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_vgnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
+#ifdef XSPEC_12_9_1
+void C_vmeka(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_vmekal(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#else
 void xsvmek_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvmkl_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+  
+// void xsvmcf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_xsvmcf(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+// void C_xsneq(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_vnei(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+// void xsshock_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_vnpshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+// void xsneqs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_vpshock(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
+#ifdef XSPEC_12_9_1
+void C_vraysmith(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#else
 void xsvrys_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+  
+// void xssedov_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_vsedov(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void xszbod_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xszbrm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void acisabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -203,8 +282,22 @@ void xszwnb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 
 // New XSPEC 12.7 models
 
+void C_cplinear(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+// void xseqpair_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_xseqpair(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+// void xseqth_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_xseqth(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+// void xscompth_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void C_xscompth(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
+#ifdef XSPEC_12_9_1
+void C_bvvapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_vvapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+#else
 void xsbvvp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsvvap_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+  
 void zigm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 
 // New XSPEC 12.7.1 models
@@ -1219,8 +1312,13 @@ static PyMethodDef XSpecMethods[] = {
             EXAMPLESDOC "\n"
             ">>> set_xspath_manager('/data/xspec/spectral/manager')\n\n"},
 
+#ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C_NORM( C_apec, 4 ),
+  XSPECMODELFCT_C_NORM( C_bapec, 5 ),
+#else
   XSPECMODELFCT_NORM( xsaped, 4 ),
   XSPECMODELFCT_NORM( xsbape, 5 ),
+#endif
   XSPECMODELFCT_NORM( xsblbd, 2 ),
   XSPECMODELFCT_NORM( xsbbrd, 2 ),
   XSPECMODELFCT_C_NORM( C_xsbexrav, 10 ),
@@ -1230,7 +1328,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_sirf, 10 ),
   XSPECMODELFCT_NORM( xsbmc, 4 ),
   XSPECMODELFCT_NORM( xsbrms, 2 ),
+#ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C_NORM( C_bvapec, 17 ),
+#else  
   XSPECMODELFCT_NORM( xsbvpe, 17 ),
+#endif
   XSPECMODELFCT_NORM( c6mekl, 11 ),
   XSPECMODELFCT_NORM( c6pmekl, 11 ),
   XSPECMODELFCT_NORM( c6pvmkl, 24 ),
@@ -1255,7 +1357,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_equil, 4 ),
   XSPECMODELFCT_NORM( xsxpdec, 2 ),
   XSPECMODELFCT_NORM( ezdiskbb, 2 ),
+#ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C_NORM( C_gaussianLine, 3 ),
+#else
   XSPECMODELFCT_NORM( xsgaul, 3 ),
+#endif
   XSPECMODELFCT_C_NORM( C_gnei, 6 ),
   XSPECMODELFCT_NORM( grad, 7 ),
   XSPECMODELFCT_NORM( xsgrbm, 4 ),
@@ -1264,9 +1370,15 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( spin, 10 ),
   XSPECMODELFCT_C_NORM( C_xslaor, 6 ),
   XSPECMODELFCT_C_NORM( C_laor2, 8 ),
+#ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C_NORM( C_lorentzianLine, 3 ),
+  XSPECMODELFCT_C_NORM( C_meka, 5 ),
+  XSPECMODELFCT_C_NORM( C_mekal, 6 ),
+#else
   XSPECMODELFCT_NORM( xslorz, 3 ),
   XSPECMODELFCT_NORM( xsmeka, 5 ),
   XSPECMODELFCT_NORM( xsmekl, 6 ),
+#endif  
   XSPECMODELFCT_C_NORM( C_xsmkcf, 6 ),
   XSPECMODELFCT_C_NORM( C_nei, 5 ),
   XSPECMODELFCT_C_NORM( C_nlapec, 4 ),
@@ -1284,24 +1396,41 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_powerLaw, 2 ),
   XSPECMODELFCT_NORM( xsposm, 1 ),
   XSPECMODELFCT_C_NORM( C_pshock, 6 ),
+#ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C_NORM(C_raysmith, 4 ),
+#else
   XSPECMODELFCT_NORM( xsrays, 4 ),
+#endif  
   XSPECMODELFCT_NORM( xredge, 3 ),
   XSPECMODELFCT_NORM( xsrefsch, 14 ),
   XSPECMODELFCT_C_NORM( C_sedov, 6 ),
   XSPECMODELFCT_NORM( srcut, 3 ),
   XSPECMODELFCT_NORM( sresc, 3 ),
   XSPECMODELFCT_NORM( xsstep, 3 ),
+#ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C_NORM( C_vapec, 16 ),
+#else  
   XSPECMODELFCT_NORM( xsvape, 16 ),
+#endif  
   XSPECMODELFCT_NORM( xsbrmv, 3 ),
   XSPECMODELFCT_C_NORM( C_vequil, 15 ),
   XSPECMODELFCT_C_NORM( C_vgnei, 18 ),
+#ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C_NORM( C_vmeka, 18 ),
+  XSPECMODELFCT_C_NORM( C_vmekal, 19 ),
+#else
   XSPECMODELFCT_NORM( xsvmek, 18 ),
   XSPECMODELFCT_NORM( xsvmkl, 19 ),
+#endif  
   XSPECMODELFCT_C_NORM( C_xsvmcf, 19 ),
   XSPECMODELFCT_C_NORM( C_vnei, 17 ),
   XSPECMODELFCT_C_NORM( C_vnpshock, 19 ),
   XSPECMODELFCT_C_NORM( C_vpshock, 18 ),
+#ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C_NORM( C_vraysmith, 15 ),
+#else
   XSPECMODELFCT_NORM( xsvrys, 15 ),
+#endif  
   XSPECMODELFCT_C_NORM( C_vsedov, 18 ),
   XSPECMODELFCT_NORM( xszbod, 3 ),
   XSPECMODELFCT_NORM( xszbrm, 3 ),
@@ -1358,8 +1487,13 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_xseqpair, 21 ),
   XSPECMODELFCT_C_NORM( C_xseqth, 21 ),
   XSPECMODELFCT_C_NORM( C_xscompth, 21 ),
+#ifdef XSPEC_12_9_1
+  XSPECMODELFCT_C_NORM( C_bvvapec, 34 ),
+  XSPECMODELFCT_C_NORM( C_vvapec, 33 ),
+#else  
   XSPECMODELFCT_NORM( xsbvvp, 34 ),
   XSPECMODELFCT_NORM( xsvvap, 33 ),
+#endif
   XSPECMODELFCT( zigm, 3 ),
   // New XSPEC 12.7.1 models
   XSPECMODELFCT_C_NORM( C_gaussDem, 7 ),

@@ -1,6 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018
-#         Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015-2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -595,7 +594,8 @@ class XSapec(XSAdditiveModel):
 
     """
 
-    __function__ = "xsaped"
+    # __function__ = "xsaped"
+    __function__ = "C_apec"
 
     def __init__(self, name='apec'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
@@ -686,7 +686,8 @@ class XSbapec(XSAdditiveModel):
 
     """
 
-    __function__ = "xsbape"
+    # __function__ = "xsbape"
+    __function__ = "C_bapec"
 
     def __init__(self, name='bapec'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
@@ -1110,7 +1111,8 @@ class XSbvapec(XSAdditiveModel):
 
     """
 
-    __function__ = "xsbvpe"
+    # __function__ = "xsbvpe"
+    __function__ = "C_bvapec"
 
     def __init__(self, name='bvapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
@@ -2286,7 +2288,8 @@ class XSgaussian(XSAdditiveModel):
 
     """
 
-    __function__ = "xsgaul"
+    # __function__ = "xsgaul"
+    __function__ = "C_gaussianLine"
 
     def __init__(self, name='gaussian'):
         self.LineE = Parameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, hugeval, 'keV')
@@ -2796,7 +2799,8 @@ class XSlorentz(XSAdditiveModel):
 
     """
 
-    __function__ = "xslorz"
+    # __function__ = "xslorz"
+    __function__ = "C_lorentzianLine"
 
     def __init__(self, name='lorentz'):
         self.LineE = Parameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, hugeval, 'keV')
@@ -2841,7 +2845,8 @@ class XSmeka(XSAdditiveModel):
 
     """
 
-    __function__ = "xsmeka"
+    # __function__ = "xsmeka"
+    __function__ = "C_meka"
 
     def __init__(self, name='meka'):
         self.kT = Parameter(name, 'kT', 1., 1.e-3, 1.e2, 0.0, hugeval, 'keV')
@@ -2888,7 +2893,8 @@ class XSmekal(XSAdditiveModel):
 
     """
 
-    __function__ = "xsmekl"
+    # __function__ = "xsmekl"
+    __function__ = "C_mekal"
 
     def __init__(self, name='mekal'):
         self.kT = Parameter(name, 'kT', 1., 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -3955,7 +3961,8 @@ class XSraymond(XSAdditiveModel):
 
     """
 
-    __function__ = "xsrays"
+    # __function__ = "xsrays"
+    __function__ = "C_raysmith"
 
     def __init__(self, name='raymond'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
@@ -4322,7 +4329,8 @@ class XSvapec(XSAdditiveModel):
 
     """
 
-    __function__ = "xsvape"
+    # __function__ = "xsvape"
+    __function__ = "C_vapec"
 
     def __init__(self, name='vapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
@@ -4620,7 +4628,8 @@ class XSvmeka(XSAdditiveModel):
 
     """
 
-    __function__ = "xsvmek"
+    # __function__ = "xsvmek"
+    __function__ = "C_vmeka"
 
     def __init__(self, name='vmeka'):
         self.kT = Parameter(name, 'kT', 1., 1.e-3, 1.e2, 0.0, hugeval, 'keV')
@@ -4679,7 +4688,8 @@ class XSvmekal(XSAdditiveModel):
 
     """
 
-    __function__ = "xsvmkl"
+    # __function__ = "xsvmkl"
+    __function__ = "C_vmekal"
 
     def __init__(self, name='vmekal'):
         self.kT = Parameter(name, 'kT', 1., 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -5222,7 +5232,8 @@ class XSvraymond(XSAdditiveModel):
 
     """
 
-    __function__ = "xsvrys"
+    # __function__ = "xsvrys"
+    __function__ = "C_vraysmith"
 
     def __init__(self, name='vraymond'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -7729,7 +7740,8 @@ class XSbvvapec(XSAdditiveModel):
 
     """
 
-    __function__ = "xsbvvp"
+    # __function__ = "xsbvvp"
+    __function__ = "C_bvvapec"
 
     def __init__(self, name='bvvapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
@@ -7799,7 +7811,8 @@ class XSvvapec(XSAdditiveModel):
 
     """
 
-    __function__ = "xsvvap"
+    # __function__ = "xsvvap"
+    __function__ = "C_vvapec"
 
     def __init__(self, name='vvapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
