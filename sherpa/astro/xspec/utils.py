@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -61,6 +61,22 @@ class ModelMeta(type):
         raise AttributeError(ModelMeta.NOT_COMPILED_FUNCTION_MESSAGE)
 
 
+def equal_or_greater_than(version_string):
+    """
+    Utility function that compares a version string with the version of the current xspec instance.
+
+    For better or worse the xspec current instance is not cached across calls. It probably could be but
+    it just seems safer not to, and any overhead insists on models initialization only.
+
+    The comparison is made in terms of the `distutils.version.LooseVersion` class.
+
+    :param version_string: the version against which to compare the current xspec version
+    :return: `True` if the version of xspec is equal or greater than the argument, `False` otherwise
+    """
+    xspec_version = LooseVersion(_xspec.get_xsversion())
+    return xspec_version >= LooseVersion(version_string)
+
+
 class include_if(object):
     """
     Generic decorator for including xspec models conditionally. It takes a boolean condition as an argument.
@@ -95,5 +111,4 @@ class version_at_least(include_if):
     the xspec version detected at runtime is equal or greater than the one provided to the decorator.
     """
     def __init__(self, version_string):
-        xspec_version = LooseVersion(_xspec.get_xsversion())
-        include_if.__init__(self, xspec_version >= LooseVersion(version_string))
+        include_if.__init__(self, equal_or_greater_than(version_string))

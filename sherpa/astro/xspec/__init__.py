@@ -50,7 +50,7 @@ from sherpa.models.parameter import hugeval
 from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
 from sherpa.astro.utils import get_xspec_position
 
-from .utils import ModelMeta, version_at_least
+from .utils import ModelMeta, version_at_least, equal_or_greater_than
 from . import _xspec
 from ._xspec import get_xschatter, get_xsabund, get_xscosmo, \
     get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, \
@@ -593,9 +593,7 @@ class XSapec(XSAdditiveModel):
     .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelApec.html
 
     """
-
-    # __function__ = "xsaped"
-    __function__ = "C_apec"
+    __function__ = "C_apec" if equal_or_greater_than("12.9.1") else "xsaped"
 
     def __init__(self, name='apec'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
@@ -686,8 +684,7 @@ class XSbapec(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsbape"
-    __function__ = "C_bapec"
+    __function__ = "C_bapec" if equal_or_greater_than("12.9.1") else "xsbape"
 
     def __init__(self, name='bapec'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
@@ -1111,8 +1108,7 @@ class XSbvapec(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsbvpe"
-    __function__ = "C_bvapec"
+    __function__ = "C_bvapec" if equal_or_greater_than("12.9.1") else "xsbvpe"
 
     def __init__(self, name='bvapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
@@ -2288,8 +2284,7 @@ class XSgaussian(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsgaul"
-    __function__ = "C_gaussianLine"
+    __function__ = "C_gaussianLine" if equal_or_greater_than("12.9.1") else "xsgaul"
 
     def __init__(self, name='gaussian'):
         self.LineE = Parameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, hugeval, 'keV')
@@ -2799,8 +2794,7 @@ class XSlorentz(XSAdditiveModel):
 
     """
 
-    # __function__ = "xslorz"
-    __function__ = "C_lorentzianLine"
+    __function__ = "C_lorentzianLine" if equal_or_greater_than("12.9.1") else "xslorz"
 
     def __init__(self, name='lorentz'):
         self.LineE = Parameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, hugeval, 'keV')
@@ -2845,8 +2839,7 @@ class XSmeka(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsmeka"
-    __function__ = "C_meka"
+    __function__ = "C_meka" if equal_or_greater_than("12.9.1") else "xsmeka"
 
     def __init__(self, name='meka'):
         self.kT = Parameter(name, 'kT', 1., 1.e-3, 1.e2, 0.0, hugeval, 'keV')
@@ -2893,8 +2886,7 @@ class XSmekal(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsmekl"
-    __function__ = "C_mekal"
+    __function__ = "C_mekal" if equal_or_greater_than("12.9.1") else "xsmekl"
 
     def __init__(self, name='mekal'):
         self.kT = Parameter(name, 'kT', 1., 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -3961,8 +3953,7 @@ class XSraymond(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsrays"
-    __function__ = "C_raysmith"
+    __function__ = "C_raysmith" if equal_or_greater_than("12.9.1") else "xsrays"
 
     def __init__(self, name='raymond'):
         self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.0, hugeval, 'keV')
@@ -4329,8 +4320,7 @@ class XSvapec(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsvape"
-    __function__ = "C_vapec"
+    __function__ = "C_vapec" if equal_or_greater_than("12.9.1") else "xsvape"
 
     def __init__(self, name='vapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
@@ -4628,8 +4618,7 @@ class XSvmeka(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsvmek"
-    __function__ = "C_vmeka"
+    __function__ = "C_vmeka" if equal_or_greater_than("12.9.1") else "xsvmek"
 
     def __init__(self, name='vmeka'):
         self.kT = Parameter(name, 'kT', 1., 1.e-3, 1.e2, 0.0, hugeval, 'keV')
@@ -4688,8 +4677,7 @@ class XSvmekal(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsvmkl"
-    __function__ = "C_vmekal"
+    __function__ = "C_vmekal" if equal_or_greater_than("12.9.1") else "xsvmkl"
 
     def __init__(self, name='vmekal'):
         self.kT = Parameter(name, 'kT', 1., 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -5232,8 +5220,7 @@ class XSvraymond(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsvrys"
-    __function__ = "C_vraysmith"
+    __function__ = "C_vraysmith" if equal_or_greater_than("12.9.1") else "xsvrys"
 
     def __init__(self, name='vraymond'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 79.9, 0.0, hugeval, 'keV')
@@ -7740,8 +7727,7 @@ class XSbvvapec(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsbvvp"
-    __function__ = "C_bvvapec"
+    __function__ = "C_bvvapec" if equal_or_greater_than("12.9.1") else "xsbvvp"
 
     def __init__(self, name='bvvapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
@@ -7811,8 +7797,7 @@ class XSvvapec(XSAdditiveModel):
 
     """
 
-    # __function__ = "xsvvap"
-    __function__ = "C_vvapec"
+    __function__ = "C_vvapec" if equal_or_greater_than("12.9.1") else "xsvvap"
 
     def __init__(self, name='vvapec'):
         self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0, hugeval, 'keV')
