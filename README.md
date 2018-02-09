@@ -451,13 +451,17 @@ used, but the full path should be in your own copy of the file):
 
  1. If the full XSPEC system has been built, then use
 
-        xspec_lib_dirs=$HEADAS/lib
-        ccfits_libraries=CCfits_2.5
-        wcs_libraries=wcs-5.16
+        xspec_include_dirs = $HEADAS/include
+        xspec_lib_dirs = $HEADAS/lib
+        xspec_libraries = XSFunctions XSModel XSUtil XS
+        cfitsio_libraries = cfitsio
+        ccfits_libraries = CCfits_2.5
+        wcs_libraries = wcs-5.16
 
     The environment variable `$HEADAS` should be expanded out, and the
     version numbers of the `wcs`, `cfitsio`, and `CCfits` libraries
-    may need to be changed, depending on the version of XSPEC.
+    may need to be changed, depending on the version of XSPEC (the
+    values given above are valid for XSPEC 12.9.1).
 
  2. Use the model-only build of XSPEC, which will also require
     building the
@@ -465,15 +469,22 @@ used, but the full path should be in your own copy of the file):
     [CCfits](http://heasarc.gsfc.nasa.gov/docs/software/fitsio/ccfits/),
     and
     [WCSLIB](http://www.atnf.csiro.au/people/mcalabre/WCS/wcslib/)
-    libraries. If all the libraries are installed into the same location
-    ($HEADAS/lib), then a similar set up to the full XSPEC build is used
+    libraries. If all the libraries are installed
+    into the same location ($HEADAS), then a similar set up to the
+    full XSPEC build is used
 
-        xspec_lib_dirs=$HEADAS/lib
+        xspec_include_dirs = $HEADAS/include
+        xspec_lib_dirs = $HEADAS/lib
+        xspec_libraries = XSFunctions XSModel XSUtil XS
+        cfitsio_libraries = cfitsio
+        ccfits_libraries = CCfits
+        wcs_libraries = wcs
 
-    and the appropriate `*_libraries` may need to be set. If the libraries
-    are placed in different directories then the `cfitsio_lib_dirs`,
-    `ccfits_lib_dirs`, and (possibly) `gfortran_lib_dirs` values should be
-    set appropriately.
+    although check on whether version numbers are required for the
+    `cfitiso`, `CCfits`, and `wcs` libraries. If placed in different
+    directories then the `cfitsio_lib_dirs`, `ccfits_lib_dirs`,
+    and (possibly) `gfortran_lib_dirs` values should be set
+    appropriately.
 
  3. or point to the XSPEC libraries provided by
     [CIAO](http://cxc.harvard.edu/ciao/). In this case the

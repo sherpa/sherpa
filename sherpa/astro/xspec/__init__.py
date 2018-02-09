@@ -68,6 +68,9 @@ except AttributeError:
 # http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
 modelstrings = {}
 
+# Store any path changes
+xspecpaths = {}
+
 
 def get_xsxset(name):
     """Return the X-Spec model setting.
@@ -160,6 +163,40 @@ def set_xsxset(name, value):
         modelstrings[name] = get_xsxset(name)
 
 
+# Since these are not included in __all__, create a symbol in this
+# module to avoid "unused symbol" if they were to be imported
+# directly from _xspec.
+#
+get_xspath_manager = _xspec.get_xspath_manager
+get_xspath_model = _xspec.get_xspath_model
+
+
+def set_xspath_manager(path):
+    """Set the path to the files describing the XSPEC models.
+
+    Parameters
+    ----------
+    path : str
+        The new path.
+
+    See Also
+    --------
+    get_xspath_manager : Return the path to the files describing the XSPEC models.
+
+    Examples
+    --------
+    >>> set_xspath_manager('/data/xspec/spectral/manager')
+    """
+
+    _xspec.set_xspath_manager(path)
+    spath = get_xspath_manager()
+    if spath != path:
+        raise IOError("Unable to set the XSPEC manager path " +
+                      "to '{}'".format(path))
+
+    xspecpaths['manager'] = path
+
+
 # Provide XSPEC module state as a dictionary.  The "cosmo" state is
 # a 3-tuple, and "modelstrings" is a dictionary of model strings
 # applicable to certain models.  The abund and xsect settings are
@@ -168,6 +205,13 @@ def set_xsxset(name, value):
 # cosmo, xsect, and xset.
 # http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Control.html
 # http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Setting.html
+#
+# The path dictionary contains the manager path, which can be
+# explicitly set. It could also contain the model path, but there
+# is no XSPEC routine to change that; instead a user would set the
+# XSPEC_MDATA_DIR environment variable before starting XSPEC.
+# Should this path be included?
+#
 def get_xsstate():
     """Return the state of the XSPEC module.
 
@@ -176,8 +220,8 @@ def get_xsstate():
     state : dict
         The current settings for the XSPEC module, including but not
         limited to: the abundance and cross-section settings, parameters
-        for the cosmological model, and any XSET parameters that have
-        been set.
+        for the cosmological model, any XSET parameters that have been
+        set, and changes to the paths used by the model library.
 
     See Also
     --------
@@ -185,11 +229,13 @@ def get_xsstate():
     set_xsstate
     """
 
+    # Do not return the internal dictionary but a copy of it.
     return {"abund": get_xsabund(),
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
-            "modelstrings": modelstrings}
+            "modelstrings": modelstrings.copy(),
+            "paths": xspecpaths.copy()}
 
 
 def set_xsstate(state):
@@ -199,8 +245,9 @@ def set_xsstate(state):
     ----------
     state : dict
         The current settings for the XSPEC module. This is expected to
-        match the return value of ``get_xsstate``, and so requires the
-        keys: 'abund', 'chatter', 'cosmo', 'xsect', and 'modelstrings'.
+        match the return value of ``get_xsstate``, and so uses the
+        keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
+        and 'paths'.
 
     See Also
     --------
@@ -210,21 +257,37 @@ def set_xsstate(state):
     Notes
     -----
     The state of the XSPEC module will only be changed if all
-    the required keys in the dictionary are present.
+    the required keys in the dictionary are present. All keys apart
+    from 'paths' are required.
     """
 
-    if (type(state) == dict and
-        'abund' in state and
-        'chatter' in state and
-        'cosmo' in state and
-        'xsect' in state and
-        'modelstrings' in state):
+    if type(state) == dict and \
+       'abund' in state and \
+       'chatter' in state and \
+       'cosmo' in state and \
+       'xsect' in state and \
+       'modelstrings' in state:
+
+        h0, q0, l0 = state["cosmo"]
+
         set_xsabund(state["abund"])
         set_xschatter(state["chatter"])
-        set_xscosmo(state["cosmo"][0], state["cosmo"][1], state["cosmo"][2])
+        set_xscosmo(h0, q0, l0)
         set_xsxsect(state["xsect"])
         for name in state["modelstrings"].keys():
             set_xsxset(name, state["modelstrings"][name])
+
+        # This is optional to support re-loading state information
+        # from a version of XSPEC which did not provide the path
+        # information.
+        #
+        try:
+            managerpath = state['paths']['manager']
+        except KeyError:
+            managerpath = None
+
+        if managerpath is not None:
+            set_xspath_manager(managerpath)
 
 
 def read_xstable_model(modelname, filename):
@@ -296,6 +359,9 @@ def read_xstable_model(modelname, filename):
 
 
 # The model classes are added to __all__ at the end of the file
+#
+# Note that not all routines from _xspec are re-exported here.
+#
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
            'get_xsversion', 'set_xsxset', 'get_xsxset', 'set_xsstate',
