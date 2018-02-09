@@ -405,14 +405,23 @@ class DataRMF(DataOgipResponse):
 
     def _validate(self, name, energy_lo, energy_hi, ethresh):
         """
-        Default validation: do nothing and just pass the arrays through.
-        Subclasses may override this method to perform different validations.
+        Validate energy ranges and, if necessary, make adjustments.
+        Subclasses may override this method to perform different validations
+        or skip validation altogether.
 
-        :param name: The name/label of the current file
-        :param energy_lo: The lower bounds of the energy bins
-        :param energy_hi: The upper bounds of the energy bins
-        :param ethresh: The lowest energy value, if any
-        :return: A tuple of energy bounds arrays, validated and possibly adjusted
+        Parameters
+        ----------
+        name : str
+            The name/label of the current file
+        energy_lo, energ_hi : NumPy array
+            The lower bounds of the energy bins. The arrays must have the same size
+        ethresh : float
+            The lowest energy value
+
+        Returns
+        -------
+        energy_lo, energ_hi : NumPy array
+            The energy values to use for the bin boundaries
         """
         return self._validate_energy_ranges(name, energy_lo, energy_hi, ethresh)
 
