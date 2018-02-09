@@ -567,7 +567,7 @@ def test_not_compiled_model():
     """
     from sherpa.models import Parameter
     from sherpa.astro.xspec.utils import include_if, ModelMeta
-    from sherpa.astro.xspec import get_xsversion, XSAdditiveModel
+    from sherpa.astro.xspec import XSAdditiveModel
 
     @include_if(True)
     class XSfoo(XSAdditiveModel):
