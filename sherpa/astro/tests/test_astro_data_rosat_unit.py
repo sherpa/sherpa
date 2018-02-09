@@ -38,7 +38,7 @@ import six
 
 from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.utils.err import IOErr
-from sherpa.astro.data import DataPHA, DataRMF
+from sherpa.astro.data import DataPHA, DataRosatRMF
 
 # Should each test import io instead of this? Also, do we have a
 # better way of determining what the backend is?
@@ -240,7 +240,7 @@ def validate_rmf(rmf):
 
     """
 
-    assert isinstance(rmf, DataRMF)
+    assert isinstance(rmf, DataRosatRMF)
 
     # There are 10 bins which have N_GRP set to 0. These rows are filtered
     # out from the F_CHAN and N_CHAN arrays.

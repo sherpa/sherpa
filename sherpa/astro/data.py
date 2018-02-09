@@ -376,7 +376,7 @@ class DataRMF(DataOgipResponse):
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
                  header=None, ethresh=None):
 
-        energ_lo, energ_hi = self._validate_energy_ranges(name, energ_lo, energ_hi, ethresh)
+        energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
         self._fch = f_chan
         self._nch = n_chan
@@ -402,6 +402,19 @@ class DataRMF(DataOgipResponse):
         if 'header' not in state:
             self.header = None
         self.__dict__.update(state)
+
+    def _validate(self, name, energy_lo, energy_hi, ethresh):
+        """
+        Default validation: do nothing and just pass the arrays through.
+        Subclasses may override this method to perform different validations.
+
+        :param name: The name/label of the current file
+        :param energy_lo: The lower bounds of the energy bins
+        :param energy_hi: The upper bounds of the energy bins
+        :param ethresh: The lowest energy value, if any
+        :return: A tuple of energy bounds arrays, validated and possibly adjusted
+        """
+        return self._validate_energy_ranges(name, energy_lo, energy_hi, ethresh)
 
     def apply_rmf(self, src, *args, **kwargs):
         "Fold the source array src through the RMF and return the result"
@@ -452,6 +465,16 @@ class DataRMF(DataOgipResponse):
 
     def get_ylabel(self):
         return 'Counts'
+
+
+# FIXME There are places in the code that explicitly check if an object is an instance of sherpa.astro.data.DataRMF.
+# So it's safer to make DataRosatRMF a subclass of the default class, although in principle they should be siblings
+# and subclasses of the same superclass.
+class DataRosatRMF(DataRMF):
+    ui_name = "ROSAT RMF"
+
+    def _validate(self, name, energy_lo, energy_hi, ethresh):
+        return energy_lo, energy_hi
 
 
 class DataPHA(Data1DInt):

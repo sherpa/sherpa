@@ -48,7 +48,7 @@ import sherpa.io
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaFloat
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
-from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, DataPHA
+from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, DataPHA, DataRosatRMF
 from sherpa import get_config
 
 import importlib
@@ -394,7 +394,19 @@ def read_rmf(arg):
     if 'emin' not in data:
         data['ethresh'] = ogip_emin
 
-    return DataRMF(filename, **data)
+    return _rmf_factory(filename, data)
+
+
+def _rmf_factory(filename, data):
+    response_map = {
+        'ROSAT': DataRosatRMF,
+        'DEFAULT': DataRMF,
+    }
+
+    rmf_telescop = data['header'].get('TELESCOP', 'DEFAULT')
+    rmf_class = response_map.get(rmf_telescop, DataRMF)
+
+    return rmf_class(filename, **data)
 
 
 def _read_ancillary(data, key, label, dname,
