@@ -1,4 +1,4 @@
-//  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015-2018  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -234,14 +234,11 @@ void xsatbl(float* ear, int ne, float* param, const char* filenm, int ifl,
 void xsmtbl(float* ear, int ne, float* param, const char* filenm, int ifl, 
 	    float* photar, float* photer);
 
-// XSPEC convolution models: ordering below matches that of model.dat
-//
-// Models added in 12.9.1 are commented out as we don't yet have a
-// sensible way to support different sets of functions for different
-// versions.
+// XSPEC convolution models: ordering below matches that of model.dat,
+// apart from those added in 12.9.1 have been moved into the
+// ifdef section below.
 //
 void C_cflux(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-  // void C_clumin(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);  12.9.1
 void C_cpflux(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_xsgsmt(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_ireflct(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
@@ -252,13 +249,9 @@ void C_xslsmt(const double* energy, int nFlux, const double* params, int spectru
 void C_PartialCovering(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_rdblur(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_reflct(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-  // void C_rfxconv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);   12.9.1
 // rgsxsrc is the only convolution-style model that uses the Fortran interface
 void rgsxsrc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void C_simpl(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
-  // void C_vashift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);   12.9.1
-  // void C_vmshift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);   12.9.1
-  // void C_xilconv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);   12.9.1
 void C_zashift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 void C_zmshift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 
@@ -267,6 +260,31 @@ void C_zmshift(const double* energy, int nFlux, const double* params, int spectr
 //
 #ifdef XSPEC_12_9_1
 void C_btapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_bvtapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_bvvtapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_tapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_vtapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_vvtapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
+void C_carbatm(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_hatm(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void ismabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+// Note: have dropped the leading 'c_' for this model
+void slimbbmodel(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_snapec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_tbfeo(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_tbgas(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_tbpcf(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_tbrel(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_voigtLine(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_xscatmodel(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
+void C_clumin(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_rfxconv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_vashift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_vmshift(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+void C_xilconv(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
+
 #endif
 
 }
@@ -1378,9 +1396,9 @@ static PyMethodDef XSpecMethods[] = {
   // XSPEC table models
   XSPECTABLEMODEL_NORM( xsatbl ),
   XSPECTABLEMODEL_NORM( xsmtbl ),
+
   // XSPEC convolution models
   XSPECMODELFCT_CON(C_cflux, 3),
-  // XSPECMODELFCT_CON(C_clumin, 4),  12.9.1
   XSPECMODELFCT_CON(C_cpflux, 3),
   XSPECMODELFCT_CON(C_xsgsmt, 2),
   XSPECMODELFCT_CON(C_ireflct, 7),
@@ -1391,12 +1409,8 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_PartialCovering, 1),
   XSPECMODELFCT_CON(C_rdblur, 4),
   XSPECMODELFCT_CON(C_reflct, 5),
-  // XSPECMODELFCT_CON(C_rfxconv, 5),  12.9.1
   XSPECMODELFCT_CON_F77(rgsxsrc, 1),
   XSPECMODELFCT_CON(C_simpl, 3),
-  // XSPECMODELFCT_CON(C_vashift, 1),  12.9.1
-  // XSPECMODELFCT_CON(C_vmshift, 1),  12.9.1
-  // XSPECMODELFCT_CON(C_xilconv, 6),  12.9.1
   XSPECMODELFCT_CON(C_zashift, 1),
   XSPECMODELFCT_CON(C_zmshift, 1),
 
@@ -1405,6 +1419,29 @@ static PyMethodDef XSpecMethods[] = {
   //
   #ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM(C_btapec, 6),
+  XSPECMODELFCT_C_NORM(C_bvtapec, 18),
+  XSPECMODELFCT_C_NORM(C_bvvtapec, 35),
+  XSPECMODELFCT_C_NORM(C_tapec, 5),
+  XSPECMODELFCT_C_NORM(C_vtapec, 17),
+  XSPECMODELFCT_C_NORM(C_vvtapec, 34),
+
+  XSPECMODELFCT_C_NORM(C_carbatm, 4),
+  XSPECMODELFCT_C_NORM(C_hatm, 4),
+  XSPECMODELFCT_NORM(ismabs, 31),
+  XSPECMODELFCT_C_NORM(slimbbmodel, 10),
+  XSPECMODELFCT_C_NORM(C_snapec, 7),
+  XSPECMODELFCT_C(C_tbfeo, 4),
+  XSPECMODELFCT_C(C_tbgas, 2),
+  XSPECMODELFCT_C(C_tbpcf, 3),
+  XSPECMODELFCT_C(C_tbrel, 42),
+  XSPECMODELFCT_C_NORM(C_voigtLine, 4),
+  XSPECMODELFCT_C(C_xscatmodel, 4),
+
+  XSPECMODELFCT_CON(C_clumin, 4),
+  XSPECMODELFCT_CON(C_rfxconv, 5),
+  XSPECMODELFCT_CON(C_vashift, 1),
+  XSPECMODELFCT_CON(C_vmshift, 1),
+  XSPECMODELFCT_CON(C_xilconv, 6),
   #endif
 
   { NULL, NULL, 0, NULL }

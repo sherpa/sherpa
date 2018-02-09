@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018
+#         Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -585,7 +586,7 @@ class XSapec(XSAdditiveModel):
 
     See Also
     --------
-    XSbapec, XSbvapec, XSbvvapec, XSnlapec, XSvapec, XSvvapec
+    XSbapec, XSbvapec, XSbvvapec, XSnlapec, XSsnapec, XSvapec, XSvvapec
 
     References
     ----------
@@ -2276,7 +2277,7 @@ class XSgaussian(XSAdditiveModel):
 
     See Also
     --------
-    XSagauss, XSlorentz, XSzagauss, XSzgauss
+    XSagauss, XSlorentz, XSvoigt, XSzagauss, XSzgauss
 
     References
     ----------
@@ -2786,7 +2787,7 @@ class XSlorentz(XSAdditiveModel):
 
     See Also
     --------
-    XSgaussian
+    XSgaussian, XSvoigt
 
     References
     ----------
@@ -6317,7 +6318,7 @@ class XSTBabs(XSMultiplicativeModel):
 
     See Also
     --------
-    XSTBgrain, XSTBvarabs, XSzTBabs
+    XSTBfeo, XSTBgas, XSTBgrain, XSTBpcf, XSTBrel, XSTBvarabs, XSzTBabs
 
     Notes
     -----
@@ -6361,7 +6362,7 @@ class XSTBgrain(XSMultiplicativeModel):
 
     See Also
     --------
-    XSTBabs, XSTBvarabs, XSzTBabs
+    XSTBabs, XSTBfeo, XSTBgas, XSTBpcf, XSTBrel, XSTBvarabs, XSzTBabs
 
     Notes
     -----
@@ -6417,7 +6418,7 @@ class XSTBvarabs(XSMultiplicativeModel):
 
     See Also
     --------
-    XSTBabs, XSTBgrain, XSzTBabs
+    XSTBabs, XSTBfeo, XSTBgas, XSTBgrain, XSTBpcf, XSTBrel, XSzTBabs
 
     Notes
     -----
@@ -7056,7 +7057,7 @@ class XSzTBabs(XSMultiplicativeModel):
 
     See Also
     --------
-    XSTBabs, XSTBgrain, XSTBvarabs
+    XSTBabs, XSTBfeo, XSTBgas, XSTBgrain, XSTBpcf, XSTBrel, XSTBvarabs
 
     Notes
     -----
@@ -8604,7 +8605,7 @@ class XSbtapec(XSAdditiveModel):
     Abundanc
         The metal abundance of the plasma, as defined by the
         ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
-        keyword.
+        keyword (which defaults to 1.0).
     Redshift
         The redshift of the plasma.
     Velocity
@@ -8615,7 +8616,7 @@ class XSbtapec(XSAdditiveModel):
 
     See Also
     --------
-    XSbapec
+    XSbapec, XSbvtapec, XSbvvtapec
 
     Notes
     -----
@@ -8639,6 +8640,1048 @@ class XSbtapec(XSAdditiveModel):
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
                                  (self.kT, self.kTi, self.Abundanc, self.Redshift, self.Velocity, self.norm))
+
+
+@version_at_least("12.9.1")
+class XSbvtapec(XSAdditiveModel):
+    """The XSPEC bvtapec model: velocity broadened APEC emission spectrum with separate continuum and line temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keywords "APECROOT" and "APEC_TRACE_ABUND".
+
+    Attributes
+    ----------
+    kT
+        Continuum temperature, in keV.
+    kTi
+        Line temperature, in keV.
+    He, C, N, O, Ne, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units. The trace element
+        abundances are determined by the APEC_TRACE_ABUND xset
+        keyword (the default is 1.0).
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbapec, XSbtapec, XSbvvtapec
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBtapec.html
+
+    """
+
+    __function__ = "C_bvtapec"
+
+    def __init__(self, name='bvtapec'):
+        self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0808, 68.447, 'keV')
+        self.kTi = Parameter(name, 'kTi', 6.5, 0.0808, 68.447, 0.0808, 68.447, 'keV')
+        self.He = Parameter(name, 'He', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.C = Parameter(name, 'C', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.N = Parameter(name, 'N', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.O = Parameter(name, 'O', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Ne = Parameter(name, 'Ne', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Mg = Parameter(name, 'Mg', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Al = Parameter(name, 'Al', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Si = Parameter(name, 'Si', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.S = Parameter(name, 'S', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Ar = Parameter(name, 'Ar', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Ca = Parameter(name, 'Ca', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Fe = Parameter(name, 'Fe', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Ni = Parameter(name, 'Ni', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Redshift = Parameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
+        self.Velocity = Parameter(name, 'Velocity', 0.0, 0.0, 1.0e6, 0.0, 1.0e6, 'km/s')
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.kT, self.kTi, self.He, self.C, self.N, self.O,
+                                  self.Ne, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                                  self.Fe, self.Ni, self.Redshift, self.Velocity, self.norm))
+
+
+@version_at_least("12.9.1")
+class XSbvvtapec(XSAdditiveModel):
+    """The XSPEC bvvtapec model: velocity broadened APEC emission spectrum with separate continuum and line temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET "APECROOT"
+    parameter.
+
+    Attributes
+    ----------
+    kT
+        Continuum temperature, in keV.
+    kTi
+        Line temperature, in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbapec, XSbtapec
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBtapec.html
+
+    """
+
+    __function__ = "C_bvvtapec"
+
+    def __init__(self, name='bvvtapec'):
+        self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0808, 68.447, 'keV')
+        self.kTi = Parameter(name, 'kTi', 6.5, 0.0808, 68.447, 0.0808, 68.447, 'keV')
+        self.H = Parameter(name, 'H', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.He = Parameter(name, 'He', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Li = Parameter(name, 'Li', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Be = Parameter(name, 'Be', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.B = Parameter(name, 'B', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.C = Parameter(name, 'C', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.N = Parameter(name, 'N', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.O = Parameter(name, 'O', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.F = Parameter(name, 'F', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ne = Parameter(name, 'Ne', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Na = Parameter(name, 'Na', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Mg = Parameter(name, 'Mg', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Al = Parameter(name, 'Al', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Si = Parameter(name, 'Si', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.P = Parameter(name, 'P', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.S = Parameter(name, 'S', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Cl = Parameter(name, 'Cl', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ar = Parameter(name, 'Ar', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.K = Parameter(name, 'K', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ca = Parameter(name, 'Ca', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Sc = Parameter(name, 'Sc', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ti = Parameter(name, 'Ti', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.V = Parameter(name, 'V', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Cr = Parameter(name, 'Cr', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Mn = Parameter(name, 'Mn', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Fe = Parameter(name, 'Fe', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Co = Parameter(name, 'Co', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ni = Parameter(name, 'Ni', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Cu = Parameter(name, 'Cu', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Zn = Parameter(name, 'Zn', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Redshift = Parameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
+        self.Velocity = Parameter(name, 'Velocity', 0.0, 0.0, 1.0e6, 0.0, 1.0e6, 'km/s')
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.kT, self.kTi, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.Velocity, self.norm))
+
+
+@version_at_least("12.9.1")
+class XStapec(XSAdditiveModel):
+    """The XSPEC tapec model: APEC emission spectrum with separate continuum and line temperatures.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keywords "APECROOT", "APECTHERMAL", "APECVELOCITY",
+    "APECNOLINES", and "APEC_TRACE_ABUND".
+
+    Attributes
+    ----------
+    kT
+        Continuum temperature, in keV.
+    kTi
+        Line temperature, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
+        keyword (which defaults to 1.0).
+    Redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbtapec, XSvtapec, XSvvtapec
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTapec.html
+
+    """
+
+    __function__ = "C_tapec"
+
+    def __init__(self, name='tapec'):
+        self.kT = Parameter(name, 'kT', 1.0, 0.008, 64.0, 0.008, 64.0, 'keV')
+        self.kTi = Parameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, 'keV')
+        self.Abundanc = Parameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0)
+        self.Redshift = Parameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.kT, self.kTi, self.Abundanc, self.Redshift, self.norm))
+
+
+@version_at_least("12.9.1")
+class XSvtapec(XSAdditiveModel):
+    """The XSPEC vtapec model: APEC emission spectrum with separate continuum and line temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keywords "APECROOT", "APECTHERMAL", "APECVELOCITY",
+    "APECNOLINES", and "APEC_TRACE_ABUND".
+
+    Attributes
+    ----------
+    kT
+        Continuum temperature, in keV.
+    kTi
+        Line temperature, in keV.
+    He, C, N, O, Ne, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units. The trace element
+        abundances are determined by the APEC_TRACE_ABUND xset
+        keyword (the default is 1.0).
+    Redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbvtapec, XStapec, XSvvtapec
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTapec.html
+
+    """
+
+    __function__ = "C_vtapec"
+
+    def __init__(self, name='vtapec'):
+        self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0808, 68.447, 'keV')
+        self.kTi = Parameter(name, 'kTi', 6.5, 0.0808, 68.447, 0.0808, 68.447, 'keV')
+        self.He = Parameter(name, 'He', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.C = Parameter(name, 'C', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.N = Parameter(name, 'N', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.O = Parameter(name, 'O', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Ne = Parameter(name, 'Ne', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Mg = Parameter(name, 'Mg', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Al = Parameter(name, 'Al', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Si = Parameter(name, 'Si', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.S = Parameter(name, 'S', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Ar = Parameter(name, 'Ar', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Ca = Parameter(name, 'Ca', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Fe = Parameter(name, 'Fe', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Ni = Parameter(name, 'Ni', 1.0, 0., 10., 0.0, hugeval, frozen=True)
+        self.Redshift = Parameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.kT, self.kTi, self.He, self.C, self.N, self.O,
+                                  self.Ne, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                                  self.Fe, self.Ni, self.Redshift, self.norm))
+
+
+@version_at_least("12.9.1")
+class XSvvtapec(XSAdditiveModel):
+    """The XSPEC vvtapec model: APEC emission spectrum with separate continuum and line temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keywords "APECROOT", "APECTHERMAL", "APECVELOCITY",
+    and "APECNOLINES".
+
+    Attributes
+    ----------
+    kT
+        Continuum temperature, in keV.
+    kTi
+        Line temperature, in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbvvtapec, XStapec, XSvtapec
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTapec.html
+
+    """
+
+    __function__ = "C_vvtapec"
+
+    def __init__(self, name='vvtapec'):
+        self.kT = Parameter(name, 'kT', 6.5, 0.0808, 68.447, 0.0808, 68.447, 'keV')
+        self.kTi = Parameter(name, 'kTi', 6.5, 0.0808, 68.447, 0.0808, 68.447, 'keV')
+        self.H = Parameter(name, 'H', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.He = Parameter(name, 'He', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Li = Parameter(name, 'Li', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Be = Parameter(name, 'Be', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.B = Parameter(name, 'B', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.C = Parameter(name, 'C', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.N = Parameter(name, 'N', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.O = Parameter(name, 'O', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.F = Parameter(name, 'F', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ne = Parameter(name, 'Ne', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Na = Parameter(name, 'Na', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Mg = Parameter(name, 'Mg', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Al = Parameter(name, 'Al', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Si = Parameter(name, 'Si', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.P = Parameter(name, 'P', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.S = Parameter(name, 'S', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Cl = Parameter(name, 'Cl', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ar = Parameter(name, 'Ar', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.K = Parameter(name, 'K', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ca = Parameter(name, 'Ca', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Sc = Parameter(name, 'Sc', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ti = Parameter(name, 'Ti', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.V = Parameter(name, 'V', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Cr = Parameter(name, 'Cr', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Mn = Parameter(name, 'Mn', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Fe = Parameter(name, 'Fe', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Co = Parameter(name, 'Co', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Ni = Parameter(name, 'Ni', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Cu = Parameter(name, 'Cu', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Zn = Parameter(name, 'Zn', 1., 0., 1000., 0.0, hugeval, frozen=True)
+        self.Redshift = Parameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.kT, self.kTi, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.norm))
+
+
+@version_at_least("12.9.1")
+class XScarbatm(XSAdditiveModel):
+    """The XSPEC carbatm model: Nonmagnetic carbon atmosphere of a neutron star.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET "CARBATM"
+    parameter.
+
+    Attributes
+    ----------
+    T
+        Effective temperature, in MK.
+    NSmass
+        Neutron star mass, in M_sol.
+    NSrad
+        Neutron star radius, in km.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XShatm
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCarbatm.html
+
+    """
+
+    __function__ = "C_carbatm"
+
+    def __init__(self, name='carbatm'):
+        self.T = Parameter(name, 'T', 2.0, 1.0, 4.0, 1.0, 4.0, 'MK')
+        self.NSmass = Parameter(name, 'NSmass', 1.4, 0.6, 2.8, 0.6, 2.8,
+                                'Msun')
+        self.NSrad = Parameter(name, 'NSrad', 10.0, 6.0, 23.0, 6.0, 23.0, 'km')
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.T, self.NSmass, self.NSrad, self.norm))
+
+
+@version_at_least("12.9.1")
+class XShatm(XSAdditiveModel):
+    """The XSPEC hatm model: Nonmagnetic hydrogen atmosphere of a neutron star.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET "HATM"
+    parameter.
+
+    Attributes
+    ----------
+    T
+        Effective temperature, in MK.
+    NSmass
+        Neutron star mass, in M_sol.
+    NSrad
+        Neutron star radius, in km.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XScarbatm
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelHatm.html
+
+    """
+
+    __function__ = "C_hatm"
+
+    def __init__(self, name='hatm'):
+        self.T = Parameter(name, 'T', 3.0, 0.5, 10.0, 0.5, 10.0, 'MK')
+        self.NSmass = Parameter(name, 'NSmass', 1.4, 0.6, 2.8, 0.6, 2.8,
+                                'Msun')
+        self.NSrad = Parameter(name, 'NSrad', 10.0, 5.0, 23.0, 5.0, 23.0, 'km')
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.T, self.NSmass, self.NSrad, self.norm))
+
+
+@version_at_least("12.9.1")
+class XSismabs(XSMultiplicativeModel):
+    """The XSPEC ismabs model: A high resolution ISM absorption model with variable columns for individual ions.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    H
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    HeII, CI, CII, CIII, NI, NII, NIII, OI, OII, OIII, NeI, NeII, NeIII,
+    MgI, MgII, MgIII, Si_I, Si_II, Si_III, S_I, S_II, S_III,
+    ArI, ArII, ArIII, CaI, CaII, CaIII, Fe
+        The column for the species (in units of 10^16 atoms/cm^2).
+    redshift
+        The redshift of the absorber.
+
+    Notes
+    -----
+    As Sherpa parameter names are case insensitive the parameters
+    for Silicon and Sulfur include an underscore character after the
+    element name to avoid conflict: that is Si_I and S_I refer to
+    the XSPEC SiI and SI parameters respectively.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelIsmabs.html
+
+    """
+
+    __function__ = "ismabs"
+
+    def __init__(self, name='ismabs'):
+
+        self.H = Parameter(name, 'H', 0.1, 0.0, 1e5, 0, 1e6, '10^22')
+        self.HeII = Parameter(name, 'HeII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.CI = Parameter(name, 'CI', 33.1, 0.0, 1e5, 0, 1e6,
+                            '10^16')
+        self.CII = Parameter(name, 'CII', 0.0, 0.0, 1e5, 0, 1e6,
+                             '10^16', frozen=True)
+        self.CIII = Parameter(name, 'CIII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.NI = Parameter(name, 'NI', 8.32, 0.0, 1e5, 0, 1e6,
+                            '10^16')
+        self.NII = Parameter(name, 'NII', 0.0, 0.0, 1e5, 0, 1e6,
+                             '10^16', frozen=True)
+        self.NIII = Parameter(name, 'NIII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.OI = Parameter(name, 'OI', 67.6, 0.0, 1e5, 0, 1e6,
+                            '10^16')
+        self.OII = Parameter(name, 'OII', 0.0, 0.0, 1e5, 0, 1e6,
+                             '10^16', frozen=True)
+        self.OIII = Parameter(name, 'OIII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.NeI = Parameter(name, 'NeI', 12.0, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.NeII = Parameter(name, 'NeII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.NeIII = Parameter(name, 'NeIII', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        self.MgI = Parameter(name, 'MgI', 3.8, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.MgII = Parameter(name, 'MgII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.MgIII = Parameter(name, 'MgIII', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        # SiI and SI conflict, so add in underscores to differentiate.
+        #
+        self.Si_I = Parameter(name, 'Si_I', 3.35, 0.0, 1e5, 0, 1e6,
+                              '10^16')
+        self.Si_II = Parameter(name, 'Si_II', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        self.Si_III = Parameter(name, 'Si_III', 0.0, 0.0, 1e5, 0, 1e6,
+                                '10^16', frozen=True)
+        self.S_I = Parameter(name, 'S_I', 2.14, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.S_II = Parameter(name, 'S_II', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.S_III = Parameter(name, 'S_III', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        self.ArI = Parameter(name, 'ArI', 0.25, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.ArII = Parameter(name, 'ArII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.ArIII = Parameter(name, 'ArIII', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        self.CaI = Parameter(name, 'CaI', 0.22, 0.0, 1e5, 0, 1e6,
+                             '10^16')
+        self.CaII = Parameter(name, 'CaII', 0.0, 0.0, 1e5, 0, 1e6,
+                              '10^16', frozen=True)
+        self.CaIII = Parameter(name, 'CaIII', 0.0, 0.0, 1e5, 0, 1e6,
+                               '10^16', frozen=True)
+        self.Fe = Parameter(name, 'Fe', 3.16, 0.0, 1e5, 0, 1e6, '10^16')
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.H, self.HeII,
+                                        self.CI,
+                                        self.CII,
+                                        self.CIII,
+                                        self.NI,
+                                        self.NII,
+                                        self.NIII,
+                                        self.OI,
+                                        self.OII,
+                                        self.OIII,
+                                        self.NeI,
+                                        self.NeII,
+                                        self.NeIII,
+                                        self.MgI,
+                                        self.MgII,
+                                        self.MgIII,
+                                        self.Si_I,
+                                        self.Si_II,
+                                        self.Si_III,
+                                        self.S_I,
+                                        self.S_II,
+                                        self.S_III,
+                                        self.ArI,
+                                        self.ArII,
+                                        self.ArIII,
+                                        self.CaI,
+                                        self.CaII,
+                                        self.CaIII,
+                                        self.Fe, self.redshift))
+
+
+@version_at_least("12.9.1")
+class XSslimbh(XSAdditiveModel):
+    """The XSPEC slimbh model: Stationary slim accretion disk.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET "SLIMBB_DEBUG",
+    "SLIMBB_DIR", and "SLIMBB_TABLE" parameters.
+
+    Attributes
+    ----------
+    M
+        The mass of the black hole, in M_sol.
+    a
+        The black hole spin parameter.
+    lumin
+        The total disk luminosity in Eddington units.
+    alpha
+        alpha-viscosity
+    inc
+        The inclination, in degrees.
+    D
+        The distance to the source, in kpc.
+    f_hard
+        The hardening factor. A negative value means to use TLUSTY spectra.
+    lflag
+        A flag to control the effect of limb-darkening. If greater than
+        zero then the disk emission is limb-darkened, otherwise it is assumed
+        to be isotropic.
+    vflag
+        A flag to contorl the surface profile. If greater than zero,
+        raytracing is done from the actual photosphere, otherwise the
+        spectrum is raytraced from the equatorial plane ignoring the
+        height profile of the disk.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSlimbh.html
+
+    """
+
+    __function__ = "slimbbmodel"
+
+    def __init__(self, name='slimbh'):
+        self.M = Parameter(name, 'M', 10.0, 0.0, 1000.0, 0.0, 1000.0, 'Msun',
+                           frozen=True)
+        self.a = Parameter(name, 'a', 0.0, 0.0, 0.999, 0.0, 0.999, 'GM/c')
+        self.lumin = Parameter(name, 'lumin', 0.5, 0.05, 1.0, 0.05, 1.0,
+                               'L_Edd')
+        self.alpha = Parameter(name, 'alpha', 0.1, 0.005, 0.1, 0.001, 0.1,
+                               frozen=True)
+        self.inc = Parameter(name, 'inc', 60.0, 0.0, 85.0, 0.0, 85.0,
+                             'deg', frozen=True)
+        self.D = Parameter(name, 'D', 10.0, 0.0, 1e4, 0.0, 1e4, 'kpc',
+                           frozen=True)
+        self.f_hard = Parameter(name, 'f_hard', -1.0, -10.0, 10.0, -10.0, 10.0,
+                                frozen=True)
+        self.lflag = Parameter(name, 'lflag', 1.0, -1, 1, alwaysfrozen=True)
+        self.vflag = Parameter(name, 'vflag', 1.0, -1, 1, alwaysfrozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval,
+                              frozen=True)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.M, self.a, self.lumin, self.alpha,
+                                  self.inc, self.D, self.f_hard,
+                                  self.lflag, self.vflag, self.norm))
+
+
+@version_at_least("12.9.1")
+class XSsnapec(XSAdditiveModel):
+    """The XSPEC snapec model: galaxy cluster spectrum using SN yields.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters to control
+    the APEC model.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    N_SNe
+        The number of SNe (in units of 10^9).
+    R
+        The percentage of SN1a.
+    SNIModelIndex
+        SNIa yield model: see [1]_ for more details.
+    SNIIModelIndex
+        SNIIa yield model: see [1]_ for more details.
+    redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.9.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSnapec.html
+
+    """
+
+    __function__ = "C_snapec"
+
+    def __init__(self, name='snapec'):
+        self.kT = Parameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64.0, 'keV')
+        self.N_SNe = Parameter(name, 'N_SNe', 1., 0.0, 1e20, 0, 1e20, '10^9')
+        # QUS: if this is a percentage, why is the maximum not 100?
+        self.R = Parameter(name, 'R', 1., 0.0, 1e20, 0, 1e20)
+        self.SNIModelIndex = Parameter(name, 'SNIModelIndex', 1.,
+                                       0.0, 125, 0, 125, alwaysfrozen=True)
+        self.SNIIModelIndex = Parameter(name, 'SNIIModelIndex', 1.,
+                                        0.0, 125, 0, 125, alwaysfrozen=True)
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., 0.0, 10.0,
+                                  frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.kT, self.N_SNe, self.R,
+                                  self.SNIModelIndex, self.SNIIModelIndex,
+                                  self.redshift, self.norm))
+
+
+@version_at_least("12.9.1")
+class XSTBfeo(XSMultiplicativeModel):
+    """The XSPEC TBfeo model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    O
+        Oxygen abundance relative to Solar.
+    Fe
+        Iron abundance relative to Solar.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSTBabs, XSTBgas, XSTBgrain, XSTBpcf, XSTBrel, XSTBvarabs, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
+
+    __function__ = "C_tbfeo"
+
+    def __init__(self, name='tbfeo'):
+        self.nH = Parameter(name, 'nH', 1., 0., 1.e5, 0.0, 1.0e6, '10^22')
+        self.O = Parameter(name, 'O', 1., 0.0, 5.0, -1.0e38, 1.0e38)
+        self.Fe = Parameter(name, 'Fe', 1., 0.0, 5.0, -1.0e38, 1.0e38)
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.nH, self.O, self.Fe,
+                                        self.redshift))
+
+
+@version_at_least("12.9.1")
+class XSTBgas(XSMultiplicativeModel):
+    """The XSPEC TBgas model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSTBabs, XSTBfeo, XSTBgrain, XSTBpcf, XSTBrel, XSTBvarabs, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
+
+    __function__ = "C_tbgas"
+
+    def __init__(self, name='tbgas'):
+        self.nH = Parameter(name, 'nH', 1., 0., 1.e5, 0.0, 1.0e6, '10^22')
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.nH, self.redshift))
+
+
+@version_at_least("12.9.1")
+class XSTBpcf(XSMultiplicativeModel):
+    """The XSPEC TBpcf model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    pcf
+        Partial covering fraction of the absorber.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSTBabs, XSTBfeo, XSTBgas, XSTBgrain, XSTBrel, XSTBvarabs, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
+
+    __function__ = "C_tbpcf"
+
+    def __init__(self, name='tbpcf'):
+        self.nH = Parameter(name, 'nH', 1., 0., 1.e5, 0.0, 1.0e6, '10^22')
+        self.pcf = Parameter(name, 'pcf', 0.5, 0, 1.0, 0, 1.0)
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.nH, self.pcf, self.redshift))
+
+
+@version_at_least("12.9.1")
+class XSTBrel(XSMultiplicativeModel):
+    """The XSPEC TBrel model: ISM grain absorption.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    nH
+        The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
+        The abundance of the element in solar units.
+    H2
+        The equivalent molecular hydrogen column (in units of
+         10^22 atoms/cm^2).
+    rho
+        The grain density, in g/cm^3.
+    amin
+        The minimum grain size, in micro-meters.
+    amax
+        The maximum grain size, in micro-meters.
+    PL
+        The power-law index of grain sizes.
+    H_dep, He_dep, C_dep, N_dep, O_dep, Ne_dep, Na_dep, Mg_dep, Al_dep,
+    Si_dep, S_dep, Cl_dep, Ar_dep, Ca_dep, Cr_dep, Fe_dep, Co_dep, Ni_dep
+        The grain depletion fraction of the element.
+    redshift
+        The redshift of the absorber.
+
+    See Also
+    --------
+    XSTBabs, XSTBfeo, XSTBgas, XSTBgrain, XSTBpcf, XSTBvarabs, XSzTBabs
+
+    Notes
+    -----
+    The `set_xsabund` function changes the relative abundances of
+    the elements, in particular the "wilm" setting.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelTbabs.html
+
+    """
+
+    __function__ = "C_tbrel"
+
+    def __init__(self, name='tbrel'):
+        self.nH = Parameter(name, 'nH', 1., -1e5, 1e5, -1e6, 1.0e6, '10^22')
+        self.He = Parameter(name, 'He', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.C = Parameter(name, 'C', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.N = Parameter(name, 'N', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.O = Parameter(name, 'O', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Ne = Parameter(name, 'Ne', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Na = Parameter(name, 'Na', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Mg = Parameter(name, 'Mg', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Al = Parameter(name, 'Al', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Si = Parameter(name, 'Si', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.S = Parameter(name, 'S', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Cl = Parameter(name, 'Cl', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Ar = Parameter(name, 'Ar', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Ca = Parameter(name, 'Ca', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Cr = Parameter(name, 'Cr', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Fe = Parameter(name, 'Fe', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Co = Parameter(name, 'Co', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.Ni = Parameter(name, 'Ni', 1., 0., 5., 0.0, hugeval, frozen=True)
+        self.H2 = Parameter(name, 'H2', 0.2, 0., 1., 0.0, 1.0, frozen=True)
+        self.rho = Parameter(name, 'rho', 1., 0., 5., 0.0, 5.0, 'g/cm^3',
+                             frozen=True)
+        self.amin = Parameter(name, 'amin', 0.025, 0., 0.25, 0.0, 0.25,
+                              'mum', frozen=True)
+        self.amax = Parameter(name, 'amax', 0.25, 0., 1., 0.0, 1.0,
+                              'mum', frozen=True)
+        self.PL = Parameter(name, 'PL', 3.5, 0., 5., 0.0, 5.0, frozen=True)
+        self.H_dep = Parameter(name, 'H_dep', 1., 0., 1., 0.0, 1.0,
+                               frozen=True)
+        self.He_dep = Parameter(name, 'He_dep', 1., 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.C_dep = Parameter(name, 'C_dep', 0.5, 0., 1., 0.0, 1.0,
+                               frozen=True)
+        self.N_dep = Parameter(name, 'N_dep', 1., 0., 1., 0.0, 1.0,
+                               frozen=True)
+        self.O_dep = Parameter(name, 'O_dep', 0.6, 0., 1., 0.0, 1.0,
+                               frozen=True)
+        self.Ne_dep = Parameter(name, 'Ne_dep', 1., 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Na_dep = Parameter(name, 'Na_dep', 0.25, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Mg_dep = Parameter(name, 'Mg_dep', 0.2, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Al_dep = Parameter(name, 'Al_dep', 0.02, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Si_dep = Parameter(name, 'Si_dep', 0.1, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.S_dep = Parameter(name, 'S_dep', 0.6, 0., 1., 0.0, 1.0,
+                               frozen=True)
+        self.Cl_dep = Parameter(name, 'Cl_dep', 0.5, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Ar_dep = Parameter(name, 'Ar_dep', 1., 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Ca_dep = Parameter(name, 'Ca_dep', 0.003, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Cr_dep = Parameter(name, 'Cr_dep', 0.03, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Fe_dep = Parameter(name, 'Fe_dep', 0.3, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Co_dep = Parameter(name, 'Co_dep', 0.05, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.Ni_dep = Parameter(name, 'Ni_dep', 0.04, 0., 1., 0.0, 1.0,
+                                frozen=True)
+        self.redshift = Parameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
+                                  frozen=True)
+        pars = (self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca,
+                self.Cr, self.Fe, self.Co, self.Ni, self.H2, self.rho,
+                self.amin, self.amax, self.PL, self.H_dep, self.He_dep,
+                self.C_dep, self.N_dep, self.O_dep, self.Ne_dep, self.Na_dep,
+                self.Mg_dep, self.Al_dep, self.Si_dep, self.S_dep, self.Cl_dep,
+                self.Ar_dep, self.Ca_dep, self.Cr_dep, self.Fe_dep,
+                self.Co_dep, self.Ni_dep, self.redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.9.1")
+class XSvoigt(XSAdditiveModel):
+    """The XSPEC voigt model: Voigt line profile.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    LineE
+        The line energy, in keV.
+    Sigma
+        The gaussian line width, in keV.
+    Gamma
+        The lorentzian FWHM line width, in keV.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSgauss, XSlorentz
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVoigt.html
+
+    """
+
+    __function__ = "C_voigtLine"
+
+    def __init__(self, name='voigt'):
+        self.LineE = Parameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, hugeval, 'keV')
+        self.Sigma = Parameter(name, 'Sigma', 0.01, 0., 10., 0.0, hugeval, 'keV')
+        self.Gamma = Parameter(name, 'Gamma', 0.01, 0., 10., 0.0, hugeval, 'keV')
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+        XSAdditiveModel.__init__(self, name,
+                                 (self.LineE, self.Sigma, self.Gamma,
+                                  self.norm))
+
+
+@version_at_least("12.9.1")
+class XSxscat(XSMultiplicativeModel):
+    """The XSPEC xscat model: dust scattering.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    NH
+        Interstellar hydrogen column density (in units of 10^22 atoms/cm^2).
+    Xpos
+        The relative position of the dust along the line of sight. A value
+        of 0 means the dust is at the observer, and of 0.95 means that the
+        dust is 5% from the source.
+    Rext
+        The radius of the circular extraction region, in arcsec.
+    DustModel
+        The dust model used: see [1]_ for more information.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelXscat.html
+
+    """
+
+    __function__ = "C_xscatmodel"
+
+    def __init__(self, name='xscat'):
+        self.NH = Parameter(name, 'NH', 1., 0., 1000.0, 0.0, 1000.0, '10^22')
+        self.Xpos = Parameter(name, 'Xpos', 0.5, 0, 0.95, 0, 0.95)
+        self.Rext = Parameter(name, 'Rext', 10.0, 0, 115.0, 0, 119.0, 'arcsec',
+                              frozen=True)
+        # The maxmimum number of models depends on the data file, so pick
+        # a value that is unlikely to be exceeded (the max at the time
+        # of writing was 3).
+        self.DustModel = Parameter(name, 'DustModel', 1, 1, 100, 1, 100,
+                                   alwaysfrozen=True)
+        XSMultiplicativeModel.__init__(self, name,
+                                       (self.NH, self.Xpos, self.Rext,
+                                        self.DustModel))
+
 
 # Add model classes to __all__
 __all__ += tuple(n for n in globals() if n.startswith('XS'))
