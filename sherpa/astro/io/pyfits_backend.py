@@ -697,12 +697,14 @@ def get_rmf_data(arg, make_copy=False):
                                       dtype=SherpaUInt)
         data['n_chan'] = _require_vec(hdu, 'N_CHAN', fix_type=True,
                                       dtype=SherpaUInt)
+
         # Read MATRIX as-is -- we will flatten it below, because
         # we need to remove all rows corresponding to n_grp[row] == 0
+        #
+        # TODO: I would expect this to error out if MATRIX is not available
+        #
         data['matrix'] = None
-        if 'MATRIX' not in hdu.columns.names:
-            pass
-        else:
+        if 'MATRIX' in hdu.columns.names:
             data['matrix'] = hdu.data.field('MATRIX')
 
         data['header'] = _get_meta_data(hdu)
@@ -739,23 +741,11 @@ def get_rmf_data(arg, make_copy=False):
     finally:
         rmf.close()
 
-    # ## For every row i of the response matrix, such that
-    # ## n_grp[i] == 0, we need to remove that row from the
-    # ## n_chan, f_chan, and matrix arrays we are constructing
-    # ## to be passed up to the DataRMF data structure.
-
-    # ## This is trivial for n_chan and f_chan.  For the matrix
-    # ## array this can be more work -- can't just remove all
-    # ## zeroes, because some rows where n_grp[row] > 0 might
-    # ## still have zeroes in the matrix.  I add new code first
-    # ## to deal with the matrix, then simpler code to remove zeroes
-    # ## from n_chan and f_chan.
-
-    # Read in MATRIX column with structure as-is -- i.e., as an array of
-    # arrays.  Then flatten it, but include only those arrays that come from
-    # rows where n_grp[row] > 0.  Zero elements can only be included from
-    # rows where n_grp[row] > 0.  SMD 05/23/13
-
+    # Remove any rows from the MATRIX and F_CHAN/N_CHAN where N_GRP is 0,
+    # since they do not add any data. This is to match the Crates backend.
+    # Note that crates uses the sherpa.astro.utils.resp_init routine,
+    # but it's not clear why, so it is not used here for now.
+    #
     good = (data['n_grp'] > 0)
     data['matrix'] = data['matrix'][good]
 
@@ -779,15 +769,18 @@ def get_rmf_data(arg, make_copy=False):
         n_chan = data['n_chan'][good]
 
         rowdata = []
-        for i, (ng, fcs, ncs) in enumerate(zip(n_grp, f_chan, n_chan)):
-            mrow = matrix[i]
+        for mrow, ng, ncs in zip(matrix, n_grp, n_chan):
+            # Need a RMF which ng>1 to test this with.
             if ng == 1:
-                fcs = [fcs]
                 ncs = [ncs]
-            for fc, nc in zip(fcs, ncs):
-                # It appears that F_CHAN is 0-based
-                #
-                rowdata.append(mrow[fc: fc + nc])
+            start = 0
+            for nc in ncs:
+                # n_chan can be an unsigned integer. Adding a Python
+                # integer to a NumPy unsigned integer appears to return
+                # a float.
+                end = start + numpy.int(nc)
+                rowdata.append(mrow[start:end])
+                start = end
 
         data['matrix'] = numpy.concatenate(rowdata)
 
@@ -796,7 +789,6 @@ def get_rmf_data(arg, make_copy=False):
     # Flatten f_chan and n_chan vectors into 1D arrays as crates does
     # according to group
     #
-    # TODO: should the n_grp > 0 filter be applied before all this?
     if data['f_chan'].ndim > 1 and data['n_chan'].ndim > 1:
         f_chan = []
         n_chan = []
@@ -806,6 +798,8 @@ def get_rmf_data(arg, make_copy=False):
                 f_chan.append(fch[i])
                 n_chan.append(nch[i])
 
+        # This automatically filters out rows where N_GRP is 0.
+        #
         data['f_chan'] = numpy.asarray(f_chan, SherpaUInt)
         data['n_chan'] = numpy.asarray(n_chan, SherpaUInt)
     else:
