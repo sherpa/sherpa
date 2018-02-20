@@ -32,6 +32,7 @@ except ImportError:  # Python 2
 
 try:
     from astropy.utils.exceptions import AstropyDeprecationWarning
+    from astropy.io.fits.verify import VerifyWarning
     have_astropy = True
 except ImportError:
     have_astropy = False
@@ -93,7 +94,6 @@ if sys.version_info >= (3, 2):
              r"numpy.dtype size changed, may indicate binary " +
              r"incompatibility. Expected 96, got 88"
              ],
-
     }
     known_warnings.update(python3_warnings)
 
@@ -111,6 +111,10 @@ if have_astropy:
         ImportWarning:
         [
             r"can't resolve.*__spec__.*__package__.*",
+        ],
+        VerifyWarning:
+        [
+            r"Invalid keyword for column.*",
         ],
     }
     known_warnings.update(astropy_warnings)
