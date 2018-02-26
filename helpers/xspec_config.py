@@ -116,9 +116,21 @@ class xspec_config(Command):
     def _find_xspec_version(self, library_folders):
         import ctypes
         import os
+        import sys
+
+        # Determining the full library name according to the platform.
+        # I couldn't find a simpler, more portable way of doing this.
+        library_base_name = 'libXSUtil'
+        if sys.platform == 'darwin':
+            library_extension = 'dylib'
+        else:  # assume linux
+            library_extension = 'so'
+
+        library_name = '{}.{}'.format(library_base_name, library_extension)
+
         for folder in library_folders:
             try:
-                xsutil = ctypes.CDLL(os.path.join(folder, 'libXSUtil.so'))  # Less general than rest of code
+                xsutil = ctypes.CDLL(os.path.join(folder, library_name))  # Less general than rest of code
                 version = b" "*256  # Is there a better way?
                 xsutil.xs_getVersion(version, len(version))
                 return version.decode('ascii').rstrip(' \t\r\n\0')
