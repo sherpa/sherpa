@@ -172,7 +172,11 @@ def test_manager_path_default():
     from sherpa.astro import xspec
 
     oval = xspec.get_xspath_manager()
-    assert oval == default_path
+
+    # Normalize the paths to remove double / - e.g. if HEADAS is
+    # set to /a/b/c/ rather than /a/b/c.
+    #
+    assert os.path.normpath(oval) == os.path.normpath(default_path)
 
 
 @requires_xspec
@@ -194,7 +198,11 @@ def test_model_path_default():
                                     '../spectral/modelData/')
 
     oval = xspec.get_xspath_model()
-    assert oval == default_path
+
+    # Normalize the paths to remove double / - e.g. if HEADAS is
+    # set to /a/b/c/ rather than /a/b/c.
+    #
+    assert os.path.normpath(oval) == os.path.normpath(default_path)
 
 
 @requires_xspec
