@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2015, 2016, 2017, 2018
+#            Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -94,66 +95,81 @@ class DataOgipResponse(Data1DInt):
     """
     _ui_name = "OGIP Response"
 
-    # FIXME For a future time when we'll review this code in a deeper way: we could have better separation of concerns
-    # if the initializers of `DataARF` and `DataRMF` did not rely on the `BaseData` initializer, and if the class
-    # hierarchy was better organized (e.g. it looks like children must not call their super's initializer.
-    # Also, I'd expect validation to happen in individual methods rather than in a large one, and nested ifs should be
-    # avoided if possible.
+    # FIXME For a future time when we'll review this code in a deeper way: we
+    # could have better separation of concerns if the initializers of `DataARF`
+    # and `DataRMF` did not rely on the `BaseData` initializer, and if the
+    # class hierarchy was better organized (e.g. it looks like children must
+    # not call their super's initializer.  Also, I'd expect validation to
+    # happen in individual methods rather than in a large one, and nested ifs
+    # should be avoided if possible.
+    #
+    # The shift to creating a warning message instead of raising an
+    # error has made this messier.
+    #
     def _validate_energy_ranges(self, label, elo, ehi, ethresh):
         """Check the lo/hi values are > 0, handling common error case.
 
-            Several checks are made, to make sure the parameters follow
-            the OGIP standard. If the checks fail a DataErr is raised.
-            When ethresh is set, the case where the low-edge of the start bin
-            is zero is treated as a special case rather than an error.
-            If a replacement is made (i.e. the low edge is set to ethresh) then
-            a warning is displayed.
+        Several checks are made, to make sure the parameters follow
+        the OGIP standard. At present a failed check can result in
+        either a warning message being logged, or an error raised.
+        It was felt that raising an error in all cases would not be
+        helpful to a user, who can't (easily) change the response
+        files.
 
-            Parameters
-            ----------
-            label : str
-                The response file identifier.
-            elo, ehi : numpy arrays
-                The input ENERG_LO and ENERG_HI arrays. They are assumed
-                to be one-dimensional and have the same number of elements.
-            ethresh : None or float, optional
-                If None, then elo must be greater than 0. When set, the
-                start bin can have a low-energy edge of 0; it is replaced
-                by ethresh. If set, ethresh must be greater than 0.
+        Parameters
+        ----------
+        label : str
+            The response file identifier.
+        elo, ehi : numpy arrays
+            The input ENERG_LO and ENERG_HI arrays. They are assumed
+            to be one-dimensional and have the same number of elements.
+        ethresh : None or float, optional
+            If None, then elo must be greater than 0. When set, the
+            start bin can have a low-energy edge of 0; it is replaced
+            by ethresh. If set, ethresh must be greater than 0.
+            An error is raised if ethresh is larger than the upper-edge
+            of the first bin (only if the lower edge has been replaced).
 
-            Returns
-            -------
-            elo, ehi : numpy arrays
-                The validated energy limits. These can be the input arrays
-                or a copy of them. At present the ehi array is the same as
-                the input array, but this may change in the future.
+        Returns
+        -------
+        elo, ehi : numpy arrays
+            The validated energy limits. These can be the input arrays
+            or a copy of them. At present the ehi array is the same as
+            the input array, but this may change in the future.
 
-            Notes
-            -----
-            Only some of the constraints provided by the OGIP standard are
-            checked here, since there are issues involving numerical effects
-            (e.g. when checking that two bins do not overlap), as well as
-            uncertainty over what possible  behavior is seen in released
-            data products for missions. The current set of checks are:
+        Notes
+        -----
+        Only some of the constraints provided by the OGIP standard are
+        checked here, since there are issues involving numerical effects
+        (e.g. when checking that two bins do not overlap), as well as
+        uncertainty over what possible  behavior is seen in released
+        data products for missions. The current set of checks are:
 
-              - ehi > elo for each bin
-              - elo is monotonic (ascending or descending)
-              - when emin is set, the lowest value in elo is >= 0,
-                otherwise it is > 0.
-              - ethresh (if set) is less than the minimum value in ENERG_HI
+          - ehi > elo for each bin
+          - elo is monotonic (ascending or descending)
+          - when emin is set, the lowest value in elo is >= 0,
+            otherwise it is > 0.
+          - ethresh (if set) is less than the minimum value in ENERG_HI
 
-            A failed check raises a DataErr exception.
-
-            """
+        """
 
         rtype = self._ui_name
 
         if ethresh is not None and ethresh <= 0.0:
             raise ValueError("ethresh is None or > 0")
 
+        # Only display the first warning, since it doesn't really
+        # help users to have multiple warnings for the same response.
+        #
+        warned = False
+
         if (elo >= ehi).any():
-            raise DataErr('ogip-error', rtype, label,
-                          'has at least one bin with ENERG_HI < ENERG_LO')
+            # raise DataErr('ogip-error', rtype, label,
+            #               'has at least one bin with ENERG_HI < ENERG_LO')
+            wmsg = "The {} '{}' ".format(rtype, label) + \
+                   'has at least one bin with ENERG_HI < ENERG_LO'
+            warnings.warn(wmsg)
+            warned = True
 
         # if elo is monotonically increasing, all elements will be True
         #                         decreasing,                      False
@@ -162,9 +178,14 @@ class DataOgipResponse(Data1DInt):
         #
         increasing = numpy.diff(elo, n=1) > 0.0
         nincreasing = increasing.sum()
-        if nincreasing > 0 and nincreasing != len(increasing):
-            raise DataErr('ogip-error', rtype, label,
-                          'has a non-monotonic ENERG_LO array')
+        if not warned and \
+           (nincreasing > 0 and nincreasing != len(increasing)):
+            # raise DataErr('ogip-error', rtype, label,
+            #               'has a non-monotonic ENERG_LO array')
+            wmsg = "The {} '{}' ".format(rtype, label) + \
+                   'has a non-monotonic ENERG_LO array'
+            warnings.warn(wmsg)
+            warned = True
 
         if nincreasing == 0:
             startidx = -1
@@ -191,10 +212,15 @@ class DataOgipResponse(Data1DInt):
                        "{} '{}' was 0 and has been ".format(rtype, label) + \
                        "replaced by {}".format(ethresh)
                 warnings.warn(wmsg)
+                warned = True
 
-            elif e0 < 0.0:
-                raise DataErr('ogip-error', rtype, label,
-                              'has an ENERG_LO value < 0')
+            elif not warned and (e0 < 0.0):
+                # raise DataErr('ogip-error', rtype, label,
+                #               'has an ENERG_LO value < 0')
+                wmsg = "The {} '{}' ".format(rtype, label) + \
+                       'has an ENERG_LO value < 0'
+                warnings.warn(wmsg)
+                warned = True
 
         return elo, ehi
 
@@ -347,17 +373,12 @@ class DataRMF(DataOgipResponse):
         If set it must be greater than 0 and is the replacement value
         to use if the lowest-energy value is 0.0.
 
-    Raises
-    ------
-    sherpa.utils.err.DataErr
-        This is raised if the energy arrays do not follow some of the
-        OGIP standards.
-
     Notes
     -----
     There is limited checking that the RMF matches the OGIP standard,
     but as there are cases of released data products that do not follow
-    the standard, these checks can not cover all cases.
+    the standard, these checks can not cover all cases. If a check fails
+    then a warning message is logged.
 
     References
     ----------

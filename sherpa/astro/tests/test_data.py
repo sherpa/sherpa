@@ -33,6 +33,14 @@ import logging
 logger = logging.getLogger('sherpa')
 
 
+def _assert_userwarning(emsg, ws):
+
+    assert len(ws) == 1
+    w = ws[0]
+    assert w.category == UserWarning
+    assert str(w.message) == emsg
+
+
 class test_filter_energy_grid(SherpaTestCase):
 
     _notice = np.ones(46, dtype=bool)
@@ -381,25 +389,43 @@ def test_arf_with_swapped_energy_bounds(idx):
     The bin edges are swapped at position idx.
     """
 
-    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    # Ensure energy grid starts > 0
+    energy = 0.001 + np.arange(0.0, 1.0, 0.1, dtype=np.float32)
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
     # test energ_hi < energ_lo
     energ_lo[idx], energ_hi[idx] = energ_hi[idx], energ_lo[idx]
+    """
     with pytest.raises(DataErr) as exc:
         create_arf(energ_lo, energ_hi, specresp)
 
     emsg = "The ARF 'test-arf' has at least one bin with ENERG_HI < ENERG_LO"
     assert str(exc.value) == emsg
+    """
+
+    emsg = "The ARF 'test-arf' has at least one bin with ENERG_HI < ENERG_LO"
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        create_arf(energ_lo, energ_hi, specresp)
+
+    _assert_userwarning(emsg, ws)
 
     # test energ_hi == energ_lo
     energ_lo[idx] = energ_hi[idx]
+    """
     with pytest.raises(DataErr) as exc:
         create_arf(energ_lo, energ_hi, specresp)
 
     assert str(exc.value) == emsg
+    """
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        create_arf(energ_lo, energ_hi, specresp)
+
+    _assert_userwarning(emsg, ws)
 
 
 @pytest.mark.parametrize("idx", [0, 1, 5, -3, -2])
@@ -420,21 +446,38 @@ def test_arf_with_non_monotonic_grid(idx):
     energ_lo[idx], energ_lo[idx1] = energ_lo[idx1], energ_lo[idx]
     energ_hi[idx], energ_hi[idx1] = energ_hi[idx1], energ_hi[idx]
 
+    """
     with pytest.raises(DataErr) as exc:
         create_arf(energ_lo, energ_hi, specresp)
 
     emsg = "The ARF 'test-arf' has a non-monotonic ENERG_LO array"
     assert str(exc.value) == emsg
+    """
+
+    emsg = "The ARF 'test-arf' has a non-monotonic ENERG_LO array"
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        create_arf(energ_lo, energ_hi, specresp)
+
+    _assert_userwarning(emsg, ws)
 
     # now make the two consecutive bin edges be the same
     #
     energ_lo[idx] = energ_lo[idx1]
     energ_hi[idx] = energ_hi[idx1]
 
+    """
     with pytest.raises(DataErr) as exc:
         create_arf(energ_lo, energ_hi, specresp)
 
     assert str(exc.value) == emsg
+    """
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        create_arf(energ_lo, energ_hi, specresp)
+
+    _assert_userwarning(emsg, ws)
 
 
 def test_arf_with_zero_energy_elem():
@@ -448,10 +491,11 @@ def test_arf_with_zero_energy_elem():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
+    emsg = "The ARF 'test-arf' has an ENERG_LO value <= 0"
+
     with pytest.raises(DataErr) as exc:
         create_arf(energ_lo, energ_hi, specresp)
 
-    emsg = "The ARF 'test-arf' has an ENERG_LO value <= 0"
     assert str(exc.value) == emsg
 
 
@@ -469,16 +513,13 @@ def test_arf_with_zero_energy_elem_replace():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
+    emsg = "The minimum ENERG_LO in the ARF 'test-arf' was 0 " + \
+           "and has been replaced by {}".format(ethresh)
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
         adata = create_arf(energ_lo, energ_hi, specresp, ethresh=ethresh)
 
-    assert len(ws) == 1
-    w = ws[0]
-    assert w.category == UserWarning
-    emsg = "The minimum ENERG_LO in the ARF 'test-arf' was 0 " + \
-           "and has been replaced by {}".format(ethresh)
-    assert str(w.message) == emsg
+    _assert_userwarning(emsg, ws)
 
     assert isinstance(adata, DataARF)
     assert adata.energ_lo[0] == pytest.approx(ethresh)
@@ -516,11 +557,12 @@ def test_arf_with_grid_below_thresh_zero():
     energ_lo[0] = 0.0
     energ_hi[0] = 1e-7
 
+    emsg = "The ARF 'test-arf' has an ENERG_HI value <= " + \
+           "the replacement value of 1e-05"
+
     with pytest.raises(DataErr) as exc:
         create_arf(energ_lo, energ_hi, ethresh=1e-5)
 
-    emsg = "The ARF 'test-arf' has an ENERG_HI value <= " + \
-           "the replacement value of 1e-05"
     assert str(exc.value) == emsg
 
 
@@ -557,10 +599,10 @@ def test_rmf_with_non_positive_thresh(ethresh):
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
+    emsg = "ethresh is None or > 0"
     with pytest.raises(ValueError) as exc:
         create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
 
-    emsg = "ethresh is None or > 0"
     assert str(exc.value) == emsg
 
 
@@ -571,24 +613,43 @@ def test_rmf_with_swapped_energy_bounds(idx):
     The bin edges are swapped at position idx.
     """
 
-    energy = np.arange(0.0, 1.0, 0.1, dtype=np.float32)
+    # Ensure energy grid starts > 0
+    energy = 0.001 + np.arange(0.0, 1.0, 0.1, dtype=np.float32)
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
     # test energ_hi < energ_lo
+    emsg = "The RMF 'delta-rmf' has at least one bin with ENERG_HI < ENERG_LO"
     energ_lo[idx], energ_hi[idx] = energ_hi[idx], energ_lo[idx]
+
+    """
     with pytest.raises(DataErr) as exc:
         create_delta_rmf(energ_lo, energ_hi)
 
-    emsg = "The RMF 'delta-rmf' has at least one bin with ENERG_HI < ENERG_LO"
     assert str(exc.value) == emsg
+    """
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        create_delta_rmf(energ_lo, energ_hi)
+
+    _assert_userwarning(emsg, ws)
 
     # test energ_hi == energ_lo
     energ_lo[idx] = energ_hi[idx]
+
+    """
     with pytest.raises(DataErr) as exc:
         create_delta_rmf(energ_lo, energ_hi)
 
     assert str(exc.value) == emsg
+    """
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        create_delta_rmf(energ_lo, energ_hi)
+
+    _assert_userwarning(emsg, ws)
 
 
 @pytest.mark.parametrize("idx", [0, 1, 5, -3, -2])
@@ -608,21 +669,38 @@ def test_rmf_with_non_monotonic_grid(idx):
     energ_lo[idx], energ_lo[idx1] = energ_lo[idx1], energ_lo[idx]
     energ_hi[idx], energ_hi[idx1] = energ_hi[idx1], energ_hi[idx]
 
+    emsg = "The RMF 'delta-rmf' has a non-monotonic ENERG_LO array"
+
+    """
     with pytest.raises(DataErr) as exc:
         create_delta_rmf(energ_lo, energ_hi)
 
-    emsg = "The RMF 'delta-rmf' has a non-monotonic ENERG_LO array"
     assert str(exc.value) == emsg
+    """
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        create_delta_rmf(energ_lo, energ_hi)
+
+    _assert_userwarning(emsg, ws)
 
     # now make the two consecutive bin edges be the same
     #
     energ_lo[idx] = energ_lo[idx1]
     energ_hi[idx] = energ_hi[idx1]
 
+    """
     with pytest.raises(DataErr) as exc:
         create_delta_rmf(energ_lo, energ_hi)
 
     assert str(exc.value) == emsg
+    """
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        create_delta_rmf(energ_lo, energ_hi)
+
+    _assert_userwarning(emsg, ws)
 
 
 def test_rmf_with_zero_energy_elem():
@@ -635,10 +713,11 @@ def test_rmf_with_zero_energy_elem():
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
+    emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
+
     with pytest.raises(DataErr) as exc:
         create_delta_rmf(energ_lo, energ_hi)
 
-    emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
     assert str(exc.value) == emsg
 
 
@@ -655,16 +734,13 @@ def test_rmf_with_zero_energy_elem_replace():
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
+    emsg = "The minimum ENERG_LO in the RMF 'delta-rmf' was 0 " + \
+           "and has been replaced by {}".format(ethresh)
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
         rdata = create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
 
-    assert len(ws) == 1
-    w = ws[0]
-    assert w.category == UserWarning
-    emsg = "The minimum ENERG_LO in the RMF 'delta-rmf' was 0 " + \
-           "and has been replaced by {}".format(ethresh)
-    assert str(w.message) == emsg
+    _assert_userwarning(emsg, ws)
 
     assert isinstance(rdata, DataRMF)
     assert rdata.energ_lo[0] == pytest.approx(ethresh)
@@ -684,10 +760,10 @@ def test_arf_with_negative_energy_elem():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
+    emsg = "The ARF 'test-arf' has an ENERG_LO value <= 0"
     with pytest.raises(DataErr) as exc:
         create_arf(energ_lo, energ_hi, specresp)
 
-    emsg = "The ARF 'test-arf' has an ENERG_LO value <= 0"
     assert str(exc.value) == emsg
 
 
@@ -708,11 +784,21 @@ def test_arf_with_negative_energy_elem_replace():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
+    emsg = "The ARF 'test-arf' has an ENERG_LO value < 0"
+
+    """
     with pytest.raises(DataErr) as exc:
         create_arf(energ_lo, energ_hi, specresp, ethresh=ethresh)
 
-    emsg = "The ARF 'test-arf' has an ENERG_LO value < 0"
     assert str(exc.value) == emsg
+    """
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        create_arf(energ_lo, energ_hi, specresp, ethresh=ethresh)
+
+    _assert_userwarning(emsg, ws)
+
 
 
 def test_rmf_with_negative_energy_elem():
@@ -750,11 +836,21 @@ def test_rmf_with_negative_energy_elem_replace():
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
+    emsg = "The RMF 'delta-rmf' has an ENERG_LO value < 0"
+
+    """
     with pytest.raises(DataErr) as exc:
         create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
 
-    emsg = "The RMF 'delta-rmf' has an ENERG_LO value < 0"
     assert str(exc.value) == emsg
+
+    """
+
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
+
+    _assert_userwarning(emsg, ws)
 
 
 def test_rmf_with_grid_below_thresh():
