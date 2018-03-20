@@ -158,18 +158,12 @@ class DataOgipResponse(Data1DInt):
         if ethresh is not None and ethresh <= 0.0:
             raise ValueError("ethresh is None or > 0")
 
-        # Only display the first warning, since it doesn't really
-        # help users to have multiple warnings for the same response.
-        #
-        warned = False
-
         if (elo >= ehi).any():
             # raise DataErr('ogip-error', rtype, label,
             #               'has at least one bin with ENERG_HI < ENERG_LO')
             wmsg = "The {} '{}' ".format(rtype, label) + \
                    'has at least one bin with ENERG_HI < ENERG_LO'
             warnings.warn(wmsg)
-            warned = True
 
         # if elo is monotonically increasing, all elements will be True
         #                         decreasing,                      False
@@ -178,14 +172,12 @@ class DataOgipResponse(Data1DInt):
         #
         increasing = numpy.diff(elo, n=1) > 0.0
         nincreasing = increasing.sum()
-        if not warned and \
-           (nincreasing > 0 and nincreasing != len(increasing)):
+        if nincreasing > 0 and nincreasing != len(increasing):
             # raise DataErr('ogip-error', rtype, label,
             #               'has a non-monotonic ENERG_LO array')
             wmsg = "The {} '{}' ".format(rtype, label) + \
                    'has a non-monotonic ENERG_LO array'
             warnings.warn(wmsg)
-            warned = True
 
         if nincreasing == 0:
             startidx = -1
@@ -212,15 +204,13 @@ class DataOgipResponse(Data1DInt):
                        "{} '{}' was 0 and has been ".format(rtype, label) + \
                        "replaced by {}".format(ethresh)
                 warnings.warn(wmsg)
-                warned = True
 
-            elif not warned and (e0 < 0.0):
+            elif e0 < 0.0:
                 # raise DataErr('ogip-error', rtype, label,
                 #               'has an ENERG_LO value < 0')
                 wmsg = "The {} '{}' ".format(rtype, label) + \
                        'has an ENERG_LO value < 0'
                 warnings.warn(wmsg)
-                warned = True
 
         return elo, ehi
 
