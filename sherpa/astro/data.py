@@ -26,6 +26,7 @@ import os.path
 import logging
 import warnings
 import numpy
+import hashlib
 
 from sherpa.data import BaseData, Data1DInt, Data2D, DataND, Data
 from sherpa.utils.err import DataErr, ImportErr
@@ -61,23 +62,28 @@ except:
 __all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt')
 
 
-class myCache:
+class myCacheARF:
     def __init__(self, func):
         self.func = func
         self.cache = {}
+        self.queue = ['']
 
-    def __call__(self, *args):
-        key = numpy.append(*args).tostring()
-        if key in self.cache:
-            return self.cache[key]
+    def __call__(self, name, src, rsp):
+        tmp = b''.join([name.encode(), src.tostring()])
+        digest = hashlib.sha256(tmp).digest()
+        if digest in self.cache:
+            return self.cache[digest]
         else:
-            val = self.func(*args)
-            self.cache[key] = val
+            val = self.func(name, src, rsp)
+            key = self.queue.pop(0)
+            self.cache.pop(key, None)
+            self.queue.append(digest)
+            self.cache[digest] = val
             return val
 
 
-@myCache
-def my_arf_fold(a, b):
+@myCacheARF
+def my_arf_fold(name, a, b):
     return arf_fold(a, b)
 
 def _notice_resp(chans, arf, rmf):
@@ -334,9 +340,9 @@ class DataARF(DataOgipResponse):
     def apply_arf(self, src, *args, **kwargs):
         "Fold the source array src through the ARF and return the result"
 
-        # an external function must be called is necessary so all arf goes
-        # through a single entry point in order for caching to 'work'
-        model = my_arf_fold(src, self._rsp)
+        # an external function must be called so all ARFs go through
+        # a single entry point in order for caching to 'work'
+        model = my_arf_fold(self.name, src, self._rsp)
 
         # Rebin the high-res source model folded through ARF down to the size
         # the PHA or RMF expects.
