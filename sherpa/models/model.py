@@ -503,7 +503,7 @@ class ArithmeticModel(Model):
         # Model caching ability
         # queue memory of maximum size
         self.cache = 5
-        self._use_caching = False  # FIXME: reduce number of variables?
+        self._use_caching = True  # FIXME: reduce number of variables?
         self._queue = ['']
         self._cache = {}
         Model.__init__(self, name, pars)

@@ -403,6 +403,9 @@ class DataRMF(DataOgipResponse):
         self._rsp = matrix
         self._lo = energ_lo
         self._hi = energ_hi
+        self._lo_unfiltered = self._lo[:]
+        self._hi_unfiltered = self._hi[:]
+        self.bin_mask = None
         BaseData.__init__(self)
 
     def __str__(self):
@@ -475,7 +478,8 @@ class DataRMF(DataOgipResponse):
                                      self.n_chan, self.matrix, self.offset)
             self._lo = self.energ_lo[bin_mask]
             self._hi = self.energ_hi[bin_mask]
-
+        if bin_mask is not None:
+            self.bin_mask = bin_mask[:]
         return bin_mask
 
     def get_indep(self, filter=False):
