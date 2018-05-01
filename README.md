@@ -123,7 +123,7 @@ to seamlessly install Sherpa.
 First you need to add the Sherpa channel to your configuration,
 and then install Sherpa:
 
-    $ conda config --add channels https://conda.anaconda.org/sherpa
+    $ conda config --add channels sherpa
     $ conda install sherpa
 
 To update Sherpa:
@@ -171,7 +171,7 @@ for BASH or `$HOME/.cshrc` for TCSH.
 
 Add the Sherpa conda repositories to your configuration:
 
-    $ conda config --add channels https://conda.anaconda.org/sherpa
+    $ conda config --add channels sherpa
 
 Create a new environment and install Sherpa:
 
