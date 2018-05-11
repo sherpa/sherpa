@@ -38,6 +38,7 @@ the standard subpackages, use ``import sherpa.all`` or
 import logging
 import os
 import os.path
+import subprocess
 import sys
 
 
@@ -159,8 +160,8 @@ def _smoke_cli(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=F
 def _install_test_deps():
     def install(package_name):
         try:
-            import pip
-            pip.main(['install', package_name])
+            subprocess.call([sys.executable, '-m', 'pip', 'install', package_name],
+                               stdout=sys.stdout, stderr=sys.stderr)
         except:
             print("""Cannot import pip or install packages with it.
             You need pytest, and possibly pytest-cov, in order to run the tests.

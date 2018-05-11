@@ -1,5 +1,122 @@
 Release Notes
 
+Sherpa 4.10.0
+=============
+This release of Standalone Sherpa corresponds to the Sherpa code released as part of CIAO 4.10.
+
+Sherpa 4.10.0 fixes several bugs related to the support of instrumental responses, including improved support of XMM and
+Swift responses.
+
+Also, this release fixes a significant bug in the support of user statistics, improvements to the Python 3 compatibility,
+more robust usage of the numpy API, as well as several other minor bug fixes and new tests.
+
+Additionally, this release introduces support for XSPEC 12.9.1n models, as well as the ability to use aliases for
+parameter names. Some parameter names have been deprecated and may be removed in a future release. We reviewed the
+parameter limits for many models and updated them to reflect the latest XSPEC specification. Also, multiple versions of
+XSPEC are now supported, through optional models and version-dependent low-level function calls. This feature is for
+advanced users building Sherpa from source. Note that Sherpa has been tested against XSPEC 12.9.0i, 12.9.0o, and
+12.9.1n. Note that XSPEC is not directly supported by the standalone binary builds, and users are expected to build
+Sherpa from sources if they want to link it against their version of XSPEC. These changes make it easier for user to
+link different versions of XSPEC with the same Sherpa code base. Also note, however, that XSPEC 12.10 is not currently
+supported.
+
+Sherpa now requires pytest-3.3 or later for running the tests.
+
+Details
+---------
+
+#438 Change from error to warning for OGIP violations
+  Given that users can not easily change a response file, and previous versions of Sherpa would allow the responses to
+  be used, this commit changes some of the errors recently introduced (in PR #383) into warnings. The errors for the
+  first bin edge being <= 0 are still left in because users of the sherpa.astro.ui module will find that these files are
+  auto-corrected for them (by PR #383).
+
+#430 Update XSPEC parameters
+  XSPEC model parameter default values, limits, and properties were reviewed and updated to reflect changes in or
+  mismatches with the model.dat file shipped with XSPEC 12.9.1n.
+
+#428 handle function name changes in XSPEC 12.9.1
+  Sherpa now supports multiple versions of the XSPEC models from the 12.9.0 and 12.9.1 series. Some models recommend
+  using the C-style interface over the older FORTRAN one, which may also resolve some memory access issues. For CIAO
+  4.10 users this means the interfaces to XSPEC models have been updated to the 12.9.1n versions. For Standalone Sherpa
+  users this means they can build and run Sherpa against a larger range of XSPEC versions, and Sherpa will pick the
+  XSPEC low level model function accordingly. Note that Sherpa has been tested against XSPEC 12.9.0i, 12.9.0o, and
+  12.9.1n. The 14 models that have been changed are: apec, bapec, bvapec, bvvapec, gaussian, lorentz, meka, mekal,
+  raymond, vapec, vmeka, vmekal, vraymond, and vvapec.
+
+#427 Add support for XSPEC models added in 12.9.1 (fix #331)
+  Add support for models added in XSPEC 12.9.1: bvtapec, bvvtapec, tapec, vtapec, vvtapec, carbatm, hatm, ismabs,
+  slimbh, snapec, TBfeo, TBgas, TBpcf, TBrel, voigt, xscat.
+  Version 12.9.0 of XSPEC can still be used, in which case the models can be generated - e.g. a user can say xstapec.mdl
+  to create a Python object - but it will error out when evaluated.
+  The Si and S elemental parameters for the ismabs model have been renamed from the XSPEC versions since they are not
+  unique using the caseinsensitive matching used by Sherpa: so SI, SII, SIII and SiI, SiII, SiIII have been renamed S_I,
+  S_II, S_III and Si_I, Si_II, and Si_III respectively.
+  Low level support for the following convolution models from XSPEC 12.9.1 has also been added, but there is no Python
+  model support for these: clumin, rfxconv, vashift, vmshift, xilconv.
+
+#412 support ROSAT PSPC (and similar) RMF files with AstroPy
+  Add explicit tests for reading in, and using, ROSAT PSPC PHA and RMF files. Fix a bug in the AstroPy back-end handling
+  of the ROSAT RMF file.
+
+#409 EmissionGaussian model when skew parameter is not unity (fix #403)
+  The `sherpa.astro.optical.EmissionGaussian` code has been fixed for the case when the skew parameter is not unity. The
+  documentation has also been updated.
+
+#399 Python 3 fixes and new tests for pha2 datasets
+  Fixed several problems when using Sherpa with Python 3: failures when calling `list_bkg_ids` and `list_response_ids`
+  and the parameter querying after `paramprompt(True)` has been called.
+  There is also a change to avoid a `FutureWarning` being raised in the astropy backend when reading in PHA2 data files.
+  Tests have been added to test the reading of a PHA2 format dataset, and new files added to the `sherpa-test-data`
+  repository for this purpose.
+
+#398 Check that list_samplers returns a list (fix #397)
+  The `list_samplers` function now returns a list in Python 3 as well.
+
+#396 Fix `set_xlog` and related commands using Python 3 (fix #393)
+  Fix use of commands that set the plot state using the `sherpa.astro.ui` module, such as `set_xlog` and `set_xlinear`,
+  when using Python 3.
+
+#395 Add xspec optional models
+  Sherpa has new infrastructure for supporting multiple versions of XSPEC at the same time, with models that are built
+  and enabled conditionally depending on the version of XSPEC being linked. Models are assumed to have the same
+  parameters and low level functions across supported versions.
+
+#394 XSPEC build and functionality improvements
+  Add support for reading and changing the path to the XSPEC "manager" directory, and reading the current XSPEC "model"
+  directory (`get_xspath_manager`, `set_xspath_manager`, and `get_xspath_model`). These are intended for the power user
+  and so require an explicit import from `sherpa.astro.xspec`.
+  There are several improvements to the build and interface to the XSPEC model library: these have no user-visible
+  changes.
+
+#390 Add nlapec model
+  The `nlapec` XSpec model has been added. Note that XSPEC 12.9.0 is now required.
+
+#385 DS9 calls return string in Python 2 and 3 (fix #319)
+  Some low lever `xpa` calls were returning byte strings rather than strings in Python 3. This had particular impact on
+  the `image_getregion` function. This has now been fixed.
+
+#383 Replace 0-energy bins in ARF and RMFs (fix #332)
+  Sherpa now performs some validation of the energy ranges of ARF and RMF files against the OGIP standard. If the ranges
+  are inconsistent then the code will return with an error. If one energy bound is 0 the bound is replaced with a small
+  number to avoid numerical issues like division by zero. A new configuration option `minimum_energy`, if present,
+  allows users to override Sherpa's default behavior.
+
+#379 Use a line not span to draw horizontal line (fix #378)
+  Ensure that the line at y=0 (residual) or y=1 (ratio) is drawn for residual or ratio plots when using matplotlib 2.0.
+
+#373 Make sure ds9 properly works with Python 2.7 (fix #368)
+ For Python versions prior to 3.2 add in explicit code to make _Popen work as a context manager.
+
+#352 Add low-level support for the XSPEC rgsxsrc convolution model
+  Add low-level support for the rgsxsrc convolution model in XSPEC. This is intended for R&D into fully supporting XSPEC
+  convolution models in Sherpa.
+
+#255 Add aliases for parameter names so to support new xspec names (fix #74)
+  The XSPEC models have been updated to use parameter names that match the new XSPEC naming scheme introduced in XSPEC
+  12.9.0. The old parameter names can still be used as aliases for the new name, but are deprecated and may be removed
+  in a next major release. Note this allows any models to define aliases for their parameters.
+
 Sherpa 4.9.1
 ============
 
