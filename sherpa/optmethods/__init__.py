@@ -644,7 +644,7 @@ class NelderMead(OptMethod):
 
     .. [1] "A simplex method for function minimization", J.A. Nelder
            and R. Mead (Computer Journal, 1965, vol 7, pp 308-313)
-           http://dx.doi.org/10.1093%2Fcomjnl%2F7.4.308
+           https://doi.org/10.1093%2Fcomjnl%2F7.4.308
 
     .. [2] "Convergence Properties of the Nelder-Mead Simplex
            Algorithm in Low Dimensions", Jeffrey C. Lagarias, James
