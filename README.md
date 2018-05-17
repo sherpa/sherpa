@@ -205,8 +205,7 @@ You can start using Sherpa by starting a Python shell, or you can install
 `ipython` and use it as a more convenient shell. We recommend that you also install
 `ipython-notebook` and `matplotlib` so that you can use the nice `ipython` notebook
 features and the seamless integration with `matplotlib` for plotting from
-Sherpa. We also recommend that you install `astropy` for enabling FITS I/O
-(Sherpa will look for `pyfits` if `astropy` is not present).
+Sherpa. We also recommend that you install `astropy` for enabling FITS I/O.
 
     $ conda install ipython-notebook matplotlib astropy
 
@@ -230,10 +229,9 @@ It is *highly* recommended that [`matplotlib`](http://matplotlib.org/)
 be installed, as this is used to create graphical output (although the
 code can be built and used without this package), and
 [`ipython`](http://ipython.org/), which is for interactive analysis.
-Data I/O requires a `FITS` I/O library. Sherpa looks for
-[`astropy`](http://www.astropy.org) by default,
-and it falls back to [`pyfits`](http://www.stsci.edu/institute/software_hardware/pyfits) 
-if `astropy` is not installed.
+Data I/O requires a `FITS` I/O library; at present the supported
+libraries are [`astropy`](http://www.astropy.org) and
+Crates from CIAO.
 
 The instructions on how to set up the prerequisites vary from system to system,
 and even on the same system there may be multiple ways of setting up the requirements.

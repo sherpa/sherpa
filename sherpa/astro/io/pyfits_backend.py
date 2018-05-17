@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,11 +18,12 @@
 #
 
 """
-Read and write FITS [1]_ files using the ``astropy.io.fits`` module [2]_,
-or ``PyFITS`` [3]_ (which is deprecated).
+Read and write FITS [1]_ files using the ``astropy.io.fits`` module [2]_.
 
-The targeted support version of PyFITS is 3.3. It is not guaranteed that
-this module will work with earlier versions.
+Notes
+-----
+
+Support for PyFITS [3]_ was dropped in Sherpa 4.10.1.
 
 References
 ----------
@@ -37,10 +38,8 @@ References
 
 import numpy
 
-try:
-    from astropy.io import fits
-except ImportError:
-    import pyfits as fits
+from astropy.io import fits
+from astropy.io.fits.column import _VLF
 
 from numpy.compat import basestring
 
@@ -69,39 +68,6 @@ except:
 __all__ = ('get_table_data', 'get_image_data', 'get_arf_data', 'get_rmf_data',
            'get_pha_data', 'set_table_data', 'set_image_data', 'set_pha_data',
            'get_column_data', 'get_ascii_data')
-
-# Should we drop support for earlier versions? The code is only tested
-# using recent (3.3 or later) versions, so there are no guarantees
-# for earlier versions. Should the import order below be reversed,
-# so that later versions are tried first?
-#
-try:
-    # pyfits-1.3 support
-    _VLF = fits.NP_pyfits._VLF
-except AttributeError:
-    # pyfits-2.3.1 support
-    try:
-        _VLF = fits.core._VLF
-    except AttributeError:
-        # pyfits-3.0 support
-        _VLF = fits.column._VLF
-
-# fits.CardList is deprecated
-if hasattr(fits, 'Header'):
-    _new_header = fits.Header
-else:
-    _new_header = fits.CardList
-
-
-# As fits.new_table is deprecated, use the from_columns method
-# if available. Note that this should only be done for binary
-# tables, as fits.TableHDU.from_columns should be used for
-# ASCII tables.
-#
-if hasattr(fits.BinTableHDU, "from_columns"):
-    _new_table = fits.BinTableHDU.from_columns
-else:
-    _new_table = fits.new_table
 
 
 def _has_hdu(hdulist, id):
@@ -1036,10 +1002,11 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
     collist, cols, coldefs = _create_columns(col_names, data)
 
     if ascii:
-        set_arrays(filename, cols, coldefs, ascii=ascii, clobber=clobber)
+        set_arrays(filename, cols, coldefs, ascii=ascii,
+                   clobber=clobber)
         return
 
-    tbl = _new_table(fits.ColDefs(collist))
+    tbl = fits.BinTableHDU.from_columns(fits.ColDefs(collist))
     tbl.name = 'HISTOGRAM'
     if packup:
         return tbl
@@ -1051,7 +1018,7 @@ def _create_header(header):
     the Sherpa representation of the key,value store.
     """
 
-    hdrlist = _new_header()
+    hdrlist = fits.Header()
     for key in header.keys():
         if header[key] is None:
             continue
@@ -1072,10 +1039,12 @@ def set_pha_data(filename, data, col_names, header=None,
     collist, cols, coldefs = _create_columns(col_names, data)
 
     if ascii:
-        set_arrays(filename, cols, coldefs, ascii=ascii, clobber=clobber)
+        set_arrays(filename, cols, coldefs, ascii=ascii,
+                   clobber=clobber)
         return
 
-    pha = _new_table(fits.ColDefs(collist), header=fits.Header(hdrlist))
+    pha = fits.BinTableHDU.from_columns(fits.ColDefs(collist),
+                                        header=fits.Header(hdrlist))
     pha.name = 'SPECTRUM'
     if packup:
         return pha
@@ -1176,10 +1145,11 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
 
     cols = []
     for val, name in izip(args, fields):
-        col = fits.Column(name=name.upper(), format=val.dtype.name.upper(),
+        col = fits.Column(name=name.upper(),
+                          format=val.dtype.name.upper(),
                           array=val)
         cols.append(col)
 
-    tbl = _new_table(fits.ColDefs(cols))
+    tbl = fits.BinTableHDU.from_columns(fits.ColDefs(cols))
     tbl.name = 'TABLE'
     tbl.writeto(filename, clobber=True)

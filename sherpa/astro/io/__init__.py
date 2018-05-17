@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -94,7 +94,7 @@ try:
 except ImportError:
     raise ImportError("""Cannot import selected FITS I/O backend {}.
     If you are using CIAO, this is most likely an error and you should contact the CIAO helpdesk.
-    If you are using Standalone Sherpa, please install astropy (pyfits should also work, but it's deprecated)."""
+    If you are using Standalone Sherpa, please install astropy."""
                       .format(io_opt))
 
 warning = logging.getLogger(__name__).warning
