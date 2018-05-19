@@ -517,7 +517,11 @@ class test_stats(SherpaTestCase):
     def test_wstat(self):
         fit = Fit(self.data, self.model, WStat(), LevMar())
         results = fit.fit()
-        self.compare_results(self._fit_wstat_results_bench, results)
+        # Prior to XSPEC 12.10.0, tol=1e-6 was used
+        # Note that nH is very large (it is the parameter that
+        # needs the large relative tolerance).
+        self.compare_results(self._fit_wstat_results_bench, results,
+                             tol=3e-4)
 
     # The following test passes if run by itself but fails when run with others
     # def test_wstat1(self):
