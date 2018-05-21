@@ -2964,7 +2964,7 @@ class XSgrbcomp(XSAdditiveModel):
         If set to 0 then only the first-order bulk Comptonization term is
         considered, otherwise if set to 1 then the second-order term
         is computed (see [1]_ for more details).
-    logA
+    log_A
         The geometrical covering factor which determines the relative
         weights of the seed and comptonized spectra to the total flux.
     z
@@ -3000,11 +3000,11 @@ class XSgrbcomp(XSAdditiveModel):
         self.tau = Parameter(name, 'tau', 5.0, 0.0, 200., 0.0, 200.)
         self.beta = Parameter(name, 'beta', 0.2, 0.0, 1.0, 0.0, 1.0)
         self.fbflag = Parameter(name, 'fbflag', 0.0, 0.0, 1.0, 0.0, 1.0, frozen=True)
-        self.logA = Parameter(name, 'logA', 5.0, -8., 8., -8., 8., frozen=True)
+        self.log_A = Parameter(name, 'log_A', 5.0, -8., 8., -8., 8., frozen=True)
         self.z = Parameter(name, 'z', 0.0, 0.0, 10., 0.0, 10., frozen=True)
         self.a_boost = Parameter(name, 'a_boost', 5.0, 0., 30., 0., 30., frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.kTs, self.gamma, self.kTe, self.tau, self.beta, self.fbflag, self.logA, self.z, self.a_boost, self.norm))
+        XSAdditiveModel.__init__(self, name, (self.kTs, self.gamma, self.kTe, self.tau, self.beta, self.fbflag, self.log_A, self.z, self.a_boost, self.norm))
 
 
 class XSgrbm(XSAdditiveModel):
@@ -9878,7 +9878,7 @@ class XSjet(XSAdditiveModel):
         Black hole mass, in solar masses.
     Dco
         Comoving distance, as in XSoptxagnf.
-    logmdot
+    log_mdot
         log (accretion power / Eddington luminosity), in units of
         log L / logLEdd. See [1]_ for a full discussion of this parameter.
     thetaobs
@@ -9934,7 +9934,7 @@ class XSjet(XSAdditiveModel):
                               units='solar', frozen=True)
         self.Dco = Parameter(name, 'Dco', 3350.6, 1., 1e8, 1., 1e8,
                              units='Mpc', frozen=True)
-        self.logmdot = Parameter(name, 'logmdot', -1., -5., 2., -5., 2.,
+        self.log_mdot = Parameter(name, 'log_mdot', -1., -5., 2., -5., 2.,
                                  units='logL/lEdd')
         self.thetaobs = Parameter(name, 'thetaobs', 3., 0., 90., 0., 90.,
                                   units='deg', frozen=True)
@@ -9952,10 +9952,12 @@ class XSjet(XSAdditiveModel):
         self.s1 = Parameter(name, 's1', 1., -1., 1., -1., 1., frozen=True)
         self.s2 = Parameter(name, 's2', 2.7, 1., 5., 1., 5., frozen=True)
         self.z = Parameter(name, 'z', 0.0, 0., 10., 0., 10., frozen=True)
+        # Note: alwaysfrozen is set for norm based on the documentation,
+        # since there's no way to determine this from the model.dat file
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval,
                               alwaysfrozen=True)
         XSAdditiveModel.__init__(self, name,
-                                 (self.mass, self.Dco, self.logmdot, self.thetaobs,
+                                 (self.mass, self.Dco, self.log_mdot, self.thetaobs,
                                   self.BulkG, self.phi, self.zdiss, self.B, self.logPrel,
                                   self.gmin_inj, self.gbreak, self.gmax, self.s1,
                                   self.s2, self.z, self.norm))
