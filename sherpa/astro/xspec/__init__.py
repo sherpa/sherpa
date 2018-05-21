@@ -2950,7 +2950,7 @@ class XSgrbcomp(XSAdditiveModel):
     Attributes
     ----------
     kTs
-        Temperature od te seed blackbody spectrum in keV.
+        Temperature of the seed blackbody spectrum in keV.
     gamma
         If set to 3 the seed soft spectrum is a blackbody, otherwise it
         approximates a modified blackbody.
