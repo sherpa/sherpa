@@ -22,8 +22,8 @@ import numpy
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 from sherpa.astro import ui
-from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_data, requires_fits, requires_xspec
+from sherpa.utils.testing import SherpaTestCase, requires_data, \
+    requires_fits, requires_xspec
 
 # How many models should there be?
 # This number includes all additive and multiplicative models, even the ones

@@ -1,5 +1,5 @@
-# 
-#  Copyright (C) 2007  Smithsonian Astrophysical Observatory
+#
+#  Copyright (C) 2007, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,9 @@
 #
 
 import numpy
-from sherpa.estmethods import *
-from sherpa.utils import SherpaTestCase
+from sherpa.estmethods import Covariance, Projection
+from sherpa.utils.testing import SherpaTestCase
+
 
 # Test data arrays -- together this makes a line best fit with a
 # 1D Gaussian function.
@@ -52,7 +53,7 @@ y = numpy.array(
 # These parameter values are known to be the best-fit parameter values
 # of a Gaussian to the x- and y-arrays above.
 fittedpars = numpy.array([32.3536, 807.863, 117.826])
-limit_parnums = numpy.array([0,1,2])
+limit_parnums = numpy.array([0, 1, 2])
 maxpars = numpy.array([200, 900, 200])
 minpars = numpy.array([1, 0, 0])
 hardmaxpars = numpy.array([1.0e+120, 1.0e+120, 1.0e+120])
@@ -60,23 +61,29 @@ hardminpars = numpy.array([1.0e-120, -1.0e+120, -1.0e+120])
 
 gfactor = 4.0 * 0.6931471805599453094172321214581766
 
+
 def freeze_par(pars, parmins, parmaxes, i):
     return (pars, parmins, parmaxes)
+
 
 def thaw_par(i):
     pass
 
+
 def report_progress(i, lower, upper):
     pass
 
-def get_par_name( ii ):
+
+def get_par_name(ii):
     pass
+
 
 # Here's the 1D Gaussian function to use to generate predicted
 # data, which will be compared to the y-array above
 def gauss_func(p):
     return p[2] * numpy.exp(-1.0 * gfactor *
                             (x - p[1]) * (x - p[1]) / p[0] / p[0])
+
 
 # Compare the y-array above to values calculated with gauss_func,
 # and calculate chi-squared, using Gehrel's approximation for
@@ -86,12 +93,14 @@ def stat(p):
     fvec = (y - gauss_func(p) ) / errors
     return ((fvec * fvec).sum(),)
 
+
 # Easiest "fit" function for unit tests is actually just to
 # return current parameter values.  In this test, that will
 # have the effect of making projection act like the old
 # uncertainty method, but that is OK for the unit test.
 def fitter(scb, pars, parmins, parmaxs):
     return (1, pars, scb(pars)[0])
+
 
 class test_estmethods(SherpaTestCase):
 
@@ -108,13 +117,13 @@ class test_estmethods(SherpaTestCase):
                           thaw_par, report_progress, get_par_name)
 
         self.assertRaises(RuntimeError, Covariance().compute,
-                          stat, fitter, numpy.array([1,2]),
+                          stat, fitter, numpy.array([1, 2]),
                           minpars, maxpars, hardminpars, hardmaxpars,
                           limit_parnums, freeze_par, thaw_par,
                           report_progress, get_par_name)
 
         self.assertRaises(RuntimeError, Covariance().compute,
-                          stat, fitter, fittedpars, numpy.array([1,2]),
+                          stat, fitter, fittedpars, numpy.array([1, 2]),
                           maxpars, hardminpars, hardmaxpars, limit_parnums,
                           freeze_par, thaw_par, report_progress, get_par_name)
 
@@ -130,13 +139,13 @@ class test_estmethods(SherpaTestCase):
                           freeze_par, thaw_par, report_progress, get_par_name)
 
         self.assertRaises(RuntimeError, Projection().compute,
-                          stat, fitter, numpy.array([1,2]),
+                          stat, fitter, numpy.array([1, 2]),
                           minpars, maxpars, hardminpars, hardmaxpars,
                           limit_parnums, freeze_par, thaw_par,
                           report_progress, get_par_name)
 
         self.assertRaises(RuntimeError, Projection().compute,
-                          stat, fitter, fittedpars, numpy.array([1,2]),
+                          stat, fitter, fittedpars, numpy.array([1, 2]),
                           maxpars, hardminpars, hardmaxpars, limit_parnums,
                           freeze_par, thaw_par, report_progress, get_par_name)
 
@@ -150,7 +159,7 @@ class test_estmethods(SherpaTestCase):
                                        limit_parnums, freeze_par, thaw_par,
                                        report_progress, get_par_name)
         self.assertEqualWithinTol(standard.diagonal(),
-                                  #results[2].diagonal(), 1e-4)
+                                  # results[2].diagonal(), 1e-4)
                                   results[1], 1e-4)
 
     def test_projection(self):
@@ -161,5 +170,5 @@ class test_estmethods(SherpaTestCase):
                                        hardminpars, hardmaxpars,
                                        limit_parnums, freeze_par, thaw_par,
                                        report_progress, get_par_name)
-        self.assertEqualWithinTol(standard_elo,results[0], 1e-4)
-        self.assertEqualWithinTol(standard_ehi,results[1], 1e-4)
+        self.assertEqualWithinTol(standard_elo, results[0], 1e-4)
+        self.assertEqualWithinTol(standard_ehi, results[1], 1e-4)

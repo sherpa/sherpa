@@ -33,7 +33,6 @@ import sys
 import numpy
 import numpy.random
 import numpy.fft
-from . import testing
 
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
 #       this module; is this intentional?
@@ -81,7 +80,7 @@ except Exception as e:
 del _ncpu_val, config, get_config, ConfigParser, NoSectionError
 
 
-__all__ = ('NoNewAttributesAfterInit', 'SherpaTestCase',
+__all__ = ('NoNewAttributesAfterInit',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'dataspace1d', 'dataspace2d', 'demuller',
@@ -95,7 +94,6 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaTestCase',
            'incbet', 'interpolate', 'is_binary_file', 'Knuth_close',
            'lgam', 'linear_interp', 'nearest_interp',
            'neville', 'neville2d',
-           'requires_data', 'requires_fits',
            'new_muller', 'normalize', 'numpy_convolve',
            'pad_bounding_box', 'parallel_map', 'param_apply_limits',
            'parse_expr', 'poisson_noise', 'print_fields', 'rebin',
@@ -156,34 +154,6 @@ class NoNewAttributesAfterInit(object):
 
         object.__setattr__(self, name, val)
 
-
-###############################################################################
-#
-# Testing stuff
-#
-###############################################################################
-
-SherpaTestCase = testing.SherpaTestCase
-
-requires_data = testing.requires_data
-
-requires_plotting = testing.requires_plotting
-
-requires_pylab = testing.requires_pylab
-
-requires_fits = testing.requires_fits
-
-requires_group = testing.requires_group
-
-requires_stk = testing.requires_stk
-
-requires_ds9 = testing.requires_ds9
-
-requires_xspec = testing.requires_xspec
-
-requires_package = testing.requires_package
-
-has_package_from_list = testing.has_package_from_list
 
 ###############################################################################
 #

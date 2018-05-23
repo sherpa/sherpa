@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,10 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
 import logging
-from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_data, requires_fits, requires_xspec
+from sherpa.utils.testing import SherpaTestCase, requires_data, \
+    requires_fits, requires_xspec
 from sherpa.astro import sim
 
 from sherpa.astro.instrument import Response1D
@@ -51,13 +50,13 @@ class test_sim(SherpaTestCase):
         self.pcaarf = self.make_path("aref_Cedge.fits")
 
         data = read_pha(pha)
-        data.ignore(None,0.3)
-        data.ignore(7.0,None)
+        data.ignore(None, 0.3)
+        data.ignore(7.0, None)
 
         rsp = Response1D(data)
         self.abs1 = XSwabs('abs1')
         self.p1 = XSpowerlaw('p1')
-        model = rsp(self.abs1*self.p1)
+        model = rsp(self.abs1 * self.p1)
 
         self.fit = Fit(data, model, CStat(), NelderMead(), Covariance())
 

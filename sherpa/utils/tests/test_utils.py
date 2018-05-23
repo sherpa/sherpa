@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,12 +19,11 @@
 
 import pytest
 import numpy
-import multiprocessing
 from numpy.testing import assert_allclose, assert_equal
 
 from sherpa import utils
-from sherpa.utils import SherpaTestCase, SherpaFloat, \
-    NoNewAttributesAfterInit
+from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
+from sherpa.utils.testing import SherpaTestCase
 
 from six.moves import xrange
 
@@ -266,17 +265,17 @@ class test_utils(SherpaTestCase):
 
 
 @pytest.mark.parametrize("num_tasks, num_segments",
-                        [
+                         [
                             (1, 1),
                             (8, 1),
                             (1, 8),
                             (10, 5),
                             (5, 10),
                             (5, 5)
-                        ])
+                         ])
 def test_parallel_map(num_tasks, num_segments):
         f = numpy.sum
-        iterable = [numpy.arange(1, 2+2*i) for i in range(num_segments)]
+        iterable = [numpy.arange(1, 2 + 2 * i) for i in range(num_segments)]
 
         result = list(map(f, iterable))
         result = numpy.asarray(result)
