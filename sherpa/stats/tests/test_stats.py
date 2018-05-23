@@ -517,11 +517,15 @@ class test_stats(SherpaTestCase):
     def test_wstat(self):
         fit = Fit(self.data, self.model, WStat(), LevMar())
         results = fit.fit()
-        # Prior to XSPEC 12.10.0, tol=1e-6 was used
-        # Note that nH is very large (it is the parameter that
-        # needs the large relative tolerance).
+        # On a local linux machine I have to bump the tolerance to
+        # 3e-4, but this isn't seen on Travis. The fit isn't
+        # "great", so it may be that the results are sensitive to
+        # numerical differences (e.g. as introduced with updated
+        # compilers).
+        # tol = 3e-4
+        tol = 1e-6  # TODO: investigate difference
         self.compare_results(self._fit_wstat_results_bench, results,
-                             tol=3e-4)
+                             tol=tol)
 
     # The following test passes if run by itself but fails when run with others
     # def test_wstat1(self):
