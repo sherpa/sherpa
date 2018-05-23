@@ -23,6 +23,7 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 """
 
 import os.path
+import logging
 import warnings
 
 import numpy
@@ -34,10 +35,17 @@ from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid or Region symbols.
 from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
-    compile_energy_grid, do_group, expand_grouped_mask, \
-    Region, region_mask
+    compile_energy_grid, do_group, expand_grouped_mask
 
-import logging
+regstatus = False
+try:
+    from sherpa.astro.utils import Region, region_mask
+    regstatus = True
+except ImportError:
+    # sherpa.astro.utils will have already generated a warning so
+    # no need to create one here
+    pass
+
 warning = logging.getLogger(__name__).warning
 
 groupstatus = False
@@ -2306,7 +2314,18 @@ class DataIMG(Data2D):
 
         # _set_coord will correctly define the _get_* WCS function pointers.
         self._set_coord(state['_coord'])
-        self._region = Region(self._region)
+        if regstatus:
+            self._region = Region(self._region)
+        else:
+            # An ImportErr could be raised rather than display a
+            # warnng, but that would make it harder for the user
+            # to extract useful data (e.g. in the case of triggering
+            # this when loading a pickled file).
+            #
+            if self._region is not None and self._region != '':
+                warning("Unable to restore region={} as region module is not avaialable.".format(self._region))
+
+            self._region = None
 
     def _check_physical_transform(self):
         if self.sky is None:
@@ -2456,6 +2475,10 @@ class DataIMG(Data2D):
         mask = None
         ignore = bool_cast(ignore)
         if val is not None:
+
+            if not regstatus:
+                raise ImportErr('importfailed', 'region', 'notice2d')
+
             val = str(val).strip()
             (self._region,
              mask) = region_mask(self._region, val,
