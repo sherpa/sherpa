@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -30,14 +30,15 @@ from types import FunctionType as function
 from types import MethodType as instancemethod
 import string
 import sys
-import importlib
 import numpy
 import numpy.random
 import numpy.fft
 from . import testing
-# Note: _utils.gsl_fcmp is not exported from this module; is this intentional?
+
+# Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
+#       this module; is this intentional?
 from sherpa.utils._utils import calc_ftest, calc_mlr, igamc, igam, \
-    incbet, gamma, lgam, erf, ndtri, sao_fcmp, rebin, \
+    incbet, gamma, lgam, erf, sao_fcmp, rebin, \
     hist1d, hist2d, sum_intervals, neville, sao_arange
 from sherpa.utils._psf import extract_kernel, normalize, set_origin, \
     pad_bounding_box
@@ -1550,7 +1551,8 @@ def run_tasks(procs, err_q, out_q, num):
     # return list(numpy.concatenate(results))
     # Remove extra dimension added by split
     vals = []
-    [vals.extend(result) for result in results]
+    for r in results:
+        vals.extend(r)
     return vals
 
 
@@ -1891,6 +1893,7 @@ def printf(format, *args):
     """Format args with the first argument as format string, and write.
     Return the last arg, or format itself if there are no args."""
     sys.stdout.write(str(format) % args)
+    # WARNING: where is if_ meant to be defined?
     return if_(args, args[-1], format)
 
 
