@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2010, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,12 @@ from .parameter import Parameter, tinyval
 from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
     ArithmeticFunctionModel
 from sherpa.utils.err import ModelErr
-from sherpa.utils import *
+from sherpa.utils import bool_cast, get_position, guess_amplitude, \
+    guess_amplitude_at_ref, \
+    guess_amplitude2d, guess_bounds, guess_fwhm, guess_position, \
+    guess_reference, interpolate, linear_interp, param_apply_limits, \
+    sao_fcmp
+
 from . import _modelfcts
 
 import logging
@@ -95,7 +100,7 @@ class Box1D(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.box1d(*args, **kwargs)
 
 
@@ -132,18 +137,19 @@ class Const1D(ArithmeticModel):
         max = dep.max()
         ylo = 0
         if numpy.abs(min - 0) > DBL_EPSILON:
-            ylo = min/100.
+            ylo = min / 100.
             if min < 0: ylo = 0
         yhi = 0
         if numpy.abs(max - 0) > DBL_EPSILON:
-            yhi = -10*max
-            if max > 0: yhi = 100*max
-        param_apply_limits({ 'val':(max+min)/2., 'min':ylo, 'max':yhi },
+            yhi = -10 * max
+            if max > 0: yhi = 100 * max
+        param_apply_limits({'val': (max + min) / 2.,
+                            'min': ylo, 'max': yhi},
                            self.c0, **kwargs)
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.const1d(*args, **kwargs)
 
 
@@ -186,7 +192,7 @@ class Cos(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.cos(*args, **kwargs)
 
 
@@ -242,7 +248,7 @@ class Delta1D(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.delta1d(*args, **kwargs)
 
 
@@ -293,7 +299,7 @@ class Erf(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.erf(*args, **kwargs)
 
 
@@ -344,7 +350,7 @@ class Erfc(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.erfc(*args, **kwargs)
 
 
@@ -383,7 +389,7 @@ class Exp(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.exp(*args, **kwargs)
 
 
@@ -422,7 +428,7 @@ class Exp10(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.exp10(*args, **kwargs)
 
 
@@ -509,7 +515,7 @@ class Gauss1D(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.gauss1d(*args, **kwargs)
 
 
@@ -548,7 +554,7 @@ class Log(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.log(*args, **kwargs)
 
 
@@ -587,7 +593,7 @@ class Log10(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.log10(*args, **kwargs)
 
 
@@ -632,16 +638,17 @@ class LogParabola(ArithmeticModel):
         self.c1 = Parameter(name, 'c1', 1)
         self.c2 = Parameter(name, 'c2', 1)
         self.ampl = Parameter(name, 'ampl', 1, 0)
-        ArithmeticModel.__init__(self, name, (self.ref,self.c1,
-                                              self.c2,self.ampl))
+        ArithmeticModel.__init__(self, name, (self.ref, self.c1,
+                                              self.c2, self.ampl))
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.logparabola(*args, **kwargs)
 
 
-_gfactor = numpy.sqrt(numpy.pi/(4*numpy.log(2)))
+_gfactor = numpy.sqrt(numpy.pi / (4 * numpy.log(2)))
+
 
 class NormGauss1D(ArithmeticModel):
     """One-dimensional normalised gaussian function.
@@ -694,7 +701,7 @@ class NormGauss1D(ArithmeticModel):
         param_apply_limits(fwhm, self.fwhm, **kwargs)
 
         # Apply normalization factor to guessed amplitude
-        norm = numpy.sqrt(numpy.pi/_gfactor)*self.fwhm.val
+        norm = numpy.sqrt(numpy.pi / _gfactor) * self.fwhm.val
         for key in ampl.keys():
             if ampl[key] is not None:
                 ampl[key] *= norm
@@ -702,7 +709,7 @@ class NormGauss1D(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.ngauss1d(*args, **kwargs)
 
 
@@ -751,7 +758,7 @@ class Poisson(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.poisson(*args, **kwargs)
 
 
@@ -816,14 +823,13 @@ class Polynom1D(ArithmeticModel):
 
         ArithmeticModel.__init__(self, name, pars)
 
-
     def guess(self, dep, *args, **kwargs):
         xmin = args[0].min()
         xmax = args[0].max()
         ymin = dep.min()
         ymax = dep.max()
-        dydx = (ymax-ymin)/(xmax-xmin)
-        dydx2 = (ymax-ymin)/((xmax-xmin)*(xmax-xmin))
+        dydx = (ymax - ymin) / (xmax - xmin)
+        dydx2 = (ymax - ymin) / ((xmax - xmin) * (xmax - xmin))
 
         xlo = 0
         if numpy.abs(xmin - 0) >= DBL_EPSILON:
@@ -849,9 +855,9 @@ class Polynom1D(ArithmeticModel):
             if ymax > 0:
                 yhi = ymax
 
-        c0 = {'val': (ymax+ymin)/2.0, 'min': ylo, 'max': yhi}
-        c1 = {'val': 0.0, 'min': -100*dydx, 'max': 100*dydx}
-        c2 = {'val': 0.0, 'min': -100*dydx2, 'max': 100*dydx2}
+        c0 = {'val': (ymax + ymin) / 2.0, 'min': ylo, 'max': yhi}
+        c1 = {'val': 0.0, 'min': -100 * dydx, 'max': 100 * dydx}
+        c2 = {'val': 0.0, 'min': -100 * dydx2, 'max': 100 * dydx2}
         c3 = {'val': 0.0, 'min': ylo, 'max': yhi}
         off = {'val': 0.0, 'min': xlo, 'max': xhi}
 
@@ -868,7 +874,7 @@ class Polynom1D(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.poly1d(*args, **kwargs)
 
 
@@ -908,17 +914,15 @@ class PowLaw1D(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1, 0)
         ArithmeticModel.__init__(self, name, (self.gamma, self.ref, self.ampl))
 
-
     def guess(self, dep, *args, **kwargs):
         ref = guess_reference(self.ref.min, self.ref.max, *args)
         param_apply_limits(ref, self.ref, **kwargs)
         norm = guess_amplitude_at_ref(self.ref.val, dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-
     @modelCacher1d
     def calc(self, pars, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         if kwargs['integrate']:
             # avoid numerical issues with C pow() function close to zero,
             # 0.0 +- ~1.e-14.  PowLaw1D integrated has multiple calls to
@@ -963,7 +967,7 @@ class Scale1D(Const1D):
 
     def __init__(self, name='scale1d'):
         Const1D.__init__(self, name)
-        self.integrate=False
+        self.integrate = False
 
 
 class Sin(ArithmeticModel):
@@ -1005,7 +1009,7 @@ class Sin(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.sin(*args, **kwargs)
 
 
@@ -1040,7 +1044,7 @@ class Sqrt(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.sqrt(*args, **kwargs)
 
 
@@ -1081,7 +1085,6 @@ class StepHi1D(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1, 0)
         ArithmeticModel.__init__(self, name, (self.xcut, self.ampl))
 
-
     def guess(self, dep, *args, **kwargs):
         cut = guess_bounds(args[0], False)
         norm = guess_amplitude(dep, *args)
@@ -1090,7 +1093,7 @@ class StepHi1D(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.stephi1d(*args, **kwargs)
 
 
@@ -1131,7 +1134,6 @@ class StepLo1D(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1, 0)
         ArithmeticModel.__init__(self, name, (self.xcut, self.ampl))
 
-
     def guess(self, dep, *args, **kwargs):
         cut = guess_bounds(args[0], False)
         norm = guess_amplitude(dep, *args)
@@ -1140,7 +1142,7 @@ class StepLo1D(ArithmeticModel):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.steplo1d(*args, **kwargs)
 
 
@@ -1177,14 +1179,13 @@ class Tan(ArithmeticModel):
         ArithmeticModel.__init__(self, name,
                                  (self.period, self.offset, self.ampl))
 
-
     def guess(self, dep, *args, **kwargs):
         norm = guess_amplitude(dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.tan(*args, **kwargs)
 
 
@@ -1242,7 +1243,6 @@ class Box2D(ArithmeticModel):
                                   self.ampl))
         self.cache = 0
 
-
     def guess(self, dep, *args, **kwargs):
         xlo, xhi = guess_bounds(args[0])
         ylo, yhi = guess_bounds(args[1])
@@ -1253,9 +1253,8 @@ class Box2D(ArithmeticModel):
         param_apply_limits(yhi, self.yhi, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.box2d(*args, **kwargs)
 
 
@@ -1289,7 +1288,7 @@ class Const2D(Const1D):
         self.cache = 0
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.const2d(*args, **kwargs)
 
 
@@ -1325,7 +1324,7 @@ class Scale2D(Const2D):
 
     def __init__(self, name='scale2d'):
         Const2D.__init__(self, name)
-        self.integrate=False
+        self.integrate = False
         self.cache = 0
 
 
@@ -1386,10 +1385,10 @@ class Delta2D(ArithmeticModel):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.delta2d(*args, **kwargs)
+
 
 class Gauss2D(ArithmeticModel):
     """Two-dimensional gaussian function.
@@ -1451,8 +1450,9 @@ class Gauss2D(ArithmeticModel):
         self.ypos = Parameter(name, 'ypos', 0)
         self.ellip = Parameter(name, 'ellip', 0, 0, 0.999, 0, 0.9999,
                                frozen=True)
-        self.theta = Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi, -2*numpy.pi,
-                               4*numpy.pi, 'radians', frozen=True)
+        self.theta = Parameter(name, 'theta', 0, -2 * numpy.pi, 2 * numpy.pi,
+                               -2 * numpy.pi, 4 * numpy.pi, 'radians',
+                               frozen=True)
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.xpos, self.ypos, self.ellip,
@@ -1473,10 +1473,10 @@ class Gauss2D(ArithmeticModel):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.gauss2d(*args, **kwargs)
+
 
 class SigmaGauss2D(Gauss2D):
     """Two-dimensional gaussian function (varying sigma).
@@ -1536,8 +1536,8 @@ class SigmaGauss2D(Gauss2D):
         self.xpos = Parameter(name, 'xpos', 0)
         self.ypos = Parameter(name, 'ypos', 0)
         self.theta = \
-            Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi, \
-                          -2*numpy.pi, 4*numpy.pi, 'radians', frozen=True)
+            Parameter(name, 'theta', 0, -2 * numpy.pi, 2 * numpy.pi,
+                      -2 * numpy.pi, 4 * numpy.pi, 'radians', frozen=True)
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name,
                                  (self.sigma_a, self.sigma_b, self.xpos,
@@ -1545,7 +1545,7 @@ class SigmaGauss2D(Gauss2D):
         self.cache = 0
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.sigmagauss2d(*args, **kwargs)
 
 
@@ -1612,8 +1612,9 @@ class NormGauss2D(ArithmeticModel):
         self.ypos = Parameter(name, 'ypos', 0)
         self.ellip = Parameter(name, 'ellip', 0, 0, 0.999, 0, 0.9999,
                                frozen=True)
-        self.theta = Parameter(name, 'theta', 0, -2*numpy.pi, 2*numpy.pi, -2*numpy.pi,
-                               4*numpy.pi, 'radians', frozen=True)
+        self.theta = Parameter(name, 'theta', 0, -2 * numpy.pi, 2 * numpy.pi,
+                               -2 * numpy.pi, 4 * numpy.pi, 'radians',
+                               frozen=True)
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.xpos, self.ypos, self.ellip,
@@ -1634,15 +1635,15 @@ class NormGauss2D(ArithmeticModel):
         param_apply_limits(ypos, self.ypos, **kwargs)
 
         # Apply normalization factor to guessed amplitude
-        norm = (numpy.pi/_gfactor)*self.fwhm.val*self.fwhm.val*numpy.sqrt(1.0 - (self.ellip.val*self.ellip.val))
+        norm = (numpy.pi / _gfactor) * self.fwhm.val * self.fwhm.val * \
+            numpy.sqrt(1.0 - (self.ellip.val * self.ellip.val))
         for key in ampl.keys():
             if ampl[key] is not None:
                 ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
 
-
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.ngauss2d(*args, **kwargs)
 
 
@@ -1707,7 +1708,6 @@ class Polynom2D(ArithmeticModel):
                                   self.cx2y1, self.cx2y2))
         self.cache = 0
 
-
     def guess(self, dep, *args, **kwargs):
         x0min = args[0].min()
         x0max = args[0].max()
@@ -1726,18 +1726,18 @@ class Polynom2D(ArithmeticModel):
             yhi = -ymax
             if ymax > 0: yhi = ymax
 
-        dydx0 = (ymax-ymin)/(x0max-x0min)
-        dydx1 = (ymax-ymin)/(x1max-x1min)
-        dyd2x0 = (ymax-ymin)/((x0max-x0min)*(x0max-x0min))
-        dyd2x1 = (ymax-ymin)/((x1max-x1min)*(x1max-x1min))
-        dydx0dx1 = (ymax-ymin)/((x0max-x0min)*(x1max-x1min))
+        dydx0 = (ymax - ymin) / (x0max - x0min)
+        dydx1 = (ymax - ymin) / (x1max - x1min)
+        dyd2x0 = (ymax - ymin) / ((x0max - x0min) * (x0max - x0min))
+        dyd2x1 = (ymax - ymin) / ((x1max - x1min) * (x1max - x1min))
+        dydx0dx1 = (ymax - ymin) / ((x0max - x0min) * (x1max - x1min))
 
-        c     = {'val':(ymax+ymin)/2., 'min': ylo, 'max': yhi }
-        cx1   = {'val': 0., 'min': -100*dydx0, 'max': 100*dydx0 }
-        cy1   = {'val': 0., 'min': -100*dydx1, 'max': 100*dydx1 }
-        cx2   = {'val': 0., 'min': -100*dyd2x0, 'max': 100*dyd2x0 }
-        cy2   = {'val': 0., 'min': -100*dyd2x1, 'max': 100*dyd2x1 }
-        cx1y1 = {'val': 0., 'min': -100*dydx0dx1, 'max': 100*dydx0dx1 }
+        c     = {'val': (ymax + ymin) / 2., 'min': ylo, 'max': yhi}
+        cx1   = {'val': 0., 'min': -100 * dydx0, 'max': 100 * dydx0}
+        cy1   = {'val': 0., 'min': -100 * dydx1, 'max': 100 * dydx1}
+        cx2   = {'val': 0., 'min': -100 * dyd2x0, 'max': 100 * dyd2x0}
+        cy2   = {'val': 0., 'min': -100 * dyd2x1, 'max': 100 * dyd2x1}
+        cx1y1 = {'val': 0., 'min': -100 * dydx0dx1, 'max': 100 * dydx0dx1}
         c22   = {'val': 0., 'min': ylo, 'max': yhi }
 
         param_apply_limits(c, self.c, **kwargs)
@@ -1750,9 +1750,8 @@ class Polynom2D(ArithmeticModel):
         param_apply_limits(c22, self.cx2y1, **kwargs)
         param_apply_limits(c22, self.cx2y2, **kwargs)
 
-
     def calc(self, *args, **kwargs):
-        kwargs['integrate']=bool_cast(self.integrate)
+        kwargs['integrate'] = bool_cast(self.integrate)
         return _modelfcts.poly2d(*args, **kwargs)
 
 
@@ -1767,7 +1766,6 @@ class TableModel(ArithmeticModel):
         self.method = linear_interp  # interpolation method
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.ampl,))
-
 
     def __setstate__(self, state):
         self.__x = None
@@ -1786,14 +1784,11 @@ class TableModel(ArithmeticModel):
             self.__y = numpy.asarray(y)[idx]
             self.__x = numpy.asarray(x)[idx]
 
-
     def get_x(self):
         return self.__x
 
-
     def get_y(self):
         return self.__y
-
 
     def fold(self, data):
         mask = data.mask
@@ -1821,6 +1816,7 @@ class TableModel(ArithmeticModel):
         raise ModelErr("filtermismatch", 'table model', 'data, (%s vs %s)' %
                        (len(self.__y), len(x0)))
 
+
 class UserModel(ArithmeticModel):
     """Support for user-supplied models.
 
@@ -1841,7 +1837,6 @@ class UserModel(ArithmeticModel):
         ArithmeticModel.__init__(self, name, pars)
 
 
-
 class Integrator1D(CompositeModel, ArithmeticModel):
 
     @staticmethod
@@ -1859,17 +1854,14 @@ class Integrator1D(CompositeModel, ArithmeticModel):
                                 ('integrate1d(%s)' % self.model.name),
                                 (self.model,))
 
-
     def startup(self):
         self.model.startup()
         self._errflag = 1
         CompositeModel.startup(self)
 
-
     def teardown(self):
         self.model.teardown()
         CompositeModel.teardown(self)
-
 
     def calc(self, p, xlo, xhi=None, **kwargs):
         if xhi is None:
@@ -1878,6 +1870,7 @@ class Integrator1D(CompositeModel, ArithmeticModel):
         return _modelfcts.integrate1d(self.model.calc,
                                       p, xlo, xhi, **self.otherkwargs)
 
+
 class Integrate1D(ArithmeticModel):
 
     def __init__(self, name='integrate1d'):
@@ -1885,9 +1878,8 @@ class Integrate1D(ArithmeticModel):
         self.epsabs = Parameter(name, 'epsabs', tol, alwaysfrozen=True)
         self.epsrel = Parameter(name, 'epsrel', 0, alwaysfrozen=True)
         self.maxeval = Parameter(name, 'maxeval', 10000, alwaysfrozen=True)
-        ArithmeticModel.__init__(self, name, (self.epsabs,self.epsrel,
+        ArithmeticModel.__init__(self, name, (self.epsabs, self.epsrel,
                                               self.maxeval))
-
 
     def __call__(self, model):
         return Integrator1D(model,
