@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -709,337 +709,28 @@ static PyObject* sao_arange( PyObject* self, PyObject* args )
   return result.return_new_ref();
 }
 
-// for documentation
-#define SEEALSODOC "\nSee also\n--------\n"
-#define NOTESDOC "\nNotes\n-----\n"
-#define REFERENCESDOC "\nReferences\n----------\n"
-#define EXAMPLESDOC "\nExamples\n--------\n"
-#define PARAMETERSDOC "\nParameters\n----------\n"
-#define RETURNSDOC "\nReturns\n-------\n"
-
 static PyMethodDef UtilsFcts[] = {
 
   // F-Test
-  //FCTSPEC(calc_ftest, ftest),
-  { (char*) "calc_ftest", (PyCFunction) ftest, METH_VARARGS,
-    (char*) "calc_ftest(dof1, stat1, dof2, stat2)\n\n"
-            "Compare two models using the F test.\n\n"
-            "The F-test is a model comparison test; that is, it is a test\n"
-            "used to select from two competing models which best describes\n"
-            "a particular data set. A model comparison test statistic, T,\n"
-            "is created from the best-fit statistics of each fit; as with all\n"
-            "statistics, it is sampled from a probability distribution p(T).\n"
-            "The test significance is defined as the integral of p(T) from the\n"
-            "observed value of T to infinity. The significance quantifies the\n"
-            "probability that one would select the more complex model when in\n"
-            "fact the null hypothesis is correct. See also `calc_mlr`.\n"
-            PARAMETERSDOC
-            "dof1 : int\n"
-            "   degrees of freedom of the simple model\n"
-            "stat1 : number\n"
-            "   best-fit chi-square statistic value of the simple model\n"
-            "dof2 : int\n"
-            "   degrees of freedom of the complex model\n"
-            "stat2 : number\n"
-            "   best-fit chi-square statistic value of the complex model\n"
-            RETURNSDOC
-            "sig : number\n"
-            "   The significance, or p-value. A standard threshold for\n"
-            "   selecting the more complex model is significance < 0.05 (the\n"
-            "   '95% criterion' of statistics).\n"
-            SEEALSODOC
-            "calc_mlr : Compare two models using the Maximum Likelihood Ratio test.\n"
-            "incbet  : Calculate the incomplete Beta function.\n"
-            NOTESDOC
-            "The F test uses the ratio of the reduced chi2, which follows\n"
-            "the F-distribution, (stat1/dof1)/(stat2/dof2). The incomplete\n"
-            "Beta function is used to calculate the integral of the tail of\n"
-            "the F-distribution.\n\n"
-            "The F test should only be used when:\n\n"
-            " - the simpler of the two models is nested within the other;\n"
-            "   that is, one can obtain the simpler model by setting the extra\n"
-            "   parameters of the more complex model (often to zero or one);\n"
-            " - the extra parameters have values sampled from normal\n"
-            "   distributions under the null hypothesis (i.e., if one samples\n"
-            "   many datasets given the null hypothesis and fits these data with\n"
-            "   the more complex model, the distributions of values for the\n"
-            "   extra parameters must be Gaussian);\n"
-            " - those normal distributions are not truncated by parameter space\n"
-            "   boundaries;\n"
-            " - the best-fit statistics are sampled from the chi-square\n"
-            "   distribution.\n\n"
-            "See Protassov et al. 2002 [1]_ for more discussion.\n"
-            REFERENCESDOC "\n"
-            ".. [1] Protassov et al., Statistics, Handle with Care: Detecting\n"
-            "       Multiple Model Components with the Likelihood Ratio Test,\n"
-            "       Astrophysical Journal, vol 571, pages 545-559, 2002,\n"
-            "       http://adsabs.harvard.edu/abs/2002ApJ...571..545P\n"
-            EXAMPLESDOC "\n"
-            "In this example, the simple model has 5 degrees of freedom and\n"
-            "a chi-square statistic of 7.73, while the complex model has 8\n"
-            "degrees of freedom and a chi-square statistic of 8.94. The\n"
-            "F test does not provide any evidence that the complex model\n"
-            "is a better fit to the data than the simple model since the\n"
-            "result is much larger than 0.\n\n"
-            ">>> calc_ftest(5, 7.73, 8, 8.94)\n0.32480691622314933\n\n"},
+  FCTSPEC(calc_ftest, ftest),
   
   // Maximum likelihood ratio
-  //FCTSPEC(calc_mlr, mlr),
-  { (char*) "calc_mlr", (PyCFunction) mlr, METH_VARARGS,
-    (char*) "calc_mlr(delta_dof, delta_stat)\n\n"
-            "Compare two models using the Maximum Likelihood Ratio test.\n\n"
-            "The Maximum Likelihood Ratio (MLR) test is a model comparison\n"
-            "test; that is, it is a test used to select from two competing\n"
-            "models which best describes a particular data set. A model\n"
-            "comparison test statistic, T, is created from the best-fit\n"
-            "statistics of each fit; as with all statistics, it is sampled\n"
-            "from a probability distribution p(T). The test significance is\n"
-            "defined as the integral of p(T) from the observed value of T to\n"
-            "infinity. Thesignificance quantifies the probability that one\n"
-            "would select the more complex model when in fact the null hypothesis\n"
-            "is correct. See also `calc_ftest`.\n"
-            PARAMETERSDOC
-            "delta_dof : int\n"
-            "   change in the number of degrees of freedom\n"
-            "delta_stat : number\n"
-            "   change in the best-fit statistic value\n"
-            RETURNSDOC
-            "sig : number\n"
-            "   The significance, or p-value. A standard threshold for\n"
-            "   selecting the more complex model is significance < 0.05 (the\n"
-            "   '95% criterion' of statistics).\n"
-            SEEALSODOC
-            "calc_ftest : Compare two models using the F test.\n"
-            NOTESDOC
-            "The MLR test should only be used when:\n\n"
-            " - the simpler of the two models is nested within the other;\n"
-            "   that is, one can obtain the simpler model by setting the extra\n"
-            "   parameters of the more complex model (often to zero or one);\n"
-            " - the extra parameters have values sampled from normal\n"
-            "   distributions under the null hypothesis (i.e., if one samples\n"
-            "   many datasets given the null hypothesis and fits these data with\n"
-            "   the more complex model, the distributions of values for the\n"
-            "   extra parameters must be Gaussian);\n"
-            " - those normal distributions are not truncated by parameter space\n"
-            "   boundaries;\n"
-            " - the best-fit statistics for each fit are sampled from the\n"
-            "   chi-square distribution.\n\n"
-            "See Protassov et al. 2002 [1]_ for more discussion.\n"
-            REFERENCESDOC "\n"
-            ".. [1] Protassov et al., Statistics, Handle with Care: Detecting\n"
-            "       Multiple Model Components with the Likelihood Ratio Test,\n"
-            "       Astrophysical Journal, vol 571, pages 545-559, 2002,\n"
-            "       http://adsabs.harvard.edu/abs/2002ApJ...571..545P\n"
-            EXAMPLESDOC "\n"
-            "In this example, the more-complex model has 2 extra degrees of\n"
-            "freedom and a statistic value that is larger by 3.7. The MLR test\n"
-            "does not provide any evidence that the complex model is a better\n"
-            "fit to the data than the simple model since the result is much\n"
-            "larger than 0.\n\n"
-            ">>> calc_mlr(2, 3.7)\n0.15723716631362761\n\n"},
-  
+  FCTSPEC(calc_mlr, mlr),
+
   // Complement of incomplete gamma function
-  { (char*) "igamc", (PyCFunction) igamc, METH_VARARGS,
-    (char*) "igamc(a,x)\n\n"
-            "Calculate the complement of the regularized incomplete Gamma\n"
-            "function (upper).\n\n"
-            "The function is defined using the regularized incomplete Gamma\n"
-            "function - igam(a,x) - and the Gamma function - gamma(a) - as::\n\n"
-            "   igamc(a,x) = 1 - igam(a,x)\n"
-            "              = 1/gamma(a) Int_x^Inf e^(-t) t^(a-1) dt\n"
-            PARAMETERSDOC
-            "a : scalar or array\n"
-            "   a > 0\n"
-            "x : scalar or array\n"
-            "   x > 0\n"
-            RETURNSDOC
-            "val : scalar or array\n"
-            SEEALSODOC
-            "gamma : The Gamma function.\n"
-            "igam  : The incomplete Gamma function (upper).\n"
-            NOTESDOC
-            "In this implementation, which is provided by the Cephes Math\n"
-            "Library [1]_, both arguments must be positive. The integral is\n"
-            "evaluated by either a power series or continued fraction expansion,\n"
-            "depending on the relative values of a and x. Using IEEE arithmetic,\n"
-            "the relative errors are\n\n"
-            "========  ======  ========  =======  =======\n"
-            " domain   domain  # trials   peak      rms\n"
-            "========  ======  ========  =======  =======\n"
-            "0.5,100   0,100   200000    1.9e-14  1.7e-15\n"
-            "0.01,0.5  0,100   200000    1.4e-13  1.6e-15\n"
-            "========  ======  ========  =======  =======\n"
-            REFERENCESDOC "\n"
-            ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
-            "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
-            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n"
-            EXAMPLESDOC "\n"
-            ">>> igamc(1, 2)\n0.1353352832366127\n\n"
-            ">>> igamc([1,1], [2,3])\narray([ 0.13533528,  0.04978707])\n\n"},
+  FCTSPEC(igamc, igamc),
 
   // Incomplete gamma function
-  { (char*) "igam", (PyCFunction) igam, METH_VARARGS,
-    (char*) "igam(a,x)\n\n"
-            "Calculate the regularized incomplete Gamma function (lower).\n\n"
-            "The function is defined using the complete Gamma function -\n"
-            "gamma(a) - as::\n\n"
-            "   igam(a,x) = 1/gamma(a) Int_0^x e^(-t) t^(a^-1) dt\n"
-            PARAMETERSDOC
-            "a : scalar or array\n"
-            "   a > 0\n"
-            "x : scalar or array\n"
-            "   x > 0\n"
-            RETURNSDOC
-            "val : scalar or array\n"
-            SEEALSODOC
-            "gamma : The Gamma function.\n"
-            "igamc : The complement of the incomplete Gamma function (upper).\n"
-            NOTESDOC
-            "In this implementation, which is provided by the Cephes Math\n"
-            "Library [1]_, both arguments must be positive. The integral is\n"
-            "evaluated by either a power series or continued fraction expansion,\n"
-            "depending on the relative values of a and x. Using IEEE arithmetic,\n"
-            "the relative errors are\n\n"
-            "======  ========  =======  =======\n"
-            "domain  # trials   peak      rms\n"
-            "======  ========  =======  =======\n"
-            "0,30    200000    3.6e-14  2.9e-15\n"
-            "0,100   300000    9.9e-14  1.5e-14\n"
-            "======  ========  =======  =======\n"
-            REFERENCESDOC "\n"
-            ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
-            "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
-            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n"
-            EXAMPLESDOC "\n"
-            ">>> igam(1, 2)\n0.8646647167633873\n\n"
-            ">>> igam([1,1], [2,3])\narray([ 0.86466472,  0.95021293])\n\n"},
+  FCTSPEC(igam, igam),
 
   // Incomplete beta function
-  { (char*) "incbet", (PyCFunction) incbet, METH_VARARGS,
-    (char*) "incbet(a,b,x)\n\n"
-            "Calculate the incomplete Beta function\n\n"
-            "The function is defined as::\n\n"
-            "   sqrt(a+b)/(sqrt(a) sqrt(b)) Int_0^x t^(a-1) (1-t)^(b-1) dt\n\n"
-            "and the integral from x to 1 can be obtained using the relation::\n\n"
-            "   1 - incbet(a, b, x) = incbet(b, a, 1-x)\n"
-            PARAMETERSDOC
-            "a : scalar or array\n"
-            "   a > 0\n"
-            "b : scalar or array\n"
-            "   b > 0\n"
-            "x : scalar or array\n"
-            "   0 <= x <= 1\n"
-            RETURNSDOC
-            "val : scalar or array\n"
-            SEEALSODOC
-            "calc_ftest : Compare two models using the F test.\n"
-            NOTESDOC
-            "In this implementation, which is provided by the Cephes Math\n"
-            "Library [1]_, the integral is evaluated by a continued fraction\n"
-            "expansion or, when b*x is small, by a power series.\n\n"
-            "Using IEEE arithmetic, the relative errors are (tested uniformly\n"
-            "distributed random points (a,b,x) with a and b in 'domain' and\n"
-            "x between 0 and 1):\n\n"
-            "========  ========  =======  =======\n"
-            " domain   # trials   peak      rms\n"
-            "========  ========  =======  =======\n"
-            "0,5       10000     6.9e-15  4.5e-16\n"
-            "0,85      250000    2.2e-13  1.7e-14\n" // DOC-TODO: is 25000 correct here?
-            "0,1000    30000     5.3e-12  6.3e-13\n"
-            "0,1000    250000    9.3e-11  7.1e-12\n" // DOC-TODO: is 25000 correct here?
-            "0,100000  10000     8.7e-10  4.8e-11\n"
-            "========  ========  =======  =======\n\n"
-            "Outputs smaller than the IEEE gradual underflow threshold were\n"
-            "excluded from these statistics.\n"
-            REFERENCESDOC "\n"
-            ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
-            "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
-            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n"
-            EXAMPLESDOC "\n"
-            ">>> incbet(0.3, 0.6, 0.5)\n0.68786273145845922\n\n"
-            ">>> incbet([0.3,0.3], [0.6,0.7], [0.5,0.4])\n"
-            "array([ 0.68786273,  0.67356524])\n\n"},
+  FCTSPEC(incbet, incbet),
   
   // Gamma function
-  { (char*) "gamma", (PyCFunction) gamma, METH_VARARGS,
-    (char*) "gamma(z)\n\n"
-            "Calculate the Gamma function.\n"
-            PARAMETERSDOC
-            "z : scalar or array\n"
-            "   -171 <= z <- 171.6\n"
-            RETURNSDOC
-            "val : scalar or array\n"
-            SEEALSODOC
-            "lgam : The log of the Gamma function.\n"
-            "igam : The incomplete Gamma function.\n"
-            NOTESDOC
-            "This implementation is provided by the Cephes Math Library [1]_.\n"
-            "Arguments ``|x| >= 34`` are reduced by recurrence and the function\n"
-            "approximated by a rational function of degree 6/7 in the interval\n"
-            "(2,3). Large arguments are handled by Stirling's formula. Large\n"
-            "negative arguments are made positive using a reflection formula.\n"
-            "Relative errors are\n\n"
-            "========  ========  =======  =======\n"
-            " domain   # trials   peak      rms\n"
-            "========  ========  =======  =======\n"
-            "-170,33   20000     2.3e-15  3.3e-16\n"
-            "-33,33    20000     9.4e-16  2.2e-16\n"
-            "33,171.6  20000     2.3e-15  3.2e-16\n"
-            "========  ========  =======  =======\n\n"
-            "Errors for arguments outside the test range will be larger owing\n"
-            "to amplification by the exponential function.\n"
-            REFERENCESDOC "\n"
-            ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
-            "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
-            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n"
-            EXAMPLESDOC "\n"
-            ">>> gamma(2.3)\n1.1667119051981603\n\n"
-            ">>> gamma([2.3,1.9])\narray([ 1.16671191,  0.96176583])\n\n"},
+  FCTSPEC(gamma, gamma),
   
   // Log gamma function
-  { (char*) "lgam", (PyCFunction) lgam, METH_VARARGS,
-    (char*) "lgam(z)\n\n"
-            "Calculate the log (base e) of the Gamma function.\n"
-            PARAMETERSDOC
-            "z : scalar or array\n"
-            "   0 <= z <= 2.556348e305\n"
-            RETURNSDOC
-            "val : scalar or array\n"
-            SEEALSODOC
-            "gamma : The Gamma function.\n"
-            "igam : The incomplete Gamma function.\n"
-            NOTESDOC
-            "This implementation is provided by the Cephes Math Library [1]_.\n"
-            "For arguments greater than 13, the logarithm of the Gamma function\n"
-            "is approximated by the logarithmic version of Stirling's formula\n"
-            "using a polynomial approximation of degree 4. Arguments\n"
-            "between -33 and +33 are reduced by recurrence to the interval [2,3]\n"
-            "of a rational approximation. The cosecant reflection formula is\n"
-            "employed for arguments less than -33.\n\n"
-            "Relative errors are\n\n"
-            "===============  ========  =======  =======\n"
-            "    domain       # trials   peak      rms\n"
-            "===============  ========  =======  =======\n"
-            "0,3              28000     5.4e-16  1.1e-16\n"
-            "2.718,2.556e305  40000     3.5e-16  8.3e-17\n"
-            "===============  ========  =======  =======\n\n"
-            "The error criterion was relative when the function magnitude was\n"
-            "greater than one but absolute when it was less than one.\n\n"
-            "The following test used the relative error criterion, though at\n"
-            "certain points the relative error could be much higher than\n"
-            "indicated.\n\n"
-            "=======  ========  =======  =======\n"
-            "domain   # trials   peak      rms\n"
-            "=======  ========  =======  =======\n"
-            "-200,-4  10000     4.8e-16  1.3e-16\n"
-            "=======  ========  =======  =======\n"
-            REFERENCESDOC "\n"
-            ".. [1] Cephes Math Library Release 2.0:  April, 1987.\n"
-            "       Copyright 1985, 1987 by Stephen L. Moshier.\n"
-            "       Direct inquiries to 30 Frost Street, Cambridge, MA 02140.\n"
-            EXAMPLESDOC "\n"
-            ">>> lgam(104.56)\n380.21387239435785\n\n"
-            ">>> lgam([104.56,2823.4])\narray([   380.21387239,  19607.42734396])\n\n"},
+  FCTSPEC(lgam, lgam),
 
   // Error Function
   FCTSPEC(erf, erf),
@@ -1052,55 +743,10 @@ static PyMethodDef UtilsFcts[] = {
   FCTSPEC(gsl_fcmp, _sherpa_fcmp< gsl_fcmp >), 
 
   //Same as gsl_fcmp, but also handles the case where one of the args is 0.
-  // FCTSPEC(sao_fcmp, _sherpa_fcmp< sao_fcmp >),
-  { (char*) "sao_fcmp", (PyCFunction)(_sherpa_fcmp< sao_fcmp >), METH_VARARGS,
-    (char*) "sao_fcmp(x, y, tol)\n\n"
-            "Compare y to x, using an absolute tolerance.\n"
-            PARAMETERSDOC
-            "first : number or array_like\n"
-            "   The expected value, or values.\n"
-            "second : number or array_like\n"
-            "   The value, or values, to check. If first is an array, then\n"
-            "   second must be an array of the same size. If first is\n"
-            "   a scalar then second can be a scalar or an array.\n"
-            "tol : number\n"
-            "   The absolute tolerance used for comparison.\n"
-            RETURNSDOC
-            "flags : int or array_like\n"
-            "   0, 1, or -1 for each value in second. If the values\n"
-            "   match, then 0, otherwise -1 if the expected value (x)\n"
-            "   is less than the comparison value (y) or +1 if x is\n"
-            "   larger than y.\n"
-            EXAMPLESDOC
-            ">>> sao_fcmp(1, 1.01, 0.01)\n"
-            "0\n\n"
-            ">>> sao_fcmp(1, [0.9, 1, 1.1], 0.01)\n"
-            "array([ 1,  0, -1], dtype=int32)\n\n"
-            ">>> utils.sao_fcmp([1.2, 2.3], [1.22, 2.29], 0.01)\n"
-            "array([-1,  0], dtype=int32)\n\n"
-  },
+  FCTSPEC(sao_fcmp, _sherpa_fcmp< sao_fcmp >),
 
   //Rebin to new grid
-  { (char*) "rebin", (PyCFunction)(rebin<SherpaFloatArray, SherpaFloat>), METH_VARARGS,
-    (char*) "rebin(y0, x0lo, x0hi, x1lo, x1hi)\n\n"
-            "Rebin a histogram.\n"
-            PARAMETERSDOC
-            "y0 : sequence of numbers\n"
-            "   The Y values of the histogram to rebin.\n"
-            "x0lo : sequence of numbers\n"
-            "   The lower edges of the X values to rebin. This must match\n"
-            "   the size of `y0`.\n"
-            "x0hi : sequence of numbers\n"
-            "   The upper edges of the X values to rebin. This must match\n"
-            "   the size of `y0`.\n"
-            "x1lo : sequence of numbers\n"
-            "   The lower edges of the X values of the output histogram.\n"
-            "x1hi : sequence of numbers\n"
-            "   The upper edges of the X values of the output histogram.\n"
-            "   This must match the size of `x1lo`.\n"
-            RETURNSDOC
-            "yout : NumPy array of numbers\n"
-            "   The re-binned Y values (same size as `x1lo`).\n"},
+  FCTSPEC(rebin, (rebin<SherpaFloatArray, SherpaFloat>)),
 
   //Histogram1d 
   { (char*) "hist1d",(PyCFunction)(histogram1d<SherpaFloatArray, SherpaFloat, IntArray, int>), METH_VARARGS, (char*) " create 1D histogram\n\nExample:\nsherpa> histogram1d( x, xlo, xhi )"},
@@ -1112,30 +758,7 @@ static PyMethodDef UtilsFcts[] = {
 			  SherpaFloat, int, npy_intp>)),
 
   //neville
-  { (char*) "neville",(PyCFunction)(neville<SherpaFloatArray, SherpaFloat>), METH_VARARGS, 
-    (char*) "neville(xout, xin, yin)\n\n"
-            "Polynomial one-dimensional interpolation using Neville's method [1]_.\n"
-            PARAMETERSDOC
-            "xout : array_like\n"
-            "   The positions at which to interpolate.\n"
-            "xin : array_like\n"
-            "   The x values of the data to be interpolated. This must be\n"
-            "   sorted so that it is monotonically increasing.\n"
-            "yin : array_like\n"
-            "   The y values of the data to interpolate (must be the same\n"
-            "   size as ``xin``).\n"
-            RETURNSDOC
-            "yout : NumPy array of numbers\n"
-            "   The interpolated y values (same size as ``xout``).\n"
-            SEEALSODOC
-            "interpolate, linear_interp, nearest_interp\n"
-            REFERENCESDOC "\n"
-            ".. [1] http://en.wikipedia.org/wiki/Neville%27s_algorithm\n"
-            EXAMPLESDOC "\n"
-            ">>> x = [1.2, 3.4, 4.5, 5.2]\n"
-            ">>> y = [12.2, 14.4, 16.8, 15.5]\n"
-            ">>> xgrid = np.linspace(2, 5, 5)\n"
-            ">>> ygrid = neville(xgrid, x, y)\n\n"},
+  FCTSPEC(neville, (neville<SherpaFloatArray, SherpaFloat>)),
 
   FCTSPEC(sao_arange, sao_arange),
   

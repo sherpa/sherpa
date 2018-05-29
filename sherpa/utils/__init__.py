@@ -36,9 +36,9 @@ import numpy.fft
 
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
 #       this module; is this intentional?
-from sherpa.utils._utils import calc_ftest, calc_mlr, igamc, igam, \
-    incbet, gamma, lgam, erf, sao_fcmp, rebin, \
-    hist1d, hist2d, sum_intervals, neville, sao_arange
+from sherpa.utils._utils import hist1d, hist2d
+from sherpa.utils import _utils
+
 from sherpa.utils._psf import extract_kernel, normalize, set_origin, \
     pad_bounding_box
 
@@ -100,7 +100,13 @@ __all__ = ('NoNewAttributesAfterInit',
            'sao_arange', 'sao_fcmp', 'set_origin', 'sum_intervals', 'zeroin',
            'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile')
 
+
 _guess_ampl_scale = 1.e+3
+"""The scaling applied to a value to create its range.
+
+The minimum and maximum values for a range are calculated by
+dividing and multiplying the value by ``_guess_ampl_scale``.
+"""
 
 ###############################################################################
 #
@@ -157,6 +163,698 @@ class NoNewAttributesAfterInit(object):
 
 ###############################################################################
 #
+# Compiled Utilities
+#
+###############################################################################
+
+
+def calc_ftest(dof1, stat1, dof2, stat2):
+    """Compare two models using the F test.
+
+    The F-test is a model comparison test; that is, it is a test
+    used to select from two competing models which best describes
+    a particular data set. A model comparison test statistic, T,
+    is created from the best-fit statistics of each fit; as with all
+    statistics, it is sampled from a probability distribution p(T).
+    The test significance is defined as the integral of p(T) from the
+    observed value of T to infinity. The significance quantifies the
+    probability that one would select the more complex model when in
+    fact the null hypothesis is correct. See also `calc_mlr`.
+
+    Parameters
+    ----------
+    dof1 : int
+       degrees of freedom of the simple model
+    stat1 : number
+       best-fit chi-square statistic value of the simple model
+    dof2 : int
+       degrees of freedom of the complex model
+    stat2 : number
+       best-fit chi-square statistic value of the complex model
+
+    Returns
+    -------
+    sig : number
+       The significance, or p-value. A standard threshold for
+       selecting the more complex model is significance < 0.05 (the
+       '95% criterion' of statistics).
+
+    See Also
+    --------
+    calc_mlr, incbet
+
+    Notes
+    -----
+    The F test uses the ratio of the reduced chi2, which follows
+    the F-distribution, (stat1/dof1) / (stat2/dof2). The incomplete
+    Beta function is used to calculate the integral of the tail of
+    the F-distribution.
+
+    The F test should only be used when:
+
+     - the simpler of the two models is nested within the other;
+       that is, one can obtain the simpler model by setting the extra
+       parameters of the more complex model (often to zero or one);
+     - the extra parameters have values sampled from normal
+       distributions under the null hypothesis (i.e., if one samples
+       many datasets given the null hypothesis and fits these data with
+       the more complex model, the distributions of values for the
+       extra parameters must be Gaussian);
+     - those normal distributions are not truncated by parameter space
+       boundaries;
+     - the best-fit statistics are sampled from the chi-square
+       distribution.
+
+    See Protassov et al. 2002 [1]_ for more discussion.
+
+    References
+    ----------
+
+    .. [1] Protassov et al., Statistics, Handle with Care: Detecting
+           Multiple Model Components with the Likelihood Ratio Test,
+           Astrophysical Journal, vol 571, pages 545-559, 2002,
+           http://adsabs.harvard.edu/abs/2002ApJ...571..545P
+
+    Examples
+    --------
+
+    In this example, the simple model has 5 degrees of freedom and
+    a chi-square statistic of 7.73, while the complex model has 8
+    degrees of freedom and a chi-square statistic of 8.94. The
+    F test does not provide any evidence that the complex model
+    is a better fit to the data than the simple model since the
+    result is much larger than 0.
+
+    >>> calc_ftest(5, 7.73, 8, 8.94)
+    0.32480691622314933
+    """
+
+    return _utils.calc_ftest(dof1, stat1, dof2, stat2)
+
+
+def calc_mlr(delta_dof, delta_stat):
+    """Compare two models using the Maximum Likelihood Ratio test.
+
+    The Maximum Likelihood Ratio (MLR) test is a model comparison
+    test; that is, it is a test used to select from two competing
+    models which best describes a particular data set. A model
+    comparison test statistic, T, is created from the best-fit
+    statistics of each fit; as with all statistics, it is sampled
+    from a probability distribution p(T). The test significance is
+    defined as the integral of p(T) from the observed value of T to
+    infinity. Thesignificance quantifies the probability that one
+    would select the more complex model when in fact the null hypothesis
+    is correct. See also `calc_ftest`.
+
+    Parameters
+    ----------
+    delta_dof : int
+       change in the number of degrees of freedom
+    delta_stat : number
+       change in the best-fit statistic value
+
+    Returns
+    -------
+    sig : number
+       The significance, or p-value. A standard threshold for
+       selecting the more complex model is significance < 0.05 (the
+       '95% criterion' of statistics).
+
+    See Also
+    --------
+    calc_ftest
+
+    Notes
+    -----
+    The MLR test should only be used when:
+
+     - the simpler of the two models is nested within the other;
+       that is, one can obtain the simpler model by setting the extra
+       parameters of the more complex model (often to zero or one);
+     - the extra parameters have values sampled from normal
+       distributions under the null hypothesis (i.e., if one samples
+       many datasets given the null hypothesis and fits these data with
+       the more complex model, the distributions of values for the
+       extra parameters must be Gaussian);
+     - those normal distributions are not truncated by parameter space
+       boundaries;
+     - the best-fit statistics for each fit are sampled from the
+       chi-square distribution.
+
+    See Protassov et al. 2002 [1]_ for more discussion.
+
+    References
+    ----------
+
+    .. [1] Protassov et al., Statistics, Handle with Care: Detecting
+           Multiple Model Components with the Likelihood Ratio Test,
+           Astrophysical Journal, vol 571, pages 545-559, 2002,
+           http://adsabs.harvard.edu/abs/2002ApJ...571..545P
+
+    Examples
+    --------
+
+    In this example, the more-complex model has 2 extra degrees of
+    freedom and a statistic value that is larger by 3.7. The MLR test
+    does not provide any evidence that the complex model is a better
+    fit to the data than the simple model since the result is much
+    larger than 0.
+
+    >>> calc_mlr(2, 3.7)
+    0.15723716631362761
+    """
+
+    return _utils.calc_mlr(delta_dof, delta_stat)
+
+
+def erf(x):
+    """Calculate the error function.
+
+    Parameters
+    ----------
+    x : scalar or array
+
+    Returns
+    -------
+    val : scalar or array
+       The error function of the input.
+
+    See Also
+    --------
+    gamma
+
+    Examples
+    --------
+
+    >>> erf(0)
+    0.0
+
+    >>> erf([1.0, 2.3])
+    array([ 0.84270079,  0.99885682])
+    """
+
+    return _utils.erf(x)
+
+
+def igamc(a, x):
+    """Calculate the complement of the regularized incomplete Gamma function (upper).
+
+    The function is defined using the regularized incomplete Gamma
+    function - igam(a,x) - and the Gamma function - gamma(a) - as::
+
+       igamc(a,x) = 1 - igam(a,x)
+                  = 1 / gamma(a) Int_x^Inf e^(-t) t^(a-1) dt
+
+    Parameters
+    ----------
+    a : scalar or array
+       a > 0
+    x : scalar or array
+       x > 0
+
+    Returns
+    -------
+    val : scalar or array
+       The incomplete Gamma function of the input.
+
+    See Also
+    --------
+    gamma, igam
+
+    Notes
+    -----
+    In this implementation, which is provided by the Cephes Math
+    Library [1]_, both arguments must be positive. The integral is
+    evaluated by either a power series or continued fraction expansion,
+    depending on the relative values of a and x. Using IEEE arithmetic,
+    the relative errors are
+
+    ========  ======  ========  =======  =======
+     domain   domain  # trials   peak      rms
+    ========  ======  ========  =======  =======
+    0.5,100   0,100   200000    1.9e-14  1.7e-15
+    0.01,0.5  0,100   200000    1.4e-13  1.6e-15
+    ========  ======  ========  =======  =======
+
+    References
+    ----------
+
+    .. [1] Cephes Math Library Release 2.0:  April, 1987.
+           Copyright 1985, 1987 by Stephen L. Moshier.
+           Direct inquiries to 30 Frost Street, Cambridge, MA 02140.
+
+    Examples
+    --------
+
+    >>> igamc(1, 2)
+    0.1353352832366127
+
+    >>> igamc([1,1], [2,3])
+    array([ 0.13533528,  0.04978707])
+    """
+
+    return _utils.igamc(a, x)
+
+
+def igam(a, x):
+    """Calculate the regularized incomplete Gamma function (lower).
+
+    The function is defined using the complete Gamma function -
+    gamma(a) - as::
+
+       igam(a,x) = 1 / gamma(a) Int_0^x e^(-t) t^(a^-1) dt
+
+    Parameters
+    ----------
+    a : scalar or array
+       a > 0
+    x : scalar or array
+       x > 0
+
+    Returns
+    -------
+    val : scalar or array
+       The incomplete Gamma function of the input.
+
+    See Also
+    --------
+    gamma, igamc
+
+    Notes
+    -----
+    In this implementation, which is provided by the Cephes Math
+    Library [1]_, both arguments must be positive. The integral is
+    evaluated by either a power series or continued fraction expansion,
+    depending on the relative values of a and x. Using IEEE arithmetic,
+    the relative errors are
+
+    ======  ========  =======  =======
+    domain  # trials   peak      rms
+    ======  ========  =======  =======
+    0,30    200000    3.6e-14  2.9e-15
+    0,100   300000    9.9e-14  1.5e-14
+    ======  ========  =======  =======
+
+    References
+    ----------
+
+    .. [1] Cephes Math Library Release 2.0:  April, 1987.
+           Copyright 1985, 1987 by Stephen L. Moshier.
+           Direct inquiries to 30 Frost Street, Cambridge, MA 02140.
+
+    Examples
+    --------
+
+    >>> igam(1, 2)
+    0.8646647167633873
+
+    >>> igam([1,1], [2,3])
+    array([ 0.86466472,  0.95021293])
+    """
+
+    return _utils.igam(a, x)
+
+
+def incbet(a, b, x):
+    """Calculate the incomplete Beta function.
+
+    The function is defined as::
+
+       sqrt(a+b)/(sqrt(a) sqrt(b)) Int_0^x t^(a-1) (1-t)^(b-1) dt
+
+    and the integral from x to 1 can be obtained using the relation::
+
+       1 - incbet(a, b, x) = incbet(b, a, 1-x)
+
+    Parameters
+    ----------
+    a : scalar or array
+       a > 0
+    b : scalar or array
+       b > 0
+    x : scalar or array
+       0 <= x <= 1
+
+    Returns
+    -------
+    val : scalar or array
+       The incomplete beta function calculated from the inputs.
+
+    See Also
+    --------
+    calc_ftest
+
+    Notes
+    -----
+    In this implementation, which is provided by the Cephes Math
+    Library [1]_, the integral is evaluated by a continued fraction
+    expansion or, when b*x is small, by a power series.
+
+    Using IEEE arithmetic, the relative errors are (tested uniformly
+    distributed random points (a,b,x) with a and b in 'domain' and
+    x between 0 and 1):
+
+    ========  ========  =======  =======
+     domain   # trials   peak      rms
+    ========  ========  =======  =======
+    0,5       10000     6.9e-15  4.5e-16
+    0,85      250000    2.2e-13  1.7e-14
+    0,1000    30000     5.3e-12  6.3e-13
+    0,1000    250000    9.3e-11  7.1e-12
+    0,100000  10000     8.7e-10  4.8e-11
+    ========  ========  =======  =======
+
+    Outputs smaller than the IEEE gradual underflow threshold were
+    excluded from these statistics.
+
+    References
+    ----------
+
+    .. [1] Cephes Math Library Release 2.0:  April, 1987.
+           Copyright 1985, 1987 by Stephen L. Moshier.
+           Direct inquiries to 30 Frost Street, Cambridge, MA 02140.
+
+    Examples
+    --------
+
+    >>> incbet(0.3, 0.6, 0.5)
+    0.68786273145845922
+
+    >>> incbet([0.3,0.3], [0.6,0.7], [0.5,0.4])
+    array([ 0.68786273,  0.67356524])
+    """
+
+    return _utils.incbet(a, b, x)
+
+
+def gamma(z):
+    """Calculate the Gamma function.
+
+    Parameters
+    ----------
+    z : scalar or array
+       -171 <= z <- 171.6
+
+    Returns
+    -------
+    val : scalar or array
+       The gamma function of the input.
+
+    See Also
+    --------
+    igam, lgam
+
+    Notes
+    -----
+    This implementation is provided by the Cephes Math Library [1]_.
+    Arguments ``|x| >= 34`` are reduced by recurrence and the function
+    approximated by a rational function of degree 6/7 in the interval
+    (2,3). Large arguments are handled by Stirling's formula. Large
+    negative arguments are made positive using a reflection formula.
+
+    Relative errors are
+
+    ========  ========  =======  =======
+     domain   # trials   peak      rms
+    ========  ========  =======  =======
+    -170,33   20000     2.3e-15  3.3e-16
+    -33,33    20000     9.4e-16  2.2e-16
+    33,171.6  20000     2.3e-15  3.2e-16
+    ========  ========  =======  =======
+
+    Errors for arguments outside the test range will be larger owing
+    to amplification by the exponential function.
+
+    References
+    ----------
+
+    .. [1] Cephes Math Library Release 2.0:  April, 1987.
+           Copyright 1985, 1987 by Stephen L. Moshier.
+           Direct inquiries to 30 Frost Street, Cambridge, MA 02140.
+
+    Examples
+    --------
+
+    >>> gamma(2.3)
+    1.1667119051981603
+
+    >>> gamma([2.3,1.9])
+    array([ 1.16671191,  0.96176583])
+    """
+
+    return _utils.gamma(z)
+
+
+def lgam(z):
+    """Calculate the log (base e) of the Gamma function.
+
+    Parameters
+    ----------
+    z : scalar or array
+       0 <= z <= 2.556348e305
+
+    Returns
+    -------
+    val : scalar or array
+       The log of the Gamma function of the input.
+
+    See Also
+    --------
+    gamma, igam
+
+    Notes
+    -----
+    This implementation is provided by the Cephes Math Library [1]_.
+    For arguments greater than 13, the logarithm of the Gamma function
+    is approximated by the logarithmic version of Stirling's formula
+    using a polynomial approximation of degree 4. Arguments
+    between -33 and +33 are reduced by recurrence to the interval [2,3]
+    of a rational approximation. The cosecant reflection formula is
+    employed for arguments less than -33.
+
+    Relative errors are
+
+    ===============  ========  =======  =======
+        domain       # trials   peak      rms
+    ===============  ========  =======  =======
+    0,3              28000     5.4e-16  1.1e-16
+    2.718,2.556e305  40000     3.5e-16  8.3e-17
+    ===============  ========  =======  =======
+
+    The error criterion was relative when the function magnitude was
+    greater than one but absolute when it was less than one.
+
+    The following test used the relative error criterion, though at
+    certain points the relative error could be much higher than
+    indicated.
+
+    =======  ========  =======  =======
+    domain   # trials   peak      rms
+    =======  ========  =======  =======
+    -200,-4  10000     4.8e-16  1.3e-16
+    =======  ========  =======  =======
+
+    References
+    ----------
+
+    .. [1] Cephes Math Library Release 2.0:  April, 1987.
+           Copyright 1985, 1987 by Stephen L. Moshier.
+           Direct inquiries to 30 Frost Street, Cambridge, MA 02140.
+
+    Examples
+    --------
+
+    >>> lgam(104.56)
+    380.21387239435785
+
+    >>> lgam([104.56,2823.4])
+    array([   380.21387239,  19607.42734396])
+    """
+
+    return _utils.lgam(z)
+
+
+def sao_arange(start, stop, step=None):
+    """Create a range of values between start and stop.
+
+    See also `numpy.arange` and `numpy.linspace`.
+
+    Parameters
+    ----------
+    start, stop : float
+       The start and stop points.
+    step : float or None, optional
+       If not given the step size defaults to 1.0.
+
+    Returns
+    -------
+    vals : NumPy array
+       The values start, start + step, ... The last point
+       is the first position where start + n * step >= stop,
+       which means that it can include a point > stop.
+
+    Examples
+    --------
+
+    >>> sao_arange(1, 3)
+    array([ 1.,  2.,  3.])
+
+    >>> sao_arange(1, 3, 0.6)
+    array([ 1. ,  1.6,  2.2,  2.8,  3.4])
+
+    """
+
+    if step is None:
+        return _utils.sao_arange(start, stop)
+    else:
+        return _utils.sao_arange(start, stop, step)
+
+
+def sao_fcmp(x, y, tol):
+    """Compare y to x, using an absolute tolerance.
+
+    Parameters
+    ----------
+    x : number or array_like
+       The expected value, or values.
+    y : number or array_like
+       The value, or values, to check. If x is an array, then
+       y must be an array of the same size. If x is a scalar
+       then y can be a scalar or an array.
+    tol : number
+       The absolute tolerance used for comparison.
+
+    Returns
+    -------
+    flags : int or array_like
+       0, 1, or -1 for each value in second. If the values match, then 0,
+       otherwise -1 if the expected value (x) is less than the comparison
+       value (y) or +1 if x is larger than y.
+
+    See Also
+    --------
+    Knuth_close
+
+    Examples
+    --------
+
+    >>> sao_fcmp(1, 1.01, 0.01)
+    0
+
+    >>> sao_fcmp(1, [0.9, 1, 1.1], 0.01)
+    array([ 1,  0, -1], dtype=int32)
+
+    >>> utils.sao_fcmp([1.2, 2.3], [1.22, 2.29], 0.01)
+    array([-1,  0], dtype=int32)
+    """
+
+    return _utils.sao_fcmp(x, y, tol)
+
+
+def sum_intervals(src, indx0, indx1):
+    """Sum up data within one or more pairs of indexes.
+
+    Parameters
+    ----------
+    src : sequence of floats
+       The data to be summed.
+    indx0, indx1 : scalar or sequence of int
+       The pair of indexes over which to sum the src array.
+       The sizes of indx0 and indx1 must match, and each element of
+       indx1 must be at least as large as the corresponding element
+       in indx0.
+
+    Returns
+    -------
+    val : scalar or array
+       The sum of the src over the given interval ranges.
+
+    Notes
+    -----
+    It is assumed that all indexes are valid. That is, they are in
+    the range [0, length of src). This condition is not checked for.
+
+    Examples
+    --------
+
+    >>> sum_intervals([1.1, 2.2, 3.3, 4.4], 1, 2)
+    5.5
+
+    >>> sum_intervals([1.1, -2.2, 3.3, 4.4], [1, 0], [3, 0])
+    array([ 5.5,  1.1])
+
+    """
+
+    return _utils.sum_intervals(src, indx0, indx1)
+
+
+def rebin(y0, x0lo, x0hi, x1lo, x1hi):
+    """Rebin a histogram.
+
+    Parameters
+    ----------
+    y0 : sequence of numbers
+       The Y values of the histogram to rebin.
+    x0lo, x0hi : sequence of numbers
+       The lower and upper edges of the X values to rebin. They must match
+       the size of `y0`.
+    x1lo, x1hi : sequence of numbers
+       The lower and upper edges of the X values of the output histogram.
+
+    Returns
+    -------
+    yout : NumPy array of numbers
+       The re-binned Y values (same size as `x1lo`).
+    """
+
+    return _utils.rebin(y0, x0lo, x0hi, x1lo, x1hi)
+
+
+def neville(xout, xin, yin):
+    """Polynomial one-dimensional interpolation using Neville's method.
+
+    The scheme used for interpolation (Neville's method) is described
+    at [1]_.
+
+    Parameters
+    ----------
+    xout : array_like
+       The positions at which to interpolate.
+    xin : array_like
+       The x values of the data to be interpolated. This must be
+       sorted so that it is monotonically increasing.
+    yin : array_like
+       The y values of the data to interpolate (must be the same
+       size as ``xin``).
+
+    Returns
+    -------
+    yout : NumPy array of numbers
+       The interpolated y values (same size as ``xout``).
+
+    See Also
+    --------
+    interpolate, linear_interp, nearest_interp
+
+    References
+    ----------
+
+    .. [1] http://en.wikipedia.org/wiki/Neville%27s_algorithm
+
+    Examples
+    --------
+
+    >>> x = [1.2, 3.4, 4.5, 5.2]
+    >>> y = [12.2, 14.4, 16.8, 15.5]
+    >>> xgrid = np.linspace(2, 5, 5)
+    >>> ygrid = neville(xgrid, x, y)
+    """
+
+    return _utils.neville(xout, xin, yin)
+
+
+###############################################################################
+#
 # Utilities
 #
 ###############################################################################
@@ -167,6 +865,44 @@ eps = numpy.finfo(numpy.float32).eps
 
 
 def filter_bins(mins, maxes, axislist):
+    """What mask represents the given set of filters?
+
+    Parameters
+    ----------
+    mins : sequence of values
+       The minimum value of the valid range (elements may be None).
+       When not None, it is treated as an inclusive limit, so
+       points >= min are included.
+    maxes : sequence of values
+       The maximum value of the valid range (elements may be None).
+       When not None, it is treated as an inclusive limit, so
+       points <= max are included.
+    axislist: sequence of arrays
+       The axis to apply the range to. There must be the same
+       number of elements in mins, maxes, and axislist.
+       The number of elements of each element of axislist must
+       also agree (the cell values do not need to match).
+
+    Returns
+    -------
+    mask : ndarray
+       A mask indicating whether the values are included (True) or
+       excluded (False).
+
+    Examples
+    --------
+
+    Calculate those points in xs which are in the range 1.5 <= x <= 2.3.
+
+    >>> mask = filter_bins([1.5], [2.3], [xs])
+
+    Repeat the above calculation by combining filters for x >= 1.5
+    and x <= 2.3.
+
+    >>> mask = filter_bins([1.5, None], [None, 2.3], [xs, xs])
+
+    """
+
     mask = None
 
     for lo, hi, axis in izip(mins, maxes, axislist):
@@ -196,7 +932,30 @@ def filter_bins(mins, maxes, axislist):
 
 
 def bool_cast(val):
-    "Converts a string (true|False|on|OFF|etc...)  to a boolean value"
+    """Convert a string to a boolean.
+
+    Parameters
+    ----------
+    val : str or sequence
+       The input value to decode.
+
+    Returns
+    -------
+    flag : bool or ndarray
+       True or False if val is considered to be a true or false term.
+       If val is a sequence then the return value is an ndarray of
+       the same size.
+
+    Notes
+    -----
+    The string is compared in a case-insensitive manner to the
+    following: 'true', 'on', 'yes', '1', 't', and 'y' for
+    `True` and 'false', 'off', 'no', '0', 'f', and 'n' for `False`.
+
+    If there is no match to the above then the default conversion
+    provided by the `bool` routine is used.
+
+    """
 
     if type(val) in (tuple, list, numpy.ndarray):
         return numpy.asarray([bool_cast(item) for item in val], bool)
@@ -800,8 +1559,34 @@ def _convolve(a, b):
     return numpy.asarray(numpy.fft.ifft(imag), dtype=SherpaFloat)
 
 
+# TODO:
+#   x1 = np.asarray([0, 0, 0, 1, 2, 3, 3, 3, 2, 1, 0, 0, 0], np.float32)
+#   x2 = np.asarray([1, 2, 1], np.float32)
+#   utils.numpy_convolve(x1, x2)
+#
+# results in a warning - e.g.
+# /home/djburke/local/u35/ciao-4.10/ots/lib/python3.5/site-packages/numpy-1.12.1-py3.5-linux-x86_64.egg/numpy/core/numeric.py:531: ComplexWarning: Casting complex values to real discards the imaginary part
+#
+# and it does not appear this routine is used by anything in Sherpa.
+#
 def numpy_convolve(a, b):
+    """Convolve two 1D arrays together using NumPy's FFT.
 
+    Parameters
+    ----------
+    a : ndarray
+       The first 1D array to convolve.
+    b : ndarray
+       The second 1D array to convolve. It does not need to have the
+       same size as `a`.
+
+    Returns
+    -------
+    c : ndarray
+       The convolved array. It's length matches the longer of the
+       input arrays.
+
+    """
     if a.ndim > 1 or b.ndim > 1:
         raise TypeError("numpy_convolution is 1D only")
 
@@ -881,8 +1666,7 @@ def dataspace2d(dim):
 
 
 def histogram1d(x, x_lo, x_hi):
-    """Create a 1D histogram from a binned grid (``x_lo``, ``xhi``)
-    and array of samples (``x``).
+    """Create a 1D histogram from a sequence of samples.
 
     See the `numpy.histogram` routine for a version with more options.
 
@@ -935,8 +1719,7 @@ def histogram1d(x, x_lo, x_hi):
 
 
 def histogram2d(x, y, x_grid, y_grid):
-    """Create 21D histogram from a binned grid (``x_grid``, ``y_grid``)
-    and array of samples (``x``, and ``y``).
+    """Create 21D histogram from a sequence of samples.
 
     See the `numpy.histogram2d` routine for a version with more options.
 
@@ -1129,8 +1912,17 @@ def interpolate(xout, xin, yin, function=linear_interp):
 def is_binary_file(filename):
     """Estimate if a file is a binary file.
 
-    Returns True if a non-printable character is found in the first
-    1024 bytes of the file.
+    Parameters
+    ----------
+    filename : str
+       The name of the file.
+
+    Returns
+    -------
+    flag : bool
+       Returns True if a non-printable character is found in the first
+       1024 bytes of the file.
+
     """
     fd = open(filename, 'r')
     try:  # Python 2
@@ -1154,19 +1946,115 @@ def is_binary_file(filename):
 
 
 def get_midpoint(a):
+    """Estimate the middle of the data.
+
+    Parameters
+    ----------
+    a : array_like
+       The data points.
+
+    Returns
+    -------
+    ans : scalar
+       The middle of the data.
+
+    See Also
+    --------
+    get_peak, guess_bounds
+
+    Notes
+    -----
+    The estimate is based on the range of the data, and not
+    the distribution of the points.
+    """
+
     # return numpy.abs(a.max() - a.min())/2. + a.min()
     return numpy.abs(a.max() + a.min()) / 2.0
 
 
 def get_peak(y, x, xhi=None):
+    """Estimate the peak position of the data.
+
+    Parameters
+    ----------
+    y, x : array_like
+       The data points.
+    xhi : None or array_like, optional
+       If given then the x array is taken to be the low-edge
+       of each bin.
+
+    Returns
+    -------
+    ans : scalar
+       The X position of the peak.
+
+    See Also
+    --------
+    get_fwhm, get_midpoint, get_valley
+
+    Notes
+    -----
+    If there are multiple peaks of the same height then
+    the location of the first peak is used.
+    """
+
     return x[y.argmax()]
 
 
 def get_valley(y, x, xhi=None):
+    """Estimate the position of the minimum of the data.
+
+    Parameters
+    ----------
+    y, x : array_like
+       The data points.
+    xhi : None or array_like, optional
+       If given then the x array is taken to be the low-edge
+       of each bin.
+
+    Returns
+    -------
+    ans : scalar
+       The X position of the minimum.
+
+    See Also
+    --------
+    get_fwhm, get_peak
+
+    Notes
+    -----
+    If there are multiple minima with the same value then
+    the location of the first minimim is used.
+    """
     return x[y.argmin()]
 
 
 def get_fwhm(y, x, xhi=None):
+    """Estimate the width of the data.
+
+    Parameters
+    ----------
+    y, x : array_like
+       The data points.
+    xhi : None or array_like, optional
+       If given then the x array is taken to be the low-edge
+       of each bin.
+
+    Returns
+    -------
+    ans : scalar
+       The full-width half-maximum of the peak.
+
+    See Also
+    --------
+    get_peak, get_valley, guess_fwhm
+
+    Notes
+    -----
+    If there are multiple peaks of the same height then
+    the first peak is used.
+    """
+
     half_max_val = y.max() / 2.0
     x_max = x[y.argmax()]
     for ii, val in enumerate(y[:y.argmax()]):
@@ -1176,15 +2064,77 @@ def get_fwhm(y, x, xhi=None):
 
 
 def guess_fwhm(y, x, xhi=None, scale=1000):
+    """Estimate the value and valid range for the FWHM of the data.
+
+    Parameters
+    ----------
+    y, x : array_like
+       The data points.
+    xhi : None or array_like, optional
+       If given then the x array is taken to be the low-edge
+       of each bin.
+    scale : number, optional
+       The scaling factor applied to the value to calculate the
+       minimum (divide) and maximum (multiply) value for the
+       FWHM range.
+
+    Returns
+    -------
+    ans : dict
+       The keys are 'val', 'min', and 'max', which give the
+       full-width half-maximum and its range.
+
+    See Also
+    --------
+    get_fwhm
+
+    Notes
+    -----
+    If there are multiple peaks of the same height then
+    the first peak is used.
+    """
+
     fwhm = get_fwhm(y, x, xhi)
     return {'val': fwhm, 'min': fwhm / scale, 'max': fwhm * scale}
 
 
 def param_apply_limits(param_limits, par, limits=True, values=True):
-    """
+    """Apply the given limits to a parameter.
 
-    apply the dictionary of guess values to parameter, also, save the
-    defaults for rollback.
+    This is primarily used by the ``guess`` routine of a model
+    to set one or more of its parameters to a given value or
+    range.
+
+    Parameters
+    ----------
+    param_limits : dict
+    par : sherpa.models.parameter.Parameter instance
+       If the parameter is frozen then nothing is changed.
+    limits : bool, optional
+       The parameter limits are not changed when ``values`` is
+       ``True`` and ``limits`` is ``False``. In all other cases
+       the limits are changed.
+    values : bool, optional
+       When ``True`` the parameter value is changed and the
+       original value is stored (for use by the parameter's
+       ``reset`` method).
+
+    Examples
+    --------
+
+    Create an initial guess for the ``mdl.fwhm`` parameter,
+    changing both the value and the soft limits, based on the
+    ``x`` and ``y`` arrays.
+
+    >>> vals = guess_fwhm(y, x)
+    >>> param_apply_limits(vals, mdl.fwhm)
+
+    Change the soft limits for the ``xpos`` and ``ypos`` parameters
+    of the ``src`` model:
+
+    >>> pos = guess_position(y, x0, x1)
+    >>> param_apply_limits(pos[0], src.xpos, limits=True, values=False)
+    >>> param_apply_limits(pos[1], src.ypos, limits=True, values=False)
 
     """
     # only guess thawed parameters!
@@ -1407,10 +2357,30 @@ def guess_position(y, x0lo, x1lo, x0hi=None, x1hi=None):
 
 
 def guess_bounds(x, xhi=True):
-    """
-    Guess model parameters xlo, xhi (val, min, max)
+    """Guess the bounds of a parameter from the independent axis.
+
+    Parameters
+    ----------
+    x : array_like
+       The axis values.
+    xhi : bool, optional
+       When ``True``, the return value is two dictionaries,
+       with values set to 1/3 and 2/3 along the axis, otherwise
+       a single dictionary, with a value set to the mid-point
+       is returned.
+
+    Returns
+    -------
+    ans : dict or (dict, dict)
+       When ``xhi`` is True then two dictionaries are returned,
+       otherwise one. The keys are 'val', 'min', and 'max'.
+
+    See Also
+    --------
+    get_midpoint
 
     """
+
     xmin = x.min()
     xmax = x.max()
     lo = xmin + (xmax - xmin) / 2.0
@@ -1424,8 +2394,30 @@ def guess_bounds(x, xhi=True):
 
 
 def guess_radius(x0lo, x1lo, x0hi=None, x1hi=None):
-    """
-    Guess 2D model parameter radius (val, min, max)
+    """Guess the radius parameter of a 2D model.
+
+    Parameters
+    ----------
+    x0lo, x1lo : array_like
+       The independent axes of the grid, in 1D form.
+    x0hi, x1hi : array_like or None, optional
+       The upper bounds of each pixel.
+
+    Returns
+    -------
+    ans : dict
+       The keys are 'val', 'min', and 'max', which give the
+       radius and its range, in units of the input grid (``x0lo``
+       and ``x1lo``).
+
+    Notes
+    -----
+    Currently only ``x0lo`` is used, and it is assumed to be arranged
+    so that this axis varies fastest (that is ``x0lo[1] > x0lo[0]``)
+    as well as representing square pixels of the same size.
+
+    The scaling factor for the minimum and maximum values is taken
+    from the module's `_guess_ampl_scale` variable.
 
     """
     # TODO: the following was the original code, but
@@ -1527,16 +2519,74 @@ def run_tasks(procs, err_q, out_q, num):
 
 
 def parallel_map(function, sequence, numcores=None):
-    """
+    """Run a function on a sequence of inputs in parallel.
+
     A parallelized version of the native Python map function that
     utilizes the Python multiprocessing module to divide and
     conquer sequence.
 
-    parallel_map does not yet support multiple argument sequences.
+    Parameters
+    ----------
+    function : function
+       This function accepts a single argument (an element of
+       ``sequence``) and returns a value.
+    sequence : array_like
+       The data to be passed to ``function``.
+    numcores : int or None, optional
+       The number of calls to ``function`` to run in parallel. When
+       set to ``None``, all the available CPUs on the machine - as
+       set either by the 'numcores' setting of the 'parallel' section
+       of Sherpa's preferences or by multiprocessing.cpu_count - are
+       used.
 
-    :param function: callable function that accepts argument from iterable
-    :param sequence: iterable sequence
-    :param numcores: number of cores to use
+    Returns
+    -------
+    ans : array
+       The return values from the calls, in the same order as the
+       ``sequence`` array.
+
+    Notes
+    -----
+    A tuple or dictionary should be used to pass multiple values to
+    the function.
+
+    The input list is split into ``numcores`` chunks, and then each
+    chunk is run in parallel. There is no guarantee to the ordering
+    of the tasks.
+
+    Examples
+    --------
+
+    In the following examples a simple set of computations are used;
+    in reality the function is expected to be run on computations
+    that take a significant amount of time to run.
+
+    Run the computation (summing up each element of the input array)
+    on a separate core and return the results (unless the machine only
+    has a single core or the parallel.numcores setting is set to 1).
+
+    >>> args = [np.arange(5), np.arange(3), np.arange(7)]
+    >>> parallel_map(np.sum, args)
+    [10, 3, 21]
+
+    Use two jobs to evaluate the results: one job will sum up two arrays
+    while the other will only sum one array since there are 3 jobs to
+    run.
+
+    >>> parallel_map(np.sum, args, numcores=2)
+    [10, 3, 21]
+
+    An example of sending in multiple arguments to a function (``comp``)
+    via a dictionary (although in this case there is only one task to
+    execute):
+
+    >>> parallel_map(comp, [{'idx1': 23, 'idx2': 47}])
+
+    Here the ``tcomp`` function accepts a single parameter which it
+    can deconstruct to extract the two values it needs:
+
+    >>> parallel_map(tcomp, [(23, 47), (2, 20), (5, 10)])
+
     """
     if not callable(function):
         raise TypeError("input function '%s' is not callable" %
@@ -1586,6 +2636,19 @@ def parallel_map(function, sequence, numcores=None):
 
 
 def neville2d(xinterp, yinterp, x, y, fval):
+    """Polynomial two-dimensional interpolation using Neville's method.
+
+    The scheme used for interpolation (Neville's method) is described
+    at [1]_, where the interpolation is done first over the Y axis
+    and then the X axis.
+
+    References
+    ----------
+
+    .. [1] http://en.wikipedia.org/wiki/Neville%27s_algorithm
+
+    """
+
     nrow = fval.shape[0]
     # ncol = fval.shape[1]
     tmp = numpy.zeros(nrow)
@@ -1911,6 +2974,10 @@ def is_sequence(start, mid, end):
 def Knuth_close(x, y, tol, myop=operator.__or__):
     """Check whether two floating-point numbers are close together.
 
+    See Also
+    --------
+    sao_fcmp
+
     Notes
     -----
     The following text was taken verbatim from [1]_:
@@ -2223,9 +3290,13 @@ def transformed_quad_coef(x, f):
 
 def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
              maxfev=32, tol=1.0e-6):
-    """A root-finding algorithm using Muller's method [1]_.
+    """A root-finding algorithm using Muller's method.
 
-    p( x ) = f( xc ) + A ( x - xc ) + B ( x - xc ) ( x - xb )
+    The algorithm is described at [1]_.
+
+    ::
+
+        p( x ) = f( xc ) + A ( x - xc ) + B ( x - xc ) ( x - xb )
 
     Notes
     -----
