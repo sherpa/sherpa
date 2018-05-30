@@ -39,8 +39,7 @@ import numpy.fft
 from sherpa.utils._utils import hist1d, hist2d
 from sherpa.utils import _utils
 
-from sherpa.utils._psf import extract_kernel, normalize, set_origin, \
-    pad_bounding_box
+from sherpa.utils import _psf
 
 from sherpa import get_config
 from six.moves.configparser import ConfigParser, NoSectionError
@@ -163,7 +162,7 @@ class NoNewAttributesAfterInit(object):
 
 ###############################################################################
 #
-# Compiled Utilities
+# Compiled Utilities: _utils
 #
 ###############################################################################
 
@@ -851,6 +850,131 @@ def neville(xout, xin, yin):
     """
 
     return _utils.neville(xout, xin, yin)
+
+
+###############################################################################
+#
+# Compiled Utilities: _psf
+#
+###############################################################################
+
+def extract_kernel(kernel, dims_kern, dims_new, center, xlo, xhi, widths,
+                   radial):
+    """Extract the kernel.
+
+    Parameters
+    ----------
+    kernel
+    dims_kern
+    dims_new
+    center
+    xlo
+    xhi
+    widths
+    radial : int
+       Set to 1 if using a radial profile, 0 otherwise.
+
+    Returns
+    -------
+    out, dims, frac, lo, hi
+
+    """
+
+    return _psf.extract_kernel(kernel, dims_kern, dims_new, center,
+                               xlo, xhi, widths, radial)
+
+
+def normalize(xs):
+    """Normalize an array.
+
+    Parameters
+    ----------
+    xs : sequence
+       The values to normalize. This must be a 1D array.
+
+    Returns
+    -------
+    ns : ndarray
+       The values of xs / sum of xs.
+
+    """
+
+    return _psf.normalize(xs)
+
+
+def set_origin(dims, maxindex=None):
+    """Return the position of the origin of the kernel.
+
+    Parameters
+    ----------
+    dims : number or sequence
+       The dimensions of the kernel. This should be a scalar or
+       a one- or two-element sequence.
+    maxindex : None or int, optional
+       If given, then use this location - which is the index
+       into the flattened array - as the center, otherwise
+       use the center of the grid.
+
+    Returns
+    -------
+    cs : ndarray or number
+       The coordinates of the center, matching the input
+       dims format.
+
+    Examples
+    --------
+
+    >>> set_origin(12)
+    5
+
+    >>> set_origin([12])
+    array([5])
+
+    >>> set_origin([12], 4)
+    array([4])
+
+    >>> set_origin([12, 13])
+    array([5, 6])
+
+    >>> set_origin([12, 13], 42)
+    array([6, 3])
+
+    """
+
+    if maxindex is None:
+        return _psf.set_origin(dims)
+    else:
+        return _psf.set_origin(dims, maxindex)
+
+
+def pad_bounding_box(kernel, mask):
+    """Expand the kernel to match the mask.
+
+    Parameters
+    ----------
+    kernel : numeric sequence
+       The data to copy. The data is a 1D array.
+    mask : int sequence
+       The mask determines the size of the output and where to place
+       the kernel values. It is expected that the number of non-zero
+       mask elements matches the size of the `kernel` parameter.
+
+    Returns
+    -------
+    nkernel : ndarray
+       The output is the same size as the mask, and initialized to
+       zero everywhere. Cells where the mask is non-zero are
+       copied from the kernel.
+
+    Examples
+    --------
+
+    >>> pad_bounding_box([1, 2, 3, 4], [1, 1, 0, 1, 1, 0, 0, 0, 0])
+    array([ 1.,  2.,  0.,  3.,  4.,  0.,  0.,  0.,  0.])
+
+    """
+
+    return _psf.pad_bounding_box(kernel, mask)
 
 
 ###############################################################################
