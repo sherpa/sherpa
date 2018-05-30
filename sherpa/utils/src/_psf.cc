@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -982,6 +982,11 @@ static PyObject* unpad_data( PyObject* self, PyObject* args )
 }
 
 
+// TODO: should the routine error out if there are more mask elements
+//       (i.e. set to true) than kernel items to copy? The code has
+//       been adjusted to ignore these extra elements at this time,
+//       rather than read out-of-bounds.
+//
 static PyObject* pad_bounding_box( PyObject* self, PyObject* args )
 {
   
@@ -994,10 +999,13 @@ static PyObject* pad_bounding_box( PyObject* self, PyObject* args )
 			  CONVERTME(IntArray), &mask) )
     return NULL;
 
-  if ( kernel.get_size() > mask.get_size() ) {
+  int msize = mask.get_size();
+  int ksize = kernel.get_size();
+  
+  if ( ksize > msize ) {
     std::ostringstream err;
-    err << "kernel size: " << kernel.get_size()
-	<< " is > than mask size: " << mask.get_size();
+    err << "kernel size: " << ksize
+	<< " is > than mask size: " << msize;
     PyErr_SetString( PyExc_TypeError, err.str().c_str() );
     return NULL;
   }
@@ -1006,11 +1014,15 @@ static PyObject* pad_bounding_box( PyObject* self, PyObject* args )
   if( EXIT_SUCCESS != res.zeros( mask.get_ndim(), mask.get_dims() ) )
     return NULL;
   
-  int size = mask.get_size();
   int jj = 0;
-  for( int ii = 0; ii < size; ++ii )
+  for( int ii = 0; ii < msize; ++ii ) {
     if( mask[ ii ] )
       res[ ii ] = kernel[ jj++ ];
+
+    // Safety check: should this be an error instead?
+    if( jj >= ksize )
+      break;
+  }
   
   return res.return_new_ref();
 }

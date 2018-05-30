@@ -252,7 +252,6 @@ def test_pad_bounding_box(mask, expected):
     assert_array_equal(ans, exp)
 
 
-@pytest.mark.xfail
 def test_pad_bounding_box_mask_too_large():
     """What happens when the mask has more valid elements
     than the kernel? At present the code will read out-of-bounds
