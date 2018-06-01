@@ -1,0 +1,7 @@
+name: sherpa
+
+channels:
+  - defaults
+
+dependencies:
+  - numpy

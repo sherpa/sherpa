@@ -1,0 +1,9 @@
+
+requirements_file: docs/rtd-pip-requirements
+
+# conda:
+#     file: docs/environment.yml
+
+python:
+    version: 3.5
+    setup_py_install: false
