@@ -281,10 +281,10 @@ class test_stats(SherpaTestCase):
         'numpoints': 446,
         'dof': 443,
         'istatval': 11078.2610904,
-        'statval': 1658.30318937,
+        'statval': 1664.80903,
         'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
         'parvals': numpy.array(
-            [5408.2022582955542, 1.2222311487955908, 4612.0008873213301])
+            [473.75459019175156, 1.2169817123652888, 4487.1266712927545])
         }
 
     _fit_chi2gehrels_results_bench = {
@@ -303,10 +303,10 @@ class test_stats(SherpaTestCase):
         'numpoints': 446,
         'dof': 443,
         'istatval': 100275.650273,
-        'statval': 15010.2465747,
+        'statval': 15069.134653,
         'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
         'parvals': numpy.array(
-            [5408.4207593703177, 1.2222288063374338, 4611.9525063414185])
+            [  4.737546e+02,   1.216982e+00,   4.487127e+03])
         }
 
     _fit_cstat_results_bench = {
@@ -380,11 +380,12 @@ class test_stats(SherpaTestCase):
         'numpoints': 446,
         'dof': 443,
         'istatval': 14000.5250801,
-        'statval': 1156.57701288,
+        'statval': 1157.1914764381368,
         'rstat': 2.6107833248,
         'parnames': ('abs1.nH', 'abs1.gamma', 'abs1.ampl'),
         'parvals': numpy.array(
-            [5864.278543739505, 1.6569575154646112, 29868.225197035885])}
+            [  2.675400e+03,   1.656894e+00,   2.976256e+04])
+        }
 
     def setUp(self):
         self._old_logger_level = logger.getEffectiveLevel()
@@ -443,7 +444,7 @@ class test_stats(SherpaTestCase):
         self.compare_results(self._fit_chi2modvar_results_bench, results)
 
     def test_chi2constvar_stat(self):
-        fit = Fit(self.data, self.model, Chi2ConstVar(), NelderMead())
+        fit = Fit(self.data, self.model, Chi2ConstVar(), LevMar())
         results = fit.fit()
         self.compare_results(self._fit_chi2constvar_results_bench, results)
 
@@ -453,7 +454,7 @@ class test_stats(SherpaTestCase):
         self.compare_results(self._fit_chi2gehrels_results_bench, results)
 
     def test_leastsq_stat(self):
-        fit = Fit(self.data, self.model, LeastSq(), NelderMead())
+        fit = Fit(self.data, self.model, LeastSq(), LevMar())
         results = fit.fit()
         self.compare_results(self._fit_leastsq_results_bench, results)
 
@@ -481,7 +482,8 @@ class test_stats(SherpaTestCase):
         data = self.bkg
         fit = Fit(data, self.model, MyCashNoBkg(), NelderMead())
         results = fit.fit()
-        self.compare_results(self._fit_mycashnobkg_results_bench, results)
+        self.compare_results(self._fit_mycashnobkg_results_bench, results,
+                             tol=1.0e-3)
 
     def test_mychi_data_and_model_donothave_bkg(self):
         data = self.bkg
@@ -498,7 +500,8 @@ class test_stats(SherpaTestCase):
         data = self.bkg
         fit = Fit(data, self.model, MyCashWithBkg(), NelderMead())
         results = fit.fit()
-        self.compare_results(self._fit_mycashnobkg_results_bench, results)
+        self.compare_results(self._fit_mycashnobkg_results_bench, results,
+                             tol=1.0e-3)
 
     def test_mychi_datahasbkg_modelhasnobkg(self):
         fit = Fit(self.data, self.model, MyChiNoBkg(), LevMar())
@@ -512,7 +515,7 @@ class test_stats(SherpaTestCase):
         self.compare_results(self._fit_mychinobkg_results_bench, results, 1e-5)
 
     def test_wstat(self):
-        fit = Fit(self.data, self.model, WStat(), NelderMead())
+        fit = Fit(self.data, self.model, WStat(), LevMar())
         results = fit.fit()
         self.compare_results(self._fit_wstat_results_bench, results)
 
