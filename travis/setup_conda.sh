@@ -51,5 +51,5 @@ source activate build
 # It looks like on some systems (well, linux) the F90 variable needs to be set. Not sure why
 export F90=${F77}
 
-# This is required to make sure that the CIAO python extensions being build pick the correct flags
+# This is required to make sure that the CIAO python extensions being built pick the correct flags
 export PYTHON_LDFLAGS=" "
