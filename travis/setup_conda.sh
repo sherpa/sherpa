@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
 # Environment
-LIBGFORTRANVER="3.0"
-SHERPA_CHANNEL=sherpa
-XSPEC_CHANNEL=cxc/channel/dev
-MINICONDA=$HOME/miniconda
+libgfortranver="3.0"
+sherpa_channel=sherpa
+xspec_channel=cxc/channel/dev
+miniconda=$HOME/miniconda
 
 if [[ ${TRAVIS_OS_NAME} == linux ]];
 then
-    MINICONDA_OS=Linux
-    export COMPILERS="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
+    miniconda_os=Linux
+    compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
     sed -i.orig "s|#extra-fortran-link-flags=|extra-fortran-link-flags=-shared|" setup.cfg
 else  # osx
-    MINICONDA_OS=MacOSX
-    export COMPILERS="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
+    miniconda_os=MacOSX
+    compilers="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
 
     # This is required on macOS when building with conda
     sed -i.orig "s|#extra-fortran-link-flags=|extra-fortran-link-flags=-undefined dynamic_lookup -bundle|" setup.cfg
@@ -23,15 +23,15 @@ else  # osx
 fi
 
 # Download and install conda
-wget http://repo.continuum.io/miniconda/Miniconda3-latest-${MINICONDA_OS}-x86_64.sh -O miniconda.sh
+wget http://repo.continuum.io/miniconda/Miniconda3-latest-${miniconda_os}-x86_64.sh -O miniconda.sh
 chmod +x miniconda.sh
-./miniconda.sh -b -p $MINICONDA
-export PATH=$MINICONDA/bin:$PATH
+./miniconda.sh -b -p $miniconda
+export PATH=$miniconda/bin:$PATH
 
 # update and add channels
 conda update --yes conda
-conda config --add channels ${SHERPA_CHANNEL}
-conda config --add channels ${XSPEC_CHANNEL}
+conda config --add channels ${sherpa_channel}
+conda config --add channels ${xspec_channel}
 
 # Figure out requested dependencies
 if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
@@ -43,8 +43,8 @@ echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}"
 
 # Create and activate conda build environment
 # We create a new environment so we don't care about the python version in the root environment.
-conda create --yes --quiet -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} $XSPEC $FITS ${COMPILERS}\
-  libgfortran=${LIBGFORTRANVER}
+conda create --yes --quiet -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} $XSPEC $FITS ${compilers}\
+  libgfortran=${libgfortranver}
 
 source activate build
 

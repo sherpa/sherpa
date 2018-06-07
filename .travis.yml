@@ -37,18 +37,18 @@ matrix:
     - env: INSTALL_TYPE=develop TEST=none FITS="astropy" TRAVIS_PYTHON_VERSION="3.5"
 
 before_install:
-  - . travis/setup_conda.sh
+  - source travis/setup_conda.sh
 
   # XSPEC and DS9
   - if [ -n "${XSPECVER}" ];
-      then . travis/setup_xspec_ds9.sh;
+      then source travis/setup_xspec_ds9.sh;
     fi
 
 install:
     - python setup.py $INSTALL_TYPE &> install.log
 
 script:
-  - . travis/test.sh
+  - source travis/test.sh
 
 notifications:
   email:

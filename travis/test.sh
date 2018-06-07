@@ -14,7 +14,7 @@ fi
 # Build smoke test switches, to ensure requested dependencies are reachable
 if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
 if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
-SMOKEVARS="${XSPECTEST} ${FITSTEST} -v 3"
+smokevars="${XSPECTEST} ${FITSTEST} -v 3"
 
 # Install coverage tooling and run tests using setuptools
 if [ ${TEST} == submodule ]; then
@@ -23,7 +23,7 @@ fi
 
 # Run smoke test
 cd /home;
-sherpa_smoke ${SMOKEVARS};
+sherpa_smoke ${smokevars};
 
 # Run regression tests using sherpa_test
 if [ ${TEST} == package ] || [ ${TEST} == none ];
