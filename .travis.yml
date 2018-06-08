@@ -2,35 +2,29 @@ language: c
 
 sudo: false
 
-addons:
-  apt:
-    packages: &default_apt
-      - gfortran
-
 matrix:
   fast_finish: true
   include:
+    # macOS build
+    - env: INSTALL_TYPE=develop FITS="astropy" TEST=submodule MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="3.6"
+      os: osx
     # Barebone build to check tests pass when most of the tests must be skipped.
     # We need to use TEST=none to remove the test-data submodule.
     - env: INSTALL_TYPE=develop TEST=none NUMPYVER=1.11 TRAVIS_PYTHON_VERSION="2.7"
     # Full build (including ds9 and xspec), Python 2.7, setup.py develop, astropy, matplotlib 1.5
-    # Note we are pinning down the numpy version to the latest that worked with our xspec conda package
-    - env: XSPECVER="12.9.0i" NUMPYVER="1.11.3=py27_0" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="2.7"
+    - env: XSPECVER="12.9.0i" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="2.7"
       sudo: required
       dist: trusty
     # As above, Python 3.5
-    # Note we are pinning down the numpy version to the latest that worked with our xspec conda package
-    - env: XSPECVER="12.9.0i" NUMPYVER="1.11.3=py35_0" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.5"
+    - env: XSPECVER="12.9.0i" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.5"
       sudo: required
       dist: trusty
     # As above, Python 3.6, setup.py install
-    # Note we are pinning down the numpy version to the latest that worked with our xspec conda package
-    - env: XSPECVER="12.9.0i" NUMPYVER="1.11.3=py36_0" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.6"
+    - env: XSPECVER="12.9.0i" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.6"
       sudo: required
       dist: trusty
     # As above, xspec 12.9.1n
-    # Note we are pinning down the numpy version to the latest that worked with our xspec conda package
-    - env: XSPECVER="12.9.1" NUMPYVER="1.13.3=py36ha12f23b_0" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="3.6"
+    - env: XSPECVER="12.9.1" NUMPYVER="1.14" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="3.6"
       sudo: required
       dist: trusty
     # Install sherpatest package rather than relying on relative location of the submodule
@@ -43,85 +37,18 @@ matrix:
     - env: INSTALL_TYPE=develop TEST=none FITS="astropy" TRAVIS_PYTHON_VERSION="3.5"
 
 before_install:
-  # General configurations
-  - export LIBGFORTRANVER="3.0"
-  - export SHERPA_CHANNEL=sherpa
-  - export XSPEC_CHANNEL=cxc/channel/dev
-  - export MINICONDA=/home/travis/miniconda
-
-  # Install, update, and configure conda
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b -p $MINICONDA
-  - export PATH=$MINICONDA/bin:$PATH
-  - conda update --yes conda
-  - conda config --add channels ${SHERPA_CHANNEL}
-  - conda config --add channels ${XSPEC_CHANNEL}
-
-  # Figure out requested dependencies
-  - if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
-  - if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
-  - if [ -n "${XSPECVER}" ];
-     then export XSPEC="xspec-modelsonly=${XSPECVER}";
-    fi
-  - echo ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}
-
-  # Create and activate conda build environment
-  # We create a new environment so we don't care about the python version in the root environment.
-  - conda create --yes --quiet -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER $XSPEC $FITS
-  - source activate build
+  - source travis/setup_conda.sh
 
   # XSPEC and DS9
   - if [ -n "${XSPECVER}" ];
-     then DS9_SITE=http://ds9.si.edu/download/centos6/;
-     XPA_SITE=http://ds9.si.edu/download/centos6/;
-     DS9_TAR=ds9.centos6.7.5.tar.gz;
-     XPA_TAR=xpa.centos6.2.1.17.tar.gz;
-     wget --quiet $DS9_SITE$DS9_TAR;
-     wget --quiet $XPA_SITE$XPA_TAR;
-     THIS_DIR=`pwd`;
-     cd $MINICONDA/bin; tar xf $THIS_DIR/$DS9_TAR; tar xf $THIS_DIR/$XPA_TAR; cd -;
-     sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev;
-     export HEADAS=$MINICONDA/envs/build/Xspec/spectral;
-     export LD_LIBRARY_PATH=$MINICONDA/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/;
-     export XSPEC_INCLUDE_PATH=$MINICONDA/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/include/;
-     sed -i.orig s/#with-xspec=True/with-xspec=True/g setup.cfg;
-     sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=$LD_LIBRARY_PATH|g" setup.cfg;
-     sed -i.orig "s|#xspec_include_dirs = None|xspec_include_dirs=$XSPEC_INCLUDE_PATH|g" setup.cfg;
-    fi
-
-  # No test data, then remove submodule (git automatically clones recursively)
-  - if [ ${TEST} == none ];
-     then git submodule deinit -f .;
-    fi
-
-  # Install test data as a package, then remove the submodule
-  - if [ ${TEST} == package ];
-     then pip install ./sherpa-test-data;
-     git submodule deinit -f .;
+      then source travis/setup_xspec_ds9.sh;
     fi
 
 install:
     - python setup.py $INSTALL_TYPE &> install.log
 
 script:
-  # Build smoke test switches, to ensure requested dependencies are reachable
-  - if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
-  - if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
-  - SMOKEVARS="${XSPECTEST} ${FITSTEST} -v 3"
-
-  # Install coverage tooling and run tests using setuptools
-  - if [ ${TEST} == submodule ]; then pip install pytest-cov; python setup.py -q test -a "--cov sherpa --cov-report term"; fi
-
-  # Run smoke test
-  - cd /home;
-  - sherpa_smoke ${SMOKEVARS};
-
-  # Run regression tests using sherpa_test
-  - if [ ${TEST} == package ] || [ ${TEST} == none ];
-        then cd $HOME;
-        sherpa_test;
-    fi
+  - source travis/test.sh
 
 notifications:
   email:
