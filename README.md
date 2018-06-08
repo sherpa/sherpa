@@ -112,7 +112,7 @@ Notice that section [1b](#1b-starting-from-scratch). only provides instructions 
 Anaconda-powered environment, not the full Anaconda distribution.
 
 The Sherpa 4.10.0 release - which is the latest binary release - is
-compatible with Python 2.7 and with Python 3.5.
+compatible with Python 2.7, Python 3.5, and Python 3.6.
 
 
 ### 1a. Anaconda
@@ -222,9 +222,8 @@ The prerequisites for building from source are:
 The full test suite requires the `mock`, `pytest >=3.3.0`, and `pytest-xvfb` packages,
 which should be installed automatically if needed.
 
-The current Sherpa code base works with Python 2.7, 3.5, and 3.6 (as of the
-Sherpa 4.9.1 release); support for versions 3.3 and 3.4 is possible
-but would require community support.
+The current Sherpa code base works with Python 2.7, 3.5, and 3.6; support for
+versions 3.3 and 3.4 is possible but would require community support.
 
 It is *highly* recommended that [`matplotlib`](http://matplotlib.org/)
 be installed, as this is used to create graphical output (although the
