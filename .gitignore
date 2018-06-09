@@ -62,6 +62,7 @@ pip-log.txt
 nosetests.xml
 .cache
 coverage.xml
+.pytest_cache
 
 # Translations
 *.mo
