@@ -252,6 +252,11 @@ astro_utils = Extension('sherpa.astro.utils._utils',
 # and then ensure they are included? At present this just assumes
 # that adding in -shared is enough.
 #
+# The addition of OS-X builds on Travis have broken the build, so I
+# am experimenting with removing this change to see if it helps
+# (this change is no-longer needed on Read The Docs whilst the
+#  approach of mocking all the compiled code is being used).
+#
 ####
 
 f77_ldflags = os.environ.get('LDFLAGS', '')
@@ -266,14 +271,14 @@ minpack = Extension('sherpa.optmethods._minpack',
                'sherpa/optmethods/src/minpack/lmdif.f',
                'sherpa/optmethods/src/minpack/mylmdif.f',
                ],
-                   extra_link_args = f77_extra_link_args
+                   # extra_link_args = f77_extra_link_args
                     )
 
 minim =  Extension('sherpa.optmethods._minim',
               ['sherpa/optmethods/src/_minim.pyf',
                'sherpa/optmethods/src/minim.f',
                'sherpa/optmethods/src/syminv.f'],
-                   extra_link_args = f77_extra_link_args
+                   # extra_link_args = f77_extra_link_args
                     )
 
 fortran_exts = [minpack, minim]
