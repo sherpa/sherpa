@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -33,7 +33,7 @@ from sherpa.data import Data1D
 import sherpa.utils
 from sherpa.utils.err import ModelErr
 
-from sherpa.models.regrid import Regrid1D, RegridModel1D, Regrid2D
+from sherpa.models.regrid import Regrid1D, RegridModel1D, EvaluationSpace
 
 
 def _setup_1d():
@@ -65,46 +65,35 @@ def _setup_2d():
 
 @pytest.mark.parametrize("cls,name",
                          [(Regrid1D, "regrid1d"),
-                          (Regrid2D, "regrid2d")])
-def test_default_model_name(cls, name):
+                          ])
+def test_default_model_name(cls, name, ):
     mdl = cls()
     assert mdl.name == name
 
 
 @pytest.mark.parametrize("cls", [Regrid1D])
 def test_given_model_name(cls):
-    mdl = cls('linGrid')
+    mdl = cls(name='linGrid')
     assert mdl.name == "linGrid"  # TODO: why is this not lower-cased?
 
 
-@pytest.mark.parametrize("cls", [Regrid1D])
-def test_default_grid_is_empty(cls):
-    mdl = cls()
-    assert mdl.grid is None
-
-
-# TODO: it is unclear whether Regrid should be part of the
-#       Sherpa model hierarchy or not.
-#
-# def test_regrid1d_create_model_instance():
-#     mdl = Regrid1D()
-#     assert isinstance(mdl, Model)
-
-
-@pytest.mark.parametrize("cls,mdl,inst",
+@pytest.mark.parametrize("regrid_class,model_class,regrid_model_class",
                          [(Regrid1D, Const1D, RegridModel1D)])
-def test_wrapping_create_model_instance(cls, mdl, inst):
-    rmdl = cls()
-    cmdl = mdl()
+def test_wrapping_create_model_instance(regrid_class,
+                                        model_class,
+                                        regrid_model_class,
+                                        ):
+    rmdl = regrid_class()
+    cmdl = model_class()
     mdl = rmdl(cmdl)
-    assert isinstance(mdl, inst)
+    assert isinstance(mdl, regrid_model_class)
 
 
-@pytest.mark.parametrize("cls,mdl",
+@pytest.mark.parametrize("regrid_class,model_class",
                          [(Regrid1D, Const1D)])
-def test_wrapping_create_arithmetic_instance(cls, mdl):
-    rmdl = cls()
-    cmdl = mdl()
+def test_wrapping_create_arithmetic_instance(regrid_class, model_class):
+    rmdl = regrid_class()
+    cmdl = model_class()
     mdl = rmdl(cmdl)
     assert isinstance(mdl, ArithmeticModel)
 
@@ -134,8 +123,8 @@ def test_regrid1d_call_twice():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    rmdl = Regrid1D()
-    rmdl.set_grid(np.arange(1000, 2000, 100))
+    eval_space = EvaluationSpace(np.arange(1000, 2000, 100))
+    rmdl = Regrid1D(eval_space)
 
     mdl = rmdl(internal_mdl)
 
@@ -191,7 +180,7 @@ def test_regrid1d_wrapping_str():
 
     imodel_name = internal_model.name
 
-    rmdl = Regrid1D('test')
+    rmdl = Regrid1D(name='test')
     mdl = rmdl(internal_model)
 
     expected_name = 'test({})'.format(imodel_name)
@@ -282,27 +271,6 @@ def test_regrid1d_identity_when_no_grid_int():
     ygot = mdl(xlo, xhi)
 
     assert_allclose(ygot, yexp, atol=0, rtol=1e-7)
-
-
-@pytest.mark.xfail(reason="2D support not written")
-def test_regrid2d_identity_when_no_grid():
-
-    gmdl, cmdl = _setup_2d()
-    internal_mdl = gmdl + cmdl
-
-    rmdl = Regrid2D()
-    mdl = rmdl(internal_mdl)
-
-    # use different bin size for the x0/x1 axes
-    x0grid = np.arange(450, 560, 5)
-    x1grid = np.arange(-300, -200, 4)
-
-    yexp = internal_mdl(x0grid, x1grid)
-    ygot = mdl(x0grid, x1grid)
-
-    assert_allclose(ygot, yexp, atol=0, rtol=1e-7)
-
-
 # TODO: should there be a test_regrid2d_identity_when_no_grid_int()?
 
 
@@ -312,8 +280,9 @@ def test_regrid1d_identity_after_clearing_grid():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    rmdl = Regrid1D()
-    rmdl.set_grid(np.arange(200, 300, 20))
+    eval_space = EvaluationSpace(np.arange(200, 300, 20))
+
+    rmdl = Regrid1D(eval_space)
 
     mdl = rmdl(internal_mdl)
 
@@ -321,7 +290,7 @@ def test_regrid1d_identity_after_clearing_grid():
 
     yexp = internal_mdl(grid)
 
-    rmdl.set_grid(None)
+    rmdl.grid = None
     ygot = mdl(grid)
 
     assert_allclose(ygot, yexp, atol=0, rtol=1e-7)
@@ -333,8 +302,8 @@ def test_regrid1d_no_overlap():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    rmdl = Regrid1D()
-    rmdl.set_grid(np.arange(1000, 2000, 100))
+    eval_space = EvaluationSpace(np.arange(1000, 2000, 100))
+    rmdl = Regrid1D(eval_space)
 
     mdl = rmdl(internal_mdl)
 
@@ -350,8 +319,8 @@ def test_regrid1d_no_overlap_rev1():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    rmdl = Regrid1D()
-    rmdl.set_grid(np.arange(1000, 2000, 100))
+    eval_space = EvaluationSpace(np.arange(1000, 2000, 100))
+    rmdl = Regrid1D(eval_space)
 
     mdl = rmdl(internal_mdl)
 
@@ -367,8 +336,8 @@ def test_regrid1d_no_overlap_rev2():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    rmdl = Regrid1D()
-    rmdl.set_grid(np.arange(1000, 2000, 100)[::-1])
+    eval_space = EvaluationSpace(np.arange(1000, 2000, 100)[::-1])
+    rmdl = Regrid1D(eval_space)
 
     mdl = rmdl(internal_mdl)
 
@@ -384,8 +353,8 @@ def test_regrid1d_no_overlap_rev3():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    rmdl = Regrid1D()
-    rmdl.set_grid(np.arange(1000, 2000, 100)[::-1])
+    eval_space = EvaluationSpace(np.arange(1000, 2000, 100)[::-1])
+    rmdl = Regrid1D(eval_space)
 
     mdl = rmdl(internal_mdl)
 
@@ -401,9 +370,9 @@ def test_regrid1d_no_overlap_int():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    rmdl = Regrid1D()
-    rgrid = np.arange(1000, 2000, 100)
-    rmdl.set_grid(rgrid[:-1], rgrid[1:])
+    array = np.arange(1000, 2000, 100)
+    eval_space = EvaluationSpace(array[:-1], array[1:])
+    rmdl = Regrid1D(eval_space)
 
     mdl = rmdl(internal_mdl)
 
@@ -411,26 +380,6 @@ def test_regrid1d_no_overlap_int():
     ygot = mdl(grid[:-1], grid[1:])
 
     assert_allclose(ygot, np.zeros(grid.size - 1), atol=0, rtol=1e-7)
-
-
-@pytest.mark.xfail(reason="2D support not written")
-def test_regrid2d_no_overlap():
-    """If the two grids have no overlap, return value is 0."""
-
-    gmdl, cmdl = _setup_2d()
-    internal_mdl = gmdl + cmdl
-
-    rmdl = Regrid2D()
-    x0 = np.arange(10, 20, 1)
-    x1 = np.arange(40, 60, 2)
-    rmdl.set_grid(x0, x1)
-    mdl = rmdl(internal_mdl)
-
-    x0grid = np.arange(450, 560, 5)
-    x1grid = np.arange(-300, -200, 4)
-    ygot = mdl(x0grid, x1grid)
-
-    assert_allclose(ygot, np.zeros(x0grid.size), atol=0, rtol=1e-7)
 
 
 class MyConst1D(Const1D):
@@ -454,7 +403,7 @@ def test_regrid1d_passes_through_the_grid():
     grid_expected = [5, 10, 15, 20, 25, 30]
     grid_requested = [12, 18, 20]
 
-    rmdl.set_grid(grid_expected)
+    rmdl.grid = grid_expected
     store = imdl._calc_store
     len(store) == 0
 
@@ -476,10 +425,9 @@ def test_regrid1d_error_calc_no_args():
 
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
-    grid_evaluate = np.arange(-10, 100, 5)
+    grid_evaluate = EvaluationSpace(np.arange(-10, 100, 5))
 
-    rmdl = Regrid1D()
-    rmdl.set_grid(grid_evaluate)
+    rmdl = Regrid1D(grid_evaluate)
     mdl = rmdl(internal_mdl)
 
     with pytest.raises(ModelErr) as excinfo:
@@ -497,8 +445,8 @@ def test_regrid1d_error_grid_mismatch_1():
     internal_mdl = gmdl + cmdl
 
     grid_evaluate = np.arange(-10, 100, 5)
-    rmdl = Regrid1D()
-    rmdl.set_grid(grid_evaluate[:-1], grid_evaluate[1:])
+    eval_space = EvaluationSpace(grid_evaluate[:-1], grid_evaluate[1:])
+    rmdl = Regrid1D(eval_space)
 
     mdl = rmdl(internal_mdl)
     grid_run = np.arange(0, 20, 10)
@@ -515,9 +463,8 @@ def test_regrid1d_error_grid_mismatch_2():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    grid_evaluate = np.arange(-10, 100, 5)
-    rmdl = Regrid1D()
-    rmdl.set_grid(grid_evaluate)
+    grid_evaluate = EvaluationSpace(np.arange(-10, 100, 5))
+    rmdl = Regrid1D(grid_evaluate)
 
     mdl = rmdl(internal_mdl)
     grid_run = np.arange(0, 20, 10)
@@ -575,8 +522,7 @@ def _test_regrid1d_interpolation(rtol,
     if not req_incr:
         grid_request = grid_request[::-1]
 
-    rmdl = Regrid1D()
-    rmdl.set_grid(grid_evaluate)
+    rmdl = Regrid1D(EvaluationSpace(grid_evaluate))
     if method is not None:
         rmdl.method = method
 
@@ -621,8 +567,9 @@ def _test_regrid1d_int(rtol,
     grid_evaluate = np.arange(-10, 100, 5)
     grid_request = np.linspace(-5, 85, 21)
 
-    rmdl = Regrid1D()
-    rmdl.set_grid(grid_evaluate[:-1], grid_evaluate[1:])
+    eval_space = EvaluationSpace(grid_evaluate[:-1], grid_evaluate[1:])
+
+    rmdl = Regrid1D(eval_space)
 
     mdl = rmdl(internal_mdl)
 
@@ -883,7 +830,7 @@ def test_regrid1d_works_with_convolution_style():
     xfull = np.arange(0, 200, 0.5)
     xout = np.arange(101, 180, 0.5)
 
-    regrid.set_grid(xfull)
+    regrid.grid = xfull
 
     # fake up a data object for the fold method
     # TODO: it is not clear to me what grid should be used here;
@@ -947,7 +894,7 @@ def test_regrid1d_int_flux():
     # a smaller grid size than the output grid.
     #
     xfull = np.arange(0, 22, 0.005)
-    regrid.set_grid(xfull[:-1], xfull[1:])
+    regrid.grid = xfull[:-1], xfull[1:]
 
     y_regrid = rmdl(glo, ghi)
     assert y_regrid.shape == glo.shape
