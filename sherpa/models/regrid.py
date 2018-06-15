@@ -104,7 +104,7 @@ class EvaluationSpace(object):
         return max(0, min(self.end, other.end) - max(self.start, other.start))
 
 
-class Regrid1D(Model):
+class Regrid1D(object):
     """Allow 1D models to be evaluated on a different grid.
 
     This class is not used directly in a model expression;
@@ -131,8 +131,8 @@ class Regrid1D(Model):
     the approach.
 
     >>> internal_mdl = Gauss1D() + Const1D()
-    >>> rmdl = Regrid1D()
-    >>> rmdl.set_grid(np.arange(0, 10, 0.5))
+    >>> eval_space = EvaluationSpace(np.arange(0, 10, 0.5))
+    >>> rmdl = Regrid1D(eval_space)
     >>> mdl = rmdl(internal_mdl)
     >>> x = np.arange(1, 8, 0.7)
     >>> y = mdl(x)
@@ -153,8 +153,6 @@ class Regrid1D(Model):
         #
         self.method = neville
 
-        Model.__init__(self, name, ())
-
     @property
     def grid(self):
         return self.evaluation_space.grid
@@ -166,22 +164,7 @@ class Regrid1D(Model):
         except TypeError:  # value is a single array (non-integrated models)
             self.evaluation_space = EvaluationSpace(value)
 
-    @property
-    def grid_is_empty(self):
-        """Is the grid empty or None (True)?"""
-        return self.evaluation_space.is_empty
-
-    @property
-    def grid_is_integrated(self):
-        """Is the grid integrated (True) or point (False)?"""
-        return self.evaluation_space.is_integrated
-
-    @property
-    def grid_is_ascending(self):
-        """Is the grid in ascending (True) or descending (False) order?"""
-        return self.evaluation_space.is_ascending
-
-    def __call__(self, model):
+    def apply_to(self, model):
         """Evaluate a model on a different grid."""
         return RegridModel1D(model, self)
 
@@ -218,7 +201,7 @@ class Regrid1D(Model):
         whether it is integrated or non-integrated) is too restrictive.
         """
 
-        if self.grid_is_empty:  # Simply pass through
+        if self.evaluation_space.is_empty:  # Simply pass through
             return modelfunc(pars, *args, **kwargs)
 
         requested_eval_space = self._make_and_validate_grid(args)
@@ -250,9 +233,9 @@ class Regrid1D(Model):
         requested_eval_space = EvaluationSpace(*args_array)
 
         # Ensure the two grids match: integrated or non-integrated.
-        if self.grid_is_integrated and not requested_eval_space.is_integrated:
+        if self.evaluation_space.is_integrated and not requested_eval_space.is_integrated:
             raise ModelErr('needsint')
-        if requested_eval_space.is_integrated and not self.grid_is_integrated:
+        if requested_eval_space.is_integrated and not self.evaluation_space.is_integrated:
             raise ModelErr('needspoint')
 
         return requested_eval_space
@@ -294,7 +277,7 @@ class RegridModel1D(CompositeModel, ArithmeticModel):
         CompositeModel.__init__(self,
                                 "{}({})".format(self.wrapper.name,
                                                 self.model.name),
-                                (self.wrapper, self.model))
+                                (self.model, ))
 
     def calc(self, p, *args, **kwargs):
         return self.wrapper.calc(p, self.model.calc, *args, **kwargs)

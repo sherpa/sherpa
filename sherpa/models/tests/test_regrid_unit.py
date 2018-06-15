@@ -49,24 +49,10 @@ def _setup_1d():
     return gmdl, cmdl
 
 
-def _setup_2d():
-    """Create Gauss2D + Const2D components."""
-
-    gmdl = Gauss2D()
-    cmdl = Const2D()
-    gmdl.xpos = 505
-    gmdl.ypos = -240
-    gmdl.fwhm = 30
-    gmdl.ampl = 20
-    cmdl.c0 = 10
-
-    return gmdl, cmdl
-
-
 @pytest.mark.parametrize("cls,name",
                          [(Regrid1D, "regrid1d"),
                           ])
-def test_default_model_name(cls, name, ):
+def test_default_model_name(cls, name):
     mdl = cls()
     assert mdl.name == name
 
@@ -81,11 +67,10 @@ def test_given_model_name(cls):
                          [(Regrid1D, Const1D, RegridModel1D)])
 def test_wrapping_create_model_instance(regrid_class,
                                         model_class,
-                                        regrid_model_class,
-                                        ):
+                                        regrid_model_class):
     rmdl = regrid_class()
     cmdl = model_class()
-    mdl = rmdl(cmdl)
+    mdl = rmdl.apply_to(cmdl)
     assert isinstance(mdl, regrid_model_class)
 
 
@@ -94,27 +79,21 @@ def test_wrapping_create_model_instance(regrid_class,
 def test_wrapping_create_arithmetic_instance(regrid_class, model_class):
     rmdl = regrid_class()
     cmdl = model_class()
-    mdl = rmdl(cmdl)
+    mdl = rmdl.apply_to(cmdl)
     assert isinstance(mdl, ArithmeticModel)
 
 
 def test_regrid1d_wrapping_create_composite_instance():
+    # This test depends on what we want the regridded model to look like, which is
+    # somewhat arbitrary
     cmdl = Const1D()
     gmdl = Gauss1D()
     imdl = cmdl + gmdl
     rmdl = Regrid1D()
-    mdl = rmdl(imdl)
+    mdl = rmdl.apply_to(imdl)
     assert isinstance(mdl, CompositeModel)
-    assert len(mdl.parts) == 2
-
-    # This test was written before the code was written, which meant
-    # that I had a different idea to how the composite model was going
-    # to wrap things. It is not clear yet which (if either) is correct.
-    #
-    # assert mdl.parts[0] == cmdl
-    # assert mdl.parts[1] == gmdl
-    assert mdl.parts[0] == rmdl
-    assert mdl.parts[1] == imdl
+    assert len(mdl.parts) == 1
+    assert mdl.parts[0] is imdl
 
 
 def test_regrid1d_call_twice():
@@ -126,7 +105,7 @@ def test_regrid1d_call_twice():
     eval_space = EvaluationSpace(np.arange(1000, 2000, 100))
     rmdl = Regrid1D(eval_space)
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     # It appears that calling the model with no arguments is
     # the same as calling 'rmdl(internal_mdl)'. An "easy" way
@@ -150,7 +129,7 @@ def test_regrid1d_wrapping_name():
     # a test where the Regrid1D model is named is in
     # test_regrid1d_wrapping_str.
     rmdl = Regrid1D()
-    mdl = rmdl(internal_model)
+    mdl = rmdl.apply_to(internal_model)
 
     # TODO: It is not clear what the syntactic constraints on
     #       the name field are; if it is to create an evaluable
@@ -181,7 +160,7 @@ def test_regrid1d_wrapping_str():
     imodel_name = internal_model.name
 
     rmdl = Regrid1D(name='test')
-    mdl = rmdl(internal_model)
+    mdl = rmdl.apply_to(internal_model)
 
     expected_name = 'test({})'.format(imodel_name)
 
@@ -213,7 +192,7 @@ def test_regrid1d_identity_when_no_grid():
     internal_mdl = gmdl + cmdl
 
     rmdl = Regrid1D()
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)
 
@@ -229,7 +208,7 @@ def test_regrid1d_identity_when_no_grid_rev():
     internal_mdl = gmdl + cmdl
 
     rmdl = Regrid1D()
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)[::-1]
 
@@ -245,7 +224,7 @@ def test_regrid1d_identity_when_no_grid_int():
     internal_mdl = gmdl + cmdl
 
     rmdl = Regrid1D()
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     # Ensure that the grid widths are not the same,
     # and that it is not contiguous. Would probably
@@ -284,7 +263,7 @@ def test_regrid1d_identity_after_clearing_grid():
 
     rmdl = Regrid1D(eval_space)
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)
 
@@ -305,7 +284,7 @@ def test_regrid1d_no_overlap():
     eval_space = EvaluationSpace(np.arange(1000, 2000, 100))
     rmdl = Regrid1D(eval_space)
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)
     ygot = mdl(grid)
@@ -322,7 +301,7 @@ def test_regrid1d_no_overlap_rev1():
     eval_space = EvaluationSpace(np.arange(1000, 2000, 100))
     rmdl = Regrid1D(eval_space)
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)[::-1]
     ygot = mdl(grid)
@@ -339,7 +318,7 @@ def test_regrid1d_no_overlap_rev2():
     eval_space = EvaluationSpace(np.arange(1000, 2000, 100)[::-1])
     rmdl = Regrid1D(eval_space)
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)
     ygot = mdl(grid)
@@ -356,7 +335,7 @@ def test_regrid1d_no_overlap_rev3():
     eval_space = EvaluationSpace(np.arange(1000, 2000, 100)[::-1])
     rmdl = Regrid1D(eval_space)
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)[::-1]
     ygot = mdl(grid)
@@ -374,7 +353,7 @@ def test_regrid1d_no_overlap_int():
     eval_space = EvaluationSpace(array[:-1], array[1:])
     rmdl = Regrid1D(eval_space)
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)
     ygot = mdl(grid[:-1], grid[1:])
@@ -399,7 +378,7 @@ def test_regrid1d_passes_through_the_grid():
     rmdl = Regrid1D()
     imdl = MyConst1D()
     imdl.c0 = -34.5
-    mdl = rmdl(imdl)
+    mdl = rmdl.apply_to(imdl)
     grid_expected = [5, 10, 15, 20, 25, 30]
     grid_requested = [12, 18, 20]
 
@@ -428,7 +407,7 @@ def test_regrid1d_error_calc_no_args():
     grid_evaluate = EvaluationSpace(np.arange(-10, 100, 5))
 
     rmdl = Regrid1D(grid_evaluate)
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     with pytest.raises(ModelErr) as excinfo:
         pvals = [p.val for p in internal_mdl.pars]
@@ -448,7 +427,7 @@ def test_regrid1d_error_grid_mismatch_1():
     eval_space = EvaluationSpace(grid_evaluate[:-1], grid_evaluate[1:])
     rmdl = Regrid1D(eval_space)
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
     grid_run = np.arange(0, 20, 10)
     with pytest.raises(ModelErr) as excinfo:
         mdl(grid_run)
@@ -466,7 +445,7 @@ def test_regrid1d_error_grid_mismatch_2():
     grid_evaluate = EvaluationSpace(np.arange(-10, 100, 5))
     rmdl = Regrid1D(grid_evaluate)
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
     grid_run = np.arange(0, 20, 10)
     with pytest.raises(ModelErr) as excinfo:
         mdl(grid_run[:-1], grid_run[1:])
@@ -526,7 +505,7 @@ def _test_regrid1d_interpolation(rtol,
     if method is not None:
         rmdl.method = method
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     yexp = internal_mdl(grid_request)
 
@@ -571,7 +550,7 @@ def _test_regrid1d_int(rtol,
 
     rmdl = Regrid1D(eval_space)
 
-    mdl = rmdl(internal_mdl)
+    mdl = rmdl.apply_to(internal_mdl)
 
     yexp = internal_mdl(grid_request[:-1], grid_request[1:])
 
@@ -669,131 +648,6 @@ class ReNormalizerModel1DInt(CompositeModel, ArithmeticModel):
 
 # TODO: more tests when regridding the models
 
-class ShiftyKernel1D(Model):
-    """A convolution-style model that shifts the origin.
-
-    The design of the Kernel/Model class structure is based on the
-    version used for the XSPEC convolution models in the contributed
-    code for CIAO. It is not yet clear to me if this is a sensible
-    approach for users, but should be fine as a test case.
-    """
-
-    def __init__(self, name='shiftykernel1d'):
-        self.dx = Parameter(name, 'dx', 0)
-        Model.__init__(self, name, (self.dx, ))
-
-    def __call__(self, model):
-        return ShiftyModel1D(model, self)
-
-    def calc(self, pars, rhs, *args, **kwargs):
-
-        dx = pars[0]
-        rpars = pars[1:]
-
-        if len(args) == 1:
-            x = args[0] + dx
-            nargs = (x, )
-        elif len(args) == 2:
-            xlo = args[0] + dx
-            xhi = args[1] + dx
-            nargs = (xlo, xhi)
-        else:
-            raise ValueError("1D only")
-
-        return rhs(rpars, *nargs, **kwargs)
-
-
-class ShiftyModel1D(CompositeModel, ArithmeticModel):
-
-    @staticmethod
-    def wrapobj(obj):
-        if isinstance(obj, ArithmeticModel):
-            return obj
-        else:
-            return ArithmeticFunctionModel(obj)
-
-    def __init__(self, model, wrapper):
-        self.model = self.wrapobj(model)
-        self.wrapper = wrapper
-        CompositeModel.__init__(self,
-                                "{}({})".format(self.wrapper.name,
-                                                self.model.name),
-                                (self.wrapper, self.model))
-
-    def calc(self, p, *args, **kwargs):
-        return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
-
-
-def _old_test_regrid1d_works_with_convolution_style():
-    """This doesn't really test more than the previous
-    model-evaluation tests.
-
-    Why do I have this routine here? Do I want this as a test,
-    or did I leave it around when writing
-    test_regrid1d_works_with_convolution_style
-    with the intention of deleting it?
-    """
-
-    gmdl = Gauss1D()
-    gmdl.pos = 200
-    gmdl.ampl = 10
-
-    cmdl = Const1D()
-    cmdl.c0 = -500
-
-    imdl = gmdl + cmdl
-
-    grid = np.arange(-50, 50, 1)
-
-    # The values should be very-close to cmdl.c0; there isn't
-    # really a need to check this here, but it makes the intent
-    # of the test a bit clearer.
-    #
-    y0 = imdl(grid)
-    flat = np.zeros(grid.size) + cmdl.c0.val
-    assert_allclose(y0, flat, atol=1e-15, rtol=0)
-
-    smdl = ShiftyKernel1D()
-    smdl.dx = 190
-
-    yexp = imdl(grid + 190)
-
-    # First check that ShiftyKernel is behaving as expected
-    #
-    test_mdl = smdl(imdl)
-    ygot = test_mdl(grid)
-    assert_allclose(ygot, yexp, atol=1e-15, rtol=0)
-
-    # Now to the actual test of Regrid1D
-    #
-    # - grid sent in to the outermost model
-    # - grid on which the model is to be evaluated
-    #   (the grid attribute of Regrid1D)
-    # - the grid after adjustment by shiftykernel
-    #
-    # if g1 is 0 - 100
-    #    g2 is -100 - 200
-    #    g3 is g2 + 80, so -20 - 280
-    #
-    # if the gaussian is centered at 10 then
-    #
-    g1 = np.arange(0, 100, 2)
-    g2 = np.arange(-100, 200, 2)
-
-    rmdl = Regrid1D()
-    rmdl.set_grid(g2)
-
-    smdl.dx = 80
-    gmdl.pos = 10
-
-    mdl = rmdl(test_mdl)
-
-    yeval = mdl(g1)
-    # assert_allclose(yeval, yexp, atol=1e-15, rtol=0)
-
-    return g1, yeval
-
-
 def test_regrid1d_works_with_convolution_style():
     """This doesn't really test more than the previous
     model-evaluation tests.
@@ -818,7 +672,7 @@ def test_regrid1d_works_with_convolution_style():
     # This is the model that will be evaluated
     #
     regrid = Regrid1D()
-    smoothed_regrid = regrid(smoothed)
+    smoothed_regrid = regrid.apply_to(smoothed)
 
     # Ignoring edge effects, the smoothed step function drops from
     # x=100 down to x~120 (it is not clear why it doesn't smooth
@@ -888,7 +742,7 @@ def test_regrid1d_int_flux():
     assert_allclose(yzero, np.zeros(glo.size), atol=1e-10, rtol=0)
 
     regrid = Regrid1D()
-    rmdl = regrid(mdl)
+    rmdl = regrid.apply_to(mdl)
 
     # ensure it covers the 10 - 20 range as well as 1-9. Pick
     # a smaller grid size than the output grid.
