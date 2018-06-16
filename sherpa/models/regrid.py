@@ -40,10 +40,10 @@ from sherpa.utils import interpolate, neville, rebin
 from sherpa.utils.err import ModelErr
 
 
-__all__ = ('Regrid1D', 'RegridModel1D')
+__all__ = ('ModelDomainRegridder1D', 'RegridModel1D')
 
 
-class EvaluationSpace(object):
+class EvaluationSpace1D(object):
     def __init__(self, x=None, xhi=None):
         self.xlo = np.asarray(x) if x is not None else None
         self.xhi = self.xhi = np.asarray(xhi) if xhi is not None else None
@@ -94,7 +94,7 @@ class EvaluationSpace(object):
         Check if this evaluation space overlaps with another
         Parameters
         ----------
-        other : EvaluationSpace
+        other : EvaluationSpace1D
 
         Returns
         -------
@@ -104,7 +104,7 @@ class EvaluationSpace(object):
         return max(0, min(self.end, other.end) - max(self.start, other.start))
 
 
-class Regrid1D(object):
+class ModelDomainRegridder1D(object):
     """Allow 1D models to be evaluated on a different grid.
 
     This class is not used directly in a model expression;
@@ -131,9 +131,9 @@ class Regrid1D(object):
     the approach.
 
     >>> internal_mdl = Gauss1D() + Const1D()
-    >>> eval_space = EvaluationSpace(np.arange(0, 10, 0.5))
-    >>> rmdl = Regrid1D(eval_space)
-    >>> mdl = rmdl(internal_mdl)
+    >>> eval_space = EvaluationSpace1D(np.arange(0, 10, 0.5))
+    >>> rmdl = ModelDomainRegridder1D(eval_space)
+    >>> mdl = rmdl.apply_to(internal_mdl)
     >>> x = np.arange(1, 8, 0.7)
     >>> y = mdl(x)
 
@@ -142,7 +142,7 @@ class Regrid1D(object):
     def __init__(self, evaluation_space=None, name='regrid1d'):
         self.name = name
         self.evaluation_space = evaluation_space\
-            if evaluation_space is not None else EvaluationSpace()
+            if evaluation_space is not None else EvaluationSpace1D()
 
         # The tests show that neville (for simple interpolation-style
         # analysis) is much-more accurate than linear_interp, so use
@@ -160,9 +160,9 @@ class Regrid1D(object):
     @grid.setter
     def grid(self, value):
         try:  # value is an iterable (integrated models) to be unpacked
-            self.evaluation_space = EvaluationSpace(*value)
+            self.evaluation_space = EvaluationSpace1D(*value)
         except TypeError:  # value is a single array (non-integrated models)
-            self.evaluation_space = EvaluationSpace(value)
+            self.evaluation_space = EvaluationSpace1D(value)
 
     def apply_to(self, model):
         """Evaluate a model on a different grid."""
@@ -222,7 +222,7 @@ class Regrid1D(object):
 
         Returns
         -------
-        requested_eval_space : EvaluationSpace
+        requested_eval_space : EvaluationSpace1D
             Whether the requested grid is point or integrated.
         """
         # FIXME Isn't this fragile?
@@ -230,7 +230,7 @@ class Regrid1D(object):
         if nargs == 0:
             raise ModelErr('nogrid')
 
-        requested_eval_space = EvaluationSpace(*args_array)
+        requested_eval_space = EvaluationSpace1D(*args_array)
 
         # Ensure the two grids match: integrated or non-integrated.
         if self.evaluation_space.is_integrated and not requested_eval_space.is_integrated:

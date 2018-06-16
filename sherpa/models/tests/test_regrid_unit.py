@@ -33,7 +33,7 @@ from sherpa.data import Data1D
 import sherpa.utils
 from sherpa.utils.err import ModelErr
 
-from sherpa.models.regrid import Regrid1D, RegridModel1D, EvaluationSpace
+from sherpa.models.regrid import ModelDomainRegridder1D, RegridModel1D, EvaluationSpace1D
 
 
 def _setup_1d():
@@ -50,21 +50,21 @@ def _setup_1d():
 
 
 @pytest.mark.parametrize("cls,name",
-                         [(Regrid1D, "regrid1d"),
+                         [(ModelDomainRegridder1D, "regrid1d"),
                           ])
 def test_default_model_name(cls, name):
     mdl = cls()
     assert mdl.name == name
 
 
-@pytest.mark.parametrize("cls", [Regrid1D])
+@pytest.mark.parametrize("cls", [ModelDomainRegridder1D])
 def test_given_model_name(cls):
     mdl = cls(name='linGrid')
     assert mdl.name == "linGrid"  # TODO: why is this not lower-cased?
 
 
 @pytest.mark.parametrize("regrid_class,model_class,regrid_model_class",
-                         [(Regrid1D, Const1D, RegridModel1D)])
+                         [(ModelDomainRegridder1D, Const1D, RegridModel1D)])
 def test_wrapping_create_model_instance(regrid_class,
                                         model_class,
                                         regrid_model_class):
@@ -75,7 +75,7 @@ def test_wrapping_create_model_instance(regrid_class,
 
 
 @pytest.mark.parametrize("regrid_class,model_class",
-                         [(Regrid1D, Const1D)])
+                         [(ModelDomainRegridder1D, Const1D)])
 def test_wrapping_create_arithmetic_instance(regrid_class, model_class):
     rmdl = regrid_class()
     cmdl = model_class()
@@ -89,7 +89,7 @@ def test_regrid1d_wrapping_create_composite_instance():
     cmdl = Const1D()
     gmdl = Gauss1D()
     imdl = cmdl + gmdl
-    rmdl = Regrid1D()
+    rmdl = ModelDomainRegridder1D()
     mdl = rmdl.apply_to(imdl)
     assert isinstance(mdl, CompositeModel)
     assert len(mdl.parts) == 1
@@ -102,8 +102,8 @@ def test_regrid1d_call_twice():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    eval_space = EvaluationSpace(np.arange(1000, 2000, 100))
-    rmdl = Regrid1D(eval_space)
+    eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100))
+    rmdl = ModelDomainRegridder1D(eval_space)
 
     mdl = rmdl.apply_to(internal_mdl)
 
@@ -128,7 +128,7 @@ def test_regrid1d_wrapping_name():
 
     # a test where the Regrid1D model is named is in
     # test_regrid1d_wrapping_str.
-    rmdl = Regrid1D()
+    rmdl = ModelDomainRegridder1D()
     mdl = rmdl.apply_to(internal_model)
 
     # TODO: It is not clear what the syntactic constraints on
@@ -159,7 +159,7 @@ def test_regrid1d_wrapping_str():
 
     imodel_name = internal_model.name
 
-    rmdl = Regrid1D(name='test')
+    rmdl = ModelDomainRegridder1D(name='test')
     mdl = rmdl.apply_to(internal_model)
 
     expected_name = 'test({})'.format(imodel_name)
@@ -191,7 +191,7 @@ def test_regrid1d_identity_when_no_grid():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    rmdl = Regrid1D()
+    rmdl = ModelDomainRegridder1D()
     mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)
@@ -207,7 +207,7 @@ def test_regrid1d_identity_when_no_grid_rev():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    rmdl = Regrid1D()
+    rmdl = ModelDomainRegridder1D()
     mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)[::-1]
@@ -223,7 +223,7 @@ def test_regrid1d_identity_when_no_grid_int():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    rmdl = Regrid1D()
+    rmdl = ModelDomainRegridder1D()
     mdl = rmdl.apply_to(internal_mdl)
 
     # Ensure that the grid widths are not the same,
@@ -259,9 +259,9 @@ def test_regrid1d_identity_after_clearing_grid():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    eval_space = EvaluationSpace(np.arange(200, 300, 20))
+    eval_space = EvaluationSpace1D(np.arange(200, 300, 20))
 
-    rmdl = Regrid1D(eval_space)
+    rmdl = ModelDomainRegridder1D(eval_space)
 
     mdl = rmdl.apply_to(internal_mdl)
 
@@ -281,8 +281,8 @@ def test_regrid1d_no_overlap():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    eval_space = EvaluationSpace(np.arange(1000, 2000, 100))
-    rmdl = Regrid1D(eval_space)
+    eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100))
+    rmdl = ModelDomainRegridder1D(eval_space)
 
     mdl = rmdl.apply_to(internal_mdl)
 
@@ -298,8 +298,8 @@ def test_regrid1d_no_overlap_rev1():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    eval_space = EvaluationSpace(np.arange(1000, 2000, 100))
-    rmdl = Regrid1D(eval_space)
+    eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100))
+    rmdl = ModelDomainRegridder1D(eval_space)
 
     mdl = rmdl.apply_to(internal_mdl)
 
@@ -315,8 +315,8 @@ def test_regrid1d_no_overlap_rev2():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    eval_space = EvaluationSpace(np.arange(1000, 2000, 100)[::-1])
-    rmdl = Regrid1D(eval_space)
+    eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100)[::-1])
+    rmdl = ModelDomainRegridder1D(eval_space)
 
     mdl = rmdl.apply_to(internal_mdl)
 
@@ -332,8 +332,8 @@ def test_regrid1d_no_overlap_rev3():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    eval_space = EvaluationSpace(np.arange(1000, 2000, 100)[::-1])
-    rmdl = Regrid1D(eval_space)
+    eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100)[::-1])
+    rmdl = ModelDomainRegridder1D(eval_space)
 
     mdl = rmdl.apply_to(internal_mdl)
 
@@ -350,8 +350,8 @@ def test_regrid1d_no_overlap_int():
     internal_mdl = gmdl + cmdl
 
     array = np.arange(1000, 2000, 100)
-    eval_space = EvaluationSpace(array[:-1], array[1:])
-    rmdl = Regrid1D(eval_space)
+    eval_space = EvaluationSpace1D(array[:-1], array[1:])
+    rmdl = ModelDomainRegridder1D(eval_space)
 
     mdl = rmdl.apply_to(internal_mdl)
 
@@ -375,7 +375,7 @@ class MyConst1D(Const1D):
 def test_regrid1d_passes_through_the_grid():
     """Is the grid actually being passed through to the model?"""
 
-    rmdl = Regrid1D()
+    rmdl = ModelDomainRegridder1D()
     imdl = MyConst1D()
     imdl.c0 = -34.5
     mdl = rmdl.apply_to(imdl)
@@ -404,9 +404,9 @@ def test_regrid1d_error_calc_no_args():
 
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
-    grid_evaluate = EvaluationSpace(np.arange(-10, 100, 5))
+    grid_evaluate = EvaluationSpace1D(np.arange(-10, 100, 5))
 
-    rmdl = Regrid1D(grid_evaluate)
+    rmdl = ModelDomainRegridder1D(grid_evaluate)
     mdl = rmdl.apply_to(internal_mdl)
 
     with pytest.raises(ModelErr) as excinfo:
@@ -424,8 +424,8 @@ def test_regrid1d_error_grid_mismatch_1():
     internal_mdl = gmdl + cmdl
 
     grid_evaluate = np.arange(-10, 100, 5)
-    eval_space = EvaluationSpace(grid_evaluate[:-1], grid_evaluate[1:])
-    rmdl = Regrid1D(eval_space)
+    eval_space = EvaluationSpace1D(grid_evaluate[:-1], grid_evaluate[1:])
+    rmdl = ModelDomainRegridder1D(eval_space)
 
     mdl = rmdl.apply_to(internal_mdl)
     grid_run = np.arange(0, 20, 10)
@@ -442,8 +442,8 @@ def test_regrid1d_error_grid_mismatch_2():
     gmdl, cmdl = _setup_1d()
     internal_mdl = gmdl + cmdl
 
-    grid_evaluate = EvaluationSpace(np.arange(-10, 100, 5))
-    rmdl = Regrid1D(grid_evaluate)
+    grid_evaluate = EvaluationSpace1D(np.arange(-10, 100, 5))
+    rmdl = ModelDomainRegridder1D(grid_evaluate)
 
     mdl = rmdl.apply_to(internal_mdl)
     grid_run = np.arange(0, 20, 10)
@@ -501,7 +501,7 @@ def _test_regrid1d_interpolation(rtol,
     if not req_incr:
         grid_request = grid_request[::-1]
 
-    rmdl = Regrid1D(EvaluationSpace(grid_evaluate))
+    rmdl = ModelDomainRegridder1D(EvaluationSpace1D(grid_evaluate))
     if method is not None:
         rmdl.method = method
 
@@ -546,9 +546,9 @@ def _test_regrid1d_int(rtol,
     grid_evaluate = np.arange(-10, 100, 5)
     grid_request = np.linspace(-5, 85, 21)
 
-    eval_space = EvaluationSpace(grid_evaluate[:-1], grid_evaluate[1:])
+    eval_space = EvaluationSpace1D(grid_evaluate[:-1], grid_evaluate[1:])
 
-    rmdl = Regrid1D(eval_space)
+    rmdl = ModelDomainRegridder1D(eval_space)
 
     mdl = rmdl.apply_to(internal_mdl)
 
@@ -671,7 +671,7 @@ def test_regrid1d_works_with_convolution_style():
 
     # This is the model that will be evaluated
     #
-    regrid = Regrid1D()
+    regrid = ModelDomainRegridder1D()
     smoothed_regrid = regrid.apply_to(smoothed)
 
     # Ignoring edge effects, the smoothed step function drops from
@@ -741,7 +741,7 @@ def test_regrid1d_int_flux():
     yzero = mdl(glo, ghi)
     assert_allclose(yzero, np.zeros(glo.size), atol=1e-10, rtol=0)
 
-    regrid = Regrid1D()
+    regrid = ModelDomainRegridder1D()
     rmdl = regrid.apply_to(mdl)
 
     # ensure it covers the 10 - 20 range as well as 1-9. Pick
