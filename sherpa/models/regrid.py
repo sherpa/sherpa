@@ -130,6 +130,7 @@ class ModelDomainRegridder1D(object):
     ``internal_mdl`` on the grid ``x`` - but it illustrates
     the approach.
 
+    >>> from sherpa.models import Gauss1D, Const1D
     >>> internal_mdl = Gauss1D() + Const1D()
     >>> eval_space = EvaluationSpace1D(np.arange(0, 10, 0.5))
     >>> rmdl = ModelDomainRegridder1D(eval_space)
