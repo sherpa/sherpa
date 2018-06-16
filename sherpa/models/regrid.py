@@ -25,20 +25,13 @@ convolved model should be evaluated on a different grid to the
 data - e.g. a larger grid, since the convolution will account
 for signal outside the data range - and then be regridded to
 match the desired grid.
-
-.. note::
-
-   This is an experimental module.
-
 """
 
 import numpy as np
 
-from sherpa.models.model import Model, ArithmeticModel, \
-    ArithmeticFunctionModel, CompositeModel
+from sherpa.models.model import ArithmeticModel, ArithmeticFunctionModel, CompositeModel
 from sherpa.utils import interpolate, neville, rebin
 from sherpa.utils.err import ModelErr
-
 
 __all__ = ('ModelDomainRegridder1D', 'RegridModel1D')
 
@@ -265,13 +258,6 @@ class ModelDomainRegridder1D(object):
 
 class RegridModel1D(CompositeModel, ArithmeticModel):
 
-    @staticmethod
-    def wrapobj(obj):
-        if isinstance(obj, ArithmeticModel):
-            return obj
-        else:
-            return ArithmeticFunctionModel(obj)
-
     def __init__(self, model, wrapper):
         self.model = self.wrapobj(model)
         self.wrapper = wrapper
@@ -282,3 +268,19 @@ class RegridModel1D(CompositeModel, ArithmeticModel):
 
     def calc(self, p, *args, **kwargs):
         return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
+
+    def get_center(self):
+        return self.model.get_center()
+
+    def set_center(self, *args, **kwargs):
+        return self.model.set_center(*args, **kwargs)
+
+    def guess(self, dep, *args, **kwargs):
+        return self.model.guess(dep, *args, **kwargs)
+
+    @staticmethod
+    def wrapobj(obj):
+        if isinstance(obj, ArithmeticModel):
+            return obj
+        else:
+            return ArithmeticFunctionModel(obj)
