@@ -36,7 +36,8 @@ from sherpa.utils.err import ModelErr
 from sherpa.models.regrid import ModelDomainRegridder1D, RegridModel1D, EvaluationSpace1D
 
 
-def _setup_1d():
+@pytest.fixture
+def setup_1d():
     """Create Gauss1D + Const1D components."""
 
     gmdl = Gauss1D()
@@ -96,10 +97,10 @@ def test_regrid1d_wrapping_create_composite_instance():
     assert mdl.parts[0] is imdl
 
 
-def test_regrid1d_call_twice():
+def test_regrid1d_call_twice(setup_1d):
     """What happens if have no evaluation (output) grid?"""
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100))
@@ -186,9 +187,9 @@ def test_regrid1d_wrapping_str():
 # are explicitly set to atol=0, rtol=1e-7) should be
 # sensible.
 #
-def test_regrid1d_identity_when_no_grid():
+def test_regrid1d_identity_when_no_grid(setup_1d):
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     rmdl = ModelDomainRegridder1D()
@@ -202,9 +203,9 @@ def test_regrid1d_identity_when_no_grid():
     assert_allclose(ygot, yexp, atol=0, rtol=1e-7)
 
 
-def test_regrid1d_identity_when_no_grid_rev():
+def test_regrid1d_identity_when_no_grid_rev(setup_1d):
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     rmdl = ModelDomainRegridder1D()
@@ -218,9 +219,9 @@ def test_regrid1d_identity_when_no_grid_rev():
     assert_allclose(ygot, yexp, atol=0, rtol=1e-7)
 
 
-def test_regrid1d_identity_when_no_grid_int():
+def test_regrid1d_identity_when_no_grid_int(setup_1d):
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     rmdl = ModelDomainRegridder1D()
@@ -253,10 +254,10 @@ def test_regrid1d_identity_when_no_grid_int():
 # TODO: should there be a test_regrid2d_identity_when_no_grid_int()?
 
 
-def test_regrid1d_identity_after_clearing_grid():
+def test_regrid1d_identity_after_clearing_grid(setup_1d):
     """Ensure that the grid can be removed."""
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     eval_space = EvaluationSpace1D(np.arange(200, 300, 20))
@@ -275,10 +276,10 @@ def test_regrid1d_identity_after_clearing_grid():
     assert_allclose(ygot, yexp, atol=0, rtol=1e-7)
 
 
-def test_regrid1d_no_overlap():
+def test_regrid1d_no_overlap(setup_1d):
     """If the two grids have no overlap, return value is 0."""
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100))
@@ -292,10 +293,10 @@ def test_regrid1d_no_overlap():
     assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
 
 
-def test_regrid1d_no_overlap_rev1():
+def test_regrid1d_no_overlap_rev1(setup_1d):
     """If the two grids have no overlap, return value is 0."""
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100))
@@ -309,10 +310,10 @@ def test_regrid1d_no_overlap_rev1():
     assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
 
 
-def test_regrid1d_no_overlap_rev2():
+def test_regrid1d_no_overlap_rev2(setup_1d):
     """If the two grids have no overlap, return value is 0."""
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100)[::-1])
@@ -326,10 +327,10 @@ def test_regrid1d_no_overlap_rev2():
     assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
 
 
-def test_regrid1d_no_overlap_rev3():
+def test_regrid1d_no_overlap_rev3(setup_1d):
     """If the two grids have no overlap, return value is 0."""
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100)[::-1])
@@ -343,10 +344,10 @@ def test_regrid1d_no_overlap_rev3():
     assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
 
 
-def test_regrid1d_no_overlap_int():
+def test_regrid1d_no_overlap_int(setup_1d):
     """If the two grids have no overlap, return value is 0."""
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     array = np.arange(1000, 2000, 100)
@@ -400,9 +401,9 @@ def test_regrid1d_passes_through_the_grid():
     assert (store[1] == grid_expected).all()
 
 
-def test_regrid1d_error_calc_no_args():
+def test_regrid1d_error_calc_no_args(setup_1d):
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
     grid_evaluate = EvaluationSpace1D(np.arange(-10, 100, 5))
 
@@ -417,10 +418,10 @@ def test_regrid1d_error_calc_no_args():
         in str(excinfo.value)
 
 
-def test_regrid1d_error_grid_mismatch_1():
+def test_regrid1d_error_grid_mismatch_1(setup_1d):
     """Internal grid is integrated but given points"""
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     grid_evaluate = np.arange(-10, 100, 5)
@@ -436,10 +437,10 @@ def test_regrid1d_error_grid_mismatch_1():
         in str(excinfo.value)
 
 
-def test_regrid1d_error_grid_mismatch_2():
+def test_regrid1d_error_grid_mismatch_2(setup_1d):
     """Internal grid is points but given integrated"""
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     grid_evaluate = EvaluationSpace1D(np.arange(-10, 100, 5))
@@ -464,7 +465,8 @@ def test_regrid1d_error_grid_mismatch_2():
 def _test_regrid1d_interpolation(rtol,
                                  eval_incr=True,
                                  req_incr=True,
-                                 method=None):
+                                 method=None,
+                                 setup_1d=None):
     """Test interpolation case.
 
     Parameters
@@ -481,7 +483,7 @@ def _test_regrid1d_interpolation(rtol,
         use the default method (which is sherpa.utils.neville)
     """
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     # Shift the evaluation grid compared to the
@@ -515,7 +517,8 @@ def _test_regrid1d_interpolation(rtol,
 
 def _test_regrid1d_int(rtol,
                        eval_incr=True,
-                       req_incr=True):
+                       req_incr=True,
+                       setup_1d=None):
     """Test with for integrated grids.
 
     Parameters
@@ -540,7 +543,7 @@ def _test_regrid1d_int(rtol,
     assert eval_incr
     assert req_incr
 
-    gmdl, cmdl = _setup_1d()
+    gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
 
     grid_evaluate = np.arange(-10, 100, 5)
@@ -569,15 +572,15 @@ def _test_regrid1d_int(rtol,
 @pytest.mark.parametrize("rincr", [True, False])
 @pytest.mark.parametrize("margs", [(5e-5, None),
                                    (0.011, sherpa.utils.linear_interp)])
-def test_regrid1d_interpolation(eincr, rincr, margs):
+def test_regrid1d_interpolation(eincr, rincr, margs, setup_1d):
 
     tol, method = margs
     _test_regrid1d_interpolation(rtol=tol, method=method,
-                                 eval_incr=eincr, req_incr=rincr)
+                                 eval_incr=eincr, req_incr=rincr, setup_1d=setup_1d)
 
 
-def test_regrid1d_int():
-    _test_regrid1d_int(rtol=0.015)
+def test_regrid1d_int(setup_1d):
+    _test_regrid1d_int(rtol=0.015, setup_1d=setup_1d)
 
 
 # Can use a "calculate the flux" style model (e.g. XSPEC's c[p]flux)
