@@ -1,5 +1,9 @@
 #
+<<<<<<< HEAD
 #  Copyright (C) 2009, 2015, 2016, 2017, 2018, 2019
+=======
+#  Copyright (C) 2009, 2015, 2016, 2017, 2018
+>>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
 #             Smithsonian Astrophysical Observatory
 #
 #

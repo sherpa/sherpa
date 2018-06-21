@@ -1,8 +1,12 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
+<<<<<<< HEAD
 #  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020
 #     Smithsonian Astrophysical Observatory
+=======
+#  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+>>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -93,8 +97,9 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
            'lgam', 'linear_interp', 'nearest_interp',
            'neville', 'neville2d',
            'new_muller', 'normalize', 'numpy_convolve',
-           'pad_bounding_box', 'parallel_map', 'param_apply_limits',
-           'parse_expr', 'poisson_noise', 'print_fields', 'rebin',
+           'pad_bounding_box', 'parallel_map', 'parallel_map_funcs',
+           'param_apply_limits', 'parse_expr', 'poisson_noise',
+           'print_fields', 'rebin',
            'sao_arange', 'sao_fcmp', 'set_origin', 'sum_intervals', 'zeroin',
            'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile')
 
@@ -2733,6 +2738,56 @@ def parallel_map(function, sequence, numcores=None):
     procs = [multiprocessing.Process(target=worker,
                                      args=(function, ii, chunk, out_q, err_q, lock))
              for ii, chunk in enumerate(sequence)]
+
+    return run_tasks(procs, err_q, out_q, numcores)
+
+def parallel_map_funcs(funcs, datasets, numcores=None):
+
+    if not numpy.iterable(funcs):
+        raise TypeError("input '%s' is not iterable" % repr(funcs))
+
+    if not numpy.iterable(datasets):
+        raise TypeError("input '%s' is not iterable" % repr(datasets))
+
+    for func in funcs:
+        if not callable(func):
+            raise TypeError("input func '%s' is not callable" % repr(func))
+
+    funcs_size = len(funcs)
+    datasets_size = len(datasets)
+    if funcs_size != datasets_size:
+        msg = "input funcs (%d) and datsets (%d) size must be same" % \
+            (funcs_size, datasets_size)
+        raise TypeError(msg)
+
+    if not _multi or datasets_size == 1 or \
+            (numcores is not None and numcores < 2):
+        return list(map(funcs[0], datasets))
+
+    if numcores is None:
+        numcores = _ncpus
+
+    # Returns a started SyncManager object which can be used for sharing
+    # objects between processes. The returned manager object corresponds
+    # to a spawned child process and has methods which will create shared
+    # objects and return corresponding proxies.
+    manager = multiprocessing.Manager()
+
+    # Create FIFO queue and lock shared objects and return proxies to them.
+    # The managers handles a server process that manages shared objects that
+    # each slave process has access to.  Bottom line -- thread-safe.
+    out_q = manager.Queue()
+    err_q = manager.Queue()
+    lock = manager.Lock()
+
+    # if datasets is less than numcores, only use len datasets number of
+    # processes
+    numcores = min(funcs_size, datasets_size)
+
+    procs = []
+    for ii, chunk in enumerate(datasets):
+        args=(funcs[ii], ii, chunk, out_q, err_q, lock)
+        procs.append(multiprocessing.Process(target=worker,args=args))
 
     return run_tasks(procs, err_q, out_q, numcores)
 

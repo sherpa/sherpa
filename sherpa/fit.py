@@ -1,7 +1,11 @@
 from __future__ import print_function
 #
+<<<<<<< HEAD
 #  Copyright (C) 2009, 2015, 2016, 2018, 2019
 #     Smithsonian Astrophysical Observatory
+=======
+#  Copyright (C) 2009, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+>>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1177,7 +1181,7 @@ class Fit(NoNewAttributesAfterInit):
                                dof, qval, rstat)
 
     @evaluates_model
-    def fit(self, outfile=None, clobber=False):
+    def fit(self, outfile=None, clobber=False, numcores=1):
         """Fit the model to the data.
 
         Parameters
@@ -1230,7 +1234,8 @@ class Fit(NoNewAttributesAfterInit):
 
         init_stat = self.calc_stat()
         # output = self.method.fit ...
-        output = self._iterfit.fit(self._iterfit._get_callback(outfile, clobber),
+        tmp = self._iterfit._get_callback(outfile, clobber)
+        output = self._iterfit.fit(tmp,
                                    self.model.thawedpars,
                                    self.model.thawedparmins,
                                    self.model.thawedparmaxes)

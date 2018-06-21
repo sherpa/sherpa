@@ -1,5 +1,9 @@
 #
+<<<<<<< HEAD
 #  Copyright (C) 2010, 2016, 2018, 2019, 2020  Smithsonian Astrophysical Observatory
+=======
+#  Copyright (C) 2010, 2016, 2018  Smithsonian Astrophysical Observatory
+>>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -282,6 +286,7 @@ def test_parallel_map(num_tasks, num_segments):
 
         assert_equal(result, numpy.asarray(pararesult))
 
+<<<<<<< HEAD
 
 @pytest.mark.parametrize("los, his, axis", [([], [], [0,1,2,3,4]),
                                             ([], [1], [0,1,2,3,4]),
@@ -388,3 +393,14 @@ def test_filter_bins_unordered():
     assert len(flags) == len(expected)
     for got, exp in zip(flags, expected):
         assert got == exp
+=======
+def test_paralle_map_funcs():
+    for arg in range(1, 5):
+        func = [numpy.sum]
+        funcs = arg * func
+        datas = [numpy.arange(1, 2+2*i) for i in range(arg)]
+        result = []
+        for func, data in zip(funcs, datas):
+            result.extend(numpy.asarray(list(map(func, data))))
+        assert_equal(result, utils.parallel_map_funcs(funcs, datas, arg))
+>>>>>>> an initial release of simultaneous fit on multicores (slower for most, ie a lot, of cases :)
