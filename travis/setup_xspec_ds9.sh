@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -e
 
 # variable $miniconda is defined in a previous script (setup_conda.sh)
 
