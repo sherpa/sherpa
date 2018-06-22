@@ -26,14 +26,12 @@ data - e.g. a larger grid, since the convolution will account
 for signal outside the data range - and then be regridded to
 match the desired grid.
 """
+import warnings
 
 import numpy as np
 
-from sherpa.models.model import ArithmeticModel, ArithmeticFunctionModel, CompositeModel
 from sherpa.utils import interpolate, neville, rebin
 from sherpa.utils.err import ModelErr
-
-__all__ = ('ModelDomainRegridder1D', 'RegridModel1D')
 
 
 class EvaluationSpace1D(object):
@@ -160,7 +158,8 @@ class ModelDomainRegridder1D(object):
 
     def apply_to(self, model):
         """Evaluate a model on a different grid."""
-        return RegridModel1D(model, self)
+        from sherpa.models.model import RegridWrappedModel
+        return RegridWrappedModel(model, self)
 
     def calc(self, pars, modelfunc, *args, **kwargs):
         """Evaluate and regrid a model
@@ -201,6 +200,7 @@ class ModelDomainRegridder1D(object):
         requested_eval_space = self._make_and_validate_grid(args)
 
         if not requested_eval_space.overlaps(self.evaluation_space):
+            warnings.warn("requested space and evaluation space do not overlap, evaluating model to 0")
             return requested_eval_space.zeros_like()
 
         return self._evaluate(requested_eval_space, pars, modelfunc)
@@ -254,33 +254,3 @@ class ModelDomainRegridder1D(object):
             y = modelfunc(pars, self.grid)
             return interpolate(requested_space.grid, self.grid, y,
                                function=self.method)
-
-
-class RegridModel1D(CompositeModel, ArithmeticModel):
-
-    def __init__(self, model, wrapper):
-        self.model = self.wrapobj(model)
-        self.wrapper = wrapper
-        CompositeModel.__init__(self,
-                                "{}({})".format(self.wrapper.name,
-                                                self.model.name),
-                                (self.model, ))
-
-    def calc(self, p, *args, **kwargs):
-        return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
-
-    def get_center(self):
-        return self.model.get_center()
-
-    def set_center(self, *args, **kwargs):
-        return self.model.set_center(*args, **kwargs)
-
-    def guess(self, dep, *args, **kwargs):
-        return self.model.guess(dep, *args, **kwargs)
-
-    @staticmethod
-    def wrapobj(obj):
-        if isinstance(obj, ArithmeticModel):
-            return obj
-        else:
-            return ArithmeticFunctionModel(obj)

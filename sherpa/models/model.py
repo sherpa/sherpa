@@ -25,6 +25,7 @@ import numpy
 import hashlib
 import warnings
 
+from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.err import ModelErr
 
@@ -203,6 +204,11 @@ class Model(NoNewAttributesAfterInit):
                     # Update index of aliases, if necessary
                     for alias in val.aliases:
                         self._par_index[alias] = val
+
+    def regrid(self, *arrays):
+        eval_space = EvaluationSpace1D(*arrays)
+        regridder = ModelDomainRegridder1D(eval_space)
+        return regridder.apply_to(self)
 
     def startup(self):
         """Called before a model may be evaluated multiple times.
@@ -715,3 +721,41 @@ class MultigridSumModel(CompositeModel, ArithmeticModel):
             # of p)
             vals.append(model(*args))
         return sum(vals)
+
+
+class RegridWrappedModel(CompositeModel, ArithmeticModel):
+
+    def __init__(self, model, wrapper):
+        self.model = self.wrapobj(model)
+        self.wrapper = wrapper
+        CompositeModel.__init__(self,
+                                "{}({})".format(self.wrapper.name,
+                                                self.model.name),
+                                (self.model, ))
+
+    def calc(self, p, *args, **kwargs):
+        return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
+
+    def get_center(self):
+        return self.model.get_center()
+
+    def set_center(self, *args, **kwargs):
+        return self.model.set_center(*args, **kwargs)
+
+    def guess(self, dep, *args, **kwargs):
+        return self.model.guess(dep, *args, **kwargs)
+
+    @property
+    def grid(self):
+        return self.wrapper.grid
+
+    @grid.setter
+    def grid(self, value):
+        self.wrapper.grid = value
+
+    @staticmethod
+    def wrapobj(obj):
+        if isinstance(obj, ArithmeticModel):
+            return obj
+        else:
+            return ArithmeticFunctionModel(obj)

@@ -23,7 +23,7 @@ from numpy.testing import assert_allclose
 import pytest
 
 from sherpa.models.model import Model, ArithmeticModel, CompositeModel, \
-    ArithmeticFunctionModel
+    ArithmeticFunctionModel, RegridWrappedModel
 from sherpa.models.basic import Const1D, Gauss1D, Const2D, Gauss2D, \
     PowLaw1D, StepLo1D
 from sherpa.models.parameter import Parameter
@@ -33,7 +33,7 @@ from sherpa.data import Data1D
 import sherpa.utils
 from sherpa.utils.err import ModelErr
 
-from sherpa.models.regrid import ModelDomainRegridder1D, RegridModel1D, EvaluationSpace1D
+from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D
 
 
 @pytest.fixture
@@ -65,7 +65,7 @@ def test_given_model_name(cls):
 
 
 @pytest.mark.parametrize("regrid_class,model_class,regrid_model_class",
-                         [(ModelDomainRegridder1D, Const1D, RegridModel1D)])
+                         [(ModelDomainRegridder1D, Const1D, RegridWrappedModel)])
 def test_wrapping_create_model_instance(regrid_class,
                                         model_class,
                                         regrid_model_class):
@@ -288,7 +288,9 @@ def test_regrid1d_no_overlap(setup_1d):
     mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)
-    ygot = mdl(grid)
+
+    with pytest.warns(UserWarning):
+        ygot = mdl(grid)
 
     assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
 
@@ -305,7 +307,9 @@ def test_regrid1d_no_overlap_rev1(setup_1d):
     mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)[::-1]
-    ygot = mdl(grid)
+
+    with pytest.warns(UserWarning):
+        ygot = mdl(grid)
 
     assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
 
@@ -322,7 +326,9 @@ def test_regrid1d_no_overlap_rev2(setup_1d):
     mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)
-    ygot = mdl(grid)
+
+    with pytest.warns(UserWarning):
+        ygot = mdl(grid)
 
     assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
 
@@ -339,7 +345,9 @@ def test_regrid1d_no_overlap_rev3(setup_1d):
     mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)[::-1]
-    ygot = mdl(grid)
+
+    with pytest.warns(UserWarning):
+        ygot = mdl(grid)
 
     assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
 
@@ -357,7 +365,9 @@ def test_regrid1d_no_overlap_int(setup_1d):
     mdl = rmdl.apply_to(internal_mdl)
 
     grid = np.arange(-10, 100, 5)
-    ygot = mdl(grid[:-1], grid[1:])
+
+    with pytest.warns(UserWarning):
+        ygot = mdl(grid[:-1], grid[1:])
 
     assert_allclose(ygot, np.zeros(grid.size - 1), atol=0, rtol=1e-7)
 
