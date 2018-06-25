@@ -33,7 +33,7 @@ from sherpa.data import Data1D
 import sherpa.utils
 from sherpa.utils.err import ModelErr
 
-from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D
+from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, EvaluationSpace2D
 
 
 @pytest.fixture
@@ -775,3 +775,108 @@ def test_regrid1d_int_flux():
     y_expected = pmdl(glo, ghi) * 20 / renorm
 
     assert_allclose(y_regrid, y_expected, atol=1e-10, rtol=0)
+
+
+@pytest.mark.parametrize('x, y', [
+    (None, [1, 2]),
+    ([1, 2], None),
+    (None, None),
+    ([], [1, 2]),
+    ([1, 2], [])
+])
+def test_evaluation_space2d_empty(x, y):
+    assert EvaluationSpace2D(x=x, y=y).is_empty
+
+
+def test_evaluation_space2d_empty_no_args():
+    assert EvaluationSpace2D().is_empty
+
+
+@pytest.mark.parametrize('xlo, xhi, ylo, yhi, is_integrated', [
+    ([1, 2], [2, 3], [1, 2], [2, 3], True),
+    ([1, 2], [2, 3], None, None, False),
+    ([1, 2], [2, 3],  [], [2, 3], False),
+    ([1, 2], [2, 3], [1, 2], [], False),
+])
+def test_evaluation_space2d_is_integrated(xlo, xhi, ylo, yhi, is_integrated):
+    assert EvaluationSpace2D(x=xlo, xhi=xhi, y=ylo, yhi=yhi).is_integrated\
+           is is_integrated
+
+
+@pytest.mark.parametrize('xlo, xhi, ylo, yhi, is_ascending', [
+    ([1, 2], [2, 3], [1, 2], [2, 3], (True, True)),
+    ([1, 2], [2, 3], [2, 1], [3, 2], (True, False)),
+    ([2, 1], [3, 2],  [1, 2], [2, 3], (False, True)),
+    ([2, 1], [3, 2], [2, 1], [3, 2], (False, False)),
+    ([1, 2], None, [1, 2], None, (True, True)),
+    ([1, 2], None, [2, 1], None, (True, False)),
+    ([2, 1], None, [1, 2], None, (False, True)),
+    ([2, 1], None, [2, 1], None, (False, False)),
+])
+def test_evaluation_space2d_is_ascending(xlo, xhi, ylo, yhi, is_ascending):
+    assert EvaluationSpace2D(x=xlo, xhi=xhi, y=ylo, yhi=yhi).is_ascending \
+           == is_ascending
+
+
+def test_evaluation_space2d_is_ascending_error():
+    with pytest.raises(ValueError):
+        EvaluationSpace2D(x=None, xhi=None, y=None, yhi=None).is_ascending
+
+
+@pytest.mark.parametrize('xlo, xhi, ylo, yhi', [
+    ([1, 2], [2, 3], [1, 2], [2, 3]),
+    ([1, 2], [2, 3], [2, 1], [3, 2]),
+    ([2, 1], [3, 2],  [1, 2], [2, 3]),
+    ([2, 1], [3, 2], [2, 1], [3, 2]),
+])
+def test_evaluation_space2d_start_end(xlo, xhi, ylo, yhi):
+    assert EvaluationSpace2D(x=xlo, xhi=xhi, y=ylo, yhi=yhi).start == (1, 1)
+    assert EvaluationSpace2D(x=xlo, xhi=xhi, y=ylo, yhi=yhi).end == (3, 3)
+
+
+@pytest.mark.parametrize('x_overlaps, y_overlaps', [
+    (True, True),
+    (True, False),
+    (False, False),
+])
+@pytest.mark.parametrize('integrated', [
+    True, False
+])
+def test_evaluation_space2d_overlaps(setup_overlapping_spaces):
+    x1, y1, x2, y2, overlaps = setup_overlapping_spaces
+
+    space_one = EvaluationSpace2D(x=x1[0], xhi=x1[1], y=y1[0], yhi=y1[1])
+    space_two = EvaluationSpace2D(x=x2[0], xhi=x2[1], y=y2[0], yhi=y2[1])
+
+    assert space_one.overlaps(space_two) is overlaps
+
+
+@pytest.fixture
+def setup_overlapping_spaces(integrated, x_overlaps, y_overlaps):
+    if integrated:
+        x1 = [1, 2], [2, 3]
+        y1 = [1, 2], [2, 3]
+        if x_overlaps:
+            x2 = [1.5, 2.5], [2.5, 3.5]
+        else:
+            x2 = [3, 4], [4, 5]
+        if y_overlaps:
+            y2 = [0.5, 1.5], [1.5, 2.5]
+        else:
+            y2 = [-1, 0], [0, 1]
+        return x1, y1, x2, y2, (x_overlaps and y_overlaps)
+
+    # To try and mix things up, below I use descending axes as well as a different number of elements
+    # in the grid
+
+    x1 = [2, 1], None
+    y1 = [2, 1], None
+    if x_overlaps:
+        x2 = [1, 2, 3], None
+    else:
+        x2 = [5, 4, 3], None
+    if y_overlaps:
+        y2 = [3.5, 2.5, 1.5], None
+    else:
+        y2 = [-1, -2, -3], None
+    return x1, y1, x2, y2, (x_overlaps and y_overlaps)

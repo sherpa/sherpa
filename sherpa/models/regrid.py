@@ -34,51 +34,94 @@ from sherpa.utils import interpolate, neville, rebin
 from sherpa.utils.err import ModelErr
 
 
-class EvaluationSpace1D(object):
-    def __init__(self, x=None, xhi=None):
-        self.xlo = np.asarray(x) if x is not None else None
-        self.xhi = self.xhi = np.asarray(xhi) if xhi is not None else None
+class Axis(object):
+    def __init__(self, lo, hi):
+        self.lo = np.asarray(lo) if lo is not None else None
+        self.hi = np.asarray(hi) if hi is not None else None
 
     @property
     def is_empty(self):
-        """Is the grid empty or None?"""
-        return self.xlo is None or not self.xlo.size
+        """Is the axis empty or None?"""
+        return self.lo is None or not self.lo.size
 
     @property
     def is_integrated(self):
-        """Is the grid integrated (True) or point (False)?"""
-        return self.xhi is not None
+        return self.hi is not None and self.hi.size > 0
 
     @property
     def is_ascending(self):
-        """Is the grid in ascending (True) or descending (False) order?"""
-        return self.xlo[-1] > self.xlo[0]
-
-    @property
-    def grid(self):
-        if self.xhi is not None:
-            return self.xlo, self.xhi
-        else:
-            return self.xlo
+        try:
+            return self.lo[-1] > self.lo[0]
+        except TypeError:
+            raise ValueError("{} does not seem to be an array".format(self.lo))
 
     @property
     def start(self):
         if self.is_ascending:
-            return self.xlo[0]
-        return self.xlo[-1]
-    
+            return self.lo[0]
+        return self.lo[-1]
+
     @property
     def end(self):
         if self.is_ascending and self.is_integrated:
-            return self.xhi[-1]
+            return self.hi[-1]
         if self.is_ascending and not self.is_integrated:
-            return self.xlo[-1]
+            return self.lo[-1]
         if self.is_integrated:
-            return self.xhi[0]
-        return self.xlo[0]
+            return self.hi[0]
+        return self.lo[0]
+
+    def overlaps(self, other):
+        """
+        Check if this axis overlaps with another
+        Parameters
+        ----------
+        other : Axis
+
+        Returns
+        -------
+        overlaps : bool
+            True if they overlap, False if not
+        """
+        num = max(0, min(self.end, other.end) - max(self.start, other.start))
+        return bool(num != 0)
+
+class EvaluationSpace1D(object):
+    def __init__(self, x=None, xhi=None):
+        self.x_axis = Axis(x, xhi)
+
+    @property
+    def is_empty(self):
+        """Is the grid empty or None?"""
+        return self.x_axis.is_empty
+
+    @property
+    def is_integrated(self):
+        """Is the grid integrated (True) or point (False)?"""
+        return self.x_axis.is_integrated
+
+    @property
+    def is_ascending(self):
+        """Is the grid in ascending (True) or descending (False) order?"""
+        return self.x_axis.is_empty
+
+    @property
+    def grid(self):
+        if self.x_axis.is_integrated:
+            return self.x_axis.lo, self.x_axis.hi
+        else:
+            return self.x_axis.lo
+
+    @property
+    def start(self):
+        return self.x_axis.start
+    
+    @property
+    def end(self):
+        return self.x_axis.end
 
     def zeros_like(self):
-        return np.zeros(self.xlo.size)
+        return np.zeros(self.x_axis.lo.size)
 
     def overlaps(self, other):
         """
@@ -92,7 +135,54 @@ class EvaluationSpace1D(object):
         overlaps : bool
             True if they overlap, False if not
         """
-        return max(0, min(self.end, other.end) - max(self.start, other.start))
+        return self.x_axis.overlaps(other.x_axis)
+
+
+class EvaluationSpace2D(object):
+    def __init__(self, x=None, y=None, xhi=None, yhi=None):
+        self.x_axis = Axis(x, xhi)
+        self.y_axis = Axis(y, yhi)
+
+    @property
+    def is_empty(self):
+        return self.x_axis.is_empty or self.y_axis.is_empty
+
+    @property
+    def is_integrated(self):
+        """Is the grid integrated (True) or point (False)?"""
+        return (not self.is_empty)\
+               and self.x_axis.is_integrated\
+               and self.y_axis.is_integrated
+
+    @property
+    def is_ascending(self):
+        """Is the grid in ascending (True) or descending (False) order?
+        Return a tuple with (is_ascending(self.x), is_ascending(self.y))
+        """
+        return self.x_axis.is_ascending, self.y_axis.is_ascending
+
+    @property
+    def start(self):
+        return self.x_axis.start, self.y_axis.start
+
+    @property
+    def end(self):
+        return self.x_axis.end, self.y_axis.end
+
+    def overlaps(self, other):
+        """
+        Check if this evaluation space overlaps with another
+        Parameters
+        ----------
+        other : EvaluationSpace2D
+
+        Returns
+        -------
+        overlaps : bool
+            True if they overlap, False if not
+        """
+        return self.x_axis.overlaps(other.x_axis)\
+               and self.y_axis.overlaps(other.y_axis)
 
 
 class ModelDomainRegridder1D(object):
