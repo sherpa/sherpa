@@ -826,8 +826,10 @@ def test_evaluation_space2d_is_ascending_error():
 @pytest.mark.parametrize('xlo, xhi, ylo, yhi', [
     ([1, 2], [2, 3], [1, 2], [2, 3]),
     ([1, 2], [2, 3], [2, 1], [3, 2]),
-    ([2, 1], [3, 2],  [1, 2], [2, 3]),
+    ([2, 1], [3, 2], [1, 2], [2, 3]),
     ([2, 1], [3, 2], [2, 1], [3, 2]),
+    ([1, 2, 3], None, [1, 2, 3], None),
+    ([3, 2, 1.5, 1], None, [1, 1.5, 2, 3], None)
 ])
 def test_evaluation_space2d_start_end(xlo, xhi, ylo, yhi):
     assert EvaluationSpace2D(x=xlo, xhi=xhi, y=ylo, yhi=yhi).start == (1, 1)
