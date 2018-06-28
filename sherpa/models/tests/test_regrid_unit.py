@@ -853,6 +853,21 @@ def test_evaluation_space2d_overlaps(setup_overlapping_spaces):
     assert space_one.overlaps(space_two) is overlaps
 
 
+def test_evaluation_space2d_grid():
+    xlo = [1, 2, 3]
+    xhi = [2, 3, 4]
+    ylo = [4, 5, 6]
+    yhi = [5, 6, 7]
+
+    expected_xlo, expected_ylo = [1, 2, 3, 1, 2, 3, 1, 2, 3], [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    expected_xhi, expected_yhi = [2, 3, 4, 2, 3, 4, 2, 3, 4], [5, 5, 5, 6, 6, 6, 7, 7, 7]
+
+    eval_space = EvaluationSpace2D(x=xlo, xhi=xhi, y=ylo, yhi=yhi)
+
+    np.testing.assert_array_equal(eval_space.grid, (expected_xlo, expected_ylo, expected_xhi, expected_yhi))
+    # assert eval_space.grid == (expected_xlo, expected_ylo, expected_xhi, expected_yhi)
+
+
 @pytest.fixture
 def setup_overlapping_spaces(integrated, x_overlaps, y_overlaps):
     if integrated:

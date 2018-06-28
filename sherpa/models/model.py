@@ -25,7 +25,7 @@ import numpy
 import hashlib
 import warnings
 
-from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D
+from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.err import ModelErr
 
@@ -561,6 +561,13 @@ class ArithmeticModel(Model):
         return NestedModel(outer, self, *otherargs, **otherkwargs)
 
 
+class ArithmeticModel2D(Model):
+    def regrid(self, *arrays):
+        eval_space = EvaluationSpace2D(*arrays)
+        regridder = ModelDomainRegridder2D(eval_space)
+        return regridder.apply_to(self)
+
+
 class UnaryOpModel(CompositeModel, ArithmeticModel):
 
     def __init__(self, arg, op, opstr):
@@ -755,7 +762,7 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
 
     @staticmethod
     def wrapobj(obj):
-        if isinstance(obj, ArithmeticModel):
+        if isinstance(obj, (ArithmeticModel, ArithmeticModel2D)):
             return obj
         else:
             return ArithmeticFunctionModel(obj)

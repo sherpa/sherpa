@@ -17,6 +17,7 @@ from __future__ import absolute_import
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+from sherpa.astro.utils import reshape_2d_arrays
 
 """
 Provide Astronomy-specific I/O routines for Sherpa.
@@ -332,9 +333,7 @@ def read_image(arg, coord='logical', dstype=DataIMG):
 
     x0 = numpy.arange(axlens[1], dtype=SherpaFloat) + 1.
     x1 = numpy.arange(axlens[0], dtype=SherpaFloat) + 1.
-    x0, x1 = numpy.meshgrid(x0, x1)
-    x0 = x0.ravel()
-    x1 = x1.ravel()
+    x0, x1 = reshape_2d_arrays(x0, x1)
 
     data['y'] = data['y'].ravel()
     data['coord'] = coord

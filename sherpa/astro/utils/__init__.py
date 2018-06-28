@@ -54,6 +54,11 @@ except ImportError:
 _hc = 12.39841874  # nist.gov in [keV-Angstrom]
 
 
+def reshape_2d_arrays(x0, x1):
+    new_x0, new_x1 = numpy.meshgrid(x0, x1)
+    return new_x0.ravel(), new_x1.ravel()
+
+
 def get_xspec_position(y, x, xhi=None):
     if xhi is not None:
         if x[0] > x[-1] and xhi[0] > xhi[-1]:

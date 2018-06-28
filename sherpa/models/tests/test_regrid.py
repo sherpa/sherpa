@@ -21,10 +21,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import numpy as np
 import pytest
+from pytest import approx
 
+from sherpa.astro.data import DataIMG
 from sherpa.astro.ui.utils import Session
 from sherpa.data import Data1DInt
-from sherpa.models import Const1D, ArithmeticModel, Parameter
+from sherpa.models import Const1D, ArithmeticModel, Parameter, Const2D
+from sherpa.models.model import ArithmeticModel2D
 
 
 @pytest.fixture
@@ -34,6 +37,23 @@ def setup():
     const.c0.freeze()
 
     return Session(), MyModel("my_model"), const
+
+
+@pytest.fixture
+def setup2d():
+    const = Const2D("const")
+    const.c0 = 0
+    const.c0.freeze()
+
+    x = [2, 3, 2, 3]
+    y = [2, 2, 3, 3]
+
+    # This is the result when rebinning [100, ] * 4
+    z = [225, ] * 4
+
+    my_model = MyModel2D("my_model")
+
+    return Session(), my_model, const, (x, y, z)
 
 
 def test_evaluate_model_on_arbitrary_grid_point_list(setup):
@@ -63,6 +83,36 @@ def test_evaluate_model_on_arbitrary_grid_point_list(setup):
     regrid_model.grid = [1, 2, 3, 4, 5]
 
     assert_fit(ui, my_model, 0)
+
+
+def test_evaluate_model_on_arbitrary_grid_point_list_2d(setup2d):
+    """
+    The idea of the test is that the model will evaluate differently depending on the grid it is evaluated on.
+    This is really arbitrary, it just exercises the high level API for a common workflow while making sure the results
+    are the expected ones.
+    """
+    ui, my_model, const, data = setup2d
+    x, y, z = data
+
+    # Load data
+    ui.load_arrays(1, x, y, z, DataIMG)
+
+    # Get a model that evaluates on a different grid
+    # This is the important part.
+    regrid_model = my_model.regrid([2, 2.5, 3], [2, 2.5, 3])
+
+    # The model will usually be part of a complex model expression, so let's pretend we add another component,
+    # although that component is muted.
+    ui.set_source(regrid_model + const)
+
+    # Fit and check the result
+    assert_fit(ui, my_model, (1, 1))
+
+    # Now fit with a different grid.
+    # This is also the important part.
+    regrid_model.grid = [2, 3], [2, 3]
+
+    assert_fit(ui, my_model, (0, 0))
 
 
 def test_evaluate_model_on_arbitrary_grid_integrated_list(setup):
@@ -176,6 +226,50 @@ class MyModel(ArithmeticModel):
             return [p[0]*100, ] * len(x)
 
 
+class MyModel2D(ArithmeticModel2D):
+    """
+    A 2D model that returns [100, ] * len(x) * len(y) if 2.5 is in the input arrays x and y
+    """
+    def __init__(self, name):
+        self.x_has_25 = Parameter(name, "x_has_25", 0, min=0, max=1)
+        self.y_has_25 = Parameter(name, "y_has_25", 0, min=0, max=1)
+        ArithmeticModel2D.__init__(self, name, (self.x_has_25, self.y_has_25))
+
+    def guess(self, dep, *args, **kwargs):
+        raise NotImplementedError()
+
+    def get_center(self):
+        raise NotImplementedError()
+
+    def set_center(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def calc(self, p, *args, **kwargs):
+        x, y, x_has_25, y_has_25 = args[0], args[1], p[0], p[1]
+
+        x_eval = np.array(self._eval(x, x_has_25))
+        y_eval = np.array(self._eval(y, y_has_25))
+
+        return (x_eval + y_eval)/2
+
+    def _eval(self, array, has_25):
+        if 2.5 not in array:
+            if has_25 == 0:
+                return [100, ] * len(array)
+            else:
+                return [100-has_25*100,] * len(array)
+        if has_25 == 1:
+            return [100, ] * len(array)
+        else:
+            return [has_25*100, ] * len(array)
+
+
 def assert_fit(ui, model, value):
     ui.fit()
-    assert model.has_25.val == value
+
+    try:  # 2D, two values
+        len(value)
+        assert model.x_has_25.val == approx(value[0])
+        assert model.y_has_25.val == approx(value[1])
+    except TypeError:  # 1D, one value
+        assert model.has_25.val == approx(value)

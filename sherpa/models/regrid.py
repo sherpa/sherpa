@@ -30,6 +30,7 @@ import warnings
 
 import numpy as np
 
+from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.utils import interpolate, neville, rebin
 from sherpa.utils.err import ModelErr
 
@@ -71,6 +72,10 @@ class Axis(object):
             return self.hi[0]
         return self.lo[0]
 
+    @property
+    def size(self):
+        return self.lo.size
+
     def overlaps(self, other):
         """
         Check if this axis overlaps with another
@@ -85,6 +90,7 @@ class Axis(object):
         """
         num = max(0, min(self.end, other.end) - max(self.start, other.start))
         return bool(num != 0)
+
 
 class EvaluationSpace1D(object):
     def __init__(self, x=None, xhi=None):
@@ -138,10 +144,27 @@ class EvaluationSpace1D(object):
         return self.x_axis.overlaps(other.x_axis)
 
 
+# TODO How much validation should be done here?
 class EvaluationSpace2D(object):
     def __init__(self, x=None, y=None, xhi=None, yhi=None):
-        self.x_axis = Axis(x, xhi)
-        self.y_axis = Axis(y, yhi)
+        # In the 2D case the arrays are redundant, as they are flattened from a meshgrid.
+        # We need to clean them up first to have proper axes.
+        # This may happen when an EvaluationSpace2D is instantiated using the arrays passed to
+        # the calc method.
+        x_unique, y_unique, xhi_unique, yhi_unique = self._clean_arrays(x, y, xhi, yhi)
+        self.x_axis = Axis(x_unique, xhi_unique)
+        self.y_axis = Axis(y_unique, yhi_unique)
+
+    def _clean_arrays(self, x, y, xhi, yhi):
+        return self._clean(x), self._clean(y), self._clean(xhi), self._clean(yhi)
+
+    @staticmethod
+    def _clean(array):
+        if array is not None:
+            # We need to take extra care not to change the order of the arrays, hence
+            # the additional complexity
+            array_unique, indexes = np.unique(array, return_index=True)
+            return array_unique[indexes.argsort()]
 
     @property
     def is_empty(self):
@@ -183,6 +206,15 @@ class EvaluationSpace2D(object):
         """
         return self.x_axis.overlaps(other.x_axis)\
                and self.y_axis.overlaps(other.y_axis)
+
+    @property
+    def grid(self):
+        x, y = reshape_2d_arrays(self.x_axis.lo, self.y_axis.lo)
+        if self.x_axis.is_integrated:
+            xhi, yhi = reshape_2d_arrays(self.x_axis.hi, self.y_axis.hi)
+            return x, y, xhi, yhi
+        else:
+            return x, y
 
 
 class ModelDomainRegridder1D(object):
@@ -307,7 +339,6 @@ class ModelDomainRegridder1D(object):
         Returns
         -------
         requested_eval_space : EvaluationSpace1D
-            Whether the requested grid is point or integrated.
         """
         # FIXME Isn't this fragile?
         nargs = len(args_array)
@@ -344,3 +375,224 @@ class ModelDomainRegridder1D(object):
             y = modelfunc(pars, self.grid)
             return interpolate(requested_space.grid, self.grid, y,
                                function=self.method)
+
+
+class ModelDomainRegridder2D(object):
+    """Allow 2D models to be evaluated on a different grid.
+
+    This class is not used directly in a model expression;
+    instead it creates an instance that is used to evaluate
+    the model.
+
+    Examples
+    --------
+
+    The "internal" model (gaussian plus constant) will be
+    evaluated on the grid 0 to 10 (spacing of 0.5), and then
+    linearly-interpolated onto the desired grid (1 to 8,
+    spacing of 0.7). In this example there is no benefit to
+    this approach - it is easier just to evaluate
+    ``internal_mdl`` on the grid ``x, y`` - but it illustrates
+    the approach.
+
+    >>> from sherpa.models import Gauss2D, Const2D
+    >>> internal_mdl = Gauss2D() + Const2D()
+    >>> eval_space = EvaluationSpace2D(np.arange(0, 10, 0.5), np.arange(0, 10, 0.5))
+    >>> rmdl = ModelDomainRegridder2D(eval_space)
+    >>> mdl = rmdl.apply_to(internal_mdl)
+    >>> x = np.arange(1, 8, 0.7)
+    >>> y = np.arange(1, 8, 0.7)
+    >>> x, y = reshape_2d_arrays(x, y)
+    >>> z = mdl(x, y)
+
+    """
+
+    def __init__(self, evaluation_space=None, name='regrid2d'):
+        self.name = name
+        self.evaluation_space = evaluation_space\
+            if evaluation_space is not None else EvaluationSpace2D()
+
+    @property
+    def grid(self):
+        return self.evaluation_space.grid
+
+    @grid.setter
+    def grid(self, value):
+        self.evaluation_space = EvaluationSpace2D(*value)
+
+    def apply_to(self, model):
+        """Evaluate a model on a different grid."""
+        from sherpa.models.model import RegridWrappedModel
+        return RegridWrappedModel(model, self)
+
+    def calc(self, pars, modelfunc, *args, **kwargs):
+        """Evaluate and regrid a model
+
+        Evaluate the model on the internal grid and then
+        interpolate onto the desired grid.
+
+        Parameters
+        ----------
+        pars : sequence of numbers
+            The parameter values of the model.
+        modelfunc
+            The model to evaluate (the calc attribute of the model)
+            TODO: should this be model as we call model.calc here?
+        args
+            The grid to interpolate the model onto. This must match the
+            format of the grid attribute of the model - i.e.
+            non-integrate (x, y arrays) or integrated (xlo, ylo, xhi, yhi).
+        kwargs
+            Keyword arguments for the model.
+
+        Notes
+        -----
+        If the requested grid (i.e. that defined by args) does not overlap
+        the stored grid (the grid attribute) then all values are set to 0.
+        However, if the grids partially overlap then there will be
+        extrapolation (depending on the method).
+
+        It is not clear yet whether the restriction on grid type (i.e.
+        must match between the requested grid and the intenal grid
+        whether it is integrated or non-integrated) is too restrictive.
+        """
+
+        if self.evaluation_space.is_empty:  # Simply pass through
+            return modelfunc(pars, *args, **kwargs)
+
+        requested_eval_space = self._make_and_validate_grid(args)
+
+        if not requested_eval_space.overlaps(self.evaluation_space):
+            warnings.warn("requested space and evaluation space do not overlap, evaluating model to 0")
+            return requested_eval_space.zeros_like()
+
+        return self._evaluate(requested_eval_space, pars, modelfunc)
+
+    def _make_and_validate_grid(self, args_array):
+        """
+        Validate input grid and check whether it's point or integrated.
+
+        Parameters
+        ----------
+        args_array : list
+            The array or arguments passed to the `call` method
+
+        Returns
+        -------
+        requested_eval_space : EvaluationSpace2D
+        """
+        # FIXME Isn't this fragile?
+        nargs = len(args_array)
+        if nargs == 0:
+            raise ModelErr('nogrid')
+
+        requested_eval_space = EvaluationSpace2D(*args_array)
+
+        # Ensure the two grids match: integrated or non-integrated.
+        if self.evaluation_space.is_integrated and not requested_eval_space.is_integrated:
+            raise ModelErr('needsint')
+        if requested_eval_space.is_integrated and not self.evaluation_space.is_integrated:
+            raise ModelErr('needspoint')
+
+        return requested_eval_space
+
+    def _evaluate(self, requested_space, pars, modelfunc):
+        # Evaluate the model on the user-defined grid and then rebin
+        # onto the desired grid.
+        #
+        # TODO: should there be some check that the grid size
+        #       is "compatible"?
+        y = modelfunc(pars, *self.grid)
+        return rebin_2d(y, self.evaluation_space, requested_space).ravel()
+
+
+def rebin_2d(y, custom_space, requested_space):
+    # we assume that the spaces have an integer ratio, and other regularities, for now.
+    requested_x_dim = requested_space.x_axis.size
+    requested_y_dim = requested_space.y_axis.size
+
+    custom_x_dim = custom_space.x_axis.size
+    custom_y_dim = custom_space.y_axis.size
+
+    reshaped_y = y.reshape(custom_x_dim, custom_y_dim)
+
+    return rebin_flux(reshaped_y, requested_x_dim, requested_y_dim)
+
+
+def rebin_flux(array, dimensions=None, scale=None):
+    """ Return the array ``array`` to the new ``dimensions`` conserving flux the flux in the bins
+    The sum of the array will remain the same. From http://martynbristow.co.uk/wordpress/blog/rebinning-data/,
+    released as GPL v3 © Martyn Bristow 2015. Slightly modified for Sherpa.
+
+    >>> ar = np.array([
+    ...    [0,1,2],
+    ...    [1,2,3],
+    ...    [2,3,4],
+    ...    ])
+    >>> rebin_flux(ar, (2,2))
+    array([[1.5, 4.5],
+           [4.5, 7.5]])
+
+    Raises
+    ------
+
+    AssertionError
+        If the totals of the input and result array don't agree, raise an error because computation may have gone wrong
+
+    Reference
+    =========
+    +-+-+-+
+    |1|2|3|
+    +-+-+-+
+    |4|5|6|
+    +-+-+-+
+    |7|8|9|
+    +-+-+-+
+    """
+    if dimensions is not None:
+        if isinstance(dimensions, float):
+            dimensions = [int(dimensions)] * len(array.shape)
+        elif isinstance(dimensions, int):
+            dimensions = [dimensions] * len(array.shape)
+        elif len(dimensions) != len(array.shape):
+            raise RuntimeError('')
+    elif scale is not None:
+        if isinstance(scale, float) or isinstance(scale, int):
+            dimensions = map(int, map(round, map(lambda x: x * scale, array.shape)))
+        elif len(scale) != len(array.shape):
+            raise RuntimeError('')
+    else:
+        raise RuntimeError('Incorrect parameters to rebin.\n\trebin(array, dimensions=(x,y))\n\trebin(array, scale=a')
+    # print(dimensions)
+    # print("Rebinning to Dimensions: %s, %s" % tuple(dimensions))
+    import itertools
+    dY, dX = map(divmod, map(float, array.shape), dimensions)
+
+    result = np.zeros(dimensions)
+    for j, i in itertools.product(*map(range, array.shape)):
+        (J, dj), (I, di) = divmod(j * dimensions[0], array.shape[0]), divmod(i * dimensions[1], array.shape[1])
+        (J1, dj1), (I1, di1) = divmod(j + 1, array.shape[0] / float(dimensions[0])), divmod(i + 1,
+                                                                                            array.shape[1] / float(
+                                                                                                dimensions[1]))
+
+        # Moving to new bin
+        # Is this a discrete bin?
+        dx, dy = 0, 0
+        if (I1 - I == 0) | ((I1 - I == 1) & (di1 == 0)):
+            dx = 1
+        else:
+            dx = 1 - di1
+        if (J1 - J == 0) | ((J1 - J == 1) & (dj1 == 0)):
+            dy = 1
+        else:
+            dy = 1 - dj1
+        # Prevent it from allocating outide the array
+        I_ = min(dimensions[1] - 1, I + 1)
+        J_ = min(dimensions[0] - 1, J + 1)
+        result[J, I] += array[j, i] * dx * dy
+        result[J_, I] += array[j, i] * (1 - dy) * dx
+        result[J, I_] += array[j, i] * dy * (1 - dx)
+        result[J_, I_] += array[j, i] * (1 - dx) * (1 - dy)
+    # allowError = 0.1
+    # assert (array.sum() < result.sum() * (1 + allowError)) & (array.sum() >= result.sum() * (1 - allowError))
+    return result
