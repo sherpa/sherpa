@@ -23,8 +23,9 @@ import numpy as np
 import pytest
 from pytest import approx
 
-from sherpa.astro.data import DataIMG
+from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
+from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.data import Data1DInt
 from sherpa.models import Const1D, ArithmeticModel, Parameter, Const2D
 from sherpa.models.model import ArithmeticModel2D
@@ -47,13 +48,15 @@ def setup2d():
 
     x = [2, 3, 2, 3]
     y = [2, 2, 3, 3]
+    xhi = [2.1, 3.5, 2.1, 3.5]
+    yhi = [2.1, 2.1, 3, 3.5]
 
     # This is the result when rebinning [100, ] * 4
     z = [225, ] * 4
 
     my_model = MyModel2D("my_model")
 
-    return Session(), my_model, const, (x, y, z)
+    return Session(), my_model, const, (x, y, xhi, yhi, z)
 
 
 def test_evaluate_model_on_arbitrary_grid_point_list(setup):
@@ -92,7 +95,7 @@ def test_evaluate_model_on_arbitrary_grid_point_list_2d(setup2d):
     are the expected ones.
     """
     ui, my_model, const, data = setup2d
-    x, y, z = data
+    x, y, _, _, z = data
 
     # Load data
     ui.load_arrays(1, x, y, z, DataIMG)
@@ -139,6 +142,37 @@ def test_evaluate_model_on_arbitrary_grid_integrated_list(setup):
     regrid_model.grid = [1, 2, 3], [2, 3, 4]
 
     assert_fit(ui, my_model, 0)
+
+
+def test_evaluate_model_on_arbitrary_grid_integrated_list_2d(setup2d):
+    """
+    Same as above, but with integrated models
+    """
+    ui, my_model, const, data = setup2d
+    x, y, xhi, yhi, z = data
+
+    # Load data
+    ui.load_arrays(1, x, y, xhi, yhi, z, DataIMGInt)
+
+    regrid_lo = [2, 2.5, 3]
+    regrid_hi = np.array([2, 2.5, 3.5])
+
+    # Get a model that evaluates on a different grid
+    # This is the important part.
+    regrid_model = my_model.regrid(regrid_lo, regrid_lo, regrid_hi, regrid_hi)
+
+    # The model will usually be part of a complex model expression, so let's pretend we add another component,
+    # although that component is muted.
+    ui.set_source(regrid_model + const)
+
+    # Fit and check the result
+    assert_fit(ui, my_model, (1, 1))
+
+    # Now fit with a different grid.
+    # This is also the important part.
+    regrid_model.grid = x, y, xhi, yhi
+
+    assert_fit(ui, my_model, (0, 0))
 
 
 def test_evaluate_model_on_arbitrary_grid_point_ndarray(setup):
@@ -193,6 +227,40 @@ def test_evaluate_model_on_arbitrary_grid_integrated_ndarray(setup):
     regrid_model.grid = [1, 2, 3], np.array([2, 3, 4])
 
     assert_fit(ui, my_model, 0)
+
+
+def test_evaluate_model_on_arbitrary_grid_no_overlap(setup):
+    """
+    If grids do not overlap, issue a warning and return zeros
+    """
+    ui, my_model, _ = setup
+
+    # Get a model that evaluates on a different grid
+    # This is the important part. Note that there is overlap, but
+    # the start and end p
+    regrid_model = my_model.regrid([2, 2.5], [2, 2.5])
+
+    with pytest.warns(UserWarning):
+        np.testing.assert_array_equal(regrid_model([1, 2], [1, 2]), [0, 0])
+
+
+def test_evaluate_model_on_arbitrary_grid_no_overlap_2d(setup2d):
+    """
+    In the 2D case, the overlap is way more stringent than in the 1D case, due to the complexity of rebinning
+    """
+    ui, my_model, _, data = setup2d
+    x, y, _, _, _ = data
+
+    my_model.x_has_25 = 1  # To force the model to evaluate to something other than 0.
+
+    # Get a model that evaluates on a different grid
+    # This is the important part. Note that there is overlap, but
+    # the start and end points are different.
+    regrid_model = my_model.regrid([2, 2.5], [2, 2.5])
+
+    with pytest.warns(UserWarning):
+        np.testing.assert_array_equal(regrid_model(x, y), [0, 0, 0, 0])
+
 
 
 class MyModel(ArithmeticModel):

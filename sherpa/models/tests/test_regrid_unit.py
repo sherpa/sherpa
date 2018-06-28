@@ -871,14 +871,14 @@ def test_evaluation_space2d_grid():
 @pytest.fixture
 def setup_overlapping_spaces(integrated, x_overlaps, y_overlaps):
     if integrated:
-        x1 = [1, 2], [2, 3]
-        y1 = [1, 2], [2, 3]
+        x1 = [1.0, 2.0], [2.0, 3.0]
+        y1 = [1.0, 2.0], [2.0, 3.0]
         if x_overlaps:
-            x2 = [1.5, 2.5], [2.5, 3.5]
+            x2 = [1, 1.5, 2], [2, 2.5, 3]
         else:
-            x2 = [3, 4], [4, 5]
+            x2 = [1, 2, 3], [1, 2, 3]
         if y_overlaps:
-            y2 = [0.5, 1.5], [1.5, 2.5]
+            y2 = [1, 1.5, 2], [2, 2.5, 3]
         else:
             y2 = [-1, 0], [0, 1]
         return x1, y1, x2, y2, (x_overlaps and y_overlaps)
@@ -886,14 +886,14 @@ def setup_overlapping_spaces(integrated, x_overlaps, y_overlaps):
     # To try and mix things up, below I use descending axes as well as a different number of elements
     # in the grid
 
-    x1 = [2, 1], None
-    y1 = [2, 1], None
+    x1 = [2.0, 1.0], None
+    y1 = [2.0, 1.0], None
     if x_overlaps:
-        x2 = [1, 2, 3], None
+        x2 = [2, 1.5, 1], None
     else:
-        x2 = [5, 4, 3], None
+        x2 = [3, 2, 1], None
     if y_overlaps:
-        y2 = [3.5, 2.5, 1.5], None
+        y2 = [2, 1.5, 1], None
     else:
         y2 = [-1, -2, -3], None
     return x1, y1, x2, y2, (x_overlaps and y_overlaps)

@@ -195,6 +195,10 @@ class EvaluationSpace2D(object):
     def overlaps(self, other):
         """
         Check if this evaluation space overlaps with another
+        Note that this is more stringent for 2D, as the boundaries
+        need to coincide in this case.
+        (#TODO come up with actual requirements on the overlap conditions)
+
         Parameters
         ----------
         other : EvaluationSpace2D
@@ -204,8 +208,10 @@ class EvaluationSpace2D(object):
         overlaps : bool
             True if they overlap, False if not
         """
-        return self.x_axis.overlaps(other.x_axis)\
-               and self.y_axis.overlaps(other.y_axis)
+        return bool(self.x_axis.start == other.x_axis.start\
+               and self.y_axis.start == other.y_axis.start\
+               and self.x_axis.end == other.x_axis.end\
+               and self.y_axis.end == other.y_axis.end)
 
     @property
     def grid(self):
@@ -215,6 +221,10 @@ class EvaluationSpace2D(object):
             return x, y, xhi, yhi
         else:
             return x, y
+
+    def zeros_like(self):
+        size = self.x_axis.lo.size * self.y_axis.lo.size
+        return np.zeros(size)
 
 
 class ModelDomainRegridder1D(object):
@@ -321,10 +331,6 @@ class ModelDomainRegridder1D(object):
 
         requested_eval_space = self._make_and_validate_grid(args)
 
-        if not requested_eval_space.overlaps(self.evaluation_space):
-            warnings.warn("requested space and evaluation space do not overlap, evaluating model to 0")
-            return requested_eval_space.zeros_like()
-
         return self._evaluate(requested_eval_space, pars, modelfunc)
 
     def _make_and_validate_grid(self, args_array):
@@ -362,6 +368,11 @@ class ModelDomainRegridder1D(object):
         #
         # TODO: can we use _modelfcts.integrate1d at all here?
         #
+
+        if not requested_space.overlaps(self.evaluation_space):
+            warnings.warn("requested space and evaluation space do not overlap, evaluating model to 0")
+            return requested_space.zeros_like()
+
         if requested_space.is_integrated:
             # TODO: should there be some check that the grid size
             #       is "compatible"? Note that test_regrid1d_int_flux
@@ -462,10 +473,6 @@ class ModelDomainRegridder2D(object):
 
         requested_eval_space = self._make_and_validate_grid(args)
 
-        if not requested_eval_space.overlaps(self.evaluation_space):
-            warnings.warn("requested space and evaluation space do not overlap, evaluating model to 0")
-            return requested_eval_space.zeros_like()
-
         return self._evaluate(requested_eval_space, pars, modelfunc)
 
     def _make_and_validate_grid(self, args_array):
@@ -502,6 +509,11 @@ class ModelDomainRegridder2D(object):
         #
         # TODO: should there be some check that the grid size
         #       is "compatible"?
+
+        if not requested_space.overlaps(self.evaluation_space):
+            warnings.warn("requested space and evaluation space do not overlap, evaluating model to 0")
+            return requested_space.zeros_like()
+
         y = modelfunc(pars, *self.grid)
         return rebin_2d(y, self.evaluation_space, requested_space).ravel()
 
@@ -571,9 +583,8 @@ def rebin_flux(array, dimensions=None, scale=None):
     result = np.zeros(dimensions)
     for j, i in itertools.product(*map(range, array.shape)):
         (J, dj), (I, di) = divmod(j * dimensions[0], array.shape[0]), divmod(i * dimensions[1], array.shape[1])
-        (J1, dj1), (I1, di1) = divmod(j + 1, array.shape[0] / float(dimensions[0])), divmod(i + 1,
-                                                                                            array.shape[1] / float(
-                                                                                                dimensions[1]))
+        (J1, dj1), (I1, di1) = divmod(j + 1, array.shape[0] / float(dimensions[0])),\
+                               divmod(i + 1, array.shape[1] / float(dimensions[1]))
 
         # Moving to new bin
         # Is this a discrete bin?
@@ -593,6 +604,8 @@ def rebin_flux(array, dimensions=None, scale=None):
         result[J_, I] += array[j, i] * (1 - dy) * dx
         result[J, I_] += array[j, i] * dy * (1 - dx)
         result[J_, I_] += array[j, i] * (1 - dx) * (1 - dy)
-    # allowError = 0.1
-    # assert (array.sum() < result.sum() * (1 + allowError)) & (array.sum() >= result.sum() * (1 - allowError))
+    allowError = 0.1
+    assert array.sum() == 0 or\
+           (array.sum() < result.sum() * (1 + allowError)) and\
+           (array.sum() > result.sum() * (1 - allowError))
     return result
