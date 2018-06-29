@@ -35,7 +35,7 @@ warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
-           'ArithmeticConstantModel', 'ArithmeticModel',
+           'ArithmeticConstantModel', 'ArithmeticModel', 'ArithmeticModel2D',
            'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 

@@ -25,10 +25,8 @@ from pytest import approx
 
 from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
-from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.data import Data1DInt
-from sherpa.models import Const1D, ArithmeticModel, Parameter, Const2D
-from sherpa.models.model import ArithmeticModel2D
+from sherpa.models import Const1D, ArithmeticModel, Parameter, Const2D, ArithmeticModel2D
 
 
 @pytest.fixture
