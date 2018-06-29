@@ -1,4 +1,4 @@
-#
+# -*- coding: utf-8 -*-
 #  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
