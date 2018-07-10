@@ -1010,7 +1010,7 @@ def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
     tbl.name = 'HISTOGRAM'
     if packup:
         return tbl
-    tbl.writeto(filename, clobber=True)
+    tbl.writeto(filename, overwrite=True)
 
 
 def _create_header(header):
@@ -1048,7 +1048,7 @@ def set_pha_data(filename, data, col_names, header=None,
     pha.name = 'SPECTRUM'
     if packup:
         return pha
-    pha.writeto(filename, clobber=True)
+    pha.writeto(filename, overwrite=True)
 
 
 def set_image_data(filename, data, header, ascii=False, clobber=False,
@@ -1112,7 +1112,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
     img = fits.PrimaryHDU(data['pixels'], header=fits.Header(hdrlist))
     if packup:
         return img
-    img.writeto(filename, clobber=True)
+    img.writeto(filename, overwrite=True)
 
 
 def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
@@ -1152,4 +1152,4 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
 
     tbl = fits.BinTableHDU.from_columns(fits.ColDefs(cols))
     tbl.name = 'TABLE'
-    tbl.writeto(filename, clobber=True)
+    tbl.writeto(filename, overwrite=True)
