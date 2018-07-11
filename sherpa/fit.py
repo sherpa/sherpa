@@ -36,7 +36,7 @@ from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, \
-    LeastSq, Likelihood, WStat
+    LeastSq, Likelihood, WStat, Chi2XspecVar
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -1254,7 +1254,7 @@ class Fit(NoNewAttributesAfterInit):
 
         if ((iterable(staterror) and 0.0 in staterror) and
                 isinstance(self.stat, Chi2) and
-                type(self.stat) != Chi2 and
+                type(self.stat) != Chi2 and type(self.stat) != Chi2XspecVar and
                 type(self.stat) != Chi2ModVar):
             raise FitErr('binhas0')
 

@@ -679,10 +679,12 @@ class Chi2XspecVar(Chi2):
 
     """
 
+    _calc = _statfcts.calc_chi2xspec_stat
+
     def __init__(self, name='chi2xspecvar'):
         Chi2.__init__(self, name)
 
-    calc_staterror = _statfcts.calc_chi2xspecvar_errors
+    calc_staterror = _statfcts.calc_chi2datavar_errors
 
 
 class UserStat(Stat):

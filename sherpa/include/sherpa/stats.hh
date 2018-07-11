@@ -1,4 +1,4 @@
-// 
+//
 //  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
 //
 //
@@ -45,7 +45,7 @@ namespace sherpa { namespace stats {
     DataType mymodel;
     for ( IndexType ii = num - 1; ii >= 0; --ii ) {
 
-      if ( model[ ii ] > 0.0) 
+      if ( model[ ii ] > 0.0)
 	mymodel = model[ ii ];
       else {
 	if (trunc_value > 0)
@@ -66,9 +66,9 @@ namespace sherpa { namespace stats {
       // https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
       if ( weight )
 	fvec[ ii ] *= weight[ ii ];
-     
+
     }
- 
+
     stat = 2.0 *
       sherpa::utils::kahan_sum< ArrayType, DataType, IndexType >( num, fvec );
 
@@ -93,8 +93,8 @@ namespace sherpa { namespace stats {
 
     DataType mymodel, d;
     for ( IndexType ii = num - 1; ii >= 0; --ii ) {
-      
-      if ( model[ ii ] > 0.0) 
+
+      if ( model[ ii ] > 0.0)
 	mymodel = model[ ii ];
       else {
 	if (trunc_value > 0)
@@ -102,19 +102,19 @@ namespace sherpa { namespace stats {
 	else
 	  return EXIT_FAILURE;
       }
-      
+
       if ( 0.0 == yraw[ ii ] )
       	d = mymodel;
       else
 	d = mymodel - ( yraw[ ii ] * std::log( mymodel ) );
-      
+
       if ( weight )
 	d *= weight[ ii ];
- 
+
       fvec[ ii ] = d;
 
     }
- 
+
     stat = 2.0 *
       sherpa::utils::kahan_sum< ArrayType, DataType, IndexType >( num, fvec );
 
@@ -125,7 +125,7 @@ namespace sherpa { namespace stats {
     }
 
     return EXIT_SUCCESS;
- 
+
   }
 
 
@@ -136,9 +136,9 @@ namespace sherpa { namespace stats {
 
     const DataType fudge = 0.75;
     const DataType sqrt_1_75 = 1.0 + std::sqrt( fudge );
-  
+
     for ( IndexType ii = num - 1; ii >= 0; --ii ) {
-   
+
       DataType tmp = yraw[ ii ] + fudge;
 
       if ( tmp < 0.0 )
@@ -165,8 +165,8 @@ namespace sherpa { namespace stats {
 	  return EXIT_FAILURE;
         }
     }
-    
-    stat = sherpa::utils::enorm2< ArrayType, DataType, IndexType >( num, fvec );    
+
+    stat = sherpa::utils::enorm2< ArrayType, DataType, IndexType >( num, fvec );
     /*
     stat = 0.0;
     for ( IndexType ii = num - 1; ii >= 0; --ii )
@@ -178,7 +178,7 @@ namespace sherpa { namespace stats {
   }
 
   //
-  // upon return from the function calculate_chi2_stat, fvec 
+  // upon return from the function calculate_chi2_stat, fvec
   // (an array of length num) shall contain the following values:
   //
   //               sqrt( weight[ ii ] )  *  ( data[ ii ] - model[ ii ] )
@@ -191,7 +191,7 @@ namespace sherpa { namespace stats {
 	    typename IndexType>
   inline int calc_chi2_stat( IndexType num, const ConstArrayType& yraw,
                              const ConstArrayType& model,
-                             const ConstArrayType& error, 
+                             const ConstArrayType& error,
                              const ConstArrayType& syserror,
                              const ConstArrayType& weight, ArrayType& fvec,
                              DataType& stat, DataType& trunc_value ) {
@@ -201,7 +201,7 @@ namespace sherpa { namespace stats {
       fvec[ ii ] = model[ ii ] - yraw[ ii ];
 
       DataType err = error[ ii ];
-    
+
       if ( syserror ) {
 	err *= error[ ii ];
 	err += syserror[ ii ] * syserror[ ii ];
@@ -211,11 +211,45 @@ namespace sherpa { namespace stats {
       // the error for Chi2 is 0, so a sanity check is required.
       if ( 0.0 != err )
 	fvec[ ii ] /= err;
-    
+
     }
 
     return sherpa::stats::calc_stat< ArrayType, ConstArrayType, DataType, IndexType >( num, weight, fvec, stat );
-  
+
+  }
+
+  template <typename ArrayType, typename ConstArrayType, typename DataType,
+	    typename IndexType>
+  inline int calc_chi2xspec_stat( IndexType num, const ConstArrayType& yraw,
+                                  const ConstArrayType& model,
+                                  const ConstArrayType& error,
+                                  const ConstArrayType& syserror,
+                                  const ConstArrayType& weight, ArrayType& fvec,
+                                  DataType& stat, DataType& trunc_value ) {
+
+    for ( IndexType ii = num - 1; ii >= 0; --ii ) {
+
+      if ( 0 < yraw[ ii ] ) {
+        fvec[ ii ] = model[ ii ] - yraw[ ii ];
+
+        DataType err = error[ ii ];
+
+        if ( syserror ) {
+          err *= error[ ii ];
+          err += syserror[ ii ] * syserror[ ii ];
+          err = std::sqrt( err );
+        }
+
+        // the error for Chi2 is 0, so a sanity check is required.
+        if ( 0.0 != err )
+          fvec[ ii ] /= err;
+      }
+
+    }
+
+    return sherpa::stats::calc_stat< ArrayType, ConstArrayType, DataType,
+      IndexType >( num, weight, fvec, stat );
+
   }
 
 
@@ -249,14 +283,14 @@ namespace sherpa { namespace stats {
 	return EXIT_FAILURE;
       else
 	err[ ii ] = std::sqrt( yraw[ ii ] );
-    
+
     return EXIT_SUCCESS;
 
   }
 
 
   //
-  // upon return from the function calculate_ChiModVar_stat, fvec 
+  // upon return from the function calculate_ChiModVar_stat, fvec
   // (an array of length num) shall contain the following values:
   //
   //               sqrt( weight[ ii ] )  *  ( data[ ii ] - model[ ii ] )
@@ -278,7 +312,7 @@ namespace sherpa { namespace stats {
     for ( IndexType ii = num - 1; ii >= 0; --ii ) {
 
       fvec[ ii ] = yraw[ ii ] - model[ ii ];
-    
+
       DataType err_sqr = model[ ii ];
       if ( err_sqr < 1.0 )
 	err_sqr = 1.0;
@@ -292,32 +326,10 @@ namespace sherpa { namespace stats {
 
       // the error is guaranteed to be > 0.0 so err could never be equal to 0.0
       fvec[ ii ] /= err;
-    
+
     }
 
     return sherpa::stats::calc_stat< ArrayType, ConstArrayType, DataType, IndexType >( num, weight, fvec, stat );
-
-  }
-
-
-  // Implement XSPEC variation of data variance as a separate
-  // option here.  Instead of returning failure when yraw[ii]
-  // is zero or less, just set the error to 1.0 instead.  This
-  // is added simply to accommodate those used to this XSPEC
-  // behavior.
-  template <typename ArrayType, typename ConstArrayType, typename DataType,
-	    typename IndexType>
-  inline int calc_chi2xspecvar_errors( IndexType num,
-                                       const ConstArrayType& yraw,
-                                       ArrayType& err ) {
-
-    for ( IndexType ii = num - 1; ii >= 0; --ii )
-      if ( yraw[ ii ] <= 0.0 )
-	err[ ii ] = 1.0;
-      else
-	err[ ii ] = std::sqrt( yraw[ ii ] );
-    
-    return EXIT_SUCCESS;
 
   }
 
@@ -326,7 +338,7 @@ namespace sherpa { namespace stats {
 	    typename IndexType>
   inline int calc_lsq_stat( IndexType num, const ConstArrayType& yraw,
 		      const ConstArrayType& model,
-		      const ConstArrayType& error, 
+		      const ConstArrayType& error,
 		      const ConstArrayType& syserror,
 		      const ConstArrayType& weight, ArrayType& fvec,
 		      DataType& stat, DataType& trunc_value ) {
@@ -345,12 +357,12 @@ namespace sherpa { namespace stats {
                              const DataType* src_model,
                              const DataType* bkg_raw,
                              const DataType* backscale_ratio,
-                             DataType* fvec, 
+                             DataType* fvec,
                              const DataType* src_exp_time,
                              const DataType* my_bkg_exp_time,
                              const DataType trunc_value ) {
 
-    // 
+    //
     // heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
     //
     //
@@ -381,9 +393,9 @@ namespace sherpa { namespace stats {
       //
       DataType bkg_exp_time = my_bkg_exp_time[ ii ] * backscale_ratio[ ii ];
       DataType src_bkg_time = src_exp_time[ ii ] + bkg_exp_time;
-      DataType ln_ts_div_src_bkg_time = 
+      DataType ln_ts_div_src_bkg_time =
         std::log( src_exp_time[ ii ] / src_bkg_time );
-      DataType ln_tb_div_src_bkg_time = 
+      DataType ln_tb_div_src_bkg_time =
         std::log( bkg_exp_time / src_bkg_time );
 
       DataType msubi = src_model[ ii ] / src_exp_time[ ii ];
@@ -392,7 +404,7 @@ namespace sherpa { namespace stats {
 
       //
       // If any bin has S and/or B  zero then its contribution to W (W )
-      //                 i        i                                   i 
+      //                 i        i                                   i
       //
       // is calculated as a special case.
       //
@@ -416,14 +428,14 @@ namespace sherpa { namespace stats {
         if ( msubi < src_raw[ ii ] / src_bkg_time )
           fvec[ ii ] = - tb_msubi - src_raw[ ii ] * ln_ts_div_src_bkg_time;
         else {
-          DataType log_src_model = 
+          DataType log_src_model =
             src_model[ ii ] <= 0 ? trunc_value : std::log( src_model[ ii ] );
-          fvec[ ii ] = src_model[ ii ] + 
+          fvec[ ii ] = src_model[ ii ] +
             src_raw[ ii ] * ( std::log( src_raw[ ii ] ) - log_src_model - 1 );
         }
 
         //
-        // If B is zero then there are two special cases. 
+        // If B is zero then there are two special cases.
         //     i
         //
         // If m  < S  / ( t  + t ) then:
@@ -435,7 +447,7 @@ namespace sherpa { namespace stats {
         // otherwise:
         //
         //              W  = t  m  + S  ( ln( S ) - ln( t  m  ) - 1 )
-        //               i    s  i    i        i         s  i 
+        //               i    s  i    i        i         s  i
         //
         // If $m_i < S_i/(t_s+t_b)$ then:
         //
@@ -453,26 +465,26 @@ namespace sherpa { namespace stats {
         DataType tmp1 = src_bkg_time_msubi - raw_data;
         DataType tmp2 = src_bkg_time * bkg_raw[ ii ] * msubi;
         DataType dsubi = std::sqrt( tmp1 * tmp1 + 4.0 * tmp2 );
-        DataType fsubi = ( raw_data - src_bkg_time_msubi + dsubi ) / 
+        DataType fsubi = ( raw_data - src_bkg_time_msubi + dsubi ) /
           ( 2.0 * src_bkg_time );
         DataType log_model_srcexptime_fsubi =
           src_model[ ii ] + src_exp_time[ ii ] * fsubi <= 0 ? trunc_value :
           std::log( src_model[ ii ] + src_exp_time[ ii ] * fsubi );
         DataType log_bkgexptime_fsubi =
-          bkg_exp_time * fsubi <= 0 ? trunc_value : 
+          bkg_exp_time * fsubi <= 0 ? trunc_value :
           std::log( bkg_exp_time * fsubi );
         fvec[ ii ] = src_model[ ii ] + src_bkg_time * fsubi -
           src_raw[ ii ] * log_model_srcexptime_fsubi -
           bkg_raw[ ii ] * log_bkgexptime_fsubi -
           src_raw[ ii ] * ( 1.0 - std::log( src_raw[ ii ] ) ) -
           bkg_raw[ ii ] * ( 1.0 - std::log( bkg_raw[ ii ] ) );
-        
+
         //
         //  W   =  t  m  + ( t  + t ) f - S ln( t  m + t  f ) - B ln( t  f ) -
         //   i      s  i      s    b   i   i     s  i   s  i     i     b  i
         //
         //                S  ( 1 - ln( S ) - B ( 1 - ln( B ) )
-        //                 i            i     i           i 
+        //                 i            i     i           i
         //
         // where
         //
@@ -529,7 +541,7 @@ template <typename ArrayType, typename ConstArrayType, typename DataType,
 
   int offset = 0;
 
-  for ( IndexType ii = 0; ii < num_data_sets; ++ii ) { 
+  for ( IndexType ii = 0; ii < num_data_sets; ++ii ) {
 
     const double* src_raw = &yraw[ offset ];
     const double* src_model = &model[ offset ];
@@ -553,7 +565,7 @@ template <typename ArrayType, typename ConstArrayType, typename DataType,
   DataType sqrt2 = std::sqrt( 2.0 );
   for ( IndexType ii = num - 1; ii >= 0; --ii )
     fvec[ ii ] = sqrt2 * std::sqrt( std::fabs(fvec[ii]) );
-  
+
   return EXIT_SUCCESS;
 }
 

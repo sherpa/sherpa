@@ -465,8 +465,10 @@ expected_chi2_datavar_ft = 3.76700948927
 expected_chi2_constvar_ff = 2.9224537037
 expected_chi2_constvar_ft = 2.1656375594
 
-expected_chi2_xspecvar_ff = expected_chi2_datavar_ff
-expected_chi2_xspecvar_ft = 3.07754451409
+expected_chi2_xspecvar_ff = 2.49264705882
+expected_chi2_xspecvar_tf = 11.917468001
+expected_chi2_xspecvar_ft = 1.726193162
+expected_chi2_xspecvar_tt = 7.85265438910
 
 expected_mod_statonly = 3.9268028344
 expected_mod_stat_sys = 2.50586379978
@@ -509,9 +511,9 @@ expected_cstat = 6.07673552072
     (Chi2ModVar, True, True, expected_mod_stat_sys),
 
     (Chi2XspecVar, False, False, expected_chi2_xspecvar_ff),
-    (Chi2XspecVar, True, False, expected_chi2_tf),
+    (Chi2XspecVar, True, False, expected_chi2_xspecvar_tf),
     (Chi2XspecVar, False, True, expected_chi2_xspecvar_ft),
-    (Chi2XspecVar, True, True, expected_chi2_tt),
+    (Chi2XspecVar, True, True, expected_chi2_xspecvar_tt),
 
     (Cash, False, False, expected_cash),
     (Cash, True, False, expected_cash),
@@ -550,8 +552,10 @@ q_mod_sysonly = 0.1134232786
 q_chi2_datavar_ff = 0.0108321566
 q_chi2_datavar_ft = 0.0522730121
 
-q_chi2_xspecvar_ff = q_chi2_datavar_ff
-q_chi2_xspecvar_ft = 0.07938028609
+q_chi2_xspecvar_ff = 0.11437920512
+q_chi2_xspecvar_ft = 0.18889779688064523
+q_chi2_xspecvar_tf = 0.0005561001398743994
+q_chi2_xspecvar_tt = 0.00507461467049117
 
 q_cstat = 0.0136973660
 
@@ -587,10 +591,10 @@ q_cstat = 0.0136973660
 
     (Chi2XspecVar, False, False, expected_chi2_xspecvar_ff,
      q_chi2_xspecvar_ff),
-    (Chi2XspecVar, True, False, expected_chi2_tf, q_chi2_tf),
+    (Chi2XspecVar, True, False, expected_chi2_xspecvar_tf, q_chi2_xspecvar_tf),
     (Chi2XspecVar, False, True, expected_chi2_xspecvar_ft,
      q_chi2_xspecvar_ft),
-    (Chi2XspecVar, True, True, expected_chi2_tt, q_chi2_tt),
+    (Chi2XspecVar, True, True, expected_chi2_xspecvar_tt, q_chi2_xspecvar_tt),
 
     (Cash, False, False, expected_cash, None),
     (Cash, True, False, expected_cash, None),
@@ -731,9 +735,14 @@ chisqr_mod_xf = [0.021739130, 0.307692308, 1.396551724,
 chisqr_mod_xt = [0.018953753, 0.277008310, 0.999506417,
                  0.200294310, 1.010101010]
 
-chisqr_xspecvar_ff = chisqr_datavar_ff
+chisqr_xspecvar_ff = [0.020833333, 0.266666667, 2.025000000,
+                     0.180147059, 0.0]
+chisqr_xspecvar_tf = [0.173611111, 2.366863905, 4.591836735,
+                      4.785156250, 0.0]
 chisqr_xspecvar_ft = [0.018261505, 0.243309002, 1.284898477,
-                      0.179724178, 1.351351351]
+                      0.179724178, 0.0]
+chisqr_xspecvar_tt = [0.079872204, 1.277955272, 1.991150442,
+                      4.503676471, 0.0]
 
 
 @pytest.mark.parametrize("stat,usestat,usesys,expected", [
@@ -766,9 +775,9 @@ chisqr_xspecvar_ft = [0.018261505, 0.243309002, 1.284898477,
     (Chi2ModVar, True, True, chisqr_mod_xt),
 
     (Chi2XspecVar, False, False, chisqr_xspecvar_ff),
-    (Chi2XspecVar, True, False, chisqr_chi2_tf),
+    (Chi2XspecVar, True, False, chisqr_xspecvar_tf),
     (Chi2XspecVar, False, True, chisqr_xspecvar_ft),
-    (Chi2XspecVar, True, True, chisqr_chi2_tt),
+    (Chi2XspecVar, True, True, chisqr_xspecvar_tt),
 
     (Cash, False, False, None),
     (Cash, True, False, None),
