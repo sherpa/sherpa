@@ -479,7 +479,8 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if step is None:
-        step = 0.4*numpy.ones(x.shape, numpy.float_, numpy.isfortran(x))
+        order = 'F' if numpy.isfortran(x) else 'C'
+        step = 0.4*numpy.ones(x.shape, numpy.float_, order)
     if simp is None:
         simp = 1.0e-2 * ftol
     if maxfev is None:
@@ -661,10 +662,11 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
+    order = 'F' if numpy.isfortran(x) else 'C'
     if step is None or ( numpy.iterable(step) and len(step) != len(x) ):
-        step = 1.2*numpy.ones(x.shape, numpy.float_, numpy.isfortran(x))
+        step = 1.2*numpy.ones(x.shape, numpy.float_, order)
     elif numpy.isscalar(step):
-        step = step*numpy.ones(x.shape, numpy.float_, numpy.isfortran(x))
+        step = step*numpy.ones(x.shape, numpy.float_, order)
 
     def stat_cb0( pars ):
         return fcn( pars )[ 0 ]
