@@ -66,7 +66,7 @@ class sherpa_config(Command):
         self.wcs=None
         self.wcs_include_dirs=None
         self.wcs_lib_dirs=None
-        self.wcs_libraries='wcs'
+        self.wcs_libraries='wcssubs'
         self.group_location=None
         self.disable_group=False
         self.configure='--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib'

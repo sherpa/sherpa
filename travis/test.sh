@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -e
 
 # No test data, then remove submodule (git automatically clones recursively)
 if [ ${TEST} == none ];
@@ -18,15 +18,15 @@ smokevars="${XSPECTEST} ${FITSTEST} -v 3"
 
 # Install coverage tooling and run tests using setuptools
 if [ ${TEST} == submodule ]; then
-    pip install pytest-cov; python setup.py -q test -a "--cov sherpa --cov-report term";
+    pip install pytest-cov; python setup.py -q test -a "--cov sherpa --cov-report term" || exit 1;
 fi
 
 # Run smoke test
-cd /home;
-sherpa_smoke ${smokevars};
+cd /home
+sherpa_smoke ${smokevars} || exit 1
 
 # Run regression tests using sherpa_test
 if [ ${TEST} == package ] || [ ${TEST} == none ];
-    then cd $HOME;
-    sherpa_test;
+    then cd $HOME
+    sherpa_test || exit 1
 fi

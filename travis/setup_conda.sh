@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -e
 
 # Environment
 libgfortranver="3.0"
@@ -18,8 +18,8 @@ else  # osx
     # This is required on macOS when building with conda
     sed -i.orig "s|#extra-fortran-link-flags=|extra-fortran-link-flags=-undefined dynamic_lookup -bundle|" setup.cfg
 
-    # It looks like xvfb doesn't "just work" on osx travis, so...
-    sudo Xvfb :99 -ac -screen 0 1024x768x8 &
+    # On macOS we also need the conda libx11 libraries used to build xspec
+    xorg="xorg-libx11"
 fi
 
 # Download and install conda
@@ -30,6 +30,15 @@ export PATH=$miniconda/bin:$PATH
 
 # update and add channels
 conda update --yes conda
+
+# Note the order of the channels matter. We built the xspec conda packages for macos using the conda-forge channel
+# with the highest priority, so we add it with a higher priority than the default channels, but with less priority
+# than our own channels, so that we don't accidentally get conda-forge packages for cfitsio/ccfits.
+if [[ ${TRAVIS_OS_NAME} == osx ]];
+then
+    conda config --add channels conda-forge
+fi
+
 conda config --add channels ${sherpa_channel}
 conda config --add channels ${xspec_channel}
 
@@ -37,13 +46,13 @@ conda config --add channels ${xspec_channel}
 if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
 if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
 if [ -n "${XSPECVER}" ];
- then export XSPEC="xspec-modelsonly=${XSPECVER}";
+ then export XSPEC="xspec-modelsonly=${XSPECVER} ${xorg}";
 fi
 echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}"
 
 # Create and activate conda build environment
 # We create a new environment so we don't care about the python version in the root environment.
-conda create --yes --quiet -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} $XSPEC $FITS ${compilers}\
+conda create --yes -n build python=${TRAVIS_PYTHON_VERSION} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITS} ${compilers}\
   libgfortran=${libgfortranver}
 
 source activate build
