@@ -14,12 +14,12 @@ then
 else  # osx
     miniconda_os=MacOSX
     compilers="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
-
     # This is required on macOS when building with conda
     sed -i.orig "s|#extra-fortran-link-flags=|extra-fortran-link-flags=-undefined dynamic_lookup -bundle|" setup.cfg
 
     # On macOS we also need the conda libx11 libraries used to build xspec
-    xorg="xorg-libx11"
+    # We also need to pin down ncurses, for now only on macos.
+    xorg="xorg-libx11 ncurses=5"
 fi
 
 # Download and install conda
