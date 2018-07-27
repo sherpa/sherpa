@@ -21,6 +21,9 @@ import pytest
 import os
 import sys
 import re
+
+from numpy import VisibleDeprecationWarning
+
 from sherpa.utils import SherpaTestCase
 
 from six.moves import reload_module
@@ -70,6 +73,9 @@ known_warnings = {
          r"numpy.dtype size changed, may indicate binary " +
          r"incompatibility. Expected 96, got 88"
          ],
+     VisibleDeprecationWarning:
+        [r"Passing `normed=True`*",
+        ],
 }
 
 if sys.version_info >= (3, 2):
