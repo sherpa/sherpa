@@ -543,7 +543,7 @@ class test_threads(SherpaTestCase):
     def test_lev3fft(self):
         self.run_thread('lev3fft', scriptname='bar.py')
         self.assertEqualWithinTol(self.locals['src'].fwhm.val,
-                                  0.04418584, 1e-4)
+                                  0.044178, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].xpos.val,
                                   150.016, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].ypos.val,
