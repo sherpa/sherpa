@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,12 +26,13 @@ import sys
 from six.moves import zip as izip
 from six.moves import xrange
 
-from . import _minpack
-from . import _minim
 from . import _saoopt
 
 from sherpa.utils import parallel_map
 from sherpa.utils._utils import sao_fcmp
+
+import autograd.numpy as np
+from autograd import jacobian
 
 #
 # Use FLT_EPSILON as default tolerance
@@ -146,6 +147,13 @@ def _narrow_limits( myrange, xxx, debug ):
 
     return myxmin, myxmax
 
+def _par_at_boundary( low, val, high, tol ):
+    for par_min, par_val, par_max in izip( low, val, high ):
+        if sao_fcmp( par_val, par_min, tol ) == 0:
+            return True
+        if sao_fcmp( par_val, par_max, tol ) == 0:
+            return True
+    return False
 
 def _outside_limits(x, xmin, xmax):
     return (numpy.any(x < xmin) or numpy.any(x > xmax))
@@ -362,110 +370,6 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 
     return rv
 
-#
-# Levenberg-Marquardt
-#
-def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
-          maxfev=None, epsfcn=EPSILON, factor=100.0, verbose=0):
-
-    def par_at_boundary( low, val, high, tol ):
-        for par_min, par_val, par_max in izip( low, val, high ):
-            if sao_fcmp( par_val, par_min, tol ) == 0:
-                return True
-            if sao_fcmp( par_val, par_max, tol ) == 0:
-                return True
-        return False
-
-    x, xmin, xmax = _check_args(x0, xmin, xmax)
-
-    if maxfev is None:
-        maxfev = 256 * len(x)
-
-    def stat_cb0( pars ):
-        return fcn( pars )[ 0 ]
-    def stat_cb1( pars ):
-        return fcn( pars )[ 1 ]
-
-    m = numpy.asanyarray(stat_cb1(x)).size
-
-    orig_fcn = stat_cb1
-    error = []
-
-    def stat_cb1(x_new, iflag):
-        fvec = None
-        try:
-##             if _outside_limits(x_new, xmin, xmax) or _my_is_nan(x_new):
-##                 fvec = numpy.empty((m,), x_new.dtype, numpy.isfortran(x_new))
-##                 fvec[:] = numpy.sqrt(FUNC_MAX / m)
-##             else:
-            fvec = orig_fcn(x_new)
-        except:
-            error.append(sys.exc_info()[1])
-            fvec = numpy.zeros((m,), x_new.dtype, numpy.isfortran(x_new))
-            iflag = -1
-
-        return fvec, iflag
-
-    info, nfev, fval, covarerr = _minpack.mylmdif(stat_cb1, m, x, ftol, xtol, gtol, maxfev, epsfcn, factor, verbose, xmin, xmax)
-
-    if par_at_boundary( xmin, x, xmax, xtol ):
-        nm_result = neldermead( fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol), maxfev=maxfev-nfev, finalsimplex=2, iquad=0, verbose=0 )
-        nfev += nm_result[ 4 ][ 'nfev' ]
-        x = nm_result[ 1 ]
-        fval = nm_result[ 2 ]
-##        if nm_result[ 2 ] < fval:
-##            x = nm_result[ 1 ]
-##            fval = nm_result[ 2 ]
-##            info, mynfev, fval, covarerr = _minpack.mylmdif(stat_cb1, m, x, ftol, xtol, gtol, maxfev-nfev, epsfcn, factor, verbose, xmin, xmax)
- ##           nfev += mynfev
-
-    if error:
-        raise error.pop()
-
-    key = {
-        0: (False, 'improper input parameters'),
-        1: (True,
-            ('both actual and predicted relative reductions in the sum ' +
-             'of squares are at most ftol=%g') % ftol),
-        2: (True,
-            ('relative error between two consecutive iterates is at ' +
-             'most xtol=%g') % xtol),
-        4: (True,
-            ('the cosine of the angle between fvec and any column of ' +
-             'the jacobian is at most gtol=%g in absolute value') % gtol),
-        5: (False,
-            ('number of calls to function has reached or exceeded '+
-             'maxfev=%d') % maxfev),
-        6: (False,
-            ('ftol=%g is too small; no further reduction in the sum of ' +
-             'squares is possible') % ftol),
-        7: (False,
-            ('xtol=%g is too small; no further improvement in the ' +
-             'approximate solution is possible') % xtol),
-        8: (False,
-            ('gtol=%g is too small; fvec is orthogonal to the columns ' +
-             'of the jacobian to machine precision') % gtol),
-        }
-    key[3] = (True, key[1][1] + ' and ' + key[2][1])
-    status, msg = key.get(info, (False, 'unknown status flag (%d)' % info))
-
-    if 0 == info:
-        info = 1
-    elif info >= 1 or info <= 4:
-        info = 0
-    else:
-        info = 3
-    status, msg = _get_saofit_msg( maxfev, info )
-
-    rv = (status, x, fval)
-    print_covar_err = False
-    if print_covar_err:
-        rv += (msg, {'info': info, 'nfev': nfev, 'covarerr': covarerr})
-    else:
-        rv += (msg, {'info': info, 'nfev': nfev})
-
-    return rv
-
 
 #
 # Nelder Mead
@@ -492,9 +396,10 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
             return FUNC_MAX
         return orig_fcn(x_new)
 
-    fval, var, ifault, neval = _minim.minim(x, step, maxfev, verbose, ftol,
-                                            nloop, iquad, simp, stat_cb0,
-                                            xmin, xmax)
+    init = 0
+    x, fval, neval, ifault = _saoopt.minim(verbose, maxfev, init, iquad, simp,
+                                           ftol, step, xmin, xmax, x, stat_cb0)
+
     key = {
         0: (True, 'successful termination'),
         1: (False,
@@ -793,8 +698,9 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     return rv
 
 
-def lmdif_cpp(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
-              maxfev=None, epsfcn=EPSILON, factor=100.0, verbose=0):
+def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
+          maxfev=None, epsfcn=EPSILON, factor=100.0, verbose=0):
+
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -811,10 +717,62 @@ def lmdif_cpp(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     orig_fcn = stat_cb1
     error = []
 
-    def stat_cb1(x_new):
-        return orig_fcn(x_new)
+    # def stat_cb1(x_new):
+    #     return orig_fcn(x_new)
 
-    x, fval, nfev, info, covarerr = _saoopt.cpp_lmdif( stat_cb1, m, x, ftol, xtol, gtol, maxfev, epsfcn, factor, verbose, xmin, xmax)
+    n = len(x)
+    fjac = numpy.empty((m*n,))
+
+    # def lmder_cb(x_new, iflag):
+
+    #     if iflag == 1:
+    #         return orig_fcn(x_new)
+    #     else:
+
+    #         # fvec = orig_fcn(x_new)
+    #         # n = len(x_new)
+    #         # eps = numpy.float_(numpy.finfo(numpy.float32).eps)
+    #         # fdjac = numpy.empty((m*n,))
+    #         # for jj in range(n):
+    #         #     tmp = x_new[jj]
+    #         #     h = eps * abs(tmp)
+    #         #     if h == 0:
+    #         #         h = eps
+    #         #     if x_new[jj] > xmax[jj]:
+    #         #         h = - h
+    #         #     x_new[jj] = tmp + h
+    #         #     wa = orig_fcn(x_new)
+    #         #     x_new[jj] = tmp
+    #         #     for ii in range(m):
+    #         #         fdjac[ii + jj * m ] = (wa[ii] - fvec[ii]) / h
+    #         # # print('fdjac =', fdjac)
+    #         # return fdjac
+
+    #         jac = np.ravel(jacobian(orig_fcn)(x_new), order='F')
+    #         # print('jac = ', jac)
+    #         return jac
+
+    # x, fval, nfev, njev, info, fjac = _saoopt.cpp_lmder( lmder_cb, m, x, ftol, xtol, gtol, maxfev, factor, verbose, xmin, xmax, fjac )
+
+    x, fval, nfev, info, fjac = _saoopt.cpp_lmdif( stat_cb1, m, x, ftol, xtol, gtol, maxfev, epsfcn, factor, verbose, xmin, xmax, fjac )
+
+    fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
+
+    if m != n:
+        covar = fjac[:n, :n]
+    else:
+        covar = fjac
+
+    if _par_at_boundary( xmin, x, xmax, xtol ):
+        nm_result = neldermead( fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol), maxfev=maxfev-nfev, finalsimplex=2, iquad=0, verbose=0 )
+        nfev += nm_result[ 4 ][ 'nfev' ]
+        x = nm_result[ 1 ]
+        fval = nm_result[ 2 ]
+##        if nm_result[ 2 ] < fval:
+##            x = nm_result[ 1 ]
+##            fval = nm_result[ 2 ]
+##            info, mynfev, fval, covarerr = _minpack.mylmdif(stat_cb1, m, x, ftol, xtol, gtol, maxfev-nfev, epsfcn, factor, verbose, xmin, xmax)
+ ##           nfev += mynfev
 
     if error:
         raise error.pop()
@@ -846,6 +804,18 @@ def lmdif_cpp(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     key[3] = (True, key[1][1] + ' and ' + key[2][1])
     status, msg = key.get(info, (False, 'unknown status flag (%d)' % info))
 
-    rv = (status, x, fval)
-    rv += (msg, {'info': info, 'nfev': nfev, 'covarerr': covarerr })
+    if 0 == info:
+        info = 1
+    elif info >= 1 or info <= 4:
+        info = 0
+    else:
+        info = 3
+    status, msg = _get_saofit_msg( maxfev, info )
+
+    #     rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
+    #                                  'njev': njev, 'covar': covar})
+    # else:
+    rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
+                                 'covar': covar})
+
     return rv

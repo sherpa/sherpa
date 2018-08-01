@@ -1,6 +1,6 @@
 #ifdef testDifEvo
 
-// 
+//
 //  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 //
 //
@@ -43,8 +43,9 @@ void tstde( Init init, Fct fct, int npar, std::vector<double>& par,
   std::vector<double> mypar( npar, 0.0 );
 
   init( npar, mfcts, answer, &par[0], &lo[0], &hi[0] );
-  sherpa::DifEvo< Fct, void*,
-    sherpa::NelderMead< Fct, void* > > de_nm( fct, NULL );
+  sherpa::Bounds<double> bounds(lo, hi);
+  sherpa::DifEvo< Fct, mybounds,
+    sherpa::NelderMead< Fct, mybounds, double >, double > de_nm( fct, bounds );
   for ( int ii = 0; ii < npar; ++ii )
     mypar[ ii ] = par[ ii ];
   de_nm( verbose, maxnfev, tol, size, seed, xprob, sfactor, npar, lo, hi,
@@ -52,8 +53,8 @@ void tstde( Init init, Fct fct, int npar, std::vector<double>& par,
   print_pars( "DifEvo_nm_", fct_name, nfev, fmin, answer, npar, mypar );
 
   init( npar, mfcts, answer, &par[0], &lo[0], &hi[0] );
-  sherpa::DifEvo< Fct, void*,
-    sherpa::OptFunc< Fct, void* > > de( fct, NULL );
+  sherpa::DifEvo< Fct, mybounds,
+    sherpa::OptFunc< Fct, mybounds, double >, double > de( fct, bounds );
   for ( int ii = 0; ii < npar; ++ii )
     mypar[ ii ] = par[ ii ];
   de( verbose, maxnfev, tol, size, seed, xprob, sfactor, npar, lo, hi,
@@ -78,8 +79,11 @@ void tstde_lm( Init init, FctVec fct, int npar, std::vector<double>& par,
   std::vector<double> mypar( npar, 0.0 );
 
   init( npar, mfcts, answer, &par[0], &lo[0], &hi[0] );
-  sherpa::DifEvo< FctVec, void*,
-    minpack::LevMar< FctVec, void* > > de_lm( fct, NULL, mfcts );
+  sherpa::Bounds<double> bounds(lo, hi);
+  sherpa::DifEvo< FctVec, mybounds,
+    minpack::LevMarDif< FctVec, mybounds, double >, double > de_lm( fct,
+                                                                    bounds,
+                                                                    mfcts );
   for ( int ii = 0; ii < npar; ++ii )
     mypar[ ii ] = par[ ii ];
   de_lm( verbose, maxnfev, tol, size, seed, xprob, sfactor, npar, lo, hi,
@@ -91,7 +95,7 @@ int main( int argc, char* argv[] ) {
 
   int c, uncopt = 1, globalopt = 1;
   while ( --argc > 0 && (*++argv)[ 0 ] == '-' )
-    while ( c = *++argv[ 0 ] )
+    while ( (c = *++argv[ 0 ]) )
       switch( c ) {
 	case 'u':
 	  uncopt = 0;
@@ -126,13 +130,16 @@ int main( int argc, char* argv[] ) {
   }
   if ( globalopt )
     tst_global( npar, tol, tstde, npop, maxfev, xprob, sfactor );
-    
+
 
   return 0;
 
 }
 
 /*
+
+g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestDifEvo DifEvo.cc Simplex.cc -o difevo
+
 ==1609== Memcheck, a memory error detector
 ==1609== Copyright (C) 2002-2009, and GNU GPL'd, by Julian Seward et al.
 ==1609== Using Valgrind-3.5.0 and LibVEX; rerun with -h for copyright info

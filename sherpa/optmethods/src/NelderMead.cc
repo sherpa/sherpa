@@ -1,6 +1,6 @@
 #ifdef testNelderMead
 
-// 
+//
 //  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 //
 //
@@ -50,36 +50,38 @@ void tstnm( Init init, Fct fct, int npar, std::vector<double>& par,
       finalsimplex.push_back( ii );
 
       for ( int initsimplex = 0; initsimplex < 2; ++initsimplex ) {
-	
+
 	int mfcts;
 	double answer;
-	
+
 	init( npar, mfcts, answer, &par[0], &lo[0], &hi[0] );
 	for ( int jj = 0; jj < npar; ++jj )
 	  mypar[ jj ] = par[ jj ];
-	sherpa::NelderMead< Fct, void* > nm( fct, NULL );
-	
+        sherpa::Bounds<double> bounds(lo, hi);
+	sherpa::NelderMead< Fct, const sherpa::Bounds<double>&, double >
+          nm( fct, bounds );
+
 	int verbose=0, maxnfev=npar*npar*maxfev, nfev;
 	double fmin;
 	nm( verbose, maxnfev, tol, npar, initsimplex, finalsimplex, lo, hi,
 	    step, mypar, nfev, fmin );
-	
+
 	sprintf( header, "NelderMead_%d_%d_", initsimplex, finalsimplex[ii] );
 	print_pars( header, fct_name, nfev, fmin, answer, npar, mypar );
 
       }
-	
+
     }
-    
+
   } catch( const sherpa::OptErr& oe ) {
-    
+
     std::cerr << oe << '\n';
-    
+
   }
 
   return;
 
-}  
+}
 
 int main( int argc, char* argv[] ) {
 
@@ -87,7 +89,7 @@ int main( int argc, char* argv[] ) {
 
     int c, uncopt = 1, globalopt = 1;
     while ( --argc > 0 && (*++argv)[ 0 ] == '-' )
-      while ( c = *++argv[ 0 ] )
+      while ( (c = *++argv[ 0 ]) )
 	switch( c ) {
 	case 'u':
 	  uncopt = 0;
@@ -105,7 +107,7 @@ int main( int argc, char* argv[] ) {
     int npar=6;
     if ( argc == 1 )
       npar = atoi( *argv );
-    
+
     if ( npar % 2 || npar < 2 ) {
       printf( "The minimum value for the free parameter must be an even "
 	      "and it is greater then 2\n" );
@@ -139,6 +141,8 @@ int main( int argc, char* argv[] ) {
 }
 
 /*
+g++  -ansi -pedantic -Wall -O3 -I. -I../../include -I.. -DtestNelderMead NelderMead.cc Simplex.cc -o neldermead
+
 ==7855== Memcheck, a memory error detector
 ==7855== Copyright (C) 2002-2012, and GNU GPL'd, by Julian Seward et al.
 ==7855== Using Valgrind-3.8.1 and LibVEX; rerun with -h for copyright info
