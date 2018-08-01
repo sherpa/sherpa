@@ -717,42 +717,8 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     orig_fcn = stat_cb1
     error = []
 
-    # def stat_cb1(x_new):
-    #     return orig_fcn(x_new)
-
     n = len(x)
     fjac = numpy.empty((m*n,))
-
-    # def lmder_cb(x_new, iflag):
-
-    #     if iflag == 1:
-    #         return orig_fcn(x_new)
-    #     else:
-
-    #         # fvec = orig_fcn(x_new)
-    #         # n = len(x_new)
-    #         # eps = numpy.float_(numpy.finfo(numpy.float32).eps)
-    #         # fdjac = numpy.empty((m*n,))
-    #         # for jj in range(n):
-    #         #     tmp = x_new[jj]
-    #         #     h = eps * abs(tmp)
-    #         #     if h == 0:
-    #         #         h = eps
-    #         #     if x_new[jj] > xmax[jj]:
-    #         #         h = - h
-    #         #     x_new[jj] = tmp + h
-    #         #     wa = orig_fcn(x_new)
-    #         #     x_new[jj] = tmp
-    #         #     for ii in range(m):
-    #         #         fdjac[ii + jj * m ] = (wa[ii] - fvec[ii]) / h
-    #         # # print('fdjac =', fdjac)
-    #         # return fdjac
-
-    #         jac = np.ravel(jacobian(orig_fcn)(x_new), order='F')
-    #         # print('jac = ', jac)
-    #         return jac
-
-    # x, fval, nfev, njev, info, fjac = _saoopt.cpp_lmder( lmder_cb, m, x, ftol, xtol, gtol, maxfev, factor, verbose, xmin, xmax, fjac )
 
     x, fval, nfev, info, fjac = _saoopt.cpp_lmdif( stat_cb1, m, x, ftol, xtol, gtol, maxfev, epsfcn, factor, verbose, xmin, xmax, fjac )
 
