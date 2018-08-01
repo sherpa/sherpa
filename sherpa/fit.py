@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2009, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,7 @@ import signal
 from functools import wraps
 
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, float, float32, finfo, nan, any, int
+    ones_like, isnan, isinf, float, float32, finfo, nan, any, int, sqrt
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
@@ -270,7 +270,7 @@ class FitResults(NoNewAttributesAfterInit):
         _dof = len(_vals) - len(tuple(results[1]))
         _qval = None
         _rstat = None
-        _covarerr = results[4].get('covarerr')
+        _covar = results[4].get('covar')
         if _can_calculate_rstat(fit.stat):
             if _dof > 0 and results[2] >= 0.0:
                 _qval = igamc(_dof / 2., results[2] / 2.)
@@ -290,10 +290,7 @@ class FitResults(NoNewAttributesAfterInit):
         self.qval = _qval
         self.rstat = _rstat
         self.message = results[3]
-        if _covarerr is not None:
-            self.covarerr = tuple(_covarerr)
-        else:
-            self.covarerr = None
+        self.covar = _covar
         self.nfev = results[4].get('nfev')
         self.extra_output = results[4]
         self.modelvals = _vals
@@ -355,12 +352,13 @@ class FitResults(NoNewAttributesAfterInit):
             s += '\nReduced statistic     = %g' % self.rstat
         s += '\nChange in statistic   = %g' % self.dstatval
 
-        if self.covarerr is None:
+        if self.covar is None:
             for name, val in izip(self.parnames, self.parvals):
                 s += '\n   %-12s   %-12g' % (name, val)
         else:
+            covar_err = sqrt(self.covar.diagonal())
             for name, val, covarerr in izip(self.parnames, self.parvals,
-                                            self.covarerr):
+                                            covar_err):
                 s += '\n   %-12s   %-12g +/- %-12g' % (name, val, covarerr)
 
         if self.param_warnings != "":

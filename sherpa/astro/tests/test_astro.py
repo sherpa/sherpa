@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017. 2018
+#                Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,6 +20,7 @@
 
 import logging
 import warnings
+from numpy import sqrt
 
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
     requires_fits, requires_xspec, requires_group
@@ -84,9 +86,13 @@ class test_threads(SherpaTestCase):
         self.run_thread('pha_intro')
         # astro.ui imported as ui, instead of
         # being in global namespace
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 37.9079, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().rstat, 0.902569, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().qval, 0.651155, 1e-4)
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 0.0790393, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 1.4564e-05, 1e-4)
+        self.assertEqualWithinTol(fit_results.statval, 37.9079, 1e-4)
+        self.assertEqualWithinTol(fit_results.rstat, 0.902569, 1e-4)
+        self.assertEqualWithinTol(fit_results.qval, 0.651155, 1e-4)
         self.assertEqualWithinTol(self.locals['p1'].gamma.val, 2.15852, 1e-4)
         self.assertEqualWithinTol(self.locals['p1'].ampl.val, 0.00022484, 1e-4)
 
@@ -120,42 +126,59 @@ class test_threads(SherpaTestCase):
         # with DM ASCII kernel, but passes because we have Sherpa code
         # to bypass that.
         self.run_thread('basic')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 151.827, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().rstat, 16.8697, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().qval, 3.68798e-28, 1e-4)
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 0.0192539, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 0.00392255, 1e-4)
+        self.assertEqualWithinTol(fit_results.statval, 151.827, 1e-4)
+        self.assertEqualWithinTol(fit_results.rstat, 16.8697, 1e-4)
+        self.assertEqualWithinTol(fit_results.qval, 3.68798e-28, 1e-4)
         self.assertEqualWithinTol(self.locals['m1'].c0.val, 1.49843, 1e-4)
         self.assertEqualWithinTol(self.locals['m1'].c1.val, 0.1447, 1e-4)
         self.assertEqualWithinTol(self.locals['m1'].c2.val, 0.0322936, 1e-4)
         self.assertEqualWithinTol(self.locals['m1'].c3.val, -0.00277729, 1e-4)
         self.assertEqualWithinTol(self.locals['m2'].c0.val, 1.75548, 1e-4)
         self.assertEqualWithinTol(self.locals['m2'].c1.val, 0.198455, 1e-4)
-        self.assertEqual(ui.get_fit_results().nfev, 9)
-        self.assertEqual(ui.get_fit_results().numpoints, 11)
-        self.assertEqual(ui.get_fit_results().dof, 9)
+        self.assertEqual(fit_results.nfev, 9)
+        self.assertEqual(fit_results.numpoints, 11)
+        self.assertEqual(fit_results.dof, 9)
 
     @requires_fits
     @requires_xspec
     def test_simultaneous(self):
         self.run_thread('simultaneous')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 7.4429, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().rstat, 0.531636, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().qval, 0.916288, 1e-4)
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 0.397769, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 0.486058, 1e-4)
+        self.assertEqualWithinTol(covarerr[2], 1.48213e-05, 1e-4)
+        self.assertEqualWithinTol(covarerr[3], 1.54245e-05, 1e-4)
+        self.assertEqualWithinTol(fit_results.statval, 7.4429, 1e-4)
+        self.assertEqualWithinTol(fit_results.rstat, 0.531636, 1e-4)
+        self.assertEqualWithinTol(fit_results.qval, 0.916288, 1e-4)
         self.assertEqualWithinTol(self.locals['abs1'].nh.val, 0.898162, 1e-2)
         self.assertEqualWithinTol(self.locals['pl1'].gamma.val, 1.645, 1e-4)
         self.assertEqualWithinTol(self.locals['pl1'].ampl.val,
                                   2.28323e-05, 1e-3)
         self.assertEqualWithinTol(self.locals['pl2'].ampl.val,
                                   2.44585e-05, 1e-3)
-        self.assertEqual(ui.get_fit_results().numpoints, 18)
-        self.assertEqual(ui.get_fit_results().dof, 14)
+        self.assertEqual(fit_results.numpoints, 18)
+        self.assertEqual(fit_results.dof, 14)
 
     @requires_fits
     @requires_xspec
     def test_sourceandbg(self):
         self.run_thread('sourceandbg')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 947.5, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().rstat, 0.715094, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().qval, 1, 1e-4)
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 0.012097, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 0, 1e-4)
+        self.assertEqualWithinTol(covarerr[2], 0.000280678, 1e-4)
+        self.assertEqualWithinTol(covarerr[3], 0.00990783, 1e-4)
+        self.assertEqualWithinTol(covarerr[4], 2.25746e-07, 1e-4)
+        self.assertEqualWithinTol(fit_results.statval, 947.5, 1e-4)
+        self.assertEqualWithinTol(fit_results.rstat, 0.715094, 1e-4)
+        self.assertEqualWithinTol(fit_results.qval, 1, 1e-4)
         self.assertEqualWithinTol(self.locals['a1'].nh.val, 0.0342266, 1e-2)
         self.assertEqualWithinTol(self.locals['b1'].kt.val, 20, 1e-2)
         self.assertEqualWithinTol(self.locals['b1'].norm.val,
@@ -164,8 +187,8 @@ class test_threads(SherpaTestCase):
                                   0.563109, 1e-2)
         self.assertEqualWithinTol(self.locals['b2'].norm.val,
                                   1.16118e-05, 1e-2)
-        self.assertEqual(ui.get_fit_results().numpoints, 1330)
-        self.assertEqual(ui.get_fit_results().dof, 1325)
+        self.assertEqual(fit_results.numpoints, 1330)
+        self.assertEqual(fit_results.dof, 1325)
 
     @requires_fits
     def test_spatial(self):
@@ -190,6 +213,12 @@ class test_threads(SherpaTestCase):
         self.run_thread('pileup')
 
         fr = ui.get_fit_results()
+        covarerr = sqrt(fr.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0],684.056 , 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 191.055, 1e-4)
+        self.assertEqualWithinTol(covarerr[2], 0.632061, 1e-4)
+        self.assertEqualWithinTol(covarerr[3], 0.290159, 1e-4)
+        self.assertEqualWithinTol(covarerr[4], 1.62529, 1e-4)
         self.assertEqualWithinTol(fr.statval, 53.6112, 1e-4)
         self.assertEqualWithinTol(fr.rstat, 1.44895, 1e-4)
         self.assertEqualWithinTol(fr.qval, 0.0379417, 1e-4)
@@ -234,16 +263,21 @@ class test_threads(SherpaTestCase):
     @requires_fits
     def test_radpro(self):
         self.run_thread('radpro')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 217.450, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().rstat, 6.21287, 1e-4)
-        self.assertEqualWithinTol(ui.get_fit_results().qval, 0.0, 1e-4)
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 9.37345, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 0.512596, 1e-4)
+        self.assertEqualWithinTol(covarerr[2], 0.0691102, 1e-4)
+        self.assertEqualWithinTol(fit_results.statval, 217.450, 1e-4)
+        self.assertEqualWithinTol(fit_results.rstat, 6.21287, 1e-4)
+        self.assertEqualWithinTol(fit_results.qval, 0.0, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].r0.val, 125.829, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].beta.val, 4.1633, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].xpos.val, 0.0, 1e-4)
         self.assertEqualWithinTol(self.locals['src'].ampl.val, 4.42821, 1e-4)
-        self.assertEqual(ui.get_fit_results().nfev, 92)
-        self.assertEqual(ui.get_fit_results().numpoints, 38)
-        self.assertEqual(ui.get_fit_results().dof, 35)
+        self.assertEqual(fit_results.nfev, 92)
+        self.assertEqual(fit_results.numpoints, 38)
+        self.assertEqual(fit_results.dof, 35)
 
     def test_radpro_dm(self):
         # This test is completely redundant to test_radpro above.
@@ -256,6 +290,10 @@ class test_threads(SherpaTestCase):
             self.run_thread('radpro_dm')
 
             fres = ui.get_fit_results()
+            covarerr = sqrt(fres.extra_output['covar'].diagonal())
+            self.assertEqualWithinTol(covarerr[0], 6.98861, 1e-4)
+            self.assertEqualWithinTol(covarerr[1], 0.383065, 1e-4)
+            self.assertEqualWithinTol(covarerr[2], 0.101712, 1e-4)
             self.assertEqualWithinTol(fres.statval, 217.450, 1e-4)
             self.assertEqualWithinTol(fres.rstat, 6.21287, 1e-4)
             self.assertEqualWithinTol(fres.qval, 0.0, 1e-4)
@@ -319,24 +357,34 @@ class test_threads(SherpaTestCase):
     @requires_fits
     def test_linepro(self):
         self.run_thread('linepro')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 203.34, 1e-4)
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 0.176282, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 0.0019578, 1e-4)
+        self.assertEqualWithinTol(covarerr[2], 0.495889, 1e-4)
+        self.assertEqualWithinTol(fit_results.statval, 203.34, 1e-4)
         self.assertEqualWithinTol(self.locals['b1'].r0.val, 4.25557, 1e-4)
         self.assertEqualWithinTol(self.locals['b1'].beta.val, 0.492232, 1e-4)
         self.assertEqualWithinTol(self.locals['b1'].ampl.val, 11.8129, 1e-4)
-        self.assertEqual(ui.get_fit_results().nfev, 17)
-        self.assertEqual(ui.get_fit_results().numpoints, 75)
-        self.assertEqual(ui.get_fit_results().dof, 72)
+        self.assertEqual(fit_results.nfev, 17)
+        self.assertEqual(fit_results.numpoints, 75)
+        self.assertEqual(fit_results.dof, 72)
 
     @requires_fits
     def test_kernel(self):
         self.run_thread('kernel')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 98.5793, 1e-4)
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 0.210895, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 0.00154839, 1e-4)
+        self.assertEqualWithinTol(covarerr[2], 0.0223859, 1e-4)
+        self.assertEqualWithinTol(fit_results.statval, 98.5793, 1e-4)
         self.assertEqualWithinTol(self.locals['b1'].r0.val, 19.2278, 1e-4)
         self.assertEqualWithinTol(self.locals['b1'].beta.val, 0.555464, 1e-4)
         self.assertEqualWithinTol(self.locals['b1'].ampl.val, 1.93706, 1e-4)
-        self.assertEqual(ui.get_fit_results().nfev, 21)
-        self.assertEqual(ui.get_fit_results().numpoints, 75)
-        self.assertEqual(ui.get_fit_results().dof, 72)
+        self.assertEqual(fit_results.nfev, 21)
+        self.assertEqual(fit_results.numpoints, 75)
+        self.assertEqual(fit_results.dof, 72)
 
     @requires_fits
     @requires_xspec
@@ -344,6 +392,12 @@ class test_threads(SherpaTestCase):
         self.run_thread('spectrum')
 
         fres = ui.get_fit_results()
+        covarerr = sqrt(fres.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 0.00148391, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 0.0011518, 1e-4)
+        self.assertEqualWithinTol(covarerr[2], 0.00377755, 1e-4)
+        self.assertEqualWithinTol(covarerr[3], 0.00370543, 1e-4)
+        self.assertEqualWithinTol(covarerr[4], 0.0016608, 1e-4)
         self.assertEqualWithinTol(fres.statval, 0.0496819, 1e-4)
         self.assertEqualWithinTol(self.locals['abs2'].nh.val, 1.1015, 1e-4)
         self.assertEqualWithinTol(self.locals['mek1'].kt.val, 0.841025, 1e-4)
@@ -370,6 +424,10 @@ class test_threads(SherpaTestCase):
         self.run_thread('xmm')
 
         fres = ui.get_fit_results()
+        covarerr = sqrt(fres.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 0.954993, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 0.142357, 1e-4)
+        self.assertEqualWithinTol(covarerr[2], 0.00038775, 1e-4)
         self.assertEqualWithinTol(fres.statval, 118.085, 1e-4)
         self.assertEqualWithinTol(self.locals['intrin'].nh.val,
                                   11.0769, 1e-2)
@@ -390,6 +448,9 @@ class test_threads(SherpaTestCase):
         self.run_thread('grouped_ciao4.5')
 
         fres = ui.get_fit_results()
+        covarerr = sqrt(fres.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 0.104838, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 2.43937e-05, 1e-4)
         self.assertEqualWithinTol(fres.statval, 18.8316, 1e-4)
         self.assertEqual(fres.numpoints, 46)
 
@@ -475,6 +536,11 @@ class test_threads(SherpaTestCase):
     @requires_xspec
     def test_proj_bubble(self):
         self.run_thread('proj_bubble')
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        self.assertEqualWithinTol(covarerr[0], 0, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 8.74608e-07, 1e-4)
+
         # Fit -- Results from reminimize
         self.assertEqualWithinTol(self.locals['mek1'].kt.val, 17.8849, 1e-2)
         self.assertEqualWithinTol(self.locals['mek1'].norm.val, 4.15418e-06,
