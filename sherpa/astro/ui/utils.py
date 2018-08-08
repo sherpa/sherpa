@@ -4735,6 +4735,92 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_table(self.get_data(id))
 
+#
+    def create_arf(self, elo, ehi, specresp=None, exposure=None, ethresh=None,
+                   name='test-arf'):
+        """Create an ARF.
+        Parameters
+        ----------
+        elo, ehi : array
+            The energy bins (low and high, in keV) for the ARF. It is
+            assumed that ehi_i > elo_i, elo_j > 0, the energy bins are
+            either ascending - so elo_i+1 > elo_i - or descending
+            (elo_i+1 < elo_i), and that there are no overlaps.
+        specresp : None or array, optional
+            The spectral response (in cm^2) for the ARF. It is assumed
+            to be >= 0. If not given a flat response of 1.0 is used.
+        exposure : number or None, optional
+            If not None, the exposure of the ARF in seconds.
+        ethresh : number or None, optional
+            Passed through to the DataARF call. It controls whether
+            zero-energy bins are replaced.
+        Returns
+        -------
+        arf : DataARF instance
+        """
+
+        assert elo.size == ehi.size
+        assert (exposure is None) or (exposure > 0.0)
+
+        if specresp is None:
+            specresp = numpy.ones(elo.size, dtype=numpy.float32)
+
+        return sherpa.astro.data.DataARF(name, energ_lo=elo, energ_hi=ehi,
+                                         specresp=specresp, exposure=exposure,
+                                         ethresh=ethresh)
+
+    def create_delta_rmf(self, rmflo, rmfhi, startchan=1,
+                         e_min=None, e_max=None, ethresh=None,
+                         name='delta-rmf'):
+        """Create a RMF for a delta-function response.
+        This is a "perfect" (delta-function) response.
+        Parameters
+        ----------
+        rmflo, rmfhi : array
+            The energy bins (low and high, in keV) for the RMF.
+            It is assumed that emfhi_i > rmflo_i, rmflo_j > 0, that the energy
+            bins are either ascending, so rmflo_i+1 > rmflo_i or descending
+            (rmflo_i+1 < rmflo_i), and that there are no overlaps.
+            These correspond to the Elow and Ehigh columns (represented
+            by the ENERG_LO and ENERG_HI columns of the MATRIX block) of
+            the OGIP standard.
+        startchan : int, optional
+            The starting channel number: expected to be 0 or 1 but this is
+            not enforced.
+        e_min, e_max : None or array, optional
+            The E_MIN and E_MAX columns of the EBOUNDS block of the
+            RMF.
+        ethresh : number or None, optional
+            Passed through to the DataARF call. It controls whether
+            zero-energy bins are replaced.
+        Returns
+        -------
+        rmf : DataRMF instance
+        Notes
+        -----
+        I do not think I have the startchan=0 case correct (does the
+        f_chan array have to change?).
+        """
+
+        assert rmflo.size == rmfhi.size
+        assert startchan >= 0
+
+        # Set up the delta-function response.
+        # TODO: should f_chan start at startchan?
+        #
+        nchans = rmflo.size
+        matrix = numpy.ones(nchans, dtype=numpy.float32)
+        dummy = numpy.ones(nchans, dtype=numpy.int16)
+        f_chan = numpy.arange(1, nchans + 1, dtype=numpy.int16)
+
+        return sherpa.astro.data.DataRMF(name, detchans=nchans,
+                                         energ_lo=rmflo, energ_hi=rmfhi,
+                                         n_grp=dummy, n_chan=dummy,
+                                         f_chan=f_chan, matrix=matrix,
+                                         offset=startchan,
+                                         e_min=e_min, e_max=e_max,
+                                         ethresh=ethresh)
+
     # def _check_resp_id(id):
     #    if (id is not None) and (not self._valid_id(id)):
     #        raise ArgumentTypeError('response identifiers must be integers ' +
