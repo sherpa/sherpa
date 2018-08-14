@@ -50,7 +50,6 @@ class sherpa_config(Command):
                     ('install-dir', None, "Directory where external dependencies must be installed (--prefix)"),
                     ('configure', None, "Additional configure flags for the external dependencies"),
                     ('group-cflags', None, "Additional cflags for building the grouping library"),
-                    ('extra-fortran-link-flags', None, "Additional linking flags for building the fortran extensions"),
                     ]
 
     def initialize_options(self):
@@ -71,7 +70,6 @@ class sherpa_config(Command):
         self.disable_group=False
         self.configure='--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib'
         self.group_cflags=None
-        self.extra_fortran_link_flags=None
         self.stk_location=None
         self.disable_stk=False
 
@@ -117,12 +115,6 @@ class sherpa_config(Command):
         ld2, inc2, l2 = build_lib_arrays(self, 'region')
         ld, inc, l = (ld1+ld2, inc1+inc2, l1+l2)
         self.distribution.ext_modules.append(build_ext('region', ld, inc, l))
-
-        if self.extra_fortran_link_flags:
-            flags = self.extra_fortran_link_flags.split(' ')
-            from .extensions import fortran_exts
-            for ext in fortran_exts:
-                ext.extra_link_args.extend(flags)
 
         if not self.disable_group:
             configure.append('--enable-group')
