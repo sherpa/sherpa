@@ -134,7 +134,7 @@ namespace minpack {
 
     void print_progress( int m, int n, const real* x, const real* fvec )
       const {
-      const real fval = pow( enorm(m, fvec), 2.0 );
+      const real fval = pow( this->enorm(m, fvec), 2.0 );
       std::cout << "f( " << x[ 0 ];
       for ( int iii = 1; iii < n; ++iii )
         std::cout << ", " << x[ iii ];
@@ -591,7 +591,7 @@ namespace minpack {
       for (j = 0; j < n; ++j) {
 	wa2[j] = diag[j] * x[j];
       }
-      dxnorm = enorm(n, wa2);
+      dxnorm = this->enorm(n, wa2);
       fp = dxnorm - delta;
       if (fp <= p1 * delta) {
 	goto TERMINATE;
@@ -621,7 +621,7 @@ namespace minpack {
           wa1[j] = (wa1[j] - sum) / r[j + j * ldr];
         }
 #     endif
-        temp = enorm(n, wa1);
+        temp = this->enorm(n, wa1);
         parl = fp / delta / temp / temp;
       }
 
@@ -641,7 +641,7 @@ namespace minpack {
         l = ipvt[j]-1;
         wa1[j] = sum / diag[l];
       }
-      gnorm = enorm(n, wa1);
+      gnorm = this->enorm(n, wa1);
       paru = gnorm / delta;
       if (paru == 0.) {
         paru = dwarf / std::min(delta,(real)p1) /* / p001 ??? */;
@@ -676,7 +676,7 @@ namespace minpack {
         for (j = 0; j < n; ++j) {
           wa2[j] = diag[j] * x[j];
         }
-        dxnorm = enorm(n, wa2);
+        dxnorm = this->enorm(n, wa2);
         temp = fp;
         fp = dxnorm - delta;
 
@@ -720,7 +720,7 @@ namespace minpack {
           }
         }
 #     endif /* !USE_CBLAS */
-        temp = enorm(n, wa1);
+        temp = this->enorm(n, wa1);
         parc = fp / delta / temp / temp;
 
         /*        depending on the sign of the function, update parl or paru. */
@@ -884,7 +884,7 @@ namespace minpack {
       /* set acnorm first (from the doc of qrfac, acnorm may point to the same area as rdiag) */
       if (acnorm != rdiag) {
         for (j = 0; j < n; ++j) {
-          acnorm[j] = enorm(m, &a[j * lda]);
+          acnorm[j] = this->enorm(m, &a[j * lda]);
         }
       }
 
@@ -1022,7 +1022,7 @@ namespace minpack {
       /*     compute the initial column norms and initialize several arrays. */
 
       for (j = 0; j < n; ++j) {
-	acnorm[j] = enorm(m, &a[j * lda + 0]);
+	acnorm[j] = this->enorm(m, &a[j * lda + 0]);
 	rdiag[j] = acnorm[j];
 	wa[j] = rdiag[j];
 	if (pivot) {
@@ -1061,7 +1061,7 @@ namespace minpack {
         /*        compute the householder transformation to reduce the */
         /*        j-th column of a to a multiple of the j-th unit vector. */
 
-	ajnorm = enorm(m - (j+1) + 1, &a[j + j * lda]);
+	ajnorm = this->enorm(m - (j+1) + 1, &a[j + j * lda]);
 	if (ajnorm != 0.) {
           if (a[j + j * lda] < 0.) {
             ajnorm = -ajnorm;
@@ -1093,7 +1093,7 @@ namespace minpack {
                 /* Computing 2nd power */
                 d1 = rdiag[k] / wa[k];
                 if (p05 * (d1 * d1) <= epsmch) {
-                  rdiag[k] = enorm(m - (j+1), &a[jp1 + k * lda]);
+                  rdiag[k] = this->enorm(m - (j+1), &a[jp1 + k * lda]);
                   wa[k] = rdiag[k];
                 }
               }
@@ -1441,7 +1441,7 @@ namespace minpack {
                       nprint, nfev, &fjac[0], ldfjac, &ipvt[0], &qtf[0],
                       &wa1[ 0 ], &wa2[0], &wa3[0], &wa4[0], bounds );
 
-	covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
+	this->covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
 
 	for ( int ii = 0; ii < n; ++ii )
 	  if ( fjac[ ii + ldfjac * ii ] > 0.0 )
@@ -1469,7 +1469,7 @@ namespace minpack {
 
       }
 
-      fmin = std::pow( enorm( myfvec.size( ), &myfvec[0] ), 2.0 );
+      fmin = std::pow( this->enorm( myfvec.size( ), &myfvec[0] ), 2.0 );
       return info;
 
     }
@@ -1488,9 +1488,9 @@ namespace minpack {
       int mymfct = static_cast<int>( myfvec.size( ) );
 
       Data my_usr_data = sherpa::Opt<Data, real>::get_usr_data();
-      usr_func( mymfct, npar, &par[0], &myfvec[0], ierr, my_usr_data );
+      this->usr_func( mymfct, npar, &par[0], &myfvec[0], ierr, my_usr_data );
 
-      real fval = pow( enorm( mymfct, &myfvec[0] ), 2.0 );
+      real fval = pow( this->enorm( mymfct, &myfvec[0] ), 2.0 );
       if ( EXIT_SUCCESS != ierr )
         throw sherpa::OptErr( sherpa::OptErr::UsrFunc );
       if ( nfev >= maxnfev )
@@ -1893,7 +1893,7 @@ namespace minpack {
       if (iflag < 0) {
 	goto TERMINATE;
       }
-      fnorm = enorm(m, fvec);
+      fnorm = this->enorm(m, fvec);
 
       /*     initialize levenberg-marquardt parameter and iteration counter. */
 
@@ -1918,7 +1918,7 @@ namespace minpack {
           iflag = 0;
           if ((iter - 1) % nprint == 0) {
             // fcn(m, n, x, fvec, iflag, xptr);
-            print_progress(m, n, x, fvec);
+            this->print_progress(m, n, x, fvec);
           }
           if (iflag < 0) {
             goto TERMINATE;
@@ -1927,7 +1927,7 @@ namespace minpack {
 
         /*        compute the qr factorization of the jacobian. */
 
-        qrfac(m, n, fjac, ldfjac, 1, ipvt, n, wa1, wa2, wa3);
+        this->qrfac(m, n, fjac, ldfjac, 1, ipvt, n, wa1, wa2, wa3);
 
         /*        on the first iteration and if mode is 1, scale according */
         /*        to the norms of the columns of the initial jacobian. */
@@ -1948,7 +1948,7 @@ namespace minpack {
           for (j = 0; j < n; ++j) {
             wa3[j] = diag[j] * x[j];
           }
-          xnorm = enorm(n, wa3);
+          xnorm = this->enorm(n, wa3);
           delta = factor * xnorm;
           if (delta == 0.) {
             delta = factor;
@@ -2019,7 +2019,7 @@ namespace minpack {
 
           /*           determine the levenberg-marquardt parameter. */
 
-          lmpar(n, fjac, ldfjac, ipvt, diag, qtf, delta, &par, wa1, wa2, wa3,
+          this->lmpar(n, fjac, ldfjac, ipvt, diag, qtf, delta, &par, wa1, wa2, wa3,
                 wa4);
 
           /*           store the direction p and x + p. calculate the norm of p. */
@@ -2029,7 +2029,7 @@ namespace minpack {
             wa2[j] = x[j] + wa1[j];
             wa3[j] = diag[j] * wa1[j];
           }
-          pnorm = enorm(n, wa3);
+          pnorm = this->enorm(n, wa3);
 
           /*           on the first iteration, adjust the initial step bound. */
 
@@ -2051,7 +2051,7 @@ namespace minpack {
           if (iflag < 0) {
             goto TERMINATE;
           }
-          fnorm1 = enorm(m, wa4);
+          fnorm1 = this->enorm(m, wa4);
 
           /*           compute the scaled actual reduction. */
 
@@ -2073,7 +2073,7 @@ namespace minpack {
               wa3[i] += fjac[i + j * ldfjac] * temp;
             }
           }
-          temp1 = enorm(n, wa3) / fnorm;
+          temp1 = this->enorm(n, wa3) / fnorm;
           temp2 = (sqrt(par) * pnorm) / fnorm;
           prered = temp1 * temp1 + temp2 * temp2 / p5;
           dirder = -(temp1 * temp1 + temp2 * temp2);
@@ -2121,7 +2121,7 @@ namespace minpack {
             for (i = 0; i < m; ++i) {
               fvec[i] = wa4[i];
             }
-            xnorm = enorm(n, wa2);
+            xnorm = this->enorm(n, wa2);
             fnorm = fnorm1;
             ++iter;
           }
@@ -2175,7 +2175,7 @@ namespace minpack {
       }
       if (nprint > 0) {
         // fcn(m, n, x, fvec, iflag, xptr);
-        print_progress(m, n, x, fvec);
+        this->print_progress(m, n, x, fvec);
       }
       return info;
       //     last card of subroutine lmdif.
@@ -2212,8 +2212,8 @@ namespace minpack {
                           maxfev, &diag[0], mode, factor, nprint,
                           nfev, njev, &ipvt[0], &qtf[0], &wa1[0], &wa2[0],
                           &wa3[0], &wa4[0], low, high);
-        double fnorm = enorm(m, &myfvec[0]);
-        covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
+        double fnorm = this->enorm(m, &myfvec[0]);
+        this->covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
         // rank = covar1( m, n, fnorm * fnorm, &fjac[0], ldfjac, &ipvt[0],
         //                ftol, &wa1[0] );
         fmin = std::pow( fnorm, 2.0 );
@@ -2258,7 +2258,7 @@ namespace minpack {
                       nprint, nfev, njev, &ipvt[0], &qtf[0], &wa1[ 0 ],
                       &wa2[0], &wa3[0], &wa4[0], low, high);
 
-        double fnorm = enorm(m, &myfvec[0]);
+        double fnorm = this->enorm(m, &myfvec[0]);
         rank = covar1( m, n, fnorm * fnorm, &fjac[0], ldfjac, &ipvt[0],
                        ftol, &wa1[0] );
         fmin = std::pow( fnorm, 2.0 );
@@ -2285,7 +2285,7 @@ namespace minpack {
 
       }
 
-      // fmin = std::pow( enorm( myfvec.size( ), &myfvec[0] ), 2.0 );
+      // fmin = std::pow( this->enorm( myfvec.size( ), &myfvec[0] ), 2.0 );
       return info;
 
     }
@@ -2306,7 +2306,7 @@ namespace minpack {
     //   Data usrdata = sherpa::Opt<Data, real>::get_usr_data();
     //   usr_func( m, npar, &par[0], &myfvec[0], &myfjac[0], m, ierr, usrdata );
 
-    //   real fval = pow( enorm( m, &myfvec[0] ), 2.0 );
+    //   real fval = pow( this->enorm( m, &myfvec[0] ), 2.0 );
     //   if ( EXIT_SUCCESS != ierr )
     //     throw sherpa::OptErr( sherpa::OptErr::UsrFunc );
     //   if ( nfev >= maxnfev )
@@ -2652,7 +2652,7 @@ namespace minpack {
       if (iflag < 0) {
 	goto TERMINATE;
       }
-      fnorm = enorm(m, fvec);
+      fnorm = this->enorm(m, fvec);
 
       /*     initialize levenberg-marquardt parameter and iteration counter. */
 
@@ -2677,7 +2677,7 @@ namespace minpack {
           iflag = 0;
           if ((iter - 1) % nprint == 0) {
             // iflag = fcn(m, n, x, fvec, fjac, ldfjac, 0, xptr);
-            print_progress(m, n, x, fvec);
+            this->print_progress(m, n, x, fvec);
           }
           if (iflag < 0) {
             goto TERMINATE;
@@ -2686,7 +2686,7 @@ namespace minpack {
 
         /*        compute the qr factorization of the jacobian. */
 
-        qrfac(m, n, fjac, ldfjac, 1, ipvt, n, wa1, wa2, wa3);
+        this->qrfac(m, n, fjac, ldfjac, 1, ipvt, n, wa1, wa2, wa3);
 
         /*        on the first iteration and if mode is 1, scale according */
         /*        to the norms of the columns of the initial jacobian. */
@@ -2707,7 +2707,7 @@ namespace minpack {
           for (j = 0; j < n; ++j) {
             wa3[j] = diag[j] * x[j];
           }
-          xnorm = enorm(n, wa3);
+          xnorm = this->enorm(n, wa3);
           delta = factor * xnorm;
           if (delta == 0.) {
             delta = factor;
@@ -2778,7 +2778,7 @@ namespace minpack {
 
           /*           determine the levenberg-marquardt parameter. */
 
-          lmpar(n, fjac, ldfjac, ipvt, diag, qtf, delta,
+          this->lmpar(n, fjac, ldfjac, ipvt, diag, qtf, delta,
                 &par, wa1, wa2, wa3, wa4);
 
           /*           store the direction p and x + p. calculate the norm of p. */
@@ -2788,7 +2788,7 @@ namespace minpack {
             wa2[j] = x[j] + wa1[j];
             wa3[j] = diag[j] * wa1[j];
           }
-          pnorm = enorm(n, wa3);
+          pnorm = this->enorm(n, wa3);
 
           /*           on the first iteration, adjust the initial step bound. */
 
@@ -2810,7 +2810,7 @@ namespace minpack {
           if (iflag < 0) {
             goto TERMINATE;
           }
-          fnorm1 = enorm(m, wa4);
+          fnorm1 = this->enorm(m, wa4);
 
           /*           compute the scaled actual reduction. */
 
@@ -2832,7 +2832,7 @@ namespace minpack {
               wa3[i] += fjac[i + j * ldfjac] * temp;
             }
           }
-          temp1 = enorm(n, wa3) / fnorm;
+          temp1 = this->enorm(n, wa3) / fnorm;
           temp2 = (sqrt(par) * pnorm) / fnorm;
           prered = temp1 * temp1 + temp2 * temp2 / p5;
           dirder = -(temp1 * temp1 + temp2 * temp2);
@@ -2880,7 +2880,7 @@ namespace minpack {
             for (i = 0; i < m; ++i) {
               fvec[i] = wa4[i];
             }
-            xnorm = enorm(n, wa2);
+            xnorm = this->enorm(n, wa2);
             fnorm = fnorm1;
             ++iter;
           }
@@ -2934,7 +2934,7 @@ namespace minpack {
       }
       if (nprint > 0) {
 	// fcn(m, n, x, fvec, fjac, ldfjac, 0, xptr);
-        print_progress(m, n, x, fvec);
+        this->print_progress(m, n, x, fvec);
       }
       return info;
 
@@ -3006,7 +3006,7 @@ namespace minpack {
       if (iflag < 0) {
 	goto TERMINATE;
       }
-      fnorm = enorm(m, fvec);
+      fnorm = this->enorm(m, fvec);
 
       /*     initialize levenberg-marquardt parameter and iteration counter. */
 
@@ -3033,7 +3033,7 @@ namespace minpack {
           iflag = 0;
           if ((iter - 1) % nprint == 0) {
             // iflag = fcn(m, n, x, fvec, fjac, ldfjac, 0, xptr);
-            print_progress(m, n, x, fvec);
+            this->print_progress(m, n, x, fvec);
           }
           if (iflag < 0) {
             goto TERMINATE;
@@ -3042,7 +3042,7 @@ namespace minpack {
 
         /*        compute the qr factorization of the jacobian. */
 
-        qrfac(m, n, fjac, ldfjac, 1, ipvt, n, wa1, wa2, wa3);
+        this->qrfac(m, n, fjac, ldfjac, 1, ipvt, n, wa1, wa2, wa3);
 
         /*        on the first iteration and if mode is 1, scale according */
         /*        to the norms of the columns of the initial jacobian. */
@@ -3063,7 +3063,7 @@ namespace minpack {
           for (j = 0; j < n; ++j) {
             wa3[j] = diag[j] * x[j];
           }
-          xnorm = enorm(n, wa3);
+          xnorm = this->enorm(n, wa3);
           delta = factor * xnorm;
           if (delta == 0.) {
             delta = factor;
@@ -3134,7 +3134,7 @@ namespace minpack {
 
           /*           determine the levenberg-marquardt parameter. */
 
-          lmpar(n, fjac, ldfjac, ipvt, diag, qtf, delta,
+          this->lmpar(n, fjac, ldfjac, ipvt, diag, qtf, delta,
                 &par, wa1, wa2, wa3, wa4);
 
           /*           store the direction p and x + p. calculate the norm of p. */
@@ -3144,7 +3144,7 @@ namespace minpack {
             wa2[j] = x[j] + wa1[j];
             wa3[j] = diag[j] * wa1[j];
           }
-          pnorm = enorm(n, wa3);
+          pnorm = this->enorm(n, wa3);
 
           /*           on the first iteration, adjust the initial step bound. */
 
@@ -3168,7 +3168,7 @@ namespace minpack {
           if (iflag < 0) {
             goto TERMINATE;
           }
-          fnorm1 = enorm(m, wa4);
+          fnorm1 = this->enorm(m, wa4);
 
           /*           compute the scaled actual reduction. */
 
@@ -3190,7 +3190,7 @@ namespace minpack {
               wa3[i] += fjac[i + j * ldfjac] * temp;
             }
           }
-          temp1 = enorm(n, wa3) / fnorm;
+          temp1 = this->enorm(n, wa3) / fnorm;
           temp2 = (sqrt(par) * pnorm) / fnorm;
           prered = temp1 * temp1 + temp2 * temp2 / p5;
           dirder = -(temp1 * temp1 + temp2 * temp2);
@@ -3238,7 +3238,7 @@ namespace minpack {
             for (i = 0; i < m; ++i) {
               fvec[i] = wa4[i];
             }
-            xnorm = enorm(n, wa2);
+            xnorm = this->enorm(n, wa2);
             fnorm = fnorm1;
             ++iter;
           }
@@ -3292,7 +3292,7 @@ namespace minpack {
       }
       if (nprint > 0) {
 	// fcn(m, n, x, fvec, fjac, ldfjac, 0, xptr);
-        print_progress(m, n, x, fvec);
+        this->print_progress(m, n, x, fvec);
       }
       return info;
 
