@@ -31,8 +31,7 @@ from . import _saoopt
 from sherpa.utils import parallel_map
 from sherpa.utils._utils import sao_fcmp
 
-import autograd.numpy as np
-from autograd import jacobian
+import numpy as np
 
 #
 # Use FLT_EPSILON as default tolerance
