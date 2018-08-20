@@ -108,3 +108,5 @@ extern/region-4.9/src/reglexer.c.tmp
 # Sphinx documentation
 docs/_build
 **/api
+
+.pytest_cache
