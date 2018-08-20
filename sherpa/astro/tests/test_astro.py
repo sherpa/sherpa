@@ -393,7 +393,7 @@ class test_threads(SherpaTestCase):
 
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0.00148391, 1e-4)
+        self.assertEqualWithinTol(covarerr[0], 0.00148391, 1e-3)
         self.assertEqualWithinTol(covarerr[1], 0.0011518, 1e-4)
         self.assertEqualWithinTol(covarerr[2], 0.00377755, 1e-4)
         self.assertEqualWithinTol(covarerr[3], 0.00370543, 1e-4)
@@ -539,7 +539,7 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         self.assertEqualWithinTol(covarerr[0], 0, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 8.74608e-07, 1e-4)
+        self.assertEqualWithinTol(covarerr[1], 8.74608e-07, 1e-3)
 
         # Fit -- Results from reminimize
         self.assertEqualWithinTol(self.locals['mek1'].kt.val, 17.8849, 1e-2)
