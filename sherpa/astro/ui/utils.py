@@ -11636,7 +11636,9 @@ class Session(sherpa.ui.utils.Session):
                                                   samples, modelcomponent,
                                                   confidence)
 
-    def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None):
+    def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None, \
+                error=False, params=None, otherids=(), niter=1000, \
+                covar_matrix=None):
         """Calculate the equivalent width of an emission or absorption line.
 
         Parameters
@@ -11714,7 +11716,40 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
 
-        return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+        if error:
+            ##############################################################
+            if params is None:
+                # will have to run get_draws
+                if covar_matrix is None:
+                    # check just in case usr has run covar()
+                    try:
+                        covar_results = self.get_covar_results()
+                        covar_matrix = covar_results.extra_output
+                        print('2. covar_matrix =', covar_matrix)
+                    except sherpa.utils.err.SessionErr:
+                        ids, f = self._get_fit(id)
+                        covar_matrix = f.est_errors().extra_output
+                        print('1. covar_matrix =', covar_matrix)
+                stat, accept, params = \
+                    self.get_draws(id, otherids=otherids, niter=niter,
+                                   covar_matrix=covar_matrix)
+            else:
+                print('params is not none')
+
+            eqw = numpy.zeros_like(params[0, :])
+            parnames = self.get_fit_results().parnames
+            for params_index in range(len(params[0, :])):
+                for parnames_index in range(len(parnames)):
+                    val = params[parnames_index, params_index]
+                    self.set_par(parnames[parnames_index], val)
+                eqw[params_index] = \
+                    sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+            median, lower, upper = sherpa.utils.get_error_estimates(eqw)
+            return median, lower, upper
+
+            ##############################################################
+        else:
+            return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
     def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None):
         """Integrate the source model over a pass band.
