@@ -149,7 +149,7 @@ class SmokeTest(unittest.TestCase):
 
     # Using skipIf directly as we need these tests to run when there is no pytest installed, so we can't use
     # the decorators in sherpa.utils.testing
-    @unittest.skipIf(not has_package_from_list('pyfits', 'astropy.io.fits', 'pycrates'), reason="Requires fits backend")
+    @unittest.skipIf(not has_package_from_list('astropy.io.fits', 'pycrates'), reason="Requires fits backend")
     def test_fits_io(self):
         """
         Test that basic FITS I/O functions work.

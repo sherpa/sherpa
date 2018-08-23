@@ -74,7 +74,7 @@ How To Install Sherpa
 =====================
 
 Sherpa can be installed from a binary distribution or built from
-sources. The 4.9.1 release is available for Python 2.7, 3.5, and 3.6.
+sources. The 4.10.0 release is available for Python 2.7, 3.5, and 3.6.
 
 The binary distribution is available for Linux and Mac OS X via conda installation 
 described in sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch). This is the fastest
@@ -111,8 +111,8 @@ and then refer to section [1a](#1a-anaconda).
 Notice that section [1b](#1b-starting-from-scratch). only provides instructions on how to install a minimal
 Anaconda-powered environment, not the full Anaconda distribution.
 
-The Sherpa 4.9.1  release - which is the latest binary release - is
-compatible with Python 2.7 and with Python 3.5.
+The Sherpa 4.10.0 release - which is the latest binary release - is
+compatible with Python 2.7, Python 3.5, and Python 3.6.
 
 
 ### 1a. Anaconda
@@ -123,7 +123,7 @@ to seamlessly install Sherpa.
 First you need to add the Sherpa channel to your configuration,
 and then install Sherpa:
 
-    $ conda config --add channels https://conda.anaconda.org/sherpa
+    $ conda config --add channels sherpa
     $ conda install sherpa
 
 To update Sherpa:
@@ -171,11 +171,11 @@ for BASH or `$HOME/.cshrc` for TCSH.
 
 Add the Sherpa conda repositories to your configuration:
 
-    $ conda config --add channels https://conda.anaconda.org/sherpa
+    $ conda config --add channels sherpa
 
 Create a new environment and install Sherpa:
 
-    $ conda create -n sherpa sherpa=4.9
+    $ conda create -n sherpa sherpa=4.10
 
 The above command will download and install Sherpa and its dependencies in an
 isolated environment, so that Sherpa will not interfere with your System's
@@ -205,8 +205,7 @@ You can start using Sherpa by starting a Python shell, or you can install
 `ipython` and use it as a more convenient shell. We recommend that you also install
 `ipython-notebook` and `matplotlib` so that you can use the nice `ipython` notebook
 features and the seamless integration with `matplotlib` for plotting from
-Sherpa. We also recommend that you install `astropy` for enabling FITS I/O
-(Sherpa will look for `pyfits` if `astropy` is not present).
+Sherpa. We also recommend that you install `astropy` for enabling FITS I/O.
 
     $ conda install ipython-notebook matplotlib astropy
 
@@ -222,18 +221,16 @@ The prerequisites for building from source are:
 The full test suite requires the `mock`, `pytest >=3.3.0`, and `pytest-xvfb` packages,
 which should be installed automatically if needed.
 
-The current Sherpa code base works with Python 2.7, 3.5, and 3.6 (as of the
-Sherpa 4.9.1 release); support for versions 3.3 and 3.4 is possible
-but would require community support.
+The current Sherpa code base works with Python 2.7, 3.5, and 3.6; support for
+versions 3.3 and 3.4 is possible but would require community support.
 
 It is *highly* recommended that [`matplotlib`](http://matplotlib.org/)
 be installed, as this is used to create graphical output (although the
 code can be built and used without this package), and
 [`ipython`](http://ipython.org/), which is for interactive analysis.
-Data I/O requires a `FITS` I/O library. Sherpa looks for
-[`astropy`](http://www.astropy.org) by default,
-and it falls back to [`pyfits`](http://www.stsci.edu/institute/software_hardware/pyfits) 
-if `astropy` is not installed.
+Data I/O requires a `FITS` I/O library; at present the supported
+libraries are [`astropy`](http://www.astropy.org) and
+Crates from CIAO.
 
 The instructions on how to set up the prerequisites vary from system to system,
 and even on the same system there may be multiple ways of setting up the requirements.
@@ -265,12 +262,12 @@ You can clone the Sherpa repository with:
     $ git clone https://github.com/sherpa/sherpa
     $ cd sherpa
 
-The most stable code is available through the 4.9.1 tag. The main
+The most stable code is available through the 4.10.0 tag. The main
 development code, which is unstable, is available in the `master`
 branch. New features and bug fixes or other, even less stable versions
 of the code may be available in other branches.
 
-The master branch supports Python 2.7, 3.5, and 3.6 (4.9.1 tag). Note the
+The master branch supports Python 2.7, 3.5, and 3.6. Note the
 4.8.1 tag and earlier are only compatible with Python 2.7.
 
 ### 2c. Build Sherpa
@@ -358,7 +355,7 @@ was installed.
 The external test data files can be
 installed from GitHub channel by saying:
 
-    $ pip install https://github.com/sherpa/sherpa-test-data/archive/4.9.1.tar.gz
+    $ pip install https://github.com/sherpa/sherpa-test-data/archive/4.10.0.tar.gz
 
 At this point, `sherpa_test` will pick up the data and so run more
 tests.
@@ -556,7 +553,7 @@ Release History
 
 4.8.2: 23 September 2016 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.154744.svg)](https://doi.org/10.5281/zenodo.154744)
 
-4.8.1: 15 April 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.49832.svg)](http://dx.doi.org/10.5281/zenodo.49832)
+4.8.1: 15 April 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.49832.svg)](https://doi.org/10.5281/zenodo.49832)
 
-4.8.0: 27 January 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.45243.svg)](http://dx.doi.org/10.5281/zenodo.45243)
+4.8.0: 27 January 2016 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.45243.svg)](https://doi.org/10.5281/zenodo.45243)
 

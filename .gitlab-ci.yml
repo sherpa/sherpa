@@ -1,0 +1,179 @@
+stages:
+  - extract
+  - build and package
+  - deploy
+  - test deploy
+
+extract:
+  stage: extract
+  image: registry.gitlab.com/olaurino/sherpa-docker-build:master
+  variables:
+     GIT_SUBMODULE_STRATEGY: 'none'
+  script:
+     - conda install numpy
+     - python setup.py sdist
+     - python -c "import sherpa; print(sherpa._version.get_versions()['version'])" > dist/version
+     - python -c "import sherpa; print(sherpa._version.get_versions()['full'])" > dist/full
+     - cat dist/version dist/full
+  artifacts:
+     expire_in: "2 weeks"
+     paths:
+         - dist
+
+.template-conda-build: &template_conda_build
+  image: registry.gitlab.com/olaurino/sherpa-docker-build:master
+  stage: build and package
+  tags:
+      - sherpa
+  script:
+      - export SHERPA_FULL_VERSION=$(git describe --tags --always)
+      - export SHERPA_VERSION=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}'`
+      - export SHERPA_BUILD_NUMBER=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}'`
+      - export SHERPA_TARBALL=$(pwd)/$(ls dist/*.tar.gz)
+      - conda build --output-folder /opt/project/packages /opt/project/recipes/sherpa.conda
+      - cp -R /opt/project/packages .
+  dependencies:
+      - extract
+  artifacts:
+    expire_in: "2 weeks"
+    paths:
+        - packages/
+
+.template-macos-conda-build: &template_macos_conda_build
+  tags:
+      - sherpa-macos-build
+  stage: build and package
+  script:
+      - export SHERPA_FULL_VERSION=$(git describe --tags --always)
+      - export SHERPA_VERSION=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}'`
+      - export SHERPA_BUILD_NUMBER=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}'`
+      - export SHERPA_TARBALL=$(pwd)/$(ls dist/*.tar.gz)
+      - mkdir ~/packages
+      - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/olaurino/sherpa-docker-build ~/sherpa-docker-build
+      - conda build --output-folder ~/packages ~/sherpa-docker-build/recipes/sherpa.conda
+      - cp -R ~/packages .
+  dependencies:
+      - extract
+  artifacts:
+      expire_in: "2 weeks"
+      paths:
+          - packages/
+
+macos-python2.7-conda-build:
+  <<: *template_macos_conda_build
+  variables:
+      SHERPA_PYTHON_VERSION: "2.7.*"
+
+macos-python3.5-conda-build:
+  <<: *template_macos_conda_build
+  variables:
+      SHERPA_PYTHON_VERSION: "3.5.*"
+
+macos-python3.6-conda-build:
+  <<: *template_macos_conda_build
+  variables:
+      SHERPA_PYTHON_VERSION: "3.6.*"
+
+linux-python2.7-conda-build:
+  <<: *template_conda_build
+  variables:
+    SHERPA_PYTHON_VERSION: '2.7.*'
+
+linux-python3.5-conda-build:
+  <<: *template_conda_build
+  variables:
+    SHERPA_PYTHON_VERSION: '3.5.*'
+
+linux-python3.6-conda-build:
+  <<: *template_conda_build
+  variables:
+    SHERPA_PYTHON_VERSION: '3.6.*'
+
+conda:
+  stage: deploy
+  tags:
+      - sherpa
+  image: registry.gitlab.com/olaurino/sherpa-docker-build:master
+  dependencies:
+      - linux-python2.7-conda-build
+      - linux-python3.5-conda-build
+      - linux-python3.6-conda-build
+      - macos-python2.7-conda-build
+      - macos-python3.5-conda-build
+      - macos-python3.6-conda-build
+  script:
+      - echo $CONDA_UPLOAD_TOKEN
+      - anaconda -t $CONDA_UPLOAD_TOKEN upload -u sherpa -c dev packages/linux-64/sherpa* --force
+      - anaconda -t $CONDA_UPLOAD_TOKEN upload -u sherpa -c dev packages/osx-64/sherpa* --force
+
+.template-linux-test: &template-linux-test
+  stage: test deploy
+  image: centos:6
+  variables:
+      PAGER: 'less'
+  before_script:
+      - yum install -y -q bzip2 libXext libSM libXrender curl less
+  script:
+      - cd /
+      - curl -LO -k http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+      - curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/master.zip # Hack, gitlab can't checkout the submodule from github
+      - bash Miniconda3-latest-Linux-x86_64.sh -b -p ~/miniconda
+      - export PATH=~/miniconda/bin:$PATH
+      - conda create -n test --yes -q -c sherpa/label/dev python=2 astropy sherpa matplotlib # How to make sure it's the correct version?
+      - source activate test
+      - pip install /master.zip
+      - sherpa_smoke -f astropy
+      - sherpa_test
+      - conda create -n test35 --yes -q -c sherpa/label/dev python=3.5 astropy sherpa matplotlib # How to make sure it's the correct version?
+      - source activate test35
+      - pip install /master.zip
+      - sherpa_smoke -f astropy
+      - sherpa_test
+      - conda create -n test36 --yes -q -c sherpa/label/dev python=3.6 astropy sherpa matplotlib # How to make sure it's the correct version?
+      - source activate test36
+      - pip install /master.zip
+      - sherpa_smoke -f astropy
+      - sherpa_test
+
+centos6-test:
+  <<: *template-linux-test
+
+centos7-test:
+  <<: *template-linux-test
+  image: centos:7
+
+ubuntu14-test:
+  <<: *template-linux-test
+  image: ubuntu:14.04
+  before_script:
+      - apt-get update && apt-get install -y -q bzip2 curl libxext6 libsm6 libxrender1 less
+
+ubuntu16-test:
+  <<: *template-linux-test
+  image: ubuntu:16.04
+  before_script:
+      - apt-get update && apt-get install -y -q bzip2 curl libxext6 libsm6 libxrender1 less
+
+#ubuntu17-test:
+#  <<: *template-linux-test
+#  image: ubuntu:17.10
+#  before_script:
+#      - apt-get update && apt-get install -y -q bzip2 curl libxext6 libsm6 libxrender1 less
+#
+#ubuntu18-test:
+#  <<: *template-linux-test
+#  image: ubuntu:18.04
+#  before_script:
+#      - apt-get update && apt-get install -y -q bzip2 curl libxext6 libsm6 libxrender1 less
+
+fedora26-test:
+  <<: *template-linux-test
+  image: fedora:26
+
+fedora27-test:
+  <<: *template-linux-test
+  image: fedora:27
+
+#fedora28-test:
+#  <<: *template-linux-test
+#  image: fedora:28

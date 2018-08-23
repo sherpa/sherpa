@@ -229,8 +229,7 @@ if HAS_PYTEST:
         Returns True if there is an importable backend for FITS I/O.
         Used to skip tests requiring fits_io
         """
-        packages = ('pyfits',
-                    'astropy.io.fits',
+        packages = ('astropy.io.fits',
                     'pycrates',
                     )
         msg = "FITS backend required"
