@@ -1,0 +1,52 @@
+#
+#  Copyright (C) 2018  Smithsonian Astrophysical Observatory
+#
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+from sherpa.utils import requires_data, requires_fits, requires_xspec
+from numpy.testing import assert_almost_equal
+import numpy
+
+
+
+from sherpa.astro.ui import *
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_eqwith_err(make_data_path):
+    set_method('neldermead')
+    set_stat('cstat')
+    load_data(make_data_path('12845.pi'))
+    notice(0.5,7)
+
+    set_model("xsphabs.gal*xszphabs.zabs*(powlaw1d.p1+xszgauss.g1)")
+    set_par(gal.nh,0.08)
+    freeze(gal)
+
+    set_par(zabs.redshift, 0.518)
+    set_par(g1.redshift, 0.518)
+    set_par(g1.Sigma, 0.01)
+    freeze(g1.Sigma)
+    set_par(g1.LineE,min=6.0,max=7.0)
+    fit()
+    result = eqwidth(p1,p1+g1, error=True, niter=100)
+    numpy.random.seed(12345)
+    assert_almost_equal(result[0], 0.16443033244310976, 1.0e-3)
+    assert_almost_equal(result[1], 0.09205564216156815, 1.0e-3)
+    assert_almost_equal(result[2], 0.23933118287470895, 1.0e-3)
