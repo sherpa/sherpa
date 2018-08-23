@@ -11666,17 +11666,27 @@ class Session(sherpa.ui.utils.Session):
         error : bool, optional
            The parameter indicates whether the errors are to be calculated
            or not.  The default value is False
-        params : numpy.ndarray, optional
+        params : 2D array, optional
+           The default is None, in which case get_draws shall be called.
+           The user can input the parameter array (e.g. from running
+           sample_flux).
         otherids: list of integer ids, optional
-        niter : integer, optional
-        covar_matrix : numpy.array
-
+           The default value is (). However, if get_draws is called
+           internally which may require otherids to be set if more then
+           one data set is to be used then otherids must be set.
+        niter : int, optional
+           The number of draws to use. The default is ``1000``.
+        covar_matrix : 2D array, optional
+           The covariance matrix to use. If ``None`` then the
+           result from `get_covar_results().extra_output` is used.
         Returns
         -------
-        width : number
-           The equivalent width [1]_ in the appropriate units (as given
-           by `set_analysis`).
-
+        if error is False
+           width : number
+              The equivalent width [1]_ in the appropriate units (as given
+              by `set_analysis`).
+        else:
+           median, 1 sigma lower, upper bounds, the parameters and eqwidth
         See Also
         --------
         calc_model_sum : Sum up the fitted model over a pass band.
