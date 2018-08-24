@@ -31,7 +31,7 @@ import warnings
 import numpy as np
 
 from sherpa.astro.utils import reshape_2d_arrays
-from sherpa.utils import interpolate, neville, rebin
+from sherpa.utils import interpolate, neville
 from sherpa.utils.err import ModelErr
 
 
@@ -142,6 +142,26 @@ class EvaluationSpace1D(object):
             True if they overlap, False if not
         """
         return self.x_axis.overlaps(other.x_axis)
+
+    def join(self, other):
+        # if we didn't keep only the unique elements the interpolation would fail.
+        # note that this also sorts the elements, which shouldn't be a problem.
+        new_xlo = np.unique(np.concatenate((self.x_axis.lo, other.x_axis.lo)))
+        if self.x_axis.is_integrated:
+            new_xhi = np.unique(np.concatenate((self.x_axis.hi, other.x_axis.hi)))
+        else:
+            new_xhi = None
+
+        return EvaluationSpace1D(new_xlo, new_xhi)
+
+    def __contains__(self, other):
+        """
+        check if this space properly contains the `other` space.
+        OL: I have mixed feelings about overriding this method. On one hand it makes the
+        tests more expressive and natural, on the other this method is intended to check
+        if an element is in a collection, so it's a bit of a stretch semantically.
+        """
+        return self.start <= other.start and self.end >= other.end
 
 
 # TODO How much validation should be done here?
@@ -265,8 +285,7 @@ class ModelDomainRegridder1D(object):
 
     def __init__(self, evaluation_space=None, name='regrid1d'):
         self.name = name
-        self.evaluation_space = evaluation_space\
-            if evaluation_space is not None else EvaluationSpace1D()
+        self.evaluation_space = evaluation_space if evaluation_space is not None else EvaluationSpace1D()
 
         # The tests show that neville (for simple interpolation-style
         # analysis) is much-more accurate than linear_interp, so use
@@ -368,10 +387,11 @@ class ModelDomainRegridder1D(object):
         #
         # TODO: can we use _modelfcts.integrate1d at all here?
         #
+        evaluation_space = self.evaluation_space
 
-        if not requested_space.overlaps(self.evaluation_space):
-            warnings.warn("requested space and evaluation space do not overlap, evaluating model to 0")
-            return requested_space.zeros_like()
+        if not requested_space in evaluation_space:
+            warnings.warn("evaluation space does not contain the requested space. Sherpa will join the two spaces.")
+            evaluation_space = evaluation_space.join(requested_space)
 
         if requested_space.is_integrated:
             # TODO: should there be some check that the grid size
@@ -379,13 +399,15 @@ class ModelDomainRegridder1D(object):
             #       appears to fail if the grid width used for modelfunc
             #       is larger than the output.
             #
-            y = modelfunc(pars, *self.evaluation_space.grid)
-            return rebin(y, self.grid[0], self.grid[1],
-                         *requested_space.grid)
+            y = modelfunc(pars, *evaluation_space.grid)
+
+            # interpolate each array individually, and then take the average as the value at the center of the bin.
+            y_lo = interpolate(requested_space.grid[0], evaluation_space.grid[0], y, function=self.method)
+            y_hi = interpolate(requested_space.grid[1], evaluation_space.grid[1], y, function=self.method)
+            return (y_lo + y_hi)/2
         else:
             y = modelfunc(pars, self.grid)
-            return interpolate(requested_space.grid, self.grid, y,
-                               function=self.method)
+            return interpolate(requested_space.grid, self.grid, y, function=self.method)
 
 
 class ModelDomainRegridder2D(object):

@@ -133,7 +133,8 @@ def test_evaluate_model_on_arbitrary_grid_integrated_list(setup):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    assert_fit(ui, my_model, 1)
+    with pytest.warns(UserWarning):
+        assert_fit(ui, my_model, 1)
 
     # Now fit with a different grid.
     # This is also the important part.
@@ -218,7 +219,8 @@ def test_evaluate_model_on_arbitrary_grid_integrated_ndarray(setup):
     ui.set_source(regrid_model + const)
 
     # Fit and check the result
-    assert_fit(ui, my_model, 1)
+    with pytest.warns(UserWarning):
+        assert_fit(ui, my_model, 1)
 
     # Now fit with a different grid.
     # This is also the important part.
