@@ -735,6 +735,10 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
     def __init__(self, model, wrapper):
         self.model = self.wrapobj(model)
         self.wrapper = wrapper
+
+        if hasattr(model, 'integrate'):
+            self.wrapper.integrate = model.integrate
+
         CompositeModel.__init__(self,
                                 "{}({})".format(self.wrapper.name,
                                                 self.model.name),
@@ -759,6 +763,10 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
     @grid.setter
     def grid(self, value):
         self.wrapper.grid = value
+
+    @property
+    def evaluation_space(self):
+        return self.wrapper.evaluation_space
 
     @staticmethod
     def wrapobj(obj):

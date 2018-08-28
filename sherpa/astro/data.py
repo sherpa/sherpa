@@ -2719,7 +2719,7 @@ class DataIMGInt(DataIMG):
     #     return (x0-halfwidth[0],x1-halfwidth[1],
     #             x0+halfwidth[0],x1+halfwidth[1])
 
-    def get_indep(self, filter=False):
+    def get_indep(self, filter=False, model=None):
         filter = bool_cast(filter)
         if filter:
             return (self._x0lo, self._x1lo, self._x0hi, self._x1hi)

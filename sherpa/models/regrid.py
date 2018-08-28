@@ -34,6 +34,9 @@ from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.utils import interpolate, neville
 from sherpa.utils.err import ModelErr
 
+import logging
+warning = logging.getLogger(__name__).warning
+
 
 class Axis(object):
     def __init__(self, lo, hi):
@@ -115,6 +118,13 @@ class EvaluationSpace1D(object):
     def grid(self):
         if self.x_axis.is_integrated:
             return self.x_axis.lo, self.x_axis.hi
+        else:
+            return self.x_axis.lo
+
+    @property
+    def midpoint_grid(self):
+        if self.x_axis.is_integrated:
+            return (self.x_axis.lo + self.x_axis.hi)/2
         else:
             return self.x_axis.lo
 
@@ -285,6 +295,7 @@ class ModelDomainRegridder1D(object):
 
     def __init__(self, evaluation_space=None, name='regrid1d'):
         self.name = name
+        self.integrate = True
         self.evaluation_space = evaluation_space if evaluation_space is not None else EvaluationSpace1D()
 
         # The tests show that neville (for simple interpolation-style
@@ -394,20 +405,30 @@ class ModelDomainRegridder1D(object):
             evaluation_space = evaluation_space.join(requested_space)
 
         if requested_space.is_integrated:
-            # TODO: should there be some check that the grid size
-            #       is "compatible"? Note that test_regrid1d_int_flux
-            #       appears to fail if the grid width used for modelfunc
-            #       is larger than the output.
-            #
-            y = modelfunc(pars, *evaluation_space.grid)
+            if self.integrate:
+                # This should be the norm
+                from sherpa.models.basic import _modelfcts
+                y = _modelfcts.integrate1d(modelfunc, pars, *evaluation_space.grid,
+                                           epsabs=np.finfo(float).eps,
+                                           epsrel=0,
+                                           maxeval=10000,
+                                           logger=warning
+                                           )
+            else:
+                # The integrate flag is set to false, so just evaluate the model
+                # at the midpoint
 
-            # interpolate each array individually, and then take the average as the value at the center of the bin.
-            y_lo = interpolate(requested_space.grid[0], evaluation_space.grid[0], y, function=self.method)
-            y_hi = interpolate(requested_space.grid[1], evaluation_space.grid[1], y, function=self.method)
-            return (y_lo + y_hi)/2
+                # TODO: should there be some check that the grid size
+                #       is "compatible"? Note that test_regrid1d_int_flux
+                #       appears to fail if the grid width used for modelfunc
+                #       is larger than the output.
+                #
+                y = modelfunc(pars, evaluation_space.midpoint_grid)
         else:
-            y = modelfunc(pars, self.grid)
-            return interpolate(requested_space.grid, self.grid, y, function=self.method)
+            y = modelfunc(pars, evaluation_space.grid)
+
+        return interpolate(requested_space.midpoint_grid, evaluation_space.midpoint_grid, y,
+                           function=self.method)
 
 
 class ModelDomainRegridder2D(object):

@@ -42,7 +42,7 @@ def setup_1d():
 
     gmdl = Gauss1D()
     cmdl = Const1D()
-    gmdl.pos = 50
+    gmdl.pos = 5000
     gmdl.fwhm = 30
     gmdl.ampl = 20
     cmdl.c0 = 10
@@ -277,7 +277,7 @@ def test_regrid1d_identity_after_clearing_grid(setup_1d):
 
 
 def test_regrid1d_no_overlap(setup_1d):
-    """If the two grids have no overlap, return value is 0."""
+    """If the two grids have no overlap, return value is the same as the model evaluated over the data space."""
 
     gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
@@ -292,11 +292,11 @@ def test_regrid1d_no_overlap(setup_1d):
     with pytest.warns(UserWarning):
         ygot = mdl(grid)
 
-    assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
+    assert_allclose(ygot, [10., ]*grid.size, atol=0, rtol=1e-7)
 
 
 def test_regrid1d_no_overlap_rev1(setup_1d):
-    """If the two grids have no overlap, return value is 0."""
+    """If the two grids have no overlap, return value is the same as the model evaluated over the data space."""
 
     gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
@@ -311,11 +311,11 @@ def test_regrid1d_no_overlap_rev1(setup_1d):
     with pytest.warns(UserWarning):
         ygot = mdl(grid)
 
-    assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
+    assert_allclose(ygot, [10., ]*grid.size, atol=0, rtol=1e-7)
 
 
 def test_regrid1d_no_overlap_rev2(setup_1d):
-    """If the two grids have no overlap, return value is 0."""
+    """If the two grids have no overlap, return value is the same as the model evaluated over the data space."""
 
     gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
@@ -330,11 +330,11 @@ def test_regrid1d_no_overlap_rev2(setup_1d):
     with pytest.warns(UserWarning):
         ygot = mdl(grid)
 
-    assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
+    assert_allclose(ygot, [10., ]*grid.size, atol=0, rtol=1e-7)
 
 
 def test_regrid1d_no_overlap_rev3(setup_1d):
-    """If the two grids have no overlap, return value is 0."""
+    """If the two grids have no overlap, return value is the same as the model evaluated over the data space."""
 
     gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
@@ -349,11 +349,11 @@ def test_regrid1d_no_overlap_rev3(setup_1d):
     with pytest.warns(UserWarning):
         ygot = mdl(grid)
 
-    assert_allclose(ygot, np.zeros(grid.size), atol=0, rtol=1e-7)
+    assert_allclose(ygot, [10., ]*grid.size, atol=0, rtol=1e-7)
 
 
 def test_regrid1d_no_overlap_int(setup_1d):
-    """If the two grids have no overlap, return value is 0."""
+    """If the two grids have no overlap, return value is the same as the model evaluated over the data space."""
 
     gmdl, cmdl = setup_1d
     internal_mdl = gmdl + cmdl
@@ -369,7 +369,7 @@ def test_regrid1d_no_overlap_int(setup_1d):
     with pytest.warns(UserWarning):
         ygot = mdl(grid[:-1], grid[1:])
 
-    assert_allclose(ygot, np.zeros(grid.size - 1), atol=0, rtol=1e-7)
+    assert_allclose(ygot, [50., ]*(grid.size - 1), atol=0, rtol=1e-7)
 
 
 class MyConst1D(Const1D):
@@ -749,10 +749,6 @@ def test_regrid1d_int_flux():
     ghi = grid[1:]
 
     mdl = fluxmdl(pmdl)
-
-    # Without any regridding, the model should be zero
-    yzero = mdl(glo, ghi)
-    assert_allclose(yzero, np.zeros(glo.size), atol=1e-10, rtol=0)
 
     regrid = ModelDomainRegridder1D()
     rmdl = regrid.apply_to(mdl)

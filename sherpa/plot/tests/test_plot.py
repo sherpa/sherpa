@@ -18,6 +18,8 @@
 #
 
 import numpy
+import pytest
+
 import sherpa.all as sherpa
 from sherpa.utils.testing import SherpaTestCase, requires_data
 
@@ -49,6 +51,8 @@ _datay = numpy.array(
 
 
 # TODO: many tests in this class do not perform any assertions
+# True, but I am glad they were there despite not performing any assertions
+# as they made me spot some regressions I wouldn't have otherwise spotted (OL)
 class test_plot(SherpaTestCase):
 
     def setUp(self):
@@ -397,3 +401,52 @@ class test_confidence(SherpaTestCase):
         self.assertEqualWithinTol(_rux1, self.ru.x1, 1e-4)
         self.assertEqualWithinTol(_ruy, self.ru.y, 1e-4)
         # self.ru.contour()
+
+
+def test_source_component_arbitrary_grid():
+    from sherpa.astro.ui.utils import  Session
+    from sherpa.models import Const1D
+
+    ui = Session()
+
+    x = [1, 2, 3]
+    y = [1, 2, 3]
+    re_x = [10, 20, 30]
+
+    ui.load_arrays(1, x, y)
+    model = Const1D('c')
+    model.c0 = 10
+
+    regrid_model = model.regrid(re_x)
+
+    with pytest.warns(UserWarning):
+        ui.plot_source_component(regrid_model)
+
+    numpy.testing.assert_array_equal(ui._compsrcplot.x, x + re_x)
+
+
+def test_source_component_arbitrary_grid_int():
+    from sherpa.astro.ui.utils import Session
+    from sherpa.models import Const1D
+    from sherpa.data import Data1DInt
+
+    ui = Session()
+
+    x = numpy.array([1, 2, 3]), numpy.array([2, 3, 4])
+    y = [1.5, 2.5, 3.5]
+    re_x = numpy.array([10, 20, 30]), numpy.array([20, 30, 40])
+
+    ui.load_arrays(1, x[0], x[1], y, Data1DInt)
+    model = Const1D('c')
+    model.c0 = 10
+
+    regrid_model = model.regrid(*re_x)
+
+    with pytest.warns(UserWarning):
+        ui.plot_source_component(regrid_model)
+
+    x_points = (x[0] + x[1])/2
+    re_x_points = (re_x[0] + re_x[1])/2
+    points = numpy.concatenate((x_points, re_x_points))
+
+    numpy.testing.assert_array_equal(ui._compsrcplot.x, points)

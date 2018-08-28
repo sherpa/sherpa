@@ -20,11 +20,14 @@
 """
 Tools for creating, storing, inspecting, and manipulating data sets
 """
+import warnings
 
 from six.moves import zip as izip
 import sys
 import inspect
 import numpy
+
+from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, NotImplementedErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     print_fields, create_expr, calc_total_error, bool_cast, \
@@ -184,14 +187,14 @@ class Data(BaseData):
         return modelfunc(*self.get_indep())
 
     def eval_model_to_fit(self, modelfunc):
-        return modelfunc(*self.get_indep(filter=True))
+        return modelfunc(*self.get_indep(filter=True, model=modelfunc))
 
     #
     # Primary properties.  These can depend only on normal attributes (and not
     # other properties).
     #
 
-    def get_indep(self, filter=False):
+    def get_indep(self, filter=False, model=None):
         """Return the independent axes of a data set.
 
         Parameters
@@ -365,11 +368,11 @@ class Data(BaseData):
         return calc_total_error(self.get_staterror(filter, staterrfunc),
                                 self.get_syserror(filter))
 
-    def get_x(self, filter=False):
+    def get_x(self, filter=False, yfunc=None):
         "Return linear view of independent axis/axes"
         self._wrong_dim_error(1)
 
-    def get_xerr(self, filter=False):
+    def get_xerr(self, filter=False, yfunc=None):
         "Return linear view of bin size in independent axis/axes"
         return None
 
@@ -438,10 +441,10 @@ class Data(BaseData):
                 self.get_syserror(True))
 
     def to_plot(self, yfunc=None, staterrfunc=None):
-        return (self.get_x(True),
+        return (self.get_x(True, yfunc),
                 self.get_y(True, yfunc),
                 self.get_yerr(True, staterrfunc),
-                self.get_xerr(True),
+                self.get_xerr(True, yfunc),
                 self.get_xlabel(),
                 self.get_ylabel())
 
@@ -586,14 +589,40 @@ class Data1D(DataND):
         self._x = x
         BaseData.__init__(self)
 
-    def get_indep(self, filter=False):
+    def get_indep(self, filter=False, model=None):
+        data_space = self._get_indep_space(filter)
+        evaluation_space = None
+
+        if model is not None and hasattr(model, "evaluation_space"):
+            evaluation_space = model.evaluation_space
+            if not data_space in evaluation_space:
+                warnings.warn("evaluation space does not contain the requested space. Sherpa will join the two spaces.")
+                evaluation_space = evaluation_space.join(data_space)
+
+        # The current implementation is weird, so we need to add some logic to always
+        # return a tuple, sometimes of one element, sometimes of two
+        if evaluation_space is None:
+            if data_space.is_integrated:
+                return data_space.grid
+            else:
+                return data_space.grid,
+
+        if evaluation_space.is_integrated:
+            return evaluation_space.grid
+        else:
+            return evaluation_space.grid,
+
+    def _get_indep_space(self, filter):
         filter = bool_cast(filter)
         if filter:
-            return (self._x,)
-        return (self.x,)
+            data_x = self._x
+        else:
+            data_x = self.x
 
-    def get_x(self, filter=False):
-        return self.get_indep(filter)[0]
+        return EvaluationSpace1D(data_x)
+
+    def get_x(self, filter=False, model=None):
+        return self.get_indep(filter, model)[0]
 
     def get_dims(self, filter=False):
         return (len(self.get_x(filter)),)
@@ -664,18 +693,18 @@ class Data1DInt(Data1D):
         self._hi = xhi
         BaseData.__init__(self)
 
-    def get_indep(self, filter=False):
+    def _get_indep_space(self, filter=False):
         filter = bool_cast(filter)
         if filter:
-            return (self._lo, self._hi)
-        return (self.xlo, self.xhi)
+            return EvaluationSpace1D(self._lo, self._hi)
+        return EvaluationSpace1D(self.xlo, self.xhi)
 
-    def get_x(self, filter=False):
-        indep = self.get_indep(filter)
+    def get_x(self, filter=False, model=None):
+        indep = self.get_indep(filter, model)
         return (indep[0] + indep[1]) / 2.0
 
-    def get_xerr(self, filter=False):
-        xlo, xhi = self.get_indep(filter)
+    def get_xerr(self, filter=False, model=None):
+        xlo, xhi = self.get_indep(filter, model)
         return xhi - xlo
 
     def notice(self, xlo=None, xhi=None, ignore=False):
@@ -704,7 +733,7 @@ class Data2D(DataND):
         self._x1 = x1
         BaseData.__init__(self)
 
-    def get_indep(self, filter=False):
+    def get_indep(self, filter=False, model=None ):
         filter = bool_cast(filter)
         if filter:
             return (self._x0, self._x1)
