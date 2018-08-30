@@ -396,31 +396,9 @@ def test_read_arf_fails_rmf(make_data_path):
 @requires_data
 @requires_fits
 def test_read_rmf(make_data_path):
-
-    if not six.PY2 and (backend == "crates"):
-        pytest.skip('Python3 and Crates: known to fail')
-
     infile = make_data_path(RMFFILE)
     rmf = io.read_rmf(infile)
     validate_rmf(rmf)
-
-
-@requires_data
-@requires_fits
-def test_read_rmf_crates_py3(make_data_path):
-    """At present the RMF can not be read with the crates backend with
-    Python 3.5. This test will let us know when Crates has been fixed.
-    """
-
-    if six.PY2 or (backend != "crates"):
-        pytest.skip('Test only needed for Crates with Python 3')
-
-    infile = make_data_path(RMFFILE)
-    with pytest.raises(ValueError) as excinfo:
-        io.read_rmf(infile)
-
-    assert str(excinfo.value) == "dmKeyRead() cound not find key. " + \
-        "'HDUCLAS1'"
 
 
 @requires_data
@@ -450,9 +428,6 @@ def test_can_use_pspc_data(make_data_path):
     Unlike the previous tests, that directly access the io module,
     this uses the ui interface.
     """
-
-    if not six.PY2 and (backend == "crates"):
-        pytest.skip('Python3 and Crates: known to fail')
 
     # The PSPC PHA file does not have the ANCRFILE/RESPFILE keywords
     # set up, so the responses has to be manually added.
