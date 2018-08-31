@@ -29,6 +29,7 @@ match the desired grid.
 import warnings
 
 import numpy as np
+from sherpa.utils._utils import rebin
 
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.utils import interpolate, neville
@@ -391,44 +392,34 @@ class ModelDomainRegridder1D(object):
 
         return requested_eval_space
 
-    def _evaluate(self, requested_space, pars, modelfunc):
-        # Evaluate the model on the user-defined grid and then interpolate
+    def _evaluate(self, data_space, pars, modelfunc):
+        # Evaluate the model on the user-defined grid and then interpolate/rebin
         # onto the desired grid. This is based on sherpa.models.TableModel
         # but is simplified as we do not provide a fold method.
-        #
-        # TODO: can we use _modelfcts.integrate1d at all here?
-        #
+
         evaluation_space = self.evaluation_space
 
-        if not requested_space in evaluation_space:
+        if not data_space in evaluation_space:
             warnings.warn("evaluation space does not contain the requested space. Sherpa will join the two spaces.")
-            evaluation_space = evaluation_space.join(requested_space)
+            evaluation_space = evaluation_space.join(data_space)
 
-        if requested_space.is_integrated:
+        if data_space.is_integrated:
             if self.integrate:
-                # This should be the norm
-                from sherpa.models.basic import _modelfcts
-                y = _modelfcts.integrate1d(modelfunc, pars, *evaluation_space.grid,
-                                           epsabs=np.finfo(float).eps,
-                                           epsrel=0,
-                                           maxeval=10000,
-                                           logger=warning
-                                           )
+                # This should be the most common case
+                y = modelfunc(pars, *evaluation_space.grid)
+                return rebin(y,
+                             evaluation_space.grid[0], evaluation_space.grid[1],
+                             data_space.grid[0], data_space.grid[1])
             else:
                 # The integrate flag is set to false, so just evaluate the model
-                # at the midpoint
-
-                # TODO: should there be some check that the grid size
-                #       is "compatible"? Note that test_regrid1d_int_flux
-                #       appears to fail if the grid width used for modelfunc
-                #       is larger than the output.
-                #
-                y = modelfunc(pars, evaluation_space.midpoint_grid)
+                # and then interpolate using the grids midpoints.
+                y = modelfunc(pars, *evaluation_space.grid)
+                return interpolate(data_space.midpoint_grid, evaluation_space.midpoint_grid, y,
+                                   function=self.method)
         else:
             y = modelfunc(pars, evaluation_space.grid)
-
-        return interpolate(requested_space.midpoint_grid, evaluation_space.midpoint_grid, y,
-                           function=self.method)
+            return interpolate(data_space.midpoint_grid, evaluation_space.midpoint_grid, y,
+                               function=self.method)
 
 
 class ModelDomainRegridder2D(object):

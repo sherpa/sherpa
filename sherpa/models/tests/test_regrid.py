@@ -126,13 +126,11 @@ def test_evaluate_model_on_arbitrary_grid_integrated_list(setup):
     ui, my_model, const = setup
 
     # Load data
-    ui.load_arrays(1, [1.5, 2.5, 3.5], [2.5, 3.5, 4.5], [100, 100, 100], Data1DInt)
+    ui.load_arrays(1, [1, 2, 3], [2, 3, 4], [100, 100, 100], Data1DInt)
 
     # Get a model that evaluates on a different grid
     # This is the important part.
-    # Note that our model has the integrate flag disabled, so the midpoint of these values
-    # is taken into account when calculating the model.
-    regrid_model = my_model.regrid([0, 1, 2], [1, 2, 3])
+    regrid_model = my_model.regrid([0.5, 1.5, 2.5], [1.5, 2.5, 3.5])
 
     # The model will be part of a complex model expression, so let's pretend we add another component
     ui.set_source(regrid_model + const)
@@ -143,7 +141,7 @@ def test_evaluate_model_on_arbitrary_grid_integrated_list(setup):
 
     # Now fit with a different grid.
     # This is also the important part.
-    regrid_model.grid = [1.5, 2.5, 3.5], [2.5, 3.5, 4.5]
+    regrid_model.grid = [1, 2, 3], [2, 3, 4]
 
     assert_fit(ui, my_model, 0)
 
@@ -214,11 +212,11 @@ def test_evaluate_model_on_arbitrary_grid_integrated_ndarray(setup):
     ui, my_model, const = setup
 
     # Load data
-    ui.load_arrays(1, [1.5, 2.5, 3.5], [2.5, 3.5, 4.5], [100, 100, 100], Data1DInt)
+    ui.load_arrays(1, [1, 2, 3], [2, 3, 4], [100, 100, 100], Data1DInt)
 
     # Get a model that evaluates on a different grid
     # This is the important part.
-    regrid_model = my_model.regrid(np.array([0, 1, 2]), [1, 2, 3])
+    regrid_model = my_model.regrid(np.array([0.5, 1.5, 2.5]), [1.5, 2.5, 3.5])
 
     # The model will be part of a complex model expression, so let's pretend we add another component
     ui.set_source(regrid_model + const)
@@ -229,7 +227,7 @@ def test_evaluate_model_on_arbitrary_grid_integrated_ndarray(setup):
 
     # Now fit with a different grid.
     # This is also the important part.
-    regrid_model.grid = [1.5, 2.5, 3.5], np.array([2.5, 3.5, 4.5])
+    regrid_model.grid = [1, 2, 3], np.array([2, 3, 4])
 
     assert_fit(ui, my_model, 0)
 
