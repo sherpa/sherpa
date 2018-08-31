@@ -362,7 +362,7 @@ class ModelDomainRegridder1D(object):
 
         requested_eval_space = self._make_and_validate_grid(args)
 
-        return self._evaluate(requested_eval_space, pars, modelfunc)
+        return self._evaluate(requested_eval_space, pars, modelfunc, **kwargs)
 
     def _make_and_validate_grid(self, args_array):
         """
@@ -392,10 +392,11 @@ class ModelDomainRegridder1D(object):
 
         return requested_eval_space
 
-    def _evaluate(self, data_space, pars, modelfunc):
+    def _evaluate(self, data_space, pars, modelfunc, **kwargs):
         # Evaluate the model on the user-defined grid and then interpolate/rebin
         # onto the desired grid. This is based on sherpa.models.TableModel
         # but is simplified as we do not provide a fold method.
+        kwargs['integrate'] = self.integrate  # Not really sure I need this, but let's be safe
 
         evaluation_space = self.evaluation_space
 
@@ -406,18 +407,19 @@ class ModelDomainRegridder1D(object):
         if data_space.is_integrated:
             if self.integrate:
                 # This should be the most common case
-                y = modelfunc(pars, *evaluation_space.grid)
+                y = modelfunc(pars, evaluation_space.grid[0], evaluation_space.grid[1],
+                              **kwargs)
                 return rebin(y,
                              evaluation_space.grid[0], evaluation_space.grid[1],
                              data_space.grid[0], data_space.grid[1])
             else:
                 # The integrate flag is set to false, so just evaluate the model
                 # and then interpolate using the grids midpoints.
-                y = modelfunc(pars, *evaluation_space.grid)
+                y = modelfunc(pars, evaluation_space.midpoint_grid, **kwargs)
                 return interpolate(data_space.midpoint_grid, evaluation_space.midpoint_grid, y,
                                    function=self.method)
         else:
-            y = modelfunc(pars, evaluation_space.grid)
+            y = modelfunc(pars, evaluation_space.grid, **kwargs)
             return interpolate(data_space.midpoint_grid, evaluation_space.midpoint_grid, y,
                                function=self.method)
 

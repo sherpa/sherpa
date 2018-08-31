@@ -404,7 +404,7 @@ def test_regrid1d_passes_through_the_grid():
     assert len(store) == 2
 
     assert len(store[0]) == 2
-    assert store[1] == {}
+    assert store[1] == {'integrate': True}
 
     store = store[0]
     assert store[0] == [-34.5]
