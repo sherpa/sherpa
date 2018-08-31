@@ -21,11 +21,14 @@
 There is a copy of this test in sherpa/ui/astro/tests/ that needs
 to be kept up to date.
 """
+import numpy
 
+from sherpa.astro.data import DataPHA
 from sherpa.utils.testing import requires_plotting
 from sherpa.ui.utils import Session
+from sherpa.astro.ui.utils import Session as AstroSession
 from numpy.testing import assert_array_equal
-from sherpa.models import parameter
+from sherpa.models import parameter, Const1D
 
 import pytest
 
@@ -248,3 +251,22 @@ def test_list_model_ids():
 
     s.set_model('const1d.mdla')
     assert set(s.list_model_ids()) == set([1, 'ma', 'mb'])
+
+
+# Fix 476
+def test_zero_division_calc_stat():
+    ui = AstroSession()
+    x = numpy.arange(100)
+    y = numpy.zeros(100)
+    ui.load_arrays(1, x, y, DataPHA)
+    ui.group_counts(1, 100)
+    ui.set_full_model(1, Const1D("const"))
+
+    # in principle I wouldn't need to call calc_stat_info(), I could just
+    # use _get_stat_info to reproduce the issue, However, _get_stat_info is not a public
+    # method, so I want to double check that calc_stat_info does not throw an exception.
+    # So, first we try to run calc_stat_info and make sure there are no exceptions.
+    # Then, since calc_stat_info only logs something and doesn't return anything, we use
+    # a white box approach to get the result from _get_stat_info.
+    ui.calc_stat_info()
+    assert ui._get_stat_info()[0].rstat is numpy.nan

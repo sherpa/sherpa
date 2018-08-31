@@ -1199,7 +1199,10 @@ class Fit(NoNewAttributesAfterInit):
         if _can_calculate_rstat(self.stat):
             if stat >= 0.0:
                 qval = igamc(dof / 2., stat / 2.)
-            rstat = stat / dof
+            try:
+                rstat = stat / dof
+            except ZeroDivisionError:
+                rstat = nan
 
         name = _cleanup_chi2_name(self.stat, self.data)
 
