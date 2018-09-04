@@ -441,6 +441,8 @@ class Data(BaseData):
                 self.get_syserror(True))
 
     def to_plot(self, yfunc=None, staterrfunc=None):
+        # As we introduced models defined on arbitrary grids, the x array can also depend on the
+        # model function, at least in principle.
         return (self.get_x(True, yfunc),
                 self.get_y(True, yfunc),
                 self.get_yerr(True, staterrfunc),
@@ -590,7 +592,12 @@ class Data1D(DataND):
         BaseData.__init__(self)
 
     def get_indep(self, filter=False, model=None):
-        data_space = self._get_indep_space(filter)
+        data_space = self._get_data_space(filter)
+        evaluation_space = self._get_evaluation_space(data_space, model)
+        return self._get_indep_grid(data_space, evaluation_space)
+
+    @staticmethod
+    def _get_evaluation_space(data_space, model):
         evaluation_space = None
 
         if model is not None and hasattr(model, "evaluation_space"):
@@ -599,7 +606,11 @@ class Data1D(DataND):
                 warnings.warn("evaluation space does not contain the requested space. Sherpa will join the two spaces.")
                 evaluation_space = evaluation_space.join(data_space)
 
-        # The current implementation is weird, so we need to add some logic to always
+        return evaluation_space
+
+    @staticmethod
+    def _get_indep_grid(data_space, evaluation_space):
+        # The current implementation requires that we add some logic to always
         # return a tuple, sometimes of one element, sometimes of two
         if evaluation_space is None:
             if data_space.is_integrated:
@@ -612,7 +623,7 @@ class Data1D(DataND):
         else:
             return evaluation_space.grid,
 
-    def _get_indep_space(self, filter):
+    def _get_data_space(self, filter):
         filter = bool_cast(filter)
         if filter:
             data_x = self._x
@@ -693,7 +704,7 @@ class Data1DInt(Data1D):
         self._hi = xhi
         BaseData.__init__(self)
 
-    def _get_indep_space(self, filter=False):
+    def _get_data_space(self, filter=False):
         filter = bool_cast(filter)
         if filter:
             return EvaluationSpace1D(self._lo, self._hi)

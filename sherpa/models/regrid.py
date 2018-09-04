@@ -175,7 +175,6 @@ class EvaluationSpace1D(object):
         return self.start <= other.start and self.end >= other.end
 
 
-# TODO How much validation should be done here?
 class EvaluationSpace2D(object):
     def __init__(self, x=None, y=None, xhi=None, yhi=None):
         # In the 2D case the arrays are redundant, as they are flattened from a meshgrid.
@@ -228,7 +227,6 @@ class EvaluationSpace2D(object):
         Check if this evaluation space overlaps with another
         Note that this is more stringent for 2D, as the boundaries
         need to coincide in this case.
-        (#TODO come up with actual requirements on the overlap conditions)
 
         Parameters
         ----------
@@ -336,7 +334,6 @@ class ModelDomainRegridder1D(object):
             The parameter values of the model.
         modelfunc
             The model to evaluate (the calc attribute of the model)
-            TODO: should this be model as we call model.calc here?
         args
             The grid to interpolate the model onto. This must match the
             format of the grid attribute of the model - i.e.
@@ -377,7 +374,6 @@ class ModelDomainRegridder1D(object):
         -------
         requested_eval_space : EvaluationSpace1D
         """
-        # FIXME Isn't this fragile?
         nargs = len(args_array)
         if nargs == 0:
             raise ModelErr('nogrid')
@@ -404,6 +400,14 @@ class ModelDomainRegridder1D(object):
             warnings.warn("evaluation space does not contain the requested space. Sherpa will join the two spaces.")
             evaluation_space = evaluation_space.join(data_space)
 
+        # I don't like the string of IFs, but it might be more expressive this way in this specific case.
+        # If the data space is integrated and the model's integrate flag is set to True, then evaluate the model
+        # on the evaluation space and then rebin onto the data space.
+        # If the data space is integrated but the model's integrate flas is set to False, then evaluate the model
+        # on the midpoint grid (note: we are passing the midpoint grid to force Sherpa to treat this as not integrated.
+        # If we passed two arrays we'd fall in a edge case and Sherpa would evaluate the model at the edge of the bin.
+        # If the data space is not integrated then simply evaluate the model on the grid and then interpolate
+        # to match the data space.
         if data_space.is_integrated:
             if self.integrate:
                 # This should be the most common case
@@ -484,7 +488,6 @@ class ModelDomainRegridder2D(object):
             The parameter values of the model.
         modelfunc
             The model to evaluate (the calc attribute of the model)
-            TODO: should this be model as we call model.calc here?
         args
             The grid to interpolate the model onto. This must match the
             format of the grid attribute of the model - i.e.
@@ -524,7 +527,6 @@ class ModelDomainRegridder2D(object):
         -------
         requested_eval_space : EvaluationSpace2D
         """
-        # FIXME Isn't this fragile?
         nargs = len(args_array)
         if nargs == 0:
             raise ModelErr('nogrid')
@@ -542,9 +544,6 @@ class ModelDomainRegridder2D(object):
     def _evaluate(self, requested_space, pars, modelfunc):
         # Evaluate the model on the user-defined grid and then rebin
         # onto the desired grid.
-        #
-        # TODO: should there be some check that the grid size
-        #       is "compatible"?
 
         if not requested_space.overlaps(self.evaluation_space):
             warnings.warn("requested space and evaluation space do not overlap, evaluating model to 0")
@@ -611,15 +610,13 @@ def rebin_flux(array, dimensions=None, scale=None):
             raise RuntimeError('')
     else:
         raise RuntimeError('Incorrect parameters to rebin.\n\trebin(array, dimensions=(x,y))\n\trebin(array, scale=a')
-    # print(dimensions)
-    # print("Rebinning to Dimensions: %s, %s" % tuple(dimensions))
     import itertools
     dY, dX = map(divmod, map(float, array.shape), dimensions)
 
     result = np.zeros(dimensions)
     for j, i in itertools.product(*map(range, array.shape)):
         (J, dj), (I, di) = divmod(j * dimensions[0], array.shape[0]), divmod(i * dimensions[1], array.shape[1])
-        (J1, dj1), (I1, di1) = divmod(j + 1, array.shape[0] / float(dimensions[0])),\
+        (J1, dj1), (I1, di1) = divmod(j + 1, array.shape[0] / float(dimensions[0])), \
                                divmod(i + 1, array.shape[1] / float(dimensions[1]))
 
         # Moving to new bin
@@ -641,7 +638,7 @@ def rebin_flux(array, dimensions=None, scale=None):
         result[J, I_] += array[j, i] * dy * (1 - dx)
         result[J_, I_] += array[j, i] * (1 - dx) * (1 - dy)
     allowError = 0.1
-    assert array.sum() == 0 or\
-           (array.sum() < result.sum() * (1 + allowError)) and\
+    assert array.sum() == 0 or \
+           (array.sum() < result.sum() * (1 + allowError)) and \
            (array.sum() > result.sum() * (1 - allowError))
     return result
