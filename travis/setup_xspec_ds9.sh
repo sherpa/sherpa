@@ -36,7 +36,7 @@ fi
 
 ### DS9 and XPA
 # Tarballs to fetch
-ds9_tar=ds9.${ds9_os}.7.5.tar.gz
+ds9_tar=ds9.${ds9_os}.7.6.tar.gz
 xpa_tar=xpa.${ds9_os}.2.1.17.tar.gz
 
 # Fetch them
