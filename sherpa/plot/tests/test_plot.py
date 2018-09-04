@@ -22,8 +22,7 @@ import numpy
 import pytest
 
 import sherpa.all as sherpa
-from sherpa.utils.testing import SherpaTestCase, requires_data
-
+from sherpa.utils.testing import SherpaTestCase, requires_data, requires_plotting
 
 _datax = numpy.array(
     [  0.,   1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.,
@@ -404,6 +403,7 @@ class test_confidence(SherpaTestCase):
         # self.ru.contour()
 
 
+@requires_plotting
 def test_source_component_arbitrary_grid():
     from sherpa.astro.ui.utils import  Session
     from sherpa.models import Const1D
@@ -426,6 +426,7 @@ def test_source_component_arbitrary_grid():
     numpy.testing.assert_array_equal(ui._compsrcplot.x, x + re_x)
 
 
+@requires_plotting
 def test_source_component_arbitrary_grid_int():
     from sherpa.astro.ui.utils import Session
     from sherpa.models import Const1D
