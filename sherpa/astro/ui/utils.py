@@ -4771,11 +4771,13 @@ class Session(sherpa.ui.utils.Session):
                                          specresp=specresp, exposure=exposure,
                                          ethresh=ethresh)
 
-    def create_delta_rmf(self, rmflo, rmfhi, startchan=1,
-                         e_min=None, e_max=None, ethresh=None,
-                         name='delta-rmf'):
-        """Create a RMF for a delta-function response.
-        This is a "perfect" (delta-function) response.
+    def create_rmf(self, rmflo, rmfhi, startchan=1, e_min=None, e_max=None,
+                   ethresh=None, fname=None, name='delta-rmf'):
+        """Create an RMF for a "perfect" delta-function response if fname is
+        None otherwise fname contains the name of the image file generated
+        from the standard RMF file with the CIAO tool rmfimg to create an
+        RMF which does not have a delta-function response.
+
         Parameters
         ----------
         rmflo, rmfhi : array
@@ -4795,63 +4797,9 @@ class Session(sherpa.ui.utils.Session):
         ethresh : number or None, optional
             Passed through to the DataARF call. It controls whether
             zero-energy bins are replaced.
-        name : str
-            The name of the data set
-        Returns
-        -------
-        rmf : DataRMF instance
-        Notes
-        -----
-        I do not think I have the startchan=0 case correct (does the
-        f_chan array have to change?).
-        """
-
-        assert rmflo.size == rmfhi.size
-        assert startchan >= 0
-
-        # Set up the delta-function response.
-        # TODO: should f_chan start at startchan?
-        #
-        nchans = rmflo.size
-        matrix = numpy.ones(nchans, dtype=numpy.float32)
-        dummy = numpy.ones(nchans, dtype=numpy.int16)
-        f_chan = numpy.arange(1, nchans + 1, dtype=numpy.int16)
-
-        return sherpa.astro.data.DataRMF(name, detchans=nchans,
-                                         energ_lo=rmflo, energ_hi=rmfhi,
-                                         n_grp=dummy, n_chan=dummy,
-                                         f_chan=f_chan, matrix=matrix,
-                                         offset=startchan,
-                                         e_min=e_min, e_max=e_max,
-                                         ethresh=ethresh)
-
-    def create_non_delta_rmf(self, rmflo, rmfhi, fname, startchan=1,
-                             e_min=None, e_max=None, ethresh=None,
-                             name='delta-rmf'):
-        """Create a RMF for a delta-function response.
-        This is a "perfect" (delta-function) response.
-        Parameters
-        ----------
-        rmflo, rmfhi : array
-            The energy bins (low and high, in keV) for the RMF.
-            It is assumed that emfhi_i > rmflo_i, rmflo_j > 0, that the energy
-            bins are either ascending, so rmflo_i+1 > rmflo_i or descending
-            (rmflo_i+1 < rmflo_i), and that there are no overlaps.
-            These correspond to the Elow and Ehigh columns (represented
-            by the ENERG_LO and ENERG_HI columns of the MATRIX block) of
-            the OGIP standard.
-        fname : str
+        fname : str, optional
             The name of the image file generated from the standard RMF file
             with the CIAO tool rmfimg
-        startchan : int, optional
-            The starting channel number: expected to be 0 or 1 but this is
-            not enforced.
-        e_min, e_max : None or array, optional
-            The E_MIN and E_MAX columns of the EBOUNDS block of the
-            RMF.
-        ethresh : number or None, optional
-            Passed through to the DataARF call. It controls whether
-            zero-energy bins are replaced.
         name : str
             The name of the data set
         Returns
@@ -4863,49 +4811,85 @@ class Session(sherpa.ui.utils.Session):
         f_chan array have to change?).
         """
 
-        assert rmflo.size == rmfhi.size
-        assert startchan >= 0
-        assert os.path.isfile(fname)
+        def create_delta_rmf(rmflo, rmfhi, startchan=1,
+                             e_min=None, e_max=None, ethresh=None,
+                             name='delta-rmf'):
+            assert rmflo.size == rmfhi.size
+            assert startchan >= 0
+
+            # Set up the delta-function response.
+            # TODO: should f_chan start at startchan?
+            #
+            nchans = rmflo.size
+            matrix = numpy.ones(nchans, dtype=numpy.float32)
+            dummy = numpy.ones(nchans, dtype=numpy.int16)
+            f_chan = numpy.arange(1, nchans + 1, dtype=numpy.int16)
+
+            return sherpa.astro.data.DataRMF(name, detchans=nchans,
+                                             energ_lo=rmflo, energ_hi=rmfhi,
+                                             n_grp=dummy, n_chan=dummy,
+                                             f_chan=f_chan, matrix=matrix,
+                                             offset=startchan,
+                                             e_min=e_min, e_max=e_max,
+                                             ethresh=ethresh)
+
+        def create_non_delta_rmf(rmflo, rmfhi, fname, startchan=1,
+                                 e_min=None, e_max=None, ethresh=None,
+                                 name='delta-rmf'):
+            assert rmflo.size == rmfhi.size
+            assert startchan >= 0
+            assert os.path.isfile(fname)
 
 
-        # Set up the delta-function response.
-        # TODO: should f_chan start at startchan?
-        #
-        nchans = rmflo.size
-        def calc_grp_chan_matrix(fname):
-            try:
-                data, filename = sherpa.astro.io.backend.get_image_data(fname)
-                matrix = data['y']
-                n_grp = []
-                n_chan = []
-                f_chan = []
-                for row in (matrix > 0):
-                    flag = numpy.hstack([[0], row, [0]])
-                    diffs = numpy.diff(flag, n=1)
-                    starts, = numpy.where(diffs > 0)
-                    ends, = numpy.where(diffs < 0)
-                    n_chan.extend(ends - starts)
-                    f_chan.extend(starts + 1)
-                    n_grp.append(len(starts))
-                n_grp = numpy.asarray(n_grp, dtype=numpy.int16)
-                f_chan = numpy.asarray(f_chan, dtype=numpy.int16)
-                n_chan = numpy.asarray(n_chan, dtype=numpy.int16)
-                matrix = matrix.flatten()
-                matrix = matrix[matrix > 0]
-                return n_grp, f_chan, n_chan, matrix
-            except sherpa.utils.err.IOErr as ioerr:
-                print(ioerr)
-                raise ioerr
+            # Set up the delta-function response.
+            # TODO: should f_chan start at startchan?
+            #
+            nchans = rmflo.size
+            def calc_grp_chan_matrix(fname):
+                try:
+                    data, filename = \
+                        sherpa.astro.io.backend.get_image_data(fname)
+                    matrix = data['y']
+                    n_grp = []
+                    n_chan = []
+                    f_chan = []
+                    for row in (matrix > 0):
+                        flag = numpy.hstack([[0], row, [0]])
+                        diffs = numpy.diff(flag, n=1)
+                        starts, = numpy.where(diffs > 0)
+                        ends, = numpy.where(diffs < 0)
+                        n_chan.extend(ends - starts)
+                        f_chan.extend(starts + 1)
+                        n_grp.append(len(starts))
+                    n_grp = numpy.asarray(n_grp, dtype=numpy.int16)
+                    f_chan = numpy.asarray(f_chan, dtype=numpy.int16)
+                    n_chan = numpy.asarray(n_chan, dtype=numpy.int16)
+                    matrix = matrix.flatten()
+                    matrix = matrix[matrix > 0]
+                    return n_grp, f_chan, n_chan, matrix
+                except sherpa.utils.err.IOErr as ioerr:
+                    print(ioerr)
+                    raise ioerr
 
-        n_grp, f_chan, n_chan, matrix = calc_grp_chan_matrix(fname)
+            n_grp, f_chan, n_chan, matrix = calc_grp_chan_matrix(fname)
 
-        return sherpa.astro.data.DataRMF(name, detchans=nchans,
-                                         energ_lo=rmflo, energ_hi=rmfhi,
-                                         n_grp=n_grp, n_chan=n_chan,
-                                         f_chan=f_chan, matrix=matrix,
-                                         offset=startchan,
-                                         e_min=e_min, e_max=e_max,
-                                         ethresh=ethresh)
+            return sherpa.astro.data.DataRMF(name, detchans=nchans,
+                                             energ_lo=rmflo, energ_hi=rmfhi,
+                                             n_grp=n_grp, n_chan=n_chan,
+                                             f_chan=f_chan, matrix=matrix,
+                                             offset=startchan,
+                                             e_min=e_min, e_max=e_max,
+                                             ethresh=ethresh)
+
+        if fname is None:
+            return create_delta_rmf(rmflo, rmfhi, startchan=startchan,
+                                    e_min=e_min, e_max=e_max, ethresh=ethresh,
+                                    name=name)
+        else:
+            return create_non_delta_rmf(rmflo, rmfhi, fname,
+                                        startchan=startchan, e_min=e_min,
+                                        e_max=e_max, ethresh=ethresh,
+                                        name=name)
 
     # def _check_resp_id(id):
     #    if (id is not None) and (not self._valid_id(id)):

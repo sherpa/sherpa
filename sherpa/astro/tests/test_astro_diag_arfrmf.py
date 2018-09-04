@@ -285,7 +285,7 @@ def test_rmf1d_no_pha_delta():
     "Can we create an RMF (delta function) with no PHA?"
 
     egrid = np.arange(0.1, 0.6, 0.1)
-    rdata = ui.create_delta_rmf(egrid[:-1], egrid[1:])
+    rdata = ui.create_rmf(egrid[:-1], egrid[1:])
     rmf = RMF1D(rdata)
 
     assert rmf._rmf == rdata
@@ -378,7 +378,7 @@ def test_rmf1d_simple_no_pha_call():
     "Can we call an RMF (delta function) with no PHA"
 
     egrid = np.arange(0.1, 0.6, 0.1)
-    rdata = ui.create_delta_rmf(egrid[:-1], egrid[1:])
+    rdata = ui.create_rmf(egrid[:-1], egrid[1:])
     rmf = RMF1D(rdata)
 
     mdl = Const1D('flat')
@@ -413,7 +413,7 @@ def test_rmf1d_delta_arf_no_pha_call():
     egrid = np.arange(0.1, 0.6, 0.1)
     elo = egrid[:-1]
     ehi = egrid[1:]
-    rdata = ui.create_delta_rmf(elo, ehi)
+    rdata = ui.create_rmf(elo, ehi)
     adata = ui.create_arf(elo, ehi)
     rmf = RMF1D(rdata, arf=adata)
 
@@ -495,7 +495,7 @@ def test_rmfmodelnopha_delta_call():
     "What happens calling an rmf (delta function) with no pha?"
 
     egrid = np.arange(0.01, 0.06, 0.01)
-    rdata = ui.create_delta_rmf(egrid[:-1], egrid[1:])
+    rdata = ui.create_rmf(egrid[:-1], egrid[1:])
 
     constant = 2.3
     mdl = Const1D('flat')
@@ -554,7 +554,7 @@ def test_rspmodelnopha_delta_call():
     elo = egrid[:-1]
     ehi = egrid[1:]
     specresp = np.asarray([1.2, 0.0, 0.5, 4.3])
-    rdata = ui.create_delta_rmf(elo, ehi)
+    rdata = ui.create_rmf(elo, ehi)
     adata = ui.create_arf(elo, ehi, specresp, exposure=exposure)
 
     constant = 2.3
@@ -676,7 +676,7 @@ def test_rmfmodelpha_delta_no_ebounds(analysis):
 
     estep = 0.01
     egrid = np.arange(0.01, 0.06, estep)
-    rdata = ui.create_delta_rmf(egrid[:-1], egrid[1:])
+    rdata = ui.create_rmf(egrid[:-1], egrid[1:])
 
     channels = np.arange(1, 5, dtype=np.int16)
     counts = np.asarray([10, 5, 12, 7], dtype=np.int16)
@@ -773,7 +773,7 @@ def test_rmfmodelpha_delta_call(ignore):
     egrid = np.arange(0.1, 0.8, estep)
     elo = egrid[:-1]
     ehi = egrid[1:]
-    rdata = ui.create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    rdata = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
     nchans = elo.size
 
     constant = 2.3
@@ -884,7 +884,7 @@ def test_rspmodelpha_delta_call(ignore):
     specresp[2:5] = 0.0
     specresp[16:19] = 3.2
     adata = ui.create_arf(elo, ehi, specresp, exposure=exposure)
-    rdata = ui.create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    rdata = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
     nchans = elo.size
 
     constant = 2.3
@@ -996,7 +996,7 @@ def test_rspmodelpha_delta_call_wave():
     specresp[2:5] = 0.0
     specresp[16:19] = 3.2
     adata = ui.create_arf(elo, ehi, specresp, exposure=exposure)
-    rdata = ui.create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    rdata = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
     nchans = elo.size
 
     constant = 2.3
@@ -1040,7 +1040,7 @@ def test_rspmodelpha_delta_call_channel():
     specresp[2:5] = 0.0
     specresp[16:19] = 3.2
     adata = ui.create_arf(elo, ehi, specresp, exposure=exposure)
-    rdata = ui.create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    rdata = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
     nchans = elo.size
 
     constant = 2.3
@@ -1440,7 +1440,7 @@ def test_rmf1d_delta_no_pha_zero_energy_bin():
     ehi = egrid[1:]
 
     with pytest.raises(DataErr) as exc:
-        ui.create_delta_rmf(elo, ehi, ethresh=ethresh)
+        ui.create_rmf(elo, ehi, ethresh=ethresh)
 
     emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
     assert str(exc.value) == emsg
@@ -1457,7 +1457,7 @@ def test_rmf1d_delta_no_pha_zero_energy_bin_replace():
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
-        rdata = ui.create_delta_rmf(elo, ehi, ethresh=ethresh)
+        rdata = ui.create_rmf(elo, ehi, ethresh=ethresh)
 
     validate_zero_replacement(ws, 'RMF', 'delta-rmf', ethresh)
 
@@ -1488,7 +1488,7 @@ def test_rmf1d_delta_pha_zero_energy_bin():
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
-        rdata = ui.create_delta_rmf(elo, ehi, ethresh=ethresh)
+        rdata = ui.create_rmf(elo, ehi, ethresh=ethresh)
 
     validate_zero_replacement(ws, 'RMF', 'delta-rmf', ethresh)
 
@@ -1535,7 +1535,7 @@ def test_rsp1d_delta_no_pha_zero_energy_bin():
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
-        rdata = ui.create_delta_rmf(elo, ehi, ethresh=ethresh)
+        rdata = ui.create_rmf(elo, ehi, ethresh=ethresh)
 
     validate_zero_replacement(ws, 'RMF', 'delta-rmf', ethresh)
 
@@ -1575,7 +1575,7 @@ def test_rsp1d_delta_pha_zero_energy_bin():
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
-        rdata = ui.create_delta_rmf(elo, ehi, ethresh=ethresh)
+        rdata = ui.create_rmf(elo, ehi, ethresh=ethresh)
 
     validate_zero_replacement(ws, 'RMF', 'delta-rmf', ethresh)
 
