@@ -18,10 +18,9 @@
 #
 
 from sherpa.utils import requires_data, requires_fits, requires_xspec
-from numpy.testing import assert_almost_equal
 import numpy
 
-
+from pytest import approx
 
 from sherpa.astro.ui import *
 
@@ -47,6 +46,6 @@ def test_eqwith_err(make_data_path):
     fit()
     numpy.random.seed(12345)
     result = eqwidth(p1,p1+g1, error=True, niter=100)
-    assert_almost_equal(result[0], 0.16443033244310976, 1.0e-3)
-    assert_almost_equal(result[1], 0.09205564216156815, 1.0e-3)
-    assert_almost_equal(result[2], 0.23933118287470895, 1.0e-3)
+    assert result[0] == approx(0.16443033244310976, rel=1e-3)
+    assert result[1] == approx(0.09205564216156815, rel=1e-3)
+    assert result[2] == approx(0.23933118287470895, rel=1e-3)
