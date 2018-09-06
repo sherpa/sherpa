@@ -27,7 +27,7 @@ import logging
 import warnings
 
 import numpy
-from sherpa.data import BaseData, Data1DInt, Data2D, DataND
+from sherpa.data import BaseData, Data1DInt, Data2D, DataND, Data
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, parse_expr, bool_cast, rebin, filter_bins
@@ -1927,7 +1927,7 @@ class DataPHA(Data1DInt):
         return val
 
     def get_y(self, filter=False, yfunc=None, response_id=None):
-        vallist = Data1DInt.get_y(self, yfunc=yfunc)
+        vallist = Data.get_y(self, yfunc=yfunc)
         filter = bool_cast(filter)
 
         if not isinstance(vallist, tuple):

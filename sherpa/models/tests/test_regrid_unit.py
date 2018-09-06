@@ -36,8 +36,8 @@ from sherpa.utils.err import ModelErr
 from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, EvaluationSpace2D
 
 
-@pytest.fixture
-def setup_1d():
+@pytest.fixture(params=[True, False])
+def setup_1d(request):
     """Create Gauss1D + Const1D components."""
 
     gmdl = Gauss1D()
@@ -47,7 +47,12 @@ def setup_1d():
     gmdl.ampl = 20
     cmdl.c0 = 10
 
-    return gmdl, cmdl
+    return_composite = request.param
+
+    if return_composite:
+        return gmdl + cmdl
+    else:
+        return cmdl
 
 
 @pytest.mark.parametrize("cls,name",
@@ -100,8 +105,7 @@ def test_regrid1d_wrapping_create_composite_instance():
 def test_regrid1d_call_twice(setup_1d):
     """What happens if have no evaluation (output) grid?"""
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100))
     rmdl = ModelDomainRegridder1D(eval_space)
@@ -189,8 +193,7 @@ def test_regrid1d_wrapping_str():
 #
 def test_regrid1d_identity_when_no_grid(setup_1d):
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     rmdl = ModelDomainRegridder1D()
     mdl = rmdl.apply_to(internal_mdl)
@@ -205,8 +208,7 @@ def test_regrid1d_identity_when_no_grid(setup_1d):
 
 def test_regrid1d_identity_when_no_grid_rev(setup_1d):
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     rmdl = ModelDomainRegridder1D()
     mdl = rmdl.apply_to(internal_mdl)
@@ -221,8 +223,7 @@ def test_regrid1d_identity_when_no_grid_rev(setup_1d):
 
 def test_regrid1d_identity_when_no_grid_int(setup_1d):
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     rmdl = ModelDomainRegridder1D()
     mdl = rmdl.apply_to(internal_mdl)
@@ -251,14 +252,12 @@ def test_regrid1d_identity_when_no_grid_int(setup_1d):
     ygot = mdl(xlo, xhi)
 
     assert_allclose(ygot, yexp, atol=0, rtol=1e-7)
-# TODO: should there be a test_regrid2d_identity_when_no_grid_int()?
 
 
 def test_regrid1d_identity_after_clearing_grid(setup_1d):
     """Ensure that the grid can be removed."""
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     eval_space = EvaluationSpace1D(np.arange(200, 300, 20))
 
@@ -279,8 +278,7 @@ def test_regrid1d_identity_after_clearing_grid(setup_1d):
 def test_regrid1d_no_overlap(setup_1d):
     """If the two grids have no overlap, return value is the same as the model evaluated over the data space."""
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100))
     rmdl = ModelDomainRegridder1D(eval_space)
@@ -298,8 +296,7 @@ def test_regrid1d_no_overlap(setup_1d):
 def test_regrid1d_no_overlap_rev1(setup_1d):
     """If the two grids have no overlap, return value is the same as the model evaluated over the data space."""
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100))
     rmdl = ModelDomainRegridder1D(eval_space)
@@ -317,8 +314,7 @@ def test_regrid1d_no_overlap_rev1(setup_1d):
 def test_regrid1d_no_overlap_rev2(setup_1d):
     """If the two grids have no overlap, return value is the same as the model evaluated over the data space."""
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100)[::-1])
     rmdl = ModelDomainRegridder1D(eval_space)
@@ -336,8 +332,7 @@ def test_regrid1d_no_overlap_rev2(setup_1d):
 def test_regrid1d_no_overlap_rev3(setup_1d):
     """If the two grids have no overlap, return value is the same as the model evaluated over the data space."""
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     eval_space = EvaluationSpace1D(np.arange(1000, 2000, 100)[::-1])
     rmdl = ModelDomainRegridder1D(eval_space)
@@ -355,8 +350,7 @@ def test_regrid1d_no_overlap_rev3(setup_1d):
 def test_regrid1d_no_overlap_int(setup_1d):
     """If the two grids have no overlap, return value is the same as the model evaluated over the data space."""
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     array = np.arange(1000, 2000, 100)
     eval_space = EvaluationSpace1D(array[:-1], array[1:])
@@ -413,8 +407,7 @@ def test_regrid1d_passes_through_the_grid():
 
 def test_regrid1d_error_calc_no_args(setup_1d):
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
     grid_evaluate = EvaluationSpace1D(np.arange(-10, 100, 5))
 
     rmdl = ModelDomainRegridder1D(grid_evaluate)
@@ -431,8 +424,7 @@ def test_regrid1d_error_calc_no_args(setup_1d):
 def test_regrid1d_error_grid_mismatch_1(setup_1d):
     """Internal grid is integrated but given points"""
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     grid_evaluate = np.arange(-10, 100, 5)
     eval_space = EvaluationSpace1D(grid_evaluate[:-1], grid_evaluate[1:])
@@ -450,8 +442,7 @@ def test_regrid1d_error_grid_mismatch_1(setup_1d):
 def test_regrid1d_error_grid_mismatch_2(setup_1d):
     """Internal grid is points but given integrated"""
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     grid_evaluate = EvaluationSpace1D(np.arange(-10, 100, 5))
     rmdl = ModelDomainRegridder1D(grid_evaluate)
@@ -493,8 +484,7 @@ def _test_regrid1d_interpolation(rtol,
         use the default method (which is sherpa.utils.neville)
     """
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     # Shift the evaluation grid compared to the
     # requested grid (making sure that the evaluation
@@ -553,8 +543,7 @@ def _test_regrid1d_int(rtol,
     assert eval_incr
     assert req_incr
 
-    gmdl, cmdl = setup_1d
-    internal_mdl = gmdl + cmdl
+    internal_mdl = setup_1d
 
     grid_evaluate = np.arange(-10, 100, 5)
     grid_request = np.linspace(-5, 85, 21)

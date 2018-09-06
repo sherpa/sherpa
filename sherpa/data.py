@@ -593,23 +593,18 @@ class Data1D(DataND):
 
     def get_indep(self, filter=False, model=None):
         data_space = self._get_data_space(filter)
+        return self._get_indep_grid(data_space)
+
+    def get_x(self, filter=False, model=None):
+        return self._get_x_space(filter, model)[0]
+
+    def _get_x_space(self, filter=False, model=None):
+        data_space = self._get_data_space(filter)
         evaluation_space = self._get_evaluation_space(data_space, model)
         return self._get_indep_grid(data_space, evaluation_space)
 
     @staticmethod
-    def _get_evaluation_space(data_space, model):
-        evaluation_space = None
-
-        if model is not None and hasattr(model, "evaluation_space"):
-            evaluation_space = model.evaluation_space
-            if not data_space in evaluation_space:
-                warnings.warn("evaluation space does not contain the requested space. Sherpa will join the two spaces.")
-                evaluation_space = evaluation_space.join(data_space)
-
-        return evaluation_space
-
-    @staticmethod
-    def _get_indep_grid(data_space, evaluation_space):
+    def _get_indep_grid(data_space, evaluation_space=None):
         # The current implementation requires that we add some logic to always
         # return a tuple, sometimes of one element, sometimes of two
         if evaluation_space is None:
@@ -632,8 +627,27 @@ class Data1D(DataND):
 
         return EvaluationSpace1D(data_x)
 
-    def get_x(self, filter=False, model=None):
-        return self.get_indep(filter, model)[0]
+    @staticmethod
+    def _get_evaluation_space(data_space, model):
+        evaluation_space = None
+
+        if model is not None and hasattr(model, "evaluation_space"):
+            evaluation_space = model.evaluation_space
+            if not data_space in evaluation_space:
+                warnings.warn("evaluation space does not contain the requested space. Sherpa will join the two spaces.")
+                evaluation_space = evaluation_space.join(data_space)
+
+        return evaluation_space
+
+    def get_y(self, filter=False, yfunc=None):
+        "Return dependent axis in N-D view of dependent variable"
+        y = self.get_dep(filter)
+
+        if yfunc is not None:
+            model_evaluation = yfunc(*self._get_x_space(filter, yfunc))
+            y = (y, model_evaluation)
+
+        return y
 
     def get_dims(self, filter=False):
         return (len(self.get_x(filter)),)
@@ -711,7 +725,7 @@ class Data1DInt(Data1D):
         return EvaluationSpace1D(self.xlo, self.xhi)
 
     def get_x(self, filter=False, model=None):
-        indep = self.get_indep(filter, model)
+        indep = self._get_x_space(filter, model)
         return (indep[0] + indep[1]) / 2.0
 
     def get_xerr(self, filter=False, model=None):
