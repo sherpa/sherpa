@@ -368,7 +368,7 @@ class Data(BaseData):
         return calc_total_error(self.get_staterror(filter, staterrfunc),
                                 self.get_syserror(filter))
 
-    def get_x(self, filter=False, yfunc=None):
+    def get_x(self, filter=False, yfunc=None, use_evaluation_space=False):
         "Return linear view of independent axis/axes"
         self._wrong_dim_error(1)
 
@@ -380,7 +380,7 @@ class Data(BaseData):
         "Return label for linear view of independent axis/axes"
         return 'x'
 
-    def get_y(self, filter=False, yfunc=None):
+    def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
         "Return dependent axis in N-D view of dependent variable"
         y = self.get_dep(filter)
 
@@ -445,6 +445,16 @@ class Data(BaseData):
         # model function, at least in principle.
         return (self.get_x(True, yfunc),
                 self.get_y(True, yfunc),
+                self.get_yerr(True, staterrfunc),
+                self.get_xerr(True, yfunc),
+                self.get_xlabel(),
+                self.get_ylabel())
+
+    def to_component_plot(self, yfunc=None, staterrfunc=None):
+        # As we introduced models defined on arbitrary grids, the x array can also depend on the
+        # model function, at least in principle.
+        return (self.get_x(True, yfunc, use_evaluation_space=True),
+                self.get_y(True, yfunc, use_evaluation_space=True),
                 self.get_yerr(True, staterrfunc),
                 self.get_xerr(True, yfunc),
                 self.get_xlabel(),
@@ -595,12 +605,15 @@ class Data1D(DataND):
         data_space = self._get_data_space(filter)
         return self._get_indep_grid(data_space)
 
-    def get_x(self, filter=False, model=None):
-        return self._get_x_space(filter, model)[0]
+    def get_x(self, filter=False, model=None, use_evaluation_space=False):
+        return self._get_x_space(filter, model, use_evaluation_space)[0]
 
-    def _get_x_space(self, filter=False, model=None):
+    def _get_x_space(self, filter=False, model=None, use_evaluation_space=False):
         data_space = self._get_data_space(filter)
-        evaluation_space = self._get_evaluation_space(data_space, model)
+        if use_evaluation_space:
+            evaluation_space = self._get_evaluation_space(data_space, model)
+        else:
+            evaluation_space = None
         return self._get_indep_grid(data_space, evaluation_space)
 
     @staticmethod
@@ -639,12 +652,12 @@ class Data1D(DataND):
 
         return evaluation_space
 
-    def get_y(self, filter=False, yfunc=None):
+    def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
         "Return dependent axis in N-D view of dependent variable"
         y = self.get_dep(filter)
 
         if yfunc is not None:
-            model_evaluation = yfunc(*self._get_x_space(filter, yfunc))
+            model_evaluation = yfunc(*self._get_x_space(filter, yfunc, use_evaluation_space))
             y = (y, model_evaluation)
 
         return y
@@ -724,8 +737,8 @@ class Data1DInt(Data1D):
             return EvaluationSpace1D(self._lo, self._hi)
         return EvaluationSpace1D(self.xlo, self.xhi)
 
-    def get_x(self, filter=False, model=None):
-        indep = self._get_x_space(filter, model)
+    def get_x(self, filter=False, model=None, use_evaluation_space=False):
+        indep = self._get_x_space(filter, model, use_evaluation_space)
         return (indep[0] + indep[1]) / 2.0
 
     def get_xerr(self, filter=False, model=None):

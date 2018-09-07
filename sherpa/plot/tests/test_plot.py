@@ -424,6 +424,33 @@ def test_source_component_arbitrary_grid():
         ui.plot_source_component(regrid_model)
 
     numpy.testing.assert_array_equal(ui._compsrcplot.x, x + re_x)
+    numpy.testing.assert_array_equal(ui._compsrcplot.y, [10, ]*6)
+
+
+@requires_plotting
+def test_plot_model_arbitrary_grid_integrated():
+    from sherpa.astro.ui.utils import Session
+    from sherpa.models import Const1D
+    from sherpa.data import Data1DInt
+
+    ui = Session()
+
+    x = [1, 2, 3], [2, 3, 4]
+    y = [1, 2, 3]
+    re_x = [10, 20, 30], [20, 30, 40]
+
+    ui.load_arrays(1, x[0], x[1], y, Data1DInt)
+    model = Const1D('c')
+    model.c0 = 10
+
+    regrid_model = model.regrid(*re_x)
+    ui.set_model(regrid_model)
+
+    with pytest.warns(UserWarning):
+        ui.plot_model()
+
+    numpy.testing.assert_array_equal(ui._modelplot.x, [1.5, 2.5, 3.5])
+    numpy.testing.assert_array_equal(ui._modelplot.y, [10, 10, 10])
 
 
 @requires_plotting
@@ -452,3 +479,4 @@ def test_source_component_arbitrary_grid_int():
     points = numpy.concatenate((x_points, re_x_points))
 
     numpy.testing.assert_array_equal(ui._compsrcplot.x, points)
+    numpy.testing.assert_array_equal(ui._compsrcplot.y, [10, 10, 10, 100, 100, 100])

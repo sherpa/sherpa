@@ -1926,7 +1926,7 @@ class DataPHA(Data1DInt):
 
         return val
 
-    def get_y(self, filter=False, yfunc=None, response_id=None):
+    def get_y(self, filter=False, yfunc=None, response_id=None, use_evaluation_space=False):
         vallist = Data.get_y(self, yfunc=yfunc)
         filter = bool_cast(filter)
 
