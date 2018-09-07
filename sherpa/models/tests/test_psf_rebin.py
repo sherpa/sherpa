@@ -22,6 +22,7 @@
 import pytest
 
 from sherpa.astro.ui.utils import Session
+from sherpa.utils import requires_data
 
 
 @pytest.fixture
@@ -33,6 +34,7 @@ def setup(make_data_path):
     return Session(), image, psf_bin05, psf_bin1
 
 
+@requires_data
 def test_psf_rebin_warning(setup):
     ui, image, _, psf_bin1 = setup
 
@@ -43,6 +45,7 @@ def test_psf_rebin_warning(setup):
         ui.set_psf('psf')
 
 
+@requires_data
 def test_psf_rebin_no_warning(setup):
     ui, image, psf_bin05, _ = setup
 
