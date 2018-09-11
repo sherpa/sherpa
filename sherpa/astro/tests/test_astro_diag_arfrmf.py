@@ -46,6 +46,7 @@ from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.models.basic import Const1D, Polynom1D, PowLaw1D
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_xspec
+from sherpa.utils import _utils, requires_data, requires_fits
 
 import sherpa.astro.ui as ui
 
@@ -1653,3 +1654,16 @@ def test_rsp1d_matrix_pha_zero_energy_bin():
     f = Fit(pha, wrapped)
     ans = f.calc_stat()
     assert ans == pytest.approx(37971.8716151947)
+
+@requires_data
+@requires_fits
+def test_create_rmf(make_data_path):
+    energ = np.arange(0.05, 1.1, 0.05)
+    rmflo = energ[:-1]
+    rmfhi = energ[1:]
+    fname= make_data_path('test_rmfimg.fits')
+    datarmf = ui.create_rmf(rmflo, rmfhi, fname=fname)
+    assert len(datarmf._fch) == 1039
+    assert len(datarmf._nch) == 1039
+    assert len(datarmf.n_grp) == 900
+    assert datarmf._rsp.shape[0] == 380384
