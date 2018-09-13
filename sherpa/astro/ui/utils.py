@@ -34,6 +34,8 @@ from sherpa.data import Data1D
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
+from sherpa.sim import NormalParameterSampleFromScaleMatrix
+from sherpa.stats import Cash, Chi2, CStat, WStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -11662,7 +11664,7 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or string, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
-           background model.
+resu           background model.
         error : bool, optional
            The parameter indicates whether the errors are to be calculated
            or not.  The default value is False
@@ -11733,8 +11735,9 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
 
-        ##############################################################
+        ####################################################
         if error:
+
             def is_numpy_ndarray(arg, name, npars, dim1=None):
                 if isinstance(arg, numpy.ndarray) is False:
                     msg = name + ' must be of type numpy.ndarray'
@@ -11751,35 +11754,52 @@ class Session(sherpa.ui.utils.Session):
                         msg = name + ' must be of dimension (%d, %d)' % \
                             (npars, npars)
                         raise IOErr(msg)
+
+            _, fit = self._get_fit(id)
             parnames = self.get_fit_results().parnames
             npar = len(parnames)
             if params is None:
-                # will have to run get_draws
+                # will have to run get_draws or normal distribution depending
+                # on fit statistics
                 if covar_matrix is None:
                     # check just in case usr has run covar()
                     try:
                         covar_results = self.get_covar_results()
                         covar_matrix = covar_results.extra_output
                     except sherpa.utils.err.SessionErr:
-                        ids, f = self._get_fit(id)
-                        covar_matrix = f.est_errors().extra_output
+                        covar_matrix = fit.est_errors().extra_output
                 is_numpy_ndarray(covar_matrix, 'covar_matrix', npar, npar)
-                stat, accept, params = \
+
+                if isinstance(self._current_stat, Chi2):
+                    sampler = NormalParameterSampleFromScaleMatrix()
+                    params = sampler.get_sample(fit, covar_matrix, niter)
+                elif isinstance(self._current_stat, (Cash, CStat, WStat)):
+                    _, _, params = \
                     self.get_draws(id, otherids=otherids, niter=niter,
                                    covar_matrix=covar_matrix)
+                else:
+                    msg = 'Unknown statistics for eqwidth'
+                    raise IOErr(msg)
             else:
                 is_numpy_ndarray(params, 'params', npar)
+
+            mins = fit.model._get_thawed_par_mins()
+            maxs = fit.model._get_thawed_par_maxes()
             eqw = numpy.zeros_like(params[0, :])
             for params_index in range(len(params[0, :])):
-                for parnames_index in range(len(parnames)):
+                for parnames_index, parname in enumerate(parnames):
                     val = params[parnames_index, params_index]
-                    self.set_par(parnames[parnames_index], val)
+                    # Note: the normal dist does not respect the soft limits
+                    mymin = mins[parnames_index]
+                    mymax = maxs[parnames_index]
+                    val = max(mymin, min(val, mymax))
+                    self.set_par(parname, val)
                 eqw[params_index] = \
                     sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
             median, lower, upper = sherpa.utils.get_error_estimates(eqw)
             return median, lower, upper, params, eqw
 
-        ##############################################################
+        ####################################################
         else:
             return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
