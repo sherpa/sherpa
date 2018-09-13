@@ -11759,27 +11759,26 @@ resu           background model.
             parnames = self.get_fit_results().parnames
             npar = len(parnames)
             if params is None:
-                # will have to run get_draws or normal distribution depending
-                # on fit statistics
+                # run get_draws or normal distribution depending on fit stat
                 if covar_matrix is None:
-                    # check just in case usr has run covar()
                     try:
+                        # check just in case usr has run covar()
                         covar_results = self.get_covar_results()
                         covar_matrix = covar_results.extra_output
                     except sherpa.utils.err.SessionErr:
+                        # usr has not run covar, will have to run it
                         covar_matrix = fit.est_errors().extra_output
                 is_numpy_ndarray(covar_matrix, 'covar_matrix', npar, npar)
 
-                if isinstance(self._current_stat, Chi2):
-                    sampler = NormalParameterSampleFromScaleMatrix()
-                    params = sampler.get_sample(fit, covar_matrix, niter)
-                elif isinstance(self._current_stat, (Cash, CStat, WStat)):
+                # Have enough stuff to generate samples
+                if isinstance(self._current_stat, (Cash, CStat, WStat)):
                     _, _, params = \
                     self.get_draws(id, otherids=otherids, niter=niter,
                                    covar_matrix=covar_matrix)
                 else:
-                    msg = 'Unknown statistics for eqwidth'
-                    raise IOErr(msg)
+                    sampler = NormalParameterSampleFromScaleMatrix()
+                    params = sampler.get_sample(fit, covar_matrix, niter)
+
             else:
                 is_numpy_ndarray(params, 'params', npar)
 
