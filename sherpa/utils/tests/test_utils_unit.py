@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,8 @@
 import pytest
 import numpy
 
-from sherpa.utils import _utils, requires_data, is_binary_file
+from sherpa.utils import _utils, requires_data, is_binary_file, \
+    pad_bounding_box
 from numpy.testing import assert_almost_equal, assert_array_equal
 
 
@@ -209,3 +210,65 @@ def test_is_binary_file(make_data_path):
 
     assert is_binary_file(pha)
     assert not is_binary_file(ascii)
+
+
+def test_pad_bounding_box_fail():
+    """The mask size must be >= kernel."""
+
+    kernel = numpy.arange(12)
+    mask = numpy.ones(10)
+    with pytest.raises(TypeError) as excinfo:
+
+        pad_bounding_box(kernel, mask)
+
+    emsg = 'kernel size: 12 is > than mask size: 10'
+    assert str(excinfo.value) == emsg
+
+
+@pytest.mark.parametrize("mask, expected",
+                         [([1, 1, 1, 1, 1], [1, 2, 3, 4, 5]),
+                          ([1, 1, 1, 1, 0], [1, 2, 3, 4, 0]),
+                          ([0, 1, 1, 1, 1], [0, 1, 2, 3, 4]),
+                          ([0, 1, 0, 1, 1], [0, 1, 0, 2, 3]),
+                          ([0, 0, 0, 0, 1], [0, 0, 0, 0, 1]),
+                          ([0, 0, 0, 0, 0], [0, 0, 0, 0, 0]),
+                          ([0, 0, 0, 1, 1, 1, 1, 1, 0, 0],
+                           [0, 0, 0, 1, 2, 3, 4, 5, 0, 0]),
+                          ([1, 0, 0, 1, 0, 1, 1, 0, 0, 1],
+                           [1, 0, 0, 2, 0, 3, 4, 0, 0, 5])
+                          ])
+def test_pad_bounding_box(mask, expected):
+    """Basic tests"""
+
+    kernel = numpy.asarray([1, 2, 3, 4, 5])
+
+    # The tests use equality rather than approximate equality
+    # since the values are just being copied around by the
+    # code, not manipulated.
+    #
+    exp = numpy.asarray(expected).astype(numpy.float64)
+
+    ans = pad_bounding_box(kernel, mask)
+    assert_array_equal(ans, exp)
+
+
+def test_pad_bounding_box_mask_too_large():
+    """What happens when the mask has more valid elements
+    than the kernel? At present the code will read out-of-bounds
+    elements rather than use 0 elements, which means that the
+    test below should fail (in all but the most unlikely case
+    of reading into memory which happens to be zeros).
+
+    Perhaps the code should catch this condition and error out
+    instead?
+    """
+
+    kernel = numpy.arange(5)
+    mask = numpy.ones(10)
+
+    ans = pad_bounding_box(kernel, mask)
+
+    # Assume that the "extra" mask elements get mapped to 0 (or
+    # ignored).
+    exp = numpy.asarray([0, 1, 2, 3, 4, 0, 0, 0, 0, 0]).astype(numpy.float64)
+    assert_array_equal(ans, exp)
