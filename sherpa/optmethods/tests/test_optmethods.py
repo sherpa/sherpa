@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,16 +18,15 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from math import sqrt
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.testing import SherpaTestCase
 from sherpa.optmethods import optfcts
-## from sherpa.optmethods import stogo
 from sherpa.optmethods import _tstoptfct
+
 
 class test_optmethods(SherpaTestCase):
 
     def setUp(self):
-        self.tolerance = 1.0e-2 #sqrt(optfcts.EPSILON)
+        self.tolerance = 1.0e-2
         self.mc = '_montecarlo'
         self.nm = '_neldermead'
         self.lm = '_lmdif'
@@ -40,8 +39,6 @@ class test_optmethods(SherpaTestCase):
                  iprint=False ):
         self.tst( optfcts.neldermead, name + self.nm, fct, fmin,
                   x0, xmin, xmax, iprint=iprint )
-##         self.tst( stogo.stogo, name + '_stogo', fct, fmin,
-##                   x0, xmin, xmax, iprint=iprint )
         self.tst( optfcts.montecarlo,  name + self.mc , fct, fmin,
                   x0, xmin, xmax, iprint=iprint, maxfev=8192*len(x0) )
         self.tst( optfcts.lmdif, name + self.lm, fct, fmin,
@@ -295,6 +292,7 @@ class test_optmethods(SherpaTestCase):
         npar = 11
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.chebyquad, fmin, x0, xmin, xmax )
+
 
 def tstme():
     from sherpa.utils import SherpaTest

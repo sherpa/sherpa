@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,6 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+
+import shlex
+import os
 
 from numpy.distutils.core import Extension
 
@@ -232,19 +235,50 @@ astro_utils = Extension('sherpa.astro.utils._utils',
 
 ####
 # FORTRAN EXTENSIONS
+#
+# Note that NumPy's distutils will replace flags from the environment
+# rather than append them - e.g. see
+# https://github.com/numpy/numpy/issues/1171
+# which is taken from the discussion of the issue at
+# https://groups.google.com/a/continuum.io/forum/#!topic/anaconda/Xw57CjIcBIU
+#
+# This causes problem's building with conda's gfortran (version 7.2.0),
+# and one suggested workaround is to just expliticly add in the
+# "-shared" which is needed to build the Fortran extensions.
+#
+# It is not clear to DJB what exactly is going on under the hood
+# here, so this feels rather fragile, and system specific. Is there
+# a way to find out what the link flags would be without LDFLAGS
+# and then ensure they are included? At present this just assumes
+# that adding in -shared is enough.
+#
+# The addition of OS-X builds on Travis have broken the build, so I
+# am experimenting with removing this change to see if it helps
+# (this change is no-longer needed on Read The Docs whilst the
+#  approach of mocking all the compiled code is being used).
+#
 ####
+
+f77_ldflags = os.environ.get('LDFLAGS', '')
+if f77_ldflags == '':
+    f77_extra_link_args = None
+else:
+    f77_extra_link_args = ["-shared"] + shlex.split(f77_ldflags)
+
 minpack = Extension('sherpa.optmethods._minpack',
               ['sherpa/optmethods/src/minpack/_minpack.pyf',
                'sherpa/optmethods/src/minpack/covar.f',
                'sherpa/optmethods/src/minpack/lmdif.f',
                'sherpa/optmethods/src/minpack/mylmdif.f',
                ],
+                   # extra_link_args = f77_extra_link_args
                     )
 
 minim =  Extension('sherpa.optmethods._minim',
               ['sherpa/optmethods/src/_minim.pyf',
                'sherpa/optmethods/src/minim.f',
                'sherpa/optmethods/src/syminv.f'],
+                   # extra_link_args = f77_extra_link_args
                     )
 
 fortran_exts = [minpack, minim]

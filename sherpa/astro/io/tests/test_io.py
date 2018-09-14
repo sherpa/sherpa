@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,8 +17,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils import SherpaTestCase, requires_data, requires_fits, \
-    requires_xspec
+from sherpa.utils.testing import SherpaTestCase, requires_data, \
+    requires_fits, requires_xspec
 from sherpa.astro import ui
 
 from tempfile import NamedTemporaryFile

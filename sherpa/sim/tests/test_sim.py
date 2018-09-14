@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2011, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -28,9 +28,9 @@ from sherpa.fit import Fit
 from sherpa.stats import Cash, Chi2DataVar, CStat
 from sherpa.optmethods import NelderMead, LevMar
 from sherpa.estmethods import Covariance
-from sherpa.sim import *
+from sherpa import sim
 
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.testing import SherpaTestCase
 
 
 _max  = numpy.finfo(numpy.float32).max
@@ -71,8 +71,7 @@ class test_sim(SherpaTestCase):
            1,  0,  1,  0
           ]
         )
-    _err = numpy.ones(100)*0.4
-
+    _err = numpy.ones(100) * 0.4
 
     def setUp(self):
         data = Data1D('fake', self._x, self._y, self._err)
@@ -123,68 +122,69 @@ class test_sim(SherpaTestCase):
         self.cov = numpy.array(covresults.extra_output)
         self.num = 10
 
-
     def test_student_t(self):
-        multivariate_t(self.mu, self.cov, self.dof, self.num)
+        sim.multivariate_t(self.mu, self.cov, self.dof, self.num)
 
     def test_cauchy(self):
-        multivariate_cauchy(self.mu, self.cov, self.num)
+        sim.multivariate_cauchy(self.mu, self.cov, self.num)
 
     def test_parameter_scale_vector(self):
-        ps = ParameterScaleVector()
+        ps = sim.ParameterScaleVector()
         ps.get_scales(self.fit)
 
     def test_parameter_scale_matrix(self):
-        ps = ParameterScaleMatrix()
+        ps = sim.ParameterScaleMatrix()
         ps.get_scales(self.fit)
 
     def test_uniform_parameter_sample(self):
-        up = UniformParameterSampleFromScaleVector()
+        up = sim.UniformParameterSampleFromScaleVector()
         up.get_sample(self.fit, num=self.num)
 
     def test_normal_parameter_sample_vector(self):
-        np = NormalParameterSampleFromScaleVector()
+        np = sim.NormalParameterSampleFromScaleVector()
         np.get_sample(self.fit, num=self.num)
 
     def test_normal_parameter_sample_matrix(self):
-        np = NormalParameterSampleFromScaleMatrix()
+        np = sim.NormalParameterSampleFromScaleMatrix()
         np.get_sample(self.fit, num=self.num)
 
     def test_t_parameter_sample_matrix(self):
-        np = StudentTParameterSampleFromScaleMatrix()
+        np = sim.StudentTParameterSampleFromScaleMatrix()
         np.get_sample(self.fit, self.dof, num=self.num)
 
     def test_uniform_sample(self):
-        up = UniformSampleFromScaleVector()
+        up = sim.UniformSampleFromScaleVector()
         up.get_sample(self.fit, num=self.num)
 
     def test_normal_sample_vector(self):
-        np = NormalSampleFromScaleVector()
+        np = sim.NormalSampleFromScaleVector()
         np.get_sample(self.fit, num=self.num)
 
     def test_normal_sample_matrix(self):
-        np = NormalSampleFromScaleMatrix()
+        np = sim.NormalSampleFromScaleMatrix()
         np.get_sample(self.fit, num=self.num)
 
     def test_t_sample_matrix(self):
-        np = StudentTSampleFromScaleMatrix()
+        np = sim.StudentTSampleFromScaleMatrix()
         np.get_sample(self.fit, self.num, self.dof)
 
+    # TODO: this overwrites the test_uniform_sample routine above,
+    #       should one be renamed?
     def test_uniform_sample(self):
-        uniform_sample(self.fit, num=self.num)
+        sim.uniform_sample(self.fit, num=self.num)
 
     def test_normal_sample(self):
-        normal_sample(self.fit, num=self.num, correlate=False)
+        sim.normal_sample(self.fit, num=self.num, correlate=False)
 
     def test_normal_sample_correlated(self):
-        normal_sample(self.fit, num=self.num, correlate=True)
+        sim.normal_sample(self.fit, num=self.num, correlate=True)
 
     def test_t_sample(self):
-        t_sample(self.fit, self.num, self.dof)
+        sim.t_sample(self.fit, self.num, self.dof)
 
     def test_lrt(self):
-        results = LikelihoodRatioTest.run(self.fit, self.fit.model.lhs,
-                                          self.fit.model, niter=25)
+        results = sim.LikelihoodRatioTest.run(self.fit, self.fit.model.lhs,
+                                              self.fit.model, niter=25)
 
 
     def test_mh(self):
@@ -195,12 +195,12 @@ class test_sim(SherpaTestCase):
         results = self.fit.est_errors()
         cov = results.extra_output
 
-        mcmc = MCMC()
+        mcmc = sim.MCMC()
 
         samplers = mcmc.list_samplers()
         priors = mcmc.list_priors()
         for par in self.fit.model.pars:
-            mcmc.set_prior(par, flat)
+            mcmc.set_prior(par, sim.flat)
             prior = mcmc.get_prior(par)
 
         sampler = mcmc.get_sampler()
@@ -210,14 +210,13 @@ class test_sim(SherpaTestCase):
 
         opt = mcmc.get_sampler_opt('defaultprior')
         mcmc.set_sampler_opt('defaultprior', opt)
-        #mcmc.set_sampler_opt('verbose', True)
+        # mcmc.set_sampler_opt('verbose', True)
 
         log = logging.getLogger("sherpa")
         level = log.level
         log.setLevel(logging.ERROR)
         stats, accept, params = mcmc.get_draws(self.fit, cov, niter=1e2)
         log.setLevel(level)
-
 
     def test_metropolisMH(self):
 
@@ -227,16 +226,15 @@ class test_sim(SherpaTestCase):
         results = self.fit.est_errors()
         cov = results.extra_output
 
-        mcmc = MCMC()
+        mcmc = sim.MCMC()
         mcmc.set_sampler('MetropolisMH')
-        #mcmc.set_sampler_opt('verbose', True)
+        # mcmc.set_sampler_opt('verbose', True)
 
         log = logging.getLogger("sherpa")
         level = log.level
         log.setLevel(logging.ERROR)
         stats, accept, params = mcmc.get_draws(self.fit, cov, niter=1e2)
         log.setLevel(level)
-
 
     def tearDown(self):
         pass

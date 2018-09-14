@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,7 @@ import sherpa
 from sherpa.image import Image, DataImage, ModelImage, RatioImage, \
     ResidImage
 
-from sherpa.utils import requires_ds9
+from sherpa.utils.testing import requires_ds9
 
 # Create a rectangular array for the tests just to ensure that
 # there are no issues with Fortran/C order.
@@ -49,6 +49,7 @@ class Data(object):
             return (self.y, self.y)
         else:
             return self.y
+
 
 data = Data()
 

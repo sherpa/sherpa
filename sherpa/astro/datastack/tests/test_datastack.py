@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,8 +24,7 @@ import logging
 
 import numpy as np
 
-from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_fits, requires_stk
+from sherpa.utils.testing import SherpaTestCase, requires_fits, requires_stk
 from sherpa.astro import ui
 from sherpa.astro import datastack
 from acis_bkg_model import acis_bkg_model

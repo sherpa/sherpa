@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,10 +17,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
 import numpy
 import sherpa.all as sherpa
-from sherpa.utils import SherpaTestCase, requires_data
+from sherpa.utils.testing import SherpaTestCase, requires_data
+
 
 _datax = numpy.array(
     [  0.,   1.,   2.,   3.,   4.,   5.,   6.,   7.,   8.,   9.,  10.,
@@ -33,6 +33,7 @@ _datax = numpy.array(
        77.,  78.,  79.,  80.,  81.,  82.,  83.,  84.,  85.,  86.,  87.,
        88.,  89.,  90.,  91.,  92.,  93.,  94.,  95.,  96.,  97.,  98.,
        99.])
+
 
 _datay = numpy.array(
     [  0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,   0.,
@@ -51,7 +52,7 @@ _datay = numpy.array(
 class test_plot(SherpaTestCase):
 
     def setUp(self):
-        self.data = sherpa.Data1D('testdata',_datax,_datay)
+        self.data = sherpa.Data1D('testdata', _datax, _datay)
         self.g1 = sherpa.Gauss1D('g1')
         self.f = sherpa.Fit(self.data, self.g1)
 
@@ -93,7 +94,7 @@ class test_plot(SherpaTestCase):
         mp.prepare(self.data, self.g1, self.f.stat)
 
         fp = sherpa.FitPlot()
-        fp.prepare(dp,mp)
+        fp.prepare(dp, mp)
         # fp.plot()
 
     def test_splitplot(self):
@@ -107,9 +108,9 @@ class test_plot(SherpaTestCase):
         rp.prepare(self.data, self.g1, self.f.stat)
 
         fp = sherpa.FitPlot()
-        fp.prepare(dp,mp)
+        fp.prepare(dp, mp)
 
-        sp = sherpa.SplitPlot(2,2)
+        sp = sherpa.SplitPlot(2, 2)
         # sp.addplot(dp)
         # sp.addplot(mp)
         # sp.addplot(fp)
@@ -179,7 +180,7 @@ class test_contour(SherpaTestCase):
         rc.prepare(self.data, self.g1, self.f.stat)
         rc.levels = self.levels
 
-        sp = sherpa.SplitPlot(2,2)
+        sp = sherpa.SplitPlot(2, 2)
         # sp.addcontour(dc)
         # sp.addcontour(mc)
         # sp.addcontour(fc)
@@ -396,15 +397,3 @@ class test_confidence(SherpaTestCase):
         self.assertEqualWithinTol(_rux1, self.ru.x1, 1e-4)
         self.assertEqualWithinTol(_ruy, self.ru.y, 1e-4)
         # self.ru.contour()
-
-if __name__ == '__main__':
-    from sherpa.utils import SherpaTest
-    import sherpa.plot
-
-    import sys
-    if len(sys.argv) > 1:
-        datadir = sys.argv[1]
-    else:
-        datadir = None
-
-    SherpaTest(sherpa.plot).test(datadir=datadir)

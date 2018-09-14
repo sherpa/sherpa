@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,17 +17,20 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import numpy
+import logging
+
 from six import string_types
 
 from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \
-    ArithmeticFunctionModel, CompositeModel, Model, Parameter
+    ArithmeticFunctionModel, CompositeModel, Model
+from sherpa.models.parameter import Parameter
 from sherpa.utils import bool_cast, NoNewAttributesAfterInit
 from sherpa.utils.err import PSFErr
 from sherpa.utils._psf import extract_kernel, get_padsize, normalize, \
     pad_data, set_origin, tcdData, unpad_data
-import numpy
-import logging
+
 import sherpa
 info = logging.getLogger(__name__).info
 

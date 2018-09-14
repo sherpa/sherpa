@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 import pytest
-from sherpa.utils import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits
 from six.moves import reload_module
 
 
@@ -91,6 +91,6 @@ def load_data(ui, make_data_path):
     ("order", (1,)),
 ])
 def test_plot(call, args, chips, ui):
-    function = getattr(ui, "plot_"+call)
+    function = getattr(ui, "plot_" + call)
     function(*args)
     assert_chips_called(chips)

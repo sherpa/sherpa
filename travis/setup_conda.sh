@@ -48,11 +48,14 @@ if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
 if [ -n "${XSPECVER}" ];
  then export XSPEC="xspec-modelsonly=${XSPECVER} ${xorg}";
 fi
-echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}"
+if [ "${DOCS}" == true ];
+ then export DOCSBUILD="sphinx sphinx_rtd_theme";
+fi
+echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC} ${DOCSBUILD}"
 
 # Create and activate conda build environment
 # We create a new environment so we don't care about the python version in the root environment.
-conda create --yes -n build python=${TRAVIS_PYTHON_VERSION} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITS} ${compilers}\
+conda create --yes --quiet -n build python=${TRAVIS_PYTHON_VERSION} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITS} ${DOCSBUILD} ${compilers}\
   libgfortran=${libgfortranver}
 
 source activate build

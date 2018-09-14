@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.astro.utils import filter_resp
-from sherpa.utils import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits
 
 
 # See https://github.com/sherpa/sherpa/issues/405

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils import SherpaTestCase, requires_pylab
+from sherpa.utils.testing import SherpaTestCase, requires_pylab
 
 
 @requires_pylab
@@ -27,4 +27,3 @@ class pylab_test(SherpaTestCase):
         from sherpa.plot.pylab_backend import _errorbar_defaults
         # assert all needed defaults have been found
         assert all(e in _errorbar_defaults for e in ('ecolor', 'capsize', 'barsabove'))
-

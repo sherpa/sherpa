@@ -26,6 +26,10 @@
   - [FFTW library](#fftw-library)
   - [XSPEC](#xspec)
   - [Other customization options](#other-customization-options)
+- [Building the documentation](#building-the-documentation)
+  - [Using the build_sphinx target](#using-the-build_sphinx-target)
+  - [Using the sphinx-build tool](#using-the-sphinx-build-tool)
+  - [Testing the documentation with Travis](#testing-the-documentation-with-travis)
 - [History](#history)
   - [Release History](#release-history)
   
@@ -534,6 +538,44 @@ These options include:
 
 The `setup.cfg` file in the Sherpa source distribution contains more information
 about these options.
+
+Building the documentation
+==========================
+
+There is an *experimental* version of the Sphinx docs available in the
+`docs/` directory. It is designed so that the documentation can be built
+without needing to build (or install) Sherpa, but this requires Python
+3.5 or higher.
+
+    % conda create -n=sherpa-sphinx python=3.5 'sphinx >= 1.3' sphinx_rtd_theme
+    % source activate sherpa-sphinx
+
+There is a *test* version of the docs built using Read The Docs and
+available at https://sherpa-test.readthedocs.io/ but this is not
+guaranteed to match the latest version of the PR.
+
+Using the build_sphinx target
+-----------------------------
+
+    % python setup.py build_sphinx
+
+The location of this output depends on the version os Sphinx in use. With
+version 1.4 it appears to be located at `build/sphinx/html/index.html`.
+
+Using the sphinx-build tool
+---------------------------
+
+The following will create the documentation in `docs/build/html/index.html`.
+
+    % cd docs
+    % sphinx-build -b html . build/html
+
+Testing the documentation with Travis
+-------------------------------------
+
+There is a documentation build included as part of the Travis-CI test suite,
+but it is not set up to do much validation. That is, you need to do something
+quite severe to break this build.
 
 History
 =======

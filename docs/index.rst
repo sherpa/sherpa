@@ -1,0 +1,94 @@
+
+.. hide the title (based on astropy)
+.. raw:: html
+
+    <style media="screen" type="text/css">h1 { display: none; }</style>
+   
+Welcome to Sherpa's documentation
+=================================
+
+.. image:: _static/sherpa_logo.png
+    :width: 350px
+    :height: 132px
+    :target: http://cxc.harvard.edu/contrib/sherpa/
+
+.. warning::
+
+   This is an *experimental build* of the Sherpa documentation. The
+   information presented here is not guaranteed to be complete
+   (and may not be correct, but please comment if you notice
+   problems).
+
+Welcome to the Sherpa documentation.
+`Sherpa <http://cxc.harvard.edu/contrib/sherpa/>`_
+is a Python package for
+modeling and fitting data. It was originally developed by the
+`Chandra X-ray Center <http://cxc.harvard.edu/>`_ for use in
+`analysing X-ray data (both spectral and imaging)
+<http://cxc.harvard.edu/sherpa>`_
+from the  Chandra X-ray telescope, but it is designed to be a
+general-purpose package, which can be enhanced with domain-specific
+tasks (such as X-ray Astronomy).
+Sherpa contains an expressive and powerful
+modeling language, coupled with a
+range of statistics and robust optimisers.
+
+Sherpa is released under the
+`GNU General Public License v3.0
+<https://github.com/sherpa/sherpa/blob/master/LICENSE>`_,
+and is compatible with Python versions 2.7, 3.5, and 3.6. 
+Information on recent releases and citation information for
+Sherpa is available using the Digital Object Identifier (DOI) 
+`10.5281/zenodo.593753 <https://doi.org/10.5281/zenodo.593753>`_.
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Introduction
+   :name: intro
+
+   install
+   quick
+   ciao
+
+.. toctree::
+   :maxdepth: 2
+   :caption: User Documentation
+   :name: user_docs
+
+   data/index
+   models/index
+   evaluation/index
+   model_classes/index
+   statistics/index
+   optimisers/index
+   fit/index
+   plots/index
+   mcmc/index
+   overview/utilities
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Worked Examples
+   :name: worked_examples
+
+   examples/simple_interpolation
+   examples/simple_user_model
+
+.. toctree::
+   :maxdepth: 2
+   :caption: An interactive application
+   :name: ui
+
+   ui/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Getting Help
+   :name: help_docs
+
+   bugs
+   development
+   indices
+      
+At present there is no developer mailing list for Sherpa.
+
