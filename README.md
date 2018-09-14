@@ -209,6 +209,11 @@ Sherpa. We also recommend that you install `astropy` for enabling FITS I/O.
 
     $ conda install ipython-notebook matplotlib astropy
 
+The minimum required version of `astropy` is version 1.3, although only 
+versions 2 and higher are used in testing. There are no known
+incompatabilities with `matplotlib`, but there has only been limited
+testing. Please [report any problems](https://github.com/sherpa/sherpa/issues/)
+you find.
 
 Source Build
 ------------
