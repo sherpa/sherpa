@@ -488,7 +488,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 
     orig_fcn = stat_cb0
     def stat_cb0(x_new):
-        if _outside_limits(x_new, xmin, xmax) or _my_is_nan(x_new):
+        if _my_is_nan(x_new) or _outside_limits(x_new, xmin, xmax):
             return FUNC_MAX
         return orig_fcn(x_new)
 
@@ -676,7 +676,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     #
     orig_fcn = stat_cb0
     def stat_cb0(x_new):
-        if _outside_limits(x_new, xmin, xmax) or _my_is_nan(x_new):
+        if _my_is_nan(x_new) or _outside_limits(x_new, xmin, xmax):
             return FUNC_MAX
         return orig_fcn(x_new)
 
