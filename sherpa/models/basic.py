@@ -253,7 +253,9 @@ class Delta1D(ArithmeticModel):
 
 
 class Erf(ArithmeticModel):
-    """One-dimensional error function [1]_.
+    """One-dimensional error function.
+
+    The function is described at [1]_.
 
     Attributes
     ----------
@@ -304,7 +306,9 @@ class Erf(ArithmeticModel):
 
 
 class Erfc(ArithmeticModel):
-    """One-dimensional complementary error function [1]_.
+    """One-dimensional complementary error function.
+
+    The function is described at [1]_.
 
     Attributes
     ----------
