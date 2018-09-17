@@ -11756,8 +11756,11 @@ resu           background model.
                         raise IOErr(msg)
 
             _, fit = self._get_fit(id)
-            parnames = self.get_fit_results().parnames
+            fit_results = self.get_fit_results()
+            parnames = fit_results.parnames
             npar = len(parnames)
+            orig_par_vals = numpy.array(fit_results.parvals)
+
             if params is None:
                 # run get_draws or normal distribution depending on fit stat
                 if covar_matrix is None:
@@ -11796,6 +11799,7 @@ resu           background model.
                 eqw[params_index] = \
                     sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
             median, lower, upper = sherpa.utils.get_error_estimates(eqw)
+            fit.model.thawedpars  = orig_par_vals
             return median, lower, upper, params, eqw
 
         ####################################################
