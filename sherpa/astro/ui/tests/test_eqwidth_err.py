@@ -72,9 +72,9 @@ def test_eqwith_err(make_data_path):
 def test_eqwith_err1(make_data_path):
 
     def check1(e0, e1, e2):
-        assert e0 == approx(0.10729373960783356, rel=1.0e-3)
-        assert e1 == approx(0.04126873787288082, rel=1.0e-3)
-        assert e2 == approx(0.32705504794498264, rel=1.0e-3)
+        assert e0 == approx(0.028335201547206704, rel=1.0e-3)
+        assert e1 == approx(-0.00744118799274448756, rel=1.0e-3)
+        assert e2 == approx(0.0706249544851336, rel=1.0e-3)
 
     load_pha(make_data_path('3c273.pi'))
     notice(0.5,7.0)
@@ -85,8 +85,13 @@ def test_eqwith_err1(make_data_path):
     g1.pos=2.0
     freeze(g1.pos,g1.fwhm)
     fit()
-    numpy.random.seed( 2345 )
+    numpy.random.seed(2345)
     e = eqwidth(p1,p1+g1,error=True, niter=100)
+    check1(e[0], e[1], e[2])
+
+    params = e[3]
+    numpy.random.seed(2345)
+    e = eqwidth(p1,p1+g1,error=True, params=params, niter=100)
     check1(e[0], e[1], e[2])
 
     parvals = get_fit_results().parvals

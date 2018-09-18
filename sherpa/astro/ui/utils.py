@@ -11780,7 +11780,8 @@ resu           background model.
                                    covar_matrix=covar_matrix)
                 else:
                     sampler = NormalParameterSampleFromScaleMatrix()
-                    params = sampler.get_sample(fit, covar_matrix, niter)
+                    tmp = sampler.get_sample(fit, covar_matrix, niter + 1)
+                    params = tmp.transpose()
 
             else:
                 is_numpy_ndarray(params, 'params', npar)
