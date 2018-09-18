@@ -22,7 +22,7 @@
 import pytest
 
 from sherpa.astro.ui.utils import Session
-from sherpa.utils import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits
 
 
 @pytest.fixture
