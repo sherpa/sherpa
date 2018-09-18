@@ -12,13 +12,6 @@ Welcome to Sherpa's documentation
     :height: 132px
     :target: http://cxc.harvard.edu/contrib/sherpa/
 
-.. warning::
-
-   This is an *experimental build* of the Sherpa documentation. The
-   information presented here is not guaranteed to be complete
-   (and may not be correct, but please comment if you notice
-   problems).
-
 Welcome to the Sherpa documentation.
 `Sherpa <http://cxc.harvard.edu/contrib/sherpa/>`_
 is a Python package for

@@ -59,10 +59,14 @@ What can you do with Sherpa?
 - visualize the parameter space with simulations or using 1D/2D cuts of the parameter space
 - calculate confidence levels on the best fit model parameters
 - choose a robust optimization method for the fit: Levenberg-Marquardt, Nelder-Mead Simplex or Monte Carlo/Differential Evolution.
-- For detailed documentation see: [http://cxc.harvard.edu/sherpa](http://cxc.harvard.edu/sherpa)
 
-A [Quick Start Tutorial](http://nbviewer.ipython.org/github/sherpa/sherpa/tree/master/docs/SherpaQuickStart.ipynb)
-is included in the `docs` folder and can be opened with an `ipython notebook`.
+Documentation for Sherpa is available at
+[Read The Docs](https://sherpa.readthedocs.io/) (at present only for
+the `master` branch)
+and also for [Sherpa in CIAO](http://cxc.harvard.edu/sherpa/).
+
+A [Quick Start Tutorial](http://nbviewer.ipython.org/github/sherpa/sherpa/tree/master/notebooks/SherpaQuickStart.ipynb)
+is included in the `notebooks` folder and can be opened with an `ipython notebook`.
 
 License
 =======
@@ -547,17 +551,13 @@ about these options.
 Building the documentation
 ==========================
 
-There is an *experimental* version of the Sphinx docs available in the
-`docs/` directory. It is designed so that the documentation can be built
-without needing to build (or install) Sherpa, but this requires Python
-3.5 or higher.
+The Sphinx documentation is available in the `docs/` directory. It is designed
+so that the documentation can be built without needing to build (or install)
+Sherpa, but this requires Python 3.5 or higher. An example for setting
+up the build environment is:
 
     % conda create -n=sherpa-sphinx python=3.5 'sphinx >= 1.3' sphinx_rtd_theme
     % source activate sherpa-sphinx
-
-There is a *test* version of the docs built using Read The Docs and
-available at https://sherpa-test.readthedocs.io/ but this is not
-guaranteed to match the latest version of the PR.
 
 Using the build_sphinx target
 -----------------------------
@@ -580,7 +580,9 @@ Testing the documentation with Travis
 
 There is a documentation build included as part of the Travis-CI test suite,
 but it is not set up to do much validation. That is, you need to do something
-quite severe to break this build.
+quite severe to break this build. Please see
+[issue 491](https://github.com/sherpa/sherpa/issues/491)
+for more information.
 
 History
 =======
