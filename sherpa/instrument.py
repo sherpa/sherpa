@@ -16,6 +16,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+import warnings
 
 import numpy
 import logging
@@ -553,6 +554,8 @@ class PSFModel(Model):
     def fold(self, data):
         # FIXME how will we know the native dimensionality of the
         # raveled model without the values?
+        self._check_pixel_size(data)
+
         kargs = {}
 
         kshape = None
@@ -700,7 +703,6 @@ class PSFModel(Model):
 
         indep, dep, kshape, lo, hi = self._get_kernel_data(data, subkernel)
 
-        dataset = None
         ndim = len(kshape)
         if ndim == 1:
             dataset = Data1D('kernel', indep[0], dep)
@@ -711,3 +713,14 @@ class PSFModel(Model):
             raise PSFErr('ndim')
 
         return dataset
+
+    def _check_pixel_size(self, data):
+        if hasattr(self.kernel, "sky"):
+            # This corresponds to the case when the kernel is actually a psf image, not just a model.
+            psf_pixel_size = self.kernel.sky.cdelt
+            data_pixel_size = data.sky.cdelt
+
+            if not numpy.allclose(psf_pixel_size, data_pixel_size):
+                warnings.warn("NOTE: The PSF pixel size ({}) does not correspond to the Image Pixel Size ({})".format(
+                    psf_pixel_size, data_pixel_size
+                ))
