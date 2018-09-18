@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from sherpa.utils import requires_data, requires_fits, requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 import numpy
 
 from pytest import approx
