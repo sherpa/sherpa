@@ -34,6 +34,8 @@ from sherpa.data import Data1D
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
+from sherpa.sim import NormalParameterSampleFromScaleMatrix
+from sherpa.stats import Cash, Chi2, CStat, WStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -11636,7 +11638,9 @@ class Session(sherpa.ui.utils.Session):
                                                   samples, modelcomponent,
                                                   confidence)
 
-    def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None):
+    def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None, \
+                error=False, params=None, otherids=(), niter=1000, \
+                covar_matrix=None):
         """Calculate the equivalent width of an emission or absorption line.
 
         Parameters
@@ -11660,14 +11664,31 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or string, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
-           background model.
-
+resu           background model.
+        error : bool, optional
+           The parameter indicates whether the errors are to be calculated
+           or not.  The default value is False
+        params : 2D array, optional
+           The default is None, in which case get_draws shall be called.
+           The user can input the parameter array (e.g. from running
+           sample_flux).
+        otherids: list of integer ids, optional
+           The default value is (). However, if get_draws is called
+           internally which may require otherids to be set if more then
+           one data set is to be used then otherids must be set.
+        niter : int, optional
+           The number of draws to use. The default is ``1000``.
+        covar_matrix : 2D array, optional
+           The covariance matrix to use. If ``None`` then the
+           result from `get_covar_results().extra_output` is used.
         Returns
         -------
-        width : number
-           The equivalent width [1]_ in the appropriate units (as given
-           by `set_analysis`).
-
+        if error is False
+           width : number
+              The equivalent width [1]_ in the appropriate units (as given
+              by `set_analysis`).
+        else:
+           median, 1 sigma lower, upper bounds, the parameters and eqwidth
         See Also
         --------
         calc_model_sum : Sum up the fitted model over a pass band.
@@ -11714,7 +11735,77 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
 
-        return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+        ####################################################
+        if error:
+
+            def is_numpy_ndarray(arg, name, npars, dim1=None):
+                if isinstance(arg, numpy.ndarray) is False:
+                    msg = name + ' must be of type numpy.ndarray'
+                    raise IOErr(msg)
+                shape = arg.shape
+                if len(shape) != 2:
+                    msg = name + ' must be 2d numpy.ndarray'
+                    raise IOErr(msg)
+                if shape[0] != npars:
+                    msg = name + ' must be of dimension (%d, x)' % npars
+                    raise IOErr(msg)
+                if dim1 is not None:
+                    if shape[1] != npars:
+                        msg = name + ' must be of dimension (%d, %d)' % \
+                            (npars, npars)
+                        raise IOErr(msg)
+
+            _, fit = self._get_fit(id)
+            fit_results = self.get_fit_results()
+            parnames = fit_results.parnames
+            npar = len(parnames)
+            orig_par_vals = numpy.array(fit_results.parvals)
+
+            if params is None:
+                # run get_draws or normal distribution depending on fit stat
+                if covar_matrix is None:
+                    try:
+                        # check just in case usr has run covar()
+                        covar_results = self.get_covar_results()
+                        covar_matrix = covar_results.extra_output
+                    except sherpa.utils.err.SessionErr:
+                        # usr has not run covar, will have to run it
+                        covar_matrix = fit.est_errors().extra_output
+                is_numpy_ndarray(covar_matrix, 'covar_matrix', npar, npar)
+
+                # Have enough stuff to generate samples
+                if isinstance(self._current_stat, (Cash, CStat, WStat)):
+                    _, _, params = \
+                    self.get_draws(id, otherids=otherids, niter=niter,
+                                   covar_matrix=covar_matrix)
+                else:
+                    sampler = NormalParameterSampleFromScaleMatrix()
+                    tmp = sampler.get_sample(fit, covar_matrix, niter + 1)
+                    params = tmp.transpose()
+
+            else:
+                is_numpy_ndarray(params, 'params', npar)
+
+            mins = fit.model._get_thawed_par_mins()
+            maxs = fit.model._get_thawed_par_maxes()
+            eqw = numpy.zeros_like(params[0, :])
+            for params_index in range(len(params[0, :])):
+                for parnames_index, parname in enumerate(parnames):
+                    val = params[parnames_index, params_index]
+                    # Note: the normal dist does not respect the soft limits
+                    mymin = mins[parnames_index]
+                    mymax = maxs[parnames_index]
+                    val = max(mymin, min(val, mymax))
+                    self.set_par(parname, val)
+                eqw[params_index] = \
+                    sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+            median, lower, upper = sherpa.utils.get_error_estimates(eqw)
+            fit.model.thawedpars  = orig_par_vals
+            return median, lower, upper, params, eqw
+
+        ####################################################
+        else:
+            return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
     def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None):
         """Integrate the source model over a pass band.
