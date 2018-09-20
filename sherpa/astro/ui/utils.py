@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -11638,10 +11638,13 @@ class Session(sherpa.ui.utils.Session):
                                                   samples, modelcomponent,
                                                   confidence)
 
-    def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None, \
-                error=False, params=None, otherids=(), niter=1000, \
+    def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None,
+                error=False, params=None, otherids=(), niter=1000,
                 covar_matrix=None):
         """Calculate the equivalent width of an emission or absorption line.
+
+        The equivalent width [1]_ is calculated in the selected units
+        for the data set (whcih can be retrieved with `get_analysis`).
 
         Parameters
         ----------
@@ -11664,14 +11667,14 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int or string, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
-resu           background model.
+           background model.
         error : bool, optional
            The parameter indicates whether the errors are to be calculated
            or not.  The default value is False
         params : 2D array, optional
            The default is None, in which case get_draws shall be called.
            The user can input the parameter array (e.g. from running
-           sample_flux).
+           `sample_flux`).
         otherids: list of integer ids, optional
            The default value is (). However, if get_draws is called
            internally which may require otherids to be set if more then
@@ -11681,14 +11684,14 @@ resu           background model.
         covar_matrix : 2D array, optional
            The covariance matrix to use. If ``None`` then the
            result from `get_covar_results().extra_output` is used.
+
         Returns
         -------
-        if error is False
-           width : number
-              The equivalent width [1]_ in the appropriate units (as given
-              by `set_analysis`).
-        else:
-           median, 1 sigma lower, upper bounds, the parameters and eqwidth
+        retval
+           If ``error`` is ``False``, then returns the equivalent width,
+           otherwise the median, 1 sigma lower, upper bounds, the
+           parameters and eqwidth.
+
         See Also
         --------
         calc_model_sum : Sum up the fitted model over a pass band.
