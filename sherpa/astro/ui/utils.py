@@ -26,6 +26,8 @@ import warnings
 import numpy
 
 import sherpa.ui.utils
+from sherpa.astro.data import DataARF
+from sherpa.astro.instrument import create_arf, create_delta_rmf, create_non_delta_rmf
 from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
@@ -4735,13 +4737,13 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_table(self.get_data(id))
 
-#
-    def create_arf(self, elo, ehi, specresp=None, exposure=None, ethresh=None,
+    @staticmethod
+    def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
                    name='test-arf'):
         """Create an ARF.
         Parameters
         ----------
-        elo, ehi : array
+        elo, ehi : numpy.ndarray
             The energy bins (low and high, in keV) for the ARF. It is
             assumed that ehi_i > elo_i, elo_j > 0, the energy bins are
             either ascending - so elo_i+1 > elo_i - or descending
@@ -4760,18 +4762,10 @@ class Session(sherpa.ui.utils.Session):
         -------
         arf : DataARF instance
         """
+        return create_arf(elo, ehi, specresp, exposure, ethresh, name)
 
-        assert elo.size == ehi.size
-        assert (exposure is None) or (exposure > 0.0)
-
-        if specresp is None:
-            specresp = numpy.ones(elo.size, dtype=numpy.float32)
-
-        return sherpa.astro.data.DataARF(name, energ_lo=elo, energ_hi=ehi,
-                                         specresp=specresp, exposure=exposure,
-                                         ethresh=ethresh)
-
-    def create_rmf(self, rmflo, rmfhi, startchan=1, e_min=None, e_max=None,
+    @staticmethod
+    def create_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None,
                    ethresh=None, fname=None, name='delta-rmf'):
         """Create an RMF for a "perfect" delta-function response if fname is
         None otherwise fname contains the name of the image file generated
@@ -4811,90 +4805,15 @@ class Session(sherpa.ui.utils.Session):
         f_chan array have to change?).
         """
 
-        def create_delta_rmf(rmflo, rmfhi, startchan=1,
-                             e_min=None, e_max=None, ethresh=None,
-                             name='delta-rmf'):
-            assert rmflo.size == rmfhi.size
-            assert startchan >= 0
-
-            # Set up the delta-function response.
-            # TODO: should f_chan start at startchan?
-            #
-            nchans = rmflo.size
-            matrix = numpy.ones(nchans, dtype=numpy.float32)
-            dummy = numpy.ones(nchans, dtype=numpy.int16)
-            f_chan = numpy.arange(1, nchans + 1, dtype=numpy.int16)
-
-            return sherpa.astro.data.DataRMF(name, detchans=nchans,
-                                             energ_lo=rmflo, energ_hi=rmfhi,
-                                             n_grp=dummy, n_chan=dummy,
-                                             f_chan=f_chan, matrix=matrix,
-                                             offset=startchan,
-                                             e_min=e_min, e_max=e_max,
-                                             ethresh=ethresh)
-
-        def create_non_delta_rmf(rmflo, rmfhi, fname, startchan=1,
-                                 e_min=None, e_max=None, ethresh=None,
-                                 name='delta-rmf'):
-            assert rmflo.size == rmfhi.size
-            assert startchan >= 0
-            assert os.path.isfile(fname)
-
-
-            # Set up the delta-function response.
-            # TODO: should f_chan start at startchan?
-            #
-            nchans = rmflo.size
-            def calc_grp_chan_matrix(fname):
-                try:
-                    data, filename = \
-                        sherpa.astro.io.backend.get_image_data(fname)
-                    matrix = data['y']
-                    n_grp = []
-                    n_chan = []
-                    f_chan = []
-                    for row in (matrix > 0):
-                        flag = numpy.hstack([[0], row, [0]])
-                        diffs = numpy.diff(flag, n=1)
-                        starts, = numpy.where(diffs > 0)
-                        ends, = numpy.where(diffs < 0)
-                        n_chan.extend(ends - starts)
-                        f_chan.extend(starts + 1)
-                        n_grp.append(len(starts))
-                    n_grp = numpy.asarray(n_grp, dtype=numpy.int16)
-                    f_chan = numpy.asarray(f_chan, dtype=numpy.int16)
-                    n_chan = numpy.asarray(n_chan, dtype=numpy.int16)
-                    matrix = matrix.flatten()
-                    matrix = matrix[matrix > 0]
-                    return n_grp, f_chan, n_chan, matrix
-                except sherpa.utils.err.IOErr as ioerr:
-                    print(ioerr)
-                    raise ioerr
-
-            n_grp, f_chan, n_chan, matrix = calc_grp_chan_matrix(fname)
-
-            return sherpa.astro.data.DataRMF(name, detchans=nchans,
-                                             energ_lo=rmflo, energ_hi=rmfhi,
-                                             n_grp=n_grp, n_chan=n_chan,
-                                             f_chan=f_chan, matrix=matrix,
-                                             offset=startchan,
-                                             e_min=e_min, e_max=e_max,
-                                             ethresh=ethresh)
-
         if fname is None:
-            return create_delta_rmf(rmflo, rmfhi, startchan=startchan,
+            return create_delta_rmf(rmflo, rmfhi, offset=startchan,
                                     e_min=e_min, e_max=e_max, ethresh=ethresh,
                                     name=name)
         else:
             return create_non_delta_rmf(rmflo, rmfhi, fname,
-                                        startchan=startchan, e_min=e_min,
+                                        offset=startchan, e_min=e_min,
                                         e_max=e_max, ethresh=ethresh,
                                         name=name)
-
-    # def _check_resp_id(id):
-    #    if (id is not None) and (not self._valid_id(id)):
-    #        raise ArgumentTypeError('response identifiers must be integers ' +
-    #                                'or strings')
 
     def get_arf(self, id=None, resp_id=None, bkg_id=None):
         """Return the ARF associated with a PHA data set.

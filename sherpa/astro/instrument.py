@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015-2018 Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -41,6 +41,7 @@ from six.moves import zip as izip
 from six import string_types
 
 import numpy
+import os
 import sherpa
 from sherpa.utils.err import InstrumentErr, DataErr, PSFErr
 from sherpa.models.model import ArithmeticModel, CompositeModel, Model
@@ -1141,3 +1142,120 @@ class PSFModel(_PSFModel):
             raise PSFErr('ndim')
 
         return dataset
+
+
+def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-arf'):
+    """Create an ARF.
+    Parameters
+    ----------
+    elo, ehi : numpy.ndarray
+        The energy bins (low and high, in keV) for the ARF.
+        The ehi values must be greater than the
+        elo values for each bin, and the energy arrays must be
+        in increasing or decreasing order.
+    specresp : None or array, optional
+        The spectral response (in cm^2) for the ARF. It is assumed
+        to be >= 0. If not given a flat response of 1.0 is used.
+    exposure : number or None, optional
+        If not None, the exposure of the ARF in seconds.
+    ethresh : number or None, optional
+        Passed through to the DataARF call. It controls whether
+        zero-energy bins are replaced.
+    name : str
+        The name of the data set
+    Returns
+    -------
+    arf : DataARF instance
+    """
+
+    if specresp is None:
+        specresp = numpy.ones(elo.size, dtype=numpy.float32)
+
+    return DataARF(name, energ_lo=elo, energ_hi=ehi, specresp=specresp, exposure=exposure, ethresh=ethresh)
+
+
+def create_delta_rmf(rmflo, rmfhi, offset=1,
+                     e_min=None, e_max=None, ethresh=None,
+                     name='delta-rmf'):
+
+    _validate_create_rmf_input(rmflo, rmfhi, offset)
+
+    # Set up the delta-function response.
+    # TODO: should f_chan start at startchan?
+    #
+    nchans = rmflo.size
+    matrix = numpy.ones(nchans, dtype=numpy.float32)
+    dummy = numpy.ones(nchans, dtype=numpy.int16)
+    f_chan = numpy.arange(1, nchans + 1, dtype=numpy.int16)
+
+    return sherpa.astro.data.DataRMF(name, detchans=nchans,
+                                     energ_lo=rmflo, energ_hi=rmfhi,
+                                     n_grp=dummy, n_chan=dummy,
+                                     f_chan=f_chan, matrix=matrix,
+                                     offset=offset,
+                                     e_min=e_min, e_max=e_max,
+                                     ethresh=ethresh)
+
+
+def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
+                         e_min=None, e_max=None, ethresh=None,
+                         name='delta-rmf'):
+
+    if fname is not None and not os.path.isfile(fname):
+        raise ValueError("{} is not a file".format(fname))
+
+    # Set up the delta-function response.
+    # TODO: should f_chan start at startchan?
+    #
+    nchans = rmflo.size
+
+    n_grp, f_chan, n_chan, matrix = calc_grp_chan_matrix(fname)
+
+    return sherpa.astro.data.DataRMF(name, detchans=nchans,
+                                     energ_lo=rmflo, energ_hi=rmfhi,
+                                     n_grp=n_grp, n_chan=n_chan,
+                                     f_chan=f_chan, matrix=matrix,
+                                     offset=offset,
+                                     e_min=e_min, e_max=e_max,
+                                     ethresh=ethresh)
+
+
+def calc_grp_chan_matrix(fname):
+    try:
+        data, filename = \
+            sherpa.astro.io.backend.get_image_data(fname)
+        matrix = data['y']
+        n_grp = []
+        n_chan = []
+        f_chan = []
+        for row in matrix > 0:
+            flag = numpy.hstack([[0], row, [0]])
+            diffs = numpy.diff(flag, n=1)
+            starts, = numpy.where(diffs > 0)
+            ends, = numpy.where(diffs < 0)
+            n_chan.extend(ends - starts)
+            f_chan.extend(starts + 1)
+            n_grp.append(len(starts))
+        n_grp = numpy.asarray(n_grp, dtype=numpy.int16)
+        f_chan = numpy.asarray(f_chan, dtype=numpy.int16)
+        n_chan = numpy.asarray(n_chan, dtype=numpy.int16)
+        matrix = matrix.flatten()
+        matrix = matrix[matrix > 0]
+        return n_grp, f_chan, n_chan, matrix
+    except sherpa.utils.err.IOErr as ioerr:
+        print(ioerr)
+        raise ioerr
+
+
+def _validate_create_rmf_input(rmflo, rmfhi, startchan, fname=None):
+    try:
+        assert rmflo.size == rmfhi.size
+    except AssertionError:
+        raise ValueError("rmflo and rmfhi must have the same size, not {} and {}".format(rmflo.size, rmfhi.size))
+
+    try:
+        assert startchan >= 0
+    except AssertionError:
+        raise ValueError("startchan must be >=0, not {}".format(startchan))
+
+

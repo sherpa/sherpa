@@ -128,7 +128,7 @@ class DataOgipResponse(Data1DInt):
         ----------
         label : str
             The response file identifier.
-        elo, ehi : numpy arrays
+        elo, ehi : numpy.ndarray
             The input ENERG_LO and ENERG_HI arrays. They are assumed
             to be one-dimensional and have the same number of elements.
         ethresh : None or float, optional
@@ -233,7 +233,7 @@ class DataARF(DataOgipResponse):
     name : str
         The name of the data set; often set to the name of the file
         containing the data.
-    energ_lo, energ_hi, specresp : array
+    energ_lo, energ_hi, specresp : numpy.ndarray
         The values of the ENERG_LO, ENERG_HI, and SPECRESP columns
         for the ARF. The ENERG_HI values must be greater than the
         ENERG_LO values for each bin, and the energy arrays must be
@@ -396,6 +396,9 @@ class DataRMF(DataOgipResponse):
                  header=None, ethresh=None):
 
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
+
+        if offset <=0:
+            raise ValueError("offset must be >=0, not {}".format(offset))
 
         self._fch = f_chan
         self._nch = n_chan
