@@ -21,8 +21,7 @@ from __future__ import print_function
 
 import numpy
 
-from sherpa.utils import requires_data, requires_xspec, requires_fits
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.testing import SherpaTestCase
 
 from sherpa.models import Polynom1D, SimulFitModel
 from sherpa.models.basic import Gauss1D
