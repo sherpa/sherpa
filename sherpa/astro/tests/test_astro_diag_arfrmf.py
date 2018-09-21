@@ -45,8 +45,8 @@ from sherpa.fit import Fit
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.models.basic import Const1D, Polynom1D, PowLaw1D
 from sherpa.utils.err import DataErr
-from sherpa.utils.testing import requires_xspec
-from sherpa.utils import _utils, requires_data, requires_fits
+from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
+from sherpa.utils import _utils
 
 import sherpa.astro.ui as ui
 
