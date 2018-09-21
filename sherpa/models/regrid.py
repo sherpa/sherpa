@@ -563,7 +563,7 @@ def rebin_2d(y, custom_space, requested_space):
 
     reshaped_y = y.reshape(custom_x_dim, custom_y_dim)
 
-    return rebin_flux(reshaped_y, requested_x_dim, requested_y_dim)
+    return rebin_flux(reshaped_y, dimensions=(requested_x_dim, requested_y_dim))
 
 
 def rebin_flux(array, dimensions=None, scale=None):
