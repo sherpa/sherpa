@@ -35,7 +35,7 @@ warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
-           'ArithmeticConstantModel', 'ArithmeticModel', 'ArithmeticModel2D',
+           'ArithmeticConstantModel', 'ArithmeticModel', 'ArithmeticModel1D', 'ArithmeticModel2D',
            'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 
@@ -204,11 +204,6 @@ class Model(NoNewAttributesAfterInit):
                     # Update index of aliases, if necessary
                     for alias in val.aliases:
                         self._par_index[alias] = val
-
-    def regrid(self, *arrays):
-        eval_space = EvaluationSpace1D(*arrays)
-        regridder = ModelDomainRegridder1D(eval_space)
-        return regridder.apply_to(self)
 
     def startup(self):
         """Called before a model may be evaluated multiple times.
@@ -561,7 +556,14 @@ class ArithmeticModel(Model):
         return NestedModel(outer, self, *otherargs, **otherkwargs)
 
 
-class ArithmeticModel2D(Model):
+class ArithmeticModel1D(ArithmeticModel):
+    def regrid(self, *arrays):
+        eval_space = EvaluationSpace1D(*arrays)
+        regridder = ModelDomainRegridder1D(eval_space)
+        return regridder.apply_to(self)
+
+
+class ArithmeticModel2D(ArithmeticModel):
     def regrid(self, *arrays):
         eval_space = EvaluationSpace2D(*arrays)
         regridder = ModelDomainRegridder2D(eval_space)
@@ -770,7 +772,7 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
 
     @staticmethod
     def wrapobj(obj):
-        if isinstance(obj, (ArithmeticModel, ArithmeticModel2D)):
+        if isinstance(obj, ArithmeticModel):
             return obj
         else:
             return ArithmeticFunctionModel(obj)

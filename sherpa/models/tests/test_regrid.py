@@ -26,7 +26,7 @@ from pytest import approx
 from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
 from sherpa.data import Data1DInt
-from sherpa.models import Const1D, ArithmeticModel, Parameter, Const2D, ArithmeticModel2D
+from sherpa.models import Const1D, ArithmeticModel1D, Parameter, Const2D, ArithmeticModel2D, ArithmeticModel
 
 
 @pytest.fixture
@@ -265,8 +265,7 @@ def test_evaluate_model_on_arbitrary_grid_no_overlap_2d(setup2d):
         np.testing.assert_array_equal(regrid_model(x, y), [0, 0, 0, 0])
 
 
-
-class MyModel(ArithmeticModel):
+class MyModel(ArithmeticModel1D):
     """
     A model that returns [100, ] * len(x) if 2.5 is in the input array x
     """

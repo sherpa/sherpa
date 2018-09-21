@@ -22,10 +22,12 @@ from numpy import arange
 import sherpa.astro.models as models
 from sherpa.utils import SherpaFloat
 from sherpa.utils.testing import SherpaTestCase
-from sherpa.models.model import ArithmeticModel, boolean_to_byte
+from sherpa.models.model import ArithmeticModel, ArithmeticModel2D, ArithmeticModel1D, boolean_to_byte
+from sherpa.models.basic import Const
 
 
 class test_models(SherpaTestCase):
+    excluded_model_classes = (ArithmeticModel, ArithmeticModel1D, ArithmeticModel2D, Const)
 
     def test_create_and_evaluate(self):
         x = arange(1.0, 5.0)
@@ -36,7 +38,7 @@ class test_models(SherpaTestCase):
 
             if ((not isinstance(clsobj, type)) or
                 (not issubclass(clsobj, ArithmeticModel)) or
-                (clsobj is ArithmeticModel)):
+                (clsobj in self.excluded_model_classes)):
                 continue
 
             # These have a very different interface than the others
