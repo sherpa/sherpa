@@ -27,7 +27,7 @@ import logging
 import warnings
 
 import numpy
-from sherpa.data import BaseData, Data1DInt, Data2D, DataND
+from sherpa.data import BaseData, Data1DInt, Data2D, DataND, Data
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, parse_expr, bool_cast, rebin, filter_bins
@@ -1926,8 +1926,8 @@ class DataPHA(Data1DInt):
 
         return val
 
-    def get_y(self, filter=False, yfunc=None, response_id=None):
-        vallist = Data1DInt.get_y(self, yfunc=yfunc)
+    def get_y(self, filter=False, yfunc=None, response_id=None, use_evaluation_space=False):
+        vallist = Data.get_y(self, yfunc=yfunc)
         filter = bool_cast(filter)
 
         if not isinstance(vallist, tuple):
@@ -2719,7 +2719,7 @@ class DataIMGInt(DataIMG):
     #     return (x0-halfwidth[0],x1-halfwidth[1],
     #             x0+halfwidth[0],x1+halfwidth[1])
 
-    def get_indep(self, filter=False):
+    def get_indep(self, filter=False, model=None):
         filter = bool_cast(filter)
         if filter:
             return (self._x0lo, self._x1lo, self._x0hi, self._x1hi)

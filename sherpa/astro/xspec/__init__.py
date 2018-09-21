@@ -44,7 +44,7 @@ import six
 from six.moves import xrange
 
 import string
-from sherpa.models import Parameter, ArithmeticModel, modelCacher1d
+from sherpa.models import Parameter, ArithmeticModel, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
 
 from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
@@ -772,7 +772,7 @@ __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
 
 
 @six.add_metaclass(ModelMeta)
-class XSModel(ArithmeticModel):
+class XSModel(RegriddableModel1D):
     """The base class for XSPEC models.
 
     It is expected that sub-classes are used to represent the

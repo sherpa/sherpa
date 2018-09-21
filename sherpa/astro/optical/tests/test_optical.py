@@ -22,10 +22,11 @@ import numpy as np
 import sherpa.astro.optical as models
 from sherpa.utils import SherpaFloat
 from sherpa.utils.testing import SherpaTestCase
-from sherpa.models.model import ArithmeticModel
+from sherpa.models.model import ArithmeticModel, RegriddableModel1D, RegriddableModel2D
 
 
 class test_models(SherpaTestCase):
+    excluded_model_classes = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D)
 
     def test_create_and_evaluate(self):
         x = arange(4500.0,5500.0,1,SherpaFloat)
@@ -34,9 +35,9 @@ class test_models(SherpaTestCase):
         for cls in dir(models):
             clsobj = getattr(models, cls)
 
-            if ((not isinstance(clsobj, type)) or
-                (not issubclass(clsobj, ArithmeticModel)) or
-                (clsobj is ArithmeticModel)):
+            if not isinstance(clsobj, type) \
+                    or not issubclass(clsobj, ArithmeticModel) \
+                    or clsobj in self.excluded_model_classes:
                 continue
 
             m = clsobj()

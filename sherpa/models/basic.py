@@ -20,9 +20,11 @@ from __future__ import absolute_import
 
 from six.moves import xrange
 import numpy
+
+from sherpa.models import Parameter, ArithmeticModel
 from .parameter import Parameter, tinyval
 from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
-    ArithmeticFunctionModel
+    ArithmeticFunctionModel, RegriddableModel2D, RegriddableModel1D
 from sherpa.utils.err import ModelErr
 from sherpa.utils import bool_cast, get_position, guess_amplitude, \
     guess_amplitude_at_ref, \
@@ -47,7 +49,7 @@ __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
 DBL_EPSILON = numpy.finfo(numpy.float).eps
 
 
-class Box1D(ArithmeticModel):
+class Box1D(RegriddableModel1D):
     """One-dimensional box function.
 
     The model is flat between ``xlow`` and ``xhi`` (both limits are
@@ -104,7 +106,28 @@ class Box1D(ArithmeticModel):
         return _modelfcts.box1d(*args, **kwargs)
 
 
-class Const1D(ArithmeticModel):
+class Const(ArithmeticModel):
+    def __init__(self, name='const'):
+        self.c0 = Parameter(name, 'c0', 1)
+        ArithmeticModel.__init__(self, name, (self.c0,))
+
+    def guess(self, dep, *args, **kwargs):
+        min = dep.min()
+        max = dep.max()
+        ylo = 0
+        if numpy.abs(min - 0) > DBL_EPSILON:
+            ylo = min / 100.
+            if min < 0: ylo = 0
+        yhi = 0
+        if numpy.abs(max - 0) > DBL_EPSILON:
+            yhi = -10 * max
+            if max > 0: yhi = 100 * max
+        param_apply_limits({'val': (max + min) / 2.,
+                            'min': ylo, 'max': yhi},
+                           self.c0, **kwargs)
+
+
+class Const1D(RegriddableModel1D, Const):
     """A constant model for one-dimensional data.
 
     Attributes
@@ -127,25 +150,8 @@ class Const1D(ArithmeticModel):
         f(xlo,xhi) = ampl * (xhi - xlo)
 
     """
-
     def __init__(self, name='const1d'):
-        self.c0 = Parameter(name, 'c0', 1)
-        ArithmeticModel.__init__(self, name, (self.c0,))
-
-    def guess(self, dep, *args, **kwargs):
-        min = dep.min()
-        max = dep.max()
-        ylo = 0
-        if numpy.abs(min - 0) > DBL_EPSILON:
-            ylo = min / 100.
-            if min < 0: ylo = 0
-        yhi = 0
-        if numpy.abs(max - 0) > DBL_EPSILON:
-            yhi = -10 * max
-            if max > 0: yhi = 100 * max
-        param_apply_limits({'val': (max + min) / 2.,
-                            'min': ylo, 'max': yhi},
-                           self.c0, **kwargs)
+        Const.__init__(self, name)
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
@@ -153,7 +159,7 @@ class Const1D(ArithmeticModel):
         return _modelfcts.const1d(*args, **kwargs)
 
 
-class Cos(ArithmeticModel):
+class Cos(RegriddableModel1D):
     """One-dimensional cosine function.
 
     Attributes
@@ -196,7 +202,7 @@ class Cos(ArithmeticModel):
         return _modelfcts.cos(*args, **kwargs)
 
 
-class Delta1D(ArithmeticModel):
+class Delta1D(RegriddableModel1D):
     """One-dimensional delta function.
 
     The model is only defined at a single point (or bin for integrated
@@ -252,7 +258,7 @@ class Delta1D(ArithmeticModel):
         return _modelfcts.delta1d(*args, **kwargs)
 
 
-class Erf(ArithmeticModel):
+class Erf(RegriddableModel1D):
     """One-dimensional error function.
 
     The function is described at [1]_.
@@ -305,7 +311,7 @@ class Erf(ArithmeticModel):
         return _modelfcts.erf(*args, **kwargs)
 
 
-class Erfc(ArithmeticModel):
+class Erfc(RegriddableModel1D):
     """One-dimensional complementary error function.
 
     The function is described at [1]_.
@@ -358,7 +364,7 @@ class Erfc(ArithmeticModel):
         return _modelfcts.erfc(*args, **kwargs)
 
 
-class Exp(ArithmeticModel):
+class Exp(RegriddableModel1D):
     """One-dimensional exponential function.
 
     Attributes
@@ -397,7 +403,7 @@ class Exp(ArithmeticModel):
         return _modelfcts.exp(*args, **kwargs)
 
 
-class Exp10(ArithmeticModel):
+class Exp10(RegriddableModel1D):
     """One-dimensional exponential function, base 10.
 
     Attributes
@@ -436,7 +442,7 @@ class Exp10(ArithmeticModel):
         return _modelfcts.exp10(*args, **kwargs)
 
 
-class Gauss1D(ArithmeticModel):
+class Gauss1D(RegriddableModel1D):
     """One-dimensional gaussian function.
 
     Attributes
@@ -523,7 +529,7 @@ class Gauss1D(ArithmeticModel):
         return _modelfcts.gauss1d(*args, **kwargs)
 
 
-class Log(ArithmeticModel):
+class Log(RegriddableModel1D):
     """One-dimensional natural logarithm function.
 
     Attributes
@@ -562,7 +568,7 @@ class Log(ArithmeticModel):
         return _modelfcts.log(*args, **kwargs)
 
 
-class Log10(ArithmeticModel):
+class Log10(RegriddableModel1D):
     """One-dimensional logarithm function, base 10.
 
     Attributes
@@ -601,7 +607,7 @@ class Log10(ArithmeticModel):
         return _modelfcts.log10(*args, **kwargs)
 
 
-class LogParabola(ArithmeticModel):
+class LogParabola(RegriddableModel1D):
     """One-dimensional log-parabolic function.
 
     Attributes
@@ -654,7 +660,7 @@ class LogParabola(ArithmeticModel):
 _gfactor = numpy.sqrt(numpy.pi / (4 * numpy.log(2)))
 
 
-class NormGauss1D(ArithmeticModel):
+class NormGauss1D(RegriddableModel1D):
     """One-dimensional normalised gaussian function.
 
     Attributes
@@ -717,7 +723,7 @@ class NormGauss1D(ArithmeticModel):
         return _modelfcts.ngauss1d(*args, **kwargs)
 
 
-class Poisson(ArithmeticModel):
+class Poisson(RegriddableModel1D):
     """One-dimensional Poisson function.
 
     A model expressing the ratio of two Poisson distributions of mean
@@ -766,7 +772,7 @@ class Poisson(ArithmeticModel):
         return _modelfcts.poisson(*args, **kwargs)
 
 
-class Polynom1D(ArithmeticModel):
+class Polynom1D(RegriddableModel1D):
     """One-dimensional polynomial function of order 8.
 
     The maximum order of the polynomial is 8. The default setting has
@@ -882,7 +888,7 @@ class Polynom1D(ArithmeticModel):
         return _modelfcts.poly1d(*args, **kwargs)
 
 
-class PowLaw1D(ArithmeticModel):
+class PowLaw1D(RegriddableModel1D):
     """One-dimensional power-law function.
 
     It is assumed that the independent axis is positive at all points.
@@ -974,7 +980,7 @@ class Scale1D(Const1D):
         self.integrate = False
 
 
-class Sin(ArithmeticModel):
+class Sin(RegriddableModel1D):
     """One-dimensional sine function.
 
     Attributes
@@ -1017,7 +1023,7 @@ class Sin(ArithmeticModel):
         return _modelfcts.sin(*args, **kwargs)
 
 
-class Sqrt(ArithmeticModel):
+class Sqrt(RegriddableModel1D):
     """One-dimensional square root function.
 
     Attributes
@@ -1052,7 +1058,7 @@ class Sqrt(ArithmeticModel):
         return _modelfcts.sqrt(*args, **kwargs)
 
 
-class StepHi1D(ArithmeticModel):
+class StepHi1D(RegriddableModel1D):
     """One-dimensional step function.
 
     The model is flat above ``xcut``, where it is set to the ``ampl``
@@ -1101,7 +1107,7 @@ class StepHi1D(ArithmeticModel):
         return _modelfcts.stephi1d(*args, **kwargs)
 
 
-class StepLo1D(ArithmeticModel):
+class StepLo1D(RegriddableModel1D):
     """One-dimensional step function.
 
     The model is flat below ``xcut``, where it is set to the ``ampl``
@@ -1150,7 +1156,7 @@ class StepLo1D(ArithmeticModel):
         return _modelfcts.steplo1d(*args, **kwargs)
 
 
-class Tan(ArithmeticModel):
+class Tan(RegriddableModel1D):
     """One-dimensional tan function.
 
     Attributes
@@ -1193,7 +1199,7 @@ class Tan(ArithmeticModel):
         return _modelfcts.tan(*args, **kwargs)
 
 
-class Box2D(ArithmeticModel):
+class Box2D(RegriddableModel2D):
     """Two-dimensional box function.
 
     The model is flat between the limits, where it is set to the
@@ -1262,7 +1268,7 @@ class Box2D(ArithmeticModel):
         return _modelfcts.box2d(*args, **kwargs)
 
 
-class Const2D(Const1D):
+class Const2D(RegriddableModel2D, Const):
     """A constant model for two-dimensional data.
 
     Attributes
@@ -1288,7 +1294,7 @@ class Const2D(Const1D):
     """
 
     def __init__(self, name='const2d'):
-        Const1D.__init__(self, name)
+        Const.__init__(self, name)
         self.cache = 0
 
     def calc(self, *args, **kwargs):
@@ -1332,7 +1338,7 @@ class Scale2D(Const2D):
         self.cache = 0
 
 
-class Delta2D(ArithmeticModel):
+class Delta2D(RegriddableModel2D):
     """Two-dimensional delta function.
 
     The model is only defined at a single point (or bin for integrated
@@ -1394,7 +1400,7 @@ class Delta2D(ArithmeticModel):
         return _modelfcts.delta2d(*args, **kwargs)
 
 
-class Gauss2D(ArithmeticModel):
+class Gauss2D(RegriddableModel2D):
     """Two-dimensional gaussian function.
 
     Attributes
@@ -1553,7 +1559,7 @@ class SigmaGauss2D(Gauss2D):
         return _modelfcts.sigmagauss2d(*args, **kwargs)
 
 
-class NormGauss2D(ArithmeticModel):
+class NormGauss2D(RegriddableModel2D):
     """Two-dimensional normalised gaussian function.
 
     Attributes
@@ -1651,7 +1657,7 @@ class NormGauss2D(ArithmeticModel):
         return _modelfcts.ngauss2d(*args, **kwargs)
 
 
-class Polynom2D(ArithmeticModel):
+class Polynom2D(RegriddableModel2D):
     """Two-dimensional polynomial function.
 
     The maximum order of the polynomial is 2.
@@ -1841,7 +1847,7 @@ class UserModel(ArithmeticModel):
         ArithmeticModel.__init__(self, name, pars)
 
 
-class Integrator1D(CompositeModel, ArithmeticModel):
+class Integrator1D(CompositeModel, RegriddableModel1D):
 
     @staticmethod
     def wrapobj(obj):
@@ -1875,7 +1881,7 @@ class Integrator1D(CompositeModel, ArithmeticModel):
                                       p, xlo, xhi, **self.otherkwargs)
 
 
-class Integrate1D(ArithmeticModel):
+class Integrate1D(RegriddableModel1D):
 
     def __init__(self, name='integrate1d'):
         tol = numpy.finfo(float).eps

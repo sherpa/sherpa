@@ -11,6 +11,7 @@ fi
 # Install test data as a package, then remove the submodule
 if [ ${TEST} == package ];
  then pip install ./sherpa-test-data;
+ pip install pytest-xvfb;
  git submodule deinit -f .;
 fi
 

@@ -29,7 +29,6 @@ from sherpa.utils.err import ModelErr
 __all__ = ('create_template_model', 'TemplateModel', 'KNNInterpolator', 'Template')
 
 
-
 def create_template_model(modelname, names, parvals, templates, template_interpolator_name='default'):
     """
     Create a TemplateModel model class from template input
@@ -94,6 +93,7 @@ class InterpolatingTemplateModel(ArithmeticModel):
         interpolated_template = self.interpolate(p, x0)
         return interpolated_template(x0, x1, *args, **kwargs)
 
+
 class KNNInterpolator(InterpolatingTemplateModel):
     def __init__(self, name, template_model, k=None, order=2):
         self._distances = {}
@@ -125,6 +125,7 @@ class KNNInterpolator(InterpolatingTemplateModel):
         tm.load(x_out, y_out)
         return tm
 
+
 class Template(KNNInterpolator):
     def __init__(self, *args, **kwargs):
         KNNInterpolator.__init__(self, *args, **kwargs)
@@ -132,9 +133,9 @@ class Template(KNNInterpolator):
 
 class TemplateModel(ArithmeticModel):
 
-    def __init__(self, name='templatemodel', pars=(), parvals=[], templates=[]):
-        self.parvals = parvals
-        self.templates = templates
+    def __init__(self, name='templatemodel', pars=(), parvals=None, templates=None):
+        self.parvals = parvals if parvals is not None else []
+        self.templates = templates if templates is not None else []
         self.index = {}
 
         for par in pars:
@@ -175,7 +176,6 @@ class TemplateModel(ArithmeticModel):
 
         # return interpolated the spectrum according to the input grid (x0, [x1])
         return table_model(x0, x1, *args, **kwargs)
-
 
 
 interpolators = {

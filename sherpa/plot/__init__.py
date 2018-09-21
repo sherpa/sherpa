@@ -928,7 +928,9 @@ class ComponentSourcePlot(SourcePlot):
     plot_prefs = backend.get_component_plot_defaults()
 
     def prepare(self, data, model, stat=None):
-        SourcePlot.prepare(self, data, model, stat)
+        (self.x, self.y, self.yerr, self.xerr,
+         self.xlabel, self.ylabel) = data.to_component_plot(yfunc=model)
+        self.y = self.y[1]
         self.title = 'Source model component: %s' % model.name
 
 
