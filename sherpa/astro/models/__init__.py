@@ -22,7 +22,7 @@ from __future__ import absolute_import
 
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
-from sherpa.models.model import ArithmeticModel, ArithmeticModel2D, ArithmeticModel1D, modelCacher1d
+from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, modelCacher1d
 from sherpa.astro.utils import apply_pileup
 from sherpa.utils.err import ModelErr
 from sherpa.utils import _guess_ampl_scale, bool_cast, get_fwhm, \
@@ -41,7 +41,7 @@ __all__ = ('Atten', 'BBody', 'BBodyFreq', 'Beta1D', 'BPL1D', 'Dered', 'Edge',
            'Shell2D')
 
 
-class Atten(ArithmeticModel1D):
+class Atten(RegriddableModel1D):
     """Model the attenuation by the Inter-Stellar Medium (ISM).
 
     This model calculates the transmission of the interstellar medium
@@ -100,7 +100,7 @@ class Atten(ArithmeticModel1D):
         return _modelfcts.atten(*args, **kwargs)
 
 
-class BBody(ArithmeticModel1D):
+class BBody(RegriddableModel1D):
     """A one-dimensional Blackbody model.
 
     This model can be used when the independent axis is in energy
@@ -179,7 +179,7 @@ class BBody(ArithmeticModel1D):
         return _modelfcts.bbody(*args, **kwargs)
 
 
-class BBodyFreq(ArithmeticModel1D):
+class BBodyFreq(RegriddableModel1D):
     """A one-dimensional Blackbody model (frequency).
 
     This model can be used when the independent axis is in frequency
@@ -236,7 +236,7 @@ class BBodyFreq(ArithmeticModel1D):
         return _modelfcts.bbodyfreq(*args, **kwargs)
 
 
-class Beta1D(ArithmeticModel1D):
+class Beta1D(RegriddableModel1D):
     """One-dimensional beta model function.
 
     The beta model is a Lorentz model with a varying power law.
@@ -306,7 +306,7 @@ class Beta1D(ArithmeticModel1D):
         return _modelfcts.beta1d(*args, **kwargs)
 
 
-class BPL1D(ArithmeticModel1D):
+class BPL1D(RegriddableModel1D):
     """One-dimensional broken power-law function.
 
     Attributes
@@ -368,7 +368,7 @@ class BPL1D(ArithmeticModel1D):
 
 # TODO: what are the units of the independent axis: Angstrom?
 
-class Dered(ArithmeticModel1D):
+class Dered(RegriddableModel1D):
     """A de-reddening model.
 
     The integrate flag of this model should be set to False when
@@ -430,7 +430,7 @@ class Dered(ArithmeticModel1D):
         return _modelfcts.dered(*args, **kwargs)
 
 
-class Edge(ArithmeticModel1D):
+class Edge(RegriddableModel1D):
     """Photoabsorption edge model.
 
     This model can be used when the independent axis is in energy
@@ -488,7 +488,7 @@ class Edge(ArithmeticModel1D):
 #    convince myself that it is doing something useful.
 #
 
-class LineBroad(ArithmeticModel1D):
+class LineBroad(RegriddableModel1D):
     """A one-dimensional line-broadening profile.
 
     Attributes
@@ -548,7 +548,7 @@ class LineBroad(ArithmeticModel1D):
 # DOC-NOTE: for some reason the division in the equation in the notes
 #           section confuses sphinx (it thinks it is a section title).
 #
-class Lorentz1D(ArithmeticModel1D):
+class Lorentz1D(RegriddableModel1D):
     """One-dimensional normalized Lorentz model function.
 
     Attributes
@@ -613,7 +613,7 @@ class Lorentz1D(ArithmeticModel1D):
         return _modelfcts.lorentz1d(*args, **kwargs)
 
 
-class NormBeta1D(ArithmeticModel1D):
+class NormBeta1D(RegriddableModel1D):
     """One-dimensional normalized beta model function.
 
     This is the same model as the ``Beta1D`` model but with a
@@ -685,7 +685,7 @@ class NormBeta1D(ArithmeticModel1D):
         return _modelfcts.nbeta1d(*args, **kwargs)
 
 
-class Schechter(ArithmeticModel1D):
+class Schechter(RegriddableModel1D):
     """One-dimensional Schecter model function.
 
     This model is for integrated data grids only.
@@ -731,7 +731,7 @@ class Schechter(ArithmeticModel1D):
         return _modelfcts.schechter(*args, **kwargs)
 
 
-class Beta2D(ArithmeticModel2D):
+class Beta2D(RegriddableModel2D):
     """Two-dimensional beta model function.
 
     The beta model is a Lorentz model with a varying power law.
@@ -824,7 +824,7 @@ class Beta2D(ArithmeticModel2D):
         return _modelfcts.beta2d(*args, **kwargs)
 
 
-class DeVaucouleurs2D(ArithmeticModel2D):
+class DeVaucouleurs2D(RegriddableModel2D):
     """Two-dimensional de Vaucouleurs model.
 
     This is a formulation of the R^(1/4) law introduced by [1]_. It
@@ -905,7 +905,7 @@ class DeVaucouleurs2D(ArithmeticModel2D):
         return _modelfcts.devau(*args, **kwargs)
 
 
-class HubbleReynolds(ArithmeticModel2D):
+class HubbleReynolds(RegriddableModel2D):
     """Two-dimensional Hubble-Reynolds model.
 
     Attributes
@@ -991,7 +991,7 @@ class HubbleReynolds(ArithmeticModel2D):
         return _modelfcts.hr(*args, **kwargs)
 
 
-class Lorentz2D(ArithmeticModel2D):
+class Lorentz2D(RegriddableModel2D):
     """Two-dimensional un-normalised Lorentz function.
 
     Attributes
@@ -1065,7 +1065,7 @@ class Lorentz2D(ArithmeticModel2D):
         return _modelfcts.lorentz2d(*args, **kwargs)
 
 
-class JDPileup(ArithmeticModel1D):
+class JDPileup(RegriddableModel1D):
     """A CCD pileup model for the ACIS detectors on Chandra.
 
     This model is based on the work by John Davis ([1]_). It is
@@ -1182,7 +1182,7 @@ class MultiResponseSumModel(ArithmeticModel):
     pass
 
 
-class Sersic2D(ArithmeticModel2D):
+class Sersic2D(RegriddableModel2D):
     """Two-dimensional Sersic model.
 
     This is a generalization of the ``DeVaucouleurs2D`` model,
@@ -1290,7 +1290,7 @@ class Sersic2D(ArithmeticModel2D):
 # ## Contributed by Christoph Deil of the HESS project
 # ## Added to CIAO 4.6 for Dec. 2013 release SMD
 
-class Disk2D(ArithmeticModel2D):
+class Disk2D(RegriddableModel2D):
     """Two-dimensional uniform disk model.
 
     Attributes
@@ -1338,7 +1338,7 @@ class Disk2D(ArithmeticModel2D):
 
 # DOC-NOTE: TODO finish the functional form description
 
-class Shell2D(ArithmeticModel2D):
+class Shell2D(RegriddableModel2D):
     """A homogenous spherical 3D shell projected onto 2D.
 
     Attributes

@@ -22,12 +22,12 @@ from numpy import arange
 import sherpa.astro.models as models
 from sherpa.utils import SherpaFloat
 from sherpa.utils.testing import SherpaTestCase
-from sherpa.models.model import ArithmeticModel, ArithmeticModel2D, ArithmeticModel1D, boolean_to_byte
+from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, boolean_to_byte
 from sherpa.models.basic import Const
 
 
 class test_models(SherpaTestCase):
-    excluded_model_classes = (ArithmeticModel, ArithmeticModel1D, ArithmeticModel2D, Const)
+    excluded_model_classes = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, Const)
 
     def test_create_and_evaluate(self):
         x = arange(1.0, 5.0)

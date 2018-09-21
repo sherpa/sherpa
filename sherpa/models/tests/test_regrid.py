@@ -26,7 +26,7 @@ from pytest import approx
 from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
 from sherpa.data import Data1DInt
-from sherpa.models import Const1D, ArithmeticModel1D, Parameter, Const2D, ArithmeticModel2D, ArithmeticModel
+from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, RegriddableModel2D, ArithmeticModel
 
 
 @pytest.fixture
@@ -265,7 +265,7 @@ def test_evaluate_model_on_arbitrary_grid_no_overlap_2d(setup2d):
         np.testing.assert_array_equal(regrid_model(x, y), [0, 0, 0, 0])
 
 
-class MyModel(ArithmeticModel1D):
+class MyModel(RegriddableModel1D):
     """
     A model that returns [100, ] * len(x) if 2.5 is in the input array x
     """
@@ -296,14 +296,14 @@ class MyModel(ArithmeticModel1D):
             return [p[0]*100, ] * len(x)
 
 
-class MyModel2D(ArithmeticModel2D):
+class MyModel2D(RegriddableModel2D):
     """
     A 2D model that returns [100, ] * len(x) * len(y) if 2.5 is in the input arrays x and y
     """
     def __init__(self, name):
         self.x_has_25 = Parameter(name, "x_has_25", 0, min=0, max=1)
         self.y_has_25 = Parameter(name, "y_has_25", 0, min=0, max=1)
-        ArithmeticModel2D.__init__(self, name, (self.x_has_25, self.y_has_25))
+        RegriddableModel2D.__init__(self, name, (self.x_has_25, self.y_has_25))
 
     def guess(self, dep, *args, **kwargs):
         raise NotImplementedError()

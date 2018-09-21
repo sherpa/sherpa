@@ -35,7 +35,7 @@ warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
-           'ArithmeticConstantModel', 'ArithmeticModel', 'ArithmeticModel1D', 'ArithmeticModel2D',
+           'ArithmeticConstantModel', 'ArithmeticModel', 'RegriddableModel1D', 'RegriddableModel2D',
            'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 
@@ -556,14 +556,14 @@ class ArithmeticModel(Model):
         return NestedModel(outer, self, *otherargs, **otherkwargs)
 
 
-class ArithmeticModel1D(ArithmeticModel):
+class RegriddableModel1D(ArithmeticModel):
     def regrid(self, *arrays):
         eval_space = EvaluationSpace1D(*arrays)
         regridder = ModelDomainRegridder1D(eval_space)
         return regridder.apply_to(self)
 
 
-class ArithmeticModel2D(ArithmeticModel):
+class RegriddableModel2D(ArithmeticModel):
     def regrid(self, *arrays):
         eval_space = EvaluationSpace2D(*arrays)
         regridder = ModelDomainRegridder2D(eval_space)

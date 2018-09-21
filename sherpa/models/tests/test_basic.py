@@ -21,7 +21,7 @@ from numpy import arange
 import sherpa.models.basic as basic
 from sherpa.utils import SherpaFloat
 from sherpa.utils.testing import SherpaTestCase
-from sherpa.models.model import ArithmeticModel, ArithmeticModel1D, ArithmeticModel2D
+from sherpa.models.model import ArithmeticModel, RegriddableModel1D, RegriddableModel2D
 
 
 def userfunc(pars, x, *args, **kwargs):
@@ -29,7 +29,7 @@ def userfunc(pars, x, *args, **kwargs):
 
 
 class test_basic(SherpaTestCase):
-    excluded_models = (ArithmeticModel, ArithmeticModel1D, ArithmeticModel2D, basic.Const)
+    excluded_models = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, basic.Const)
 
     def test_create_and_evaluate(self):
         x = arange(1.0, 5.0)
