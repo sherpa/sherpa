@@ -1178,8 +1178,6 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
                      e_min=None, e_max=None, ethresh=None,
                      name='delta-rmf'):
 
-    _validate_create_rmf_input(rmflo, rmfhi, offset)
-
     # Set up the delta-function response.
     # TODO: should f_chan start at startchan?
     #
@@ -1245,17 +1243,3 @@ def calc_grp_chan_matrix(fname):
     except sherpa.utils.err.IOErr as ioerr:
         print(ioerr)
         raise ioerr
-
-
-def _validate_create_rmf_input(rmflo, rmfhi, startchan, fname=None):
-    try:
-        assert rmflo.size == rmfhi.size
-    except AssertionError:
-        raise ValueError("rmflo and rmfhi must have the same size, not {} and {}".format(rmflo.size, rmfhi.size))
-
-    try:
-        assert startchan >= 0
-    except AssertionError:
-        raise ValueError("startchan must be >=0, not {}".format(startchan))
-
-

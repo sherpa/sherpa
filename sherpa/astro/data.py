@@ -163,6 +163,9 @@ class DataOgipResponse(Data1DInt):
 
         rtype = self._ui_name
 
+        if elo.size != ehi.size:
+            raise ValueError("rmflo and rmfhi must have the same size, not {} and {}".format(elo.size, ehi.size))
+
         if ethresh is not None and ethresh <= 0.0:
             raise ValueError("ethresh is None or > 0")
 
@@ -397,7 +400,7 @@ class DataRMF(DataOgipResponse):
 
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
-        if offset <=0:
+        if offset <0:
             raise ValueError("offset must be >=0, not {}".format(offset))
 
         self._fch = f_chan
