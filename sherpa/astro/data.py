@@ -25,8 +25,8 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 import os.path
 import logging
 import warnings
-
 import numpy
+
 from sherpa.data import BaseData, Data1DInt, Data2D, DataND, Data
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
@@ -60,6 +60,25 @@ except:
 
 __all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt')
 
+
+class myCache:
+    def __init__(self, func):
+        self.func = func
+        self.cache = {}
+
+    def __call__(self, *args):
+        key = numpy.append(*args).tostring()
+        if key in self.cache:
+            return self.cache[key]
+        else:
+            val = self.func(*args)
+            self.cache[key] = val
+            return val
+
+
+@myCache
+def my_arf_fold(a, b):
+    return arf_fold(a, b)
 
 def _notice_resp(chans, arf, rmf):
     bin_mask = None
@@ -311,7 +330,10 @@ class DataARF(DataOgipResponse):
 
     def apply_arf(self, src, *args, **kwargs):
         "Fold the source array src through the ARF and return the result"
-        model = arf_fold(src, self._rsp)
+
+        # an external function must be called is necessary so all arf goes
+        # through a single entry point in order for caching to 'work'
+        model = my_arf_fold(src, self._rsp)
 
         # Rebin the high-res source model folded through ARF down to the size
         # the PHA or RMF expects.
