@@ -26,6 +26,8 @@ import warnings
 import numpy
 
 import sherpa.ui.utils
+from sherpa.astro.data import DataARF
+from sherpa.astro.instrument import create_arf, create_delta_rmf, create_non_delta_rmf
 from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
@@ -4735,10 +4737,83 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_table(self.get_data(id))
 
-    # def _check_resp_id(id):
-    #    if (id is not None) and (not self._valid_id(id)):
-    #        raise ArgumentTypeError('response identifiers must be integers ' +
-    #                                'or strings')
+    @staticmethod
+    def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
+                   name='test-arf'):
+        """Create an ARF.
+        Parameters
+        ----------
+        elo, ehi : numpy.ndarray
+            The energy bins (low and high, in keV) for the ARF. It is
+            assumed that ehi_i > elo_i, elo_j > 0, the energy bins are
+            either ascending - so elo_i+1 > elo_i - or descending
+            (elo_i+1 < elo_i), and that there are no overlaps.
+        specresp : None or array, optional
+            The spectral response (in cm^2) for the ARF. It is assumed
+            to be >= 0. If not given a flat response of 1.0 is used.
+        exposure : number or None, optional
+            If not None, the exposure of the ARF in seconds.
+        ethresh : number or None, optional
+            Passed through to the DataARF call. It controls whether
+            zero-energy bins are replaced.
+        name : str
+            The name of the data set
+        Returns
+        -------
+        arf : DataARF instance
+        """
+        return create_arf(elo, ehi, specresp, exposure, ethresh, name)
+
+    @staticmethod
+    def create_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None,
+                   ethresh=None, fname=None, name='delta-rmf'):
+        """Create an RMF for a "perfect" delta-function response if fname is
+        None otherwise fname contains the name of the image file generated
+        from the standard RMF file with the CIAO tool rmfimg to create an
+        RMF which does not have a delta-function response.
+
+        Parameters
+        ----------
+        rmflo, rmfhi : array
+            The energy bins (low and high, in keV) for the RMF.
+            It is assumed that emfhi_i > rmflo_i, rmflo_j > 0, that the energy
+            bins are either ascending, so rmflo_i+1 > rmflo_i or descending
+            (rmflo_i+1 < rmflo_i), and that there are no overlaps.
+            These correspond to the Elow and Ehigh columns (represented
+            by the ENERG_LO and ENERG_HI columns of the MATRIX block) of
+            the OGIP standard.
+        startchan : int, optional
+            The starting channel number: expected to be 0 or 1 but this is
+            not enforced.
+        e_min, e_max : None or array, optional
+            The E_MIN and E_MAX columns of the EBOUNDS block of the
+            RMF.
+        ethresh : number or None, optional
+            Passed through to the DataARF call. It controls whether
+            zero-energy bins are replaced.
+        fname : str, optional
+            The name of the image file generated from the standard RMF file
+            with the CIAO tool rmfimg
+        name : str
+            The name of the data set
+        Returns
+        -------
+        rmf : DataRMF instance
+        Notes
+        -----
+        I do not think I have the startchan=0 case correct (does the
+        f_chan array have to change?).
+        """
+
+        if fname is None:
+            return create_delta_rmf(rmflo, rmfhi, offset=startchan,
+                                    e_min=e_min, e_max=e_max, ethresh=ethresh,
+                                    name=name)
+        else:
+            return create_non_delta_rmf(rmflo, rmfhi, fname,
+                                        offset=startchan, e_min=e_min,
+                                        e_max=e_max, ethresh=ethresh,
+                                        name=name)
 
     def get_arf(self, id=None, resp_id=None, bkg_id=None):
         """Return the ARF associated with a PHA data set.
