@@ -132,7 +132,7 @@ class EvaluationSpace1D(object):
     @property
     def start(self):
         return self.x_axis.start
-    
+
     @property
     def end(self):
         return self.x_axis.end
@@ -567,9 +567,25 @@ def rebin_2d(y, custom_space, requested_space):
 
 
 def rebin_flux(array, dimensions=None, scale=None):
-    """ Return the array ``array`` to the new ``dimensions`` conserving flux the flux in the bins
-    The sum of the array will remain the same. From http://martynbristow.co.uk/wordpress/blog/rebinning-data/,
-    released as GPL v3 © Martyn Bristow 2015. Slightly modified for Sherpa.
+    """Rebin the array, conserving flux.
+
+    Return the array ``array`` to the new ``dimensions`` conserving flux,
+    so that the sum of the output matches the sum of ``array``.
+
+    Raises
+    ------
+    AssertionError
+        If the totals of the input and result array don't agree, raise an error because computation may have gone wrong
+
+    Notes
+    -----
+    This routine is based on the example at
+    http://martynbristow.co.uk/wordpress/blog/rebinning-data/
+    which was released as GPL v3 © Martyn Bristow 2015. It has been
+    slightly modified for Sherpa.
+
+    Examples
+    --------
 
     >>> ar = np.array([
     ...    [0,1,2],
@@ -580,21 +596,6 @@ def rebin_flux(array, dimensions=None, scale=None):
     array([[1.5, 4.5],
            [4.5, 7.5]])
 
-    Raises
-    ------
-
-    AssertionError
-        If the totals of the input and result array don't agree, raise an error because computation may have gone wrong
-
-    Reference
-    =========
-    +-+-+-+
-    |1|2|3|
-    +-+-+-+
-    |4|5|6|
-    +-+-+-+
-    |7|8|9|
-    +-+-+-+
     """
     if dimensions is not None:
         if isinstance(dimensions, float):
