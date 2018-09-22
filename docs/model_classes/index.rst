@@ -48,6 +48,7 @@ contains the classes that implement various models.
 
    model
    parameters
+   regrid
    instrument
    template
    astro_instrument
