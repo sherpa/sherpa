@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2010, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -503,7 +503,7 @@ class ArithmeticModel(Model):
         # Model caching ability
         # queue memory of maximum size
         self.cache = 5
-        self._use_caching = False  # FIXME: reduce number of variables?
+        self._use_caching = True  # FIXME: reduce number of variables?
         self._queue = ['']
         self._cache = {}
         Model.__init__(self, name, pars)

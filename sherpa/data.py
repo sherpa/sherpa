@@ -189,6 +189,9 @@ class Data(BaseData):
     def eval_model_to_fit(self, modelfunc):
         return modelfunc(*self.get_indep(filter=True, model=modelfunc))
 
+    def _get_indep(self, filter=False):
+        return self.get_indep(filter=filter)
+
     #
     # Primary properties.  These can depend only on normal attributes (and not
     # other properties).

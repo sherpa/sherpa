@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018
+#            Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -556,7 +557,13 @@ class RSPModelPHA(RSPModel):
     def calc(self, p, x, xhi=None, *args, **kwargs):
         # x could be channels or x, xhi could be energy|wave
 
-        src = self.model.calc(p, self.xlo, self.xhi)
+        bin_mask = self.rmf.bin_mask
+        if bin_mask is None:
+            src = self.model.calc(p, self.xlo, self.xhi)
+        else:
+            xlo = self.rmf._lo_unfiltered
+            xhi = self.rmf._hi_unfiltered
+            src = self.model.calc(p, xlo, xhi)[bin_mask]
         src = self.arf.apply_arf(src, *self.arfargs)
         src = self.rmf.apply_rmf(src, *self.rmfargs)
 
