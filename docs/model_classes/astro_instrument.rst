@@ -29,6 +29,15 @@ The sherpa.astro.instrument module
       MultiResponseSumModel
       PileupRMFModel
    
+   .. rubric:: Functions
+               
+   .. autosummary::
+      :toctree: api
+
+      create_arf
+      create_delta_rmf
+      create_non_delta_rmf
+
 Class Inheritance Diagram
 =========================
 
