@@ -16,19 +16,26 @@ Sherpa can take advantage of the following Python packages
 if installed:
 
 * :term:`astropy`: for reading and writing files in
-  :term:`FITS` format.
+  :term:`FITS` format. The minimum required version of astropy
+  is version 1.3, although only versions 2 and higher are used in testing.
 * :term:`matplotlib`: for visualisation of
   one-dimensional data or models, one- or two- dimensional
   error analysis, and the results of Monte-Carlo Markov Chain
-  runs.
+  runs. There are no known incompatabilities with matplotlib, but there
+  has only been limited testing. Please
+  `report any problems <https://github.com/sherpa/sherpa/issues/>`_
+  you find.
 
 The Sherpa build can be configured to create the
 :py:mod:`sherpa.astro.xspec` module, which provides the models and utility
 functions from the :term:`XSPEC`.
-The supported versions of XSPEC are 12.9.0 and 12.9.1.
+The supported versions of XSPEC are 12.9.0 and 12.9.1 (unfortunately
+version 12.10.0 is currently incompatible with Sherpa).
 
 Interactive display and manipulation of two-dimensional images
-is available if the :term:`DS9` image viewer is installed.
+is available if the :term:`DS9` image viewer and the :term:`XPA`
+commands are installed. It is expected that any recent version of
+DS9 can be used.
 
 Releases and version numbers
 ============================
@@ -117,38 +124,30 @@ It is *highly* recommended that `matplotlib` and `astropy` be installed
 before building Sherpa, to avoid skipping a number of tests in the
 test suite.
 
-The full Sherpa test suite requires the `mock` package (Python 2.7 only)
-and `pytest`. These packages should be installed
+The full Sherpa test suite requires the `mock` package (Python 2.7 only),
+`pytest`, and `pytest-xvfb`. These packages should be installed
 automatically for you by the test suite if they do not already exist.
-
-If :term:`DS9` is installed, along with the :term:`XPA` commands,
-then the Sherpa test suite will cause multiple instances of DS9 to
-appear and then disappear, almost immediately. To avoid this
-disruption, install both the `pytest-xvfb` package and the
-`X virtual frame buffer (Xvfb) <https://en.wikipedia.org/wiki/Xvfb>`_,
-which will cause the DS9 tests to use the virtual framebuffer rather
-than the existing X session for display.
 
 Obtaining the source package
 ----------------------------
 
 The source code can be obtained as a release package from
 Zenodo - e.g.
-`the CIAO 4.9 release <https://zenodo.org/record/207470>`_ -
+`the Sherpa 4.10.0 release <https://zenodo.org/record/1245678>`_ -
 or from
 `the Sherpa repository on GitHub <https://github.com/sherpa/sherpa>`_,
 either a release version,
 such as the
-`ciao4.9 <https://github.com/sherpa/sherpa/tree/ciao4.9>`_ tag,
-or the ``master`` branch , which is not guaranteed to be stable.
+`4.10.0 <https://github.com/sherpa/sherpa/tree/4.10.0>`_ tag,
+or the ``master`` branch (which is not guaranteed to be stable).
 
 For example::
 
     git clone git://github.com/sherpa/sherpa.git
     cd sherpa
-    git checkout ciao4.9
+    git checkout 4.10.0
 
-will use the ``ciao4.9`` tag.
+will use the ``4.10.0`` tag.
 
 Configuring the build
 ---------------------
@@ -304,11 +303,6 @@ which used ``git`` to access the source code)::
   
 Building the documentation
 --------------------------
-
-.. warning::
-
-   The documentation support is **highly experimental**. It is also
-   **restricted** to Python 3 systems.
 
 Building the documentation requires the Sherpa source code and several
 additional packages:
