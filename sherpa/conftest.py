@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,7 @@ import re
 
 from numpy import VisibleDeprecationWarning
 
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.testing import SherpaTestCase
 
 from six.moves import reload_module
 
@@ -34,7 +34,6 @@ except ImportError:  # Python 2
     import mock
 
 try:
-    from astropy.utils.exceptions import AstropyDeprecationWarning
     from astropy.io.fits.verify import VerifyWarning
     have_astropy = True
 except ImportError:
@@ -106,13 +105,6 @@ if sys.version_info >= (3, 2):
 
 if have_astropy:
     astropy_warnings = {
-        AstropyDeprecationWarning:
-        [
-            # leave in the 1.3 warning since there was a release version
-            # with this message in
-            r".*clobber.*deprecated.*1.3",
-            r".*clobber.*deprecated.*2.0",
-        ],
         # See bug #372 on GitHub
         ImportWarning:
         [

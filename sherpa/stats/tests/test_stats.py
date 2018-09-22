@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,8 +20,8 @@ from __future__ import print_function
 
 import numpy
 
-from sherpa.utils import requires_data, requires_xspec, requires_fits
-from sherpa.utils import SherpaTestCase
+from sherpa.utils.testing import SherpaTestCase, requires_data, \
+    requires_xspec, requires_fits
 from sherpa.data import Data1D
 
 from sherpa.models import PowLaw1D, SimulFitModel

@@ -39,7 +39,7 @@ References
 from six.moves import xrange
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
-from sherpa.models.model import ArithmeticModel
+from sherpa.models.model import ArithmeticModel, RegriddableModel1D
 from sherpa.utils import SherpaFloat, sao_fcmp
 
 _tol = numpy.finfo(numpy.float32).eps
@@ -98,7 +98,7 @@ def _extinct_interp(xtable, etable, x):
 
 # This model sets in edge (in Angstroms) beyond which absorption
 # is a significant feature to the spectrum or SED.
-class AbsorptionEdge(ArithmeticModel):
+class AbsorptionEdge(RegriddableModel1D):
     """Optical model of an absorption edge.
 
     This model is intended to be used to modify another model (e.g.
@@ -159,7 +159,7 @@ class AbsorptionEdge(ArithmeticModel):
 
 
 # This model is an accretion disk continuum function.
-class AccretionDisk(ArithmeticModel):
+class AccretionDisk(RegriddableModel1D):
     """A model of emission due to an accretion disk.
 
     It is for use when the independent axis is in Angstroms.
@@ -214,7 +214,7 @@ class AccretionDisk(ArithmeticModel):
 
 # This model calculates a Gaussian function expressed in
 # equivalent width, and models absorption due to this Gaussian.
-class AbsorptionGaussian(ArithmeticModel):
+class AbsorptionGaussian(RegriddableModel1D):
     """Gaussian function for modeling absorption (equivalent width).
 
     This model is intended to be used to modify another model (e.g.
@@ -296,7 +296,7 @@ class AbsorptionGaussian(ArithmeticModel):
 
 # This model calculates a Lorentzian function expressed in
 # equivalent width, and models absorption due to this Lorentzian.
-class AbsorptionLorentz(ArithmeticModel):
+class AbsorptionLorentz(RegriddableModel1D):
     """Lorentz function for modeling absorption (equivalent width).
 
     This model is intended to be used to modify another model (e.g.
@@ -364,7 +364,7 @@ class AbsorptionLorentz(ArithmeticModel):
 
 
 # This model computes a Lorentzian profile for emission features.
-class EmissionLorentz(ArithmeticModel):
+class EmissionLorentz(RegriddableModel1D):
     """Lorentz function for modeling emission.
 
     It is for use when the independent axis is in Angstroms.
@@ -437,7 +437,7 @@ class EmissionLorentz(ArithmeticModel):
 
 # This model computes an absorption Gaussian feature expressed in
 # optical depth.
-class OpticalGaussian(ArithmeticModel):
+class OpticalGaussian(RegriddableModel1D):
     """Gaussian function for modeling absorption (optical depth).
 
     This model is intended to be used to modify another model (e.g.
@@ -517,7 +517,7 @@ class OpticalGaussian(ArithmeticModel):
 
 
 # This model computes a Gaussian profile for emission features.
-class EmissionGaussian(ArithmeticModel):
+class EmissionGaussian(RegriddableModel1D):
     """Gaussian function for modeling emission.
 
     It is for use when the independent axis is in Angstroms.
@@ -628,7 +628,7 @@ class EmissionGaussian(ArithmeticModel):
 
 # This model computes absorption as a Voigt function -- i.e., with
 # a Gaussian core and Lorentzian wings.
-class AbsorptionVoigt(ArithmeticModel):
+class AbsorptionVoigt(RegriddableModel1D):
     """Voigt function for modeling absorption (equivalent width).
 
     This model uses an ``AbsorptionGaussian`` component to model the
@@ -705,7 +705,7 @@ class AbsorptionVoigt(ArithmeticModel):
 
 
 # This model computes continuum emission as a blackbody function.
-class BlackBody(ArithmeticModel):
+class BlackBody(RegriddableModel1D):
     """Emission from a black body.
 
     It is for use when the independent axis is in Angstroms.
@@ -787,7 +787,7 @@ class BlackBody(ArithmeticModel):
 
 
 # This model computes continuum emission with the bremsstrahlung function.
-class Bremsstrahlung(ArithmeticModel):
+class Bremsstrahlung(RegriddableModel1D):
     """Bremsstrahlung emission.
 
     It is for use when the independent axis is in Angstroms.
@@ -842,7 +842,7 @@ class Bremsstrahlung(ArithmeticModel):
 # This model computes continuum emission with a broken power-law;
 # that is, the power-law index changes after a break at a particular
 # wavelength.
-class BrokenPowerlaw(ArithmeticModel):
+class BrokenPowerlaw(RegriddableModel1D):
     """Broken power-law model.
 
     It is for use when the independent axis is in Angstroms.
@@ -904,7 +904,7 @@ class BrokenPowerlaw(ArithmeticModel):
 # This model computes extinction using the function published by
 # Cardelli, Clayton, and Mathis
 # (ApJ, 1989, vol 345, pp 245)
-class CCM(ArithmeticModel):
+class CCM(RegriddableModel1D):
     """Galactic extinction: the Cardelli, Clayton, and Mathis model.
 
     The interstellar extinction is calculated using the formula
@@ -1027,7 +1027,7 @@ class CCM(ArithmeticModel):
 
 # This model computes absorption using a Gaussian function expressed
 # in optical depth, and using the log of the FWHM.
-class LogAbsorption(ArithmeticModel):
+class LogAbsorption(RegriddableModel1D):
     """Gaussian function for modeling absorption (log of fwhm).
 
     This model is intended to be used to modify another model (e.g.
@@ -1107,7 +1107,7 @@ class LogAbsorption(ArithmeticModel):
 #           WHAT IS CORRECT? See
 #           https://github.com/sherpa/sherpa/issues/220
 #
-class LogEmission(ArithmeticModel):
+class LogEmission(RegriddableModel1D):
     """Gaussian function for modeling emission (log of fwhm).
 
     It is for use when the independent axis is in Angstroms.
@@ -1214,7 +1214,7 @@ class LogEmission(ArithmeticModel):
 #     c4 * (x - offset)^4 +
 #     c5 * (x - offset)^5
 #
-class Polynomial(ArithmeticModel):
+class Polynomial(RegriddableModel1D):
     """Polynomial model of order 5.
 
     This model can be used with any one-dimensional data set since
@@ -1278,7 +1278,7 @@ class Polynomial(ArithmeticModel):
 
 
 # This model computes continuum emission using a power-law.
-class Powerlaw(ArithmeticModel):
+class Powerlaw(RegriddableModel1D):
     """Power-law model.
 
     It is for use when the independent axis is in Angstroms.
@@ -1332,7 +1332,7 @@ class Powerlaw(ArithmeticModel):
 
 # This model computes the continuum with an optically thin
 # recombination function.
-class Recombination(ArithmeticModel):
+class Recombination(RegriddableModel1D):
     """Optically-thin recombination continuum model.
 
     It is for use when the independent axis is in Angstroms.
@@ -1404,7 +1404,7 @@ class Recombination(ArithmeticModel):
 
 # This model computes emission as a Voigt function -- i.e., with
 # a Gaussian core and Lorentzian wings.
-class EmissionVoigt(ArithmeticModel):
+class EmissionVoigt(RegriddableModel1D):
     """Voigt function for modeling emission.
 
     This model uses an ``EmissionGaussian`` component to model the
@@ -1478,7 +1478,7 @@ class EmissionVoigt(ArithmeticModel):
 
 # This model computes the extragalactic extinction function of
 # Calzetti, Kinney and Storchi-Bergmann, 1994, ApJ, 429, 582
-class XGal(ArithmeticModel):
+class XGal(RegriddableModel1D):
     """Extragalactic extinction: Calzetti, Kinney and Storchi-Bergmann
 
     The extragalactic extinction is calculated using the formula
@@ -1537,7 +1537,7 @@ class XGal(ArithmeticModel):
 # with Drude UV bump.
 # See Fitzpatrick and Massa (ApJ, 1988, vol. 328, p. 734)
 
-class FM(ArithmeticModel):
+class FM(RegriddableModel1D):
     """UV extinction curve: Fitzpatrick and Massa 1988.
 
     The UV extinction is calculated using [1]_. This model is
@@ -1608,7 +1608,7 @@ class FM(ArithmeticModel):
 
 # This model computes the extinction curve using the
 #  LMC extinction curve from Howarth 1983 MNRAS, 203, 301
-class LMC(ArithmeticModel):
+class LMC(RegriddableModel1D):
     """LMC extinction: the Howarth model.
 
     The interstellar extinction is calculated using the formula
@@ -1677,7 +1677,7 @@ class LMC(ArithmeticModel):
 
 # This model computes the galactic interstellar extinction function
 # from Savage & Mathis (1979, ARA&A, 17, 73-111)
-class SM(ArithmeticModel):
+class SM(RegriddableModel1D):
     """Galactic extinction: the Savage & Mathis model.
 
     The interstellar extinction is calculated using the formula
@@ -1736,7 +1736,7 @@ class SM(ArithmeticModel):
 
 # This model computes the SMC extinction function of
 # Prevot et al. 1984, A&A, 132, 389-392
-class SMC(ArithmeticModel):
+class SMC(RegriddableModel1D):
     """SMC extinction: the Prevot et al. 1984 model.
 
     The interstellar extinction is calculated using the formula
@@ -1820,7 +1820,7 @@ class SMC(ArithmeticModel):
 # 3704 < lambda < 10,000	Nandy (1975) A+A 44, 195. (corrected to R=3.2)
 # 10000 < lambda		    extrapolate linearly in 1/lambda
 
-class Seaton(ArithmeticModel):
+class Seaton(RegriddableModel1D):
     """Galactic extinction: the Seaton model from Synphot.
 
     The interstellar extinction is calculated using the formula

@@ -11,7 +11,7 @@ then
     sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev
 
     # set os-specific variables
-    ds9_os=centos6
+    ds9_os=ubuntu14
     xspec_root=$miniconda/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0
 
     # Newer versions (or conda builds) of numpy bring in a libgfortran-ng dependency, which our
@@ -36,7 +36,7 @@ fi
 
 ### DS9 and XPA
 # Tarballs to fetch
-ds9_tar=ds9.${ds9_os}.7.5.tar.gz
+ds9_tar=ds9.${ds9_os}.7.6.tar.gz
 xpa_tar=xpa.${ds9_os}.2.1.17.tar.gz
 
 # Fetch them

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@ import unittest
 from tempfile import NamedTemporaryFile
 
 from sherpa.astro import ui
-from sherpa.utils import has_package_from_list
+from sherpa.utils.testing import has_package_from_list
 from numpy.testing import assert_almost_equal
 import logging
 import sys

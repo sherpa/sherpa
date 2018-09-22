@@ -67,3 +67,7 @@ GPLv3+ license.
 minpack was developed by the University of Chicago, as Operator of
 Argonne National Laboratory, under the terms described at:
 http://netlib.org/minpack/disclaimer
+
+The rebinning code for 2D images was taken from a blog post by Martyn Brystow:
+? Martyn Bristow 2015, and licensed under GPL v3
+http://martynbristow.co.uk/wordpress/blog/rebinning-data/

@@ -65,12 +65,7 @@ namespace sherpa { namespace models {
     if ( p[1] <= xlo || p[0] >= xhi ) 
       val = 0.0;
     else {
-      register DataType denom = xhi - xlo;
-      if ( 0.0 == denom ) {
-	// val = NAN;
-	return EXIT_FAILURE;
-      }
-      val = p[2] * ( (std::min(xhi,p[1]) - std::max(xlo,p[0]) ) / denom );
+      val = p[2] * ( std::min(xhi,p[1]) - std::max(xlo,p[0]) );
     }
 
     return EXIT_SUCCESS;

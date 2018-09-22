@@ -23,10 +23,11 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 """
 
 import os.path
+import logging
 import warnings
-
 import numpy
-from sherpa.data import BaseData, Data1DInt, Data2D, DataND
+
+from sherpa.data import BaseData, Data1DInt, Data2D, DataND, Data
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, parse_expr, bool_cast, rebin, filter_bins
@@ -34,10 +35,17 @@ from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid or Region symbols.
 from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
-    compile_energy_grid, do_group, expand_grouped_mask, \
-    Region, region_mask
+    compile_energy_grid, do_group, expand_grouped_mask
 
-import logging
+regstatus = False
+try:
+    from sherpa.astro.utils import Region, region_mask
+    regstatus = True
+except ImportError:
+    # sherpa.astro.utils will have already generated a warning so
+    # no need to create one here
+    pass
+
 warning = logging.getLogger(__name__).warning
 
 groupstatus = False
@@ -52,6 +60,25 @@ except:
 
 __all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt')
 
+
+class myCache:
+    def __init__(self, func):
+        self.func = func
+        self.cache = {}
+
+    def __call__(self, *args):
+        key = numpy.append(*args).tostring()
+        if key in self.cache:
+            return self.cache[key]
+        else:
+            val = self.func(*args)
+            self.cache[key] = val
+            return val
+
+
+@myCache
+def my_arf_fold(a, b):
+    return arf_fold(a, b)
 
 def _notice_resp(chans, arf, rmf):
     bin_mask = None
@@ -120,7 +147,7 @@ class DataOgipResponse(Data1DInt):
         ----------
         label : str
             The response file identifier.
-        elo, ehi : numpy arrays
+        elo, ehi : numpy.ndarray
             The input ENERG_LO and ENERG_HI arrays. They are assumed
             to be one-dimensional and have the same number of elements.
         ethresh : None or float, optional
@@ -154,6 +181,9 @@ class DataOgipResponse(Data1DInt):
         """
 
         rtype = self._ui_name
+
+        if elo.size != ehi.size:
+            raise ValueError("The energy arrays must have the same size, not {} and {}" .format(elo.size, ehi.size))
 
         if ethresh is not None and ethresh <= 0.0:
             raise ValueError("ethresh is None or > 0")
@@ -225,7 +255,7 @@ class DataARF(DataOgipResponse):
     name : str
         The name of the data set; often set to the name of the file
         containing the data.
-    energ_lo, energ_hi, specresp : array
+    energ_lo, energ_hi, specresp : numpy.ndarray
         The values of the ENERG_LO, ENERG_HI, and SPECRESP columns
         for the ARF. The ENERG_HI values must be greater than the
         ENERG_LO values for each bin, and the energy arrays must be
@@ -303,7 +333,10 @@ class DataARF(DataOgipResponse):
 
     def apply_arf(self, src, *args, **kwargs):
         "Fold the source array src through the ARF and return the result"
-        model = arf_fold(src, self._rsp)
+
+        # an external function must be called is necessary so all arf goes
+        # through a single entry point in order for caching to 'work'
+        model = my_arf_fold(src, self._rsp)
 
         # Rebin the high-res source model folded through ARF down to the size
         # the PHA or RMF expects.
@@ -389,12 +422,18 @@ class DataRMF(DataOgipResponse):
 
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
+        if offset < 0:
+            raise ValueError("offset must be >=0, not {}".format(offset))
+
         self._fch = f_chan
         self._nch = n_chan
         self._grp = n_grp
         self._rsp = matrix
         self._lo = energ_lo
         self._hi = energ_hi
+        self._lo_unfiltered = self._lo[:]
+        self._hi_unfiltered = self._hi[:]
+        self.bin_mask = None
         BaseData.__init__(self)
 
     def __str__(self):
@@ -467,7 +506,8 @@ class DataRMF(DataOgipResponse):
                                      self.n_chan, self.matrix, self.offset)
             self._lo = self.energ_lo[bin_mask]
             self._hi = self.energ_hi[bin_mask]
-
+        if bin_mask is not None:
+            self.bin_mask = bin_mask[:]
         return bin_mask
 
     def get_indep(self, filter=False):
@@ -1918,8 +1958,8 @@ class DataPHA(Data1DInt):
 
         return val
 
-    def get_y(self, filter=False, yfunc=None, response_id=None):
-        vallist = Data1DInt.get_y(self, yfunc=yfunc)
+    def get_y(self, filter=False, yfunc=None, response_id=None, use_evaluation_space=False):
+        vallist = Data.get_y(self, yfunc=yfunc)
         filter = bool_cast(filter)
 
         if not isinstance(vallist, tuple):
@@ -2306,7 +2346,18 @@ class DataIMG(Data2D):
 
         # _set_coord will correctly define the _get_* WCS function pointers.
         self._set_coord(state['_coord'])
-        self._region = Region(self._region)
+        if regstatus:
+            self._region = Region(self._region)
+        else:
+            # An ImportErr could be raised rather than display a
+            # warnng, but that would make it harder for the user
+            # to extract useful data (e.g. in the case of triggering
+            # this when loading a pickled file).
+            #
+            if self._region is not None and self._region != '':
+                warning("Unable to restore region={} as region module is not avaialable.".format(self._region))
+
+            self._region = None
 
     def _check_physical_transform(self):
         if self.sky is None:
@@ -2456,6 +2507,10 @@ class DataIMG(Data2D):
         mask = None
         ignore = bool_cast(ignore)
         if val is not None:
+
+            if not regstatus:
+                raise ImportErr('importfailed', 'region', 'notice2d')
+
             val = str(val).strip()
             (self._region,
              mask) = region_mask(self._region, val,
@@ -2696,7 +2751,7 @@ class DataIMGInt(DataIMG):
     #     return (x0-halfwidth[0],x1-halfwidth[1],
     #             x0+halfwidth[0],x1+halfwidth[1])
 
-    def get_indep(self, filter=False):
+    def get_indep(self, filter=False, model=None):
         filter = bool_cast(filter)
         if filter:
             return (self._x0lo, self._x1lo, self._x0hi, self._x1hi)

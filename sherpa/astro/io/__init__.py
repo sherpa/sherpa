@@ -17,9 +17,10 @@ from __future__ import absolute_import
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+from sherpa.astro.utils import reshape_2d_arrays
 
 """
-Provide Astornomy-specific I/O routines for Sherpa.
+Provide Astronomy-specific I/O routines for Sherpa.
 
 This module contains read and write routines for handling FITS [1]_
 and ASCII format data. The actual support is provided by
@@ -101,8 +102,6 @@ warning = logging.getLogger(__name__).warning
 info    = logging.getLogger(__name__).info
 
 
-read_table_blocks = backend.read_table_blocks
-
 __all__ = ('read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',
            'read_pha', 'write_image', 'write_pha', 'write_table',
            'pack_table', 'pack_image', 'pack_pha', 'read_table_blocks')
@@ -112,6 +111,9 @@ def _is_subclass(t1, t2):
     return isinstance(t1, type) and issubclass(t1, t2) and (t1 is not t2)
 
 
+# Note: write_arrays is not included in __all__, so don't add to the
+#       See Also section.
+#
 def read_arrays(*args):
     """Create a dataset from multiple arrays.
 
@@ -192,6 +194,10 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
     Returns
     -------
     data : a sherpa.data.BaseData derived object
+
+    See Also
+    --------
+    write_table
 
     Examples
     --------
@@ -303,6 +309,10 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     -------
     data : a sherpa.data.BaseData derived object
 
+    See Also
+    --------
+    write_image
+
     Examples
     --------
     The following examples do not contain argument types specific to
@@ -323,9 +333,7 @@ def read_image(arg, coord='logical', dstype=DataIMG):
 
     x0 = numpy.arange(axlens[1], dtype=SherpaFloat) + 1.
     x1 = numpy.arange(axlens[0], dtype=SherpaFloat) + 1.
-    x0, x1 = numpy.meshgrid(x0, x1)
-    x0 = x0.ravel()
-    x1 = x1.ravel()
+    x0, x1 = reshape_2d_arrays(x0, x1)
 
     data['y'] = data['y'].ravel()
     data['coord'] = coord
@@ -688,35 +696,205 @@ def _pack_pha(dataset):
 
 
 def write_arrays(filename, args, fields=None, ascii=True, clobber=False):
+    """Write out a collection of arrays.
+
+    Parameters
+    ----------
+    filename : str
+       The name of the file.
+    args
+       The data to write out.
+    fields : None or list of str, optional
+       The names to use for each column. If ``None`` then the names
+       default to `col1` ... `colN`.
+    ascii : bool, optional
+       If `True` use an ASCII format, otherwise a binary format.
+    clobber : bool, optional
+       If `True` then the output file will be over-written if it
+       already exists, otherwise an error is raised.
+
+    See Also
+    --------
+    read_arrays
+
+    """
     backend.set_arrays(filename, args, fields, ascii=ascii, clobber=clobber)
 
 
 def write_table(filename, dataset, ascii=True, clobber=False):
+    """Write out a table.
+
+    Parameters
+    ----------
+    filename : str
+       The name of the file.
+    dataset
+       The data to write out.
+    ascii : bool, optional
+       If `True` use an ASCII format, otherwise a binary format.
+    clobber : bool, optional
+       If `True` then the output file will be over-written if it
+       already exists, otherwise an error is raised.
+
+    See Also
+    --------
+    read_table
+
+    """
     data, names = _pack_table(dataset)
     backend.set_table_data(filename, data, names, ascii=ascii, clobber=clobber)
 
 
 def write_image(filename, dataset, ascii=True, clobber=False):
+    """Write out an image.
+
+    Parameters
+    ----------
+    filename : str
+       The name of the file.
+    dataset
+       The data to write out.
+    ascii : bool, optional
+       If `True` use an ASCII format, otherwise a binary format.
+    clobber : bool, optional
+       If `True` then the output file will be over-written if it
+       already exists, otherwise an error is raised.
+
+    See Also
+    --------
+    read_image
+
+    """
     data, hdr = _pack_image(dataset)
     backend.set_image_data(filename, data, hdr, ascii=ascii, clobber=clobber )
 
 
 def write_pha(filename, dataset, ascii=True, clobber=False):
+    """Write out a PHA dataset.
+
+    Parameters
+    ----------
+    filename : str
+       The name of the file.
+    dataset
+       The data to write out.
+    ascii : bool, optional
+       If `True` use an ASCII format, otherwise a binary format.
+    clobber : bool, optional
+       If `True` then the output file will be over-written if it
+       already exists, otherwise an error is raised.
+
+    See Also
+    --------
+    read_pha
+
+    """
     data, col_names, hdr = _pack_pha(dataset)
     backend.set_pha_data(filename, data, col_names, hdr, ascii=ascii,
                          clobber=clobber)
 
 
 def pack_table(dataset):
+    """Convert a Sherpa data object into an I/O item (tabular).
+
+    Parameters
+    ----------
+    dataset : a sherpa.data.Data1D derived object
+
+    Returns
+    -------
+    obj
+       An object representing the data, the format of which depends
+       on the I/O backend.
+
+    See Also
+    --------
+    pack_image, pack_pha
+
+    Examples
+    --------
+
+    >>> d = sherpa.data.Data1D('tmp', [1, 2, 3], [4, 10, 2])
+    >>> tbl = pack_table(d)
+
+    """
     data, names = _pack_table(dataset)
     return backend.set_table_data('', data, names, packup=True)
 
 
 def pack_image(dataset):
+    """Convert a Sherpa data object into an I/O item (image).
+
+    Parameters
+    ----------
+    dataset : a sherpa.data.Data2D derived object
+
+    Returns
+    -------
+    obj
+       An object representing the data, the format of which depends
+       on the I/O backend.
+
+    See Also
+    --------
+    pack_image, pack_pha
+
+    Examples
+    --------
+
+    >>> y, x = np.mgrid[:10, :5]
+    >>> z = (x-2)**2 + (y-2)**3
+    >>> d = sherpa.data.Data2D('img', x.flatten(), y.flatten(),
+                               z.flatten(), shape=z.shape)
+    >>> img = pack_image(d)
+
+    """
     data, hdr = _pack_image(dataset)
     return backend.set_image_data('', data, hdr, packup=True)
 
 
 def pack_pha(dataset):
+    """Convert a Sherpa PHA data object into an I/O item (tabular).
+
+    Parameters
+    ----------
+    dataset : a sherpa.astro.data.DataPHA derived object
+
+    Returns
+    -------
+    obj
+       An object representing the data, the format of which depends
+       on the I/O backend.
+
+    See Also
+    --------
+    pack_image, pack_table
+
+    """
     data, col_names, hdr = _pack_pha(dataset)
     return backend.set_pha_data('', data, col_names, hdr, packup=True)
+
+
+def read_table_blocks(arg, make_copy=False):
+    """Return the HDU elements (columns and header) from a FITS table.
+
+    Parameters
+    ----------
+    arg
+       The data file, which can be the name of the file or an object
+       representing the opened file (the type of this depends on the I/O
+       backend in use).
+    make_copy : bool, optional
+       This argument is currently unused.
+
+    Returns
+    -------
+    filename, cols, hdr : str, dict, dict
+       The name of the file, the column data, and the header data
+       from the HDUs in the file. The keys of the dictionaries are the
+       block name and the values are dictionaries, with the keys
+       being the column or header name.
+
+    """
+
+    return backend.read_table_blocks(arg, make_copy=make_copy)

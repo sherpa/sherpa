@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,11 +20,14 @@ import pytest
 
 from numpy import arange
 import sherpa.astro.models as models
-from sherpa.utils import SherpaFloat, SherpaTestCase
-from sherpa.models.model import ArithmeticModel, boolean_to_byte
+from sherpa.utils import SherpaFloat
+from sherpa.utils.testing import SherpaTestCase
+from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, boolean_to_byte
+from sherpa.models.basic import Const
 
 
 class test_models(SherpaTestCase):
+    excluded_model_classes = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D, Const)
 
     def test_create_and_evaluate(self):
         x = arange(1.0, 5.0)
@@ -35,7 +38,7 @@ class test_models(SherpaTestCase):
 
             if ((not isinstance(clsobj, type)) or
                 (not issubclass(clsobj, ArithmeticModel)) or
-                (clsobj is ArithmeticModel)):
+                (clsobj in self.excluded_model_classes)):
                 continue
 
             # These have a very different interface than the others

@@ -27,6 +27,12 @@ matrix:
     - env: XSPECVER="12.9.1" NUMPYVER="1.14" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="3.6"
       sudo: required
       dist: trusty
+    # Experimental support for using Sphinx to build the documentation
+    # should we not run tests with this build (to save time); i.e. have
+    # a specific build just for the documentation and nothing else?
+    - env: DOCS=true INSTALL_TYPE=build_sphinx TEST=none TRAVIS_PYTHON_VERSION="3.6"
+      sudo: required
+      dist: trusty
     # Install sherpatest package rather than relying on relative location of the submodule
     # Also, install matplotlib 2.0 and do not install astropy (checks tests are properly skipped)
     - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="2.7"
@@ -44,6 +50,11 @@ before_install:
       then source travis/setup_xspec_ds9.sh;
     fi
 
+  # Doc installation (try to use a similar same setup as on Read-The-Docs)
+  - if [ "${DOCS}" == "true" ];
+     then pip install --requirement docs/rtd-pip-requirements;
+    fi
+  
 install:
     - python setup.py $INSTALL_TYPE
 

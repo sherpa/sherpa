@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2012, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2012, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,8 +26,8 @@ import tempfile
 import numpy
 from numpy.testing import assert_allclose
 
-from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_data, requires_fits, requires_group
+from sherpa.utils.testing import SherpaTestCase, requires_data, \
+    requires_fits, requires_group
 from sherpa.astro import ui
 from sherpa.data import Data1D
 from sherpa.astro.data import DataPHA
@@ -433,7 +433,7 @@ class test_save_arrays_base(SherpaTestCase):
         self.assertIsInstance(out, Data1D)
 
         # remove potential dm syntax introduced by backend before checking for equality
-        out_name = re.sub("\[.*\]", "", out.name)
+        out_name = re.sub(r"\[.*\]", "", out.name)
 
         self.assertEqual(out_name, ofh.name, msg="file name")
         assert_allclose(out.x, a, rtol=rtol, atol=atol, err_msg="x column")

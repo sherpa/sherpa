@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -33,54 +33,54 @@ def test_decorator_exception_when_pytest_is_absent(monkeypatch):
     import sys
     monkeypatch.setitem(sys.modules, 'pytest', None)
     reload_module(sherpa.utils.testing)
-    reload_module(sherpa.utils)
 
-    from sherpa import utils
+    from sherpa.utils import testing
 
-    @utils.requires_data
+    @testing.requires_data
     def foo():
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)
 
-    @utils.requires_plotting
+    @testing.requires_plotting
     def foo():
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)
 
-    @utils.requires_pylab
+    @testing.requires_pylab
     def foo():
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)
 
-    @utils.requires_fits
+    @testing.requires_fits
     def foo():
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)
 
-    @utils.requires_group
+    @testing.requires_group
     def foo():
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)
 
-    @utils.requires_stk
+    @testing.requires_stk
     def foo():
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)
 
-    @utils.requires_ds9
+    @testing.requires_ds9
     def foo():
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)
 
-    @utils.requires_xspec
+    @testing.requires_xspec
     def foo():
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)
 
-    @utils.requires_package("non.existent.package")
+    @testing.requires_package("non.existent.package")
     def foo():
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)
+
 
 def assert_decorated_function(function):
     """

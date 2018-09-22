@@ -29,7 +29,7 @@ import six
 
 from numpy.testing import assert_almost_equal
 
-from sherpa.utils import requires_data, requires_fits, requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
 
 # It is hard to test many of the state routines, since it requires

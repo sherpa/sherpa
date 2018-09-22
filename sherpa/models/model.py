@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 #
-#  Copyright (C) 2010, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,7 @@ import numpy
 import hashlib
 import warnings
 
+from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.err import ModelErr
 
@@ -34,7 +35,7 @@ warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
-           'ArithmeticConstantModel', 'ArithmeticModel',
+           'ArithmeticConstantModel', 'ArithmeticModel', 'RegriddableModel1D', 'RegriddableModel2D',
            'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 
@@ -502,7 +503,7 @@ class ArithmeticModel(Model):
         # Model caching ability
         # queue memory of maximum size
         self.cache = 5
-        self._use_caching = False  # FIXME: reduce number of variables?
+        self._use_caching = True  # FIXME: reduce number of variables?
         self._queue = ['']
         self._cache = {}
         Model.__init__(self, name, pars)
@@ -553,6 +554,20 @@ class ArithmeticModel(Model):
 
     def apply(self, outer, *otherargs, **otherkwargs):
         return NestedModel(outer, self, *otherargs, **otherkwargs)
+
+
+class RegriddableModel1D(ArithmeticModel):
+    def regrid(self, *arrays):
+        eval_space = EvaluationSpace1D(*arrays)
+        regridder = ModelDomainRegridder1D(eval_space)
+        return regridder.apply_to(self)
+
+
+class RegriddableModel2D(ArithmeticModel):
+    def regrid(self, *arrays):
+        eval_space = EvaluationSpace2D(*arrays)
+        regridder = ModelDomainRegridder2D(eval_space)
+        return regridder.apply_to(self)
 
 
 class UnaryOpModel(CompositeModel, ArithmeticModel):
@@ -715,3 +730,49 @@ class MultigridSumModel(CompositeModel, ArithmeticModel):
             # of p)
             vals.append(model(*args))
         return sum(vals)
+
+
+class RegridWrappedModel(CompositeModel, ArithmeticModel):
+
+    def __init__(self, model, wrapper):
+        self.model = self.wrapobj(model)
+        self.wrapper = wrapper
+
+        if hasattr(model, 'integrate'):
+            self.wrapper.integrate = model.integrate
+
+        CompositeModel.__init__(self,
+                                "{}({})".format(self.wrapper.name,
+                                                self.model.name),
+                                (self.model, ))
+
+    def calc(self, p, *args, **kwargs):
+        return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
+
+    def get_center(self):
+        return self.model.get_center()
+
+    def set_center(self, *args, **kwargs):
+        return self.model.set_center(*args, **kwargs)
+
+    def guess(self, dep, *args, **kwargs):
+        return self.model.guess(dep, *args, **kwargs)
+
+    @property
+    def grid(self):
+        return self.wrapper.grid
+
+    @grid.setter
+    def grid(self, value):
+        self.wrapper.grid = value
+
+    @property
+    def evaluation_space(self):
+        return self.wrapper.evaluation_space
+
+    @staticmethod
+    def wrapobj(obj):
+        if isinstance(obj, ArithmeticModel):
+            return obj
+        else:
+            return ArithmeticFunctionModel(obj)

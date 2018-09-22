@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@ data have two background components.
 import logging
 import pytest
 
-from sherpa.utils import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.utils.err import IdentifierErr
 
 from sherpa.astro import ui
@@ -159,8 +159,14 @@ def test_load_pha2(make_data_path, caplog):
 
     # Test Log messages
     msg_one = "systematic errors were not found in file '{}'".format(infile)
-    msg_two = """statistical errors were found in file '{}' 
-but not used; to use them, re-read with use_errors=True""".format(infile)
+
+    # Editors can remove trailing spaces from lines, so split into
+    # separate lines so the space after the file name is included.
+    # Perhaps this space should be removed from the warning message?
+    #
+    msg_two = "statistical errors were found in file '{}' \n".format(infile) + \
+              "but not used; to use them, re-read with use_errors=True"
+
     msg_three = "read background_up into a dataset from file {}".format(infile)
     msg_four = "read background_down into a dataset from file {}".format(infile)
     msg_five = "Multiple data sets have been input: 1-12"

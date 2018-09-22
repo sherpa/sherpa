@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -80,11 +80,9 @@
 
 import numpy as np
 
-from sherpa.utils import SherpaTestCase, requires_data, requires_fits, \
-    requires_group
+from sherpa.utils.testing import SherpaTestCase, requires_data, \
+    requires_fits, requires_group
 from sherpa.astro import ui
-
-from unittest import expectedFailure
 
 import logging
 

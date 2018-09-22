@@ -44,7 +44,7 @@ import six
 from six.moves import xrange
 
 import string
-from sherpa.models import Parameter, ArithmeticModel, modelCacher1d
+from sherpa.models import Parameter, ArithmeticModel, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
 
 from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
@@ -52,14 +52,383 @@ from sherpa.astro.utils import get_xspec_position
 
 from .utils import ModelMeta, version_at_least, equal_or_greater_than
 from . import _xspec
-from ._xspec import get_xschatter, get_xsabund, get_xscosmo, \
-    get_xsxsect, set_xschatter, set_xsabund, set_xscosmo, \
-    set_xsxsect, get_xsversion
+
 
 try:
     maketrans = string.maketrans  # Python 2
 except AttributeError:
     maketrans = str.maketrans  # Python 3
+
+
+# Python wrappers around the exported functions from _xspec. This
+# provides a more-accurate function signature to the user, makes
+# the documentation easier to write, and makes it available even
+# when the compiled code has not been compiled (e.g. for a Sphinx
+# documentation run).
+#
+def get_xsabund(element=None):
+    """Return the X-Spec abundance setting or elemental abundance.
+
+    Parameters
+    ----------
+    element : str, optional
+       When not given, the abundance table name is returned.
+       If a string, then it must be an element name from:
+       'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
+       'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
+       'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni',
+       'Cu', 'Zn'. Case is important.
+
+    Returns
+    -------
+    val : str or float
+       When ``element`` is ``None``, the abundance table name is
+       returned (see `set_xsabund`); the string 'file' is used
+       when the abundances were read from a file. A numeric value
+       is returned when an element name is given. This value is the
+       elemental abundance relative to H.
+
+    See Also
+    --------
+    set_xsabund
+
+    Examples
+    --------
+
+    Return the current abundance setting, which in this case
+    is 'angr', the default value for X-Spec:
+
+    >>> get_xsabund()
+    'angr'
+
+    The `set_xsabund` function has been used to read in the
+    abundances from a file, so the routine now returns the
+    string 'file':
+
+    >>> set_xsabund('abund.dat')
+    >>> get_xsabund()
+    'file'
+
+    >>> get_xsabund('He')
+    0.09769999980926514
+
+    """
+
+    if element is None:
+        return _xspec.get_xsabund()
+    else:
+        return _xspec.get_xsabund(element)
+
+
+def get_xschatter():
+    """Return the chatter level used by X-Spec.
+
+    Returns
+    -------
+    chatter : int
+       The chatter setting used by the X-Spec routines.
+
+    See Also
+    --------
+    set_xschatter
+
+    Examples
+    --------
+
+    >>> get_xschatter()
+    0
+    """
+
+    return _xspec.get_xschatter()
+
+
+def get_xscosmo():
+    """Return the X-Spec cosmology settings.
+
+    Returns
+    -------
+    (h0, q0, l0)
+       The Hubble constant, in km/s/Mpc, the deceleration parameter,
+       and the cosmological constant.
+
+    See Also
+    --------
+    set_xscosmo
+
+    Examples
+    --------
+
+    >>> get_xscosmo()
+    (70.0, 0.0, 0.7300000190734863)
+    """
+
+    return _xspec.get_xscosmo()
+
+
+def get_xsversion():
+    """Return the version of the X-Spec model library in use.
+
+    Returns
+    -------
+    version : str
+       The version of the X-Spec model library used by Sherpa [1]_.
+
+    References
+    ----------
+
+    .. [1] http://heasarc.nasa.gov/docs/xanadu/xspec/
+
+    Examples
+    --------
+
+    >>> get_xsversion()
+    '12.9.1p'
+    """
+
+    return _xspec.get_xsversion()
+
+
+def get_xsxsect():
+    """Return the cross sections used by X-Spec models.
+
+    Returns
+    -------
+    val : str
+       The value of the photoelectric absorption setting: one of
+       'bcmc', 'obcm', and 'vern'.
+
+    See Also
+    --------
+    set_xsxsect
+
+    Examples
+    --------
+
+    >>> get_xsxsect()
+    'bcmc'
+    """
+
+    return _xspec.get_xsxsect()
+
+
+def set_xsabund(abundance):
+    """Set the elemental abundances used by X-Spec models.
+
+    Set the abundance table used in the X-Spec plasma emission and
+    photoelectric absorption models. It is equivalent to the X-Spec
+    ``abund`` command [1]_.
+
+    Parameters
+    ----------
+    abundance : str
+       A file name, format described below, or one of the pre-defined
+       names listed in the Notes section below.
+
+    See Also
+    --------
+    get_xsabund, get_xsversion, set_xschatter
+
+    Notes
+    -----
+    The pre-defined abundance tables are:
+     - 'angr', from [2]_
+     - 'aspl', from [3]_
+     - 'feld', from [4]_, except for elements not listed which
+       are given 'grsa' abundances
+     - 'aneb', from [5]_
+     - 'grsa', from [6]_
+     - 'wilm', from [7]_, except for elements not listed which
+       are given zero abundance
+     - 'lodd', from [8]_
+
+    The values for these tables are given at [1]_.
+
+    Data files should be in ASCII format, containing a single
+    numeric (floating-point) column of the abundance values,
+    relative to Hydrogen.
+
+    The screen output of this function is controlled by the
+    X-Spec chatter setting (`set_xschatter`).
+
+    References
+    ----------
+    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSabund.html
+           Note that this may refer to a newer version than the
+           compiled version used by Sherpa; use `get_xsversion` to
+           check.
+
+    .. [2] Anders E. & Grevesse N. (1989, Geochimica et
+           Cosmochimica Acta 53, 197)
+           http://adsabs.harvard.edu/abs/1989GeCoA..53..197A
+
+    .. [3] Asplund M., Grevesse N., Sauval A.J. & Scott P.
+           (2009, ARAA, 47, 481)
+           http://adsabs.harvard.edu/abs/2009ARA%26A..47..481A
+
+    .. [4] Feldman U.(1992, Physica Scripta 46, 202)
+           http://adsabs.harvard.edu/abs/1992PhyS...46..202F
+
+    .. [5] Anders E. & Ebihara (1982, Geochimica et Cosmochimica
+           Acta 46, 2363)
+           http://adsabs.harvard.edu/abs/1982GeCoA..46.2363A
+
+    .. [6] Grevesse, N. & Sauval, A.J. (1998, Space Science
+           Reviews 85, 161)
+           http://adsabs.harvard.edu/abs/1998SSRv...85..161G
+
+    .. [7] Wilms, Allen & McCray (2000, ApJ 542, 914)
+           http://adsabs.harvard.edu/abs/2000ApJ...542..914W
+
+    .. [8] Lodders, K (2003, ApJ 591, 1220)
+           http://adsabs.harvard.edu/abs/2003ApJ...591.1220L
+
+    Examples
+    --------
+
+    >>> set_xsabund('lodd')
+     Solar Abundance Vector set to lodd:  Lodders, K. ApJ 591, 1220 (2003)
+
+    >>> set_xsabund('abund.dat')
+     Solar Abundance Vector set to file:  User defined abundance vector / no description specified
+
+    """
+
+    _xspec.set_xsabund(abundance)
+
+
+def set_xschatter(level):
+    """Set the chatter level used by X-Spec.
+
+    Set the chatter setting used by the X-Spec routines for determining
+    what information gets printed to the screen. It is equivalent to
+    the X-Spec ``chatter`` command [1]_.
+
+    Parameters
+    ----------
+    level : int
+       The higher the value of ``level``, the more screen output will
+       be created by X-Spec routines. A value of ``0`` hides
+       most information while ``25`` will generate a lot of
+       debug output.
+
+    See Also
+    --------
+    get_xschatter, get_xsversion
+
+    Notes
+    -----
+    The default chatter setting used by Sherpa is ``0``, which is lower
+    than - so, creates less screen output - the default value used by
+    X-Spec (``10``).
+
+    There is no way to change the X-Spec "log chatter" setting.
+
+    References
+    ----------
+    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSchatter.html
+           Note that this may refer to a newer version than the
+           compiled version used by Sherpa; use `get_xsversion` to
+           check.
+
+    Examples
+    --------
+
+    Set the chatter level to the default used by X-Spec:
+
+    >>> set_xschatter(10)
+    """
+
+    _xspec.set_xschatter(level)
+
+
+def set_xscosmo(h0, q0, l0):
+    """Set the cosmological parameters used by X-Spec models.
+
+    Set the cosmological parameters (H_0, q_0, lambda_0) used
+    by X-Spec. It is equivalent to the X-Spec ``cosmo``
+    command [1]_. The default values are h0=70, q0=0, and l0=0.73
+
+    Parameters
+    ----------
+    h0 : number
+       The Hubble constant in km/s/Mpc.
+    q0 : number
+       The deceleration parameter.
+    l0 : number
+       The cosmological constant. If this is non-zero then the q0
+       parameter is ignored and the Universe is assumed to be flat.
+
+    See Also
+    --------
+    get_xscosmo, get_xsversion
+
+    References
+    ----------
+    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XScosmo.html
+           Note that this may refer to a newer version than the
+           compiled version used by Sherpa; use `get_xsversion` to
+           check.
+
+    Examples
+    --------
+
+    >>> set_xscosmo(73, 0, 0.73)
+    """
+
+    _xspec.set_xscosmo(h0, q0, l0)
+
+
+def set_xsxsect(name):
+    """Set the cross sections used by X-Spec models.
+
+    Set the X-Spec photoelectric absorption cross-sections
+    setting, which changes the cross-sections used by all
+    X-Spec absorption models *except* for `XSwabs`. It is
+    equivalent to the X-Spec ``xsect`` command [1]_.
+
+    Parameters
+    ----------
+    name : { 'bcmc', 'obcm', 'vern' }
+       The options are: 'bcmc' from [2]_ with a new
+       He cross-section based on [3]_; 'obcm' which is,
+       the same as 'bcmc', but with the He cross-section
+       from [2]_, or 'vern' [4]_.
+
+    See Also
+    --------
+    get_xsversion, get_xsxsect, set_xschatter
+
+    Notes
+    -----
+    The screen output of this function is controlled by the
+    X-Spec chatter setting (`set_xschatter`).
+
+    References
+    ----------
+    .. [1] http://heasarc.nasa.gov/xanadu/xspec/manual/XSxsect.html
+           Note that this may refer to a newer version than the
+           compiled version used by Sherpa; use `get_xsversion` to
+           check.
+
+    .. [2] Balucinska-Church & McCammon (1992; Ap.J.400, 699).
+           http://adsabs.harvard.edu/abs/1992ApJ...400..699B
+
+    .. [3] Yan, M., Sadeghpour, H. R., Dalgarno, A. 1998,
+           Ap.J. 496, 1044
+           http://adsabs.harvard.edu/abs/1998ApJ...496.1044Y
+
+    .. [4] Verner et. al., 1996, Ap.J., 465, 487.
+           http://adsabs.harvard.edu/abs/1996ApJ...465..487V
+
+    Examples
+    --------
+
+    >>> set_xsxsect('vern')
+     Cross Section Table set to vern:  Verner, Ferland, Korista, and Yakovlev 1996
+    """
+
+    _xspec.set_xsxsect(name)
+
 
 # Wrap the XSET function in Python, so that we can keep a record of
 # the strings the user sent as specific XSPEC model strings (if any) during
@@ -89,7 +458,7 @@ def get_xsxset(name):
 
     See Also
     --------
-    set_xsxset : Set a X-Spec model setting.
+    set_xsxset
 
     Notes
     -----
@@ -120,12 +489,8 @@ def set_xsxset(name, value):
 
     See Also
     --------
-    get_xsxset : Return the value of X-Spec model settings.
-    get_xsversion : Return the version of X-Spec used by this module.
-    set_xsabund : Set the X-Spec abundance table.
-    set_xschatter : Set the X-Spec chatter level.
-    set_xscosmo : Set the X-Spec cosmology settings.
-    set_xsxsect : Set the X-Spec photoelectric absorption cross-sections.
+    get_xsxset, get_xsversion, set_xsabund, set_xschatter, set_xscosmo,
+    set_xsxsect
 
     Notes
     -----
@@ -163,12 +528,50 @@ def set_xsxset(name, value):
         modelstrings[name] = get_xsxset(name)
 
 
-# Since these are not included in __all__, create a symbol in this
-# module to avoid "unused symbol" if they were to be imported
-# directly from _xspec.
-#
-get_xspath_manager = _xspec.get_xspath_manager
-get_xspath_model = _xspec.get_xspath_model
+def get_xspath_manager():
+    """Return the path to the files describing the XSPEC models.
+
+    Returns
+    -------
+    path : str
+       The path to the manager directory containing the various model-data
+       files used by XSPEC.
+
+    See Also
+    --------
+    get_xspath_model, set_xspath_manager
+
+    Examples
+    --------
+
+    >>> get_xspath_manager()
+    '/usr/local/heasoft-6.22/x86_64-unknown-linux-gnu-libc2.24/../spectral/manager'
+    """
+
+    return _xspec.get_xspath_manager()
+
+
+def get_xspath_model():
+    """Return the path to the model data files.
+
+    Returns
+    -------
+    path : str
+       The path to the directory containing the files used by
+       the XSPEC models.
+
+    See Also
+    --------
+    get_xspath_manager
+
+    Examples
+    --------
+
+    >>> get_xspath_model()
+    '/usr/local/heasoft-6.22/x86_64-unknown-linux-gnu-libc2.24/../spectral/modelData'
+    """
+
+    return _xspec.get_xspath_model()
 
 
 def set_xspath_manager(path):
@@ -369,7 +772,7 @@ __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
 
 
 @six.add_metaclass(ModelMeta)
-class XSModel(ArithmeticModel):
+class XSModel(RegriddableModel1D):
     """The base class for XSPEC models.
 
     It is expected that sub-classes are used to represent the
@@ -3473,6 +3876,7 @@ class XSnsx(XSAdditiveModel):
 
         XSAdditiveModel.__init__(self, name, (self.logTeff, self.M_ns, self.R_ns, self.dist, self.specfile, self.norm))
 
+
 class XSnteea(XSAdditiveModel):
     """The XSPEC nteea model: non-thermal pair plasma.
 
@@ -4118,6 +4522,7 @@ class XSsedov(XSAdditiveModel):
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kT_a, self.kT_b, self.Abundanc, self.Tau, self.redshift, self.norm))
 
+
 class XSsirf(XSAdditiveModel):
     """The XSPEC sirf model: self-irradiated funnel.
 
@@ -4173,6 +4578,7 @@ class XSsirf(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.tin, self.rin, self.rout, self.theta,
                                               self.incl, self.valpha, self.gamma, self.mdot,
                                               self.irrad, self.norm))
+
 
 class XSsrcut(XSAdditiveModel):
     """The XSPEC srcut model: synchrotron spectrum, cutoff power law.
@@ -4587,6 +4993,7 @@ class XSvvgnei(XSAdditiveModel):
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
         XSAdditiveModel.__init__(self, name, (self.kT, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Tau, self.meankT, self.redshift, self.norm))
+
 
 class XSvmeka(XSAdditiveModel):
     """The XSPEC vmeka model: emission, hot diffuse gas (Mewe-Gronenschild).
@@ -8287,6 +8694,7 @@ class XSpexmon(XSAdditiveModel):
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.foldE, self.rel_refl, self.redshift, self.abund, self.Fe_abund, self.Incl, self.norm))
 
+
 class XSagauss(XSAdditiveModel):
     """The XSPEC agauss model: gaussian line profile in wavelength space.
 
@@ -8319,6 +8727,7 @@ class XSagauss(XSAdditiveModel):
         self.Sigma = Parameter(name, 'Sigma', 1.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.LineE, self.Sigma, self.norm))
+
 
 class XSzagauss(XSAdditiveModel):
     """The XSPEC zagauss model: gaussian line profile in wavelength space.
@@ -8355,6 +8764,7 @@ class XSzagauss(XSAdditiveModel):
         self.Redshift = Parameter(name, 'Redshift', 0., -0.999, 10.0, -0.999, 10.0, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.LineE, self.Sigma, self.Redshift, self.norm))
+
 
 class XScompmag(XSAdditiveModel):
     """The XSPEC compmag model: Thermal and bulk Comptonization for cylindrical accretion onto the polar cap of a magnetized neutron star.
@@ -8409,6 +8819,7 @@ class XScompmag(XSAdditiveModel):
         self.betaflag = Parameter(name, 'betaflag', 1, 0, 2, 0, 2, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kTbb, self.kTe, self.tau, self.eta, self.beta0, self.r0, self.A, self.betaflag, self.norm))
+
 
 class XScomptb(XSAdditiveModel):
     """The XSPEC comptb model: Thermal and bulk Comptonization of a seed blackbody-like spectrum.
@@ -8498,6 +8909,7 @@ class XSheilin(XSMultiplicativeModel):
 
         # TODO: correct self.nHei to self.nHeI
         XSMultiplicativeModel.__init__(self, name, (self.nHei, self.b, self.z))
+
 
 class XSlyman(XSMultiplicativeModel):
     """The XSPEC lyman model: Voigt absorption profiles for H I or He II Lyman series.

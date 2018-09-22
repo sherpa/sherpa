@@ -26,6 +26,10 @@
   - [FFTW library](#fftw-library)
   - [XSPEC](#xspec)
   - [Other customization options](#other-customization-options)
+- [Building the documentation](#building-the-documentation)
+  - [Using the build_sphinx target](#using-the-build_sphinx-target)
+  - [Using the sphinx-build tool](#using-the-sphinx-build-tool)
+  - [Testing the documentation with Travis](#testing-the-documentation-with-travis)
 - [History](#history)
   - [Release History](#release-history)
   
@@ -55,10 +59,14 @@ What can you do with Sherpa?
 - visualize the parameter space with simulations or using 1D/2D cuts of the parameter space
 - calculate confidence levels on the best fit model parameters
 - choose a robust optimization method for the fit: Levenberg-Marquardt, Nelder-Mead Simplex or Monte Carlo/Differential Evolution.
-- For detailed documentation see: [http://cxc.harvard.edu/sherpa](http://cxc.harvard.edu/sherpa)
 
-A [Quick Start Tutorial](http://nbviewer.ipython.org/github/sherpa/sherpa/tree/master/docs/SherpaQuickStart.ipynb)
-is included in the `docs` folder and can be opened with an `ipython notebook`.
+Documentation for Sherpa is available at
+[Read The Docs](https://sherpa.readthedocs.io/) (at present only for
+the `master` branch)
+and also for [Sherpa in CIAO](http://cxc.harvard.edu/sherpa/).
+
+A [Quick Start Tutorial](http://nbviewer.ipython.org/github/sherpa/sherpa/tree/master/notebooks/SherpaQuickStart.ipynb)
+is included in the `notebooks` folder and can be opened with an `ipython notebook`.
 
 License
 =======
@@ -209,6 +217,11 @@ Sherpa. We also recommend that you install `astropy` for enabling FITS I/O.
 
     $ conda install ipython-notebook matplotlib astropy
 
+The minimum required version of `astropy` is version 1.3, although only 
+versions 2 and higher are used in testing. There are no known
+incompatabilities with `matplotlib`, but there has only been limited
+testing. Please [report any problems](https://github.com/sherpa/sherpa/issues/)
+you find.
 
 Source Build
 ------------
@@ -534,6 +547,42 @@ These options include:
 
 The `setup.cfg` file in the Sherpa source distribution contains more information
 about these options.
+
+Building the documentation
+==========================
+
+The Sphinx documentation is available in the `docs/` directory. It is designed
+so that the documentation can be built without needing to build (or install)
+Sherpa, but this requires Python 3.5 or higher. An example for setting
+up the build environment is:
+
+    % conda create -n=sherpa-sphinx python=3.5 'sphinx >= 1.3' sphinx_rtd_theme
+    % source activate sherpa-sphinx
+
+Using the build_sphinx target
+-----------------------------
+
+    % python setup.py build_sphinx
+
+The location of this output depends on the version os Sphinx in use. With
+version 1.4 it appears to be located at `build/sphinx/html/index.html`.
+
+Using the sphinx-build tool
+---------------------------
+
+The following will create the documentation in `docs/build/html/index.html`.
+
+    % cd docs
+    % sphinx-build -b html . build/html
+
+Testing the documentation with Travis
+-------------------------------------
+
+There is a documentation build included as part of the Travis-CI test suite,
+but it is not set up to do much validation. That is, you need to do something
+quite severe to break this build. Please see
+[issue 491](https://github.com/sherpa/sherpa/issues/491)
+for more information.
 
 History
 =======

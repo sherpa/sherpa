@@ -1,5 +1,8 @@
 #!/usr/bin/env bash -e
 
+# For now do not run tests with the documentation build
+if [ "${DOCS}" == true ]; then exit 0; fi
+
 # No test data, then remove submodule (git automatically clones recursively)
 if [ ${TEST} == none ];
  then git submodule deinit -f .;
@@ -8,6 +11,7 @@ fi
 # Install test data as a package, then remove the submodule
 if [ ${TEST} == package ];
  then pip install ./sherpa-test-data;
+ pip install pytest-xvfb;
  git submodule deinit -f .;
 fi
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,9 +20,9 @@
 import logging
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit, \
-     get_keyword_names, get_keyword_defaults, print_fields
-from sherpa.utils.err import FitErr
-from sherpa.optmethods.optfcts import *
+    get_keyword_names, get_keyword_defaults, print_fields
+from sherpa.optmethods.optfcts import grid_search, lmdif, montecarlo, \
+    neldermead
 
 warning = logging.getLogger(__name__).warning
 
@@ -31,6 +31,18 @@ __all__ = ('GridSearch', 'OptMethod', 'LevMar', 'MonCar', 'NelderMead')
 
 
 class OptMethod(NoNewAttributesAfterInit):
+    """Base class for the optimisers.
+
+    Parameters
+    ----------
+    name : str
+       The name of the optimiser.
+    optfunc : function
+       The function which optimises the model: its arguments are
+       a function which evalutes the statistic given a list of parameter
+       values, the starting parameters, minima, and maxima, followed
+       by keyword arguments matching the configuration data.
+    """
 
     def __init__(self, name, optfunc):
         self.name = name
@@ -74,7 +86,7 @@ class OptMethod(NoNewAttributesAfterInit):
     def __str__(self):
         names = ['name']
         names.extend(get_keyword_names(self._optfunc))
-        #names.remove('full_output')
+        # names.remove('full_output')
         # Add the method's name to printed output
         # Don't add to self.config b/c name isn't a
         # fit function config setting
@@ -86,10 +98,39 @@ class OptMethod(NoNewAttributesAfterInit):
     def _get_default_config(self):
         args = get_keyword_defaults(self._optfunc)
         return args
-    default_config = property(_get_default_config)
+    default_config = property(_get_default_config,
+                              doc='The default settings for the optimiser.')
 
     def fit(self, statfunc, pars, parmins, parmaxes, statargs=(),
             statkwargs={}):
+        """Run the optimiser.
+
+        Parameters
+        ----------
+        statfunc : function
+           Given a list of parameter values as the first argument and,
+           as the remaining positional arguments, ``statargs`` and
+           ``statkwargs`` as keyword arguments, return the statistic
+           value.
+        pars : sequence
+           The start position of the model parameter values.
+        parmins : sequence
+           The minimum allowed values for each model parameter. This
+           must match the length of ``pars``.
+        parmaxes : sequence
+           The maximum allowed values for each model parameter. This
+           must match the length of ``pars``.
+        statargs : optional
+           Additional positional arguments to send to ``statfunc``.
+        statkwargs : optional
+           Additional keyword arguments to send to ``statfunc``.
+
+        Returns
+        -------
+        newpars : tuple
+           The model parameters after the optimiser has run.
+
+        """
 
         def cb(pars):
             return statfunc(pars, *statargs, **statkwargs)
@@ -109,10 +150,11 @@ class OptMethod(NoNewAttributesAfterInit):
 
         return output
 
-### DOC-TODO: better description of the sequence argument; what happens
-###           with multiple free parameters.
-### DOC-TODO: what does the method attribute take: string or class instance?
-### DOC-TODO: it looks like there's no error checking on the method attribute
+
+# ## DOC-TODO: better description of the sequence argument; what happens
+# ##           with multiple free parameters.
+# ## DOC-TODO: what does the method attribute take: string or class instance?
+# ## DOC-TODO: it looks like there's no error checking on the method attribute
 class GridSearch(OptMethod):
     """Grid Search optimization method.
 
@@ -149,6 +191,7 @@ class GridSearch(OptMethod):
 
     def __init__(self, name='gridsearch'):
         OptMethod.__init__(self, name, grid_search)
+
 
 """
   LMDIF.
@@ -336,6 +379,7 @@ class GridSearch(OptMethod):
 
 """
 
+
 class LevMar(OptMethod):
     """Levenberg-Marquardt optimization method.
 
@@ -465,8 +509,8 @@ class MonCar(OptMethod):
         OptMethod.__init__(self, name, montecarlo)
 
 
-### DOC-TODO: finalximplex=4 and 5 list the same conditions, it is likely
-###           a cut-n-paste error, so what is the correct description?
+# ## DOC-TODO: finalximplex=4 and 5 list the same conditions, it is likely
+# ##           a cut-n-paste error, so what is the correct description?
 class NelderMead(OptMethod):
     """Nelder-Mead Simplex optimization method.
 
@@ -577,7 +621,7 @@ class NelderMead(OptMethod):
          n           -   2
         ===   ( f  - f )
         \        i                    2
-        /     -----------     &lt;=  ftol
+        /     -----------     <=  ftol
         ====   sqrt( n )
         i = 0
 
@@ -666,67 +710,67 @@ class NelderMead(OptMethod):
 
 ###############################################################################
 
-## from sherpa.optmethods.fminpowell import *
-## from sherpa.optmethods.nmpfit import *
+# # from sherpa.optmethods.fminpowell import *
+# # from sherpa.optmethods.nmpfit import *
 
-## from sherpa.optmethods.odrpack import odrpack
-## from sherpa.optmethods.stogo import stogo
-## from sherpa.optmethods.chokkan import chokkanlbfgs
-## from sherpa.optmethods.odr import odrf77
+# # from sherpa.optmethods.odrpack import odrpack
+# # from sherpa.optmethods.stogo import stogo
+# # from sherpa.optmethods.chokkan import chokkanlbfgs
+# # from sherpa.optmethods.odr import odrf77
 
-## def myall( targ, arg ):
-##     fubar = list( targ )
-##     fubar.append( arg )
-##     return tuple( fubar )
+# # def myall( targ, arg ):
+# #     fubar = list( targ )
+# #     fubar.append( arg )
+# #     return tuple( fubar )
 
-## __all__ = myall( __all__, 'Bobyqa' )
-## __all__ = myall( __all__, 'Chokkan' )
-## __all__ = myall( __all__, 'cppLevMar' )
-## __all__ = myall( __all__, 'Dif_Evo' )
-## __all__ = myall( __all__, 'MarLev' )
-## __all__ = myall( __all__, 'MyMinim' )
-## __all__ = myall( __all__, 'Nelder_Mead' )
-## __all__ = myall( __all__, 'NMPFIT' )
-## __all__ = myall( __all__, 'Newuoa' )
-## __all__ = myall( __all__, 'Odr' )
-## __all__ = myall( __all__, 'OdrPack' )
-## __all__ = myall( __all__, 'PortChi' )
-## __all__ = myall( __all__, 'PortFct' )
-## __all__ = myall( __all__, 'ScipyPowell' )
-## __all__ = myall( __all__, 'StoGo' )
+# # __all__ = myall( __all__, 'Bobyqa' )
+# # __all__ = myall( __all__, 'Chokkan' )
+# # __all__ = myall( __all__, 'cppLevMar' )
+# # __all__ = myall( __all__, 'Dif_Evo' )
+# # __all__ = myall( __all__, 'MarLev' )
+# # __all__ = myall( __all__, 'MyMinim' )
+# # __all__ = myall( __all__, 'Nelder_Mead' )
+# # __all__ = myall( __all__, 'NMPFIT' )
+# # __all__ = myall( __all__, 'Newuoa' )
+# # __all__ = myall( __all__, 'Odr' )
+# # __all__ = myall( __all__, 'OdrPack' )
+# # __all__ = myall( __all__, 'PortChi' )
+# # __all__ = myall( __all__, 'PortFct' )
+# # __all__ = myall( __all__, 'ScipyPowell' )
+# # __all__ = myall( __all__, 'StoGo' )
 
-## class Chokkan(OptMethod):
-##     def __init__(self, name='chokkan'):
-##         OptMethod.__init__(self, name, chokkanlbfgs)
+# # class Chokkan(OptMethod):
+# #     def __init__(self, name='chokkan'):
+# #         OptMethod.__init__(self, name, chokkanlbfgs)
 
-## class cppLevMar(OptMethod):
+# # class cppLevMar(OptMethod):
 
-##    def __init__(self, name='clevmar'):
-## 	OptMethod.__init__(self, name, optfcts.lmdif_cpp)
+# #    def __init__(self, name='clevmar'):
+# # 	OptMethod.__init__(self, name, optfcts.lmdif_cpp)
 
-## class MyMinim(OptMethod):
+# # class MyMinim(OptMethod):
 
-##     def __init__(self, name='simplex'):
-## 	OptMethod.__init__(self, name, minim)
+# #     def __init__(self, name='simplex'):
+# # 	OptMethod.__init__(self, name, minim)
 
-## class NMPFIT(OptMethod):
-##     def __init__(self, name='pytools_nmpfit'):
-##         OptMethod.__init__(self, name, nmpfit.pytools_nmpfit)
+# # class NMPFIT(OptMethod):
+# #     def __init__(self, name='pytools_nmpfit'):
+# #         OptMethod.__init__(self, name, nmpfit.pytools_nmpfit)
 
-## class OdrPack(OptMethod):
-##     def __init__(self, name='odrpack'):
-##         OptMethod.__init__(self, name, odrpack)
+# # class OdrPack(OptMethod):
+# #     def __init__(self, name='odrpack'):
+# #         OptMethod.__init__(self, name, odrpack)
 
-## class Odr(OptMethod):
-##     def __init__(self, name='odr'):
-##         OptMethod.__init__(self, name, odrf77)
+# # class Odr(OptMethod):
+# #     def __init__(self, name='odr'):
+# #         OptMethod.__init__(self, name, odrf77)
 
-## class ScipyPowell(OptMethod):
-##     def __init__(self, name='scipypowell'):
-##         OptMethod.__init__(self, name, my_fmin_powell)
+# # class ScipyPowell(OptMethod):
+# #     def __init__(self, name='scipypowell'):
+# #         OptMethod.__init__(self, name, my_fmin_powell)
 
-## class StoGo(OptMethod):
-##     def __init__(self, name='stogo'):
-## 	OptMethod.__init__(self, name, stogo)
+# # class StoGo(OptMethod):
+# #     def __init__(self, name='stogo'):
+# # 	OptMethod.__init__(self, name, stogo)
 
 ###############################################################################

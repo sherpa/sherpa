@@ -38,7 +38,7 @@ include sherpa/sherpa.rc
 include sherpa/sherpa-standalone.rc
 
 # Quick Start Tutorial
-include docs/SherpaQuickStart.ipynb
+include notebooks/SherpaQuickStart.ipynb
 
 include sherpa/_version.py
 

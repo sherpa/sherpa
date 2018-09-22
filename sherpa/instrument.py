@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,18 +16,22 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+import warnings
+
+import numpy
+import logging
 
 from six import string_types
 
 from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \
-    ArithmeticFunctionModel, CompositeModel, Model, Parameter
+    ArithmeticFunctionModel, CompositeModel, Model
+from sherpa.models.parameter import Parameter
 from sherpa.utils import bool_cast, NoNewAttributesAfterInit
 from sherpa.utils.err import PSFErr
 from sherpa.utils._psf import extract_kernel, get_padsize, normalize, \
     pad_data, set_origin, tcdData, unpad_data
-import numpy
-import logging
+
 import sherpa
 info = logging.getLogger(__name__).info
 
@@ -550,6 +554,8 @@ class PSFModel(Model):
     def fold(self, data):
         # FIXME how will we know the native dimensionality of the
         # raveled model without the values?
+        self._check_pixel_size(data)
+
         kargs = {}
 
         kshape = None
@@ -697,7 +703,6 @@ class PSFModel(Model):
 
         indep, dep, kshape, lo, hi = self._get_kernel_data(data, subkernel)
 
-        dataset = None
         ndim = len(kshape)
         if ndim == 1:
             dataset = Data1D('kernel', indep[0], dep)
@@ -708,3 +713,14 @@ class PSFModel(Model):
             raise PSFErr('ndim')
 
         return dataset
+
+    def _check_pixel_size(self, data):
+        if hasattr(self.kernel, "sky"):
+            # This corresponds to the case when the kernel is actually a psf image, not just a model.
+            psf_pixel_size = self.kernel.sky.cdelt
+            data_pixel_size = data.sky.cdelt
+
+            if not numpy.allclose(psf_pixel_size, data_pixel_size):
+                warnings.warn("NOTE: The PSF pixel size ({}) does not correspond to the Image Pixel Size ({})".format(
+                    psf_pixel_size, data_pixel_size
+                ))
