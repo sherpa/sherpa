@@ -208,7 +208,7 @@ as ``CCfits`` - may need to be changed:
 
        xspec_include_dirs = $HEADAS/include
        xspec_lib_dirs = $HEADAS/lib
-       xspec_libraries = XSFunctions XSModel XSUtil XS hdsp_2.9
+       xspec_libraries = XSFunctions XSModel XSUtil XS hdsp_3.0
        cfitsio_libraries = cfitsio
        ccfits_libraries = CCfits_2.5
        wcslib_libraries = wcs-5.16
@@ -229,7 +229,8 @@ as ``CCfits`` - may need to be changed:
 
    Note that XSPEC 12.10.0 has simplified the models-only build,
    which means that the same settings as the full 12.10.0 build
-   can be used as a starting point.
+   can be used as a starting point. However, by default not all
+   libraries needed by Sherpa are built (e.g. `libXSModel.so`).
 
 A common problem is to set the `xspec_lib_dirs` option to the value
 of `$HEADAS` instead of `$HEADAS/lib`. This will cause the build to
@@ -247,9 +248,8 @@ The Sherpa test suite includes an extensive set of tests of this
 module, but a quick check of an installed version can be done with
 the following::
 
-    >>> from sherpa.astro import xspec
-    >>> xspec.get_xsversion()
-    '12.9.1n'
+    % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
+    12.10.0c
 
 Other options
 ^^^^^^^^^^^^^

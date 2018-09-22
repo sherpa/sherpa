@@ -456,22 +456,19 @@ turn on the extension. In all cases, set
     with-xspec=True
 
 The remaining settings depend on how the XSPEC libraries have
-been built (in the examples below, environment variables are
-used, but the full path should be in your own copy of the file):
+been built. In the examples below, the `$HEADAS` environment
+variables **must be replaced** by the actual path to the
+HEADAS installation, and the versions of the libraries - such
+as `CCfits` - may need to be changed:
 
  1. If the full XSPEC 12.10.0 system has been built, then use
 
         xspec_include_dirs = $HEADAS/include
         xspec_lib_dirs = $HEADAS/lib
-        xspec_libraries = XSFunctions XSModel XSUtil XS hdsp_2.9
+        xspec_libraries = XSFunctions XSModel XSUtil XS hdsp_3.0
         cfitsio_libraries = cfitsio
         ccfits_libraries = CCfits_2.5
         wcs_libraries = wcs-5.16
-
-    The environment variable `$HEADAS` should be expanded out, and the
-    version numbers of the `wcs`, `cfitsio`, and `CCfits` libraries
-    may need to be changed, depending on the version of XSPEC (the
-    values given above are valid for XSPEC 12.10.0).
 
  2. If the full XSPEC 12.9.x system has been built, then use
 
@@ -481,11 +478,6 @@ used, but the full path should be in your own copy of the file):
         cfitsio_libraries = cfitsio
         ccfits_libraries = CCfits_2.5
         wcs_libraries = wcs-5.16
-
-    The environment variable `$HEADAS` should be expanded out, and the
-    version numbers of the `wcs`, `cfitsio`, and `CCfits` libraries
-    may need to be changed, depending on the version of XSPEC (the
-    values given above are valid for XSPEC 12.9.1).
 
  3. Use the model-only build of XSPEC, which will also require
     building the
@@ -510,6 +502,11 @@ used, but the full path should be in your own copy of the file):
     and (possibly) `gfortran_lib_dirs` values should be set
     appropriately.
 
+   Note that XSPEC 12.10.0 has simplified the models-only build,
+   which means that the same settings as the full 12.10.0 build
+   can be used as a starting point. However, by default not all
+   libraries needed by Sherpa are built (e.g. `libXSModel.so`).
+
 In all cases, the same version of `gfortran` should be used to build
 Sherpa and XSPEC, in order to avoid possible incompatibilities.
 
@@ -525,9 +522,8 @@ In order to check that the module is working, importing the
 `sherpa.astro.xspec` module is not available and you can use routines
 such as:
 
-    >>> from sherpa.astro import xspec
-    >>> xspec.get_xsversion()
-    '12.10.0'
+    % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
+    12.10.0c
 
 Other customization options
 ---------------------------
