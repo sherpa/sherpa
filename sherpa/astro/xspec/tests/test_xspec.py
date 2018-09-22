@@ -31,7 +31,8 @@ from sherpa.utils.testing import SherpaTestCase, requires_data, \
 # The number can be calculated by counting the occurrences of the string
 # '(XSAdditiveModel)' and adding it to the number of occurrences of the
 # string '(XSMultiplicativeModel)' in `xspec/__init__.py`
-XSPEC_MODELS_COUNT = 182
+#
+XSPEC_MODELS_COUNT = 189
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh

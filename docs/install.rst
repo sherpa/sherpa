@@ -25,7 +25,7 @@ if installed:
 The Sherpa build can be configured to create the
 :py:mod:`sherpa.astro.xspec` module, which provides the models and utility
 functions from the :term:`XSPEC`.
-The supported versions of XSPEC are 12.9.0 and 12.9.1.
+The supported versions of XSPEC are 12.10.0, 12.9.1, and 12.9.0.
 
 Interactive display and manipulation of two-dimensional images
 is available if the :term:`DS9` image viewer is installed.
@@ -198,24 +198,39 @@ The ``with-xspec`` option must be set to ``True`` and then the
 remaining options set based on whether just the
 XSPEC model library or the full XSPEC system has been installed.
 
-1. If the full XSPEC system has been built then use::
+The remaining settings depend on how the XSPEC libraries have
+been built. In the examples below, the ``$HEADAS`` environment
+variables **must be replaced** by the actual path to the
+HEADAS installation, and the versions of the libraries - such
+as ``CCfits`` - may need to be changed:
 
-       xspec_lib_dirs=$HEADAS/lib
-       xspec_include_dirs=$HEADAS/include
-       ccfits_libraries=CCfits_2.5
-       wcslib_libraries=wcs-5.16
-     
-   The ``$HEADAS`` environment variable should be replaced by the
-   location of XSPEC.
-   These values are for XSPEC 12.9.1 using a Linux system
-   and may need adjusting for other releases or operating systems
-   (in particular the version numbers of the libraries, such
-   as ``cfitsio``).
+1. If the full XSPEC 12.10.0 system has been built then use::
 
-2. If the model-only build of XSPEC has been installed, then
+       xspec_include_dirs = $HEADAS/include
+       xspec_lib_dirs = $HEADAS/lib
+       xspec_libraries = XSFunctions XSModel XSUtil XS hdsp_3.0
+       cfitsio_libraries = cfitsio
+       ccfits_libraries = CCfits_2.5
+       wcslib_libraries = wcs-5.16
+
+2. If the full XSPEC 12.9.x system has been built then use::
+
+       xspec_include_dirs = $HEADAS/include
+       xspec_lib_dirs = $HEADAS/lib
+       xspec_libraries = XSFunctions XSModel XSUtil XS
+       cfitsio_libraries = cfitsio
+       ccfits_libraries = CCfits_2.5
+       wcslib_libraries = wcs-5.16
+
+3. If the model-only build of XSPEC has been installed, then
    the configuration is similar, but the library names may
    not need version numbers and locations, depending on how the
    ``cfistio``, ``CCfits``, and ``wcs`` libraries were installed
+
+   Note that XSPEC 12.10.0 has simplified the models-only build,
+   which means that the same settings as the full 12.10.0 build
+   can be used as a starting point. However, by default not all
+   libraries needed by Sherpa are built (e.g. `libXSModel.so`).
 
 A common problem is to set the `xspec_lib_dirs` option to the value
 of `$HEADAS` instead of `$HEADAS/lib`. This will cause the build to
@@ -225,10 +240,6 @@ such as ``XSFunctions`` and ``XSModel``.
 The ``gfortran`` options should be adjusted if there are problems
 building or using the XSPEC module.
 
-The current supported versions of XSPEC are 12.9.0 and
-12.9.1 (although not all models in the later versions are currently
-available).
-
 In order for the XSPEC module to be used from Python, the
 ``HEADAS`` environment variable **must** be set before the
 :py:mod:`sherpa.astro.xspec` module is imported.
@@ -237,9 +248,8 @@ The Sherpa test suite includes an extensive set of tests of this
 module, but a quick check of an installed version can be done with
 the following::
 
-    >>> from sherpa.astro import xspec
-    >>> xspec.get_xsversion()
-    '12.9.1n'
+    % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
+    12.10.0c
 
 Other options
 ^^^^^^^^^^^^^
