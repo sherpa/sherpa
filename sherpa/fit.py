@@ -207,6 +207,12 @@ class FitResults(NoNewAttributesAfterInit):
     statistic and optimisation-method used, and other relevant
     information.
 
+    .. versionchanged:: 4.10.1
+       The ``covarerr`` attribute has been renamed to ``covar``
+       and now contains the covariance matrix estimated at the
+       best-fit location, if provided by the optimiser.
+
+
     Attributes
     ----------
     datasets : sequence of int or str, or `None`
@@ -252,8 +258,9 @@ class FitResults(NoNewAttributesAfterInit):
        The number of model evaluations made during the fit.
     extra_output
        The ``extra_output`` field from the fit.
-    covarerr : tuple or `None`
-       The ``covarerr`` field from the fit, if available.
+    covar : tuple or `None`
+       The covariance matrix from the best-fit location, if provided
+       by the optimiser.
     modelvals : NumPy array
        The values of the best-fit model evaluated for the data.
 
