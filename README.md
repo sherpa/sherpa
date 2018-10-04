@@ -229,7 +229,7 @@ Source Build
 The prerequisites for building from source are:
 
  - Python: `setuptools`, `numpy`
- - System: `gcc`, `g++`, `gfortran`, `make`, `flex`, `bison`
+ - System: `gcc`, `g++`, `make`, `flex`, `bison`
 
 The full test suite requires the `mock`, `pytest >=3.3.0`, and `pytest-xvfb` packages,
 which should be installed automatically if needed.
@@ -254,12 +254,7 @@ There are two ways to download the source code:
 
  - directly from GitHub as a git repository
 
-**NOTE:** it is possible to build Sherpa with `fortran` compilers other than
-`gfortran`. While this is not supported, [PR #202](https://github.com/sherpa/sherpa/pull/202/files)
-shows how this can been accomplished with `g95` on `OS X` in a specific setup.
-Similar changes are probably required for other compilers or setups.
-The `fortran` extensions are compiled by
-[`f2py` via `numpy.distutils`](http://docs.scipy.org/doc/numpy-1.11.0/f2py/distutils.html).
+**NOTE:** As of Sherpa 4.10.1 a `fortran` compiler is no longer required to build Sherpa.
 
 ### 2a. Extract the source tarball
 
@@ -508,9 +503,6 @@ used, but the full path should be in your own copy of the file):
     that either of the first two approaches is used instead. There
     have been issues seen using the CIAO binaries on certain OS X
     systems.
-
-In all cases, the same version of `gfortran` should be used to build
-Sherpa and XSPEC, in order to avoid possible incompatibilities.
 
 If there are problems building, or using, the module, then the other
 options may need to be set - in particular the `gfortran_lib_dirs` and
