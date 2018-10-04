@@ -21,6 +21,7 @@
 import logging
 import warnings
 from numpy import sqrt
+from pytest import approx
 
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
     requires_fits, requires_xspec, requires_group
@@ -88,27 +89,27 @@ class test_threads(SherpaTestCase):
         # being in global namespace
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0.0790393, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 1.4564e-05, 1e-4)
-        self.assertEqualWithinTol(fit_results.statval, 37.9079, 1e-4)
-        self.assertEqualWithinTol(fit_results.rstat, 0.902569, 1e-4)
-        self.assertEqualWithinTol(fit_results.qval, 0.651155, 1e-4)
-        self.assertEqualWithinTol(self.locals['p1'].gamma.val, 2.15852, 1e-4)
-        self.assertEqualWithinTol(self.locals['p1'].ampl.val, 0.00022484, 1e-4)
+        assert covarerr[0] == approx(0.0790393, rel=1e-4)
+        assert covarerr[1] == approx(1.4564e-05, rel=1e-4)
+        assert fit_results.statval == approx(37.9079, rel=1e-4)
+        assert fit_results.rstat == approx(0.902569, rel=1e-4)
+        assert fit_results.qval == approx(0.651155, rel=1e-4)
+        assert self.locals['p1'].gamma.val == approx(2.15852, rel=1e-4)
+        assert self.locals['p1'].ampl.val == approx(0.00022484, rel=1e-4)
 
-        self.assertEqualWithinTol(ui.calc_photon_flux(), 0.000469964, 1e-4)
-        self.assertEqualWithinTol(ui.calc_energy_flux(), 9.614847e-13, 1e-4)
-        self.assertEqualWithinTol(ui.calc_data_sum(), 706.85714092, 1e-4)
-        self.assertEqualWithinTol(ui.calc_model_sum(), 638.45693377, 1e-4)
-        self.assertEqualWithinTol(ui.calc_source_sum(), 0.046996409, 1e-4)
+        assert ui.calc_photon_flux() == approx(0.000469964, rel=1e-4)
+        assert ui.calc_energy_flux() == approx(9.614847e-13, rel=1e-4)
+        assert ui.calc_data_sum() == approx(706.85714092, rel=1e-4)
+        assert ui.calc_model_sum() == approx(638.45693377, rel=1e-4)
+        assert ui.calc_source_sum() == approx(0.046996409, rel=1e-4)
 
         calc = ui.eqwidth(self.locals['p1'], ui.get_source())
-        self.assertEqualWithinTol(calc, -0.57731725, 1e-4)
+        assert calc == approx(-0.57731725, rel=1e-4)
 
         calc = ui.calc_kcorr([1, 1.2, 1.4, 1.6, 1.8, 2], 0.5, 2)
         expected = [0.93341286, 0.93752836, 0.94325233,
                     0.94990140, 0.95678054, 0.96393515]
-        self.assertEqualWithinTol(calc, expected, 1e-4)
+        assert calc == approx(expected, rel=1e-4)
 
         self.assertEqual(ui.get_fit_results().nfev, 22)
         self.assertEqual(ui.get_fit_results().numpoints, 44)
@@ -128,17 +129,17 @@ class test_threads(SherpaTestCase):
         self.run_thread('basic')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0.0192539, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 0.00392255, 1e-4)
-        self.assertEqualWithinTol(fit_results.statval, 151.827, 1e-4)
-        self.assertEqualWithinTol(fit_results.rstat, 16.8697, 1e-4)
-        self.assertEqualWithinTol(fit_results.qval, 3.68798e-28, 1e-4)
-        self.assertEqualWithinTol(self.locals['m1'].c0.val, 1.49843, 1e-4)
-        self.assertEqualWithinTol(self.locals['m1'].c1.val, 0.1447, 1e-4)
-        self.assertEqualWithinTol(self.locals['m1'].c2.val, 0.0322936, 1e-4)
-        self.assertEqualWithinTol(self.locals['m1'].c3.val, -0.00277729, 1e-4)
-        self.assertEqualWithinTol(self.locals['m2'].c0.val, 1.75548, 1e-4)
-        self.assertEqualWithinTol(self.locals['m2'].c1.val, 0.198455, 1e-4)
+        assert covarerr[0] == approx(0.0192539, rel=1e-4)
+        assert covarerr[1] == approx(0.00392255, rel=1e-4)
+        assert fit_results.statval == approx(151.827, rel=1e-4)
+        assert fit_results.rstat == approx(16.8697, rel=1e-4)
+        assert fit_results.qval == approx(3.68798e-28, rel=1e-4)
+        assert self.locals['m1'].c0.val == approx(1.49843, rel=1e-4)
+        assert self.locals['m1'].c1.val == approx(0.1447, rel=1e-4)
+        assert self.locals['m1'].c2.val == approx(0.0322936, rel=1e-4)
+        assert self.locals['m1'].c3.val == approx(-0.00277729, rel=1e-4)
+        assert self.locals['m2'].c0.val == approx(1.75548, rel=1e-4)
+        assert self.locals['m2'].c1.val == approx(0.198455, rel=1e-4)
         self.assertEqual(fit_results.nfev, 9)
         self.assertEqual(fit_results.numpoints, 11)
         self.assertEqual(fit_results.dof, 9)
@@ -149,15 +150,15 @@ class test_threads(SherpaTestCase):
         self.run_thread('simultaneous')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0.397769, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 0.486058, 1e-4)
-        self.assertEqualWithinTol(covarerr[2], 1.48213e-05, 1e-4)
-        self.assertEqualWithinTol(covarerr[3], 1.54245e-05, 1e-4)
-        self.assertEqualWithinTol(fit_results.statval, 7.4429, 1e-4)
-        self.assertEqualWithinTol(fit_results.rstat, 0.531636, 1e-4)
-        self.assertEqualWithinTol(fit_results.qval, 0.916288, 1e-4)
-        self.assertEqualWithinTol(self.locals['abs1'].nh.val, 0.898162, 1e-2)
-        self.assertEqualWithinTol(self.locals['pl1'].gamma.val, 1.645, 1e-4)
+        assert covarerr[0] == approx(0.397769, rel=1e-3)
+        assert covarerr[1] == approx(0.486058, rel=1e-3)
+        assert covarerr[2] == approx(1.48213e-05, rel=1e-3)
+        assert covarerr[3] == approx(1.54245e-05, rel=1e-3)
+        assert fit_results.statval == approx(7.4429, rel=1e-4)
+        assert fit_results.rstat == approx(0.531636, rel=1e-4)
+        assert fit_results.qval == approx(0.916288, rel=1e-4)
+        assert self.locals['abs1'].nh.val == approx(0.898162, rel=1e-2)
+        assert self.locals['pl1'].gamma.val == approx(1.645, rel=1e-4)
         self.assertEqualWithinTol(self.locals['pl1'].ampl.val,
                                   2.28323e-05, 1e-3)
         self.assertEqualWithinTol(self.locals['pl2'].ampl.val,
@@ -171,16 +172,16 @@ class test_threads(SherpaTestCase):
         self.run_thread('sourceandbg')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0.012097, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 0, 1e-4)
-        self.assertEqualWithinTol(covarerr[2], 0.000280678, 1e-4)
-        self.assertEqualWithinTol(covarerr[3], 0.00990783, 1e-4)
-        self.assertEqualWithinTol(covarerr[4], 2.25746e-07, 1e-4)
-        self.assertEqualWithinTol(fit_results.statval, 947.5, 1e-4)
-        self.assertEqualWithinTol(fit_results.rstat, 0.715094, 1e-4)
-        self.assertEqualWithinTol(fit_results.qval, 1, 1e-4)
-        self.assertEqualWithinTol(self.locals['a1'].nh.val, 0.0342266, 1e-2)
-        self.assertEqualWithinTol(self.locals['b1'].kt.val, 20, 1e-2)
+        assert covarerr[0] == approx(0.012097, rel=1e-3)
+        assert covarerr[1] == approx(0, rel=1e-3)
+        assert covarerr[2] == approx(0.000280678, rel=1e-3)
+        assert covarerr[3] == approx(0.00990783, rel=1e-3)
+        assert covarerr[4] == approx(2.25746e-07, rel=1e-3)
+        assert fit_results.statval == approx(947.5, rel=1e-4)
+        assert fit_results.rstat == approx(0.715094, rel=1e-4)
+        assert fit_results.qval == approx(1, rel=1e-4)
+        assert self.locals['a1'].nh.val == approx(0.0342266, rel=1e-2)
+        assert self.locals['b1'].kt.val == approx(20, rel=1e-2)
         self.assertEqualWithinTol(self.locals['b1'].norm.val,
                                   0.00953809, 1e-2)
         self.assertEqualWithinTol(self.locals['b2'].kt.val,
@@ -195,14 +196,14 @@ class test_threads(SherpaTestCase):
         self.run_thread('spatial')
         self.assertEqualWithinTol(ui.get_fit_results().statval,
                                   -59229.749441, 1e-4)
-        self.assertEqualWithinTol(self.locals['g1'].fwhm.val, 61.5615, 1e-4)
-        self.assertEqualWithinTol(self.locals['g1'].xpos.val, 4070.45, 1e-4)
-        self.assertEqualWithinTol(self.locals['g1'].ypos.val, 4251.35, 1e-4)
-        self.assertEqualWithinTol(self.locals['g1'].ampl.val, 22.1269, 1e-4)
-        self.assertEqualWithinTol(self.locals['g2'].fwhm.val, 6.20409, 1e-4)
-        self.assertEqualWithinTol(self.locals['g2'].xpos.val, 4070.78, 1e-4)
-        self.assertEqualWithinTol(self.locals['g2'].ypos.val, 4249.33, 1e-4)
-        self.assertEqualWithinTol(self.locals['g2'].ampl.val, 226.563, 1e-4)
+        assert self.locals['g1'].fwhm.val == approx(61.5615, rel=1e-4)
+        assert self.locals['g1'].xpos.val == approx(4070.45, rel=1e-4)
+        assert self.locals['g1'].ypos.val == approx(4251.35, rel=1e-4)
+        assert self.locals['g1'].ampl.val == approx(22.1269, rel=1e-4)
+        assert self.locals['g2'].fwhm.val == approx(6.20409, rel=1e-4)
+        assert self.locals['g2'].xpos.val == approx(4070.78, rel=1e-4)
+        assert self.locals['g2'].ypos.val == approx(4249.33, rel=1e-4)
+        assert self.locals['g2'].ampl.val == approx(226.563, rel=1e-4)
         # self.assertEqual(ui.get_fit_results().nfev, 371)
         self.assertEqual(ui.get_fit_results().numpoints, 4881)
         self.assertEqual(ui.get_fit_results().dof, 4877)
@@ -214,27 +215,27 @@ class test_threads(SherpaTestCase):
 
         fr = ui.get_fit_results()
         covarerr = sqrt(fr.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0],684.056 , 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 191.055, 1e-4)
-        self.assertEqualWithinTol(covarerr[2], 0.632061, 1e-4)
-        self.assertEqualWithinTol(covarerr[3], 0.290159, 1e-4)
-        self.assertEqualWithinTol(covarerr[4], 1.62529, 1e-4)
-        self.assertEqualWithinTol(fr.statval, 53.6112, 1e-4)
-        self.assertEqualWithinTol(fr.rstat, 1.44895, 1e-4)
-        self.assertEqualWithinTol(fr.qval, 0.0379417, 1e-4)
+        assert covarerr[0] == approx(684.056 , rel=1e-4)
+        assert covarerr[1] == approx(191.055, rel=1e-3)
+        assert covarerr[2] == approx(0.632061, rel=1e-3)
+        assert covarerr[3] == approx(0.290159, rel=1e-3)
+        assert covarerr[4] == approx(1.62529, rel=1e-3)
+        assert fr.statval == approx(53.6112, rel=1e-4)
+        assert fr.rstat == approx(1.44895, rel=1e-4)
+        assert fr.qval == approx(0.0379417, rel=1e-4)
         self.assertEqual(fr.numpoints, 42)
         self.assertEqual(fr.dof, 37)
 
         jdp = self.locals['jdp']
-        self.assertEqualWithinTol(jdp.alpha.val, 0.522593, 1e-1)
-        self.assertEqualWithinTol(jdp.f.val, 0.913458, 1e-2)
+        assert jdp.alpha.val == approx(0.522593, rel=1e-1)
+        assert jdp.f.val == approx(0.913458, rel=1e-2)
 
         abs1 = self.locals['abs1']
-        self.assertEqualWithinTol(abs1.nh.val, 6.12101, 1e-2)
+        assert abs1.nh.val == approx(6.12101, rel=1e-2)
 
         power = self.locals['power']
-        self.assertEqualWithinTol(power.gamma.val, 1.41887, 1e-2)
-        self.assertEqualWithinTol(power.ampl.val, 0.00199457, 1e-2)
+        assert power.gamma.val == approx(1.41887, rel=1e-2)
+        assert power.ampl.val == approx(0.00199457, rel=1e-2)
 
         # Issue #294 was a problem with serializing the pileup model
         # after a fit in Python 3 (but not Python 2). Add some basic
@@ -265,16 +266,16 @@ class test_threads(SherpaTestCase):
         self.run_thread('radpro')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 9.37345, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 0.512596, 1e-4)
-        self.assertEqualWithinTol(covarerr[2], 0.0691102, 1e-4)
-        self.assertEqualWithinTol(fit_results.statval, 217.450, 1e-4)
-        self.assertEqualWithinTol(fit_results.rstat, 6.21287, 1e-4)
-        self.assertEqualWithinTol(fit_results.qval, 0.0, 1e-4)
-        self.assertEqualWithinTol(self.locals['src'].r0.val, 125.829, 1e-4)
-        self.assertEqualWithinTol(self.locals['src'].beta.val, 4.1633, 1e-4)
-        self.assertEqualWithinTol(self.locals['src'].xpos.val, 0.0, 1e-4)
-        self.assertEqualWithinTol(self.locals['src'].ampl.val, 4.42821, 1e-4)
+        assert covarerr[0] == approx(9.37345, rel=1e-4)
+        assert covarerr[1] == approx(0.512596, rel=1e-4)
+        assert covarerr[2] == approx(0.0691102, rel=1e-4)
+        assert fit_results.statval == approx(217.450, rel=1e-4)
+        assert fit_results.rstat == approx(6.21287, rel=1e-4)
+        assert fit_results.qval == approx(0.0, rel=1e-4)
+        assert self.locals['src'].r0.val == approx(125.829, rel=1e-4)
+        assert self.locals['src'].beta.val == approx(4.1633, rel=1e-4)
+        assert self.locals['src'].xpos.val == approx(0.0, rel=1e-4)
+        assert self.locals['src'].ampl.val == approx(4.42821, rel=1e-4)
         self.assertEqual(fit_results.nfev, 92)
         self.assertEqual(fit_results.numpoints, 38)
         self.assertEqual(fit_results.dof, 35)
@@ -291,18 +292,18 @@ class test_threads(SherpaTestCase):
 
             fres = ui.get_fit_results()
             covarerr = sqrt(fres.extra_output['covar'].diagonal())
-            self.assertEqualWithinTol(covarerr[0], 6.98861, 1e-4)
-            self.assertEqualWithinTol(covarerr[1], 0.383065, 1e-4)
-            self.assertEqualWithinTol(covarerr[2], 0.101712, 1e-4)
-            self.assertEqualWithinTol(fres.statval, 217.450, 1e-4)
-            self.assertEqualWithinTol(fres.rstat, 6.21287, 1e-4)
-            self.assertEqualWithinTol(fres.qval, 0.0, 1e-4)
+            assert covarerr[0] == approx(6.98861, rel=1e-4)
+            assert covarerr[1] == approx(0.383065, rel=1e-4)
+            assert covarerr[2] == approx(0.101712, rel=1e-4)
+            assert fres.statval == approx(217.450, rel=1e-4)
+            assert fres.rstat == approx(6.21287, rel=1e-4)
+            assert fres.qval == approx(0.0, rel=1e-4)
 
             srcmdl = self.locals['src']
-            self.assertEqualWithinTol(srcmdl.r0.val, 125.829, 1e-4)
-            self.assertEqualWithinTol(srcmdl.beta.val, 4.1633, 1e-4)
-            self.assertEqualWithinTol(srcmdl.xpos.val, 0.0, 1e-4)
-            self.assertEqualWithinTol(srcmdl.ampl.val, 4.42821, 1e-4)
+            assert srcmdl.r0.val == approx(125.829, rel=1e-4)
+            assert srcmdl.beta.val == approx(4.1633, rel=1e-4)
+            assert srcmdl.xpos.val == approx(0.0, rel=1e-4)
+            assert srcmdl.ampl.val == approx(4.42821, rel=1e-4)
 
             self.assertEqual(fres.nfev, 92)
             self.assertEqual(fres.numpoints, 38)
@@ -311,11 +312,11 @@ class test_threads(SherpaTestCase):
     @requires_fits
     def test_psf2d(self):
         self.run_thread('psf')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 4066.78, 1e-4)
-        self.assertEqualWithinTol(self.locals['g1'].fwhm.val, 2.80117, 1e-2)
-        self.assertEqualWithinTol(self.locals['g1'].ypos.val, 77.2271, 1e-2)
-        self.assertEqualWithinTol(self.locals['g1'].xpos.val, 88.661, 1e-2)
-        self.assertEqualWithinTol(self.locals['g1'].ampl.val, 166.649, 1e-2)
+        assert ui.get_fit_results().statval == approx(4066.78, rel=1e-4)
+        assert self.locals['g1'].fwhm.val == approx(2.80117, rel=1e-2)
+        assert self.locals['g1'].ypos.val == approx(77.2271, rel=1e-2)
+        assert self.locals['g1'].xpos.val == approx(88.661, rel=1e-2)
+        assert self.locals['g1'].ampl.val == approx(166.649, rel=1e-2)
         # self.assertEqual(ui.get_fit_results().nfev, 342)
         self.assertEqual(ui.get_fit_results().numpoints, 4899)
         self.assertEqual(ui.get_fit_results().dof, 4895)
@@ -325,19 +326,19 @@ class test_threads(SherpaTestCase):
         self.run_thread('fpsf')
 
         fres = ui.get_fit_results()
-        self.assertEqualWithinTol(fres.statval, -4053.6635, 1e-4)
+        assert fres.statval == approx(-4053.6635, rel=1e-4)
 
-        # self.assertEqualWithinTol(self.locals['b1'].xlow.val, -4.70832, 1e-4)
-        # self.assertEqualWithinTol(self.locals['b1'].xhi.val, 164.687, 1e-4)
-        # self.assertEqualWithinTol(self.locals['b1'].ylow.val, 0.83626, 1e-4)
-        # self.assertEqualWithinTol(self.locals['b1'].yhi.val, 142.603, 1e-4)
-        # self.assertEqualWithinTol(self.locals['b1'].ampl.val, 0.956766, 1e-4)
+        # assert self.locals['b1'].xlow.val == approx(-4.70832, rel=1e-4)
+        # assert self.locals['b1'].xhi.val == approx(164.687, rel=1e-4)
+        # assert self.locals['b1'].ylow.val == approx(0.83626, rel=1e-4)
+        # assert self.locals['b1'].yhi.val == approx(142.603, rel=1e-4)
+        # assert self.locals['b1'].ampl.val == approx(0.956766, rel=1e-4)
 
         g1mdl = self.locals['g1']
-        self.assertEqualWithinTol(g1mdl.fwhm.val, 6.420237, 1e-4)
-        self.assertEqualWithinTol(g1mdl.xpos.val, 88.940712, 1e-4)
-        self.assertEqualWithinTol(g1mdl.ypos.val, 76.577265, 1e-4)
-        self.assertEqualWithinTol(g1mdl.ampl.val, 36344.48324, 1e-4)
+        assert g1mdl.fwhm.val == approx(6.420237, rel=1e-4)
+        assert g1mdl.xpos.val == approx(88.940712, rel=1e-4)
+        assert g1mdl.ypos.val == approx(76.577265, rel=1e-4)
+        assert g1mdl.ampl.val == approx(36344.48324, rel=1e-4)
 
         # self.assertEqual(fres.nfev, 978)
         self.assertEqual(fres.numpoints, 4899)
@@ -346,10 +347,10 @@ class test_threads(SherpaTestCase):
     @requires_fits
     def test_radpro_psf(self):
         self.run_thread('radpro_psf')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 200.949, 1e-4)
-        self.assertEqualWithinTol(self.locals['src'].r0.val, 83.0997, 1e-4)
-        self.assertEqualWithinTol(self.locals['src'].beta.val, 2.97737, 1e-4)
-        self.assertEqualWithinTol(self.locals['src'].ampl.val, 5.27604, 1e-4)
+        assert ui.get_fit_results().statval == approx(200.949, rel=1e-4)
+        assert self.locals['src'].r0.val == approx(83.0997, rel=1e-4)
+        assert self.locals['src'].beta.val == approx(2.97737, rel=1e-4)
+        assert self.locals['src'].ampl.val == approx(5.27604, rel=1e-4)
         self.assertEqual(ui.get_fit_results().nfev, 48)
         self.assertEqual(ui.get_fit_results().numpoints, 38)
         self.assertEqual(ui.get_fit_results().dof, 35)
@@ -359,13 +360,13 @@ class test_threads(SherpaTestCase):
         self.run_thread('linepro')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0.176282, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 0.0019578, 1e-4)
-        self.assertEqualWithinTol(covarerr[2], 0.495889, 1e-4)
-        self.assertEqualWithinTol(fit_results.statval, 203.34, 1e-4)
-        self.assertEqualWithinTol(self.locals['b1'].r0.val, 4.25557, 1e-4)
-        self.assertEqualWithinTol(self.locals['b1'].beta.val, 0.492232, 1e-4)
-        self.assertEqualWithinTol(self.locals['b1'].ampl.val, 11.8129, 1e-4)
+        assert covarerr[0] == approx(0.176282, rel=1e-4)
+        assert covarerr[1] == approx(0.0019578, rel=1e-4)
+        assert covarerr[2] == approx(0.495889, rel=1e-4)
+        assert fit_results.statval == approx(203.34, rel=1e-4)
+        assert self.locals['b1'].r0.val == approx(4.25557, rel=1e-4)
+        assert self.locals['b1'].beta.val == approx(0.492232, rel=1e-4)
+        assert self.locals['b1'].ampl.val == approx(11.8129, rel=1e-4)
         self.assertEqual(fit_results.nfev, 17)
         self.assertEqual(fit_results.numpoints, 75)
         self.assertEqual(fit_results.dof, 72)
@@ -375,13 +376,13 @@ class test_threads(SherpaTestCase):
         self.run_thread('kernel')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0.210895, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 0.00154839, 1e-4)
-        self.assertEqualWithinTol(covarerr[2], 0.0223859, 1e-4)
-        self.assertEqualWithinTol(fit_results.statval, 98.5793, 1e-4)
-        self.assertEqualWithinTol(self.locals['b1'].r0.val, 19.2278, 1e-4)
-        self.assertEqualWithinTol(self.locals['b1'].beta.val, 0.555464, 1e-4)
-        self.assertEqualWithinTol(self.locals['b1'].ampl.val, 1.93706, 1e-4)
+        assert covarerr[0] == approx(0.210895, rel=1e-4)
+        assert covarerr[1] == approx(0.00154839, rel=1e-4)
+        assert covarerr[2] == approx(0.0223859, rel=1e-4)
+        assert fit_results.statval == approx(98.5793, rel=1e-4)
+        assert self.locals['b1'].r0.val == approx(19.2278, rel=1e-4)
+        assert self.locals['b1'].beta.val == approx(0.555464, rel=1e-4)
+        assert self.locals['b1'].ampl.val == approx(1.93706, rel=1e-4)
         self.assertEqual(fit_results.nfev, 21)
         self.assertEqual(fit_results.numpoints, 75)
         self.assertEqual(fit_results.dof, 72)
@@ -393,27 +394,27 @@ class test_threads(SherpaTestCase):
 
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0.00148391, 1e-3)
-        self.assertEqualWithinTol(covarerr[1], 0.0011518, 1e-4)
-        self.assertEqualWithinTol(covarerr[2], 0.00377755, 1e-4)
-        self.assertEqualWithinTol(covarerr[3], 0.00370543, 1e-4)
-        self.assertEqualWithinTol(covarerr[4], 0.0016608, 1e-4)
-        self.assertEqualWithinTol(fres.statval, 0.0496819, 1e-4)
-        self.assertEqualWithinTol(self.locals['abs2'].nh.val, 1.1015, 1e-4)
-        self.assertEqualWithinTol(self.locals['mek1'].kt.val, 0.841025, 1e-4)
-        self.assertEqualWithinTol(self.locals['mek1'].norm.val, 0.699761, 1e-4)
-        self.assertEqualWithinTol(self.locals['mek2'].kt.val, 2.35845, 1e-4)
-        self.assertEqualWithinTol(self.locals['mek2'].norm.val, 1.03724, 1e-4)
+        assert covarerr[0] == approx(0.00148391, rel=1e-3)
+        assert covarerr[1] == approx(0.0011518, rel=1e-4)
+        assert covarerr[2] == approx(0.00377755, rel=1e-4)
+        assert covarerr[3] == approx(0.00370543, rel=1e-4)
+        assert covarerr[4] == approx(0.0016608, rel=1e-4)
+        assert fres.statval == approx(0.0496819, rel=1e-4)
+        assert self.locals['abs2'].nh.val == approx(1.1015, rel=1e-4)
+        assert self.locals['mek1'].kt.val == approx(0.841025, rel=1e-4)
+        assert self.locals['mek1'].norm.val == approx(0.699761, rel=1e-4)
+        assert self.locals['mek2'].kt.val == approx(2.35845, rel=1e-4)
+        assert self.locals['mek2'].norm.val == approx(1.03724, rel=1e-4)
         self.assertEqual(fres.numpoints, 446)
         self.assertEqual(fres.dof, 441)
 
     @requires_fits
     def test_histo(self):
         self.run_thread('histo')
-        self.assertEqualWithinTol(ui.get_fit_results().statval, 14.7264, 1e-4)
-        self.assertEqualWithinTol(self.locals['g1'].fwhm.val, 0.0232473, 1e-4)
-        self.assertEqualWithinTol(self.locals['g1'].pos.val, 1.26713, 1e-4)
-        self.assertEqualWithinTol(self.locals['g1'].ampl.val, 40.4503, 1e-4)
+        assert ui.get_fit_results().statval == approx(14.7264, rel=1e-4)
+        assert self.locals['g1'].fwhm.val == approx(0.0232473, rel=1e-4)
+        assert self.locals['g1'].pos.val == approx(1.26713, rel=1e-4)
+        assert self.locals['g1'].ampl.val == approx(40.4503, rel=1e-4)
         # self.assertEqual(ui.get_fit_results().nfev, 19)
         self.assertEqual(ui.get_fit_results().numpoints, 50)
         self.assertEqual(ui.get_fit_results().dof, 47)
@@ -425,10 +426,10 @@ class test_threads(SherpaTestCase):
 
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0.954993, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 0.142357, 1e-4)
-        self.assertEqualWithinTol(covarerr[2], 0.00038775, 1e-4)
-        self.assertEqualWithinTol(fres.statval, 118.085, 1e-4)
+        assert covarerr[0] == approx(0.954993, rel=1e-3)
+        assert covarerr[1] == approx(0.142357, rel=1e-3)
+        assert covarerr[2] == approx(0.00038775, rel=1e-3)
+        assert fres.statval == approx(118.085, rel=1e-4)
         self.assertEqualWithinTol(self.locals['intrin'].nh.val,
                                   11.0769, 1e-2)
         self.assertEqualWithinTol(self.locals['phard'].phoindex.val,
@@ -449,14 +450,14 @@ class test_threads(SherpaTestCase):
 
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0.104838, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 2.43937e-05, 1e-4)
-        self.assertEqualWithinTol(fres.statval, 18.8316, 1e-4)
+        assert covarerr[0] == approx(0.104838, rel=1e-4)
+        assert covarerr[1] == approx(2.43937e-05, rel=1e-4)
+        assert fres.statval == approx(18.8316, rel=1e-4)
         self.assertEqual(fres.numpoints, 46)
 
         aamdl = self.locals['aa']
-        self.assertEqualWithinTol(aamdl.gamma.val, 1.83906, 1e-4)
-        self.assertEqualWithinTol(aamdl.ampl.val, 0.000301258, 1e-4)
+        assert aamdl.gamma.val == approx(1.83906, rel=1e-4)
+        assert aamdl.ampl.val == approx(0.000301258, rel=1e-4)
 
     @requires_fits
     @requires_xspec
@@ -465,9 +466,9 @@ class test_threads(SherpaTestCase):
         # Fit 1
         self.assertEqualWithinTol(self.locals['fit_res1'].statval,
                                   64.3803, 1e-2)
-        self.assertEqualWithinTol(self.locals['g'].fwhm.val, 32.3536, 1e-2)
-        self.assertEqualWithinTol(self.locals['g'].pos.val, 807.863, 1e-2)
-        self.assertEqualWithinTol(self.locals['g'].ampl.val, 117.826, 1e-2)
+        assert self.locals['g'].fwhm.val == approx(32.3536, rel=1e-2)
+        assert self.locals['g'].pos.val == approx(807.863, rel=1e-2)
+        assert self.locals['g'].ampl.val == approx(117.826, rel=1e-2)
 
         # Covar 1
         self.assertEqualWithinTol(self.locals['covar_res1'].parmins[0],
@@ -500,9 +501,9 @@ class test_threads(SherpaTestCase):
         # Fit 2
         self.assertEqualWithinTol(self.locals['fit_res2'].statval,
                                   108.048, 1e-2)
-        self.assertEqualWithinTol(self.locals['xs1'].nh.val, 0.0532586, 1e-2)
-        self.assertEqualWithinTol(self.locals['p'].gamma.val, 1.4816, 1e-2)
-        self.assertEqualWithinTol(self.locals['p'].ampl.val, 0.302343, 1e-2)
+        assert self.locals['xs1'].nh.val == approx(0.0532586, rel=1e-2)
+        assert self.locals['p'].gamma.val == approx(1.4816, rel=1e-2)
+        assert self.locals['p'].ampl.val == approx(0.302343, rel=1e-2)
 
         # Covar 2
         self.assertEqualWithinTol(self.locals['covar_res2'].parmins[0],
@@ -538,11 +539,11 @@ class test_threads(SherpaTestCase):
         self.run_thread('proj_bubble')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        self.assertEqualWithinTol(covarerr[0], 0, 1e-4)
-        self.assertEqualWithinTol(covarerr[1], 8.74608e-07, 1e-3)
+        assert covarerr[0] == approx(0, rel=1e-4)
+        assert covarerr[1] == approx(8.74608e-07, rel=1e-3)
 
         # Fit -- Results from reminimize
-        self.assertEqualWithinTol(self.locals['mek1'].kt.val, 17.8849, 1e-2)
+        assert self.locals['mek1'].kt.val == approx(17.8849, rel=1e-2)
         self.assertEqualWithinTol(self.locals['mek1'].norm.val, 4.15418e-06,
                                   1e-2)
 
@@ -571,8 +572,8 @@ class test_threads(SherpaTestCase):
     @requires_xspec
     def test_counts(self):
         self.run_thread('counts')
-        self.assertEqualWithinTol(self.locals['counts_data1'], 52701.0, 1e-4)
-        self.assertEqualWithinTol(self.locals['counts_data2'], 25032.0, 1e-4)
+        assert self.locals['counts_data1'] == approx(52701.0, rel=1e-4)
+        assert self.locals['counts_data2'] == approx(25032.0, rel=1e-4)
         self.assertEqualWithinTol(self.locals['counts_model1'],
                                   73226263.55355, 1e-4)
         self.assertEqualWithinTol(self.locals['eflux1'],
@@ -620,8 +621,8 @@ class test_threads(SherpaTestCase):
                                   -1.513700715, 1e-4)
 
         fres = ui.get_fit_results()
-        self.assertEqualWithinTol(fres.istatval, 19496.3, 1e-4)
-        self.assertEqualWithinTol(fres.statval, 592.32647, 1e-4)
+        assert fres.istatval == approx(19496.3, rel=1e-4)
+        assert fres.statval == approx(592.32647, rel=1e-4)
         self.assertEqual(fres.numpoints, 3307)
         self.assertEqual(fres.dof, 3302)
 
@@ -664,7 +665,7 @@ class test_threads(SherpaTestCase):
         wmsgs = set([str(w.message) for w in ws])
         assert wmsgs == emsgs
 
-        self.assertEqualWithinTol(ui.get_data().channel[0], 1.0, 1e-4)
+        assert ui.get_data().channel[0] == approx(1.0, rel=1e-4)
         rmf = ui.get_rmf()
         arf = ui.get_arf()
         self.assertEqual(rmf.detchans, 800)
@@ -682,5 +683,5 @@ class test_threads(SherpaTestCase):
         self.assertEqual(len(arf.specresp), 2400)
 
         etol = EMIN / 100.0
-        self.assertEqualWithinTol(rmf.energ_lo[0], EMIN, etol)
-        self.assertEqualWithinTol(arf.energ_lo[0], EMIN, etol)
+        assert rmf.energ_lo[0] == approx(EMIN, rel=etol)
+        assert arf.energ_lo[0] == approx(EMIN, rel=etol)
