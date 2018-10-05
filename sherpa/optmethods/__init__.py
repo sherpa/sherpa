@@ -379,71 +379,69 @@ class GridSearch(OptMethod):
 
 """
 
-
 class LevMar(OptMethod):
     """Levenberg-Marquardt optimization method.
 
-    The Levenberg-Marquardt method is an interface to the MINPACK
-    subroutine lmdif to find the local minimum of nonlinear least
-    squares functions of several variables by a modification of the
-    Levenberg-Marquardt algorithm [1]_.
+        The Levenberg-Marquardt method is an interface to the MINPACK
+        subroutine lmdif to find the local minimum of nonlinear least
+        squares functions of several variables by a modification of the
+        Levenberg-Marquardt algorithm [1]_.
 
-    Attributes
-    ----------
-    ftol : number
-       The function tolerance to terminate the search for the minimum;
-       the default is FLT_EPSILON ~ 1.19209289551e-07, where
-       FLT_EPSILON is the smallest number x such that `1.0 != 1.0 +
-       x`. The conditions are satisfied when both the actual and
-       predicted relative reductions in the sum of squares are, at
-       most, ftol.
-    xtol : number
-       The relative error desired in the approximate solution; default
-       is FLT_EPSILON ~ 1.19209289551e-07, where FLT_EPSILON
-       is the smallest number x such that `1.0 != 1.0 + x`. The
-       conditions are satisfied when the relative error between two
-       consecutive iterates is, at most, `xtol`.
-    gtol : number
-       The orthogonality desired between the function vector and the
-       columns of the jacobian; default is FLT_EPSILON ~
-       1.19209289551e-07, where FLT_EPSILON is the smallest number x
-       such that `1.0 != 1.0 + x`. The conditions are satisfied when
-       the cosine of the angle between fvec and any column of the
-       jacobian is, at most, `gtol` in absolute value.
-    maxfev : int or `None`
-       The maximum number of function evaluations; the default value
-       of `None` means to use `1024 * n`, where `n` is the number of
-       free parameters.
-    epsfcn : number
-       This is used in determining a suitable step length for the
-       forward-difference approximation; default is FLT_EPSILON
-       ~ 1.19209289551e-07, where FLT_EPSILON is the smallest number
-       x such that `1.0 != 1.0 + x`. This approximation assumes that
-       the relative errors in the functions are of the order of
-       `epsfcn`. If `epsfcn` is less than the machine precision, it is
-       assumed that the relative errors in the functions are of the
-       order of the machine precision.
-    factor : int
-       Used in determining the initial step bound; default is 100. The
-       initial step bound is set to the product of `factor` and the
-       euclidean norm of diag*x if nonzero, or else to factor itself.
-       In most cases, `factor` should be from the interval (.1,100.).
-    verbose: int
-       The amount of information to print during the fit. The default
-       is `0`, which means no output.
+        Attributes
+        ----------
+        ftol : number
+           The function tolerance to terminate the search for the minimum;
+           the default is FLT_EPSILON ~ 1.19209289551e-07, where
+           FLT_EPSILON is the smallest number x such that `1.0 != 1.0 +
+           x`. The conditions are satisfied when both the actual and
+           predicted relative reductions in the sum of squares are, at
+           most, ftol.
+        xtol : number
+           The relative error desired in the approximate solution; default
+           is FLT_EPSILON ~ 1.19209289551e-07, where FLT_EPSILON
+           is the smallest number x such that `1.0 != 1.0 + x`. The
+           conditions are satisfied when the relative error between two
+           consecutive iterates is, at most, `xtol`.
+        gtol : number
+           The orthogonality desired between the function vector and the
+           columns of the jacobian; default is FLT_EPSILON ~
+           1.19209289551e-07, where FLT_EPSILON is the smallest number x
+           such that `1.0 != 1.0 + x`. The conditions are satisfied when
+           the cosine of the angle between fvec and any column of the
+           jacobian is, at most, `gtol` in absolute value.
+        maxfev : int or `None`
+           The maximum number of function evaluations; the default value
+           of `None` means to use `1024 * n`, where `n` is the number of
+           free parameters.
+        epsfcn : number
+           This is used in determining a suitable step length for the
+           forward-difference approximation; default is FLT_EPSILON
+           ~ 1.19209289551e-07, where FLT_EPSILON is the smallest number
+           x such that `1.0 != 1.0 + x`. This approximation assumes that
+           the relative errors in the functions are of the order of
+           `epsfcn`. If `epsfcn` is less than the machine precision, it is
+           assumed that the relative errors in the functions are of the
+           order of the machine precision.
+        factor : int
+           Used in determining the initial step bound; default is 100. The
+           initial step bound is set to the product of `factor` and the
+           euclidean norm of diag*x if nonzero, or else to factor itself.
+           In most cases, `factor` should be from the interval (.1,100.).
+        verbose: int
+           The amount of information to print during the fit. The default
+           is `0`, which means no output.
 
-    References
-    ----------
+        References
+        ----------
 
-    .. [1] J.J. More, "The Levenberg Marquardt algorithm:
-           implementation and theory," in Lecture Notes in Mathematics
-           630: Numerical Analysis, G.A. Watson (Ed.),
-           Springer-Verlag: Berlin, 1978, pp.105-116.
+        .. [1] J.J. More, "The Levenberg Marquardt algorithm:
+               implementation and theory," in Lecture Notes in Mathematics
+               630: Numerical Analysis, G.A. Watson (Ed.),
+               Springer-Verlag: Berlin, 1978, pp.105-116.
 
-    """
-
+        """
     def __init__(self, name='levmar'):
-        OptMethod.__init__(self, name, lmdif)
+        OptMethod.__init__(self, name, optfcts.lmdif)
 
 
 class MonCar(OptMethod):
