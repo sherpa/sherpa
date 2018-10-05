@@ -14,6 +14,7 @@ Evaluating a model
    integrate
    combine
    convolution
+   regrid
    simulate
    cache
    examples

@@ -1152,6 +1152,7 @@ class PSFModel(_PSFModel):
 
 def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-arf'):
     """Create an ARF.
+
     Parameters
     ----------
     elo, ehi : numpy.ndarray
@@ -1169,9 +1170,10 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
         zero-energy bins are replaced.
     name : str
         The name of the data set
+
     Returns
     -------
-    arf : DataARF instance
+    arf : sherpa.astro.data.DataARF instance
     """
 
     if specresp is None:
