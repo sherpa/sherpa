@@ -1,7 +1,7 @@
 #ifndef Opt_hh
 #define Opt_hh
 
-// 
+//
 //  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 //
 //
@@ -63,44 +63,70 @@ namespace sherpa {
 
   };
 
+  template< typename real >
+  class Bounds {
+
+  public:
+
+    Bounds( const std::vector<real>& l, const std::vector<real>& u ) :
+      lb(l), ub(u) { }
+
+    // bool are_pars_outside_limits( int npar, const std::vector<real>& par )
+    //   const {
+    //   for ( int ii = 0; ii < npar; ++ii )
+    //     if ( par[ ii ] < lb[ ii ] || par[ ii ] > ub[ ii ] )
+    //       return true;
+    //   return false;
+    // }
+
+    const std::vector<real>& get_lb( ) const { return lb; }
+    const std::vector<real>& get_ub( ) const { return ub; }
+
+  private:
+
+    const std::vector<real>& lb;
+    const std::vector<real>& ub;
+
+  };
+
+  template< typename Data, typename real >
   class Opt {
 
   public:
 
-    typedef std::vector<double> myvec;
-    typedef std::pair< const myvec, const myvec > mypair;
-
     virtual ~Opt( ) { }
-    
-    Opt( ) { }
 
-    virtual double eval_func( int maxnfev, const Opt::mypair& limits, int npar,
-			      Opt::myvec& par, int& nfev ) {
+    Opt( Data data ) : usr_data( data ) { }
+
+    //
+    // If lo <= xpar <= hi return false, else return true
+    //
+    static bool are_pars_outside_limits( int npar,
+                                         const std::vector<real>& par,
+                                         const sherpa::Bounds<real>& limits ) {
+      const std::vector<real>& low = limits.get_lb();
+      const std::vector<real>& high = limits.get_ub();
+      for ( int ii = 0; ii < npar; ++ii )
+	if ( par[ ii ] < low[ ii ] || par[ ii ] > high[ ii ] )
+	  return true;
+      return false;
+    }
+
+    virtual real eval_func( int maxnfev, const sherpa::Bounds<real>& limits,
+                            int npar, std::vector<real>& par, int& nfev ) {
       std::cerr << "Opt::eval_func define me!\n";
       return 0.0; }
 
-    virtual int minimize( int maxnfev, const sherpa::Opt::mypair& limits,
-			  double tol, int npar, sherpa::Opt::myvec& par,
+    virtual int minimize( int maxnfev, const sherpa::Bounds<real>& limits,
+			  double tol, int npar, std::vector<real>& par,
 			  double& fmin, int& nfev ) {
       std::cerr << "Opt::minimize define me!\n";
       return EXIT_FAILURE;
     }
 
-    //
-    // If lo <= xpar <= hi return false, else return true
-    //
-    static bool are_pars_outside_limits( int npar, const mypair& limits,
-					 const myvec& par ) {
-      const myvec& low = limits.first;
-      const myvec& high = limits.second;
-      for ( int ii = 0; ii < npar; ++ii )
-	if ( par[ ii ] < low[ ii ] || par[ ii ] > high[ ii ] )
-	  return true;
-      return false;
 
-    }
-
-    static std::ostream& print_par( std::ostream& os, const myvec& par ) {
+    static std::ostream& print_par( std::ostream& os,
+                                    const std::vector<real>& par ) {
       const size_t npar = par.size( ) - 1;
       os.precision( 6 );
       os << "f( " << std::scientific << par[ 0 ];
@@ -110,33 +136,42 @@ namespace sherpa {
       return os;
     }
 
+  protected:
+
+    Data get_usr_data( ) { return usr_data; }
+
+
   private:
+
+    Data usr_data;
 
   };                                                               // class Opt
 
-  template< typename Func, typename Data >
-  class OptFunc : public Opt {
+  template< typename Func, typename Data, typename real >
+  class OptFunc : public Opt<Data, real> {
 
   public:
 
     virtual ~OptFunc( ) { }
 
-    OptFunc( Func func, Data data, int mfct=0 ) :
-      usr_func( func ), usr_data( data ), mfcts( mfct ) { }
+    OptFunc( Func func, Data data, int mfct=0 ) : Opt< Data, real>( data ),
+                                                  usr_func( func ),
+                                                  mfcts( mfct ) { }
 
 
-    virtual double eval_func( int maxnfev, const Opt::mypair& limits, int npar,
-			      Opt::myvec& par, int& nfev ) {
-      
-      if ( sherpa::Opt::are_pars_outside_limits( npar, limits, par ) ) {
-	par[ npar ] = std::numeric_limits< double >::max( );
+    virtual real eval_func( int maxnfev, const sherpa::Bounds<real>& limits,
+                            int npar, std::vector<real>& par, int& nfev ) {
+
+      if ( sherpa::Opt<Data, real>::are_pars_outside_limits( npar, par,
+                                                             limits ) ) {
+	par[ npar ] = std::numeric_limits< real >::max( );
 	return par[ npar ];
       }
 
       ++nfev;
-      
+
       int ierr = EXIT_SUCCESS;
-      usr_func( npar, &par[0], par[npar], ierr, usr_data );
+      usr_func( npar, &par[0], par[npar], ierr, sherpa::Opt<Data, real>::get_usr_data() );
       if ( EXIT_SUCCESS != ierr )
 	throw sherpa::OptErr( sherpa::OptErr::UsrFunc );
       if ( nfev >= maxnfev )
@@ -149,8 +184,8 @@ namespace sherpa {
 
     }                                                         // eval_user_func
 
-    int minimize( int maxnfev, const sherpa::Opt::mypair& limits,
-		  double tol, int npar, sherpa::Opt::myvec& par, double& fmin,
+    int minimize( int maxnfev, const sherpa::Bounds<real>& limits,
+		  real tol, int npar, std::vector<real>& par, real& fmin,
 		  int& nfev ) {
       int ierr = EXIT_SUCCESS;
       fmin = eval_func( maxnfev, limits, npar, par, nfev );
@@ -160,12 +195,10 @@ namespace sherpa {
   protected:
 
     Func get_func( ) { return usr_func; }
-    Data get_data( ) { return usr_data; }
 
   private:
 
     Func usr_func;
-    Data usr_data;
     const int mfcts;
 
     OptFunc& operator = (OptFunc const&); // declare but, purposely, not define
@@ -189,14 +222,14 @@ void justdoit( Init init, Func fct, int npar, std::vector<double>& par ) {
   std::vector< double > lo( npar ), hi( npar );
   init( npar, mfcts, answer, &par[0], &lo[0], &hi[0] );
 
-  const sherpa::Opt::mypair limits( lo, hi );
-
-  sherpa::OptFunc< Func, void* > optfunc( fct, NULL );
+  sherpa::Bounds<double> bounds(lo, hi);
+  sherpa::OptFunc< Func, const sherpa::Bounds<double>&, double>
+    optfunc( fct, bounds );
 
   try {
 
     for ( int ii = 0; ii < maxnfev + 1; ++ii )
-      fmin = optfunc.eval_func( maxnfev, limits, npar, par, nfev );
+      fmin = optfunc.eval_func( maxnfev, npar, par, nfev );
 
   } catch( sherpa::OptErr& oe ) {
 
@@ -214,8 +247,9 @@ int main( int argc, char* argv[] ) {
     npar = atoi( argv[1] );
 
   std::vector<double> par( npar + 1, 0.0 );
-  sherpa::FctPtr< void, int, double*, double&, int&, void* >
-    fct( tstoptfct::Rosenbrock<double,void*> );
+  sherpa::FctPtr< void, int, double*, double&, int&,
+    const sherpa::Bounds<double>& >
+    fct( tstoptfct::Rosenbrock<double,const sherpa::Bounds<double>&> );
 
   justdoit( sherpa::fct_ptr( tstoptfct::RosenbrockInit<double> ),
 	    fct, npar, par );

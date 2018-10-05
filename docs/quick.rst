@@ -286,9 +286,21 @@ a string representation of the fit results, as shown below::
     Data points           = 200
     Degrees of freedom    = 197
     Change in statistic   = 172.641
-       gauss1d.fwhm   1.91572     
-       gauss1d.pos    1.2743      
-       gauss1d.ampl   3.04706      
+       gauss1d.fwhm   1.91572      +/- 0.165982    
+       gauss1d.pos    1.2743       +/- 0.0704859   
+       gauss1d.ampl   3.04706      +/- 0.228618    
+
+.. note::
+
+   The :py:class:`~sherpa.optmethods.LevMar` optimiser calculates the
+   covariance matrix at the best-fit location, and the errors from
+   this are reported in the output from the call to the
+   :py:meth:`~sherpa.fit.Fit.fit` method. In this particular case -
+   which uses the :py:class:`~sherpa.stats.LeastSq` statistic -
+   the error estimates do not have much meaning. As discussed
+   below, Sherpa can :ref:`make use of error estimates 
+   on the data <quick-gauss1d-errors>`
+   to calculate meaningful parameter errors.
 
 .. _quick-fitplot:
 
@@ -335,10 +347,10 @@ model, to the Gaussian sigma value used to create the data:
     statname       = leastsq
     succeeded      = True
     parnames       = ('gauss1d.fwhm', 'gauss1d.pos', 'gauss1d.ampl')
-    parvals        = (1.9157241114063941, 1.2743015983545247, 3.0470560360944017)
+    parvals        = (1.915724111406394, 1.2743015983545247, 3.0470560360944017)
     statval        = 8.069746329529591
     istatval       = 180.71034547759984
-    dstatval       = 172.640599148
+    dstatval       = 172.64059914807027
     numpoints      = 200
     dof            = 197
     qval           = None
@@ -365,15 +377,15 @@ have been changed by the fit::
        gauss1d.pos  thawed       1.2743 -3.40282e+38  3.40282e+38           
        gauss1d.ampl thawed      3.04706 -3.40282e+38  3.40282e+38       
     >>> print(g.pos)
-    val         = 1.27430159835
-    min         = -3.40282346639e+38
-    max         = 3.40282346639e+38
+    val         = 1.2743015983545247
+    min         = -3.4028234663852886e+38
+    max         = 3.4028234663852886e+38
     units       = 
     frozen      = False
     link        = None
     default_val = 0.0
-    default_min = -3.40282346639e+38
-    default_max = 3.40282346639e+38
+    default_min = -3.4028234663852886e+38
+    default_max = 3.4028234663852886e+38
 
 .. _quick-gauss1d-errors:
     
@@ -412,9 +424,9 @@ the error value per bin when calculating the statistic value)::
     Probability [Q-value] = 0.393342
     Reduced statistic     = 1.02408
     Change in statistic   = 4316.01
-       gerr.fwhm      1.91572     
-       gerr.pos       1.2743      
-       gerr.ampl      3.04706     
+       gerr.fwhm      1.91572      +/- 0.0331963   
+       gerr.pos       1.2743       +/- 0.0140972   
+       gerr.ampl      3.04706      +/- 0.0457235   
     >>> if not geres.succeeded: print(geres.message)
 
 Since the error value is independent of bin, then the fit results
@@ -450,13 +462,13 @@ respectively.::
     statname       = chi2
     succeeded      = True
     parnames       = ('gerr.fwhm', 'gerr.pos', 'gerr.ampl')
-    parvals        = (1.9157241114064163, 1.2743015983545292, 3.0470560360943919)
+    parvals        = (1.9157241114064163, 1.2743015983545292, 3.047056036094392)
     statval        = 201.74365823823976
     istatval       = 4517.758636940002
-    dstatval       = 4316.0149787
+    dstatval       = 4316.014978701763
     numpoints      = 200
     dof            = 197
-    qval           = 0.393342466792
+    qval           = 0.3933424667915623
     rstat          = 1.0240794834428415
     message        = successful termination
     nfev           = 30
@@ -472,18 +484,18 @@ The default error estimation routine is
     >>> gefit.estmethod = Confidence()
     >>> print(gefit.estmethod)
     name         = confidence
-    parallel     = True
-    numcores     = 8
-    tol          = 0.2
-    max_rstat    = 3
-    remin        = 0.01
-    eps          = 0.01
-    fast         = False
-    maxiters     = 200
-    verbose      = False
-    maxfits      = 5
-    soft_limits  = False
     sigma        = 1
+    eps          = 0.01
+    maxiters     = 200
+    soft_limits  = False
+    remin        = 0.01
+    fast         = False
+    parallel     = True
+    numcores     = 4
+    maxfits      = 5
+    max_rstat    = 3
+    tol          = 0.2
+    verbose      = False
     openinterval = False
 
 Running the error analysis can take time, for particularly complex
@@ -525,10 +537,10 @@ values and limits::
     fitname     = levmar
     statname    = chi2
     sigma       = 1
-    percent     = 68.2689492137
+    percent     = 68.26894921370858
     parnames    = ('gerr.fwhm', 'gerr.pos', 'gerr.ampl')
-    parvals     = (1.9157241114064163, 1.2743015983545292, 3.0470560360943919)
-    parmins     = (-0.032632743123330199, -0.014098074065578947, -0.045611913713536456)
+    parvals     = (1.9157241114064163, 1.2743015983545292, 3.047056036094392)
+    parmins     = (-0.0326327431233302, -0.014098074065578947, -0.045611913713536456)
     parmaxes    = (0.033257800216357714, 0.014098074065578947, 0.045611913713536456)
     nfits       = 29
 
@@ -542,7 +554,12 @@ ranges::
                  for d in dvals}
     >>> pvals['gerr.pos']
     {'min': -0.014098074065578947, 'max': 0.014098074065578947, 'val': 1.2743015983545292}
-                 
+             
+.. todo::
+
+   Discuss the relationship between the parameter errors reported in a
+   fit and the ones from Confidence, or related.
+
 Screen output
 -------------
 
@@ -705,7 +722,15 @@ For example, the following code creates a
     >>> x0axis = x0.ravel()
     >>> x1axis = x1.ravel()
     >>> yaxis = y.ravel()
-    >>> d2 = Data2D('img', x0axis, x1axis, yaxis, shape=(128,128))
+    >>> d2 = Data2D('img', x0axis, x1axis, yaxis, shape=(128, 128))
+    >>> print(d2)
+    name      = img
+    x0        = Int64[16384]
+    x1        = Int64[16384]
+    y         = Float64[16384]
+    shape     = (128, 128)
+    staterror = None
+    syserror  = None
 
 Define the model
 ----------------
@@ -714,7 +739,7 @@ Creating the model is the same as the one-dimensional case; in this
 case the :py:class:`~sherpa.models.basic.Polynom2D` class is used
 to create a low-order polynomial::
 
-    >>> from sherpa.models import Polynom2D
+    >>> from sherpa.models.basic import Polynom2D
     >>> p2 = Polynom2D('p2')
     >>> print(p2)
     p2
@@ -738,6 +763,7 @@ can be set::
 
     >>> for n in ['cx1', 'cy1', 'cx2y1', 'cx1y2', 'cx2y2']:
        ...:     getattr(p2, n).frozen = True
+       ...:
     >>> print(p2)
     p2
        Param        Type          Value          Min          Max      Units
@@ -768,10 +794,10 @@ objects used earlier could have been re-used here)::
     statname       = leastsq
     succeeded      = True
     parnames       = ('p2.c', 'p2.cy2', 'p2.cx1y1', 'p2.cx2')
-    parvals        = (-80.289475554881392, -0.48174521913599017, 1.5022711710872119, 1.9894112623568638)
+    parvals        = (-80.28947555488139, -0.48174521913599017, 1.5022711710872119, 1.9894112623568638)
     statval        = 400658883390.66907
     istatval       = 6571471882611.967
-    dstatval       = 6.17081299922e+12
+    dstatval       = 6170812999221.298
     numpoints      = 16384
     dof            = 16380
     qval           = None
