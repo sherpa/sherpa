@@ -508,6 +508,12 @@ If there are problems building, or using, the module, then the other
 options may need to be set - in particular the `gfortran_lib_dirs` and
 `gfortran_libraries` settings.
 
+It is important that the `gfortran`-related options above point to a
+`libgfortran` library that is the same, or at least the same version,
+as the one that was used to build XSPEC itself. The `gfortran_libraries`
+option, in particular, can be used on Linux to set the specific name of
+the library, e.g. `:libgfortran.so.3`.
+
 In order for the module to work, the `HEADAS` environment variable has
 to be set in the shell from which the Python session is started.  For
 the CIAO-XSPEC build, `HEADAS` should be set to
