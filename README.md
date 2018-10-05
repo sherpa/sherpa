@@ -83,7 +83,7 @@ How To Install Sherpa
 =====================
 
 Sherpa can be installed from a binary distribution or built from
-sources. The 4.10.0 release is available for Python 2.7, 3.5, and 3.6.
+sources. The 4.10.1 release is available for Python 2.7, 3.5, 3.6, and 3.7.
 
 The binary distribution is available for Linux and Mac OS X via conda installation 
 described in sections [1a](#1a-anaconda) and [1b](#1b-starting-from-scratch). This is the fastest
@@ -120,7 +120,7 @@ and then refer to section [1a](#1a-anaconda).
 Notice that section [1b](#1b-starting-from-scratch). only provides instructions on how to install a minimal
 Anaconda-powered environment, not the full Anaconda distribution.
 
-The Sherpa 4.10.0 release - which is the latest binary release - is
+The Sherpa 4.10.1 release - which is the latest binary release - is
 compatible with Python 2.7, Python 3.5, and Python 3.6.
 
 
@@ -235,7 +235,7 @@ The prerequisites for building from source are:
 The full test suite requires the `mock`, `pytest >=3.3.0`, and `pytest-xvfb` packages,
 which should be installed automatically if needed.
 
-The current Sherpa code base works with Python 2.7, 3.5, and 3.6; support for
+The current Sherpa code base works with Python 2.7, 3.5, 3.6, and 3.7; support for
 versions 3.3 and 3.4 is possible but would require community support.
 
 It is *highly* recommended that [`matplotlib`](http://matplotlib.org/)
@@ -271,7 +271,7 @@ You can clone the Sherpa repository with:
     $ git clone https://github.com/sherpa/sherpa
     $ cd sherpa
 
-The most stable code is available through the 4.10.0 tag. The main
+The most stable code is available through the 4.10.1 tag. The main
 development code, which is unstable, is available in the `master`
 branch. New features and bug fixes or other, even less stable versions
 of the code may be available in other branches.
@@ -364,7 +364,7 @@ was installed.
 The external test data files can be
 installed from GitHub channel by saying:
 
-    $ pip install https://github.com/sherpa/sherpa-test-data/archive/4.10.0.tar.gz
+    $ pip install https://github.com/sherpa/sherpa-test-data/archive/4.10.1.tar.gz
 
 At this point, `sherpa_test` will pick up the data and so run more
 tests.
@@ -594,6 +594,7 @@ extend (whether to other areas of Astronomy or in other domains).
 
 Release History
 ---------------
+4.10.0: 11 May 2018 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1245678.svg)](https://doi.org/10.5281/zenodo.1245678)
 
 4.9.1: 01 August 2017 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.838686.svg)](https://doi.org/10.5281/zenodo.838686)
 
