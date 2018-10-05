@@ -64,7 +64,7 @@ def _trap1d(pars, x):
     return out
 
 
-class Trap1D(model.ArithmeticModel):
+class Trap1D(model.RegriddableModel1D):
     """A one-dimensional trapezoid.
 
     The model parameters are:
@@ -86,9 +86,9 @@ class Trap1D(model.ArithmeticModel):
         self.width = model.Parameter(name, 'width', 1, min=0, hard_min=0)
         self.slope = model.Parameter(name, 'slope', 1, min=0, hard_min=0)
 
-        model.ArithmeticModel.__init__(self, name,
-                                       (self.ampl, self.center, self.width,
-                                        self.slope))
+        model.RegriddableModel1D.__init__(self, name,
+                                          (self.ampl, self.center, self.width,
+                                           self.slope))
 
     def calc(self, pars, x, *args, **kwargs):
         """Evaluate the model"""

@@ -20,12 +20,14 @@ The sherpa.models.model module
       FilterModel
       MultigridSumModel
       NestedModel
+      RegriddableModel1D
+      RegriddableModel2D
       SimulFitModel
       UnaryOpModel
    
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: Model ArithmeticConstantModel ArithmeticFunctionModel ArithmeticModel CompositeModel BinaryOpModel FilterModel MultigridSumModel NestedModel SimulFitModel UnaryOpModel
+.. inheritance-diagram:: Model ArithmeticConstantModel ArithmeticFunctionModel ArithmeticModel CompositeModel BinaryOpModel FilterModel MultigridSumModel NestedModel RegriddableModel1D RegriddableModel2D SimulFitModel UnaryOpModel
    :parts: 1
    
