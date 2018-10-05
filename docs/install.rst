@@ -115,7 +115,7 @@ The prerequisites for building from source are:
 
 * Python versions: 2.7, 3.5, 3.6
 * Python packages: ``setuptools``, ``numpy``
-* System: ``gcc``, ``g++``, ``gfortran``, ``make``, ``flex``,
+* System: ``gcc``, ``g++``, ``make``, ``flex``,
   ``bison`` (the aim is to support recent versions of these
   tools; please report problems to the
   `Sherpa issue tracker <https://github.com/sherpa/sherpa/issues/>`_).
@@ -127,6 +127,11 @@ test suite.
 The full Sherpa test suite requires the `mock` package (Python 2.7 only),
 `pytest`, and `pytest-xvfb`. These packages should be installed
 automatically for you by the test suite if they do not already exist.
+
+.. note::
+
+   As of the Sherpa 4.10.1 release, a Fortran compiled is no-longer
+   required to build Sherpa.
 
 Obtaining the source package
 ----------------------------
@@ -222,7 +227,7 @@ fail with errors about being unable to find the various XSPEC libraries,
 such as ``XSFunctions`` and ``XSModel``.
 
 The ``gfortran`` options should be adjusted if there are problems
-building or using the XSPEC module.
+using the XSPEC module.
 
 The current supported versions of XSPEC are 12.9.0 and
 12.9.1 (although not all models in the later versions are currently
