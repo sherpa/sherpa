@@ -1,5 +1,85 @@
 Release Notes
 
+Sherpa 4.10.1
+=============
+
+This release fixes several bugs and introduces a few new features, notably the ability to evaluate model components on
+arbitrary grids and generate user-defined ARFs and RMFs. Also, as of this release Sherpa will no longer rely on any
+Fortran code. See the following section for details.
+
+It is now possible to build the Sherpa documentation using Sphinx. Additionally, the Sphinx documentation is
+automatically built and hosted on ReadTheDocs: https://sherpa.readthedocs.io/
+
+Details
+-------
+
+#407 Ensure 0-length array is an error in filter_resp (fix #405)
+    Add an explicit check in the C++ filter_resp code to error out if the noticed channels array
+    is empty.
+
+#422 Improve error message with wrong xspec version
+    Improve the handling of XSPEC versions mismatch.
+
+#444 Improve caching
+    When fitting multiple datasets simultaneously Sherpa now tries to cache model evaluations
+    to improve performance.
+
+#466 Fix bounding box out-of-bounds memory read
+    Avoid an out-of-bounds memory read when calling pad_bounding_box (when the data is not
+    matching the expected conditions for this call).
+
+#469 Evaluate model on finer grid
+    Sherpa users can now define arbitrary grids, called evaluation spaces, on which to
+    evaluate individual model components, both in 1D and 2D. This can be useful in a number
+    of cases, for instance when it is desirable to evaluate models on a finer grid than the one
+    defined by the data, or in convolution models where information outside of the data range
+    can be used to reduce boundary effects or to inform the evaluation inside the data space.
+    Also, when plotting individual 1D model components (plot_source_component), if a specific
+    evaluation space was attached to the model then the plot will be of the model evaluated
+    over that evaluation space, not the data space. Other plotting commands should be
+    unaffected by this change.
+
+#470 Order for np.ones() should be a one length string not a bool
+    Fixed a `DeprecationWarning` in the optimization module.
+
+#471 Using overwrite rather than clobber of astropy.io.fits
+    `clobber` in astropy has been deprecated for a while now in favour of overwrite and thus
+    issues a `DeprecationWarning`. Sherpa now uses `overwrite` instead.
+
+#475 Fix unecessary runtime warning (fix #402)
+    A condition check in the optimization code was modified so as not to produce a warning
+    when the value is a NaN.
+
+#481 Remove Fortran code
+    Sherpa does not rely on any Fortran routines anymore, except those compiled in XSPEC.
+    The existing Fortran code, which was used mainly in some of the optimization routines, has
+    been replaced by equivalent C++ code. This means that gfortran is no longer required for
+    building Sherpa, although a version of libgfortran compatible with the one used to link the
+    XSPEC libraries would still be needed at runtime if the XSPEC extension is
+    built.
+
+#482 ARF/RMF creation functions
+    The `create_rmf` and `create_arf` functions now allow users to easily generate user
+    defined response objects.
+
+#486 `ZeroDivisionError` in `calc_stat_info` (fix #476)
+    Sherpa did not catch divisions by zero in the calc_stat_info command. That has been fixed.
+
+#484 Equivalent Width errors
+    Several optional arguments `(params=None, error=False, otherids=(), niter=1000)`, were
+    added to `eqwidth`. If `error = True`, then get_draws shall be run if the fit stat is one of the
+    following: (Cash,  CStat, WStat) otherwise a multivariate normal distribution shall be run to
+    generate the samples. The optional niter parameter is used to generate the number of
+    samples. The optional parameter otherids is only used if get_draws is used internally when
+    multiple data sets were used to fit. Alternatively, the user can enter the samples via the
+    `params` option where the samples must be a `numpy.ndarray` of dimension `(num, npar)`.
+
+#487 PSF bin size warning
+    Sherpa assumes that the PSF image and the data have the same pixel size. When this is
+    not true Sherpa ignores the difference, which results in a larger PSF being applied. From
+    now on Sherpa will issue a warning when the PSF image
+    pixel size and the data image pixel size are different.
+
 Sherpa 4.10.0
 =============
 This release of Standalone Sherpa corresponds to the Sherpa code released as part of CIAO 4.10.
