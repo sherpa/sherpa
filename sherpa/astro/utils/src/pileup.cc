@@ -580,6 +580,10 @@ init_kernel(pileup_kernel_t *k, const double* arf_source,
   if ( NULL == (k->results = XMALLOC (NUM_POINTS, double)))
     return NULL;
   k->pileup_fractions = pileup_fractions;
+
+  // Ensure fields have been set in case the first XMALLOC fails.
+  k->arf_s_tmp = NULL;
+  k->arf_s_fft_tmp = NULL;
   
   if ((NULL == (k->arf_s_fft = XMALLOC (4*NUM_POINTS, double)))
       || (NULL == (k->arf_s_tmp = XMALLOC (NUM_POINTS, double)))
