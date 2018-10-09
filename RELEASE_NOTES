@@ -20,10 +20,6 @@ Details
 #422 Improve error message with wrong xspec version
     Improve the handling of XSPEC versions mismatch.
 
-#444 Improve caching
-    When fitting multiple datasets simultaneously Sherpa now tries to cache model evaluations
-    to improve performance.
-
 #466 Fix bounding box out-of-bounds memory read
     Avoid an out-of-bounds memory read when calling pad_bounding_box (when the data is not
     matching the expected conditions for this call).
