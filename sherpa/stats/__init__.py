@@ -594,7 +594,8 @@ class Chi2Gehrels(Chi2):
     def __init__(self, name='chi2gehrels'):
         Chi2.__init__(self, name)
 
-    def calc_staterror(self, data):
+    @staticmethod
+    def calc_staterror(data):
         return _statfcts.calc_chi2gehrels_errors(data)
 
 
@@ -615,7 +616,8 @@ class Chi2ConstVar(Chi2):
     def __init__(self, name='chi2constvar'):
         Chi2.__init__(self, name)
 
-    def calc_staterror(self, data):
+    @staticmethod
+    def calc_staterror(data):
         return _statfcts.calc_chi2constvar_errors(data)
 
 
@@ -645,7 +647,8 @@ class Chi2DataVar(Chi2):
     def __init__(self, name='chi2datavar'):
         Chi2.__init__(self, name)
 
-    def calc_staterror(self, data):
+    @staticmethod
+    def calc_staterror(data):
         return _statfcts.calc_chi2datavar_errors(data)
 
 
@@ -704,7 +707,8 @@ class Chi2XspecVar(Chi2):
     def __init__(self, name='chi2xspecvar'):
         Chi2.__init__(self, name)
 
-    def calc_staterror(self, data):
+    @staticmethod
+    def calc_staterror(data):
         return _statfcts.calc_chi2xspecvar_errors(data)
 
 
