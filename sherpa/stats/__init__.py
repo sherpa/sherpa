@@ -1,6 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2017, 2018
-#             Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -864,7 +863,7 @@ class WStat(Likelihood):
         # original code used this approach.
         #
         data_src = []
-        data_model = data.eval_model_to_fit(model)
+        data_model = []
         data_bkg = []
         nelems = []
         exp_src = []
@@ -875,6 +874,7 @@ class WStat(Likelihood):
 
             y = dset.to_fit(staterrfunc=None)[0]
             data_src.append(y)
+            data_model.append(dset.eval_model_to_fit(mexpr))
             nelems.append(y.size)
 
             try:
@@ -952,6 +952,7 @@ class WStat(Likelihood):
             exp_bkg.append(bset.exposure * ascal)
 
         data_src = numpy.concatenate(data_src)
+        data_model = numpy.concatenate(data_model)
         exp_src = numpy.concatenate(exp_src)
         exp_bkg = numpy.concatenate(exp_bkg)
         data_bkg = numpy.concatenate(data_bkg)
