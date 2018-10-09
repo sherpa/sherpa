@@ -16,10 +16,10 @@ the code you are using - in particular for Sherpa, NumPy, and Python. The
 Sherpa version can be found using
 
     $ python -c 'import sherpa; print(sherpa.__version__)'
-    40701
+    4.10.0
 
 When using a development version of Sherpa, the value will include the
-Git commit. An example of this is ``4.7+524.g2d013d1``.
+Git commit. An example of this is ``4.10.0+177.g3540951``.
 
 Contributing code
 -----------------
@@ -49,9 +49,9 @@ include the following:
   platforms/configurations). If you have questions about how the tests in
   Sherpa are arranged, please include them in your pull request.
 
-- **Documentation**: at present, the documentation is limited to Python
-  docstrings, but it is expected that more-extensive documentation will
-  be added soon (in the ``docs/`` directory).
+- **Documentation**: documentation consists of Python docstrings and a
+  manual in the ``docs/`` directory built using Sphinx. The documentation
+  is hosted on the [Sherpa Read The Docs site](https://sherpa.readthedocs.io/).
 
 - **Changelog entry**: unlike AstroPy, we do not have a "change log" file.
   Instead, we ask that the Pull Request include the relevant information,
@@ -96,16 +96,14 @@ Example: new functionality, such as
 
 **Software versions**
 
-At present Sherpa is built using Python 2.7, but there are plans to support
-Python 3 in the near future (this will be tracked in
-[issue #76](https://github.com/sherpa/sherpa/issues/76)).
+Development should use Python 3.5 or later (Sherpa does support Python 2.7, 
+but this will be dropped soon).
 
 Ideally, NumPy support should be 1.6 or greater, but please include a comment
 if you need to restrict (or relax) this further.
 
-Currently Sherpa requires both a C and Fortran compiler, along with
-related tools, to build. Additional dependencies must be highlighted,
-and should be made optional if at all possible.
+Sherpa requires a C compiler, along with related tools, to build. Additional
+dependencies must be highlighted, and should be made optional if at all possible.
 
 **Testing**
 
