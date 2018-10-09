@@ -1,5 +1,5 @@
 Original Sherpa and CIAO code is
-Copyright (c) 2004-2015 Smithsonian Astrophysical Observatory
+Copyright (c) 2004-2018 Smithsonian Astrophysical Observatory
 
 Sherpa is released under the terms of the GNU General Public Licence (GPL)
 Version 3 (or at your option any later version).
@@ -69,5 +69,5 @@ Argonne National Laboratory, under the terms described at:
 http://netlib.org/minpack/disclaimer
 
 The rebinning code for 2D images was taken from a blog post by Martyn Brystow:
-? Martyn Bristow 2015, and licensed under GPL v3
+copyright Martyn Bristow 2015, and licensed under GPL v3
 http://martynbristow.co.uk/wordpress/blog/rebinning-data/
