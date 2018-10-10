@@ -75,14 +75,10 @@ class test_plot(SherpaTestCase):
                           stats.Chi2Gehrels(),
                           stats.Chi2ModVar(),
                           stats.Chi2XspecVar(),
-                          pytest.param(stats.LeastSq(),
-                                       marks=pytest.mark.xfail),
-                          pytest.param(stats.Cash(),
-                                       marks=pytest.mark.xfail),
-                          pytest.param(stats.CStat(),
-                                       marks=pytest.mark.xfail),
-                          pytest.param(stats.WStat(),
-                                       marks=pytest.mark.xfail),
+                          stats.LeastSq(),
+                          stats.Cash(),
+                          stats.CStat(),
+                          stats.WStat(),
                          ])
 def test_astro_data_plot_with_stat_simple(make_data_path, stat):
 
