@@ -37,6 +37,9 @@ include sherpa/optmethods/tests/tstopt.hh
 include sherpa/sherpa.rc
 include sherpa/sherpa-standalone.rc
 
+# Sphinx documentation
+recursive-include docs *
+
 # Quick Start Tutorial
 include notebooks/SherpaQuickStart.ipynb
 
