@@ -19,23 +19,6 @@ from __future__ import print_function
 #
 
 
-# ##
-# Check that numpy is installed and with a good version
-###
-try:
-    import imp
-
-    imp.find_module('numpy')
-except ImportError:
-    import sys
-
-    print((
-        "You need to install NUMPY in order to build Sherpa\n"
-        "Other dependencies will be automatically installed\n"
-        "Please install NUMPY (e.g. pip install numpy) and try again."
-    ), file=sys.stderr)
-    sys.exit(2)
-
 try:
     import setuptools
 except:
@@ -46,7 +29,23 @@ except:
         "Could not import setuptools.\n"
         "This might lead to an incomplete installation\n"
     ), file=sys.stderr)
-from numpy.distutils.core import setup
+
+# The module used to try to find the numpy module and error out if
+# that could not be found, but it seems simpler to just error out
+# here.
+#
+try:
+    from numpy.distutils import core
+
+except ImportError:
+    import sys
+
+    print((
+        "You need to install NUMPY in order to build Sherpa\n"
+        "Other dependencies will be automatically installed\n"
+        "Please install NUMPY (e.g. pip install numpy) and try again."
+    ), file=sys.stderr)
+    sys.exit(2)
 
 from helpers.extensions import static_ext_modules
 
@@ -135,4 +134,4 @@ meta = dict(name='sherpa',
                 ],
             )
 
-setup(**meta)
+core.setup(**meta)
