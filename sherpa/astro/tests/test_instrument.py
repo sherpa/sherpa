@@ -43,12 +43,12 @@ from sherpa.models.model import ArithmeticModel, \
     ArithmeticConstantModel, BinaryOpModel
 from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     Response1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
-    RSPModelNoPHA, RSPModelPHA
+    RSPModelNoPHA, RSPModelPHA, create_arf, create_delta_rmf
 from sherpa.fit import Fit
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.models.basic import Const1D, Polynom1D, PowLaw1D
 from sherpa.utils.err import DataErr
-from sherpa.utils.testing import requires_xspec
+from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
 
 try:
     from sherpa.astro.xspec import XSconstant
@@ -66,99 +66,6 @@ def validate_zero_replacement(ws, rtype, label, ethresh):
     emsg = "The minimum ENERG_LO in the {} '{}' ".format(rtype, label) + \
            "was 0 and has been replaced by {}".format(ethresh)
     assert str(w.message) == emsg
-
-
-# Create instrument responses for testing.
-#
-def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None):
-    """Create an ARF.
-
-    Parameters
-    ----------
-    elo, ehi : array
-        The energy bins (low and high, in keV) for the ARF. It is
-        assumed that ehi_i > elo_i, elo_j > 0, the energy bins are
-        either ascending - so elo_i+1 > elo_i - or descending
-        (elo_i+1 < elo_i), and that there are no overlaps.
-    specresp : None or array, optional
-        The spectral response (in cm^2) for the ARF. It is assumed
-        to be >= 0. If not given a flat response of 1.0 is used.
-    exposure : number or None, optional
-        If not None, the exposure of the ARF in seconds.
-    ethresh : number or None, optional
-        Passed through to the DataARF call. It controls whether
-        zero-energy bins are replaced.
-
-    Returns
-    -------
-    arf : DataARF instance
-
-    """
-
-    assert elo.size == ehi.size
-    assert (exposure is None) or (exposure > 0.0)
-
-    if specresp is None:
-        specresp = np.ones(elo.size, dtype=np.float32)
-
-    return DataARF('test-arf', energ_lo=elo, energ_hi=ehi,
-                   specresp=specresp, exposure=exposure, ethresh=ethresh)
-
-
-def create_delta_rmf(rmflo, rmfhi, startchan=1,
-                     e_min=None, e_max=None, ethresh=None):
-    """Create a RMF for a delta-function response.
-
-    This is a "perfect" (delta-function) response.
-
-    Parameters
-    ----------
-    rmflo, rmfhi : array
-        The energy bins (low and high, in keV) for the RMF.
-        It is assumed that emfhi_i > rmflo_i, rmflo_j > 0, that the energy
-        bins are either ascending, so rmflo_i+1 > rmflo_i or descending
-        (rmflo_i+1 < rmflo_i), and that there are no overlaps.
-        These correspond to the Elow and Ehigh columns (represented
-        by the ENERG_LO and ENERG_HI columns of the MATRIX block) of
-        the OGIP standard.
-    startchan : int, optional
-        The starting channel number: expected to be 0 or 1 but this is
-        not enforced.
-    e_min, e_max : None or array, optional
-        The E_MIN and E_MAX columns of the EBOUNDS block of the
-        RMF.
-    ethresh : number or None, optional
-        Passed through to the DataARF call. It controls whether
-        zero-energy bins are replaced.
-
-    Returns
-    -------
-    rmf : DataRMF instance
-
-    Notes
-    -----
-    I do not think I have the startchan=0 case correct (does the
-    f_chan array have to change?).
-    """
-
-    assert rmflo.size == rmfhi.size
-    assert startchan >= 0
-
-    # Set up the delta-function response.
-    # TODO: should f_chan start at startchan?
-    #
-    nchans = rmflo.size
-    matrix = np.ones(nchans, dtype=np.float32)
-    dummy = np.ones(nchans, dtype=np.int16)
-    f_chan = np.arange(1, nchans + 1, dtype=np.int16)
-
-    return DataRMF('delta-rmf', detchans=nchans,
-                   energ_lo=rmflo, energ_hi=rmfhi,
-                   n_grp=dummy, n_chan=dummy,
-                   f_chan=f_chan, matrix=matrix,
-                   offset=startchan,
-                   e_min=e_min, e_max=e_max,
-                   ethresh=ethresh)
 
 
 def get_non_delta_matrix():
@@ -1769,3 +1676,19 @@ def test_rsp1d_matrix_pha_zero_energy_bin():
     f = Fit(pha, wrapped)
     ans = f.calc_stat()
     assert ans == pytest.approx(37971.8716151947)
+
+
+@requires_data
+@requires_fits
+def test_create_rmf(make_data_path):
+    from sherpa.astro.ui.utils import Session
+    ui = Session()
+    energ = np.arange(0.05, 1.1, 0.05)
+    rmflo = energ[:-1]
+    rmfhi = energ[1:]
+    fname= make_data_path('test_rmfimg.fits')
+    datarmf = ui.create_rmf(rmflo, rmfhi, fname=fname)
+    assert len(datarmf._fch) == 1039
+    assert len(datarmf._nch) == 1039
+    assert len(datarmf.n_grp) == 900
+    assert datarmf._rsp.shape[0] == 380384
