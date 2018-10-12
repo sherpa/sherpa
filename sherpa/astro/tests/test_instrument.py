@@ -275,7 +275,7 @@ def test_arf1d_no_pha_no_exposure_basic():
     assert arf._pha is None
 
     # Does the ARF1D pass through functionality to the DataARF?
-    assert arf.name == 'test-arf'
+    assert arf.name == 'user-arf'
     assert arf.exposure is None
     assert str(arf) == str(adata)
 
@@ -1369,7 +1369,7 @@ def test_arf1d_no_pha_zero_energy_bin():
     with pytest.raises(DataErr) as exc:
         create_arf(elo, ehi, specresp, exposure=exposure)
 
-    emsg = "The ARF 'test-arf' has an ENERG_LO value <= 0"
+    emsg = "The ARF 'user-arf' has an ENERG_LO value <= 0"
     assert str(exc.value) == emsg
 
 
@@ -1389,7 +1389,7 @@ def test_arf1d_no_pha_zero_energy_bin_replace():
         adata = create_arf(elo, ehi, specresp, exposure=exposure,
                            ethresh=ethresh)
 
-    validate_zero_replacement(ws, 'ARF', 'test-arf', ethresh)
+    validate_zero_replacement(ws, 'ARF', 'user-arf', ethresh)
 
     arf = ARF1D(adata)
 
@@ -1426,7 +1426,7 @@ def test_arf1d_pha_zero_energy_bin():
         adata = create_arf(elo, ehi, specresp, exposure=exposure1,
                            ethresh=ethresh)
 
-    validate_zero_replacement(ws, 'ARF', 'test-arf', ethresh)
+    validate_zero_replacement(ws, 'ARF', 'user-arf', ethresh)
 
     arf = ARF1D(adata)
 
@@ -1553,7 +1553,7 @@ def test_rsp1d_delta_no_pha_zero_energy_bin():
         adata = create_arf(elo, ehi, specresp, exposure=exposure,
                            ethresh=ethresh)
 
-    validate_zero_replacement(ws, 'ARF', 'test-arf', ethresh)
+    validate_zero_replacement(ws, 'ARF', 'user-arf', ethresh)
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
@@ -1593,7 +1593,7 @@ def test_rsp1d_delta_pha_zero_energy_bin():
         adata = create_arf(elo, ehi, specresp, exposure=exposure1,
                            ethresh=ethresh)
 
-    validate_zero_replacement(ws, 'ARF', 'test-arf', ethresh)
+    validate_zero_replacement(ws, 'ARF', 'user-arf', ethresh)
 
     with warnings.catch_warnings(record=True) as ws:
         warnings.simplefilter("always")
@@ -1652,7 +1652,7 @@ def test_rsp1d_matrix_pha_zero_energy_bin():
                            exposure=exposure_arf,
                            ethresh=ethresh)
 
-    validate_zero_replacement(ws, 'ARF', 'test-arf', ethresh)
+    validate_zero_replacement(ws, 'ARF', 'user-arf', ethresh)
 
     nchans = rdata.e_min.size
     channels = np.arange(1, nchans + 1, dtype=np.int16)
