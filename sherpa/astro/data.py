@@ -68,13 +68,13 @@ class myCacheARF:
         self.cache = {}
         self.queue = ['']
 
-    def __call__(self, name, src, rsp):
-        tmp = b''.join([name.encode(), src.tostring()])
+    def __call__(self, src, rsp):
+        tmp = b''.join([src.tostring(), rsp.tostring()])
         digest = hashlib.sha256(tmp).digest()
         if digest in self.cache:
             return self.cache[digest]
         else:
-            val = self.func(name, src, rsp)
+            val = self.func(src, rsp)
             key = self.queue.pop(0)
             self.cache.pop(key, None)
             self.queue.append(digest)
@@ -83,7 +83,7 @@ class myCacheARF:
 
 
 @myCacheARF
-def my_arf_fold(name, a, b):
+def my_arf_fold(a, b):
     return arf_fold(a, b)
 
 def _notice_resp(chans, arf, rmf):
@@ -342,7 +342,7 @@ class DataARF(DataOgipResponse):
 
         # an external function must be called so all ARFs go through
         # a single entry point in order for caching to 'work'
-        model = my_arf_fold(self.name, src, self._rsp)
+        model = my_arf_fold(src, self._rsp)
 
         # Rebin the high-res source model folded through ARF down to the size
         # the PHA or RMF expects.
