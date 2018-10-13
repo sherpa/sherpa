@@ -29,130 +29,11 @@ def clean(xs):
     return [x for x in xs if x != '']
 
 
-def _get_xspec_version(libname, mode=0):
-    """Call xs_getVersion provided by the library.
-
-    Parameters
-    ----------
-    libname : str
-        The full name to the library; passed to ctypes.CDLL
-    mode : int, optional
-        The mode parameter sent to ctypes.CDLL
-
-    Returns
-    -------
-    ver : str or None
-        Returns the version string of XSPEC or, if there is a problem,
-        None.
-
-    """
-
-    import ctypes
-
-    # This would likely need to be updated if we supported building outside
-    # of Linux or OS-X.
-    try:
-        xslib = ctypes.CDLL(libname, mode=mode)
-        version = b" "*256  # Is there a better way?
-        xslib.xs_getVersion(version, len(version))
-        return version.decode('ascii').rstrip(' \t\r\n\0')
-
-    except:
-        return None
-
-
-def _find_xspec_version_1210(library_folders, library_extension,
-                             cfitsio='cfitsio', ccfits='CCfits'):
-    """Find the XSPEC version in XSPEC 12.10 (and hopefully later).
-
-    Parameters
-    ----------
-    library_folders : list of str
-        The directories to look in.
-    library_extension : str
-        The extenssion of the dylib (expected to be 'so' or 'dylib').
-    cfitsio , ccfits : str or None, optional
-        The name of the cfitsio and ccfits libraries (this is the library
-        name without the "lib" prefix and the ".xxx" suffix). If either
-        is set to None then no attempt to find the version is made.
-
-    Returns
-    -------
-    version : str or None
-        None is returned if the version could not be found.
-
-    """
-
-    import ctypes
-
-    if cfitsio is None or ccfits is None:
-        return None
-
-    # Following the approach of
-    # https://github.com/sherpa/sherpa/issues/436#issuecomment-371944527
-    # which requires installing a lot of symbols into the global name space.
-    #
-    # This feels very fragile.
-    #
-    for name in [cfitsio, ccfits, 'XSUtil']:
-        for folder in library_folders:
-            libname = os.path.join(folder,
-                                   "lib{}.{}".format(name, library_extension))
-            try:
-                ctypes.CDLL(libname, mode=ctypes.RTLD_GLOBAL)
-                break
-            except:
-                pass
-
-        else:
-            # Unable to load this library; no point in continuing
-            return None
-
-    library_base_name = 'libXSFunctions'
-    library_name = '{}.{}'.format(library_base_name, library_extension)
-
-    for folder in library_folders:
-        libname = os.path.join(folder, library_name)
-        ver = _get_xspec_version(libname, mode=1)
-        if ver is not None:
-            return ver
-
-    return None
-
-
-def _find_xspec_version_129x(library_folders, library_extension):
-    """Find the XSPEC version in XSPEC 12.9.x.
-
-    Parameters
-    ----------
-    library_folders : list of str
-        The directories to look in.
-    library_extension : str
-        The extenssion of the dylib (expected to be 'so' or 'dylib').
-
-    Returns
-    -------
-    version : str or None
-        None is returned if the version could not be found.
-
-    """
-
-    library_base_name = 'libXSUtil'
-    library_name = '{}.{}'.format(library_base_name, library_extension)
-
-    for folder in library_folders:
-        libname = os.path.join(folder, library_name)
-        ver = _get_xspec_version(libname)
-        if ver is not None:
-            return ver
-
-    return None
-
-
 class xspec_config(Command):
     description = "Configure XSPEC Models external module (optional) "
     user_options = [
                     ('with-xspec', None, "Whether sherpa must build the XSPEC module (default False)"),
+                    ('xspec-version', None, "the XSPEC version (default 12.9.0)"),
                     ('xspec-lib-dirs', None, "Where the xspec libraries are located, if with-xspec is True"),
                     ('xspec-libraries', None, "Name of the libraries that should be linked for xspec"),
                     ('cfitsio-lib-dirs', None, "Where the cfitsio libraries are located, if with-xspec is True"),
@@ -167,6 +48,7 @@ class xspec_config(Command):
 
     def initialize_options(self):
         self.with_xspec = False
+        self.xspec_version = '12.9.0'
         self.xspec_include_dirs = ''
         self.xspec_lib_dirs = ''
         self.xspec_libraries = 'XSFunctions XSModel XSUtil XS'
@@ -221,10 +103,7 @@ class xspec_config(Command):
             except IndexError:
                 ccfits = None
 
-            xspec_raw_version = self._find_xspec_version(ld,
-                                                         cfitsio=cfitsio,
-                                                         ccfits=ccfits
-                                                         )
+            xspec_raw_version = self.xspec_version
 
             macros = []
 
@@ -257,22 +136,3 @@ class xspec_config(Command):
                 dist_packages.remove(package)
             if package in dist_data:
                 del dist_data[package]
-
-    def _find_xspec_version(self, library_folders,
-                            cfitsio=None,
-                            ccfits=None):
-        """Try and find the XSPEC version."""
-
-        # Determining the full library name according to the platform.
-        # I couldn't find a simpler, more portable way of doing this.
-        if sys.platform == 'darwin':
-            library_extension = 'dylib'
-        else:  # assume linux
-            library_extension = 'so'
-
-        ver = _find_xspec_version_1210(library_folders, library_extension,
-                                       cfitsio=cfitsio, ccfits=ccfits)
-        if ver is not None:
-            return ver
-
-        return _find_xspec_version_129x(library_folders, library_extension)
