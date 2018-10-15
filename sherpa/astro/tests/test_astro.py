@@ -539,6 +539,16 @@ class test_threads(SherpaTestCase):
     def test_proj_bubble(self):
         self.run_thread('proj_bubble')
 
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        assert covarerr[0] == approx(0, rel=1e-4)
+        assert covarerr[1] == approx(8.74608e-07, rel=1e-3)
+        
+        # Fit -- Results from reminimize
+        assert self.locals['mek1'].kt.val == approx(17.8849, rel=1e-2)
+        self.assertEqualWithinTol(self.locals['mek1'].norm.val, 4.15418e-06,
+                                  1e-2)
+
         # Fit -- Results from reminimize
 
         # TODO: given that some valurs << 1e-2 using atol=1e-2 is not
