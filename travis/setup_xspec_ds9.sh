@@ -23,7 +23,7 @@ then
 
 else  # osx
     ds9_os=darwinsierra
-    xspec_root=$miniconda/envs/build/Xspec/x86_64-apple-darwin16.7.0
+    xspec_root=$miniconda/envs/build/Xspec/x86_64-apple-darwin16.3.0
     export DYLD_LIBRARY_PATH=${xspec_root}/lib
 
     # It looks like on macs numpy does not bring in the dependency with libgfortran-ng,
