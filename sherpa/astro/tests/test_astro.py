@@ -704,3 +704,22 @@ class test_threads(SherpaTestCase):
         etol = EMIN / 100.0
         assert rmf.energ_lo[0] == approx(EMIN, rel=etol)
         assert arf.energ_lo[0] == approx(EMIN, rel=etol)
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_missmatch_arf(make_data_path):
+    ui.load_pha(1, make_data_path("source1.pi"))
+    ui.load_bkg(1, make_data_path("back1.pi"))
+    ui.load_arf(1, make_data_path("arf_1024.fits"))
+    ui.load_rmf(1, make_data_path("rmf_1024.fits"))
+    ui.set_method('levmar')
+    ui.set_model(ui.powlaw1d.p1 * ui.xswabs.abs1)
+    ui.set_par('p1.ampl', 0.0001)
+    ui.set_stat('cash')
+    ui.fit()
+    parvals = ui.get_fit_results().parvals
+    assert parvals[0] == approx(1.47969, rel=1.0e-3)
+    assert parvals[1] == approx(0.0019491, rel=1.0e-3)
+    assert parvals[2] == approx(2.35452, rel=1.0e-3)
+
