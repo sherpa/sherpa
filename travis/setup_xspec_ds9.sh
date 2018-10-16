@@ -60,6 +60,9 @@ xpec_include_path=${xspec_root}/include/
 sed -i.orig "s/#with-xspec=True/with-xspec=True/g" setup.cfg
 sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=${xspec_library_path}|g" setup.cfg
 sed -i.orig "s|#xspec_include_dirs = None|xspec_include_dirs=${xpec_include_path}|g" setup.cfg
+sed -i.orig "s/#cfitsio_libraries/cfitsio_libraries/g" setup.cfg
+sed -i.orig "s/#ccfits_libraries/ccfits_libraries/g" setup.cfg
+sed -i.orig "s/#wcslib_libraries/wcslib_libraries/g" setup.cfg
 sed -i.orig "s|#gfortran_libraries = gfortran|gfortran_libraries= ${libgfortran_name}|g" setup.cfg
 
 case "${XSPECVER}" in

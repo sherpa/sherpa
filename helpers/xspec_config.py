@@ -54,16 +54,16 @@ class xspec_config(Command):
         self.xspec_libraries = 'XSFunctions XSModel XSUtil XS'
         self.cfitsio_include_dirs = ''
         self.cfitsio_lib_dirs = ''
-        self.cfitsio_libraries = 'cfitsio'
+        self.cfitsio_libraries = ''
         self.ccfits_include_dirs = ''
         self.ccfits_lib_dirs = ''
-        self.ccfits_libraries = 'CCfits'
+        self.ccfits_libraries = ''
         self.wcslib_include_dirs = ''
         self.wcslib_lib_dirs = ''
-        self.wcslib_libraries = 'wcs'
+        self.wcslib_libraries = ''
         self.gfortran_include_dirs = ''
         self.gfortran_lib_dirs = ''
-        self.gfortran_libraries = 'gfortran'
+        self.gfortran_libraries = ''
 
     def finalize_options(self):
         pass
