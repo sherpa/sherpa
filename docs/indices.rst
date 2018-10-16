@@ -144,3 +144,6 @@ Glossary
        built with support for the
        `models from XSPEC
        <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixExternal.html>`_.
+
+       Sherpa can be built to use XSPEC versions 12.10.0, 12.9.1, or
+       12.9.0.
