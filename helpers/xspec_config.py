@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014-2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014-2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,6 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import sys
+import os
+
 from distutils.version import LooseVersion
 from numpy.distutils.core import Command
 from .extensions import build_ext, build_lib_arrays
@@ -25,10 +28,12 @@ def clean(xs):
     "Remove all '' entries from xs, returning the new list."
     return [x for x in xs if x != '']
 
+
 class xspec_config(Command):
     description = "Configure XSPEC Models external module (optional) "
     user_options = [
                     ('with-xspec', None, "Whether sherpa must build the XSPEC module (default False)"),
+                    ('xspec-version', None, "the XSPEC version (default 12.9.0)"),
                     ('xspec-lib-dirs', None, "Where the xspec libraries are located, if with-xspec is True"),
                     ('xspec-libraries', None, "Name of the libraries that should be linked for xspec"),
                     ('cfitsio-lib-dirs', None, "Where the cfitsio libraries are located, if with-xspec is True"),
@@ -43,21 +48,22 @@ class xspec_config(Command):
 
     def initialize_options(self):
         self.with_xspec = False
+        self.xspec_version = '12.9.0'
         self.xspec_include_dirs = ''
         self.xspec_lib_dirs = ''
         self.xspec_libraries = 'XSFunctions XSModel XSUtil XS'
         self.cfitsio_include_dirs = ''
         self.cfitsio_lib_dirs = ''
-        self.cfitsio_libraries = 'cfitsio'
+        self.cfitsio_libraries = ''
         self.ccfits_include_dirs = ''
         self.ccfits_lib_dirs = ''
-        self.ccfits_libraries = 'CCfits'
+        self.ccfits_libraries = ''
         self.wcslib_include_dirs = ''
         self.wcslib_lib_dirs = ''
-        self.wcslib_libraries = 'wcs'
+        self.wcslib_libraries = ''
         self.gfortran_include_dirs = ''
         self.gfortran_lib_dirs = ''
-        self.gfortran_libraries = 'gfortran'
+        self.gfortran_libraries = ''
 
     def finalize_options(self):
         pass
@@ -84,7 +90,20 @@ class xspec_config(Command):
             inc = clean(inc1 + inc2 + inc3 + inc4 + inc5)
             l = clean(l1 + l2 + l3 + l4 + l5)
 
-            xspec_raw_version = self._find_xspec_version(ld)
+            # I do not know if l2/l3 are guaranteed to be indexable
+            # entries with at least one element in them.
+            #
+            try:
+                cfitsio = l2[0]
+            except IndexError:
+                cfitsio = None
+
+            try:
+                ccfits = l3[0]
+            except IndexError:
+                ccfits = None
+
+            xspec_raw_version = self.xspec_version
 
             macros = []
 
@@ -100,8 +119,13 @@ class xspec_config(Command):
                 if xspec_version >= LooseVersion("12.9.1"):
                     macros += [('XSPEC_12_9_1', None)]
 
-                if xspec_version >= LooseVersion("12.9.2"):
-                    self.warn("XSPEC Version is greater than 12.9.1, which is the latest supported version for Sherpa")
+                if xspec_version >= LooseVersion("12.10.0"):
+                    macros += [('XSPEC_12_10_0', None)]
+
+                # Since there are patches (e.g. 12.10.0c), look for the
+                # "next highest version.
+                if xspec_version >= LooseVersion("12.10.1"):
+                    self.warn("XSPEC Version is greater than 12.10.0, which is the latest supported version for Sherpa")
 
             extension = build_ext('xspec', ld, inc, l, define_macros=macros)
 
@@ -112,28 +136,3 @@ class xspec_config(Command):
                 dist_packages.remove(package)
             if package in dist_data:
                 del dist_data[package]
-
-    def _find_xspec_version(self, library_folders):
-        import ctypes
-        import os
-        import sys
-
-        # Determining the full library name according to the platform.
-        # I couldn't find a simpler, more portable way of doing this.
-        library_base_name = 'libXSUtil'
-        if sys.platform == 'darwin':
-            library_extension = 'dylib'
-        else:  # assume linux
-            library_extension = 'so'
-
-        library_name = '{}.{}'.format(library_base_name, library_extension)
-
-        for folder in library_folders:
-            try:
-                xsutil = ctypes.CDLL(os.path.join(folder, library_name))  # Less general than rest of code
-                version = b" "*256  # Is there a better way?
-                xsutil.xs_getVersion(version, len(version))
-                return version.decode('ascii').rstrip(' \t\r\n\0')
-            except:
-                pass
-        return None

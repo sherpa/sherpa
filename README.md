@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/sherpa/sherpa.svg?branch=master)](https://travis-ci.org/sherpa/sherpa)
+[![Documentation Status](https://readthedocs.org/projects/sherpa/badge/)](https://sherpa.readthedocs.io/)
 [![DOI](https://zenodo.org/badge/683/sherpa/sherpa.svg)](https://zenodo.org/badge/latestdoi/683/sherpa/sherpa)
 [![GPLv3+ License](https://img.shields.io/badge/license-GPLv3+-blue.svg)](https://www.gnu.org/copyleft/gpl.html)
 ![Python version](https://img.shields.io/badge/Python-2.7,3.5,3.6-green.svg?style=flat)
@@ -229,7 +230,7 @@ Source Build
 The prerequisites for building from source are:
 
  - Python: `setuptools`, `numpy`
- - System: `gcc`, `g++`, `gfortran`, `make`, `flex`, `bison`
+ - System: `gcc`, `g++`, `make`, `flex`, `bison`
 
 The full test suite requires the `mock`, `pytest >=3.3.0`, and `pytest-xvfb` packages,
 which should be installed automatically if needed.
@@ -254,12 +255,7 @@ There are two ways to download the source code:
 
  - directly from GitHub as a git repository
 
-**NOTE:** it is possible to build Sherpa with `fortran` compilers other than
-`gfortran`. While this is not supported, [PR #202](https://github.com/sherpa/sherpa/pull/202/files)
-shows how this can been accomplished with `g95` on `OS X` in a specific setup.
-Similar changes are probably required for other compilers or setups.
-The `fortran` extensions are compiled by
-[`f2py` via `numpy.distutils`](http://docs.scipy.org/doc/numpy-1.11.0/f2py/distutils.html).
+**NOTE:** As of Sherpa 4.10.1 a `fortran` compiler is no longer required to build Sherpa.
 
 ### 2a. Extract the source tarball
 
@@ -446,7 +442,7 @@ XSPEC
 Sherpa can be built with support for
 [`XSPEC`](https://heasarc.gsfc.nasa.gov/xanadu/xspec/), although
 support is not enabled by default. The current supported XSPEC versions
-are 12.9.0 and 12.9.1, and it is expected that it will build against
+are 12.10.0, 12.9.1, and 12.9.0, and it is expected that it will build against
 newer versions, but without support for new models or features.
 
 To build the XSPEC support in Sherpa, the `xspec_config` section of the
@@ -459,7 +455,21 @@ The remaining settings depend on how the XSPEC libraries have
 been built (in the examples below, environment variables are
 used, but the full path should be in your own copy of the file):
 
- 1. If the full XSPEC system has been built, then use
+ 1. If the full XSPEC 12.10.0 system has been built, then use
+
+        xspec_include_dirs = $HEADAS/include
+        xspec_lib_dirs = $HEADAS/lib
+        xspec_libraries = XSFunctions XSModel XSUtil XS hdsp_2.9
+        cfitsio_libraries = cfitsio
+        ccfits_libraries = CCfits_2.5
+        wcs_libraries = wcs-5.16
+
+    The environment variable `$HEADAS` should be expanded out, and the
+    version numbers of the `wcs`, `cfitsio`, and `CCfits` libraries
+    may need to be changed, depending on the version of XSPEC (the
+    values given above are valid for XSPEC 12.10.0).
+
+ 2. If the full XSPEC 12.9.x system has been built, then use
 
         xspec_include_dirs = $HEADAS/include
         xspec_lib_dirs = $HEADAS/lib
@@ -473,7 +483,7 @@ used, but the full path should be in your own copy of the file):
     may need to be changed, depending on the version of XSPEC (the
     values given above are valid for XSPEC 12.9.1).
 
- 2. Use the model-only build of XSPEC, which will also require
+ 3. Use the model-only build of XSPEC, which will also require
     building the
     [cfitsio](http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html),
     [CCfits](http://heasarc.gsfc.nasa.gov/docs/software/fitsio/ccfits/),
@@ -509,18 +519,18 @@ used, but the full path should be in your own copy of the file):
     have been issues seen using the CIAO binaries on certain OS X
     systems.
 
-In all cases, the same version of `gfortran` should be used to build
-Sherpa and XSPEC, in order to avoid possible incompatibilities.
-
 If there are problems building, or using, the module, then the other
 options may need to be set - in particular the `gfortran_lib_dirs` and
 `gfortran_libraries` settings.
 
+It is important that the `gfortran`-related options above point to a
+`libgfortran` library that is the same, or at least the same version,
+as the one that was used to build XSPEC itself. The `gfortran_libraries`
+option, in particular, can be used on Linux to set the specific name of
+the library, e.g. `:libgfortran.so.3`.
+
 In order for the module to work, the `HEADAS` environment variable has
-to be set in the shell from which the Python session is started.  For
-the CIAO-XSPEC build, `HEADAS` should be set to
-`$ASCDS_INSTALL/ots/spectral`, otherwise it is the parent directory of
-the `xspec_lib_dirs` directory.
+to be set in the shell from which the Python session is started.
 
 In order to check that the module is working, importing the
 `sherpa.astro.ui` module will no-longer warn you that the
@@ -529,7 +539,7 @@ such as:
 
     >>> from sherpa.astro import xspec
     >>> xspec.get_xsversion()
-    '12.9.1p'
+    '12.10.0'
 
 Other customization options
 ---------------------------

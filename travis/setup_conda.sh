@@ -10,12 +10,9 @@ if [[ ${TRAVIS_OS_NAME} == linux ]];
 then
     miniconda_os=Linux
     compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
-    sed -i.orig "s|#extra-fortran-link-flags=|extra-fortran-link-flags=-shared|" setup.cfg
 else  # osx
     miniconda_os=MacOSX
     compilers="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
-    # This is required on macOS when building with conda
-    sed -i.orig "s|#extra-fortran-link-flags=|extra-fortran-link-flags=-undefined dynamic_lookup -bundle|" setup.cfg
 
     # On macOS we also need the conda libx11 libraries used to build xspec
     # We also need to pin down ncurses, for now only on macos.

@@ -722,10 +722,10 @@ parameters are chosen to match the default values of the
 :py:class:`~sherpa.models.basic.Exp` parameters,
 where :math:`{\rm coeff} = -1` and :math:`{\rm offset} = 0`::
 
-    from sherpa.models.basic import ArithmeticModel
+    from sherpa.models.basic import RegriddableModel1D
     from sherpa.models.parameter import Parameter
     
-    class MyExp(ArithmeticModel):
+    class MyExp(RegriddableModel1D):
         """A simpler form of the Exp model.
     
         The model is f(x) = exp(a + b * x).
@@ -740,7 +740,7 @@ where :math:`{\rm coeff} = -1` and :math:`{\rm offset} = 0`::
             # as shown in the calc method.
             self._exp = Exp('hidden')
             
-            return ArithmeticModel.__init__(self, name, (self.a, self.b))
+            return RegriddableModel1D.__init__(self, name, (self.a, self.b))
     
         def calc(self, pars, *args, **kwargs):
             """Calculate the model"""

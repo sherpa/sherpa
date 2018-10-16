@@ -557,13 +557,19 @@ class RSPModelPHA(RSPModel):
     def calc(self, p, x, xhi=None, *args, **kwargs):
         # x could be channels or x, xhi could be energy|wave
 
-        bin_mask = self.rmf.bin_mask
-        if bin_mask is None:
-            src = self.model.calc(p, self.xlo, self.xhi)
+        if len(self.rmf._lo_unfiltered) > len(self.xlo):
+             xlo = self.rmf._lo_unfiltered
         else:
-            xlo = self.rmf._lo_unfiltered
+            xlo = self.xlo
+        if len(self.rmf._hi_unfiltered) > len(self.xhi):
             xhi = self.rmf._hi_unfiltered
-            src = self.model.calc(p, xlo, xhi)[bin_mask]
+        else:
+            xhi = self.xhi
+        src = self.model.calc(p, xlo, xhi)
+        bin_mask = self.rmf.bin_mask
+        if bin_mask is not None and \
+           (len(bin_mask) == len(xlo) and len(bin_mask) == len(xhi)):
+            src = src[bin_mask]
         src = self.arf.apply_arf(src, *self.arfargs)
         src = self.rmf.apply_rmf(src, *self.rmfargs)
 
@@ -1152,6 +1158,7 @@ class PSFModel(_PSFModel):
 
 def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-arf'):
     """Create an ARF.
+
     Parameters
     ----------
     elo, ehi : numpy.ndarray
@@ -1169,9 +1176,10 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
         zero-energy bins are replaced.
     name : str
         The name of the data set
+
     Returns
     -------
-    arf : DataARF instance
+    arf : sherpa.astro.data.DataARF instance
     """
 
     if specresp is None:

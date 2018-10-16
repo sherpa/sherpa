@@ -51,6 +51,7 @@ develop-eggs
 lib
 lib64
 __pycache__
+.pytest_cache
 
 # Installer logs
 pip-log.txt
@@ -109,4 +110,5 @@ extern/region-4.9/src/reglexer.c.tmp
 docs/_build
 **/api
 
+#generated from python setup.py test
 .pytest_cache
