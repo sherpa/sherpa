@@ -26,8 +26,6 @@ sherpa/astro/ui/tests/test_astro_ui_unit.py
 
 from sherpa import ui
 
-import pytest
-
 
 # This is part of #397
 #
@@ -51,7 +49,6 @@ def test_list_samplers_contents():
         assert expected in samplers
 
 
-@pytest.mark.xfail
 def test_all_has_no_repeated_elements():
     """Ensure __all__ does not contain repeated elements.
 
