@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2006-2010, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2006-2010, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 #
 
 
-"""
+r"""
 Interface for viewing images with the ds9 image viewer.
 Loosely based on XPA, by Andrew Williams.
 

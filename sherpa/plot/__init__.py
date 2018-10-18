@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1185,8 +1185,8 @@ class ChisqrPlot(ModelPlot):
         staterr = data.get_yerr(True, stat.calc_staterror)
 
         self.y = self._calc_chisqr(y, staterr)
-        self.ylabel = get_latex_for_string('\chi^2')
-        self.title = _make_title(get_latex_for_string('\chi^2'), data.name)
+        self.ylabel = get_latex_for_string(r'\chi^2')
+        self.title = _make_title(get_latex_for_string(r'\chi^2'), data.name)
 
     def plot(self, overplot=False, clearwindow=True):
         Plot.plot(self, self.x, self.y, title=self.title,
