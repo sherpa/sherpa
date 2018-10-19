@@ -18,9 +18,11 @@
 #
 
 import logging
+import os
 import warnings
 from numpy import sqrt
 from pytest import approx
+import pytest
 
 from numpy.testing import assert_allclose
 
@@ -209,9 +211,12 @@ class test_threads(SherpaTestCase):
         self.assertEqual(ui.get_fit_results().numpoints, 4881)
         self.assertEqual(ui.get_fit_results().dof, 4877)
 
+    # This has been moved to its own pytest-style test below (test_thread_pileup)
+    # but this has been left in for reference.
+    #
     @requires_fits
     @requires_xspec
-    def test_pileup(self):
+    def _test_pileup(self):
         self.run_thread('pileup')
 
         fr = ui.get_fit_results()
@@ -722,3 +727,168 @@ def test_missmatch_arf(make_data_path):
     assert parvals[0] == approx(1.47969, rel=1.0e-3)
     assert parvals[1] == approx(0.0019491, rel=1.0e-3)
     assert parvals[2] == approx(2.35452, rel=1.0e-3)
+
+
+# for running regression tests from sherpa-test-data
+#
+# This is not a fixture, at least for now. The use of
+# SherpaTestCase.datadir is not ideal.
+#
+def run_thread(name, scriptname='fit.py'):
+    """Run a regression test from the sherpa-test-data submodule.
+
+    Parameters
+    ----------
+    name : string
+       The name of the science thread to run (e.g., pha_read,
+       radpro). The name should match the corresponding thread
+       name in the sherpa-test-data submodule. See examples below.
+    scriptname : string
+       The suffix of the test script file name, usually "fit.py."
+
+    Returns
+    -------
+    localsyms : dict
+        Any model parameters created by the script.
+
+    Examples
+    --------
+    Regression test script file names have the structure
+    "name-scriptname.py." By default, scriptname is set to "fit.py."
+    For example, if one wants to run the regression test
+    "pha_read-fit.py," they would write
+
+    >>> run_thread("pha_read")
+
+    If the regression test name is "lev3fft-bar.py," they would do
+
+    >>> run_thread("lev3fft", scriptname="bar.py")
+
+    """
+
+    basedir = SherpaTestCase.datadir
+    if basedir is None:
+        raise RuntimeError("Test needs the requires_data decorator")
+
+    scriptname = name + "-" + scriptname
+    cwd = os.getcwd()
+    os.chdir(basedir)
+
+    # Need to add to localsyms so that the scripts can work, but we
+    # do not need (for now) to return all the local symbols, so
+    # also have a version just for model parameters.
+    #
+    localsyms = {}
+    modelsyms = {}
+
+    def assign_model(name, val):
+        localsyms[name] = val
+        modelsyms[name] = val
+
+    old_assign_model = ui.get_model_autoassign_func()
+
+    try:
+        with open(scriptname, "rb") as fh:
+            cts = fh.read()
+        ui.set_model_autoassign_func(assign_model)
+        exec(compile(cts, scriptname, 'exec'), {}, localsyms)
+    finally:
+        ui.set_model_autoassign_func(old_assign_model)
+        os.chdir(cwd)
+
+    return modelsyms
+
+
+@pytest.fixture
+def clean_astro_ui():
+    """Ensure sherpa.astro.ui.clean is called before AND after the test.
+
+    This also resets the XSPEC settings (if XSPEC support is provided).
+
+    Notes
+    -----
+    It does NOT change the logging level; perhaps it should, but the
+    screen output is useful for debugging at this time.
+    """
+
+    # old_lgr_level = logger.getEffectiveLevel()
+    # logger.setLevel(logging.CRITICAL)
+
+    if has_xspec:
+        old_xspec = xspec.get_xsstate()
+    else:
+        old_xspec = None
+
+    ui.clean()
+    yield
+
+    ui.clean()
+    if old_xspec is not None:
+        xspec.set_xsstate(old_xspec)
+
+    # logger.setLevel(old_lgr_level)
+
+
+# This was test_threads.test_pileup
+#
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.usefixtures("clean_astro_ui")
+def test_thread_pileup():
+
+    models = run_thread('pileup')
+
+    fr = ui.get_fit_results()
+    covarerr = sqrt(fr.extra_output['covar'].diagonal())
+
+    assert fr.statval == approx(53.6112, rel=1e-4)
+    assert fr.rstat == approx(1.44895, rel=1e-4)
+    assert fr.qval == approx(0.0379417, rel=1e-4)
+    assert fr.numpoints == 42
+    assert fr.dof == 37
+
+    jdp = models['jdp']
+    assert jdp.alpha.val == approx(0.522593, rel=1e-1)
+    assert jdp.f.val == approx(0.913458, rel=1e-2)
+
+    abs1 = models['abs1']
+    assert abs1.nh.val == approx(6.12101, rel=1e-2)
+
+    power = models['power']
+    assert power.gamma.val == approx(1.41887, rel=1e-2)
+    assert power.ampl.val == approx(0.00199457, rel=1e-2)
+
+    # Move covariance checks to the end of the parameters
+    # to check whether the fit is the same, even if the
+    # covariance is different.
+    #
+    assert covarerr[0] == approx(684.056, rel=1e-4)
+    assert covarerr[1] == approx(191.055, rel=1e-3)
+    assert covarerr[2] == approx(0.632061, rel=1e-3)
+    assert covarerr[3] == approx(0.290159, rel=1e-3)
+    assert covarerr[4] == approx(1.62529, rel=1e-3)
+
+    # Issue #294 was a problem with serializing the pileup model
+    # after a fit in Python 3 (but not Python 2). Add some basic
+    # validation that the conversion to a string works. For the
+    # pileup model we expect the standard model layout - e.g.
+    #
+    #   jdp
+    #   paramter headers
+    #   ---- ----- ...
+    #   jdp.alpha ...
+    #   ...
+    #   jdp.nterms ...
+    #   <blank line>
+    #   1: ...
+    #   ...
+    #   7: ...
+    #   *** pileup fraction: value
+    #
+    lines = str(jdp).split('\n')
+    assert len(lines) == 19
+    assert lines[10].strip() == ''
+    assert lines[11].startswith('   1: ')
+    assert lines[17].startswith('   7: ')
+    assert lines[18].startswith('   *** pileup fraction: ')
