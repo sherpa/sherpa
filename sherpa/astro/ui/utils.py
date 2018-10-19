@@ -11719,7 +11719,13 @@ class Session(sherpa.ui.utils.Session):
         """Calculate the equivalent width of an emission or absorption line.
 
         The equivalent width [1]_ is calculated in the selected units
-        for the data set (whcih can be retrieved with `get_analysis`).
+        for the data set (which can be retrieved with `get_analysis`).
+
+        .. versionchanged:: 4.10.1
+           The `error` parameter was added which controls whether the
+           return value is a scalar (the calculated equivalent width),
+           when set to `False`, or the median value, error limits, and
+           ancillary values.
 
         Parameters
         ----------
@@ -11764,8 +11770,9 @@ class Session(sherpa.ui.utils.Session):
         -------
         retval
            If ``error`` is ``False``, then returns the equivalent width,
-           otherwise the median, 1 sigma lower, upper bounds, the
-           parameters and eqwidth.
+           otherwise the median, 1 sigma lower bound, 1 sigma upper
+           bound, the parameters array, and the array of the equivalent
+           width values used to determine the errors.
 
         See Also
         --------
@@ -11807,6 +11814,23 @@ class Session(sherpa.ui.utils.Session):
         >>> set_bkg_source(2, const1d.flat + gauss1d.bline)
         >>> eqwidth(flat, flat+bline, id=2, bkg_id=1, lo=0.5, hi=2)
         0.45494599793003426
+
+        With the `error` flag set to `True`, the return value is
+        enhanced with extra information, such as the median and
+        one-sigma ranges on the equivalent width::
+
+        >>> res = eqwidth(p1, p1 + g1, error=True)
+        >>> ewidth = res[0]  # the median equivalent width
+        >>> errlo = res[1]   # the one-sigma lower limit
+        >>> errhi = res[2]   # the one-sigma upper limit
+        >>> pars = res[3]    # the parameter values used
+        >>> ews = res[4]     # array of eq. width values
+
+        which can be used to display the probability density or
+        cumulative distribution function of the equivalent widths::
+
+        >>> plot_pdf(ews)
+        >>> plot_cdf(ews)
 
         """
         data = self.get_data(id)
