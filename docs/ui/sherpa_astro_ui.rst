@@ -46,7 +46,9 @@ burden...
       copy_data
       covar
       covariance
+      create_arf
       create_model_component
+      create_rmf
       dataspace1d
       dataspace2d
       delete_bkg_model

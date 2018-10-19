@@ -4741,6 +4741,9 @@ class Session(sherpa.ui.utils.Session):
     def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
                    name='test-arf'):
         """Create an ARF.
+
+        .. versionadded:: 4.10.1
+
         Parameters
         ----------
         elo, ehi : numpy.ndarray
@@ -4756,21 +4759,50 @@ class Session(sherpa.ui.utils.Session):
         ethresh : number or None, optional
             Passed through to the DataARF call. It controls whether
             zero-energy bins are replaced.
-        name : str
-            The name of the data set
+        name : str, optional
+            The name of the ARF data set
+
         Returns
         -------
         arf : DataARF instance
+
+        See Also
+        --------
+        create_rmf, get_arf, set_arf, unpack_arf
+
+        Examples
+        --------
+
+        Create a flat ARF, with a value of 1.0 cm^2 for each bin,
+        over the energy range 0.1 to 10 keV, with a bin spacing of
+        0.01 keV.
+
+        >>> egrid = np.arange(0.1, 10, 0.01)
+        >>> arf = create_arf(egrid[:-1], egrid[1:])
+
+        Create an ARF that has 10 percent more area than the ARF
+        from the default data set::
+
+        >>> arf1 = get_arf()
+        >>> elo = arf1.energ_lo
+        >>> ehi = arf1.energ_hi
+        >>> y = 1.1 * arf1.specresp
+        >>> arf2 = create_arf(elo, ehi, y, exposure=arf1.exposure)
+
         """
         return create_arf(elo, ehi, specresp, exposure, ethresh, name)
 
     @staticmethod
     def create_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None,
                    ethresh=None, fname=None, name='delta-rmf'):
-        """Create an RMF for a "perfect" delta-function response if fname is
-        None otherwise fname contains the name of the image file generated
-        from the standard RMF file with the CIAO tool rmfimg to create an
-        RMF which does not have a delta-function response.
+        """Create an RMF.
+
+        If fname is set to `None` then this creats a "perfect" RMF,
+        which has a delta-function response (so each channel uniquely
+        maps to a single energy bin), otherwise the RMF is taken from
+        the image data stored in the file pointed to by `fname`.
+
+        .. versionadded:: 4.10.1
 
         Parameters
         ----------
@@ -4789,20 +4821,29 @@ class Session(sherpa.ui.utils.Session):
             The E_MIN and E_MAX columns of the EBOUNDS block of the
             RMF.
         ethresh : number or None, optional
-            Passed through to the DataARF call. It controls whether
+            Passed through to the DataRMF call. It controls whether
             zero-energy bins are replaced.
-        fname : str, optional
-            The name of the image file generated from the standard RMF file
-            with the CIAO tool rmfimg
-        name : str
-            The name of the data set
+        fname : None or str, optional
+            If None then a "perfect" RMF is generated, otherwise it gives
+            the name of the two-dimensional image file which stores the
+            response information (the format of this file matches that
+            created by the CIAO tool rmfimg [1]_).
+        name : str, optional
+            The name of the RMF data set
+
         Returns
         -------
         rmf : DataRMF instance
-        Notes
-        -----
-        I do not think I have the startchan=0 case correct (does the
-        f_chan array have to change?).
+
+        See Also
+        --------
+        create_arf, get_rmf, set_rmf, unpack_rmf
+
+        References
+        ----------
+
+        .. [1] http://cxc.harvard.edu/ciao/ahelp/rmfimg.html
+
         """
 
         if fname is None:
