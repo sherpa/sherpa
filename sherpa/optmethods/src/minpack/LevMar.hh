@@ -2205,14 +2205,14 @@ namespace minpack {
       const int ldfjac = m;
 
       Data usrdata = sherpa::Opt<Data, real>::get_usr_data();
-      const std::vector<double>& low = bounds.get_lb();
-      const std::vector<double>& high = bounds.get_ub();
+      const std::vector<real>& low = bounds.get_lb();
+      const std::vector<real>& high = bounds.get_ub();
       int info = lmder_2( usr_fcn, usrdata, m, n, &x[0],
                           &myfvec[0], &fjac[0], ldfjac, ftol, xtol, gtol,
                           maxfev, &diag[0], mode, factor, nprint,
                           nfev, njev, &ipvt[0], &qtf[0], &wa1[0], &wa2[0],
                           &wa3[0], &wa4[0], low, high);
-        double fnorm = this->enorm(m, &myfvec[0]);
+        real fnorm = this->enorm(m, &myfvec[0]);
         this->covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
         // rank = covar1( m, n, fnorm * fnorm, &fjac[0], ldfjac, &ipvt[0],
         //                ftol, &wa1[0] );
@@ -2258,7 +2258,7 @@ namespace minpack {
                       nprint, nfev, njev, &ipvt[0], &qtf[0], &wa1[ 0 ],
                       &wa2[0], &wa3[0], &wa4[0], low, high);
 
-        double fnorm = this->enorm(m, &myfvec[0]);
+        real fnorm = this->enorm(m, &myfvec[0]);
         rank = covar1( m, n, fnorm * fnorm, &fjac[0], ldfjac, &ipvt[0],
                        ftol, &wa1[0] );
         fmin = std::pow( fnorm, 2.0 );

@@ -293,9 +293,9 @@ class test_threads(SherpaTestCase):
 
             fres = ui.get_fit_results()
             covarerr = sqrt(fres.extra_output['covar'].diagonal())
-            assert covarerr[0] == approx(6.98861, rel=1e-4)
-            assert covarerr[1] == approx(0.383065, rel=1e-4)
-            assert covarerr[2] == approx(0.101712, rel=1e-4)
+            self.assertEqualWithinTol(covarerr[0], 9.37344776, 1e-4)
+            self.assertEqualWithinTol(covarerr[1], 0.51259645, 1e-4)
+            self.assertEqualWithinTol(covarerr[2], 0.06911017, 1e-4)
             assert fres.statval == approx(217.450, rel=1e-4)
             assert fres.rstat == approx(6.21287, rel=1e-4)
             assert fres.qval == approx(0.0, rel=1e-4)
@@ -722,4 +722,3 @@ def test_missmatch_arf(make_data_path):
     assert parvals[0] == approx(1.47969, rel=1.0e-3)
     assert parvals[1] == approx(0.0019491, rel=1.0e-3)
     assert parvals[2] == approx(2.35452, rel=1.0e-3)
-
