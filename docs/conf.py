@@ -174,7 +174,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Sherpa'
-copyright = '2018, Chandra X-ray Center, Smithsonian Astrophysical Observatory'
+copyright = '2018, Chandra X-ray Center, Smithsonian Astrophysical Observatory.'
 author = 'Chandra X-ray Center, Smithsonian Astrophysical Observatory'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -286,6 +286,10 @@ html_static_path = ['_static']
 # The empty string is equivalent to '%b %d, %Y'.
 #
 # html_last_updated_fmt = None
+
+# Follow AstroPy's convention for the date format.
+#
+html_last_updated_fmt = '%d %b %Y'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
