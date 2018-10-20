@@ -474,3 +474,14 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #
 # texinfo_no_detailmenu = False
+
+# -- try and get copybuttons to work --
+#
+# docs/_static/copybutton.js is copied from
+# https://raw.githubusercontent.com/scipy/scipy-sphinx-theme/master/_theme/scipy/static/js/copybutton.js
+# version is from
+# https://github.com/scipy/scipy-sphinx-theme/commit/a8aa8a6aad1524c9577a861fc4faa82d6c167138
+#
+
+def setup(app):
+    app.add_javascript('copybutton.js')
