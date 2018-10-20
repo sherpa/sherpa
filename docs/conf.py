@@ -149,8 +149,9 @@ extensions = [
     # Use napoleon over numpydoc for now since it stops a large number
     # of warning messages (about missing links) that I don't have time
     # to investigate.
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
     # 'numpydoc.numpydoc'
+    'sphinx_astropy.ext.edit_on_github'
 ]
 
 napoleon_google_docstring = False
@@ -251,6 +252,14 @@ graphviz_dot_args = [
     '-Gfontsize=10',
     '-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif'
 ]
+
+# Ensure sphinx_astropy.ext.edit_on_github knows where to send
+# the edit links.
+#
+edit_on_github_project = 'sherpa/sherpa'
+# edit_on_github_branch = '4.10.1'
+edit_on_github_source_root = ''
+edit_on_github_doc_root = 'docs'
 
 # -- Options for HTML output ----------------------------------------------
 
