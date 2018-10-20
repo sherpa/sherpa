@@ -45,6 +45,9 @@ except ImportError:
     from mock import MagicMock as BaseMock
 
 
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+
 # I found this somewhere (probably the rtd link given above). I was
 # hoping it would support building with Python 2.7 but it doesn't seem
 # to.
@@ -116,17 +119,18 @@ if os.path.split(os.getcwd())[1] == 'docs':
 import sherpa
 
 # For now include the '+...' part of the version string
-# and that I can drop the '+...' part.
+# in the full version, but drop the ".dirty" suffix.
 #
 sherpa_release = sherpa._version.get_versions()['version']
+if on_rtd and sherpa_release.endswith('.dirty'):
+    sherpa_release = sherpa_release[:-6]
+
 sherpa_version = sherpa_release[:sherpa_release.find('+')]
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-# needs_sphinx = '1.0'
-
 # If use napoleon, force 1.3 rather than try and support the external
 # napoleon code.
 #
