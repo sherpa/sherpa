@@ -238,6 +238,19 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
+# Graphviz based on values from AstroPy - see
+# https://github.com/astropy/sphinx-astropy/blob/master/sphinx_astropy/conf/v1.py
+#
+graphviz_output_format = "svg"
+
+graphviz_dot_args = [
+    '-Nfontsize=10',
+    '-Nfontname=Helvetica Neue, Helvetica, Arial, sans-serif',
+    '-Efontsize=10',
+    '-Efontname=Helvetica Neue, Helvetica, Arial, sans-serif',
+    '-Gfontsize=10',
+    '-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif'
+]
 
 # -- Options for HTML output ----------------------------------------------
 
