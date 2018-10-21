@@ -432,7 +432,7 @@ For this plot, the :py:class:`~sherpa.plot.FitPlot` class is going
 to be used to show both the data and model rather than doing it
 manually as above:
 
-   >>> from sherp.plot import FitPlot
+   >>> from sherpa.plot import FitPlot
    >>> fitplot = FitPlot()
    >>> dplot.prepare(d)
    >>> mplot.prepare(d, mdl)
