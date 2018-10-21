@@ -265,7 +265,9 @@ nowhere near the expected values.
    Reduced chi square = 14.48
 
 Visually comparing the model and data values highlights how poor
-this fit is (the data plot needs re-generating because ::
+this fit is (the data plot does not need regenerating in this
+case, but :py:meth:`~sherpa.plot.DataPlot.prepare` is called
+just to make sure that the correct data is being displayed)::
 
   >>> dplot.prepare(d)
   >>> mplot.prepare(d, mdl)
