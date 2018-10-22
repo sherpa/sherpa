@@ -316,6 +316,7 @@ additional packages:
 * `Sphinx <http://sphinx.pocoo.org/>`_, version 1.3 or later
 * The ``sphinx_rtd_theme``
 * NumPy, six, and `sphinx_astropy <https://github.com/astropy/sphinx-astropy/>`_
+* `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
 With these installed, the documentation can be built with the
 ``build_sphinx`` target::

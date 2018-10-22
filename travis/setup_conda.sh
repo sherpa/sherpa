@@ -46,7 +46,7 @@ if [ -n "${XSPECVER}" ];
  then export XSPEC="xspec-modelsonly=${XSPECVER} ${xorg}";
 fi
 if [ "${DOCS}" == true ];
- then export DOCSBUILD="sphinx sphinx_rtd_theme";
+ then export DOCSBUILD="sphinx sphinx_rtd_theme graphviz";
 fi
 echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC} ${DOCSBUILD}"
 
