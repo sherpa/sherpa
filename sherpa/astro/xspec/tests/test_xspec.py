@@ -115,8 +115,11 @@ def make_grid():
     # range.
     #
     # egrid = numpy.arange(0.1, 11.01, 0.01)
+    # egrid = numpy.arange(0.1, 5.01, 0.1)
 
-    egrid = numpy.arange(0.1, 5.01, 0.1)
+    # XSgaussian has peak at 6.5 keV and sigma ~ 0.1 keV
+    # so need to get to around 7 keV
+    egrid = numpy.arange(0.1, 7.01, 0.1)
     elo = egrid[:-1]
     ehi = egrid[1:]
 
@@ -163,10 +166,36 @@ class test_xspec(SherpaTestCase):
     # using this with some real-world responses. So add in an
     # explicit - hopefully temporary - test here.
     #
+    # Also ensure that at least one bin is > 0
+    # (technically we could have a model with all negative
+    #  values, or all 0 with the default values, but this
+    #  seems unlikely; it is more likely a model evaluates
+    #  to 0 - or at least not positive - because a data file
+    #  is missing).
+    #
     def assertFinite(self, vals, model, label):
         emsg = "model {} is finite [{}]".format(model, label)
         self.assertTrue(numpy.isfinite(vals).all(),
                         msg=emsg)
+
+        # XSPEC 12.10.0 defaults to ATOMDB version 3.0.7 but
+        # provides files for 3.0.9 (this is okay for the application
+        # as it is automatically over-written by the XSPEC init file,
+        # but not for the models-only build we use).
+        #
+        # Some models (e.g. XSismabs, XSkerrd[isk]?) seem to return
+        # 0's, so skip them for now.
+        # The logic of what gets sent in for the model
+        # argument is unclear (class, object, and strings are
+        # sent in), which makes this more annoying.
+        #
+        smdl = str(model)
+        for n in ["ismabs", "kerrd", "mkcflow", "vmcflow"]:
+            if n in smdl:
+                return
+
+        emsg = "model {} has a value > 0 [{}]".format(model, label)
+        self.assertTrue((vals > 0.0).any(), msg=emsg)
 
     def test_create_model_instances(self):
         import sherpa.astro.xspec as xs
