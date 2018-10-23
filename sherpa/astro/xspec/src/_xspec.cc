@@ -393,6 +393,17 @@ int _sherpa_init_xspec_library()
     csmpq0( 0.0 );
     csmpl0( 0.73 );
 
+    // Work around a XSPEC 12.10.0 issue where the atomdb version is
+    // hardcoded to 3.0.7 for the models-only build but it should be
+    // 3.0.9. This is fixed in the yet-to-be-released 12.10.1 (hence
+    // the attempt to only restrict to 12.10.0).
+    //
+#if defined (XSPEC_12_10_0) && !defined (XSPEC_12_10_1)
+    char atomdbVersion1210[6] = "3.0.9";
+    atomdbVersion1210[5] = '\0';
+    FPATDV(atomdbVersion1210);
+#endif
+
   } catch(...) {
 
     
