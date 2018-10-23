@@ -598,6 +598,8 @@ def test_old_style_xspec_class():
 def assert_is_finite(vals, modelcls, label):
     """modelcls is the model class (e.g. xspec.XSphabs)"""
 
+    import sherpa.astro.xspec as xs
+
     emsg = "model {} is finite [{}]".format(modelcls, label)
     assert numpy.isfinite(vals).all(), emsg
 
@@ -608,17 +610,17 @@ def assert_is_finite(vals, modelcls, label):
     # mis-match, APEC-style models return all 0 values, so check
     # for this.
     #
-    # Some models (e.g. XSismabs, XSkerrd[isk]?) seem to return
-    # 0's, so skip them for now.
+    # Some models seem to return 0's, so skip them for now.
     #
     # The *cflow models return 0's because:
     #     XSVMCF: Require z > 0 for cooling flow models
     # but the default value is 0 but mkcflox/vmcflow
     # have a default redshift of 0 in XSPEC 12.10.0 model.dat
     #
-    for n in ["ismabs", "kerrd", "mkcflow", "vmcflow"]:
-        if n in modelcls.__name__:
-            return
+    if modelcls in [xs.XSismabs, xs.XSkerrd, xs.XSmkcflow, xs.XSvmcflow]:
+        # perhaps should check that all values == 0 so that
+        # if anything changes the test will start to fail
+        return
 
     emsg = "model {} has a value > 0 [{}]".format(modelcls, label)
     assert (vals > 0.0).any(), emsg
