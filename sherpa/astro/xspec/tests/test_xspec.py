@@ -68,8 +68,14 @@ def remove_item(xs, x):
 # results for any model). For now stick with testing most of
 # the models.
 #
-def get_xspec_models(xs):
-    """What are the XSpec model names to test."""
+def get_xspec_models():
+    """What are the XSpec model names to test.
+
+    This must only be called after making sure that XSPEC support
+    is available.
+    """
+
+    import sherpa.astro.xspec as xs
 
     # The alternate approach is to use that taken by
     # test_create_model_instances
@@ -264,78 +270,6 @@ class test_xspec(SherpaTestCase):
         # low and high bin edges are given)
         self.assertRaises(TypeError, mdl, [0.1, 0.2, 0.3], [0.2, 0.3])
         self.assertRaises(TypeError, mdl, [0.1, 0.2], [0.2, 0.3, 0.4])
-
-    def test_xspec_models(self):
-        import sherpa.astro.xspec as xs
-        models = get_xspec_models(xs)
-
-        egrid, elo, ehi, wgrid, wlo, whi = make_grid()
-        for model in models:
-            # use an identifier in case there is an error
-            mdl = model()
-
-            # The model checks that the values are all finite,
-            # so there is no need to check that the output of
-            # mdl does not contain non-finite values.
-            # NOTE: this is no-longer the case, so include an
-            #       explicit check for the single-argument forms
-            #
-            evals1 = mdl(egrid)
-            evals2 = mdl(elo, ehi)
-
-            wvals1 = mdl(wgrid)
-            wvals2 = mdl(wlo, whi)
-
-            self.assertFinite(evals1, model, "energy")
-            self.assertFinite(wvals1, model, "wavelength")
-
-            emsg = "{} model evaluation failed: ".format(model)
-
-            # It might be expected that the test should be
-            #   assert_allclose(evals1[:-1], evals2)
-            # to ensure there's no floating-point issues,
-            # but in this case the grid and parameter
-            # values *should* be exactly the same, so the
-            # results *should* be exactly equal, hence
-            # the use of assert_array_equal
-            assert_array_equal(evals1[:-1], evals2,
-                               err_msg=emsg + "energy comparison")
-            assert_array_equal(wvals1[:-1], wvals2,
-                               err_msg=emsg + "wavelength comparison")
-
-            # When comparing wavelength to energy values, have
-            # to use allclose since the bins are not identically
-            # equal.
-            assert_allclose(evals1, wvals1,
-                            err_msg=emsg + "energy to wavelength")
-
-    def test_xspec_models_noncontiguous2(self):
-        """Note that there is no test that the non-contiguous grid
-        results are similar to the result from using a contiguous
-        grid and then filtering out the missing bins. The way that
-        some models are implemented make this a tricky test to
-        write (due to numerical tolerances), as bins at the
-        edges may not match well.
-        """
-
-        import sherpa.astro.xspec as xs
-        models = get_xspec_models(xs)
-
-        elo, ehi, wlo, whi = make_grid_noncontig2()
-        for model in models:
-            # use an identifier in case there is an error
-            mdl = model()
-
-            evals2 = mdl(elo, ehi)
-            wvals2 = mdl(wlo, whi)
-
-            self.assertFinite(evals2, model, "energy")
-            self.assertFinite(wvals2, model, "wavelength")
-
-            emsg = "{} non-contiguous model evaluation " + \
-                "failed: ".format(model)
-            assert_allclose(evals2, wvals2,
-                            err_msg=emsg + "energy to wavelength")
 
     # Support for XSPEC support in load_table_model has been deprecated
     # in Sherpa 4.9.0; use load_xstable_model instead. For now the
@@ -640,3 +574,136 @@ def test_old_style_xspec_class():
     expected = XSzbabs()([1, 2, 3])
 
     assert_array_equal(expected, actual)
+
+
+# The following repeats logic in self.assertFinite above.
+# The plan is to move the SherpaTestCase derived tests into
+# plain pytest-style tests, and then self.assertFinite
+# will be removed, but that day is not today.
+#
+# In Sherpa 4.8.0 development, the XSPEC model class included
+# an explicit check that all the bins were finite. This has
+# been removed as testing has shown there are complications when
+# using this with some real-world responses. So add in an
+# explicit - hopefully temporary - test here.
+#
+# Also ensure that at least one bin is > 0
+# (technically we could have a model with all negative
+#  values, or all 0 with the default values, but this
+#  seems unlikely; it is more likely a model evaluates
+#  to 0 - or at least not positive - because a data file
+#  is missing).
+#
+def assert_is_finite(vals, modelcls, label):
+    """modelcls is the model class (e.g. xspec.XSphabs)"""
+
+    emsg = "model {} is finite [{}]".format(modelcls, label)
+    assert numpy.isfinite(vals).all(), emsg
+
+    # XSPEC 12.10.0 defaults to ATOMDB version 3.0.7 but
+    # provides files for 3.0.9 (this is okay for the application
+    # as it is automatically over-written by the XSPEC init file,
+    # but not for the models-only build we use). With this
+    # mis-match, APEC-style models return all 0 values, so check
+    # for this.
+    #
+    # Some models (e.g. XSismabs, XSkerrd[isk]?) seem to return
+    # 0's, so skip them for now.
+    #
+    # The *cflow models return 0's because:
+    #     XSVMCF: Require z > 0 for cooling flow models
+    # but the default value is 0 but mkcflox/vmcflow
+    # have a default redshift of 0 in XSPEC 12.10.0 model.dat
+    #
+    for n in ["ismabs", "kerrd", "mkcflow", "vmcflow"]:
+        if n in modelcls.__name__:
+            return
+
+    emsg = "model {} has a value > 0 [{}]".format(modelcls, label)
+    assert (vals > 0.0).any(), emsg
+
+
+@requires_xspec
+@pytest.mark.parametrize("modelcls", get_xspec_models())
+def test_evaluate_xspec_model(modelcls):
+    """Can we call a model with its default parameters?
+
+    There is limited validation of the results. A regression-style test could
+    be made (e.g. with use of pytest-arraydiff) but is it worth it?
+
+    Rather than loop over each model within the test, use pytest to loop over
+    each model. This means that make_grid gets called multiple times, but
+    (hopefully) makes it a lot easier to debug when only a subset of tests
+    fails.  It also makes sure that all models are run, even if some fail,
+    which did not happen when they were all stuck in the same test function.
+    """
+
+    egrid, elo, ehi, wgrid, wlo, whi = make_grid()
+
+    # use an identifier in case there is an error
+    mdl = modelcls()
+
+    # The model checks that the values are all finite,
+    # so there is no need to check that the output of
+    # mdl does not contain non-finite values.
+    # NOTE: this is no-longer the case, so include an
+    #       explicit check for the single-argument forms
+    #
+    evals1 = mdl(egrid)
+    evals2 = mdl(elo, ehi)
+
+    wvals1 = mdl(wgrid)
+    wvals2 = mdl(wlo, whi)
+
+    assert_is_finite(evals1, modelcls, "energy")
+    assert_is_finite(wvals1, modelcls, "wavelength")
+
+    emsg = "{} model evaluation failed: ".format(modelcls)
+
+    # It might be expected that the test should be
+    #   assert_allclose(evals1[:-1], evals2)
+    # to ensure there's no floating-point issues,
+    # but in this case the grid and parameter
+    # values *should* be exactly the same, so the
+    # results *should* be exactly equal, hence
+    # the use of assert_array_equal
+    assert_array_equal(evals1[:-1], evals2,
+                       err_msg=emsg + "energy comparison")
+    assert_array_equal(wvals1[:-1], wvals2,
+                       err_msg=emsg + "wavelength comparison")
+
+    # When comparing wavelength to energy values, have
+    # to use allclose since the bins are not identically
+    # equal.
+    assert_allclose(evals1, wvals1,
+                    err_msg=emsg + "energy to wavelength")
+
+
+@requires_xspec
+@pytest.mark.parametrize("modelcls", get_xspec_models())
+def test_evaluate_xspec_model_noncontiguous2(modelcls):
+    """Can we evaluate an XSPEC model with a non-contiguous grid?
+
+    Note that there is no test that the non-contiguous grid
+    results are similar to the result from using a contiguous
+    grid and then filtering out the missing bins. The way that
+    some models are implemented make this a tricky test to
+    write (due to numerical tolerances), as bins at the
+    edges may not match well.
+    """
+
+    elo, ehi, wlo, whi = make_grid_noncontig2()
+
+    # use an identifier in case there is an error
+    mdl = modelcls()
+
+    evals2 = mdl(elo, ehi)
+    wvals2 = mdl(wlo, whi)
+
+    assert_is_finite(evals2, modelcls, "energy")
+    assert_is_finite(wvals2, modelcls, "wavelength")
+
+    emsg = "{} non-contiguous model evaluation " + \
+        "failed: ".format(modelcls)
+    assert_allclose(evals2, wvals2,
+                    err_msg=emsg + "energy to wavelength")
