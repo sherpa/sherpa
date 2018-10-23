@@ -71,11 +71,12 @@ def remove_item(xs, x):
 def get_xspec_models():
     """What are the XSpec model names to test.
 
-    This must only be called after making sure that XSPEC support
-    is available.
     """
 
-    import sherpa.astro.xspec as xs
+    try:
+        import sherpa.astro.xspec as xs
+    except ImportError:
+        return []
 
     # The alternate approach is to use that taken by
     # test_create_model_instances
