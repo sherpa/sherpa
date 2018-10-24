@@ -57,11 +57,11 @@ class test_threads(SherpaTestCase):
         self.is_crates_io = False
         try:
             import sherpa.astro.io
-            if ("sherpa.astro.io.crates_backend" ==
-                sherpa.astro.io.backend.__name__):
+            if "sherpa.astro.io.crates_backend" == sherpa.astro.io.backend.__name__:
                 self.is_crates_io = True
-        except:
+        except ImportError:
             self.is_crates_io = False
+
         self.old_state = ui._session.__dict__.copy()
         self.old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.CRITICAL)
@@ -69,6 +69,12 @@ class test_threads(SherpaTestCase):
         # Store XSPEC settings, if applicable
         if has_xspec:
             self.old_xspec = xspec.get_xsstate()
+            # As of XSPEC 12.10.1, it is safest to explicitly set
+            # the state to a known value. For now just pick the
+            # "easy" settings.
+            #
+            xspec.set_xsabund('angr')
+            xspec.set_xsxsect('bcmc')
 
     def tearDown(self):
         ui._session.__dict__.update(self.old_state)
@@ -644,6 +650,7 @@ class test_threads(SherpaTestCase):
         etol = EMIN / 100.0
         assert rmf.energ_lo[0] == approx(EMIN, rel=etol)
         assert arf.energ_lo[0] == approx(EMIN, rel=etol)
+
 
 @requires_data
 @requires_fits

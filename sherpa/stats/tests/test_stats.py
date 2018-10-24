@@ -391,7 +391,18 @@ class test_stats(SherpaTestCase):
         self._old_logger_level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
         from sherpa.astro.io import read_pha
-        from sherpa.astro.xspec import XSphabs
+        from sherpa.astro import xspec
+
+        # Ensure we have a known set of XSPEC settings.
+        # At present this is just the abundance and cross-section,
+        # since the cosmology settings do not affect any of the
+        # models used here.
+        #
+        self._xspec_settings = {'abund': xspec.get_xsabund(),
+                                'xsect': xspec.get_xsxsect()}
+
+        xspec.set_xsabund('angr')
+        xspec.set_xsxsect('bcmc')
 
         pha_fname = self.make_path("9774.pi")
         self.data = read_pha(pha_fname)
@@ -400,7 +411,7 @@ class test_stats(SherpaTestCase):
         bkg_fname = self.make_path("9774_bg.pi")
         self.bkg = read_pha(bkg_fname)
 
-        abs1 = XSphabs('abs1')
+        abs1 = xspec.XSphabs('abs1')
         p1 = PowLaw1D('p1')
         self.model = abs1 + p1
 
@@ -411,6 +422,14 @@ class test_stats(SherpaTestCase):
         self.data_pi2286 = read_pha(pi2286)
 
     def tearDown(self):
+        from sherpa.astro import xspec
+
+        self._xspec_settings = {'abund': xspec.get_xsabund(),
+                                'xsect': xspec.get_xsxsect()}
+
+        xspec.set_xsabund(self._xspec_settings['abund'])
+        xspec.set_xsxsect(self._xspec_settings['xsect'])
+
         if hasattr(self, "_old_logger_level"):
             logger.setLevel(self._old_logger_level)
 
