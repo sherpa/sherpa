@@ -402,3 +402,34 @@ def clean_astro_ui():
         xspec.set_xsstate(old_xspec)
 
     # logger.setLevel(old_lgr_level)
+
+
+@pytest.fixture
+def restore_xspec_settings():
+    """Fixture to ensure that XSPEC settings are restored after the test.
+
+    The aim is to allow the test to change XSPEC settings but to
+    ensure they are restored to their default values after the test.
+
+    The logic for what should and should not be reset is left to
+    xspec.get_state/set_state. There are known issues with trying to
+    reset "XSET" values (e.g. you can only set them to "", not
+    "delete" them, and it is up to the model implementation to note
+    the value has changed).
+    """
+
+    try:
+        from sherpa.astro import xspec
+    except ImportError:
+        # can I return from here safely?
+        return
+
+    # grab initial values
+    #
+    state = xspec.get_xsstate()
+
+    # return control to test
+    yield
+
+    # clean up after test
+    xspec.set_xsstate(state)

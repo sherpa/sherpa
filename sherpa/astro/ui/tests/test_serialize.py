@@ -70,6 +70,13 @@ has_xspec = has_package_from_list("sherpa.astro.xspec")
 # then have to deal with multiple versions depending on the modules
 # that are available).
 
+# Note that the XSPEC defaults changed in XSPEC 12.10.1 (xsxsect is
+# now vern rather than bcmc, but it can depend on what files a
+# user has - e.g. ~/.xspec/Xspec.init will over-ride it), so there
+# are explicit statements to set the values before the tests so
+# that we have a "known" state.
+#
+
 # A representation of the default Sherpa state
 _canonical_empty = """import numpy
 from sherpa.astro.ui import *
@@ -827,6 +834,8 @@ class test_ui(SherpaTestCase):
             from sherpa.astro import xspec
             self._xspec_state = xspec.get_xsstate()
             ui.set_xschatter(0)
+            ui.set_xsabund('angr')
+            ui.set_xsxsect('bcmc')
 
     def tearDown(self):
         try:

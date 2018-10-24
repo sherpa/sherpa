@@ -46,8 +46,20 @@ from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 # contract do we want to make with the initialization code to set
 # to our values versus the default XSPEC settings?
 #
-DEFAULT_ABUND = 'angr'
-DEFAULT_XSECT = 'bcmc'
+# For XSPEC 12.10.1 and later, the default settings depend on
+#  - the user's ~/.xspec/Xspec.init file
+#  - the $HEADAS/../spectral/manaer/Xspec.init file
+#  - in-built dfeaults
+#
+# This means that it is now hard to reliably check the default
+# values. So, we now just chcek that the default values are
+# one of the expected values.
+#
+# Note that a used could set up their own abundance table,
+# in which case it is not obvious what to do.
+#
+DEFAULT_ABUND = ['angr', 'aspl', 'feld', 'aneb', 'grsa', 'wilm', 'lodd']
+DEFAULT_XSECT = ['bcmc', 'obcm', 'vern']
 
 # XSPEC presmably has its own default for these, but Sherpa explicitly
 # sets values for these parameters.
@@ -117,7 +129,7 @@ def test_abund_default():
     from sherpa.astro import xspec
 
     oval = xspec.get_xsabund()
-    assert oval == DEFAULT_ABUND
+    assert oval in DEFAULT_ABUND
 
 
 @requires_xspec
@@ -155,7 +167,7 @@ def test_xsect_default():
     from sherpa.astro import xspec
 
     oval = xspec.get_xsxsect()
-    assert oval == DEFAULT_XSECT
+    assert oval in DEFAULT_XSECT
 
 
 @requires_xspec
