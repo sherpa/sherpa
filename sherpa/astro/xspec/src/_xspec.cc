@@ -112,6 +112,11 @@ int _sherpa_init_xspec_library();
 
 extern "C" {
 
+#ifdef XSPEC_12_10_1
+void agnsed_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void qsosed_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+
 #ifndef XSPEC_12_9_1
 void xsaped_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsbape_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -166,6 +171,10 @@ void jet_(float* ear, int* ne, float* param, int* ifl, float* photar, float* pho
   
 void xsgrbm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void spin_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+
+#ifdef XSPEC_12_10_1
+void kyrline_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
 
 #ifndef XSPEC_12_9_1
 void xslorz_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -302,6 +311,12 @@ void ismabs_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void slimbbmodel(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr);
 #endif
 
+#ifdef XSPEC_12_10_1
+void tdrelline_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void tdrellinelp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void tdrellinelpext_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
+
 // XSPEC table models
 void xsatbl(float* ear, int ne, float* param, const char* filenm, int ifl, 
 	    float* photar, float* photer);
@@ -310,9 +325,15 @@ void xsmtbl(float* ear, int ne, float* param, const char* filenm, int ifl,
 
 // XSPEC convolution models
 //
-  
-// rgsxsrc is the only convolution-style model that uses the Fortran interface
+
 void rgsxsrc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+
+#ifdef XSPEC_12_10_1
+void kyconv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void tdrelconv_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void tdrelconvlp_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+void tdrelconvlpext_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
 
 }
 
@@ -937,6 +958,11 @@ static PyMethodDef XSpecMethods[] = {
     (PyCFunction)get_model_data_path, METH_NOARGS, NULL },
   FCTSPEC(set_xspath_manager, set_manager_data_path),
 
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_NORM( agnsed, 16 ),
+  XSPECMODELFCT_NORM( qsosed, 7 ),
+#endif
+
 #ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_apec, 4 ),
   XSPECMODELFCT_C_NORM( C_bapec, 5 ),
@@ -1019,6 +1045,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_kerrdisk, 8 ),
 #endif
   XSPECMODELFCT_NORM( spin, 10 ),
+
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_NORM( kyrline, 12 ),
+#endif
+
 #ifdef XSPEC_12_10_1
   XSPECMODELFCT_C_NORM( C_laor, 6 ),
 #else
@@ -1062,6 +1093,13 @@ static PyMethodDef XSpecMethods[] = {
 #endif  
   XSPECMODELFCT_NORM( xredge, 3 ),
   XSPECMODELFCT_NORM( xsrefsch, 14 ),
+
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_NORM( tdrelline, 11 ),
+  XSPECMODELFCT_NORM( tdrellinelp, 10 ),
+  XSPECMODELFCT_NORM( tdrellinelpext, 13 ),
+#endif
+
   XSPECMODELFCT_C_NORM( C_sedov, 6 ),
   XSPECMODELFCT_NORM( srcut, 3 ),
   XSPECMODELFCT_NORM( sresc, 3 ),
@@ -1069,12 +1107,18 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( ssa, 3 ),
 #endif  
   XSPECMODELFCT_NORM( xsstep, 3 ),
+
 #ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_vapec, 16 ),
 #else  
   XSPECMODELFCT_NORM( xsvape, 16 ),
 #endif  
   XSPECMODELFCT_NORM( xsbrmv, 3 ),
+
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_C_NORM( C_vcph, 18 ),
+#endif
+
   XSPECMODELFCT_C_NORM( C_vequil, 15 ),
   XSPECMODELFCT_C_NORM( C_vgnei, 18 ),
 #ifdef XSPEC_12_9_1
@@ -1095,11 +1139,21 @@ static PyMethodDef XSpecMethods[] = {
 #endif  
   XSPECMODELFCT_C_NORM( C_vsedov, 18 ),
   XSPECMODELFCT_NORM( xszbod, 3 ),
+
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_C_NORM( C_zBrokenPowerLaw, 5 ),
+#endif
+
   XSPECMODELFCT_NORM( xszbrm, 3 ),
 #ifdef XSPEC_12_10_0
   XSPECMODELFCT_C_NORM( C_zcutoffPowerLaw, 4),
 #endif
   XSPECMODELFCT_C_NORM( C_xszgau, 4 ),
+
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_C_NORM( C_zLogpar, 5 ),
+#endif
+
   XSPECMODELFCT_C_NORM( C_zpowerLaw, 3 ),
   XSPECMODELFCT_C( C_xsabsori, 6 ),
 
@@ -1165,7 +1219,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT( xszvph, 19 ),
   XSPECMODELFCT( xszabs, 2 ),
   XSPECMODELFCT( xszwnb, 3 ),
-  // New XSPEC 12.7 models
+
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_C_NORM( C_cph, 5 ),
+#endif
+
   XSPECMODELFCT_C_NORM( C_cplinear, 21 ),
   XSPECMODELFCT_C_NORM( C_xseqpair, 21 ),
   XSPECMODELFCT_C_NORM( C_xseqth, 21 ),
@@ -1243,6 +1301,10 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_kdblur2, 6),
   XSPECMODELFCT_CON(C_spinconv, 7),
 
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_CON_F77(kyconv, 12),
+#endif
+
 #ifdef XSPEC_12_10_0  
   XSPECMODELFCT_CON(C_lsmooth, 2),
 #else
@@ -1252,6 +1314,13 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_PartialCovering, 1),
   XSPECMODELFCT_CON(C_rdblur, 4),
   XSPECMODELFCT_CON(C_reflct, 5),
+
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_CON_F77(tdrelconv, 8),
+  XSPECMODELFCT_CON_F77(tdrelconvlp, 7),
+  XSPECMODELFCT_CON_F77(tdrelconvlpext, 10),
+#endif
+
   XSPECMODELFCT_CON_F77(rgsxsrc, 1),
   XSPECMODELFCT_CON(C_simpl, 3),
   XSPECMODELFCT_CON(C_zashift, 1),
