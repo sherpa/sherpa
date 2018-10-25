@@ -976,6 +976,123 @@ class XSMultiplicativeModel(XSModel):
     pass
 
 
+@version_at_least("12.10.1")
+class XSagnsed(XSAdditiveModel):
+    """The XSPEC agnsed model: AGN SED model
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    mass
+        The black hole mass, in solar units.
+    dist
+        The comoving (proper) distance, in Mpc.
+    logmdot
+        log of mdot, where mdot = Mdot/Mdot_Edd and
+        eta Mdot_Edd c^2 = L_Edd
+    astar
+        The black hole spin (dimensionless)
+    cosi
+        The cosine of the inclination angle i for the warm
+        Comptonising component and the outer disc.
+    kTe_hot
+        The electron temperature for the hot Comptonisation component
+        in keV. If negative then only the hot Comptonisation component
+        is used.
+    kTe_warm
+        The electron temperature for the warm Comptonisation component
+        in keV. If negative then only the warm Comptonisation component
+        is used.
+    Gamma_hot
+        The spectral index of the hot Comptonisation component. If
+        negative, the code will use the value calculated via eq.(2) of
+        KD18 (see [1]_).
+    Gamma_warm
+        The spectral index of the warm Comptonisation component. If
+        negative then only the outer disc component is used.
+    R_hot
+        The outer radius of the hot Comptonisation component in Rg.
+    R_warm
+        The outer radius of the warm Comptonisation component in Rg.
+    logrout
+        The log of the outer radius of the disc in units of Rg. If
+        negative, the code will use the self gravity radius as calculated
+        from Laor & Netzer (1989) (see [1]_).
+    Htmax
+        The upper limit of the scale height for the hot Comptonisation
+        component in Rg. If smaller than R_hot, the hot Comptonisation
+        region is a sphere of radius Htmax by keeping Ldiss_hot determined
+        by R_hot via eq.(2) of KD18 (see [1]_).
+    reprocess
+        If this parameter is 0, reprocessing is not considered. If it
+        is 1, reprocessing is included.
+    redshift
+        The redshift.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSqsosed
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.10.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAgnsed.html
+
+    """
+
+    __function__ = "agnsed"
+
+    def __init__(self, name='agnsed'):
+        self.mass = Parameter(name, 'mass', 1e7, 1.0, 1e10, 1.0, 1e10,
+                              'solar', frozen=True)
+        self.dist = Parameter(name, 'dist', 100, 0.01, 1e9, 0.01, 1e9,
+                              'Mpc', frozen=True)
+        self.logmdot = Parameter(name, 'logmdot', -1, -10, 2, -10, 2)
+        self.astar = Parameter(name, 'astar', 0.0, -1, 0.998, -1, 0.998,
+                               frozen=True)
+        self.cosi = Parameter(name, 'cosi', 0.5, 0.05, 1.0, 0.05, 1.0,
+                              frozen=True)
+        # TODO: allow negative values
+        self.kTe_hot = Parameter(name, 'kTe_hot', 100.0, 10, 300, 10, 300,
+                                 'keV(_pl)', frozen=True)
+        self.kTe_warm = Parameter(name, 'kTe_warm', 0.2, 0.1, 0.5, 0.1, 0.5,
+                                  'keV(_sc)')
+        self.Gamma_hot = Parameter(name, 'Gamma_hot', 1.7, 1.3, 3, 1.3, 3,
+                                   '(_calc)')
+        self.Gamma_warm = Parameter(name, 'Gamma_warm', 2.7, 2, 5, 2, 10,
+                                    '(_disk)')
+
+        self.R_hot = Parameter(name, 'R_hot', 10, 6, 500, 6, 500, 'Rg')
+        self.R_warm = Parameter(name, 'R_warm', 20, 6, 500, 6, 500, 'Rg')
+
+        self.logrout = Parameter(name, 'logrout', -1, -3, 7, -3, 7,
+                                 '(_selfg)', frozen=True)
+
+        self.Htmax = Parameter(name, 'Htmax', 100, 6, 200, 6, 200,
+                               'Rg', frozen=True)
+
+        self.reprocess = Parameter(name, 'reprocess', 1, 0, 1, 0, 1,
+                                   '0off/1on', alwaysfrozen=True)
+
+        self.redshift = Parameter(name, 'redshift', 0, 0, 1, 0, 1,
+                                  frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
+                self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
+                self.R_hot, self.R_warm, self.logrout, self.Htmax,
+                self.reprocess, self.redshift, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSapec(XSAdditiveModel):
     """The XSPEC apec model: APEC emission spectrum.
 
@@ -1346,7 +1463,7 @@ class XSbknpower(XSAdditiveModel):
 
     See Also
     --------
-    XSbkn2pow, XScutoffpl, XSpowerlaw, XSzcutoffpl, XSzpowerlw
+    XSbkn2pow, XScutoffpl, XSpowerlaw, XSzbknpower, XSzcutoffpl, XSzpowerlw
 
     References
     ----------
@@ -1362,7 +1479,10 @@ class XSbknpower(XSAdditiveModel):
         self.BreakE = Parameter(name, 'BreakE', 5., 1.e-2, 1.e6, 0.0, hugeval, 'keV')
         self.PhoIndx2 = Parameter(name, 'PhoIndx2', 2., -2., 9., -hugeval, hugeval)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
-        XSAdditiveModel.__init__(self, name, (self.PhoIndx1, self.BreakE, self.PhoIndx2, self.norm))
+
+        pars = (self.PhoIndx1, self.BreakE, self.PhoIndx2, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
 
     def guess(self, dep, *args, **kwargs):
         XSAdditiveModel.guess(self, dep, *args, **kwargs)
@@ -2321,6 +2441,148 @@ class XScompTT(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.redshift, self.T0, self.kT, self.taup, self.approx, self.norm))
 
 
+@version_at_least("12.10.1")
+class XScph(XSAdditiveModel):
+    """The XSPEC cph model: Cooling + heating model for cool core clusters
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    peakT
+        The peak temperature, in keV.
+    Abund
+        The abundance, relative to Solar.
+    Redshift
+        The redshift.
+    switch
+        If 0 calculate, if 1 interpolate, if 2 use AtomDB data.
+    norm
+        The mass accretion rate, in solar mass per year.
+
+    See Also
+    --------
+    XSmkcflow, XSvcph
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.10.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCph.html
+
+    """
+
+    __function__ = "C_cph"
+
+    def __init__(self, name='cph'):
+        self.peakT = Parameter(name, 'peakT', 2.2, 1e-1, 1e2, 1e-1, 1e2,
+                               'keV')
+        self.Abund = Parameter(name, 'Abund', 1, 0, 1000, 0, 1000,
+                               frozen=True)
+        # In XSPEC 12.10.1 the redshift value defaults to 0 but the
+        # minimum is 1e-6, so switch to 0.1
+        self.Redshift = Parameter(name, 'Redshift', 0.1, 1e-6, 50, 1e-6, 50,
+                                  frozen=True)
+        self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2,
+                                alwaysfrozen=True)
+
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.peakT, self.Abund, self.Redshift, self.switch, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.10.1")
+class XSvcph(XSAdditiveModel):
+    """The XSPEC vcph model: Cooling + heating model for cool core clusters
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    peakT
+        The peak temperature, in keV.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Redshift
+        The redshift.
+    switch
+        If 0 calculate, if 1 interpolate, if 2 use AtomDB data.
+    norm
+        The mass accretion rate, in solar mass per year.
+
+    See Also
+    --------
+    XSmkcflow, XScph
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.10.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCph.html
+
+    """
+
+    __function__ = "C_vcph"
+
+    def __init__(self, name='vcph'):
+        self.peakT = Parameter(name, 'peakT', 2.2, 1e-1, 1e2, 1e-1, 1e2,
+                               'keV')
+
+        self.He = Parameter(name, 'He', 1.0, 0., 1000., 0.0, 1000.0,
+                            frozen=True)
+        self.C = Parameter(name, 'C', 1.0, 0., 1000., 0.0, 1000.0,
+                           frozen=True)
+        self.N = Parameter(name, 'N', 1.0, 0., 1000., 0.0, 1000.0,
+                           frozen=True)
+        self.O = Parameter(name, 'O', 1.0, 0., 1000., 0.0, 1000.0,
+                           frozen=True)
+        self.Ne = Parameter(name, 'Ne', 1.0, 0., 1000., 0.0, 1000.0,
+                            frozen=True)
+        self.Na = Parameter(name, 'Na', 1.0, 0., 1000., 0.0, 1000.0,
+                            frozen=True)
+        self.Mg = Parameter(name, 'Mg', 1.0, 0., 1000., 0.0, 1000.0,
+                            frozen=True)
+        self.Al = Parameter(name, 'Al', 1.0, 0., 1000., 0.0, 1000.0,
+                            frozen=True)
+        self.Si = Parameter(name, 'Si', 1.0, 0., 1000., 0.0, 1000.0,
+                            frozen=True)
+        self.S = Parameter(name, 'S', 1.0, 0., 1000., 0.0, 1000.0,
+                           frozen=True)
+        self.Ar = Parameter(name, 'Ar', 1.0, 0., 1000., 0.0, 1000.0,
+                            frozen=True)
+        self.Ca = Parameter(name, 'Ca', 1.0, 0., 1000., 0.0, 1000.0,
+                            frozen=True)
+        self.Fe = Parameter(name, 'Fe', 1.0, 0., 1000., 0.0, 1000.0,
+                            frozen=True)
+        self.Ni = Parameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000.0,
+                            frozen=True)
+
+        # In XSPEC 12.10.1 the redshift value defaults to 0 but the
+        # minimum is 1e-6, so switch to 0.1
+        self.Redshift = Parameter(name, 'Redshift', 0.1, 1e-6, 50, 1e-6, 50,
+                                  frozen=True)
+        self.switch = Parameter(name, 'switch', 1, 0, 2, 0, 2,
+                                alwaysfrozen=True)
+
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.peakT,
+                self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni,
+                self.Redshift, self.switch, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XScutoffpl(XSAdditiveModel):
     """The XSPEC cutoffpl model: power law, high energy exponential cutoff.
 
@@ -3258,6 +3520,88 @@ class XSkerrdisk(XSAdditiveModel):
         param_apply_limits(pos, self.lineE, **kwargs)
 
 
+@version_at_least("12.10.1")
+class XSkyrline(XSAdditiveModel):
+    """The XSPEC kyrline model: relativistic line from axisymmetric accretion disk
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    a
+        Black Hole angular momentum, in units of GM/c.
+    theta_o
+        The observer inclination, where 0 is pole on. The units are
+        degrees.
+    rin
+        The inner radius (units of GM/c^2).
+    ms
+        A flag that determines whether to integrate from rin (0)
+        or to integrate emission from above the marginally-stable orbit
+        only (1)
+    rout
+        The outer radius (units of GM/c^2).
+    Erest
+        The line energy in keV.
+    alpha
+        The accretion disk emissivity scales as r^(-alpha) for r < rb.
+    beta
+        The accretion disk emissivity scales as r^(-beta) for r > rb.
+    rb
+        The boundary radius between the inner and outer emissivity laws
+        (units of GM/c^2).
+    zshift
+        The overall Doppler shift.
+    limb
+        0 means isotropic emission, 1 means Laor's limb darkening
+        (1 + 0.26 \mu), 2 means Haardt's limb brightening (ln(1 + 1/\mu))
+    norm
+        The normalization.
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.10.1 or later.
+
+    Early releases of XSPEC 12.10.1 refer to the first parameter as
+    a/M. As this is not a valid Python name, the parameter has been
+    renamed "a" to better match other XSPEC models (after consultation
+    with Keith Arnaud).
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelKyrline.html
+
+    """
+
+    __function__ = "kyrline"
+
+    def __init__(self, name='kyrline'):
+        self.a = Parameter(name, 'a', 0.9982, 0, 1, 0, 1, 'GM/c')
+        self.theta_o = Parameter(name, 'theta_o', 30, 0, 89, 0, 89, 'deg')
+        self.rin = Parameter(name, 'rin', 1, 1, 1000, 1, 1000, 'GM/c^2',
+                             frozen=True)
+        self.ms = Parameter(name, 'ms', 1, 0, 1, 0, 1, alwaysfrozen=True)
+        self.rout = Parameter(name, 'rout', 400, 1, 1000, 1, 1000, 'GM/c^2',
+                              frozen=True)
+        self.Erest = Parameter(name, 'Erest', 6.4, 1, 99, 1, 99, 'keV',
+                               frozen=True)
+        self.alpha = Parameter(name, 'alpha', 3, -20, 20, -20, 20, frozen=True)
+        self.beta = Parameter(name, 'beta', 3, -20, 20, -20, 20, frozen=True)
+        self.rb = Parameter(name, 'rb', 400, 1, 1000, 1, 1000, 'GM/c^2',
+                            frozen=True)
+        self.zshift = Parameter(name, 'zshift', 0, -0.999, 10, -0.999, 10,
+                                frozen=True)
+        self.limb = Parameter(name, 'limb', 1, 0, 2, 0, 2, frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.a, self.theta_o, self.rin, self.ms, self.rout,
+                self.Erest, self.alpha, self.beta, self.rb, self.zshift,
+                self.limb, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSlaor(XSAdditiveModel):
     """The XSPEC laor model: accretion disk, black hole emission line.
 
@@ -3534,7 +3878,7 @@ class XSmkcflow(XSAdditiveModel):
 
     See Also
     --------
-    XSapec, XScflow, XScevmkl, XSvmcflow
+    XSapec, XScflow, XScevmkl, XScph, XSvcph, XSvmcflow
 
     References
     ----------
@@ -4534,6 +4878,69 @@ class XSpshock(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.Abundanc, self.Tau_l, self.Tau_u, self.redshift, self.norm))
 
 
+@version_at_least("12.10.1")
+class XSqsosed(XSAdditiveModel):
+    """The XSPEC qsosed model: AGN SED model
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    mass
+        The black hole mass, in solar units.
+    dist
+        The comoving (proper) distance, in Mpc.
+    logmdot
+        log of mdot, where mdot = Mdot/Mdot_Edd and
+        eta Mdot_Edd c^2 = L_Edd
+    astar
+        The black hole spin (dimensionless)
+    cosi
+        The cosine of the inclination angle i for the warm
+        Comptonising component and the outer disc.
+    redshift
+        The redshift.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSagnsed
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.10.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAgnsed.html
+
+    """
+
+    __function__ = "qsosed"
+
+    def __init__(self, name='qsosed'):
+        self.mass = Parameter(name, 'mass', 1e7, 1e5, 1e10, 1e5, 1e10,
+                              'solar', frozen=True)
+        self.dist = Parameter(name, 'dist', 100, 0.01, 1e9, 0.01, 1e9,
+                              'Mpc', frozen=True)
+        self.logmdot = Parameter(name, 'logmdot', -1, -1.65, 0.39, -1.65, 0.39)
+        self.astar = Parameter(name, 'astar', 0.0, -1, 0.998, -1, 0.998,
+                               frozen=True)
+        self.cosi = Parameter(name, 'cosi', 0.5, 0.05, 1.0, 0.05, 1.0,
+                              frozen=True)
+
+        self.redshift = Parameter(name, 'redshift', 0, 0, 5, 0, 5,
+                                  frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
+                self.redshift, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSraymond(XSAdditiveModel):
     """The XSPEC raymond model: emission, hot diffuse gas, Raymond-Smith.
 
@@ -4678,6 +5085,241 @@ class XSrefsch(XSAdditiveModel):
         self.accuracy = Parameter(name, 'accuracy', 30., 30., 100000., 0.0, hugeval, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.foldE, self.rel_refl, self.redshift, self.abund, self.Fe_abund, self.Incl, self.T_disk, self.xi, self.Betor10, self.Rin, self.Rout, self.accuracy, self.norm))
+
+
+@version_at_least("12.10.1")
+class XSrelline(XSAdditiveModel):
+    """The XSPEC relline model: relativistic accretion disk line emission with different geometries
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    lineE
+        The rest-frame line energy in keV.
+    Index1
+        Emissivity index for the inner disk.
+    Index2
+        Emissivity index for the outer disk.
+    Rbr
+        The break radius separating the inner and outer portions of the
+        disk (gravitational radii)
+    a
+        The dimensionless black-hole spin.
+    Incl
+        The disk inclination angle to the line of sight, in degrees.
+    Rin
+        The inner radius of the disk in units of the radius of marginal
+        stability.
+    Rout
+        The outer radius of the disk in units of the radius of marginal
+        stability.
+    z
+        Redshift
+    limb
+        limb-darkening/-brightening law with 0=isotropic, 1=darkening
+        (flux 1 + 2.06 mu), 2=brightening (flux ln(1 + 1/mu)) where
+        mu=cos(emission angle)
+    norm
+        The flux in the line (photon/cm^2/s).
+
+    See Also
+    --------
+    XSrelline_lp, XSrelline_lp_ext
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.10.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRelline.html
+
+    """
+
+    __function__ = "tdrelline"
+
+    def __init__(self, name='relline'):
+        self.lineE = Parameter(name, 'lineE', 6.4, 0.1, 10, 0.01, 100, 'keV')
+        self.Index1 = Parameter(name, 'Index1', 3, -10, 10, -10, 10,
+                                frozen=True)
+        self.Index2 = Parameter(name, 'Index2', 3, -10, 10, -10, 10,
+                                frozen=True)
+        self.Rbr = Parameter(name, 'Rbr', 14, 1, 400, 1, 1000, frozen=True)
+        self.a = Parameter(name, 'a', 0.998, -0.998, 0.998, -0.998, 0.998)
+        self.Incl = Parameter(name, 'Incl', 30, 5, 80, 1, 89, 'deg',
+                              frozen=True)
+        self.Rin = Parameter(name, 'Rin', -1, -100, -1, -100, -1,
+                             frozen=True)
+        self.Rout = Parameter(name, 'Rout', 400, 1, 400, 1, 1000,
+                              frozen=True)
+        self.z = Parameter(name, 'z', 0, 0, 10, 0, 10, frozen=True)
+        self.limb = Parameter(name, 'limb', 0, 0, 2, 0, 2, frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.lineE, self.Index1, self.Index2, self.Rbr, self.a,
+                self.Incl, self.Rin, self.Rout, self.z, self.limb,
+                self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.10.1")
+class XSrelline_lp(XSAdditiveModel):
+    """The XSPEC relline_lp model: relativistic accretion disk line emission with different geometries
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    lineE
+        The rest-frame line energy in keV.
+    h
+        The height of the primary source, in units of GM/c^2.
+    a
+        The dimensionless black-hole spin.
+    Incl
+        The disk inclination angle to the line of sight, in degrees.
+    Rin
+        The inner radius of the disk in units of the radius of marginal
+        stability.
+    Rout
+        The outer radius of the disk in units of the radius of marginal
+        stability.
+    z
+        Redshift
+    limb
+        limb-darkening/-brightening law with 0=isotropic, 1=darkening
+        (flux 1 + 2.06 mu), 2=brightening (flux ln(1 + 1/mu)) where
+        mu=cos(emission angle)
+    gamma
+        The power-law index of the primary source (E-gamma).
+    norm
+        The flux in the line (photon/cm^2/s).
+
+    See Also
+    --------
+    XSrelline, XSrelline_lp_ext
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.10.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRelline.html
+
+    """
+
+    __function__ = "tdrellinelp"
+
+    def __init__(self, name='relline_lp'):
+        self.lineE = Parameter(name, 'lineE', 6.4, 0.1, 10, 0.01, 100, 'keV')
+        self.h = Parameter(name, 'h', 6, 3, 100, -100, 1000, 'GM/c^2')
+        self.a = Parameter(name, 'a', 0.998, -0.998, 0.998, -0.998, 0.998)
+        self.Incl = Parameter(name, 'Incl', 30, 5, 80, 1, 89, 'deg',
+                              frozen=True)
+        self.Rin = Parameter(name, 'Rin', -1, -100, -1, -100, -1,
+                             frozen=True)
+        self.Rout = Parameter(name, 'Rout', 400, 1, 400, 1, 1000,
+                              frozen=True)
+        self.z = Parameter(name, 'z', 0, 0, 10, 0, 10, frozen=True)
+        self.limb = Parameter(name, 'limb', 0, 0, 2, 0, 2, frozen=True)
+        self.gamma = Parameter(name, 'gamma', 2, 1, 4, -10, 10, frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.lineE, self.h, self.a, self.Incl, self.Rin, self.Rout,
+                self.z, self.limb, self.gamma, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.10.1")
+class XSrelline_lp_ext(XSAdditiveModel):
+    """The XSPEC relline_lp model: relativistic accretion disk line emission with different geometries
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    lineE
+        The rest-frame line energy in keV.
+    a
+        The dimensionless black-hole spin.
+    Incl
+        The disk inclination angle to the line of sight, in degrees.
+    Rin
+        The inner radius of the disk in units of the radius of marginal
+        stability.
+    Rout
+        The outer radius of the disk in units of the radius of marginal
+        stability.
+    z
+        Redshift
+    limb
+        limb-darkening/-brightening law with 0=isotropic, 1=darkening
+        (flux 1 + 2.06 mu), 2=brightening (flux ln(1 + 1/mu)) where
+        mu=cos(emission angle)
+    gamma
+        The power-law index of the primary source (E-gamma).
+    hbase
+        The lower height of radially extended primary source.
+    htop
+        The upper height of radially extended primary source.
+    vbase
+        The velocity of the source at hbase.
+    v100
+        The velocity of the source at 100 rg above hbase.
+    norm
+        The flux in the line (photon/cm^2/s).
+
+    See Also
+    --------
+    XSrelline, XSrelline_lp
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.10.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRelline.html
+
+    """
+
+    __function__ = "tdrellinelpext"
+
+    def __init__(self, name='relline_lp_ext'):
+        self.lineE = Parameter(name, 'lineE', 6.4, 0.1, 10, 0.01, 100, 'keV')
+        self.a = Parameter(name, 'a', 0.998, -0.998, 0.998, -0.998, 0.998)
+        self.Incl = Parameter(name, 'Incl', 30, 5, 80, 1, 89, 'deg',
+                              frozen=True)
+        self.Rin = Parameter(name, 'Rin', -1, -100, -1, -100, -1,
+                             frozen=True)
+        self.Rout = Parameter(name, 'Rout', 400, 1, 400, 1, 1000,
+                              frozen=True)
+        self.z = Parameter(name, 'z', 0, 0, 10, 0, 10, frozen=True)
+        self.limb = Parameter(name, 'limb', 0, 0, 2, 0, 2, frozen=True)
+        self.gamma = Parameter(name, 'gamma', 2, 1, 4, -10, 10, frozen=True)
+        self.hbase = Parameter(name, 'hbase', 3, 3, 100, -100, 1000,
+                               'GM/c^2', frozen=True)
+        self.htop = Parameter(name, 'htop', 50, 3, 100, -100, 1000,
+                              'GM/c^2', frozen=True)
+        self.vbase = Parameter(name, 'vbase', 0, 0, 0.99, 0, 0.999,
+                               'c', frozen=True)
+        self.v100 = Parameter(name, 'v100', 0, 0, 0.999, 0, 0.9999,
+                              'c', frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.lineE, self.a, self.Incl, self.Rin, self.Rout,
+                self.z, self.limb, self.gamma,
+                self.hbase, self.htop, self.vbase, self.v100,
+                self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
 
 
 class XSsedov(XSAdditiveModel):
@@ -6070,6 +6712,59 @@ class XSzbbody(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.redshift, self.norm))
 
 
+@version_at_least("12.10.1")
+class XSzbknpower(XSAdditiveModel):
+    """The XSPEC bknpower model: broken power law.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    PhoIndx1
+        The power law photon index for energies less than BreakE.
+    BreakE
+        The break energy, in keV.
+    PhoIndx2
+        The power law photon index for energies greater than BreakE.
+    Redshift
+        The redshift.
+    norm
+        The normalization of the model. See [1]_ for details, as its
+        meaning depends on whether the "POW_EMIN" or "POW_EMAX"
+        keywords have been set with ``set_xsxset``.
+
+    See Also
+    --------
+    XSbknpower
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelBknpower.html
+
+    """
+
+    __function__ = "C_zBrokenPowerLaw"
+
+    def __init__(self, name='zbknpower'):
+        self.PhoIndx1 = Parameter(name, 'PhoIndx1', 1., -2., 9., -hugeval, hugeval)
+        self.BreakE = Parameter(name, 'BreakE', 5., 1.e-2, 1.e6, 0.0, hugeval, 'keV')
+        self.PhoIndx2 = Parameter(name, 'PhoIndx2', 2., -2., 9., -hugeval, hugeval)
+        self.Redshift = Parameter(name, 'Redshift', 0, -0.999, 10, -0.999, 10,
+                                  frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.PhoIndx1, self.BreakE, self.PhoIndx2, self.Redshift,
+                self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
+
+    def guess(self, dep, *args, **kwargs):
+        XSAdditiveModel.guess(self, dep, *args, **kwargs)
+        pos = get_xspec_position(dep, *args)
+        param_apply_limits(pos, self.BreakE, **kwargs)
+
+
 class XSzbremss(XSAdditiveModel):
     """The XSPEC zbremss model: thermal bremsstrahlung.
 
@@ -6189,6 +6884,56 @@ class XSzgauss(XSAdditiveModel):
         XSAdditiveModel.guess(self, dep, *args, **kwargs)
         pos = get_xspec_position(dep, *args)
         param_apply_limits(pos, self.LineE, **kwargs)
+
+
+@version_at_least("12.10.1")
+class XSzlogpar(XSAdditiveModel):
+    """The XSPEC zlogpar model: log-parabolic blazar model.
+
+    The model is described at [1]_.
+
+    Attributes
+    ----------
+    alpha
+        The slope at the pivot energy.
+    beta
+        The curvature term.
+    pivotE
+        The pivot energy, in keV.
+    Redshift
+        The redshift.
+    norm
+        The normalization of the model: see [1]_ for more details.
+
+    See Also
+    --------
+    XSlogpar
+
+    Notes
+    -----
+    This model is only available when used with XSPEC 12.10.1 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLogpar.html
+
+    """
+
+    __function__ = "C_zLogpar"
+
+    def __init__(self, name='zlogpar'):
+        self.alpha = Parameter(name, 'alpha', 1.5, 0., 4., 0.0, hugeval)
+        self.beta = Parameter(name, 'beta', 0.2, -4., 4., -hugeval, hugeval)
+        self.pivotE = Parameter(name, 'pivotE', 1.0, units='keV',
+                                alwaysfrozen=True)
+        self.Redshift = Parameter(name, 'Redshift', 0, -0.999, 10, -0.999, 10,
+                                  frozen=True)
+        self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
+
+        pars = (self.alpha, self.beta, self.pivotE, self.Redshift, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
 
 
 class XSzpowerlw(XSAdditiveModel):
@@ -8832,7 +9577,7 @@ class XSlogpar(XSAdditiveModel):
 
     See Also
     --------
-    XSeplogpar
+    XSeplogpar, XSzlogpar
 
     References
     ----------
@@ -8846,10 +9591,13 @@ class XSlogpar(XSAdditiveModel):
     def __init__(self, name='logpar'):
         self.alpha = Parameter(name, 'alpha', 1.5, 0., 4., 0.0, hugeval)
         self.beta = Parameter(name, 'beta', 0.2, -4., 4., -hugeval, hugeval)
-        self.pivotE = Parameter(name, 'pivotE', 1.0, units='keV', alwaysfrozen=True)
+        self.pivotE = Parameter(name, 'pivotE', 1.0, units='keV',
+                                alwaysfrozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
 
-        XSAdditiveModel.__init__(self, name, (self.alpha, self.beta, self.pivotE, self.norm))
+        pars = (self.alpha, self.beta, self.pivotE, self.norm)
+
+        XSAdditiveModel.__init__(self, name, pars)
 
 
 class XSoptxagn(XSAdditiveModel):
