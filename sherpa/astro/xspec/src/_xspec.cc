@@ -141,7 +141,9 @@ void xstitg_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 void disk_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void diskir_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void xsdskb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#ifndef XSPEC_12_10_1  
 void xsdili_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
 void diskm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void disko_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void diskpbb_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -272,7 +274,9 @@ void xsvvap_(float* ear, int* ne, float* param, int* ifl, float* photar, float* 
 
 void zigm_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 
+#ifndef XSPEC_12_10_1
 void logpar_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
+#endif
 void eplogpar_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void optxagn_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 void optxagnf_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
@@ -384,7 +388,7 @@ int _sherpa_init_xspec_library()
     }
     fout.clear();
     fout.close();
-
+    
     // Try to minimize model chatter for normal operation.
     FPCHAT( 0 );
 
@@ -406,7 +410,6 @@ int _sherpa_init_xspec_library()
 
   } catch(...) {
 
-    
     // Get back original std::cout
     if (cout_sbuf != NULL) {
       std::cout.clear();
@@ -982,7 +985,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( disk, 4 ),
   XSPECMODELFCT_NORM( diskir, 9 ),
   XSPECMODELFCT_NORM( xsdskb, 2 ),
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_C_NORM( C_diskline, 6 ),
+#else
   XSPECMODELFCT_NORM( xsdili, 6 ),
+#endif
   XSPECMODELFCT_NORM( diskm, 5 ),
   XSPECMODELFCT_NORM( disko, 5 ),
   XSPECMODELFCT_NORM( diskpbb, 3 ),
@@ -1012,7 +1019,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_kerrdisk, 8 ),
 #endif
   XSPECMODELFCT_NORM( spin, 10 ),
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_C_NORM( C_laor, 6 ),
+#else
   XSPECMODELFCT_C_NORM( C_xslaor, 6 ),
+#endif
   XSPECMODELFCT_C_NORM( C_laor2, 8 ),
 #ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_lorentzianLine, 3 ),
@@ -1174,7 +1185,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_gaussDem, 7 ),
   XSPECMODELFCT_C_NORM( C_vgaussDem, 20 ),
   XSPECMODELFCT_NORM( eplogpar, 3 ),
+#ifdef XSPEC_12_10_1
+  XSPECMODELFCT_C_NORM( C_logpar, 4 ),
+#else  
   XSPECMODELFCT_NORM( logpar, 4 ),
+#endif  
   XSPECMODELFCT_NORM( optxagn, 14 ),
   XSPECMODELFCT_NORM( optxagnf, 12 ),
   XSPECMODELFCT_NORM( pexmon, 8 ),

@@ -19,9 +19,9 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.10.0, 12.9.1, and 12.9.0 of XSPEC [1]_,
-and can be built against the model library or the full application.
-There is no guarantee of support for older or newer versions of XSPEC.
+Sherpa supports versions 12.10.1, 12.10.0, 12.9.1, and 12.9.0 of XSPEC [1]_,
+and can be built against the model library or the full application.  There is
+no guarantee of support for older or newer versions of XSPEC.
 
 To be able to use most routines from this module, the HEADAS environment
 variable must be set. The `get_xsversion` function can be used to return the
@@ -29,7 +29,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.10.0'
+   '12.10.1'
 
 References
 ----------
@@ -2535,7 +2535,7 @@ class XSdiskline(XSAdditiveModel):
 
     """
 
-    __function__ = "xsdili"
+    __function__ = "C_diskline" if equal_or_greater_than("12.10.1") else "xsdili"
 
     def __init__(self, name='diskline'):
         self.LineE = Parameter(name, 'LineE', 6.7, 0., 100., 0.0, hugeval, 'keV')
@@ -3297,7 +3297,7 @@ class XSlaor(XSAdditiveModel):
 
     """
 
-    __function__ = "C_xslaor"
+    __function__ = "C_laor" if equal_or_greater_than("12.10.1") else "C_xslaor"
 
     def __init__(self, name='laor'):
         self.lineE = Parameter(name, 'lineE', 6.4, 0., 100., 0.0, hugeval, 'keV')
@@ -8841,7 +8841,7 @@ class XSlogpar(XSAdditiveModel):
 
     """
 
-    __function__ = "logpar"
+    __function__ = "C_logpar" if equal_or_greater_than("12.10.1") else "logpar"
 
     def __init__(self, name='logpar'):
         self.alpha = Parameter(name, 'alpha', 1.5, 0., 4., 0.0, hugeval)

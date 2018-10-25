@@ -122,10 +122,13 @@ class xspec_config(Command):
                 if xspec_version >= LooseVersion("12.10.0"):
                     macros += [('XSPEC_12_10_0', None)]
 
+                if xspec_version >= LooseVersion("12.10.1"):
+                    macros += [('XSPEC_12_10_1', None)]
+
                 # Since there are patches (e.g. 12.10.0c), look for the
                 # "next highest version.
-                if xspec_version >= LooseVersion("12.10.1"):
-                    self.warn("XSPEC Version is greater than 12.10.0, which is the latest supported version for Sherpa")
+                if xspec_version >= LooseVersion("12.10.2"):
+                    self.warn("XSPEC Version is greater than 12.10.1, which is the latest supported version for Sherpa")
 
             extension = build_ext('xspec', ld, inc, l, define_macros=macros)
 
