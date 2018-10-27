@@ -730,6 +730,41 @@ def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
     assert (zeros[0] == np.arange(968, 1090)).all()
 
 
+@requires_data
+@requires_fits
+@requires_xspec
+def test_create_xspec_multiplicative_model(make_data_path):
+    """Can we load multiplicative table models?
+    """
+
+    from sherpa.astro import xspec
+
+    path = make_data_path('testpcfabs.mod')
+    tbl = xspec.read_xstable_model('bar', path)
+
+    assert tbl.name == 'bar'
+    assert isinstance(tbl, xspec.XSTableModel)
+    assert not tbl.addmodel
+
+    # Apparently we lose the case of the parameter names;
+    # should investigate
+    #
+    assert len(tbl.pars) == 2
+    assert tbl.pars[0].name == 'nh'
+    assert tbl.pars[1].name == 'fract'
+
+    assert tbl.nh.val == pytest.approx(1)
+    assert tbl.nh.min == pytest.approx(0)
+    assert tbl.nh.max == pytest.approx(1000)
+
+    assert tbl.fract.val == pytest.approx(0.5)
+    assert tbl.fract.min == pytest.approx(0)
+    assert tbl.fract.max == pytest.approx(1)
+
+    for p in tbl.pars:
+        assert not(p.frozen)
+
+
 @requires_xspec
 def test_ismabs_parameter_name_clashes():
     """Check the work around for the ismabs XSPEC 12.9.1 name clashes.
