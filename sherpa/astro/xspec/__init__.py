@@ -936,9 +936,24 @@ class XSTableModel(XSModel):
 
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
-        func = _xspec.xsmtbl
+        # The function used depends on XSPEC version and, prior
+        # to XSPEC 12.10.1, the type of table.
+        #
+        # Note that this is lacking support for "exp" models.
+        # It should also not be a run-time decision, since the
+        # logic could be in __init__, but that can be changed
+        # at a later date.
+        #
+        if hasattr(_xspec, 'tabint'):
+            tabtype = 'add' if self.addmodel else 'mul'
+            return _xspec.tabint(p,
+                                 filename=self.filename, tabtype=tabtype,
+                                 *args, **kwargs)
+
         if self.addmodel:
             func = _xspec.xsatbl
+        else:
+            func = _xspec.xsmtbl
 
         return func(p, filename=self.filename, *args, **kwargs)
 
