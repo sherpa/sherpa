@@ -317,11 +317,15 @@ void tdrellinelp_(float* ear, int* ne, float* param, int* ifl, float* photar, fl
 void tdrellinelpext_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);
 #endif
 
-// XSPEC table models
+// XSPEC table models; in XSPEC 12.10.1 these have been consolidated
+// into the tabint routine.
+//
+#ifndef XSPEC_12_10_1
 void xsatbl(float* ear, int ne, float* param, const char* filenm, int ifl, 
 	    float* photar, float* photer);
 void xsmtbl(float* ear, int ne, float* param, const char* filenm, int ifl, 
 	    float* photar, float* photer);
+#endif
 
 // XSPEC convolution models
 //
@@ -1283,8 +1287,12 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C( xszbabs, 4 ), // DJB thinks it's okay to use the C++ wrapper for C
 
   // XSPEC table models
+#ifdef XSPEC_12_10_1
+  XSPECTABLEMODEL,
+#else
   XSPECTABLEMODEL_NORM( xsatbl ),
   XSPECTABLEMODEL( xsmtbl ),
+#endif
 
   // XSPEC convolution models
   XSPECMODELFCT_CON(C_cflux, 3),
