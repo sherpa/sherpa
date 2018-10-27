@@ -765,6 +765,63 @@ def test_create_xspec_multiplicative_model(make_data_path):
         assert not(p.frozen)
 
 
+@requires_data
+@requires_fits
+@requires_xspec
+def test_evaluate_xspec_multiplicative_model(make_data_path):
+    """Can we evaluate multiplicative table models?
+
+    This is a limited test - in that it does not attempt to
+    test the full set of grid inputs that we do with additive
+    table models (and other XSPEC models) - as it is assumed that
+    this logic hsa been tested.
+    """
+
+    from sherpa.astro import xspec
+
+    if xspec.get_xsversion().startswith('12.10.0'):
+        pytest.skip('Test known to crash XSPEC 12.10.0')
+
+    path = make_data_path('testpcfabs.mod')
+    tbl = xspec.read_xstable_model('bar', path)
+
+    # This extends beyond the range of the model grid
+    egrid = np.arange(0.1, 17, 1.0)
+
+    # The expected values, evaluated with XSPEC 12.10.1b using
+    # C++ code (i.e. not the Sherpa interface).
+    #
+    # It appears that the -1 is 1 in earlier versions.
+    #
+    yexp = np.asarray([0.511674,
+                       0.730111,
+                       0.898625,
+                       0.95572,
+                       0.977472,
+                       0.987328,
+                       0.992138,
+                       0.990245,
+                       0.992846,
+                       0.994674,
+                       0.995997,
+                       0.996945,
+                       0.997616,
+                       0.998104,
+                       0.998454,
+                       -1,
+                       0])
+
+    # Note, xspec 12.10.0 should not be seen here as explicitly
+    # excluded above.
+    xver = xspec.get_xsversion()
+    if xver.startswith('12.9.'):
+        yexp[-2] = 1.0
+
+    y = tbl(egrid)
+
+    assert_almost_equal(y, yexp, decimal=6)
+
+
 @requires_xspec
 def test_ismabs_parameter_name_clashes():
     """Check the work around for the ismabs XSPEC 12.9.1 name clashes.
