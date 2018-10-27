@@ -27,6 +27,7 @@ from tempfile import NamedTemporaryFile, gettempdir
 import pytest
 import six
 
+import numpy as np
 from numpy.testing import assert_almost_equal
 
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
@@ -691,6 +692,42 @@ def test_read_xstable_model(make_data_path):
 
     for p in tbl.pars:
         assert not(p.frozen)
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
+    """Can we extend an additive table model beyond its grid?
+
+    XSPEC 12.10.0 (if not manually patched) will crash if an
+    XSPEC table model is evaluated beyond its grid (this is only
+    an issue for programs like Sherpa that use XSPEC as a "library").
+    """
+
+    from sherpa.astro import xspec
+
+    if xspec.get_xsversion().startswith('12.10.0'):
+        pytest.skip('Test known to crash XSPEC 12.10.0')
+
+    path = make_data_path('xspec-tablemodel-RCS.mod')
+    tbl = xspec.read_xstable_model('bar', path)
+
+    egrid = np.arange(0.1, 11, 0.01)
+    y = tbl(egrid)
+
+    # Several simple regression tests.
+    assert y[0] == pytest.approx(0.27216572)
+    assert y.max() == pytest.approx(0.3047457)
+    assert y.min() == 0.0
+
+    # Is the following worth it?
+    minval = 1.2102469e-11
+    assert y[y > 0].min() == pytest.approx(minval)
+    assert y[967] == pytest.approx(minval)
+
+    zeros = np.where(y <= 0)
+    assert (zeros[0] == np.arange(968, 1090)).all()
 
 
 @requires_xspec
