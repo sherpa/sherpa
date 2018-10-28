@@ -1203,7 +1203,7 @@ static PyMethodDef XSpecMethods[] = {
 
   // XSPEC table models
   XSPECTABLEMODEL_NORM( xsatbl ),
-  XSPECTABLEMODEL_NORM( xsmtbl ),
+  XSPECTABLEMODEL( xsmtbl ),
 
   // XSPEC convolution models
   XSPECMODELFCT_CON(C_cflux, 3),
