@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -8060,15 +8060,15 @@ class Session(NoNewAttributesAfterInit):
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
 
-        See Also
-        --------
-        get_pvalue_plot : Return the data used by plot_pvalue.
-        get_pvalue_results : Return the data calculated by the last plot_pvalue call.
-
         Raises
         ------
         TypeError
            An invalid statistic.
+
+        See Also
+        --------
+        get_pvalue_plot : Return the data used by plot_pvalue.
+        get_pvalue_results : Return the data calculated by the last plot_pvalue call.
 
         Notes
         -----

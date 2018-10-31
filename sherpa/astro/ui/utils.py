@@ -8144,6 +8144,12 @@ class Session(sherpa.ui.utils.Session):
            set are scaled appropriately and added to the simulated
            source signal.
 
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set already exists and does not contain PHA
+           data.
+
         See Also
         --------
         fake : Simulate a data set.
@@ -8152,12 +8158,6 @@ class Session(sherpa.ui.utils.Session):
         get_dep : Return the dependent axis of a data set.
         load_arrays : Create a data set from array values.
         set_model : Set the source model expression for a data set.
-
-        Raises
-        ------
-        sherpa.utils.err.ArgumentErr
-           If the data set already exists and does not contain PHA
-           data.
 
         Examples
         --------
