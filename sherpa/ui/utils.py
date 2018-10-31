@@ -43,11 +43,7 @@ warning = logging.getLogger(__name__).warning
 
 config = ConfigParser()
 config.read(get_config())
-# Suppress printing of traceback in high-level UI.
-# If needed for debugging, set sys.tracebacklimit to a
-# nonzero value in that session--traceback is for debugging
-# but is irritating to ordinary users.
-sys.tracebacklimit = int(config.get('verbosity', 'level'))
+
 numpy.set_printoptions(threshold=int(config.get('verbosity', 'arraylength')))
 
 __all__ = ('ModelWrapper', 'Session')
