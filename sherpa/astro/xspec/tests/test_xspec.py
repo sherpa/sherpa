@@ -190,14 +190,14 @@ class test_xspec(SherpaTestCase):
         # as it is automatically over-written by the XSPEC init file,
         # but not for the models-only build we use).
         #
-        # Some models (e.g. XSismabs, XSkerrd[isk]?) seem to return
-        # 0's, so skip them for now.
+        # Some models return 0's, so skip them for now.
+        #
         # The logic of what gets sent in for the model
         # argument is unclear (class, object, and strings are
         # sent in), which makes this more annoying.
         #
         smdl = str(model)
-        for n in ["ismabs", "kerrd", "mkcflow", "vmcflow"]:
+        for n in ["kerrd", "mkcflow", "vmcflow"]:
             if n in smdl:
                 return
 
@@ -617,7 +617,7 @@ def assert_is_finite(vals, modelcls, label):
     # but the default value is 0 but mkcflox/vmcflow
     # have a default redshift of 0 in XSPEC 12.10.0 model.dat
     #
-    if modelcls in [xs.XSismabs, xs.XSkerrd, xs.XSmkcflow, xs.XSvmcflow]:
+    if modelcls in [xs.XSkerrd, xs.XSmkcflow, xs.XSvmcflow]:
         # perhaps should check that all values == 0 so that
         # if anything changes the test will start to fail
         return
