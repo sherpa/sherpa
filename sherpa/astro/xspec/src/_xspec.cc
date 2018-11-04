@@ -1250,7 +1250,7 @@ static PyMethodDef XSpecMethods[] = {
 #ifdef XSPEC_12_10_0  
   XSPECMODELFCT_NORM(jet, 16),
 #endif
-  XSPECMODELFCT_NORM(ismabs, 31),
+  XSPECMODELFCT(ismabs, 31),
   XSPECMODELFCT_C_NORM(slimbbmodel, 10),
   XSPECMODELFCT_C_NORM(C_snapec, 7),
   XSPECMODELFCT_C(C_tbfeo, 4),
