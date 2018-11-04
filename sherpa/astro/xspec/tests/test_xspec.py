@@ -618,9 +618,10 @@ def assert_is_finite(vals, modelcls, label):
     # have a default redshift of 0 in XSPEC 12.10.0 model.dat
     #
     if modelcls in [xs.XSkerrd, xs.XSmkcflow, xs.XSvmcflow]:
-        # perhaps should check that all values == 0 so that
-        # if anything changes the test will start to fail
-        return
+        # Catch the case when this condition is no longer valid
+        #
+        assert (vals == 0.0).all(), \
+            'Expected {} to evaluate to all zeros [{}]'.format(modelcls, label)
 
     emsg = "model {} has a value > 0 [{}]".format(modelcls, label)
     assert (vals > 0.0).any(), emsg
