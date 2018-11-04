@@ -622,6 +622,7 @@ def assert_is_finite(vals, modelcls, label):
         #
         assert (vals == 0.0).all(), \
             'Expected {} to evaluate to all zeros [{}]'.format(modelcls, label)
+        return
 
     emsg = "model {} has a value > 0 [{}]".format(modelcls, label)
     assert (vals > 0.0).any(), emsg
