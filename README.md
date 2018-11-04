@@ -2,7 +2,7 @@
 [![Documentation Status](https://readthedocs.org/projects/sherpa/badge/)](https://sherpa.readthedocs.io/)
 [![DOI](https://zenodo.org/badge/683/sherpa/sherpa.svg)](https://zenodo.org/badge/latestdoi/683/sherpa/sherpa)
 [![GPLv3+ License](https://img.shields.io/badge/license-GPLv3+-blue.svg)](https://www.gnu.org/copyleft/gpl.html)
-![Python version](https://img.shields.io/badge/Python-2.7,3.5,3.6-green.svg?style=flat)
+![Python version](https://img.shields.io/badge/Python-2.7,3.5,3.6,3.7-green.svg?style=flat)
 
 <!-- TOC *generated with [DocToc](https://github.com/thlorenz/doctoc)* -->
 **Table of Contents**
