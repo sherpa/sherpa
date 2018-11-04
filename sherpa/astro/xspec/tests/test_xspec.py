@@ -198,7 +198,7 @@ class test_xspec(SherpaTestCase):
         #
         smdl = str(model)
         for n in ["kerrd", "mkcflow", "vmcflow"]:
-            if n in smdl:
+            if n in smdl and "kerrdisk" not in smdl:
                 return
 
         emsg = "model {} has a value > 0 [{}]".format(model, label)
