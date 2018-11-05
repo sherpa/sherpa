@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -228,7 +228,7 @@ class AbsorptionGaussian(RegriddableModel1D):
     pos
         The center of the gaussian, in Angstroms.
     ewidth
-        The equivalent width of the model.
+        The equivalent width of the model, in Angstroms.
     limit
         The model is only evaluated for points that lie within
         limit sigma of pos. It is a hidden parameter, with a
@@ -310,7 +310,7 @@ class AbsorptionLorentz(RegriddableModel1D):
     pos
         The center of the lorentzian, in Angstroms.
     ewidth
-        The equivalent width of the model.
+        The equivalent width of the model, in Angstroms.
 
     See Also
     --------
@@ -706,7 +706,7 @@ class AbsorptionVoigt(RegriddableModel1D):
 
 # This model computes continuum emission as a blackbody function.
 class BlackBody(RegriddableModel1D):
-    """Emission from a black body.
+    """Emission from a black body as a function of wavelength.
 
     It is for use when the independent axis is in Angstroms.
 
@@ -797,9 +797,9 @@ class Bremsstrahlung(RegriddableModel1D):
     refer
         The reference point, in Angstroms.
     ampl
-        The amplitude of the emission; it is defined at the reference
-        point but its numerical value there also depends on the
-        temperature.
+        The amplitude of the emission. Note that the model does
+        not equal ``ampl`` at the reference point, as shown in
+        the functional form below.
     temperature
         The temperature in Kelvin.
 
