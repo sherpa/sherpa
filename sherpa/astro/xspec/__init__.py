@@ -44,7 +44,7 @@ import six
 from six.moves import xrange
 
 import string
-from sherpa.models import Parameter, ArithmeticModel, modelCacher1d, RegriddableModel1D
+from sherpa.models import Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
 
 from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
