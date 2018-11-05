@@ -9463,7 +9463,9 @@ class Session(sherpa.ui.utils.Session):
         -----
         For PHA data sets with background components, the function
         will fit any background components for which a background
-        model has been created (rather than being subtracted).
+        model has been created (rather than being subtracted). The
+        `fit_bkg` function can be used to fit models to just the
+        background data.
 
         Examples
         --------
@@ -12598,10 +12600,11 @@ class Session(sherpa.ui.utils.Session):
         """Calculate the K correction for a model.
 
         The K correction ([1]_, [2]_, [3]_, [4]_) is the numeric
-        factor applied to measured energy fluxes to convert values in
-        an observed energy band to that they are in a rest-frame
-        energy band (that is, correct for the change in spectral shape
-        between the rest-frame and observed-frame bands). This is
+        factor applied to measured energy fluxes in an observed
+        energy band to estimate the flux in a given rest-frame
+        energy band. It accounts for the change in spectral energy
+        distribution between the desired rest-frame band and the
+        rest-frame band corresponding to the observed band. This is
         often used when converting a flux into a luminosity.
 
         Parameters
@@ -12616,7 +12619,7 @@ class Session(sherpa.ui.utils.Session):
         restlo : number or ``None``
            The minimum energy of the rest-frame band. If ``None`` then
            use ``obslo``.
-        restlo : number or ``None``
+        resthi : number or ``None``
            The maximum energy of the rest-frame band. It must be
            larger than ``restlo``. If ``None`` then use ``obshi``.
         id : int or str, optional
@@ -12700,6 +12703,12 @@ class Session(sherpa.ui.utils.Session):
         >>> dataspace1d(0.01, 11, 0.01)
         >>> zs = np.linspace(0, 2, 21)
         >>> ks = calc_kcorr(zs, 0.5, 2, restlo=0.1, resthi=10)
+
+        Calculate the k correction for the background dataset
+        bkg_id=2 for a redshift of 0.5 over the energy range
+        0.5 to 2 keV with rest-frame energy limits of 2 to 10 keV.
+
+        >>> calc_kcorr(0.5, 0.5, 2, 2, 10, bkg_id=2)
 
         """
         data = self.get_data(id)

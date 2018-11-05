@@ -2040,7 +2040,7 @@ class Session(NoNewAttributesAfterInit):
         return stat
 
     def get_stat(self, name=None):
-        """Return a fit statisic.
+        """Return the fit statisic.
 
         Parameters
         ----------
@@ -2068,11 +2068,17 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> stat = ui.stat()
-        >>> stat
-        Chi Squared with Gehrels variance
+        Return the currently-selected statistic, display its name, and
+        read the help documentation for it:
+
+        >>> stat = get_stat()
         >>> stat.name
         'chi2gehrels'
+        >>> help(stat)
+
+        Read the help for the "wstat" statistic:
+
+        >>> help(get_stat('wstat'))
 
         """
         if name is None:
@@ -2097,7 +2103,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> get_method_name()
+        >>> get_stat_name()
         'chi2gehrels'
 
         >>> set_stat('cash')
@@ -5252,9 +5258,9 @@ class Session(NoNewAttributesAfterInit):
 
         Model components created by this function are set to their
         default values. Components can also be created directly using
-        the syntax ``typename.name``, such as in calls to `set_model`,
-        when using the default model auto assignment setting (see
-        `set_model_autoassign_func`).
+        the syntax ``typename.name``, such as in calls to `set_model`
+        and `set_source` (unless you have called `set_model_autoassign_func`
+        to change the default model auto-assignment setting).
 
         Parameters
         ----------
@@ -5301,6 +5307,14 @@ class Session(NoNewAttributesAfterInit):
         >>> create_model_component("powlaw1d", "pl")
         >>> pl.gamma = 2.6
         >>> freeze(pl.gamma)
+
+        Create a blackbody model called bb, check that it is
+        reconized as a component, and display its parameters:
+
+        >>> create_model_component("bbody", "bb")
+        >>> list_model_components()
+        >>> print(bb)
+        >>> print(bb.ampl)
 
         """
 
@@ -6531,6 +6545,14 @@ class Session(NoNewAttributesAfterInit):
         load_user_model : Create a user-defined model.
         set_par : Set the value, limits, or behavior of a model parameter.
 
+        Notes
+        -----
+
+        The parameters must be specified in the order that the function
+        expects. That is, if the function has two parameters,
+        pars[0]='slope' and pars[1]='y_intercept', then the call to
+        add_user_pars must use the order ["slope", "y_intercept"].
+
         Examples
         --------
 
@@ -7202,6 +7224,12 @@ class Session(NoNewAttributesAfterInit):
         thaw : Allow model parameters to be varied during a fit.
         unlink : Unlink a parameter value.
 
+        Notes
+        -----
+
+        The `thaw` function can be used to reverse this setting,
+        so that parameters can be varied in a fit.
+
         Examples
         --------
 
@@ -7244,6 +7272,13 @@ class Session(NoNewAttributesAfterInit):
         link : Link a parameter value to an associated value.
         set_par : Set the value, limits, or behavior of a model parameter.
         unlink : Unlink a parameter value.
+
+        Notes
+        -----
+
+        The `freeze` function can be used to reverse this setting,
+        so that parameters are "frozen" and so remain constant during
+        a fit.
 
         Examples
         --------
@@ -7506,8 +7541,9 @@ class Session(NoNewAttributesAfterInit):
         Displays the statistic value for each data set, and the
         combined fit, using the current set of models, parameters, and
         ranges. The output is printed to stdout, and so is intended
-        for use in interactive analysis. The `get_stat_info` function
-        returns the values as a list of objects.
+        for use in interactive analysis. The `get_stat_info`
+        function returns the same information but as an array of
+        Python structures.
 
         See Also
         --------
@@ -7521,6 +7557,40 @@ class Session(NoNewAttributesAfterInit):
         choice of statistic - have been changed since the last fit,
         then the results for that data set may not be meaningful and
         will therefore bias the results for the simultaneous results.
+
+        The information returned by `calc_stat_info` includes:
+
+        Dataset
+           The dataset identifier (or identifiers).
+
+        Statistic
+           The name of the statistic used to calculate the results.
+
+        Fit statistic value
+           The current fit statistic value.
+
+        Data points
+           The number of bins used in the fit.
+
+        Degrees of freedom
+            The number of bins minus the number of thawed parameters.
+
+        Some fields are only returned for a subset of statistics:
+
+        Probability (Q-value)
+            A measure of the probability that one would observe the
+            reduced statistic value, or a larger value, if the assumed
+            model is true and the best-fit model parameters are the true
+            parameter values.
+
+        Reduced statistic
+            The fit statistic value divided by the number of degrees of
+            freedom.
+
+        Examples
+        --------
+
+        >>> calc_stat_info()
 
         """
         output = self._get_stat_info()
@@ -7560,6 +7630,10 @@ class Session(NoNewAttributesAfterInit):
         choice of statistic - have been changed since the last fit,
         then the results for that data set may not be meaningful and
         will therefore bias the results for the simultaneous results.
+
+        The return value of `get_stat_info` differs to `get_fit_results`
+        since it includes values for each data set, individually, rather
+        than just the combined results.
 
         The fields of the object include:
 
@@ -7841,7 +7915,14 @@ class Session(NoNewAttributesAfterInit):
 
         >>> stat = calc_stat()
 
-        Use the data sets labelled "core" and "jet":
+        Find the statistic for data set 3:
+
+        >>> stat = calc_stat(3)
+
+        When fitting to multiple data sets, you can get the contribution
+        to the total fit statistic from only one data set, or from
+        several by listing the datasets explicitly. The following finds
+        the contribution from the data sets labelled "core" and "jet":
 
         >>> stat = calc_stat("core", "jet")
 
@@ -7859,16 +7940,16 @@ class Session(NoNewAttributesAfterInit):
     def calc_chisqr(self, id=None, *otherids):
         """Calculate the per-bin chi-squared statistic.
 
-        Evaluate the model for one or more data sets, compare it to
-        the data using the current statistic, and return the value for
-        each bin.  No fitting is done, as the current model parameter,
-        and any filters, are used.
+        Evaluate the model for one or more data sets, compare it to the
+        data using the current statistic, and return an array of
+        chi-squared values for each bin. No fitting is done, as the
+        current model parameter, and any filters, are used.
 
         Parameters
         ----------
         id : int or str, optional
-           The data set to use. If not given then the default
-           identifier is used, as returned by `get_default_id`.
+           The data set to use. If not given then all data sets
+           are used.
         *otherids : int or str, optional
            Include multiple data sets in the calculation.
 
@@ -7885,6 +7966,31 @@ class Session(NoNewAttributesAfterInit):
         calc_stat : Calculate the fit statistic for a data set.
         calc_stat_info : Display the statistic values for the current models.
         set_stat : Set the statistical method.
+
+        Notes
+        -----
+
+        The output array length equals the sum of the arrays lengths
+        of the requested data sets.
+
+        Examples
+        --------
+
+        When called with no arguments, the return value is the chi-squared
+        statistic for each bin in the data sets which have a defined model.
+
+        >>> calc_chisqr()
+
+        Supplying a specific data set ID to calc_chisqr - such as "1" or
+        "src" - will return the chi-squared statistic array for only that
+        data set.
+
+        >>> calc_chisqr(1)
+        >>> calc_chisqr("src")
+
+        Restrict the calculation to just datasets 1 and 3:
+
+        >>> calc_chisqr(1, 3)
 
         """
         ids, f = self._get_fit(id, otherids)
@@ -9817,6 +9923,9 @@ class Session(NoNewAttributesAfterInit):
     def get_sampler(self):
         """Return the current MCMC sampler options.
 
+        Returns the options for the current pyBLoCXS MCMC sampling
+        method (jumping rules).
+
         Returns
         -------
         options : dict
@@ -9830,6 +9939,11 @@ class Session(NoNewAttributesAfterInit):
         get_sampler_opt : Return an option of the current MCMC sampler.
         set_sampler : Set the MCMC sampler.
         set_sampler_opt : Set an option for the current MCMC sampler.
+
+        Examples
+        --------
+
+        >>> print(get_sampler())
 
         """
         return self._pyblocxs.get_sampler()
@@ -12925,6 +13039,8 @@ class Session(NoNewAttributesAfterInit):
         >>> contour('data', 1, 'data', 2)
 
         >>> contour('data', 'model')
+
+        >>> contour('data', 'model', 'fit', 'resid')
 
         """
         self._multi_plot(args, 'contour')
