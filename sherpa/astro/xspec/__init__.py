@@ -3162,7 +3162,7 @@ class XSkerrd(XSAdditiveModel):
 
     """
 
-    __function__ = "C_kerrdisk"
+    __function__ = "C_kerrd" if equal_or_greater_than("12.10.0") else "C_kerrdisk"
 
     def __init__(self, name='kerrd'):
         self.distance = Parameter(name, 'distance', 1., 0.01, 1000., 0.0, hugeval, 'kpc', True)

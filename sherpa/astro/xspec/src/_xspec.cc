@@ -1002,7 +1002,15 @@ static PyMethodDef XSpecMethods[] = {
 #endif  
   XSPECMODELFCT_NORM( xsgrbm, 4 ),
   XSPECMODELFCT_C_NORM( C_kerrbb, 10 ),
+#ifdef XSPEC_12_10_0
+  /* From an email from Craig Gordon at HEASARC:
+     12.10.0 and later: for kerrd call C_kerrd. For earlier versions kerrd should call C_kerrdisk.
+     (the model.dat file gives C_kerrdisk up to 12.10.1b)
+  */
+  XSPECMODELFCT_C_NORM( C_kerrd, 8 ),
+#else
   XSPECMODELFCT_C_NORM( C_kerrdisk, 8 ),
+#endif
   XSPECMODELFCT_NORM( spin, 10 ),
   XSPECMODELFCT_C_NORM( C_xslaor, 6 ),
   XSPECMODELFCT_C_NORM( C_laor2, 8 ),
