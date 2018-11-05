@@ -197,8 +197,8 @@ class test_xspec(SherpaTestCase):
         # sent in), which makes this more annoying.
         #
         smdl = str(model)
-        for n in ["kerrd", "mkcflow", "vmcflow"]:
-            if n in smdl and "kerrdisk" not in smdl:
+        for n in ["mkcflow", "vmcflow"]:
+            if n in smdl:
                 return
 
         emsg = "model {} has a value > 0 [{}]".format(model, label)
@@ -617,7 +617,7 @@ def assert_is_finite(vals, modelcls, label):
     # but the default value is 0 but mkcflox/vmcflow
     # have a default redshift of 0 in XSPEC 12.10.0 model.dat
     #
-    if modelcls in [xs.XSkerrd, xs.XSmkcflow, xs.XSvmcflow]:
+    if modelcls in [xs.XSmkcflow, xs.XSvmcflow]:
         # Catch the case when this condition is no longer valid
         #
         assert (vals == 0.0).all(), \
