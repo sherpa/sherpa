@@ -293,9 +293,9 @@ class test_threads(SherpaTestCase):
 
             fres = ui.get_fit_results()
             covarerr = sqrt(fres.extra_output['covar'].diagonal())
-            self.assertEqualWithinTol(covarerr[0], 9.37344776, 1e-4)
-            self.assertEqualWithinTol(covarerr[1], 0.51259645, 1e-4)
-            self.assertEqualWithinTol(covarerr[2], 0.06911017, 1e-4)
+            assert covarerr[0] = approx(9.37344776, rel=1e-4)
+            assert covarerr[1] = approx(0.51259645, rel=1e-4)
+            assert covarerr[2] = approx(0.06911017, rel=1e-4)
             assert fres.statval == approx(217.450, rel=1e-4)
             assert fres.rstat == approx(6.21287, rel=1e-4)
             assert fres.qval == approx(0.0, rel=1e-4)
