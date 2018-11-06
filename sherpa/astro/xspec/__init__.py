@@ -44,7 +44,7 @@ import six
 from six.moves import xrange
 
 import string
-from sherpa.models import Parameter, ArithmeticModel, modelCacher1d, RegriddableModel1D
+from sherpa.models import Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
 
 from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
@@ -3162,7 +3162,7 @@ class XSkerrd(XSAdditiveModel):
 
     """
 
-    __function__ = "C_kerrdisk"
+    __function__ = "C_kerrd" if equal_or_greater_than("12.10.0") else "C_kerrdisk"
 
     def __init__(self, name='kerrd'):
         self.distance = Parameter(name, 'distance', 1., 0.01, 1000., 0.0, hugeval, 'kpc', True)
