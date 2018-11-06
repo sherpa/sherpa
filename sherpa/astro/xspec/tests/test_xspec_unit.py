@@ -27,6 +27,7 @@ from tempfile import NamedTemporaryFile, gettempdir
 import pytest
 import six
 
+import numpy as np
 from numpy.testing import assert_almost_equal
 
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
@@ -691,6 +692,134 @@ def test_read_xstable_model(make_data_path):
 
     for p in tbl.pars:
         assert not(p.frozen)
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
+    """Can we extend an additive table model beyond its grid?
+
+    XSPEC 12.10.0 (if not manually patched) will crash if an
+    XSPEC table model is evaluated beyond its grid (this is only
+    an issue for programs like Sherpa that use XSPEC as a "library").
+    """
+
+    from sherpa.astro import xspec
+
+    if xspec.get_xsversion().startswith('12.10.0'):
+        pytest.skip('Test known to crash XSPEC 12.10.0')
+
+    path = make_data_path('xspec-tablemodel-RCS.mod')
+    tbl = xspec.read_xstable_model('bar', path)
+
+    egrid = np.arange(0.1, 11, 0.01)
+    y = tbl(egrid)
+
+    # Several simple regression tests.
+    assert y[0] == pytest.approx(0.27216572)
+    assert y.max() == pytest.approx(0.3047457)
+    assert y.min() == 0.0
+
+    # Is the following worth it?
+    minval = 1.2102469e-11
+    assert y[y > 0].min() == pytest.approx(minval)
+    assert y[967] == pytest.approx(minval)
+
+    zeros = np.where(y <= 0)
+    assert (zeros[0] == np.arange(968, 1090)).all()
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_create_xspec_multiplicative_model(make_data_path):
+    """Can we load multiplicative table models?
+    """
+
+    from sherpa.astro import xspec
+
+    path = make_data_path('testpcfabs.mod')
+    tbl = xspec.read_xstable_model('bar', path)
+
+    assert tbl.name == 'bar'
+    assert isinstance(tbl, xspec.XSTableModel)
+    assert not tbl.addmodel
+
+    # Apparently we lose the case of the parameter names;
+    # should investigate
+    #
+    assert len(tbl.pars) == 2
+    assert tbl.pars[0].name == 'nh'
+    assert tbl.pars[1].name == 'fract'
+
+    assert tbl.nh.val == pytest.approx(1)
+    assert tbl.nh.min == pytest.approx(0)
+    assert tbl.nh.max == pytest.approx(1000)
+
+    assert tbl.fract.val == pytest.approx(0.5)
+    assert tbl.fract.min == pytest.approx(0)
+    assert tbl.fract.max == pytest.approx(1)
+
+    for p in tbl.pars:
+        assert not(p.frozen)
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_evaluate_xspec_multiplicative_model(make_data_path):
+    """Can we evaluate multiplicative table models?
+
+    This is a limited test - in that it does not attempt to
+    test the full set of grid inputs that we do with additive
+    table models (and other XSPEC models) - as it is assumed that
+    this logic hsa been tested.
+    """
+
+    from sherpa.astro import xspec
+
+    if xspec.get_xsversion().startswith('12.10.0'):
+        pytest.skip('Test known to crash XSPEC 12.10.0')
+
+    path = make_data_path('testpcfabs.mod')
+    tbl = xspec.read_xstable_model('bar', path)
+
+    # This extends beyond the range of the model grid
+    egrid = np.arange(0.1, 17, 1.0)
+
+    # The expected values, evaluated with XSPEC 12.10.1b using
+    # C++ code (i.e. not the Sherpa interface).
+    #
+    # It appears that the -1 is 1 in earlier versions.
+    #
+    yexp = np.asarray([0.511674,
+                       0.730111,
+                       0.898625,
+                       0.95572,
+                       0.977472,
+                       0.987328,
+                       0.992138,
+                       0.990245,
+                       0.992846,
+                       0.994674,
+                       0.995997,
+                       0.996945,
+                       0.997616,
+                       0.998104,
+                       0.998454,
+                       -1,
+                       0])
+
+    # Note, xspec 12.10.0 should not be seen here as explicitly
+    # excluded above.
+    xver = xspec.get_xsversion()
+    if xver.startswith('12.9.'):
+        yexp[-2] = 1.0
+
+    y = tbl(egrid)
+
+    assert_almost_equal(y, yexp, decimal=6)
 
 
 @requires_xspec
