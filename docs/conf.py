@@ -45,6 +45,9 @@ except ImportError:
     from mock import MagicMock as BaseMock
 
 
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+
 # I found this somewhere (probably the rtd link given above). I was
 # hoping it would support building with Python 2.7 but it doesn't seem
 # to.
@@ -116,17 +119,18 @@ if os.path.split(os.getcwd())[1] == 'docs':
 import sherpa
 
 # For now include the '+...' part of the version string
-# and that I can drop the '+...' part.
+# in the full version, but drop the ".dirty" suffix.
 #
 sherpa_release = sherpa._version.get_versions()['version']
+if on_rtd and sherpa_release.endswith('.dirty'):
+    sherpa_release = sherpa_release[:-6]
+
 sherpa_version = sherpa_release[:sherpa_release.find('+')]
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-# needs_sphinx = '1.0'
-
 # If use napoleon, force 1.3 rather than try and support the external
 # napoleon code.
 #
@@ -145,8 +149,9 @@ extensions = [
     # Use napoleon over numpydoc for now since it stops a large number
     # of warning messages (about missing links) that I don't have time
     # to investigate.
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
     # 'numpydoc.numpydoc'
+    'sphinx_astropy.ext.edit_on_github'
 ]
 
 napoleon_google_docstring = False
@@ -170,7 +175,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Sherpa'
-copyright = '2018, Chandra X-ray Center, Smithsonian Astrophysical Observatory'
+copyright = '2018, Chandra X-ray Center, Smithsonian Astrophysical Observatory.'
 author = 'Chandra X-ray Center, Smithsonian Astrophysical Observatory'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -234,6 +239,27 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
+# Graphviz based on values from AstroPy - see
+# https://github.com/astropy/sphinx-astropy/blob/master/sphinx_astropy/conf/v1.py
+#
+graphviz_output_format = "svg"
+
+graphviz_dot_args = [
+    '-Nfontsize=10',
+    '-Nfontname=Helvetica Neue, Helvetica, Arial, sans-serif',
+    '-Efontsize=10',
+    '-Efontname=Helvetica Neue, Helvetica, Arial, sans-serif',
+    '-Gfontsize=10',
+    '-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif'
+]
+
+# Ensure sphinx_astropy.ext.edit_on_github knows where to send
+# the edit links.
+#
+edit_on_github_project = 'sherpa/sherpa'
+# edit_on_github_branch = '4.10.1'
+edit_on_github_source_root = ''
+edit_on_github_doc_root = 'docs'
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -282,6 +308,10 @@ html_static_path = ['_static']
 # The empty string is equivalent to '%b %d, %Y'.
 #
 # html_last_updated_fmt = None
+
+# Follow AstroPy's convention for the date format.
+#
+html_last_updated_fmt = '%d %b %Y'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
@@ -453,3 +483,14 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #
 # texinfo_no_detailmenu = False
+
+# -- try and get copybuttons to work --
+#
+# docs/_static/copybutton.js is copied from
+# https://raw.githubusercontent.com/scipy/scipy-sphinx-theme/master/_theme/scipy/static/js/copybutton.js
+# version is from
+# https://github.com/scipy/scipy-sphinx-theme/commit/a8aa8a6aad1524c9577a861fc4faa82d6c167138
+#
+
+def setup(app):
+    app.add_javascript('copybutton.js')

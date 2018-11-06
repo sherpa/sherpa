@@ -252,9 +252,19 @@ based on the statistic and number of degrees of freedom).
    Probability [Q-value] = 5.64518e-19
    Reduced statistic     = 14.4802
    Change in statistic   = 531.862
-      plateau.c0     10.8792     
-      rise.offset    457.221     
-      rise.coeff     24.3662     
+      plateau.c0     10.8792      +/- 0.428815    
+      rise.offset    457.221      +/- 0           
+      rise.coeff     24.3662      +/- 0           
+
+.. versionchanged:: 4.10.1
+          
+   The implementation of the :py:class:`~sherpa.optmethods.LevMar`
+   class has been changed from Fortran to C++ in the 4.10.1 release.
+   The results of the optimiser are expected not to change
+   significantly, but one of the more-noticeable changes is that
+   the covariance matrix is now returned directly from a fit,
+   which results in an error estimate provided as part of the
+   fit output (the values after the +/- terms above).
 
 The reduced chi-square value is large, as shown in the screen
 output above and the explicit access below, the probability
@@ -265,7 +275,9 @@ nowhere near the expected values.
    Reduced chi square = 14.48
 
 Visually comparing the model and data values highlights how poor
-this fit is (the data plot needs re-generating because ::
+this fit is (the data plot does not need regenerating in this
+case, but :py:meth:`~sherpa.plot.DataPlot.prepare` is called
+just to make sure that the correct data is being displayed)::
 
   >>> dplot.prepare(d)
   >>> mplot.prepare(d, mdl)
@@ -358,6 +370,8 @@ represent the asymptote of the curve.
 
 .. image:: ../_static/examples/user_model/model_data_reset.png
 
+.. _simple_user_model_refit:
+
 A new fit object could be created, but it is also possible
 to re-use the existing object. This leaves the optimiser set to
 :py:class:`~sherpa.optmethods.NelderMead`, although in this
@@ -376,10 +390,10 @@ attribute had been changed back to
    Probability [Q-value] = 0.9999
    Reduced statistic     = 0.0428198
    Change in statistic   = 168.12
-      plateau.c0     14.9694     
-      rise.offset    4.17729     
-      rise.coeff     -0.420696   
-
+      plateau.c0     14.9694      +/- 0.859633    
+      rise.offset    4.17729      +/- 0.630148    
+      rise.coeff     -0.420696    +/- 0.118487
+   
 These results already look a lot better than the previous attempt;
 the reduced statistic is much smaller, and the values are similar
 to the reported values. As shown in the plot below, the model
@@ -430,7 +444,7 @@ For this plot, the :py:class:`~sherpa.plot.FitPlot` class is going
 to be used to show both the data and model rather than doing it
 manually as above:
 
-   >>> from sherp.plot import FitPlot
+   >>> from sherpa.plot import FitPlot
    >>> fitplot = FitPlot()
    >>> dplot.prepare(d)
    >>> mplot.prepare(d, mdl)
@@ -518,6 +532,9 @@ as other techniques.
       plateau.c0        14.9694    -0.880442     0.880442
       rise.offset       4.17729    -0.646012     0.646012
       rise.coeff      -0.420696     -0.12247      0.12247
+
+These errors are similar to those reported
+:ref:`during the fit <simple_user_model_refit>`.
 
 As :ref:`shown below <simple_user_model_compare_errors>`,
 the error values can be extracted from the output of
@@ -778,9 +795,9 @@ This can be used as any other Sherpa model::
    Probability [Q-value] = 0.9999
    Reduced statistic     = 0.0428198
    Change in statistic   = 632.924
-      plateau2.c0    14.9694     
-      rise2.a        1.75734     
-      rise2.b        -0.420685   
+      plateau2.c0    14.9694      +/- 0.859768    
+      rise2.a        1.75734      +/- 0.419169    
+      rise2.b        -0.420685    +/- 0.118473    
 
    >>> dplot.prepare(d)
    >>> mplot2 = ModelPlot()

@@ -19,9 +19,9 @@ Glossary
        the :term:`OGIP` Calibration Memo
        `CAL/GEN/02-002 <http://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
 
-   astropy
+   Astropy
        A community Python library for Astronomy:
-       <http://www.astropy.org/>_.
+       http://www.astropy.org/.
        
    ChIPS
        The Chandra Imaging and Plotting System, ChIPS, is one of
@@ -117,7 +117,11 @@ Glossary
        The phrase World Coordinate System for an Astronomical data set
        represents the mapping between the measured position on the detector
        and a "celestial" coordinate. The most common case is in providing
-       a location on the sky (e.g. in Equatorial or Galactic coordinates)
+       a location on the sky (e.g. in
+       `Equatorial
+       <https://en.wikipedia.org/wiki/Equatorial_coordinate_system>`_
+       or `Galactic <https://en.wikipedia.org/wiki/Galactic_coordinate_system>`_
+       coordinates)
        for a given image pixel, but it can also be used to map between
        row on a spectrograph and the corresponding wavelength of light.
        
