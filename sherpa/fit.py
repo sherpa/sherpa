@@ -646,7 +646,7 @@ class IterFit(NoNewAttributesAfterInit):
 
     def primini(self, statfunc, pars, parmins, parmaxes, statargs=(),
                 statkwargs=None):
-        """An iterative scheme, where the variance is computed from
+        r"""An iterative scheme, where the variance is computed from
         the model amplitudes.
 
         This is a chi-square statistic where the variance is computed

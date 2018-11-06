@@ -510,7 +510,7 @@ class MonCar(OptMethod):
 # ## DOC-TODO: finalximplex=4 and 5 list the same conditions, it is likely
 # ##           a cut-n-paste error, so what is the correct description?
 class NelderMead(OptMethod):
-    """Nelder-Mead Simplex optimization method.
+    r"""Nelder-Mead Simplex optimization method.
 
     The Nelder-Mead Simplex algorithm, devised by J.A. Nelder and
     R. Mead [1]_, is a direct search method of optimization for
