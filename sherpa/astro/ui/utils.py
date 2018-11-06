@@ -2817,6 +2817,10 @@ class Session(sherpa.ui.utils.Session):
     def get_indep(self, id=None, filter=False, bkg_id=None):
         """Return the independent axes of a data set.
 
+        This function returns the coordinates of each point, or pixel,
+        in the data set. The `get_axes` function may be be preferred
+        in some situations.
+
         Parameters
         ----------
         id : int or str, optional
@@ -2853,18 +2857,29 @@ class Session(sherpa.ui.utils.Session):
         list_data_ids : List the identifiers for the loaded data sets.
         set_coord : Set the coordinate system to use for image analysis.
 
+        Notes
+        -----
+        For a two-dimensional image, with size n by m pixels, the
+        `get_dep` function will return two arrays, each of size n * m,
+        which contain the coordinate of the center of each pixel. The
+        `get_axes` function will instead return the coordinates of
+        each axis separately, i.e. arrays of size n and m.
+
         Examples
         --------
 
         For a one-dimensional data set, the X values are returned:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], Data1D)
         >>> get_indep()
         (array([10, 15, 19]),)
 
         For a 2D data set the X0 and X1 values are returned:
 
-        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> x0 = [10, 15, 12, 19]
+        >>> x1 = [12, 14, 10, 17]
+        >>> y = [4, 5, 9, -2]
+        >>> load_arrays(2, x0, x1, y, Data2D)
         >>> get_indep(2)
         (array([10, 15, 12, 19]), array([12, 14, 10, 17]))
 
@@ -2885,10 +2900,10 @@ class Session(sherpa.ui.utils.Session):
         array([ 35.,  36.,  37.,  38.,  39.])
 
         For images the pixel coordinates of each pixel are returned,
-        as a 1D array.
+        as 1D arrays, one value for each pixel:
 
         >>> load_image('img', 'image.fits')
-        >>> (xvals,yvals) = get_indep('img')
+        >>> (xvals, yvals) = get_indep('img')
         >>> xvals.shape
         (65536,)
         >>> yvals.shape
@@ -2902,7 +2917,7 @@ class Session(sherpa.ui.utils.Session):
         `set_coord` setting for the data set:
 
         >>> set_coord('img', 'physical')
-        >>> (avals,bvals) = get_indep('img')
+        >>> (avals, bvals) = get_indep('img')
         >>> avals[0:5]
         array([  16.5,   48.5,   80.5,  112.5,  144.5])
 
@@ -2914,6 +2929,10 @@ class Session(sherpa.ui.utils.Session):
 
     def get_axes(self, id=None, bkg_id=None):
         """Return information about the independent axes of a data set.
+
+        This function returns the coordinates of each point, or pixel,
+        in the data set. The `get_indep` function may be be preferred
+        in some situations.
 
         Parameters
         ----------
@@ -2928,7 +2947,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         axis : tuple of arrays
-           The independent axis values. The difference to `get_dep` is
+           The independent axis values. The differences to `get_dep`
            that this represents the "alternate grid" for the axis. For
            PHA data, this is the energy grid (E_MIN and E_MAX). For
            image data it is an array for each axis, of the length of
@@ -2951,7 +2970,7 @@ class Session(sherpa.ui.utils.Session):
         For 1D data sets, the "alternate" view is the same as the
         independent axis:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], Data1D)
         >>> get_indep()
         array([10, 15, 19])
         >>> get_axes()
@@ -2976,7 +2995,7 @@ class Session(sherpa.ui.utils.Session):
 
         The image has 101 columns by 108 rows. The `get_indep`
         function returns one-dimensional arrays, for the full dataset,
-        where as `get_axes` returns values for the individual axis:
+        whereas `get_axes` returns values for the individual axis:
 
         >>> load_image('img', 'img.fits')
         >>> get_data('img').shape
@@ -3008,6 +3027,9 @@ class Session(sherpa.ui.utils.Session):
     def get_dep(self, id=None, filter=False, bkg_id=None):
         """Return the dependent axis of a data set.
 
+        This function returns the data values (the dependent axis)
+        for each point or pixel in the data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -3027,7 +3049,8 @@ class Session(sherpa.ui.utils.Session):
            The dependent axis values. The model estimate is compared
            to these values during fitting. For PHA data sets, the
            return array will match the grouping scheme applied to
-           the data set.
+           the data set. This array is one-dimensional, even for
+           two dimensional (e.g. image) data.
 
         Raises
         ------
@@ -3044,16 +3067,28 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], Data1D)
         >>> get_dep()
-        array([10, 15, 19])
+        array([4, 5, 9])
 
-        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> x0 = [10, 15, 12, 19]
+        >>> x1 = [12, 14, 10, 17]
+        >>> y = [4, 5, 9, -2]
+        >>> load_arrays(2, x0, x1, y, Data2D)
         >>> get_dep(2)
         array([4, 5, 9, -2])
 
         If the ``filter`` flag is set then the return will be limited to
         the data that is used in the fit:
+
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
+        >>> ignore_id(1, 17, None)
+        >>> get_dep()
+        array([4, 5, 9])
+        >>> get_dep(filter=True)
+        array([4, 5])
+
+        An example with a PHA data set named 'spec':
 
         >>> notice_id('spec', 0.5, 7)
         >>> yall = get_dep('spec')
@@ -3087,6 +3122,11 @@ class Session(sherpa.ui.utils.Session):
     def get_rate(self, id=None, filter=False, bkg_id=None):
         """Return the count rate of a PHA data set.
 
+        Return an array of count-rate values for each bin in the
+        data set. The units of the returned values depends on the
+        values set by the `set_analysis` rountine for the data
+        set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -3105,7 +3145,8 @@ class Session(sherpa.ui.utils.Session):
         rate : array
            The rate array. The output matches the grouping of the data
            set. The units are controlled by the `set_analysis` setting
-           for this data set; that is, the units used in `plot_data`.
+           for this data set; that is, the units used in `plot_data`,
+           except that the `type` argument to `set_analysis` is ignored.
            The return array will match the grouping scheme applied to
            the data set.
 
@@ -3125,7 +3166,28 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
+        Return the count-rate for the default data set. For a PHA
+        data set, where `set_analysis` has not been called, the return
+        value will be in units of count/second/keV, and a value for
+        each group in the data set is returned.
+
         >>> rate = get_rate()
+
+        The return value is grouped to match the data, but is not
+        filtered (with the default `filter` argument). The data
+        set used here 46 groups in it, but after filtering only has 40
+        groups, but the call to `get_rate` returns a 46-element array
+        unless `filter` is explicitly set to `True`:
+
+        >>> notice()
+        >>> get_rate().size
+        46
+        >>> ignore(None, 0.5)
+        >>> ignore(7, None)
+        >>> get_rate().size
+        46
+        >>> get_rate(filter=True).size
+        40
 
         The rate of data set 2 will be in units of count/s/Angstrom
         and only cover the range 20 to 22 Angstroms:
@@ -3133,6 +3195,18 @@ class Session(sherpa.ui.utils.Session):
         >>> set_analysis(2, 'wave')
         >>> notice_id(2, 20, 22)
         >>> r2 = get_rate(2, filter=True)
+
+        The returned rate is now in units of count/s (the return value
+        is multiplied by `binwidth^factor`, where `factor` is normally
+        0):
+
+        >>> set_analysis(2, 'wave', factor=1)
+        >>> r2 = get_rate(2, filter=True)
+
+        Return the count rate for the second background component of
+        data set "grating":
+
+        >>> get_rate(id="grating", bkg_id=2)
 
         """
         d = self._get_pha_data(id)
@@ -3227,8 +3301,8 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        backscal : number or array
-           The BACKSCAL value.
+        backscal : number or ndarray
+           The BACKSCAL value, which can be a scalar or a 1D array.
 
         See Also
         --------
@@ -3317,7 +3391,6 @@ class Session(sherpa.ui.utils.Session):
 
         return scale
 
-    # DOC-TODO: the description needs improving.
     def get_areascal(self, id=None, bkg_id=None):
         """Return the fractional area factor of a PHA data set.
 
@@ -3337,8 +3410,8 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        areascal : number
-           The AREASCAL value.
+        areascal : number or ndarray
+           The AREASCAL value, which can be a scalar or a 1D array.
 
         See Also
         --------
@@ -3355,6 +3428,18 @@ class Session(sherpa.ui.utils.Session):
 
         .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
                http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+        Examples
+        --------
+
+        Return the AREASCAL value for the default data set:
+
+        >>> get_areascal()
+
+        Return the AREASCAL value for the first background component
+        of dataset 2:
+
+        >>> get_areascal(id=2, bkg_id=1)
 
         """
         if bkg_id is not None:
@@ -4880,6 +4965,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         fake_pha : Simulate a PHA data set from a model.
+        get_response: Return the respone information applied to a PHA data set.
         load_arf : Load an ARF from a file and add it to a PHA data set.
         load_pha : Load a file as a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
@@ -4904,6 +4990,17 @@ class Session(sherpa.ui.utils.Session):
         component of the 'core' data set:
 
         >>> bgarf = get_arf('core', 'bkg.arf', bkg_id=2)
+
+        Retrieve the ARF and RMF for the default data set and
+        use them to create a model expression which includes
+        a power-law component (pbgnd) that is not convolved by the
+        response:
+
+        >>> arf = get_arf()
+        >>> rmf = get_rmf()
+        >>> src_expr = xsphabs.abs1 * powlaw1d.psrc
+        >>> set_full_model(rmf(arf(src_expr)) + powlaw1d.pbgnd)
+        >>> print(get_model())
 
         """
         data = self._get_pha_data(id)
@@ -5350,6 +5447,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         fake_pha : Simulate a PHA data set from a model.
+        get_response: Return the respone information applied to a PHA data set.
         load_pha : Load a file as a PHA data set.
         load_rmf : Load a RMF from a file and add it to a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
@@ -5369,6 +5467,17 @@ class Session(sherpa.ui.utils.Session):
         component of the 'core' data set:
 
         >>> bgrmf = get_rmf('core', 'bkg.rmf', bkg_id=2)
+
+        Retrieve the ARF and RMF for the default data set and
+        use them to create a model expression which includes
+        a power-law component (pbgnd) that is not convolved by the
+        response:
+
+        >>> arf = get_arf()
+        >>> rmf = get_rmf()
+        >>> src_expr = xsphabs.abs1 * powlaw1d.psrc
+        >>> set_full_model(rmf(arf(src_expr)) + powlaw1d.pbgnd)
+        >>> print(get_model())
 
         """
         data = self._get_pha_data(id)
@@ -5789,8 +5898,9 @@ class Session(sherpa.ui.utils.Session):
     def get_bkg(self, id=None, bkg_id=None):
         """Return the background for a PHA data set.
 
+        Function to return the background for a PHA data set.
         The object returned by the call can be used to query and
-        change properties of the background of data set.
+        change properties of the background.
 
         Parameters
         ----------
@@ -6055,7 +6165,6 @@ class Session(sherpa.ui.utils.Session):
         for id in ids:
             self._get_pha_data(id).set_analysis(quantity, type, factor)
 
-    # DOC-TODO: docs need to be added to sherpa.astro.data.get_analysis
     def get_analysis(self, id=None):
         """Return the units used when fitting spectral data.
 
@@ -6067,7 +6176,8 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        quantity : { 'channel', 'energy', 'wavelength' }
+        setting : { 'channel', 'energy', 'wavelength' }
+           The analysis setting for the data set.
 
         Raises
         ------
@@ -6080,6 +6190,18 @@ class Session(sherpa.ui.utils.Session):
         --------
         get_default_id : Return the default data set identifier.
         set_analysis : Change the analysis setting.
+
+        Examples
+        --------
+
+        Display the analysis setting for the default data set:
+
+        >>> print(get_analysis())
+
+        Check whether the data set labelled 'SgrA' is using the
+        wavelength setting:
+
+        >>> is_wave = get_analysis('SgrA') == 'wavelength'
 
         """
         return self._get_pha_data(id).get_analysis()
@@ -8462,13 +8584,14 @@ class Session(sherpa.ui.utils.Session):
         return model
 
     def get_response(self, id=None, bkg_id=None):
-        """Return the respone information applied to a PHA data set.
+        """Return the response information applied to a PHA data set.
 
         For a PHA data set, the source model - created by `set_model`
         - is modified by a model representing the instrumental effects
         - such as the effective area of the mirror, the energy
         resolution of the detector, and any model of pile up - which
-        is collectively known as the instrument response.
+        is collectively known as the instrument response. The
+        `get_response` function returns the instrument response model.
 
         Parameters
         ----------
@@ -8504,13 +8627,15 @@ class Session(sherpa.ui.utils.Session):
 
         Create an empty PHA data set, load in an ARF and RMF, and then
         retrieve the response. The response is then used to model the
-        instrument response applied to a `powlaw1d` model component:
+        instrument response applied to a `powlaw1d` model component,
+        along with a constant component (`bgnd`) that does not
+        "pass through" the instrument response:
 
         >>> dataspace1d(1, 1024, 1, dstype=DataPHA)
         >>> load_arf('src.arf')
         >>> load_rmf('src.rmf')
         >>> rsp = get_response()
-        >>> mdl = rsp(powlaw1d.pl)
+        >>> set_full_model(rsp(powlaw1d.pl) + const1d.bgnd)
 
         """
         pha = self._get_pha_data(id)

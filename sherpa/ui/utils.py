@@ -2956,6 +2956,9 @@ class Session(NoNewAttributesAfterInit):
     def get_indep(self, id=None):
         """Return the independent axes of a data set.
 
+        This function returns the coordinates of each point, or pixel,
+        in the data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -2984,13 +2987,16 @@ class Session(NoNewAttributesAfterInit):
 
         For a one-dimensional data set, the X values are returned:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
         >>> get_indep()
         (array([10, 15, 19]),)
 
         For a 2D data set the X0 and X1 values are returned:
 
-        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> x0 = [10, 15, 12, 19]
+        >>> x1 = [12, 14, 10, 17]
+        >>> y = [4, 5, 9, -2]
+        >>> load_arrays(2, x0, x1, y, Data2D)
         >>> get_indep(2)
         (array([10, 15, 12, 19]), array([12, 14, 10, 17]))
 
@@ -3000,6 +3006,9 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def get_dep(self, id=None, filter=False):
         """Return the dependent axis of a data set.
+
+        This function returns the data values (the dependent axis)
+        for each point or pixel in the data set.
 
         Parameters
         ----------
@@ -3031,16 +3040,26 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
+        >>> get_dep()
+        array([4, 5, 9])
+
+        >>> x0 = [10, 15, 12, 19]
+        >>> x1 = [12, 14, 10, 17]
+        >>> y = [4, 5, 9, -2]
+        >>> load_arrays(2, x0, x1, y, Data2D)
+        >>> get_dep(2)
+        array([ 4,  5,  9, -2])
+
+        If the ``filter`` flag is set then the return will be limited to
+        the data that is used in the fit:
+
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
         >>> ignore_id(1, 17, None)
         >>> get_dep()
         array([4, 5, 9])
         >>> get_dep(filter=True)
         array([4, 5])
-
-        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
-        >>> get_dep(2)
-        array([ 4,  5,  9, -2])
 
         """
         return self.get_data(id).get_y(filter)
@@ -3067,6 +3086,19 @@ class Session(NoNewAttributesAfterInit):
         sherpa.astro.ui.ignore2d : Exclude a spatial region from an image.
         notice : Include data in the fit.
         sherpa.astro.ui.notice2d : Include a spatial region of an image.
+
+        Examples
+        --------
+
+        Display the dimensions for the default data set:
+
+        >>> print(get_dims())
+
+        Find the number of bins in dataset 'a2543' without and with
+        any filters applied to it:
+
+        >>> nall = get_dims('a2543')
+        >>> nfilt = get_dims('a2543', filter=True)
 
         """
         return self.get_data(id).get_dims(filter)
@@ -3113,7 +3145,7 @@ class Session(NoNewAttributesAfterInit):
         The default filter is the full dataset, given in the
         format ``lowval:hival`` (both are inclusive limits):
 
-        >>> load_arrays(1, [10,15,20,25], [5,7,4,2])
+        >>> load_arrays(1, [10, 15, 20, 25], [5, 7, 4, 2])
         >>> get_filter()
         '10.0000:25.0000'
 
@@ -3121,32 +3153,37 @@ class Session(NoNewAttributesAfterInit):
         14 and 30. The resulting filter is the combination of this
         range and the data:
 
-        >>> notice(14,30)
+        >>> notice(14, 30)
         >>> get_filter()
         '15.0000:25.0000'
 
         Ignoring the point at ``x=20`` means that only the points at
         ``x=15`` and ``x=25`` remain, so a comma-separated list is used:
 
-        >>> ignore(19,22)
+        >>> ignore(19, 22)
         >>> get_filter()
         '15.0000,25.0000'
 
         The filter equivalent to the per-bin array of filter values:
 
-        >>> set_filter([1,1,0,1])
+        >>> set_filter([1, 1, 0, 1])
         >>> get_filter()
         '10.0000,15.0000,25.0000'
+
+        Return the filter for data set 3:
+
+        >>> get_filter(3)
 
         """
         return self.get_data(id).get_filter()
 
     def copy_data(self, fromid, toid):
-        """Copy a data set to a new identifier.
+        """Copy a data set, creating a new identifier.
 
-        This is a "deep" copy, so that once it has been
-        made, changes to one of the data sets will not
-        be made to the other data set.
+        After copying the data set, any changes made to the
+        original data set (that is, the `fromid` identifier)
+        will not be reflected in the new (the `toid`
+        identifier) data set.
 
         Parameters
         ----------
@@ -3165,7 +3202,11 @@ class Session(NoNewAttributesAfterInit):
 
         >>> copy_data(1, 2)
 
+        Rename the data set with identifier 2 to "orig", and
+        then delete the old data set:
+
         >>> copy_data(2, "orig")
+        >>> delete_data(2)
 
         """
         data = self.get_data(fromid)
@@ -5563,9 +5604,11 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Return the source expression for the default data set:
+        Return the source expression for the default data set,
+        display it, and then find the number of parameters in it:
 
         >>> src = get_source()
+        >>> print(src)
         >>> len(src.pars)
         5
 
@@ -6004,6 +6047,9 @@ class Session(NoNewAttributesAfterInit):
     def get_num_par(self, id=None):
         """Return the number of parameters in a model expression.
 
+        The `get_num_par` function returns the number of parameters,
+        both frozen and thawed, in the model assigned to a data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -6014,6 +6060,9 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         npar : int
+           The number of parameters in the model expression. This
+           sums up all the parameters of the components in the
+           expression, and includes both frozen and thawed components.
 
         Raises
         ------
@@ -6026,6 +6075,18 @@ class Session(NoNewAttributesAfterInit):
         get_num_par_frozen : Return the number of frozen parameters.
         get_num_par_thawed : Return the number of thawed parameters.
         set_model : Set the source model expression for a data set.
+
+        Examples
+        --------
+
+        Return the total number of parameters for the default data set:
+
+        >>> print(get_num_par())
+
+        Find the number of parameters for the model associated with
+        the data set called "jet":
+
+        >>> njet = get_num_par('jet')
 
         """
         return len(self._get_source(id).pars)
@@ -6033,6 +6094,9 @@ class Session(NoNewAttributesAfterInit):
     def get_num_par_thawed(self, id=None):
         """Return the number of thawed parameters in a model expression.
 
+        The `get_num_par_thawed` function returns the number of
+        thawed parameters in the model assigned to a data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -6043,6 +6107,9 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         npar : int
+           The number of parameters in the model expression. This
+           sums up all the thawed parameters of the components in the
+           expression.
 
         Raises
         ------
@@ -6056,11 +6123,26 @@ class Session(NoNewAttributesAfterInit):
         get_num_par_frozen : Return the number of frozen parameters.
         set_model : Set the source model expression for a data set.
 
+        Examples
+        --------
+
+        Return the number of thawed parameters for the default data set:
+
+        >>> print(get_num_par_thawed())
+
+        Find the number of thawed parameters for the model associated
+        with the data set called "jet":
+
+        >>> njet = get_num_par_thawed('jet')
+
         """
         return len(self._get_source(id).thawedpars)
 
     def get_num_par_frozen(self, id=None):
         """Return the number of frozen parameters in a model expression.
+
+        The `get_num_par_frozen` function returns the number of
+        frozen parameters in the model assigned to a data set.
 
         Parameters
         ----------
@@ -6072,6 +6154,9 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         npar : int
+           The number of parameters in the model expression. This
+           sums up all the frozen parameters of the components in the
+           expression.
 
         Raises
         ------
@@ -6084,6 +6169,18 @@ class Session(NoNewAttributesAfterInit):
         get_num_par : Return the number of parameters.
         get_num_par_thawed : Return the number of thawed parameters.
         set_model : Set the source model expression for a data set.
+
+        Examples
+        --------
+
+        Return the number of frozen parameters for the default data set:
+
+        >>> print(get_num_par_frozen())
+
+        Find the number of frozen parameters for the model associated
+        with the data set called "jet":
+
+        >>> njet = get_num_par_frozen('jet')
 
         """
         model = self._get_source(id)
@@ -13085,7 +13182,11 @@ class Session(NoNewAttributesAfterInit):
         self._contour(id, self._datacontour, **kwargs)
 
     def contour_model(self, id=None, **kwargs):
-        """Contour the values of the model, including any PSF.
+        """Create a contour plot of the model.
+
+        Displays a contour plot of the values of the model,
+        evaluated on the data, including any PSF kernel convolution
+        (if set).
 
         Parameters
         ----------
@@ -13105,6 +13206,7 @@ class Session(NoNewAttributesAfterInit):
         get_model_contour_prefs : Return the preferences for contour_model.
         get_default_id : Return the default data set identifier.
         contour : Create one or more plot types.
+        contour_source : Create a contour plot of the unconvolved spatial model.
         sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
         set_psf : Add a PSF model to a data set.
 
@@ -13125,9 +13227,11 @@ class Session(NoNewAttributesAfterInit):
         self._contour(id, self._modelcontour, **kwargs)
 
     def contour_source(self, id=None, **kwargs):
-        """Contour the values of the model, without any PSF.
+        """Create a contour plot of the unconvolved spatial model.
 
-        The preferences are the same as `contour_model`.
+        Displays a contour plot of the values of the model,
+        evaluated on the data, without any PSF kernel convolution
+        applied. The preferences are the same as `contour_model`.
 
         Parameters
         ----------
@@ -13146,6 +13250,7 @@ class Session(NoNewAttributesAfterInit):
         get_source_contour : Return the data used by contour_source.
         get_default_id : Return the default data set identifier.
         contour : Create one or more plot types.
+        contour_model : Create a contour plot of the model.
         sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
         set_psf : Add a PSF model to a data set.
 
