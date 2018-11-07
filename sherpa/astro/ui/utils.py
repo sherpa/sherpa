@@ -2653,9 +2653,17 @@ class Session(sherpa.ui.utils.Session):
         else:
             self._get_pha_data(id).areascal = area
 
-    # DOC-NOTE: also in sherpa.utils
+    # DOC-NOTE: also in sherpa.utils, where it does not have
+    #           the bkg_id parameter.
+    #
     def get_staterror(self, id=None, filter=False, bkg_id=None):
         """Return the statistical error on the dependent axis of a data set.
+
+        The function returns the statistical errors on the values
+        (dependenent axis) of a data set, or its background. These
+        may have been set explicitly - either when the data set was
+        created or with a call to `set_staterror` - or as defined by
+        the chosen fit statistic (such as "chi2gehrels").
 
         Parameters
         ----------
@@ -2672,12 +2680,13 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        axis : array
+        staterrors : array
            The statistical error for each data point. This may be
            estimated from the data (e.g. with the ``chi2gehrels``
            statistic) or have been set explicitly (`set_staterror`).
            For PHA data sets, the return array will match the grouping
-           scheme applied to the data set.
+           scheme applied to the data set. The size of this array
+           depends on the `filter` argument.
 
         Raises
         ------
@@ -2692,6 +2701,13 @@ class Session(sherpa.ui.utils.Session):
         list_data_ids : List the identifiers for the loaded data sets.
         set_staterror : Set the statistical errors on the dependent axis of a data set.
 
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
         Examples
         --------
 
@@ -2699,7 +2715,7 @@ class Session(sherpa.ui.utils.Session):
         may be calculated from the data values (the independent axis),
         depending on the chosen statistic:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
         >>> set_stat('chi2datavar')
         >>> get_staterror()
         array([ 2.        ,  2.23606798,  3.        ])
@@ -2711,7 +2727,7 @@ class Session(sherpa.ui.utils.Session):
         is created or with a call to `set_staterror` - then these values
         will be used, no matter the statistic:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9], [2,3,5])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], [2, 3, 5])
         >>> set_stat('chi2datavar')
         >>> get_staterror()
         array([2, 3, 5])
@@ -2725,9 +2741,16 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         return d.get_staterror(filter, self.get_stat().calc_staterror)
 
-    # DOC-NOTE: also in sherpa.utils
+    # DOC-NOTE: also in sherpa.utils, where it does not have
+    #           the bkg_id parameter.
+    #
     def get_syserror(self, id=None, filter=False, bkg_id=None):
         """Return the systematic error on the dependent axis of a data set.
+
+        The function returns the systematic errors on the values
+        (dependenent axis) of a data set, or its background. It is
+        an error if called on a data set with no systematic errors
+        (which are set with `set_syserror`).
 
         Parameters
         ----------
@@ -2744,8 +2767,9 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        axis : array
-           The systematic error for each data point.
+        syserrors : array
+           The systematic error for each data point. The size of this
+           array depends on the `filter` argument.
 
         Raises
         ------
@@ -2762,6 +2786,28 @@ class Session(sherpa.ui.utils.Session):
         list_data_ids : List the identifiers for the loaded data sets.
         set_syserror : Set the systematic errors on the dependent axis of a data set.
 
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
+        Examples
+        --------
+
+        Return the systematic error for the default data set:
+
+        >>> yerr = get_syserror()
+
+        Return an array that has been filtered to match the data:
+
+        >>> yerr = get_syserror(filter=True)
+
+        Return the filtered errors for data set "core":
+
+        >>> yerr = get_syserror("core", filter=True)
+
         """
         d = self.get_data(id)
         id = self._fix_id(id)
@@ -2772,9 +2818,17 @@ class Session(sherpa.ui.utils.Session):
             raise sherpa.utils.err.DataErr('nosyserr', id)
         return err
 
-    # DOC-NOTE: also in sherpa.utils
+    # DOC-NOTE: also in sherpa.utils, where it does not have
+    #           the bkg_id parameter.
+    #
     def get_error(self, id=None, filter=False, bkg_id=None):
         """Return the errors on the dependent axis of a data set.
+
+        The function returns the total errors (a quadrature addition
+        of the statistical and systematic errors) on the values
+        (dependent acis) of a data set or its background. The individual
+        components can be retrieved with the `get_staterror` and
+        `get_syserror` functions.
 
         Parameters
         ----------
@@ -2791,9 +2845,12 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        axis : array
+        errors : array
            The error for each data point, formed by adding the
            statistical and systematic errors in quadrature.
+           For PHA data sets, the return array will match the grouping
+           scheme applied to the data set. The size of this array
+           depends on the `filter` argument.
 
         Raises
         ------
@@ -2806,6 +2863,34 @@ class Session(sherpa.ui.utils.Session):
         get_staterror : Return the statistical errors on the dependent axis of a data set.
         get_syserror : Return the systematic errors on the dependent axis of a data set.
         list_data_ids : List the identifiers for the loaded data sets.
+
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
+        Examples
+        --------
+
+        Return the error values for the default data set, ignoring any
+        filter applied to it:
+
+        >>> err = get_error()
+
+        Ensure that the return values are for the selected (filtered)
+        points in the default data set (the return array may be smaller
+        than in the previous example):
+
+        >>> err = get_error(filter=True)
+
+        Find the errors for the "core" data set and its two background
+        components:
+
+        >>> err = get_error('core', filter=True)
+        >>> berr1 = get_error('core', bkg_id=1, filter=True)
+        >>> berr2 = get_error('core', bkg_id=2, filter=True)
 
         """
         d = self.get_data(id)
@@ -3241,6 +3326,18 @@ class Session(sherpa.ui.utils.Session):
         arf : array
            The effective area values for the data set (or background
            component).
+
+        Examples
+        --------
+
+        Return the effective-area values for the default data set:
+
+        >>> arf = get_specresp()
+
+        Return the area for the second background component of the
+        data set with the id "eclipse":
+
+        >>> barf = get_spectresp("eclipse", bkg_id=2)
 
         """
         d = self._get_pha_data(id)

@@ -2811,6 +2811,12 @@ class Session(NoNewAttributesAfterInit):
     def get_staterror(self, id=None, filter=False):
         """Return the statistical error on the dependent axis of a data set.
 
+        The function returns the statistical errors on the values
+        (dependenent axis) of a data set. These may have been set
+        explicitly - either when the data set was created or with
+        a call to `set_staterror` - or as defined by the chosen
+        fit statistic (such as "chi2gehrels").
+
         Parameters
         ----------
         id : int or str, optional
@@ -2823,10 +2829,11 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        axis : array
+        staterrors : array
            The statistical error for each data point. This may be
            estimated from the data (e.g. with the ``chi2gehrels``
            statistic) or have been set explicitly (`set_staterror`).
+           The size of this array depends on the `filter` argument.
 
         Raises
         ------
@@ -2841,6 +2848,13 @@ class Session(NoNewAttributesAfterInit):
         list_data_ids : List the identifiers for the loaded data sets.
         set_staterror : Set the statistical errors on the dependent axis of a data set.
 
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
         Examples
         --------
 
@@ -2848,7 +2862,7 @@ class Session(NoNewAttributesAfterInit):
         may be calculated from the data values (the independent axis),
         depending on the chosen statistic:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
         >>> set_stat('chi2datavar')
         >>> get_staterror()
         array([ 2.        ,  2.23606798,  3.        ])
@@ -2860,7 +2874,7 @@ class Session(NoNewAttributesAfterInit):
         is created or with a call to `set_staterror` - then these values
         will be used, no matter the statistic:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9], [2,3,5])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], [2, 3, 5])
         >>> set_stat('chi2datavar')
         >>> get_staterror()
         array([2, 3, 5])
@@ -2876,6 +2890,11 @@ class Session(NoNewAttributesAfterInit):
     def get_syserror(self, id=None, filter=False):
         """Return the systematic error on the dependent axis of a data set.
 
+        The function returns the systematic errors on the values
+        (dependenent axis) of a data set. It is an error if called
+        on a data set with no systematic errors (which are set
+        with `set_syserror`).
+
         Parameters
         ----------
         id : int or str, optional
@@ -2888,8 +2907,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        axis : array
-           The systematic error for each data point.
+        syserrors : array
+           The systematic error for each data point. The size of this
+           array depends on the `filter` argument.
 
         Raises
         ------
@@ -2906,6 +2926,28 @@ class Session(NoNewAttributesAfterInit):
         list_data_ids : List the identifiers for the loaded data sets.
         set_syserror : Set the systematic errors on the dependent axis of a data set.
 
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
+        Examples
+        --------
+
+        Return the systematic error for the default data set:
+
+        >>> yerr = get_syserror()
+
+        Return an array that has been filtered to match the data:
+
+        >>> yerr = get_syserror(filter=True)
+
+        Return the filtered errors for data set "core":
+
+        >>> yerr = get_syserror("core", filter=True)
+
         """
         d = self.get_data(id)
         id = self._fix_id(id)
@@ -2917,6 +2959,12 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def get_error(self, id=None, filter=False):
         """Return the errors on the dependent axis of a data set.
+
+        The function returns the total errors (a quadrature addition
+        of the statistical and systematic errors) on the values
+        (dependent acis) of a data set. The individual components
+        can be retrieved with the `get_staterror` and `get_syserror`
+        functions.
 
         Parameters
         ----------
@@ -2930,9 +2978,10 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        axis : array
+        errors : array
            The error for each data point, formed by adding the
            statistical and systematic errors in quadrature.
+           The size of this array depends on the `filter` argument.
 
         Raises
         ------
@@ -2946,6 +2995,31 @@ class Session(NoNewAttributesAfterInit):
         get_staterror : Return the statistical errors on the dependent axis of a data set.
         get_syserror : Return the systematic errors on the dependent axis of a data set.
         list_data_ids : List the identifiers for the loaded data sets.
+
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
+        Examples
+        --------
+
+        Return the error values for the default data set, ignoring any
+        filter applied to it:
+
+        >>> err = get_error()
+
+        Ensure that the return values are for the selected (filtered)
+        points in the default data set (the return array may be smaller
+        than in the previous example):
+
+        >>> err = get_error(filter=True)
+
+        Find the errors for the "core" data set:
+
+        >>> err = get_error('core', filter=True)
 
         """
         return self.get_data(id).get_error(filter,
@@ -7953,6 +8027,14 @@ class Session(NoNewAttributesAfterInit):
         >>> set_source("bgnd", bgnd)
         >>> guess("src", src)
         >>> guess("bgnd", bgnd)
+
+        Set the source model for the default dataset. Guess is run to
+        determine the values of the model component "p1" and the limits
+        of the model component "g1":
+
+        >>> set_source(powlaw1d.p1 + gauss1d.g1)
+        >>> guess(p1, limits=False)
+        >>> guess(g1, values=False)
 
         """
         if model is None:
