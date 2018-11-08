@@ -1414,6 +1414,19 @@ class Session(NoNewAttributesAfterInit):
         -----
         The default Sherpa data set identifier is the integer 1.
 
+        Examples
+        --------
+
+        Display the default identifier:
+
+        >>> print(get_default_id())
+
+        Store the default identifier and use it as an argument to
+        call another Sherpa routine:
+
+        >>> defid = get_default_id()
+        >>> load_arrays(defid, x, y)
+
         """
         return self._default_id
 
@@ -7897,6 +7910,10 @@ class Session(NoNewAttributesAfterInit):
     def get_fit_results(self):
         """Return the results of the last fit.
 
+        This function returns the results from the most-recent fit.
+        The returned value includes information on the parameter values
+        and fit statistic.
+
         Returns
         -------
         stats : a `sherpa.fit.FitResults` instance
@@ -7975,6 +7992,12 @@ class Session(NoNewAttributesAfterInit):
 
         Examples
         --------
+
+        Display the fit results:
+
+        >>> print(get_fit_results())
+
+        Inspect the fit results:
 
         >>> res = get_fit_results()
         >>> res.statval
@@ -8318,6 +8341,13 @@ class Session(NoNewAttributesAfterInit):
     def get_pvalue_results(self):
         """Return the data calculated by the last plot_pvalue call.
 
+        The `get_pvalue_results` function returns the likelihood ratio test
+        results computed by the `plot_pvalue` command, which compares fits
+        of the null model to fits of the alternative model using faked data
+        with Poisson noise. The likelihood ratio based on the observed data is
+        returned, along with the p-value, used to reject or accept the null
+        model.
+
         Returns
         -------
         plot : a `sherpa.sim.simulate.LikelihoodRatioResults` instance
@@ -8395,8 +8425,8 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        Each simulation involves creating a data set using the
-        observed data simulated with Poisson noise.
+        Each simulation involves creating a data set using the observed
+        data simulated with Poisson noise.
 
         For the likelihood ratio test to be valid, the following
         conditions must hold:
@@ -8415,15 +8445,15 @@ class Session(NoNewAttributesAfterInit):
 
         >>> create_model_component('powlaw1d', 'pl')
         >>> create_model_component('gauss1d', 'gline')
-        >>> plot_pvalue(pl, pl+gline)
+        >>> plot_pvalue(pl, pl + gline)
 
         Use 1000 simulations and use the data from data sets
-        1, 2, and 3:
+        'core', 'jet1', and 'jet2':
 
         >>> mdl1 = pl
         >>> mdl2 = pl + gline
-        >>> plot_pvalue(mdl1, mdl2, id=1, otherids=(2,3),
-                        num=1000)
+        >>> plot_pvalue(mdl1, mdl2, id='core', otherids=('jet1', 'jet2'),
+        ...             num=1000)
 
         Apply a convolution to the models before fitting:
 
@@ -10176,12 +10206,13 @@ class Session(NoNewAttributesAfterInit):
     def set_prior(self, par, prior):
         """Set the prior function to use with a parameter.
 
-        The default prior used by ``get_draws`` for each parameter
+        The default prior used by `get_draws` for each parameter
         is flat, varying between the soft minimum and maximum
-        values of the parameter (as given by the ``min`` and
-        ``max`` attributes of the parameter object). The ``set_prior``
+        values of the parameter (as given by the `min` and
+        `max` attributes of the parameter object). The `set_prior`
         function is used to change the form of the prior for a
-        parameter.
+        parameter, and `get_prior` returns the current prior for
+        a parameter.
 
         Parameters
         ----------
@@ -10195,7 +10226,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_draws : Run the pyBLoCXS MCMC algorithm.
-        get_prior : Set the prior function to use with a parameter.
+        get_prior : Return the prior function for a parameter (MCMC).
         set_sampler : Set the MCMC sampler.
 
         Examples
@@ -10205,32 +10236,37 @@ class Session(NoNewAttributesAfterInit):
         to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
         keV::
 
-            >>> create_model_component('xsapec', 'therm')
-            >>> create_model_component('gauss1d', 'p_temp')
-            >>> p_temp.pos = 1.7
-            >>> p_temp.fwhm = 0.35
-            >>> set_prior(therm.kT, p_temp)
+        >>> create_model_component('xsapec', 'therm')
+        >>> create_model_component('gauss1d', 'p_temp')
+        >>> p_temp.pos = 1.7
+        >>> p_temp.fwhm = 0.35
+        >>> set_prior(therm.kT, p_temp)
 
         Create a function (``lognorm``) and use it as the prior the the
         ``nH`` parameter of the ``abs1`` model component::
 
-            >>> create_model_component('xsphabs', 'abs1')
-            >>> def lognorm(x):
-               # center on 10^20 cm^2 with a sigma of 0.5
-               sigma = 0.5
-               x0 = 20
-               # nH is in units of 10^-22 so convert
-               dx = np.log10(x) + 22 - x0
-               norm = sigma / np.sqrt(2 * np.pi)
-               return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
-
-            >>> set_prior(abs1.nH, lognorm)
+        >>> create_model_component('xsphabs', 'abs1')
+        >>> def lognorm(x):
+        ...   # center on 10^20 cm^2 with a sigma of 0.5
+        ...   sigma = 0.5
+        ...   x0 = 20
+        ...   # nH is in units of 10^-22 so convert
+        ...   dx = np.log10(x) + 22 - x0
+        ...   norm = sigma / np.sqrt(2 * np.pi)
+        ...   return norm * np.exp(-0.5 * dx * dx / (sigma * sigma))
+        ...
+        >>> set_prior(abs1.nH, lognorm)
 
         """
         self._pyblocxs.set_prior(par, prior)
 
     def get_prior(self, par):
-        """Return the prior function for a parameter.
+        """Return the prior function for a parameter (MCMC).
+
+        The default behavior of the pyBLoCXS MCMC sampler (run by the
+        `get_draws` function) is to use a flat prior for each parameter.
+        The `get_prior` routine finds the current prior assigned to
+        a parameter, and `set_prior` is used to change it.
 
         Parameters
         ----------
@@ -10240,8 +10276,8 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         prior
-           The function or parameter instance set by
-           a previous call to `set_prior`.
+           The parameter prior set by a previous call to `set_prior`.
+           This may be a function or model instance.
 
         Raises
         ------
@@ -10255,7 +10291,8 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> pfunc = get_prior(bgnd.c0)
+        >>> prior = get_prior(bgnd.c0)
+        >>> print(prior)
 
         """
         return self._pyblocxs.get_prior(par)
@@ -10271,7 +10308,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_prior : Return the prior function for a parameter.
+        get_prior : Return the prior function for a parameter (MCMC).
         set_prior : Set the prior function to use with a parameter.
 
         Examples
@@ -10391,11 +10428,14 @@ class Session(NoNewAttributesAfterInit):
         are displayed. The first one as a cumulative distribution
         using `plot_cdf` and the second one as a probability
         distribution using `plot_pdf`. Finally the acceptance fraction
-        (number of draws where the chain moved) is displayed:
+        (number of draws where the chain moved) is displayed.
+        Note that in a full analysis session a burn-in period would
+        normally be removed from the chain before using the
+        results.
 
         >>> fit()
         >>> covar()
-        >>> (stats, accept, params) = get_draws(1, niter=1e4)
+        >>> stats, accept, params = get_draws(1, niter=1e4)
         >>> plot_trace(stats, name='stat')
         >>> names = [p.fullname for p in get_source().pars if not p.frozen]
         >>> plot_cdf(params[0,:], name=names[0], xlabel=names[0])
@@ -10403,8 +10443,10 @@ class Session(NoNewAttributesAfterInit):
         >>> accept[:-1].sum() * 1.0 / len(accept - 1)
         0.4287
 
-        In a full analysis a burn-in period would normally be removed
-        from the chain before using it.
+        The following runs the chain on multiple data sets, with
+        identifiers 'core', 'jet1', and 'jet2':
+
+        >>> stats, accept, params = get_draws('core', ['jet1', 'jet2'], niter=1e4)
 
         """
 
