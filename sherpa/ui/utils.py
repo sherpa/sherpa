@@ -3522,7 +3522,7 @@ class Session(NoNewAttributesAfterInit):
         For a 2D data set, display the simulated data, model, and
         residuals:
 
-        >>> dataspace2d([150,80], id='fakeimg')
+        >>> dataspace2d([150, 80], id='fakeimg')
         >>> set_source('fakeimg', beta2d.src + polynom2d.bg)
         >>> src.xpos, src.ypos = 75, 40
         >>> src.r0, src.alpha = 15, 2.3
@@ -6663,12 +6663,12 @@ class Session(NoNewAttributesAfterInit):
         use it in a source expression::
 
             >>> def func1d(pars, x, xhi=None):
-                    if xhi is not None:
-                        x = (x + xhi)/2
-                    return x * pars[1] + pars[0]
+            ...     if xhi is not None:
+            ...         x = (x + xhi) / 2
+            ...     return x * pars[1] + pars[0]
 
             >>> load_user_model(func1d, "myfunc")
-            >>> add_user_pars(myfunc, ["c","m"], [0,1])
+            >>> add_user_pars(myfunc, ["c", "m"], [0, 1])
             >>> set_source(myfunc + gauss1d.gline)
 
         """
@@ -6742,7 +6742,7 @@ class Session(NoNewAttributesAfterInit):
         >>> pmins = [0.01, 0, 0]
         >>> pfreeze = [False, False, True]
         >>> add_user_pars("prof", pnames, pvals,
-                          parmins=pmins, parfrozen=pfreeze)
+        ...               parmins=pmins, parfrozen=pfreeze)
 
         """
         pars = []
@@ -6811,7 +6811,7 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         statname : str
-           The name to use for the new statisitic when calling
+           The name to use for the new statistic when calling
            `set_stat`.
         calc_stat_func : func
            The function that calculates the statistic.
@@ -8180,7 +8180,7 @@ class Session(NoNewAttributesAfterInit):
         """Fit a model to one or more data sets.
 
         Use forward fitting to find the best-fit model to one or more
-        data sets, given the chosen statisitic and optimization
+        data sets, given the chosen statistic and optimization
         method. The fit proceeds until the results converge or the
         number of iterations exceeds the maximum value (these values
         can be changed with `set_method_opt`). An iterative scheme can
@@ -9537,8 +9537,8 @@ class Session(NoNewAttributesAfterInit):
         covar : Estimate the confidence intervals using the confidence method.
         get_covar : Return the covariance estimation object.
         get_covar_results : Return the results of the last `covar` run.
-        int_proj : Plot the statisitic value as a single parameter is varied.
-        int_unc : Plot the statisitic value as a single parameter is varied.
+        int_proj : Plot the statistic value as a single parameter is varied.
+        int_unc : Plot the statistic value as a single parameter is varied.
         reg_proj : Plot the statistic value as two parameters are varied.
         reg_unc : Plot the statistic value as two parameters are varied.
         set_covar_opt : Set an option of the `covar` estimation object.
@@ -9664,8 +9664,8 @@ class Session(NoNewAttributesAfterInit):
         covar : Estimate the confidence intervals using the covariance method.
         get_conf : Return the confidence-interval estimation object.
         get_conf_results : Return the results of the last `conf` run.
-        int_proj : Plot the statisitic value as a single parameter is varied.
-        int_unc : Plot the statisitic value as a single parameter is varied.
+        int_proj : Plot the statistic value as a single parameter is varied.
+        int_unc : Plot the statistic value as a single parameter is varied.
         reg_proj : Plot the statistic value as two parameters are varied.
         reg_unc : Plot the statistic value as two parameters are varied.
         set_conf_opt : Set an option of the `conf` estimation object.
@@ -9859,7 +9859,7 @@ class Session(NoNewAttributesAfterInit):
         covar : Estimate the confidence intervals using the covariance method.
         get_proj : Return the confidence-interval estimation object.
         get_proj_results : Return the results of the last `proj` run.
-        int_proj : Plot the statisitic value as a single parameter is varied.
+        int_proj : Plot the statistic value as a single parameter is varied.
         reg_proj : Plot the statistic value as two parameters are varied.
         set_proj_opt : Set an option of the `proj` estimation object.
 

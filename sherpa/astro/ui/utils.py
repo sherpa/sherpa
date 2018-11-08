@@ -3374,6 +3374,22 @@ class Session(sherpa.ui.utils.Session):
         get_backscal : Return the area scaling of a PHA data set.
         set_exposure : Change the exposure time of a PHA data set.
 
+        Examples
+        --------
+
+        Return the exposure time for the default data set.
+
+        >>> t = get_exposure()
+
+        Return the exposure time for the data set with identifier 2:
+
+        >>> t2 = get_exposure(2)
+
+        Return the exposure time for the first background component
+        of data set "core":
+
+        >>> tbkg = get_exposure('core', bkg_id=1)
+
         """
         if bkg_id is not None:
             return self.get_bkg(id, bkg_id).exposure
@@ -7199,12 +7215,16 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `val` parameters,
         respectively.
 
+        Notes
+        -----
+        The meaning of the grouping column is taken from [1]_, which says
+        that +1 indicates the start of a bin, -1 if the channel is part
+        of group, and 0 if the data grouping is undefined for all channels.
+
         References
         ----------
 
-        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
-               Format",
-               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
         --------
@@ -7212,13 +7232,13 @@ class Session(sherpa.ui.utils.Session):
         Copy the grouping array from data set 2 into the default data
         set:
 
-        >>> grp = get_data(2).grouping
+        >>> grp = get_grouping(2)
         >>> set_grouping(grp)
 
-        Copy the grouping from data set "src1" to the source and
-        background data sets of "src2":
+        Copy the grouping from data set "src1" to the source and the
+        first background data set of "src2":
 
-        >>> grp = get_data("src1").grouping
+        >>> grp = get_grouping("src1")
         >>> set_grouping("src2", grp)
         >>> set_grouping("src2", grp, bkg_id=1)
 
@@ -7242,6 +7262,9 @@ class Session(sherpa.ui.utils.Session):
     def get_grouping(self, id=None, bkg_id=None):
         """Return the grouping array for a PHA data set.
 
+        The function returns the grouping value for each channel in
+        the PHA data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -7254,9 +7277,13 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        grouping : array or ``None``
+        grouping : ndarray or ``None``
            A value of ``1`` indicates the start of a new group, and ``-1``
-           indicates that the bin is part of the group.
+           indicates that the bin is part of the group. This array is
+           not filtered - that is, there is one element for each channel
+           in the PHA data set.  Changes to the elements of this array will
+           change the values in the dataset (is is a reference to the values
+           used to define the quality, not a copy).
 
         Raises
         ------
@@ -7268,13 +7295,24 @@ class Session(sherpa.ui.utils.Session):
         fit : Fit one or more data sets.
         get_quality : Return the quality array for a PHA data set.
         ignore_bad : Exclude channels marked as bad in a PHA data set.
+        load_grouping: Load the grouping scheme from a file and add to a PHA data set.
         set_grouping : Apply a set of grouping flags to a PHA data set.
+
+        Notes
+        -----
+        The meaning of the grouping column is taken from [1]_, which says
+        that +1 indicates the start of a bin, -1 if the channel is part
+        of group, and 0 if the data grouping is undefined for all channels.
+
+        References
+        ----------
+
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
         --------
 
-        Copy the grouping array from the default data set to data set
-        2:
+        Copy the grouping array from the default data set to data set 2:
 
         >>> grp1 = get_grouping()
         >>> set_grouping(2, grp1)
@@ -7335,12 +7373,18 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `val` parameters,
         respectively.
 
+        Notes
+        -----
+        The meaning of the quality column is taken from [1]_, which says
+        that 0 indicates a "good" channel, 1 and 2 are for channels that
+        are identified as "bad" or "dubious" (respectively) by software,
+        5 indicates a "bad" channel set by the user, and values of 3 or 4
+        are not used.
+
         References
         ----------
 
-        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
-               Format",
-               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
         --------
@@ -7387,6 +7431,9 @@ class Session(sherpa.ui.utils.Session):
     def get_quality(self, id=None, bkg_id=None):
         """Return the quality flags for a PHA data set.
 
+        The function returns the quality value for each channel in
+        the PHA data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -7397,6 +7444,16 @@ class Session(sherpa.ui.utils.Session):
            Set if the quality flags should be taken from a background
            associated with the data set.
 
+        Returns
+        -------
+        qual : ndarray or ``None``
+           The quality value for each channel in the PHA data set.
+           This array is not grouped or filtered - that is, there
+           is one element for each channel in the PHA data set. Changes
+           to the elements of this array will change the values in the
+           dataset (is is a reference to the values used to define the
+           quality, not a copy).
+
         Raises
         ------
         sherpa.utils.err.ArgumentErr
@@ -7406,14 +7463,28 @@ class Session(sherpa.ui.utils.Session):
         --------
         fit : Fit one or more data sets.
         get_grouping : Return the grouping array for a PHA data set.
+        get_indep : Return the independent axes of a data set.
         ignore_bad : Exclude channels marked as bad in a PHA data set.
+        load_quality : Load the quality array from a file and add to a PHA data set.
         set_quality : Apply a set of quality flags to a PHA data set.
+
+        Notes
+        -----
+        The meaning of the quality column is taken from [1]_, which says
+        that 0 indicates a "good" channel, 1 and 2 are for channels that
+        are identified as "bad" or "dubious" (respectively) by software,
+        5 indicates a "bad" channel set by the user, and values of 3 or 4
+        are not used.
+
+        References
+        ----------
+
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
         --------
 
-        Copy the quality array from the default data set to data set
-        2:
+        Copy the quality array from the default data set to data set 2:
 
         >>> qual1 = get_quality()
         >>> set_quality(2, qual1)
@@ -7422,6 +7493,13 @@ class Session(sherpa.ui.utils.Session):
         2 for the 'histate' data set:
 
         >>> qual = get_quality('histate', bkg_id=2)
+
+        Change the quality setting for all channels below 30 in the
+        default data set to 5 (considered bad by the user):
+
+        >>> chans, = get_indep()
+        >>> qual = get_quality()
+        >>> qual[chans < 30] = 5
 
         """
 
@@ -8324,12 +8402,10 @@ class Session(sherpa.ui.utils.Session):
                  grouping=None, grouped=False, quality=None, bkg=None):
         """Simulate a PHA data set from a model.
 
-        Take a PHA data set, evaluate the model for each bin, and then
-        use this value to create a data value from each bin, where the
-        value is used as the expectation value of the Poisson
-        distribution. A background component can be added (these
-        values are scaled to account for area extraction and exposure
-        time, but are not themselves simulated).
+        The function creates a simulated PHA data set based on a source
+        model, instrument response (given as an ARF and RMF), and exposure
+        time, along with a Poisson noise term. A background component can
+        be included.
 
         Parameters
         ----------
@@ -8378,6 +8454,18 @@ class Session(sherpa.ui.utils.Session):
         load_arrays : Create a data set from array values.
         set_model : Set the source model expression for a data set.
 
+        Notes
+        -----
+        A model expression is created by using the supplied ARF and RMF
+        to convolve the source expression for the dataset (the return
+        value of `get_source` for the supplied `id` parameter). This
+        expresion is evaluated for each channel to create the expectation
+        values, which is then passed to a Poisson random number generator
+        to determine the observed number of counts per channel. Any
+        background component is scaled by appropriate terms (exsposure
+        time, area scaling, and the backscal value) before adding to the
+        simulated date. That is, the background component is not simulated.
+
         Examples
         --------
         Estimate the signal from a 5000 second observation using
@@ -8395,8 +8483,8 @@ class Session(sherpa.ui.utils.Session):
         estimated background component based on scaling the existing
         background observations for the source. The simulated data
         set, which has the same grouping as the default set, for
-        easier comparison, is created with the 'sim' label
-        and then written out to the file 'sim.pi':
+        easier comparison, is created with the 'sim' label and then
+        written out to the file 'sim.pi':
 
         >>> arf = get_arf()
         >>> rmf = get_rmf()
@@ -8405,9 +8493,9 @@ class Session(sherpa.ui.utils.Session):
         >>> grp = get_grouping()
         >>> qual = get_quality()
         >>> texp = 1e6
-        >>> set_source('sim', get_model())
-        >>> fake_pha('sim', arf, rmf, backscal=bscal, bkg=bkg,
-                     grouping=grp, quality=qual, grouped=True)
+        >>> set_source('sim', get_source())
+        >>> fake_pha('sim', arf, rmf, texp, backscal=bscal, bkg=bkg,
+        ...          grouping=grp, quality=qual, grouped=True)
         >>> save_pha('sim', 'sim.pi')
 
         """
@@ -9632,7 +9720,7 @@ class Session(sherpa.ui.utils.Session):
         """Fit a model to one or more data sets.
 
         Use forward fitting to find the best-fit model to one or more
-        data sets, given the chosen statisitic and optimization
+        data sets, given the chosen statistic and optimization
         method. The fit proceeds until the results converge or the
         number of iterations exceeds the maximum value (these values
         can be changed with `set_method_opt`). An iterative scheme can
@@ -12367,6 +12455,9 @@ class Session(sherpa.ui.utils.Session):
     def calc_data_sum(self, lo=None, hi=None, id=None, bkg_id=None):
         """Sum up the data values over a pass band.
 
+        This function is for one-dimensional data sets: use
+        `calc_model_sum` for two-dimensional data sets.
+
         Parameters
         ----------
         lo : number, optional
@@ -12406,7 +12497,9 @@ class Session(sherpa.ui.utils.Session):
         Notes
         -----
         The units of ``lo`` and ``hi`` are determined by the analysis
-        setting for the data set (e.g. `get_analysis`).
+        setting for the data set (e.g. `get_analysis`). The summation
+        occurs over those points in the data set that lie within this
+        range, not the range itself.
 
         Any existing filter on the data set - e.g. as created by
         `ignore` or `notice` - is ignored by this function.
@@ -12418,6 +12511,11 @@ class Session(sherpa.ui.utils.Session):
 
         Examples
         --------
+
+        Sum up the data values (the dependent axis) for all points or
+        bins in the default data set:
+
+        >>> dsum = calc_data_sum()
 
         Calculate the number of counts over the ranges 0.5 to 2 and 0.5 to
         7 keV for the default data set, first using the observed signal
@@ -12439,23 +12537,33 @@ class Session(sherpa.ui.utils.Session):
         >>> calc_data_sum(0.5, id="core")
         0.0
 
+        Calculate the sum of the second background component for data
+        set 3 over the independent axis range 12 to 45:
+
+        >>> calc_data_sum(12, 45, id=3, bkg_id=2)
+
         """
         data = self.get_data(id)
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
         return sherpa.astro.utils.calc_data_sum(data, lo, hi)
 
-    # DOC-TODO: does lo!=None,hi=None make sense here,
-    # since this is not an integration but a sum.
-    # For now I have just not documented this capability.
     # DOC-TODO: better comparison of calc_source_sum and calc_model_sum
     # needed (e.g. integration or results in PHA case?)
+    #
+    # DOC-TODO: add some form of convolution to the last example
+    #           to show the difference between calc_model_sum and
+    #           calc_source_sum
+    #
     def calc_model_sum(self, lo=None, hi=None, id=None, bkg_id=None):
         """Sum up the fitted model over a pass band.
 
-        Sum up S(E) over a pass band, where S(E) is the model
-        evaluated for each bin (that is, the model that is fit to the
-        data, so that it includes instrumental responses).
+        Sum up M(E) over a range of bins, where M(E) is the per-bin model
+        value after it has been convolved with any instrumental response
+        (e.g. RMF and ARF or PSF). This is intended for one-dimensional
+        data sets: use `calc_model_sum2d` for two-dimensional data sets.
+        The `calc_source_sum` function is used to calculate the sum of the
+        model before any instrumental response is applied.
 
         Parameters
         ----------
@@ -12477,7 +12585,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         signal : number
-           The sum of the model values used to fit the data.
+           The sum of the model values over the requested axis range.
 
         See Also
         --------
@@ -12490,17 +12598,25 @@ class Session(sherpa.ui.utils.Session):
         Notes
         -----
         The units of ``lo`` and ``hi`` are determined by the analysis
-        setting for the data set (e.g. `get_analysis`).
+        setting for the data set (e.g. `get_analysis`). The summation
+        occurs over those points in the data set that lie within this
+        range, not the range itself.
 
         Any existing filter on the data set - e.g. as created by
         `ignore` or `notice` - is ignored by this function.
 
         The units of the answer depend on the model components used in
         the source expression and the axis or axes of the data set.
-        It is unlikely to give sensible results for 2D data sets.
 
         Examples
         --------
+
+        Calculate the model evaluated over the full data set (all points
+        or pixels of the independent axis) for the default data set,
+        and compare it to the sum for th first background component:
+
+        >>> tsrc = calc_model_sum()
+        >>> tbkg = calc_model_sum(bkg_id=1)
 
         Sum up the model over the data range 0.5 to 2 for the default
         data set, and compared to the data over the same range:
@@ -12509,6 +12625,33 @@ class Session(sherpa.ui.utils.Session):
         404.97796489631639
         >>> calc_data_sum(0.5, 2)
         745.0
+
+        Calculate the model sum, evaluated over the range 20 to 22
+        Angstroms, for the first background component of the "histate"
+        data set:
+
+        >>> set_analysis("histate", "wavelength")
+        >>> calc_model_sum(20, 22, "histate", bkg_id=1)
+
+        In the following example, a small data set is created, covering
+        the axis range of -5 to 5, and an off-center gaussian model
+        created (centered at 1). The model is evaluated over the full
+        data grid and then a subset of pixels. As the summation is done
+        over those points in the data set that lie within the requested
+        range, the sum for lo=-2 to hi=1 is the same as that for
+        lo=-1.5 to hi=1.5:
+
+        >>> load_arrays('test', [-5, -2.5, 0, 2.5, 5], [2, 5, 12, 7, 3])
+        >>> set_source('test', gauss1d.gmdl)
+        >>> gmdl.pos = 1
+        >>> gmdl.fwhm = 2.4
+        >>> gmdl.ampl = 10
+        >>> calc_model_sum(id='test')
+        9.597121089731253
+        >>> calc_model_sum(-2, 1, id='test')
+        6.179472329646446
+        >>> calc_model_sum(-1.5, 1.5, id='test')
+        6.179472329646446
 
         """
         data = self.get_data(id)
@@ -12522,6 +12665,9 @@ class Session(sherpa.ui.utils.Session):
 
     def calc_data_sum2d(self, reg=None, id=None):
         """Sum up the data values of a 2D data set.
+
+        This function is for two-dimensional data sets: use
+        `calc_model_sum` for one-dimensional data sets.
 
         Parameters
         ----------
@@ -12565,7 +12711,7 @@ class Session(sherpa.ui.utils.Session):
         >>> (y,x) = np.mgrid[0:3, 0:4]
         >>> y = y.flatten()
         >>> x = x.flatten()
-        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+        >>> load_arrays(1, x, y, ivals, (3, 4), DataIMG)
 
         With no argument, the full data set is used:
 
@@ -12726,15 +12872,15 @@ class Session(sherpa.ui.utils.Session):
         src = self.get_source(id)
         return sherpa.astro.utils.calc_model_sum2d(data, src, reg)
 
-    # DOC-TODO: does lo!=None,hi=None make sense here,
-    # since this is not an integration but a sum.
-    # For now I have just not documented this capability.
     def calc_source_sum(self, lo=None, hi=None, id=None, bkg_id=None):
         """Sum up the source model over a pass band.
 
-        Sum up S(E) over a pass band, where S(E) is the spectral model
-        evaluated for each bin (that is, the model without any
-        instrumental responses applied to it).
+        Sum up S(E) over a range of bins, where S(E) is the per-bin model
+        value before it has been convolved with any instrumental response
+        (e.g. RMF and ARF or PSF). This is intended for one-dimensional
+        data sets: use `calc_source_sum2d` for two-dimensional data sets.
+        The `calc_model_sum` function is used to calculate the sum of the
+        model after any instrumental response is applied.
 
         Parameters
         ----------
@@ -12772,17 +12918,25 @@ class Session(sherpa.ui.utils.Session):
         Notes
         -----
         The units of ``lo`` and ``hi`` are determined by the analysis
-        setting for the data set (e.g. `get_analysis`).
+        setting for the data set (e.g. `get_analysis`). The summation
+        occurs over those points in the data set that lie within this
+        range, not the range itself.
 
         Any existing filter on the data set - e.g. as created by
         `ignore` or `notice` - is ignored by this function.
 
         The units of the answer depend on the model components used in
         the source expression and the axis or axes of the data set.
-        It is unlikely to give sensible results for 2D data sets.
 
         Examples
         --------
+
+        Calculate the model evaluated over the full data set (all points
+        or pixels of the independent axis) for the default data set,
+        and compare it to the sum for th first background component:
+
+        >>> tsrc = calc_source_sum()
+        >>> tbkg = calc_source_sum(bkg_id=1)
 
         Sum up the model over the data range 0.5 to 2 for the default
         data set:
@@ -12790,12 +12944,11 @@ class Session(sherpa.ui.utils.Session):
         >>> calc_source_sum(0.5, 2)
         139.12819041922018
 
-        Compare the output of the `calc_source_sum` and
-        `calc_photon_flux` routines. A 1099-bin data space is created,
-        with a model which has a value of 1 for each bin. As the bin
-        width is constant, at 0.01, the integrated value, calculated
-        by `calc_photon_flux`, is one hundredth the value from
-        `calc_data_sum`:
+        Compare the output of the `calc_source_sum` and `calc_photon_flux`
+        routines. A 1099-bin data space is created, with a model which has
+        a value of 1 for each bin. As the bin width is constant, at 0.01,
+        the integrated value, calculated by `calc_photon_flux`, is one
+        hundredth the value returned by `calc_data_sum`:
 
         >>> dataspace1d(0.01, 11, 0.01, id="test")
         >>> set_source("test", const1d.bflat)
@@ -12804,6 +12957,26 @@ class Session(sherpa.ui.utils.Session):
         1099.0
         >>> calc_photon_flux(id="test")
         10.99
+
+        In the following example, a small data set is created, covering
+        the axis range of -5 to 5, and an off-center gaussian model
+        created (centered at 1). The model is evaluated over the full
+        data grid and then a subset of pixels. As the summation is done
+        over those points in the data set that lie within the requested
+        range, the sum for lo=-2 to hi=1 is the same as that for
+        lo=-1.5 to hi=1.5:
+
+        >>> load_arrays('test', [-5, -2.5, 0, 2.5, 5], [2, 5, 12, 7, 3])
+        >>> set_source('test', gauss1d.gmdl)
+        >>> gmdl.pos = 1
+        >>> gmdl.fwhm = 2.4
+        >>> gmdl.ampl = 10
+        >>> calc_source_sum(id='test')
+        9.597121089731253
+        >>> calc_source_sum(-2, 1, id='test')
+        6.179472329646446
+        >>> calc_source_sum(-1.5, 1.5, id='test')
+        6.179472329646446
 
         """
         data = self.get_data(id)
