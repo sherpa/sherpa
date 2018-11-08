@@ -430,7 +430,7 @@ the error value per bin when calculating the statistic value)::
     >>> if not geres.succeeded: print(geres.message)
 
 Since the error value is independent of bin, then the fit results
-should be the same here (that is, the parametes in ``g`` are the
+should be the same here (that is, the parameters in ``g`` are the
 same as ``ge``)::
 
     >>> print(g)
