@@ -10234,7 +10234,7 @@ class Session(NoNewAttributesAfterInit):
 
         Set the prior for the ``kT`` parameter of the ``therm`` component
         to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
-        keV::
+        keV:
 
         >>> create_model_component('xsapec', 'therm')
         >>> create_model_component('gauss1d', 'p_temp')
@@ -10242,22 +10242,27 @@ class Session(NoNewAttributesAfterInit):
         >>> p_temp.fwhm = 0.35
         >>> set_prior(therm.kT, p_temp)
 
-        Create a function (``lognorm``) and use it as the prior the the
+        Create a function (``lognorm``) and use it as the prior of the
         ``nH`` parameter of the ``abs1`` model component::
 
-        >>> create_model_component('xsphabs', 'abs1')
-        >>> def lognorm(x):
-        ...   # center on 10^20 cm^2 with a sigma of 0.5
-        ...   sigma = 0.5
-        ...   x0 = 20
-        ...   # nH is in units of 10^-22 so convert
-        ...   dx = np.log10(x) + 22 - x0
-        ...   norm = sigma / np.sqrt(2 * np.pi)
-        ...   return norm * np.exp(-0.5 * dx * dx / (sigma * sigma))
-        ...
-        >>> set_prior(abs1.nH, lognorm)
+            >>> def lognorm(x):
+            ...     nh = 20
+            ...     sigma = 0.5  # use a sigma of 0.5
+            ...     # nH is in units of 10^-22 so convert
+            ...     dx = np.log10(x) + 22 - nh
+            ...     norm = sigma / np.sqrt(2 * np.pi)
+            ...     return norm * np.exp(-0.5 * dx * dx / (sigma * sigma))
+            ...
+            >>> create_model_component('xsphabs', 'abs1')
+            >>> set_prior(abs1.nH, lognorm)
 
         """
+
+        # NOTE: the second piece of code is indented in the example
+        #       above because otherwise sphinx seems to think that the
+        #       colon at the end of the "def lognorm" line ends the
+        #       code block.
+
         self._pyblocxs.set_prior(par, prior)
 
     def get_prior(self, par):
