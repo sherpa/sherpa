@@ -11406,8 +11406,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the source model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
         get_energy_flux_hist : Return the data displayed by plot_energy_flux.
         get_photon_flux_hist : Return the data displayed by plot_photon_flux.
@@ -11507,8 +11507,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the source model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
         get_energy_flux_hist : Return the data displayed by plot_energy_flux.
         get_photon_flux_hist : Return the data displayed by plot_photon_flux.
@@ -11777,8 +11777,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the source model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
         plot_cdf : Plot the cumulative density function of an array.
         plot_pdf : Plot the probability density function of an array.
@@ -11879,8 +11879,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the source model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
         plot_cdf : Plot the cumulative density function of an array.
         plot_pdf : Plot the probability density function of an array.
@@ -11997,8 +11997,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the source model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
         plot_energy_flux : Display the energy flux distribution.
         plot_photon_flux : Display the photon flux distribution.
@@ -12263,7 +12263,7 @@ class Session(sherpa.ui.utils.Session):
             return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
     def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None):
-        """Integrate the source model over a pass band.
+        """Integrate the unconvolved source model over a pass band.
 
         Calculate the integral of S(E) over a pass band, where S(E) is
         the spectral model evaluated for each bin (that is, the model
@@ -12288,7 +12288,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        number
+        flux : number
            The flux from the source model integrated over the given
            band. This represents the flux from the model without any
            instrument response (i.e. the intrinsic flux of the
@@ -12302,7 +12302,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         calc_data_sum : Sum up the observed counts over a pass band.
         calc_model_sum : Sum up the fitted model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
         set_analysis : Set the units used when fitting and displaying spectral data
         set_model : Set the source model expression for a data set.
@@ -12327,6 +12327,15 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
+        Calculate the integral of the unconvolved model over the
+        full range of the default data set:
+
+        >>> calc_photon_flux()
+
+        Return the flux for the data set labelled "core":
+
+        >>> calc_photon_flux(id='core')
+
         Calculate the photon flux over the ranges 0.5 to 2 and 0.5 to
         7 keV, and compared to the energy fluxes for the same bands:
 
@@ -12346,6 +12355,13 @@ class Session(sherpa.ui.utils.Session):
         >>> calc_photon_flux(0.5, id="core")
         0.64978176
 
+        Calculate the flux for the model applied to the second background
+        component of the 'jet' data set, for the wavelength range 20 to 22
+        Angstroms:
+
+        >>> set_analysis('jet', 'wave')
+        >>> calc_photon_flux(20, 22, id='jet', bkg_id=2)
+
         """
 
         data = self.get_data(id)
@@ -12360,7 +12376,7 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
 
     def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None):
-        """Integrate the source model over a pass band.
+        """Integrate the unconvolved source model over a pass band.
 
         Calculate the integral of E * S(E) over a pass band, where E
         is the energy of the bin and S(E) the spectral model evaluated
@@ -12386,7 +12402,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        number
+        flux : number
            The flux from the source model integrated over the given
            band. This represents the flux from the model without any
            instrument response (i.e. the intrinsic flux of the
@@ -12400,7 +12416,7 @@ class Session(sherpa.ui.utils.Session):
         calc_data_sum : Sum up the data values over a pass band.
         calc_model_sum : Sum up the fitted model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
-        calc_photon_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
         set_analysis : Set the units used when fitting and displaying spectral data
         set_model : Set the source model expression for a data set.
 
@@ -12424,6 +12440,15 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
+        Calculate the integral of the unconvolved model over the
+        full range of the default data set:
+
+        >>> calc_energy_flux()
+
+        Return the flux for the data set labelled "core":
+
+        >>> calc_energy_flux(id='core')
+
         Calculate the energy flux over the ranges 0.5 to 2 and 0.5 to
         7 keV:
 
@@ -12438,6 +12463,13 @@ class Session(sherpa.ui.utils.Session):
 
         >>> calc_energy_flux(0.5, id="core")
         5.2573786652855304e-10
+
+        Calculate the flux for the model applied to the second background
+        component of the 'jet' data set, for the wavelength range 20 to 22
+        Angstroms:
+
+        >>> set_analysis('jet', 'wave')
+        >>> calc_energy_flux(20, 22, id='jet', bkg_id=2)
 
         """
         data = self.get_data(id)
@@ -12489,8 +12521,8 @@ class Session(sherpa.ui.utils.Session):
         --------
         calc_data_sum2d : Sum up the data values of a 2D data set.
         calc_model_sum : Sum up the fitted model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
-        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
+        calc_photon_flux : Integrate the unconcolved source model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
         set_model : Set the source model expression for a data set.
 
@@ -12590,8 +12622,8 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         calc_data_sum : Sum up the observed counts over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
-        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
         set_model : Set the source model expression for a data set.
 
@@ -12688,8 +12720,8 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         calc_data_sum : Sum up the data values of a data set.
-        calc_model_sum2d : Sum up the fitted model for a 2D data set.
-        calc_source_sum2d: Sum up the source model for a 2D data set.
+        calc_model_sum2d : Sum up the convolved model for a 2D data set.
+        calc_source_sum2d: Sum up the unconvolved model for a 2D data set.
         set_model : Set the source model expression for a data set.
 
         Notes
@@ -12708,33 +12740,43 @@ class Session(sherpa.ui.utils.Session):
         values to be 0 to 11 in a 3 row by 4 column image:
 
         >>> ivals = np.arange(12)
-        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y, x = np.mgrid[10:13, 20:24]
         >>> y = y.flatten()
         >>> x = x.flatten()
         >>> load_arrays(1, x, y, ivals, (3, 4), DataIMG)
 
-        With no argument, the full data set is used:
+        with no argument, the full data set is used:
 
         >>> calc_data_sum2d()
         66
         >>> ivals.sum()
         66
 
-        Only use pixels that fall within the given spatial filters:
+        and a spatial filter can be used to restrict the region
+        used for the summation:
 
-        >>> calc_data_sum2d('circle(2,2,1)')
+        >>> calc_data_sum2d('circle(22,12,1)')
         36
         >>> calc_data_sum2d('field()-circle(2,2,1)')
         30
+
+        Apply the spatial filter to the data set labelled "a2142":
+
+        >>> calc_data_sum2d('rotbox(4232.3,3876,300,200,43)', 'a2142')
 
         """
         data = self.get_data(id)
         return sherpa.astro.utils.calc_data_sum2d(data, reg)
 
     # DOC-TODO: show an example with psf
+    #           and change the model (to a non-flat distribution, otherwise
+    #           the PSF doesn't really help)
     # DOC-TODO: this needs testing as doesn't seem to be working for me
     def calc_model_sum2d(self, reg=None, id=None):
-        """Sum up the fitted model for a 2D data set.
+        """Sum up the convolved model for a 2D data set.
+
+        This function is for two-dimensional data sets: use
+        `calc_model_sum` for one-dimensional data sets.
 
         Parameters
         ----------
@@ -12756,8 +12798,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         calc_model_sum : Sum up the fitted model over a pass band.
-        calc_model_sum2d : Sum up the fitted model for a 2D data set.
-        calc_source_sum2d: Sum up the source model for a 2D data set.
+        calc_source_sum2d: Sum up the unconvolved model for a 2D data set.
         set_psf : Add a PSF model to a data set.
         set_model : Set the source model expression for a data set.
 
@@ -12777,26 +12818,32 @@ class Session(sherpa.ui.utils.Session):
         values to be 0 to 11 in a 3 row by 4 column image:
 
         >>> ivals = np.arange(12)
-        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y, x = np.mgrid[10:13, 20:24]
         >>> y = y.flatten()
         >>> x = x.flatten()
-        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+        >>> load_arrays(1, x, y, ivals, (3, 4), DataIMG)
         >>> set_source(const2d.bgnd)
         >>> bgnd.c0 = 2
 
-        With no argument, the full data set is used. Since the model
+        with no argument, the full data set is used. Since the model
         evaluates to 2 per pixel, and there are 12 pixels in the
         data set, the result is 24:
 
         >>> calc_model_sum2d()
         24.0
 
-        Only use pixels that fall within the given spatial filters:
+        and a spatial filter can be used to restrict the region
+        used for the summation:
 
-        >>> calc_model_sum2d('circle(2,2,1)')
+        >>> calc_model_sum2d('circle(22,12,1)')
         8.0
-        >>> calc_model_sum2d('field()-circle(2,2,1)')
+        >>> calc_model_sum2d('field()-circle(22,12,1)')
         16.0
+
+        Apply the spatial filter to the model for the data set
+        labelled "a2142":
+
+        >>> calc_model_sum2d('rotbox(4232.3,3876,300,200,43)', 'a2142')
 
         """
         data = self.get_data(id)
@@ -12804,7 +12851,10 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_model_sum2d(data, model, reg)
 
     def calc_source_sum2d(self, reg=None, id=None):
-        """Sum up the fitted model for a 2D data set.
+        """Sum up the unconvolved model for a 2D data set.
+
+        This function is for two-dimensional data sets: use
+        `calc_source_sum` for one-dimensional data sets.
 
         Parameters
         ----------
@@ -12825,7 +12875,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_model_sum2d : Sum up the fitted model for a 2D data set.
+        calc_model_sum2d : Sum up the convolved model for a 2D data set.
         calc_source_sum : Sum up the model over a pass band.
         set_psf : Add a PSF model to a data set.
         set_model : Set the source model expression for a data set.
@@ -12846,26 +12896,32 @@ class Session(sherpa.ui.utils.Session):
         values to be 0 to 11 in a 3 row by 4 column image:
 
         >>> ivals = np.arange(12)
-        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y, x = np.mgrid[10:13, 20:24]
         >>> y = y.flatten()
         >>> x = x.flatten()
-        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+        >>> load_arrays(1, x, y, ivals, (3, 4), DataIMG)
         >>> set_source(const2d.bgnd)
         >>> bgnd.c0 = 2
 
-        With no argument, the full data set is used. Since the model
+        with no argument, the full data set is used. Since the model
         evaluates to 2 per pixel, and there are 12 pixels in the
         data set, the result is 24:
 
         >>> calc_source_sum2d()
         24.0
 
-        Only use pixels that fall within the given spatial filters:
+        and a spatial filter can be used to restrict the region
+        used for the summation:
 
-        >>> calc_source_sum2d('circle(2,2,1)')
+        >>> calc_source_sum2d('circle(22,12,1)')
         8.0
-        >>> calc_source_sum2d('field()-circle(2,2,1)')
+        >>> calc_source_sum2d('field()-circle(22,12,1)')
         16.0
+
+        Apply the spatial filter to the model for the data set
+        labelled "a2142":
+
+        >>> calc_source_sum2d('rotbox(4232.3,3876,300,200,43)', 'a2142')
 
         """
         data = self.get_data(id)
@@ -12911,8 +12967,8 @@ class Session(sherpa.ui.utils.Session):
         --------
         calc_data_sum : Sum up the observed counts over a pass band.
         calc_model_sum : Sum up the fitted model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
-        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
         set_model : Set the source model expression for a data set.
 
         Notes
@@ -13031,7 +13087,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         dataspace1d : Create the independent axis for a 1D data set.
 
         Notes

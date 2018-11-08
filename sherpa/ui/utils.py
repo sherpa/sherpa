@@ -1135,7 +1135,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         show_all : Report the current state of the Sherpa session.
 
         Notes
@@ -1176,7 +1176,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        proj : Estimate confidence intervals using the projection method.
+        proj : Estimate parameter confidence intervals using the projection method.
         show_all : Report the current state of the Sherpa session.
 
         Notes
@@ -1217,7 +1217,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        covar : Estimate confidence intervals using the covariance method.
+        covar : Estimate parameter confidence intervals using the covariance method.
         show_all : Report the current state of the Sherpa session.
 
         Notes
@@ -1751,7 +1751,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        name : str
+        name : {'none', 'primini', 'sigmarej'}
            The name of the iterative fitting scheme set by
            `set_iter_method`.
 
@@ -1760,11 +1760,19 @@ class Session(NoNewAttributesAfterInit):
         list_iter_methods : List the iterative fitting schemes.
         set_iter_method : Set the iterative-fitting scheme used in the fit.
 
+        Examples
+        --------
+
+        >>> print(get_iter_method_name())
+
         """
         return self._current_itermethod['name']
 
     def get_iter_method_opt(self, optname=None):
         """Return one or all options for the iterative-fitting scheme.
+
+        The options available for the iterative-fitting methods are
+        described in `set_iter_method_opt`.
 
         Parameters
         ----------
@@ -1789,6 +1797,22 @@ class Session(NoNewAttributesAfterInit):
         set_iter_method_opt : Set an option for the iterative-fitting scheme.
         set_iter_method : Set the iterative-fitting scheme used in the fit.
 
+        Examples
+        --------
+
+        Return the settings of the current iterative-fitting method:
+
+        >>> get_iter_method_opt()
+
+        Switch to the sigmarej scheme and find out the current settings:
+
+        >>> set_iter_method('sigmarej')
+        >>> opts = get_iter_method_opt()
+
+        Return the 'maxiters' setting (if applicable):
+
+        >>> get_iter_method_opt('maxiters')
+
         """
         itermethod_opts = dict(self._current_itermethod)
         del itermethod_opts['name']
@@ -1808,8 +1832,7 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         schemes : list of str
-           A list of the names that can be used with
-           `set_iter_method`.
+           A list of the names that can be used with `set_iter_method`.
 
         See Also
         --------
@@ -1909,6 +1932,21 @@ class Session(NoNewAttributesAfterInit):
                http://adsabs.harvard.edu/abs/1995ASPC...77..331K
 
         .. [3] http://iraf.net/irafhelp.php?val=sfit
+
+        Examples
+        --------
+
+        Switch to the 'sigmarej' scheme for iterative fitting and
+        change the low and hige rejection limits to 4 and 3
+        respectively:
+
+        >>> set_iter_method('sigmarej')
+        >>> set_iter_method_opt('lrej') = 4
+        >>> set_iter_method_opt('hrej') = 3
+
+        Remove any iterative-fitting method:
+
+        >>> set_iter_method('none')
 
         """
         if isinstance(meth, string_types):
@@ -8210,7 +8248,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         contour_fit : Contour the fit to a data set.
         covar : Estimate the confidence intervals using the confidence method.
         freeze : Fix model parameters so they are not changed by a fit.
@@ -8693,7 +8731,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        covar : Estimate confidence intervals using the covariance method.
+        covar : Estimate parameter confidence intervals using the covariance method.
         get_covar_opt : Return one or all of the options for the covariance method.
         set_covar_opt : Set an option of the covar estimation object.
 
@@ -8750,7 +8788,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         get_conf_opt : Return one or all of the options for the confidence interval method.
         set_conf_opt : Set an option of the conf estimation object.
 
@@ -8857,7 +8895,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals for fit parameters.
+        conf : Estimate parameter confidence intervals using the confidence method.
         get_proj_opt : Return one or all of the options for the confidence interval method.
         proj : Estimate confidence intervals for fit parameters.
         set_proj_opt : Set an option of the proj estimation object.
@@ -8986,7 +9024,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        covar : Estimate confidence intervals using the covariance method.
+        covar : Estimate parameter confidence intervals using the covariance method.
         get_covar : Return the covariance estimation object.
         set_covar_opt : Set an option of the covar estimation object.
 
@@ -9027,7 +9065,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         get_conf : Return the confidence-interval estimation object.
         set_conf_opt : Set an option of the conf estimation object.
 
@@ -9070,7 +9108,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals for fit parameters.
+        conf : Estimate parameter confidence intervals using the confidence method.
         proj : Estimate confidence intervals for fit parameters.
         get_proj : Return the confidence-interval estimation object.
         set_proj_opt : Set an option of the proj estimation object.
@@ -9110,7 +9148,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        covar : Estimate confidence intervals using the covariance method.
+        covar : Estimate parameter confidence intervals using the covariance method.
         get_covar : Return the covar estimation object.
         get_covar_opt : Return one or all options of the covar estimation object.
 
@@ -9144,7 +9182,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         get_conf : Return the conf estimation object.
         get_conf_opt : Return one or all options of the conf estimation object.
 
@@ -9180,8 +9218,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals using the confidence method.
-        proj : Estimate confidence intervals using the projection method.
+        conf : Estimate parameter confidence intervals using the confidence method.
+        proj : Estimate parameter confidence intervals using the projection method.
         get_proj : Return the proj estimation object.
         get_proj_opt : Return one or all options of the proj estimation object.
 
@@ -9402,7 +9440,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals for fit parameters.
+        conf : Estimate parameter confidence intervals using the confidence method.
         proj : Estimate confidence intervals for fit parameters.
         get_proj_opt : Return one or all of the options for the projection method.
         set_proj_opt : Set an option of the proj estimation object.
@@ -9505,8 +9543,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: include screen output of covar() ?
     def covar(self, *args):
-        """Estimate the confidence intervals for parameters using the
-        covariance method.
+        """Estimate parameter confidence intervals using the covariance method.
 
         The `covar` command computes confidence interval bounds for
         the specified model parameters in the dataset, using the
@@ -9604,7 +9641,7 @@ class Session(NoNewAttributesAfterInit):
         >>> covar()
         >>> res = get_covar_results()
 
-        Only evaluate the parametes associated with data set 2.
+        Only evaluate the parameters associated with data set 2.
 
         >>> covar(2)
 
@@ -9616,22 +9653,21 @@ class Session(NoNewAttributesAfterInit):
         Change the limits to be 1.6 sigma (90%) rather than the default
         1 sigma.
 
-        >>> get_covar().sigma = 1.6
+        >>> set_covar_ope('sigma', 1.6)
         >>> covar()
 
         Only evaluate the ``clus.kt`` parameter for the data sets with
         identifiers "obs1", "obs5", and "obs6". This will still use
         the 1.6 sigma setting from the previous run.
 
-        >>> covar("obs1", ["obs5","obs6"], clus.kt)
+        >>> covar("obs1", ["obs5", "obs6"], clus.kt)
 
         """
         self._covariance_results = self._est_errors(args, 'covariance')
 
     # DOC-TODO: include screen output of conf() ?
     def conf(self, *args):
-        """Estimate the confidence intervals for parameters using the
-        confidence method.
+        """Estimate parameter confidence intervals using the confidence method.
 
         The `conf` command computes confidence interval bounds for the
         specified model parameters in the dataset.  A given
@@ -9678,7 +9714,7 @@ class Session(NoNewAttributesAfterInit):
         order is unimportant, since any argument that is not defined
         as a model parameter is assumed to be a data id.
 
-        The `conf` command is different to `covar`, in that in that
+        The `conf` function is different to `covar`, in that in that
         all other thawed parameters are allowed to float to new
         best-fit values, instead of being fixed to the initial
         best-fit values as they are in `covar`.  While `conf` is more
@@ -9686,6 +9722,10 @@ class Session(NoNewAttributesAfterInit):
         away from the best-fit point), it is in the strictest sense no
         more accurate than `covar` for determining confidence
         intervals.
+
+        The `conf` function is a replacement for the `proj` function,
+        which uses a different algorithm to estimate parameter
+        confidence limits.
 
         An estimated confidence interval is accurate if and only if:
 
@@ -9796,7 +9836,7 @@ class Session(NoNewAttributesAfterInit):
         >>> conf()
         >>> res = get_conf_results()
 
-        Only evaluate the parametes associated with data set 2.
+        Only evaluate the parameters associated with data set 2:
 
         >>> conf(2)
 
@@ -9808,22 +9848,27 @@ class Session(NoNewAttributesAfterInit):
         Change the limits to be 1.6 sigma (90%) rather than the default
         1 sigma.
 
-        >>> get_conf().sigma = 1.6
+        >>> set_conf_opt('sigma', 1.6)
         >>> conf()
 
         Only evaluate the ``clus.kt`` parameter for the data sets with
         identifiers "obs1", "obs5", and "obs6". This will still use
         the 1.6 sigma setting from the previous run.
 
-        >>> conf("obs1", ["obs5","obs6"], clus.kt)
+        >>> conf("obs1", ["obs5", "obs6"], clus.kt)
+
+        Only use two cores when evaluating the errors for the parameters
+        used in the model for data set 3:
+
+        >>> set_conf_opt('numcores', 2)
+        >>> conf(3)
 
         """
         self._confidence_results = self._est_errors(args, 'confidence')
 
     # DOC-TODO: add a deprecation note?
     def proj(self, *args):
-        """Estimate the confidence intervals for parameters using the
-        projection method.
+        """Estimate parameter confidence intervals using the projection method.
 
         .. note:: The `conf` function should be used instead of `proj`.
 
@@ -9855,7 +9900,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         get_proj : Return the confidence-interval estimation object.
         get_proj_results : Return the results of the last `proj` run.
@@ -13654,7 +13699,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -13748,7 +13793,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -13853,7 +13898,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -13961,7 +14006,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -14086,7 +14131,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         get_int_proj : Return the interval-projection object.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -14199,7 +14244,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         get_int_unc : Return the interval-uncertainty object.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
@@ -14351,7 +14396,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         get_reg_proj : Return the interval-projection object.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
@@ -14475,7 +14520,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         get_reg_unc : Return the interval-uncertainty object.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
