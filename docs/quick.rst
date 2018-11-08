@@ -452,7 +452,7 @@ The difference is that more of the fields
 in the result structure are populated: in particular the
 :py:attr:`~sherpa.fit.FitResults.rstat` and
 :py:attr:`~sherpa.fit.FitResults.qval` fields, which give the
-reduced statistic and the probability of obtaining this statisitic value
+reduced statistic and the probability of obtaining this statistic value
 respectively.::
 
     >>> print(geres)

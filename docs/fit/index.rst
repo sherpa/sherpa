@@ -589,7 +589,7 @@ call.
    assumption is that the search statistic is chi-square distributed
    so the change in statistic as a statistic varies can be related to
    a confidence bound. One requirement is that - for chi-square
-   statistics - is that the reduced statisitic value is small
+   statistics - is that the reduced statistic value is small
    enough. See the ``max_rstat`` field of the
    :py:class:`~sherpa.estmethods.EstMethod` object.
 
