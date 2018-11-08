@@ -74,8 +74,8 @@ Use an arcsinh transform to view the data, based on the work of
 ::
 
     >>> plt.imshow(np.arcsinh(msim), origin='lower', cmap='viridis',
-       ...:            extent=(x0low, x0high, x1low, x1high),
-       ...:            interpolation='nearest', aspect='auto')
+    ...            extent=(x0low, x0high, x1low, x1high),
+    ...            interpolation='nearest', aspect='auto')
     >>> plt.title('Simulated image')
 
 .. image:: ../_static/mcmc/mcmc_sim.png
@@ -218,7 +218,7 @@ Scatter plot
 ::
 
     >>> plt.scatter(pvals[0, :] - truth.r0.val,
-       ...:             pvals[4, :] - truth.alpha.val, alpha=0.3)
+    ...             pvals[4, :] - truth.alpha.val, alpha=0.3)
     >>> plt.xlabel(r'$\Delta r_0$', size=18)
     >>> plt.ylabel(r'$\Delta \alpha$', size=18)
 
@@ -237,3 +237,15 @@ This can be compared to the
     >>> plt.xlabel(r'$r_0$'); plt.ylabel(r'$\alpha$')
 
 .. image:: ../_static/mcmc/mcmc_scatter_r0_alpha_compare.png
+
+Reference/API
+=============
+
+.. toctree::
+   :maxdepth: 2
+
+   sim
+   mh
+   sample
+   simulate
+
