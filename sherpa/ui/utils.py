@@ -1813,9 +1813,9 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Return the settings of the current iterative-fitting method:
+        Display the settings of the current iterative-fitting method:
 
-        >>> get_iter_method_opt()
+        >>> print(get_iter_method_opt())
 
         Switch to the sigmarej scheme and find out the current settings:
 
@@ -5399,16 +5399,17 @@ class Session(NoNewAttributesAfterInit):
 
         When a model component is created, a variable is created that
         contains the model instance. The instance can also be returned
-        with `get_model_component`, as shown here:
+        with `get_model_component`, which can then be queried or used
+        to change the model settings:
 
         >>> create_model_component('gauss1d', 'gline')
         >>> gmodel = get_model_component('gline')
         >>> gmodel.name
         'gauss1d.gline'
-        >>> gmodel.pars
-        (<Parameter 'fwhm' of model 'gline'>,
-         <Parameter 'pos' of model 'gline'>,
-         <Parameter 'ampl' of model 'gline'>)
+        >>> print([p.name for p in gmodel.pars])
+        ['fwhm', 'pos', 'ampl']
+        >>> gmodel.fwhm.val = 12.2
+        >>> gmodel.fwhm.freeze()
 
         """
         # If user mistakenly passes an actual model reference,
@@ -8350,21 +8351,59 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        plot : a `sherpa.sim.simulate.LikelihoodRatioResults` instance
-           None is returned if neither `plot_pvalue` or
-           `get_pvalue_pvalue` have been run.
+        plot : None or a `sherpa.sim.simulate.LikelihoodRatioResults` instance
+           If `plot_pvalue` or `get_pvalue_plot` have been called then
+           the return value is a `sherpa.sim.simulate.LikelihoodRatioResults`
+           instance, otherwise `None` is returned.
 
         See Also
         --------
         plot_value : Compute and plot a histogram of likelihood ratios by simulating data.
         get_pvalue_plot : Return the data used by plot_pvalue.
 
+        Notes
+        -----
+        The fields of the returned (`LikelihoodRatioResults`) object are::
+
+        ratios
+           The calculated likelihood ratio for each iteration.
+
+        stats
+           The calculated fit statistics for each iteration, stored
+           as the null model and then the alt model in a nsim by 2
+           array.
+
+        samples
+           The parameter samples array for each simulation, stored in
+           a nsim by npar array.
+
+        lr
+           The likelihood ratio of the observed data for the null and
+           alternate models.
+
+        ppp
+           The p value of the observed data for the null and alternate
+           models.
+
+        null
+           The fit statistic of the null model on the observed data.
+
+        alt
+           The fit statistic of the alternate model on the observed data.
+
         Examples
         --------
 
+        Return the results of the last pvalue analysis and display the
+        results - first using the `format` method, which provides a
+        summary of the data, and then a look at the individual fields
+        in the returned object. The last call displays the contents
+        of one of the fields (`ppp`).
+
         >>> res = get_pvalue_results()
-        >>> res.ppp
-        0.472
+        >>> print(res.format())
+        >>> print(res)
+        >>> print(res.ppp)
 
         """
         return self._pvalue_results
@@ -8485,6 +8524,13 @@ class Session(NoNewAttributesAfterInit):
                         recalc=False):
         """Return the data used by plot_pvalue.
 
+        Access the data arrays and preferences defining the histogram plot
+        produced by the `plot_pvalue` function, a histogram of the likelihood
+        ratios comparing fits of the null model to fits of the alternative
+        model using faked data with Poisson noise. Data returned includes the
+        likelihood ratio computed using the observed data, and the p-value,
+        used to reject or accept the null model.
+
         Parameters
         ----------
         null_model
@@ -8529,9 +8575,11 @@ class Session(NoNewAttributesAfterInit):
         >>> pvals.ppp
         0.472
 
-        Run 500 simulations for the two models:
+        Run 500 simulations for the two models and print the
+        results:
 
         >>> pvals = get_pvalue_plot(mdl1, mdl2, recalc=True, num=500)
+        >>> print(pvals)
 
         """
         lrplot = self._lrplot
@@ -13696,12 +13744,16 @@ class Session(NoNewAttributesAfterInit):
         """Return the interval-projection object.
 
         This returns (and optionally calculates) the data used to
-        display the `int_proj` plot.
+        display the `int_proj` plot. Note that if the the `recalc`
+        parameter is `False` (the default value) then all other parameters
+        are ignored and the results of the last `int_proj` call are
+        returned.
 
         Parameters
         ----------
         par
-           The parameter to plot.
+           The parameter to plot. This argument is only used if `recalc` is
+           set to `True`.
         id : str or int, optional
         otherids : list of str or int, optional
            The `id` and `otherids` arguments determine which data set
@@ -13710,7 +13762,7 @@ class Session(NoNewAttributesAfterInit):
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `int_proj` (or `get_int_proj`) are returned,
-           ignoring the other parameter values. Otherwise, the
+           ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         min : number, optional
            The minimum parameter value for the calcutation. The
@@ -13762,14 +13814,21 @@ class Session(NoNewAttributesAfterInit):
         >>> min(iproj.y)
         119.55942437129544
 
+        Since the `recalc` parameter has not been changed to `True`, the
+        following will return the results for the last call to `int_proj`,
+        which may not have been for the src.ypos parameter:
+
+        >>> iproj = get_int_proj(src.ypos)
+
         Create the data without creating a plot:
 
         >>> iproj = get_int_proj(pl.gamma, recalc=True)
 
-        Control how the data is created
+        Specify the range and step size for the parameter, in this
+        case varying linearly between 12 and 14 with 51 values:
 
-        >>> iproj = get_int_proj(pl.gamma, id="src", min=12, max=14,
-                                 nloop=51, recalc=True)
+        >>> iproj = get_int_proj(src.r0, id="src", min=12, max=14,
+        ...                      nloop=51, recalc=True)
 
         """
         if sherpa.utils.bool_cast(recalc):
@@ -13790,12 +13849,16 @@ class Session(NoNewAttributesAfterInit):
         """Return the interval-uncertainty object.
 
         This returns (and optionally calculates) the data used to
-        display the `int_unc` plot.
+        display the `int_unc` plot. Note that if the the `recalc`
+        parameter is `False` (the default value) then all other parameters
+        are ignored and the results of the last `int_unc` call are
+        returned.
 
         Parameters
         ----------
         par
-           The parameter to plot.
+           The parameter to plot. This argument is only used if `recalc` is
+           set to `True`.
         id : str or int, optional
         otherids : list of str or int, optional
            The `id` and `otherids` arguments determine which data set
@@ -13804,7 +13867,7 @@ class Session(NoNewAttributesAfterInit):
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `int_proj` (or `get_int_proj`) are returned,
-           ignoring the other parameter values. Otherwise, the
+           ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         min : number, optional
            The minimum parameter value for the calcutation. The
@@ -13856,14 +13919,21 @@ class Session(NoNewAttributesAfterInit):
         >>> min(iunc.y)
         119.55942437129544
 
+        Since the `recalc` parameter has not been changed to `True`, the
+        following will return the results for the last call to `int_unc`,
+        which may not have been for the src.ypos parameter:
+
+        >>> iunc = get_int_unc(src.ypos)
+
         Create the data without creating a plot:
 
         >>> iunc = get_int_unc(pl.gamma, recalc=True)
 
-        Control how the data is created
+        Specify the range and step size for the parameter, in this
+        case varying linearly between 12 and 14 with 51 values:
 
-        >>> iunc = get_int_unc(pl.gamma, id="src", min=12, max=14,
-                               nloop=51, recalc=True)
+        >>> iunc = get_int_unc(src.r0, id="src", min=12, max=14,
+        ...                    nloop=51, recalc=True)
 
         """
         if sherpa.utils.bool_cast(recalc):
@@ -13883,12 +13953,16 @@ class Session(NoNewAttributesAfterInit):
         """Return the region-projection object.
 
         This returns (and optionally calculates) the data used to
-        display the `reg_proj` contour plot.
+        display the `reg_proj` contour plot. Note that if the the `recalc`
+        parameter is `False` (the default value) then all other parameters
+        are ignored and the results of the last `reg_proj` call are
+        returned.
 
         Parameters
         ----------
         par0, par1
            The parameters to plot on the X and Y axes, respectively.
+           These arguments are only used if recalc is set to `True`.
         id : str or int, optional
         otherids : list of str or int, optional
            The `id` and `otherids` arguments determine which data set
@@ -13897,7 +13971,7 @@ class Session(NoNewAttributesAfterInit):
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `reg_proj` (or `get_reg_proj`) are returned,
-           ignoring the other parameter values. Otherwise, the
+           ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         fast : bool, optional
            If ``True`` then the fit optimization used may be changed from
@@ -13955,21 +14029,31 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Return the results for the `reg_proj` run:
+        Return the results for the `reg_proj` run for the `xpos` and `ypos`
+        parameters of the `src` component, for the default data set:
 
         >>> reg_proj(src.xpos, src.ypos)
         >>> rproj = get_reg_proj()
+
+        Since the `recalc` parameter has not been changed to `True`, the
+        following will return the results for the last call to `reg_proj`,
+        which may not have been for the r0 and alpha parameters:
+
+        >>> rprog = get_reg_proj(src.r0, src.alpha)
 
         Create the data without creating a plot:
 
         >>> rproj = get_reg_proj(pl.gamma, gal.nh, recalc=True)
 
-        Control how the data is created:
+        Specify the range and step size for both the parameters,
+        in this case pl.gamma should vary between 0.5 and 2.5, with
+        gal.nh between 0.01 and 1, both with 51 values and the
+        nH range done over a log scale:
 
         >>> rproj = get_reg_proj(pl.gamma, gal.nh, id="src",
-                                 min=(0.5,0.01), max=(2.5,1),
-                                 nloop=(51,51), log=(False,True),
-                                 recalc=True)
+        ...                      min=(0.5, 0.01), max=(2.5, 1),
+        ...                      nloop=(51, 51), log=(False, True),
+        ...                      recalc=True)
 
         """
         if sherpa.utils.bool_cast(recalc):
@@ -13991,12 +14075,16 @@ class Session(NoNewAttributesAfterInit):
         """Return the region-uncertainty object.
 
         This returns (and optionally calculates) the data used to
-        display the `reg_unc` contour plot.
+        display the `reg_unc` contour plot.  Note that if the the `recalc`
+        parameter is `False` (the default value) then all other parameters
+        are ignored and the results of the last `reg_unc` call are
+        returned.
 
         Parameters
         ----------
         par0, par1
            The parameters to plot on the X and Y axes, respectively.
+           These arguments are only used if `recalc` is set to `True`.
         id : str or int, optional
         otherids : list of str or int, optional
            The `id` and `otherids` arguments determine which data set
@@ -14005,7 +14093,7 @@ class Session(NoNewAttributesAfterInit):
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `reg_unc` (or `get_reg_unc`) are returned,
-           ignoring the other parameter values. Otherwise, the
+           ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         fast : bool, optional
            If ``True`` then the fit optimization used may be changed from
@@ -14063,21 +14151,31 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Return the results for the `reg_unc` run:
+        Return the results for the `reg_unc` run for the `xpos` and `ypos`
+        parameters of the `src` component, for the default data set:
 
         >>> reg_unc(src.xpos, src.ypos)
         >>> runc = get_reg_unc()
+
+        Since the `recalc` parameter has not been changed to `True`, the
+        following will return the results for the last call to `reg_unc`,
+        which may not have been for the r0 and alpha parameters:
+
+        >>> runc = get_reg_unc(src.r0, src.alpha)
 
         Create the data without creating a plot:
 
         >>> runc = get_reg_unc(pl.gamma, gal.nh, recalc=True)
 
-        Control how the data is created:
+        Specify the range and step size for both the parameters,
+        in this case pl.gamma should vary between 0.5 and 2.5, with
+        gal.nh between 0.01 and 1, both with 51 values and the
+        nH range done over a log scale:
 
         >>> runc = get_reg_unc(pl.gamma, gal.nh, id="src",
-                               min=(0.5,0.01), max=(2.5,1),
-                               nloop=(51,51), log=(False,True),
-                               recalc=True)
+        ...                    min=(0.5, 0.01), max=(2.5, 1),
+        ...                    nloop=(51, 51), log=(False, True),
+        ...                    recalc=True)
 
         """
         if sherpa.utils.bool_cast(recalc):
@@ -14128,7 +14226,7 @@ class Session(NoNewAttributesAfterInit):
         current statistic value and the parameter value at this
         point. The parameter value is varied over a grid of points and
         the free parameters re-fit. It is expected that this is run
-        after a successful fit, so that the parameter values are at
+        after a successful fit, so that the parameter values identify
         the best-fit location.
 
         Parameters
@@ -14246,7 +14344,7 @@ class Session(NoNewAttributesAfterInit):
         point. The parameter value is varied over a grid of points and
         the statistic evaluated while holding the other parameters
         fixed. It is expected that this is run after a successful fit,
-        so that the parameter values are at the best-fit location.
+        so that the parameter values identify the best-fit location.
 
         Parameters
         ----------
