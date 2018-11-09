@@ -10677,7 +10677,7 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self, id=None):
-        """Return the data used by plot_model.
+        """Return the data used to create the model plot.
 
         Parameters
         ----------
@@ -10701,6 +10701,7 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         >>> mplot = get_model_plot()
+        >>> print(mplot)
 
         """
         self._prepare_plotobj(id, self._modelplot)
@@ -10708,7 +10709,7 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils (does not copy this docstring)
     def get_source_plot(self, id=None):
-        """Return the data used by plot_source.
+        """Return the data used to create the source plot.
 
         Parameters
         ----------
@@ -10725,17 +10726,32 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_plot : Return the data used by plot_model.
+        get_model_plot : Return the data used to create the model plot.
         plot_model : Plot the model for a data set.
         plot_source : Plot the source expression for a data set.
 
         Examples
         --------
 
+        Retrieve the source plot information for the default data
+        set and then display it:
+
         >>> splot = get_source_plot()
+        >>> print(splot)
+
+        Return the plot data for data set 2, and then use it to create
+        a plot:
+
+        >>> s2 = get_source_plot(2)
+        >>> s2.plot()
+
+        Display the two source plots for the 'jet' and 'core' datasets
+        on the same plot:
 
         >>> splot1 = get_source_plot(id='jet')
         >>> splot2 = get_source_plot(id='core')
+        >>> splot1.plot()
+        >>> splot2.overplot()
 
         """
         self._prepare_plotobj(id, self._sourceplot)
@@ -10743,7 +10759,7 @@ class Session(NoNewAttributesAfterInit):
 
     # sherpa.astro.utils version copies this docstring
     def get_model_component_plot(self, id, model=None):
-        """Return the data used by plot_model_component.
+        """Return the data used to create the model-component plot.
 
         Parameters
         ----------
@@ -10762,7 +10778,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_plot : Return the data used by plot_model.
+        get_model_plot : Return the data used to create the model plot.
         plot_model : Plot the model for a data set.
         plot_model_component : Plot a component of the model for a data set.
 
@@ -10825,7 +10841,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_source_plot : Return the data used by plot_source.
+        get_source_plot : Return the data used to create the source plot.
         plot_source : Plot the source expression for a data set.
         plot_source_component : Plot a component of the source expression for a data set.
 
@@ -10972,7 +10988,7 @@ class Session(NoNewAttributesAfterInit):
         return self._modelplot.plot_prefs
 
     def get_fit_plot(self, id=None):
-        """Return the data used by plot_fit.
+        """Return the data used to create the fit plot.
 
         Parameters
         ----------
@@ -10999,7 +11015,30 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
+        Create the data needed to create the "fit plot" for the default
+        data set and display it:
+
         >>> fplot = get_fit_plot()
+        >>> print(fplot)
+
+        Return the plot data for data set 2, and then use it to create
+        a plot:
+
+        >>> f2 = get_fit_plot(2)
+        >>> f2.plot()
+
+        The fit plot consists of a combination of a data plot and a
+        model plot, which are captured in the `dataplot` and `modelplot`
+        attributes of the return value. These can be used to display
+        the plots individually, such as:
+
+        >>> f2.dataplot.plot()
+        >>> f2.modelplot.plot()
+
+        or, to combine the two:
+
+        >>> f2.dataplot.plot()
+        >>> f2.modelplot.overplot()
 
         """
         self._prepare_plotobj(id, self._fitplot)
@@ -11041,6 +11080,18 @@ class Session(NoNewAttributesAfterInit):
         -2.9102595936209896
         >>> np.max(rplot.y)
         4.0897404063790104
+
+        Display the contents of the residuals plot for data set 2:
+
+        >>> print(get_resid_plot(2))
+
+        Overplot the residuals plot from the 'core' data set on the 'jet'
+        data set:
+
+        >>> r1 = get_resid_plot('jet')
+        >>> r2 = get_resid_plot('core')
+        >>> r1.plot()
+        >>> r2.overplot()
 
         """
         self._prepare_plotobj(id, self._residplot)
@@ -11084,6 +11135,18 @@ class Session(NoNewAttributesAfterInit):
         >>> np.max(rplot.y)
         2.89477053577520982
 
+        Display the contents of the residuals plot for data set 2:
+
+        >>> print(get_delchi_plot(2))
+
+        Overplot the residuals plot from the 'core' data set on the 'jet'
+        data set:
+
+        >>> r1 = get_delchi_plot('jet')
+        >>> r2 = get_delchi_plot('core')
+        >>> r1.plot()
+        >>> r2.overplot()
+
         """
         self._prepare_plotobj(id, self._delchiplot)
         return self._delchiplot
@@ -11126,6 +11189,18 @@ class Session(NoNewAttributesAfterInit):
         >>> np.max(rplot.y)
         8.379696454792295
 
+        Display the contents of the residuals plot for data set 2:
+
+        >>> print(get_chisqr_plot(2))
+
+        Overplot the residuals plot from the 'core' data set on the 'jet'
+        data set:
+
+        >>> r1 = get_chisqr_plot('jet')
+        >>> r2 = get_chisqr_plot('core')
+        >>> r1.plot()
+        >>> r2.overplot()
+
         """
         self._prepare_plotobj(id, self._chisqrplot)
         return self._chisqrplot
@@ -11167,6 +11242,18 @@ class Session(NoNewAttributesAfterInit):
         0.6320905073750186
         >>> np.max(rplot.y)
         1.5170172177000447
+
+        Display the contents of the ratio plot for data set 2:
+
+        >>> print(get_ratio_plot(2))
+
+        Overplot the ratio plot from the 'core' data set on the 'jet'
+        data set:
+
+        >>> r1 = get_ratio_plot('jet')
+        >>> r2 = get_ratio_plot('core')
+        >>> r1.plot()
+        >>> r2.overplot()
 
         """
         self._prepare_plotobj(id, self._ratioplot)
@@ -12161,7 +12248,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_plot : Return the data used by plot_model.
+        get_model_plot : Return the data used to create the model plot.
         get_model_plot_prefs : Return the preferences for plot_model.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
@@ -12284,7 +12371,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_component_plot : Return the data used by plot_model_component.
+        get_model_component_plot : Return the data used to create the model-component plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_source_component : Plot a component of the source expression for a data set.
@@ -12355,7 +12442,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_source_plot : Return the data used by plot_source.
+        get_source_plot : Return the data used to create the source plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_model : Plot the model for a data set.
@@ -12411,7 +12498,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_fit_plot : Return the data used by plot_fit.
+        get_fit_plot : Return the data used to create the fit plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
@@ -12795,7 +12882,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_fit_plot : Return the data used by plot_fit.
+        get_fit_plot : Return the data used to create the fit plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_fit : Plot the fit results for a data set.
@@ -12879,7 +12966,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_fit_plot : Return the data used by plot_fit.
+        get_fit_plot : Return the data used to create the fit plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_fit : Plot the fit results for a data set.

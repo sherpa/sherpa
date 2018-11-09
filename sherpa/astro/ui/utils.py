@@ -9967,7 +9967,8 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
-    # also in sherpa.utils
+    # also in sherpa.utils; it does not seem worthwhile creating a new
+    # docstring here
     def get_model_plot(self, id=None, **kwargs):
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
             self._prepare_plotobj(id, self._modelhisto, **kwargs)
@@ -10008,10 +10009,25 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
+        Retrieve the source plot information for the default data
+        set and then display it:
+
         >>> splot = get_source_plot()
+        >>> print(splot)
+
+        Return the plot data for data set 2, and then use it to create
+        a plot:
+
+        >>> s2 = get_source_plot(2)
+        >>> s2.plot()
+
+        Retrive the source plots for the 0.5 to 7 range of the
+        'jet' and 'core' data sets and display them on the same plot:
 
         >>> splot1 = get_source_plot(id='jet', lo=0.5, hi=7)
         >>> splot2 = get_source_plot(id='core', lo=0.5, hi=7)
+        >>> splot1.plot()
+        >>> splot2.overplot()
 
         For a PHA data set, the units on both the X and Y axes of the
         plot are controlled by the `set_analysis` command. In this
@@ -10020,6 +10036,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> set_analysis('energy', factor=1)
         >>> splot = get_source_plot()
+        >>> print(splot)
 
         """
         # srcplot obj is possibly reinstantiated depending on data type
@@ -10087,6 +10104,22 @@ class Session(sherpa.ui.utils.Session):
         get_default_id : Return the default data set identifier.
         plot_order : Plot the model for a data set convolved by the given response.
 
+        Examples
+        --------
+
+        Retrieve the plot information for order 1 of the default data set
+        and then display it:
+
+        >>> oplot = get_order_plot(orders=1)
+        >>> print(oplot)
+
+        Return the plot data for orders 1 and 2 of data set 'jet', plot the
+        first and then overplot the second:
+
+        >>> plots = get_order_plot('jet', orders=[1, 2])
+        >>> plots[0].plot()
+        >>> plots[1].overplot()
+
         """
         self._prepare_plotobj(id, self._orderplot, orders=orders)
         return self._orderplot
@@ -10128,9 +10161,10 @@ class Session(sherpa.ui.utils.Session):
         676.95794677734375
 
         Return the ARF data for the second response of the
-        data set labelled 'histate':
+        data set labelled 'histate', and then plot it:
 
         >>> aplot = get_arf_plot('histate', 2)
+        >>> aplot.plot()
 
         """
         self._prepare_plotobj(id, self._arfplot, resp_id)
@@ -10170,6 +10204,39 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_model_plot : Return the data used by plot_bkg_model.
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
 
+        Examples
+        --------
+
+        Create the data needed to create the "fit plot" for the background
+        of the default data set and display it:
+
+        >>> bplot = get_bkg_fit_plot()
+        >>> print(bplot)
+
+        Return the plot data for data set 2, and then use it to create
+        a plot:
+
+        >>> b2 = get_bkg_fit_plot(2)
+        >>> b2.plot()
+
+        The fit plot consists of a combination of a data plot and a
+        model plot, which are captured in the `dataplot` and `modelplot`
+        attributes of the return value. These can be used to display
+        the plots individually, such as:
+
+        >>> b2.dataplot.plot()
+        >>> b2.modelplot.plot()
+
+        or, to combine the two:
+
+        >>> b2.dataplot.plot()
+        >>> b2.modelplot.overplot()
+
+        Return the plot data for the second background component to the
+        "jet" data set:
+
+        >>> bplot = get_bkg_fit_plot('jet', bkg_id=2)
+
         """
         self._prepare_plotobj(id, self._bkgfitplot, bkg_id=bkg_id)
         return self._bkgfitplot
@@ -10208,6 +10275,15 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_source : Plot the model expression for the background of a PHA data set.
 
+        Examples
+        --------
+
+        >>> bplot = get_bkg_model_plot()
+        >>> print(bplot)
+
+        >>> get_bkg_model_plot('jet', bkg_id=1).plot()
+        >>> get_bkg_model_plot('jet', bkg_id=2).overplot()
+
         """
         self._prepare_plotobj(id, self._bkgmodelhisto, bkg_id=bkg_id)
         return self._bkgmodelhisto
@@ -10243,6 +10319,26 @@ class Session(sherpa.ui.utils.Session):
         --------
         get_default_id : Return the default data set identifier.
         plot_bkg : Plot the background values for a PHA data set.
+
+        Examples
+        --------
+
+        Create the data needed to create the "data plot" for the background
+        of the default data set and display it:
+
+        >>> bplot = get_bkg_plot()
+        >>> print(bplot)
+
+        Return the plot data for data set 2, and then use it to create
+        a plot:
+
+        >>> b2 = get_bkg_plot(2)
+        >>> b2.plot()
+
+        Return the plot data for the second background component to the
+        "jet" data set:
+
+        >>> bplot = get_bkg_plot('jet', bkg_id=2)
 
         """
         self._prepare_plotobj(id, self._bkgdataplot, bkg_id=bkg_id)
@@ -10286,6 +10382,46 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_source : Plot the model expression for the background of a PHA data set.
 
+        Examples
+        --------
+
+        Retrieve the source plot information for the background of
+        the default data set and display it:
+
+        >>> splot = get_bkg_source_plot()
+        >>> print(splot)
+
+        Return the background plot data for data set 2, and then use it
+        to create a plot:
+
+        >>> s2 = get_bkg_source_plot(2)
+        >>> s2.plot()
+
+        Create a plot of the first two background components of the
+        'histate' data set, overplotting the second on the first:
+
+        >>> b1 = get_bkg_source_plot('histate', bkg_id=1)
+        >>> b2 = get_bkg_source_plot('histate', bkg_id=2)
+        >>> b1.plot()
+        >>> b2.overplot()
+
+        Retrive the background source plots for the 0.5 to 7 range of the
+        'jet' and 'core' data sets and display them on the same plot:
+
+        >>> splot1 = get_bkg_source_plot(id='jet', lo=0.5, hi=7)
+        >>> splot2 = get_bkg_source_plot(id='core', lo=0.5, hi=7)
+        >>> splot1.plot()
+        >>> splot2.overplot()
+
+        For a PHA data set, the units on both the X and Y axes of the
+        plot are controlled by the `set_analysis` command. In this
+        case the Y axis will be in units of photons/s/cm^2 and the X
+        axis in keV:
+
+        >>> set_analysis('energy', factor=1)
+        >>> splot = get_bkg_source_plot()
+        >>> print(splot)
+
         """
         self._prepare_plotobj(id, self._bkgsourceplot, bkg_id=bkg_id,
                               lo=lo, hi=hi)
@@ -10326,6 +10462,15 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_ratio_plot : Return the data used by plot_bkg_ratio.
         plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
 
+        Examples
+        --------
+
+        >>> bplot = get_bkg_resid_plot()
+        >>> print(bplot)
+
+        >>> get_bkg_resid_plot('jet', bkg_id=1).plot()
+        >>> get_bkg_resid_plot('jet', bkg_id=2).overplot()
+
         """
         self._prepare_plotobj(id, self._bkgresidplot, bkg_id=bkg_id)
         return self._bkgresidplot
@@ -10364,6 +10509,15 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_delchi_plot : Return the data used by plot_bkg_delchi.
         get_bkg_resid_plot : Return the data used by plot_bkg_resid.
         plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
+
+        Examples
+        --------
+
+        >>> bplot = get_bkg_ratio_plot()
+        >>> print(bplot)
+
+        >>> get_bkg_ratio_plot('jet', bkg_id=1).plot()
+        >>> get_bkg_ratio_plot('jet', bkg_id=2).overplot()
 
         """
         self._prepare_plotobj(id, self._bkgratioplot, bkg_id=bkg_id)
@@ -10404,6 +10558,16 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_resid_plot : Return the data used by plot_bkg_resid.
         plot_bkg_delchi : Plot the ratio of residuals to error for the background of a PHA data set.
 
+        Examples
+        --------
+
+        >>> bplot = get_bkg_delchi_plot()
+        >>> print(bplot)
+
+        >>> get_bkg_delchi_plot('jet', bkg_id=1).plot()
+        >>> get_bkg_delchi_plot('jet', bkg_id=2).overplot()
+
+
         """
         self._prepare_plotobj(id, self._bkgdelchiplot, bkg_id=bkg_id)
         return self._bkgdelchiplot
@@ -10443,6 +10607,16 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_resid_plot : Return the data used by plot_bkg_resid.
         plot_bkg_chisqr : Plot the chi-squared value for each point of the background of a PHA data set.
 
+        Examples
+        --------
+
+        >>> bplot = get_bkg_chisqr_plot()
+        >>> print(bplot)
+
+        >>> get_bkg_chisqr_plot('jet', bkg_id=1).plot()
+        >>> get_bkg_chisqr_plot('jet', bkg_id=2).overplot()
+
+
         """
         self._prepare_plotobj(id, self._bkgchisqrplot, bkg_id=bkg_id)
         return self._bkgchisqrplot
@@ -10463,6 +10637,11 @@ class Session(sherpa.ui.utils.Session):
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None, **kwargs):
         """Return the data displayed by plot_energy_flux.
+
+        The get_energy_flux_hist() function calculates a histogram of
+        simulated energy flux values representing the energy flux probability
+        distribution for a model component, accounting for the errors on the
+        model parameters.
 
         Parameters
         ----------
@@ -10521,10 +10700,17 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        >>> ehist = get_energy_flux_hist(0.5, 7, num=1000)
+        Get the energy flux distribution for the range 0.5 to 7 for
+        the default data set:
 
-        >>> ehist1 = get_energy_flux_hist(0.5, 2, id="jet", num=1000)
-        >>> ehist2 = get_energy_flux_hist(0.5, 2, id="core", num=1000)
+        >>> ehist = get_energy_flux_hist(0.5, 7, num=1000)
+        >>> print(ehist)
+
+        Compare the 0.5 to 2 energy flux distribution from the "core"
+        data set to the values from the "jet" data set:
+
+        >>> ehist1 = get_energy_flux_hist(0.5, 2, id='jet', num=1000)
+        >>> ehist2 = get_energy_flux_hist(0.5, 2, id='core', num=1000)
 
         """
         if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
@@ -10536,6 +10722,11 @@ class Session(sherpa.ui.utils.Session):
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None, **kwargs):
         """Return the data displayed by plot_photon_flux.
+
+        The get_photon_flux_hist() function calculates a histogram of
+        simulated photon flux values representing the photon flux probability
+        distribution for a model component, accounting for the errors on the
+        model parameters.
 
         Parameters
         ----------
@@ -10594,10 +10785,17 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        >>> phist = get_photon_flux_hist(0.5, 7, num=1000)
+        Get the photon flux distribution for the range 0.5 to 7 for
+        the default data set:
 
-        >>> phist1 = get_photon_flux_hist(0.5, 2, id="jet", num=1000)
-        >>> phist2 = get_photon_flux_hist(0.5, 2, id="core", num=1000)
+        >>> phist = get_photon_flux_hist(0.5, 7, num=1000)
+        >>> print(phist)
+
+        Compare the 0.5 to 2 photon flux distribution from the "core"
+        data set to the values from the "jet" data set:
+
+        >>> phist1 = get_photon_flux_hist(0.5, 2, id='jet', num=1000)
+        >>> phist2 = get_photon_flux_hist(0.5, 2, id='core', num=1000)
 
         """
         if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
@@ -10916,12 +11114,12 @@ class Session(sherpa.ui.utils.Session):
         responses for the second data set (separate curves for
         each response):
 
-        >>> plot_order(2, orders=[1,2])
+        >>> plot_order(2, orders=[1, 2])
 
         Add the orders plot to a model plot:
 
         >>> plot_model()
-        >>> plot_order(orders=[2,3], overplot=True)
+        >>> plot_order(orders=[2, 3], overplot=True)
 
         """
         self._plot(
@@ -11422,7 +11620,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Plot the energy energy distribution for the range 0.5 to 7 for
+        Plot the energy flux distribution for the range 0.5 to 7 for
         the default data set:
 
         >>> plot_energy_flux(0.5, 7, num=1000)
