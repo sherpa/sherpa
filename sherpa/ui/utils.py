@@ -2647,8 +2647,7 @@ class Session(NoNewAttributesAfterInit):
         Ignore those bins with a value less 20.
 
         >>> d = get_dep()
-        >>> f = d >= 20
-        >>> set_filter(f)
+        >>> set_filter(d >= 20)
 
         """
         if val is None:
@@ -3498,7 +3497,7 @@ class Session(NoNewAttributesAfterInit):
         Create a 200 pixel by 150 pixel grid (number of columns by
         number of rows) and display it (each pixel has a value of 0):
 
-        >>> dataspace2d([200,150])
+        >>> dataspace2d([200, 150])
         >>> image_data()
 
         Create a data space called "fakeimg":
@@ -3631,8 +3630,8 @@ class Session(NoNewAttributesAfterInit):
         the x and y arrays. Use the returned object to create
         a data set labelled "oned":
 
-        >>> x = [1,3,7,12]
-        >>> y = [2.3,3.2,-5.4,12.1]
+        >>> x = [1, 3, 7, 12]
+        >>> y = [2.3, 3.2, -5.4, 12.1]
         >>> dat = unpack_arrays(x, y)
         >>> set_data("oned", dat)
 
@@ -3753,7 +3752,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> cols = ['XLO', 'XHI', 'Y']
         >>> idat = unpack_data('hist.dat', colkeys=cols,
-                               dstype=ui.Data1DInt)
+        ...                    dstype=ui.Data1DInt)
 
         """
         return self._read_data(sherpa.io.read_data, filename, ncols, colkeys,
@@ -3902,7 +3901,7 @@ class Session(NoNewAttributesAfterInit):
         Data set 1 is a histogram, where the bins cover the range
         1-3, 3-5, and 5-7 with values 4, 5, and 9 respectively.
 
-        >>> load_arrays(1, [1,3,5], [3,5,7], [4,5,9], Data1DInt)
+        >>> load_arrays(1, [1, 3, 5], [3, 5, 7], [4, 5, 9], Data1DInt)
 
         """
         self.set_data(id, self.unpack_arrays(*args))
@@ -4000,7 +3999,7 @@ class Session(NoNewAttributesAfterInit):
         Use the column names "r" and "surbri" for the columns:
 
         >>> save_arrays('prof.txt', [x, y], fields=["r", "surbri"],
-                        clobber=True)
+        ...             clobber=True)
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
@@ -4374,7 +4373,7 @@ class Session(NoNewAttributesAfterInit):
         exists:
 
         >>> save_data('rprof', 'prof.out', clobber=True,
-                      fields=['x', 'y', 'staterror'])
+        ...           fields=['x', 'y', 'staterror'])
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
@@ -4758,7 +4757,7 @@ class Session(NoNewAttributesAfterInit):
         data set, the filter choses only those points that lie
         within the range 12 <= X <= 18.
 
-        >>> load_arrays(1, [10,15,20,30], [5,10,7,13])
+        >>> load_arrays(1, [10, 15, 20, 30], [5, 10, 7, 13])
         >>> notice(12, 28)
         >>> get_dep(filter=True)
         array([10,  7])
@@ -4839,7 +4838,7 @@ class Session(NoNewAttributesAfterInit):
         between 12 and 18. For this one-dimensional data set, this
         means that the second bin is ignored:
 
-        >>> load_arrays(1, [10,15,20,30], [5,10,7,13])
+        >>> load_arrays(1, [10, 15, 20, 30], [5, 10, 7, 13])
         >>> ignore(12, 18)
         >>> get_dep(filter=True)
         array([ 5,  7, 13])
@@ -6432,7 +6431,7 @@ class Session(NoNewAttributesAfterInit):
         Monte-Carlo based optimiser is used.
 
         >>> load_template_model('tbl', 'table.lis',
-                                sherpa.utils.neville)
+        ...                     sherpa.utils.neville)
         >>> set_source(tbl + const1d.bgnd)
         >>> set_method('moncar')
 
@@ -6718,7 +6717,7 @@ class Session(NoNewAttributesAfterInit):
             ...     if xhi is not None:
             ...         x = (x + xhi) / 2
             ...     return x * pars[1] + pars[0]
-
+            ...
             >>> load_user_model(func1d, "myfunc")
             >>> add_user_pars(myfunc, ["c", "m"], [0, 1])
             >>> set_source(myfunc + gauss1d.gline)
@@ -6902,11 +6901,11 @@ class Session(NoNewAttributesAfterInit):
         Define a chi-square statistic with the label "qstat":
 
             >>> def qstat(d, m, staterr=None, syserr=None, w=None):
-                    if staterr is None:
-                        staterr = 1
-                    c = ((d-m) / staterr)
-                    return ((c*c).sum(), c)
-
+            ...     if staterr is None:
+            ...         staterr = 1
+            ...     c = ((d-m) / staterr)
+            ...     return ((c*c).sum(), c)
+            ...
             >>> load_user_stat("qstat", qstat)
             >>> set_stat("qstat")
 
@@ -7258,8 +7257,8 @@ class Session(NoNewAttributesAfterInit):
         Change the size and center of the PSF for the default data set:
 
         >>> psf = get_psf()
-        >>> psf.size = (21,21)
-        >>> psf.center = (10,10)
+        >>> psf.size = (21, 21)
+        >>> psf.center = (10, 10)
 
         """
         return self._get_item(id, self._psf, 'psf model', 'has not been set')
@@ -9491,7 +9490,7 @@ class Session(NoNewAttributesAfterInit):
         (best-fit value, lower-limit, upper-limit):
 
         >>> pvals1 = zip(res.parvals, res.parmins, res.parmaxes)
-        >>> pvals2 = [(v, v+l, v+h) for (v,l,h) in pvals1]
+        >>> pvals2 = [(v, v+l, v+h) for (v, l, h) in pvals1]
         >>> dres = dict(zip(res.parnames, pvals2))
         >>> dres['p1.gamma']
         (2.1585155113403327, 2.07572994399221, 2.241926145484433)
@@ -14659,7 +14658,7 @@ class Session(NoNewAttributesAfterInit):
 
         Only display the one- and three-sigma contours:
 
-        >>> reg_proj(gsrc.xpos, gsrc.ypos, sigma=(1,3))
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, sigma=(1, 3))
 
         Display contours at values of 5, 10, and 20 more than the
         statistic value of the source model for data set 1:
@@ -14671,14 +14670,14 @@ class Session(NoNewAttributesAfterInit):
         Increase the limits of the plot and the number of steps along
         each axis:
 
-        >>> reg_proj(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41,41))
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41, 41))
 
         Compare the ``ampl`` parameters of the ``g`` and ``b`` model
         components, for data sets 'core' and 'jet', over the given
         ranges:
 
-        >>> reg_proj(g.ampl, b.ampl, min=(0,1e-4), max=(0.2,5e-4),
-                     nloop=(51,51), id='core', otherids=['jet'])
+        >>> reg_proj(g.ampl, b.ampl, min=(0, 1e-4), max=(0.2, 5e-4),
+        ...          nloop=(51, 51), id='core', otherids=['jet'])
 
         """
         self._reg_plot(self._regproj, par0, par1, id=id, otherids=otherids,
@@ -14785,7 +14784,7 @@ class Session(NoNewAttributesAfterInit):
 
         Only display the one- and three-sigma contours:
 
-        >>> reg_unc(gsrc.xpos, gsrc.ypos, sigma=(1,3))
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, sigma=(1, 3))
 
         Display contours at values of 5, 10, and 20 more than the
         statistic value of the source model for data set 1:
@@ -14797,14 +14796,14 @@ class Session(NoNewAttributesAfterInit):
         Increase the limits of the plot and the number of steps along
         each axis:
 
-        >>> reg_unc(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41,41))
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41, 41))
 
         Compare the ``ampl`` parameters of the ``g`` and ``b`` model
         components, for data sets 'core' and 'jet', over the given
         ranges:
 
-        >>> reg_unc(g.ampl, b.ampl, min=(0,1e-4), max=(0.2,5e-4),
-                    nloop=(51,51), id='core', otherids=['jet'])
+        >>> reg_unc(g.ampl, b.ampl, min=(0, 1e-4), max=(0.2, 5e-4),
+        ...         nloop=(51, 51), id='core', otherids=['jet'])
 
         Overplot the results on the `reg_proj` plot:
 
@@ -15467,7 +15466,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> image_source_component('img', 'clus')
         >>> image_source_component('img', 'bgnd', newframe=True,
-                                   tile=True)
+        ...                        tile=True)
 
         """
         if model is None:
@@ -15550,7 +15549,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> image_source_component('img', 'clus')
         >>> image_model_component('img', 'clus', newframe=True,
-                                  tile=True)
+        ...                       tile=True)
 
         """
         if model is None:

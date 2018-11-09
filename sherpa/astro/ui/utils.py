@@ -633,7 +633,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> dataspace1d(0.01, 11, 0.01, id='jet', dstype=DataPHA)
         >>> dataspace1d(0.01, 11, 0.01, id='jet', bkg_id=1,
-                        dstype=DataPHA)
+        ...             dstype=DataPHA)
 
         """
         # support non-integrated grids with inclusive boundaries
@@ -693,12 +693,12 @@ class Session(sherpa.ui.utils.Session):
         Create a 200 pixel by 150 pixel grid (number of columns by
         number of rows) and display it (each pixel has a value of 0):
 
-        >>> dataspace2d([200,150])
+        >>> dataspace2d([200, 150])
         >>> image_data()
 
         Create a data space called "fakeimg":
 
-        >>> dataspace2d([nx,ny], id="fakeimg")
+        >>> dataspace2d([nx, ny], id="fakeimg")
 
         """
         x0, x1, y, shape = sherpa.utils.dataspace2d(dims)
@@ -753,8 +753,8 @@ class Session(sherpa.ui.utils.Session):
         the x and y arrays. Use the returned object to create
         a data set labelled "oned":
 
-        >>> x = [1,3,7,12]
-        >>> y = [2.3,3.2,-5.4,12.1]
+        >>> x = [1, 3, 7, 12]
+        >>> y = [2.3, 3.2, -5.4, 12.1]
         >>> dat = unpack_arrays(x, y)
         >>> set_data("oned", dat)
 
@@ -772,10 +772,10 @@ class Session(sherpa.ui.utils.Session):
         Create a 3 column by 4 row image:
 
         >>> ivals = np.arange(12)
-        >>> (y, x) = np.mgrid[0:3, 0:4]
+        >>> y, x = np.mgrid[0:3, 0:4]
         >>> x = x.flatten()
         >>> y = y.flatten()
-        >>> idat = unpack_arrays(x, y, ivals, (3,4), DataIMG)
+        >>> idat = unpack_arrays(x, y, ivals, (3, 4), DataIMG)
 
         """
         dataset = None
@@ -865,15 +865,15 @@ class Session(sherpa.ui.utils.Session):
         Data set 1 is a histogram, where the bins cover the range
         1-3, 3-5, and 5-7 with values 4, 5, and 9 respectively.
 
-        >>> load_arrays(1, [1,3,5], [3,5,7], [4,5,9], Data1DInt)
+        >>> load_arrays(1, [1, 3, 5], [3, 5, 7], [4, 5, 9], Data1DInt)
 
         Create an image data set:
 
         >>> ivals = np.arange(12)
-        >>> (y, x) = np.mgrid[0:3, 0:4]
+        >>> y, x = np.mgrid[0:3, 0:4]
         >>> x = x.flatten()
         >>> y = y.flatten()
-        >>> load_arrays('img', x, y, ivals, (3,4), DataIMG)
+        >>> load_arrays('img', x, y, ivals, (3, 4), DataIMG)
 
         """
         self.set_data(id, self.unpack_arrays(*args))
@@ -934,14 +934,14 @@ class Session(sherpa.ui.utils.Session):
         the dependent value (``y``):
 
         >>> d = unpack_table('fields.fits', ncols=3,
-                             dstype=sherpa.astro.data.Data2D)
+        ...                  dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
         also be done using the `colkeys` parameter, as shown above:
 
         >>> d = unpack_table('rprof.fits[cols rmid,sur_bri,sur_bri_err]',
-                             ncols=3)
+        ...                  ncols=3)
 
         """
         return sherpa.astro.io.read_table(filename, ncols, colkeys, dstype)
@@ -1032,29 +1032,29 @@ class Session(sherpa.ui.utils.Session):
         'prof':
 
         >>> load_table('prof', 'rprof.fits',
-                       colkeys=['RMID', 'SUR_BRI'])
+        ...            colkeys=['RMID', 'SUR_BRI'])
 
         The first three columns are taken to be the two independent
         axes of a two-dimensional data set (``x0`` and ``x1``) and
         the dependent value (``y``):
 
         >>> load_table('fields.fits', ncols=3,
-                       dstype=sherpa.astro.data.Data2D)
+        ...            dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
         also be done using the ``colkeys`` parameter, as shown above:
 
         >>> load_table('prof',
-                       'rprof.fits[cols rmid,sur_bri,sur_bri_err]',
-                       ncols=3)
+        ...            'rprof.fits[cols rmid,sur_bri,sur_bri_err]',
+        ...            ncols=3)
 
         Read in a data set using Crates:
 
         >>> cr = pycrates.read_file('table.fits')
         >>> load_table(cr)
 
-        Read in a data set using Crates:
+        Read in a data set using AstroPy:
 
         >>> hdus = astropy.io.fits.open('table.fits')
         >>> load_table(hdus)
@@ -1128,14 +1128,14 @@ class Session(sherpa.ui.utils.Session):
         the dependent value (``y``):
 
         >>> d = unpack_ascii('fields.dat', ncols=3,
-                             dstype=sherpa.astro.data.Data2D)
+        ...                  dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
         also be done using the `colkeys` parameter, as shown above:
 
         >>> d = unpack_ascii('tbl.dat[cols rmid,sur_bri,sur_bri_err]',
-                             ncols=3)
+        ...                  ncols=3)
 
         """
         return sherpa.astro.io.read_ascii(filename, ncols, colkeys, dstype,
@@ -1234,22 +1234,22 @@ class Session(sherpa.ui.utils.Session):
         'prof':
 
         >>> load_ascii('prof', 'rprof.dat',
-                       colkeys=['RMID', 'SUR_BRI'])
+        ...            colkeys=['RMID', 'SUR_BRI'])
 
         The first three columns are taken to be the two independent
         axes of a two-dimensional data set (``x0`` and ``x1``) and
         the dependent value (``y``):
 
         >>> load_ascii('fields.txt', ncols=3,
-                       dstype=sherpa.astro.data.Data2D)
+        ...            dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
         also be done using the ``colkeys`` parameter, as shown above:
 
         >>> load_ascii('prof',
-                       'rprof.dat[cols rmid,sur_bri,sur_bri_err]',
-                       ncols=3)
+        ...            'rprof.dat[cols rmid,sur_bri,sur_bri_err]',
+        ...            ncols=3)
 
         """
         if filename is None:
@@ -2069,8 +2069,7 @@ class Session(sherpa.ui.utils.Session):
         Ignore those bins with a value less 20.
 
         >>> d = get_dep()
-        >>> f = d >= 20
-        >>> set_filter(f)
+        >>> set_filter(d >= 20)
 
         """
         if val is None:
@@ -3693,12 +3692,12 @@ class Session(sherpa.ui.utils.Session):
 
         >>> x = get_indep()
         >>> y = get_dep()
-        >>> save_arrays('src.dat', [x,y])
+        >>> save_arrays('src.dat', [x, y])
 
         Use the column names "r" and "surbri" for the columns:
 
         >>> save_arrays('prof.fits', [x,y], fields=["r", "surbri"],
-                        ascii=False, clobber=True)
+        ...             ascii=False, clobber=True)
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
@@ -12213,10 +12212,10 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source(xsphabs.gal * xsapec.src)
         >>> fit()
         >>> covar()
-        >>> (fflux,cflux,vals) = sample_flux(src, 0.5, 2, num=1000)
+        >>> fflux, cflux, vals = sample_flux(src, 0.5, 2, num=1000)
         original model flux = 2.88993e-14, + 1.92575e-15, - 1.81963e-15
         model component flux = 7.96865e-14, + 4.65144e-15, - 4.41222e-15
-        >>> (f0, fhi, flo) = cflux
+        >>> f0, fhi, flo = cflux
         >>> print("Flux: {:.2e} {:.2e} {:.2e}".format(f0, fhi-f0, flo-f0))
         Flux: 7.97e-14 4.65e-15 -4.41e-15
 
