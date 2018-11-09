@@ -8363,7 +8363,7 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The fields of the returned (`LikelihoodRatioResults`) object are::
+        The fields of the returned (`LikelihoodRatioResults`) object are:
 
         ratios
            The calculated likelihood ratio for each iteration.
