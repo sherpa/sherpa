@@ -441,7 +441,7 @@ class LevMar(OptMethod):
 
         """
     def __init__(self, name='levmar'):
-        OptMethod.__init__(self, name, optfcts.lmdif)
+        OptMethod.__init__(self, name, lmdif)
 
 
 class MonCar(OptMethod):
