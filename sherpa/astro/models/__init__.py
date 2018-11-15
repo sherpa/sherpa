@@ -1,6 +1,6 @@
 # coding: utf-8
 #
-#  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -103,15 +103,16 @@ class Atten(RegriddableModel1D):
 class BBody(RegriddableModel1D):
     """A one-dimensional Blackbody model.
 
-    This model can be used when the independent axis is in energy
-    or wavelength space.
+    A model representing the ideal blackbody function. It can be
+    used when the independent axis is in energy or wavelength space.
 
     Attributes
     ----------
     space
-        This parameter is not fit (``alwaysfrozen`` is set), and
-        should be set to either 0, when the independent axis is
-        energy with units of keV, or 1 when the axis is wavelength
+        Switch to select whether the independent axis is energy or
+        wavelength. This parameter is not fit (``alwaysfrozen`` is
+        set), and should be set to either 0, when the independent axis
+        is energy with units of keV, or 1 when the axis is wavelength
         with units of Angstrom.
     kT
         The temperature if the blackbody, in keV.
@@ -371,6 +372,7 @@ class BPL1D(RegriddableModel1D):
 class Dered(RegriddableModel1D):
     """A de-reddening model.
 
+    De-reddening model applied multiplicatively to a spectrum.
     The integrate flag of this model should be set to False when
     used with an integrated grid.
 
@@ -439,9 +441,10 @@ class Edge(RegriddableModel1D):
     Attributes
     ----------
     space
-        This parameter is not fit (``alwaysfrozen`` is set), and
-        should be set to either 0, when the independent axis is
-        energy with units of keV, or 1 when the axis is wavelength
+        Switch to select whether the independent axis is energy or
+        wavelength. This parameter is not fit (``alwaysfrozen`` is
+        set), and should be set to either 0, when the independent axis
+        is energy with units of keV, or 1 when the axis is wavelength
         with units of Angstrom.
     thresh
         The edge position (in energy or wavelength units matching
@@ -741,19 +744,18 @@ class Beta2D(RegriddableModel2D):
     r0
         The core radius.
     xpos
-        The center of the model on the x0 axis.
+        X0 axis coordinate of the model center (position of the peak).
     ypos
-        The center of the model on the x1 axis.
+        X1 axis coordinate of the model center (position of the peak).
     ellip
         The ellipticity of the model.
     theta
         The angle of the major axis. It is in radians, measured
         counter-clockwise from the X0 axis (i.e. the line X1=0).
     ampl
-        The amplitude refers to the maximum peak of the model.
+        The model value at the peak position (xpos, ypos).
     alpha
-        This parameter controls the slope of the profile at large
-        radii.
+        The power-law slope of the profile at large radii.
 
     See Also
     --------
@@ -827,9 +829,10 @@ class Beta2D(RegriddableModel2D):
 class DeVaucouleurs2D(RegriddableModel2D):
     """Two-dimensional de Vaucouleurs model.
 
-    This is a formulation of the R^(1/4) law introduced by [1]_. It
-    is a special case of the ``Sersic2D`` model with ``n=4``,
-    as described in [2]_, [3]_, and [4]_.
+    A spatial de Vaucouleurs profile which is a formulation of the
+    R^(1/4) law introduced by [1]_. It is a special case of the
+    ``Sersic2D`` model with ``n=4``, as described in [2]_, [3]_,
+    and [4]_.
 
     Attributes
     ----------
@@ -1292,6 +1295,9 @@ class Sersic2D(RegriddableModel2D):
 
 class Disk2D(RegriddableModel2D):
     """Two-dimensional uniform disk model.
+
+    Two-dimensional step function model consisting of a uniform
+    intensity disk.
 
     Attributes
     ----------

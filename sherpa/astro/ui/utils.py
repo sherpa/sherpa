@@ -633,7 +633,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> dataspace1d(0.01, 11, 0.01, id='jet', dstype=DataPHA)
         >>> dataspace1d(0.01, 11, 0.01, id='jet', bkg_id=1,
-                        dstype=DataPHA)
+        ...             dstype=DataPHA)
 
         """
         # support non-integrated grids with inclusive boundaries
@@ -693,12 +693,12 @@ class Session(sherpa.ui.utils.Session):
         Create a 200 pixel by 150 pixel grid (number of columns by
         number of rows) and display it (each pixel has a value of 0):
 
-        >>> dataspace2d([200,150])
+        >>> dataspace2d([200, 150])
         >>> image_data()
 
         Create a data space called "fakeimg":
 
-        >>> dataspace2d([nx,ny], id="fakeimg")
+        >>> dataspace2d([nx, ny], id="fakeimg")
 
         """
         x0, x1, y, shape = sherpa.utils.dataspace2d(dims)
@@ -753,8 +753,8 @@ class Session(sherpa.ui.utils.Session):
         the x and y arrays. Use the returned object to create
         a data set labelled "oned":
 
-        >>> x = [1,3,7,12]
-        >>> y = [2.3,3.2,-5.4,12.1]
+        >>> x = [1, 3, 7, 12]
+        >>> y = [2.3, 3.2, -5.4, 12.1]
         >>> dat = unpack_arrays(x, y)
         >>> set_data("oned", dat)
 
@@ -772,10 +772,10 @@ class Session(sherpa.ui.utils.Session):
         Create a 3 column by 4 row image:
 
         >>> ivals = np.arange(12)
-        >>> (y, x) = np.mgrid[0:3, 0:4]
+        >>> y, x = np.mgrid[0:3, 0:4]
         >>> x = x.flatten()
         >>> y = y.flatten()
-        >>> idat = unpack_arrays(x, y, ivals, (3,4), DataIMG)
+        >>> idat = unpack_arrays(x, y, ivals, (3, 4), DataIMG)
 
         """
         dataset = None
@@ -865,15 +865,15 @@ class Session(sherpa.ui.utils.Session):
         Data set 1 is a histogram, where the bins cover the range
         1-3, 3-5, and 5-7 with values 4, 5, and 9 respectively.
 
-        >>> load_arrays(1, [1,3,5], [3,5,7], [4,5,9], Data1DInt)
+        >>> load_arrays(1, [1, 3, 5], [3, 5, 7], [4, 5, 9], Data1DInt)
 
         Create an image data set:
 
         >>> ivals = np.arange(12)
-        >>> (y, x) = np.mgrid[0:3, 0:4]
+        >>> y, x = np.mgrid[0:3, 0:4]
         >>> x = x.flatten()
         >>> y = y.flatten()
-        >>> load_arrays('img', x, y, ivals, (3,4), DataIMG)
+        >>> load_arrays('img', x, y, ivals, (3, 4), DataIMG)
 
         """
         self.set_data(id, self.unpack_arrays(*args))
@@ -934,14 +934,14 @@ class Session(sherpa.ui.utils.Session):
         the dependent value (``y``):
 
         >>> d = unpack_table('fields.fits', ncols=3,
-                             dstype=sherpa.astro.data.Data2D)
+        ...                  dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
         also be done using the `colkeys` parameter, as shown above:
 
         >>> d = unpack_table('rprof.fits[cols rmid,sur_bri,sur_bri_err]',
-                             ncols=3)
+        ...                  ncols=3)
 
         """
         return sherpa.astro.io.read_table(filename, ncols, colkeys, dstype)
@@ -1032,29 +1032,29 @@ class Session(sherpa.ui.utils.Session):
         'prof':
 
         >>> load_table('prof', 'rprof.fits',
-                       colkeys=['RMID', 'SUR_BRI'])
+        ...            colkeys=['RMID', 'SUR_BRI'])
 
         The first three columns are taken to be the two independent
         axes of a two-dimensional data set (``x0`` and ``x1``) and
         the dependent value (``y``):
 
         >>> load_table('fields.fits', ncols=3,
-                       dstype=sherpa.astro.data.Data2D)
+        ...            dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
         also be done using the ``colkeys`` parameter, as shown above:
 
         >>> load_table('prof',
-                       'rprof.fits[cols rmid,sur_bri,sur_bri_err]',
-                       ncols=3)
+        ...            'rprof.fits[cols rmid,sur_bri,sur_bri_err]',
+        ...            ncols=3)
 
         Read in a data set using Crates:
 
         >>> cr = pycrates.read_file('table.fits')
         >>> load_table(cr)
 
-        Read in a data set using Crates:
+        Read in a data set using AstroPy:
 
         >>> hdus = astropy.io.fits.open('table.fits')
         >>> load_table(hdus)
@@ -1128,14 +1128,14 @@ class Session(sherpa.ui.utils.Session):
         the dependent value (``y``):
 
         >>> d = unpack_ascii('fields.dat', ncols=3,
-                             dstype=sherpa.astro.data.Data2D)
+        ...                  dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
         also be done using the `colkeys` parameter, as shown above:
 
         >>> d = unpack_ascii('tbl.dat[cols rmid,sur_bri,sur_bri_err]',
-                             ncols=3)
+        ...                  ncols=3)
 
         """
         return sherpa.astro.io.read_ascii(filename, ncols, colkeys, dstype,
@@ -1234,22 +1234,22 @@ class Session(sherpa.ui.utils.Session):
         'prof':
 
         >>> load_ascii('prof', 'rprof.dat',
-                       colkeys=['RMID', 'SUR_BRI'])
+        ...            colkeys=['RMID', 'SUR_BRI'])
 
         The first three columns are taken to be the two independent
         axes of a two-dimensional data set (``x0`` and ``x1``) and
         the dependent value (``y``):
 
         >>> load_ascii('fields.txt', ncols=3,
-                       dstype=sherpa.astro.data.Data2D)
+        ...            dstype=sherpa.astro.data.Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
         also be done using the ``colkeys`` parameter, as shown above:
 
         >>> load_ascii('prof',
-                       'rprof.dat[cols rmid,sur_bri,sur_bri_err]',
-                       ncols=3)
+        ...            'rprof.dat[cols rmid,sur_bri,sur_bri_err]',
+        ...            ncols=3)
 
         """
         if filename is None:
@@ -2069,8 +2069,7 @@ class Session(sherpa.ui.utils.Session):
         Ignore those bins with a value less 20.
 
         >>> d = get_dep()
-        >>> f = d >= 20
-        >>> set_filter(f)
+        >>> set_filter(d >= 20)
 
         """
         if val is None:
@@ -2653,9 +2652,17 @@ class Session(sherpa.ui.utils.Session):
         else:
             self._get_pha_data(id).areascal = area
 
-    # DOC-NOTE: also in sherpa.utils
+    # DOC-NOTE: also in sherpa.utils, where it does not have
+    #           the bkg_id parameter.
+    #
     def get_staterror(self, id=None, filter=False, bkg_id=None):
         """Return the statistical error on the dependent axis of a data set.
+
+        The function returns the statistical errors on the values
+        (dependenent axis) of a data set, or its background. These
+        may have been set explicitly - either when the data set was
+        created or with a call to `set_staterror` - or as defined by
+        the chosen fit statistic (such as "chi2gehrels").
 
         Parameters
         ----------
@@ -2672,12 +2679,13 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        axis : array
+        staterrors : array
            The statistical error for each data point. This may be
            estimated from the data (e.g. with the ``chi2gehrels``
            statistic) or have been set explicitly (`set_staterror`).
            For PHA data sets, the return array will match the grouping
-           scheme applied to the data set.
+           scheme applied to the data set. The size of this array
+           depends on the `filter` argument.
 
         Raises
         ------
@@ -2692,6 +2700,13 @@ class Session(sherpa.ui.utils.Session):
         list_data_ids : List the identifiers for the loaded data sets.
         set_staterror : Set the statistical errors on the dependent axis of a data set.
 
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
         Examples
         --------
 
@@ -2699,7 +2714,7 @@ class Session(sherpa.ui.utils.Session):
         may be calculated from the data values (the independent axis),
         depending on the chosen statistic:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
         >>> set_stat('chi2datavar')
         >>> get_staterror()
         array([ 2.        ,  2.23606798,  3.        ])
@@ -2711,7 +2726,7 @@ class Session(sherpa.ui.utils.Session):
         is created or with a call to `set_staterror` - then these values
         will be used, no matter the statistic:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9], [2,3,5])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], [2, 3, 5])
         >>> set_stat('chi2datavar')
         >>> get_staterror()
         array([2, 3, 5])
@@ -2725,9 +2740,16 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         return d.get_staterror(filter, self.get_stat().calc_staterror)
 
-    # DOC-NOTE: also in sherpa.utils
+    # DOC-NOTE: also in sherpa.utils, where it does not have
+    #           the bkg_id parameter.
+    #
     def get_syserror(self, id=None, filter=False, bkg_id=None):
         """Return the systematic error on the dependent axis of a data set.
+
+        The function returns the systematic errors on the values
+        (dependenent axis) of a data set, or its background. It is
+        an error if called on a data set with no systematic errors
+        (which are set with `set_syserror`).
 
         Parameters
         ----------
@@ -2744,8 +2766,9 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        axis : array
-           The systematic error for each data point.
+        syserrors : array
+           The systematic error for each data point. The size of this
+           array depends on the `filter` argument.
 
         Raises
         ------
@@ -2762,6 +2785,28 @@ class Session(sherpa.ui.utils.Session):
         list_data_ids : List the identifiers for the loaded data sets.
         set_syserror : Set the systematic errors on the dependent axis of a data set.
 
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
+        Examples
+        --------
+
+        Return the systematic error for the default data set:
+
+        >>> yerr = get_syserror()
+
+        Return an array that has been filtered to match the data:
+
+        >>> yerr = get_syserror(filter=True)
+
+        Return the filtered errors for data set "core":
+
+        >>> yerr = get_syserror("core", filter=True)
+
         """
         d = self.get_data(id)
         id = self._fix_id(id)
@@ -2772,9 +2817,17 @@ class Session(sherpa.ui.utils.Session):
             raise sherpa.utils.err.DataErr('nosyserr', id)
         return err
 
-    # DOC-NOTE: also in sherpa.utils
+    # DOC-NOTE: also in sherpa.utils, where it does not have
+    #           the bkg_id parameter.
+    #
     def get_error(self, id=None, filter=False, bkg_id=None):
         """Return the errors on the dependent axis of a data set.
+
+        The function returns the total errors (a quadrature addition
+        of the statistical and systematic errors) on the values
+        (dependent acis) of a data set or its background. The individual
+        components can be retrieved with the `get_staterror` and
+        `get_syserror` functions.
 
         Parameters
         ----------
@@ -2791,9 +2844,12 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        axis : array
+        errors : array
            The error for each data point, formed by adding the
            statistical and systematic errors in quadrature.
+           For PHA data sets, the return array will match the grouping
+           scheme applied to the data set. The size of this array
+           depends on the `filter` argument.
 
         Raises
         ------
@@ -2807,6 +2863,34 @@ class Session(sherpa.ui.utils.Session):
         get_syserror : Return the systematic errors on the dependent axis of a data set.
         list_data_ids : List the identifiers for the loaded data sets.
 
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
+        Examples
+        --------
+
+        Return the error values for the default data set, ignoring any
+        filter applied to it:
+
+        >>> err = get_error()
+
+        Ensure that the return values are for the selected (filtered)
+        points in the default data set (the return array may be smaller
+        than in the previous example):
+
+        >>> err = get_error(filter=True)
+
+        Find the errors for the "core" data set and its two background
+        components:
+
+        >>> err = get_error('core', filter=True)
+        >>> berr1 = get_error('core', bkg_id=1, filter=True)
+        >>> berr2 = get_error('core', bkg_id=2, filter=True)
+
         """
         d = self.get_data(id)
         if bkg_id is not None:
@@ -2816,6 +2900,10 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     def get_indep(self, id=None, filter=False, bkg_id=None):
         """Return the independent axes of a data set.
+
+        This function returns the coordinates of each point, or pixel,
+        in the data set. The `get_axes` function may be be preferred
+        in some situations.
 
         Parameters
         ----------
@@ -2853,18 +2941,29 @@ class Session(sherpa.ui.utils.Session):
         list_data_ids : List the identifiers for the loaded data sets.
         set_coord : Set the coordinate system to use for image analysis.
 
+        Notes
+        -----
+        For a two-dimensional image, with size n by m pixels, the
+        `get_dep` function will return two arrays, each of size n * m,
+        which contain the coordinate of the center of each pixel. The
+        `get_axes` function will instead return the coordinates of
+        each axis separately, i.e. arrays of size n and m.
+
         Examples
         --------
 
         For a one-dimensional data set, the X values are returned:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], Data1D)
         >>> get_indep()
         (array([10, 15, 19]),)
 
         For a 2D data set the X0 and X1 values are returned:
 
-        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> x0 = [10, 15, 12, 19]
+        >>> x1 = [12, 14, 10, 17]
+        >>> y = [4, 5, 9, -2]
+        >>> load_arrays(2, x0, x1, y, Data2D)
         >>> get_indep(2)
         (array([10, 15, 12, 19]), array([12, 14, 10, 17]))
 
@@ -2885,10 +2984,10 @@ class Session(sherpa.ui.utils.Session):
         array([ 35.,  36.,  37.,  38.,  39.])
 
         For images the pixel coordinates of each pixel are returned,
-        as a 1D array.
+        as 1D arrays, one value for each pixel:
 
         >>> load_image('img', 'image.fits')
-        >>> (xvals,yvals) = get_indep('img')
+        >>> (xvals, yvals) = get_indep('img')
         >>> xvals.shape
         (65536,)
         >>> yvals.shape
@@ -2902,7 +3001,7 @@ class Session(sherpa.ui.utils.Session):
         `set_coord` setting for the data set:
 
         >>> set_coord('img', 'physical')
-        >>> (avals,bvals) = get_indep('img')
+        >>> (avals, bvals) = get_indep('img')
         >>> avals[0:5]
         array([  16.5,   48.5,   80.5,  112.5,  144.5])
 
@@ -2914,6 +3013,10 @@ class Session(sherpa.ui.utils.Session):
 
     def get_axes(self, id=None, bkg_id=None):
         """Return information about the independent axes of a data set.
+
+        This function returns the coordinates of each point, or pixel,
+        in the data set. The `get_indep` function may be be preferred
+        in some situations.
 
         Parameters
         ----------
@@ -2928,7 +3031,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         axis : tuple of arrays
-           The independent axis values. The difference to `get_dep` is
+           The independent axis values. The differences to `get_dep`
            that this represents the "alternate grid" for the axis. For
            PHA data, this is the energy grid (E_MIN and E_MAX). For
            image data it is an array for each axis, of the length of
@@ -2951,7 +3054,7 @@ class Session(sherpa.ui.utils.Session):
         For 1D data sets, the "alternate" view is the same as the
         independent axis:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], Data1D)
         >>> get_indep()
         array([10, 15, 19])
         >>> get_axes()
@@ -2976,7 +3079,7 @@ class Session(sherpa.ui.utils.Session):
 
         The image has 101 columns by 108 rows. The `get_indep`
         function returns one-dimensional arrays, for the full dataset,
-        where as `get_axes` returns values for the individual axis:
+        whereas `get_axes` returns values for the individual axis:
 
         >>> load_image('img', 'img.fits')
         >>> get_data('img').shape
@@ -3008,6 +3111,9 @@ class Session(sherpa.ui.utils.Session):
     def get_dep(self, id=None, filter=False, bkg_id=None):
         """Return the dependent axis of a data set.
 
+        This function returns the data values (the dependent axis)
+        for each point or pixel in the data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -3027,7 +3133,8 @@ class Session(sherpa.ui.utils.Session):
            The dependent axis values. The model estimate is compared
            to these values during fitting. For PHA data sets, the
            return array will match the grouping scheme applied to
-           the data set.
+           the data set. This array is one-dimensional, even for
+           two dimensional (e.g. image) data.
 
         Raises
         ------
@@ -3044,16 +3151,28 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        >>> load_arrays(1, [10,15,19], [4,5,9], Data1D)
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], Data1D)
         >>> get_dep()
-        array([10, 15, 19])
+        array([4, 5, 9])
 
-        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> x0 = [10, 15, 12, 19]
+        >>> x1 = [12, 14, 10, 17]
+        >>> y = [4, 5, 9, -2]
+        >>> load_arrays(2, x0, x1, y, Data2D)
         >>> get_dep(2)
         array([4, 5, 9, -2])
 
         If the ``filter`` flag is set then the return will be limited to
         the data that is used in the fit:
+
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
+        >>> ignore_id(1, 17, None)
+        >>> get_dep()
+        array([4, 5, 9])
+        >>> get_dep(filter=True)
+        array([4, 5])
+
+        An example with a PHA data set named 'spec':
 
         >>> notice_id('spec', 0.5, 7)
         >>> yall = get_dep('spec')
@@ -3087,6 +3206,11 @@ class Session(sherpa.ui.utils.Session):
     def get_rate(self, id=None, filter=False, bkg_id=None):
         """Return the count rate of a PHA data set.
 
+        Return an array of count-rate values for each bin in the
+        data set. The units of the returned values depends on the
+        values set by the `set_analysis` rountine for the data
+        set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -3105,7 +3229,8 @@ class Session(sherpa.ui.utils.Session):
         rate : array
            The rate array. The output matches the grouping of the data
            set. The units are controlled by the `set_analysis` setting
-           for this data set; that is, the units used in `plot_data`.
+           for this data set; that is, the units used in `plot_data`,
+           except that the `type` argument to `set_analysis` is ignored.
            The return array will match the grouping scheme applied to
            the data set.
 
@@ -3125,7 +3250,28 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
+        Return the count-rate for the default data set. For a PHA
+        data set, where `set_analysis` has not been called, the return
+        value will be in units of count/second/keV, and a value for
+        each group in the data set is returned.
+
         >>> rate = get_rate()
+
+        The return value is grouped to match the data, but is not
+        filtered (with the default `filter` argument). The data
+        set used here 46 groups in it, but after filtering only has 40
+        groups, but the call to `get_rate` returns a 46-element array
+        unless `filter` is explicitly set to `True`:
+
+        >>> notice()
+        >>> get_rate().size
+        46
+        >>> ignore(None, 0.5)
+        >>> ignore(7, None)
+        >>> get_rate().size
+        46
+        >>> get_rate(filter=True).size
+        40
 
         The rate of data set 2 will be in units of count/s/Angstrom
         and only cover the range 20 to 22 Angstroms:
@@ -3133,6 +3279,18 @@ class Session(sherpa.ui.utils.Session):
         >>> set_analysis(2, 'wave')
         >>> notice_id(2, 20, 22)
         >>> r2 = get_rate(2, filter=True)
+
+        The returned rate is now in units of count/s (the return value
+        is multiplied by `binwidth^factor`, where `factor` is normally
+        0):
+
+        >>> set_analysis(2, 'wave', factor=1)
+        >>> r2 = get_rate(2, filter=True)
+
+        Return the count rate for the second background component of
+        data set "grating":
+
+        >>> get_rate(id="grating", bkg_id=2)
 
         """
         d = self._get_pha_data(id)
@@ -3167,6 +3325,18 @@ class Session(sherpa.ui.utils.Session):
         arf : array
            The effective area values for the data set (or background
            component).
+
+        Examples
+        --------
+
+        Return the effective-area values for the default data set:
+
+        >>> arf = get_specresp()
+
+        Return the area for the second background component of the
+        data set with the id "eclipse":
+
+        >>> barf = get_spectresp("eclipse", bkg_id=2)
 
         """
         d = self._get_pha_data(id)
@@ -3203,6 +3373,22 @@ class Session(sherpa.ui.utils.Session):
         get_backscal : Return the area scaling of a PHA data set.
         set_exposure : Change the exposure time of a PHA data set.
 
+        Examples
+        --------
+
+        Return the exposure time for the default data set.
+
+        >>> t = get_exposure()
+
+        Return the exposure time for the data set with identifier 2:
+
+        >>> t2 = get_exposure(2)
+
+        Return the exposure time for the first background component
+        of data set "core":
+
+        >>> tbkg = get_exposure('core', bkg_id=1)
+
         """
         if bkg_id is not None:
             return self.get_bkg(id, bkg_id).exposure
@@ -3227,8 +3413,8 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        backscal : number or array
-           The BACKSCAL value.
+        backscal : number or ndarray
+           The BACKSCAL value, which can be a scalar or a 1D array.
 
         See Also
         --------
@@ -3317,7 +3503,6 @@ class Session(sherpa.ui.utils.Session):
 
         return scale
 
-    # DOC-TODO: the description needs improving.
     def get_areascal(self, id=None, bkg_id=None):
         """Return the fractional area factor of a PHA data set.
 
@@ -3337,8 +3522,8 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        areascal : number
-           The AREASCAL value.
+        areascal : number or ndarray
+           The AREASCAL value, which can be a scalar or a 1D array.
 
         See Also
         --------
@@ -3355,6 +3540,18 @@ class Session(sherpa.ui.utils.Session):
 
         .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
                http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+        Examples
+        --------
+
+        Return the AREASCAL value for the default data set:
+
+        >>> get_areascal()
+
+        Return the AREASCAL value for the first background component
+        of dataset 2:
+
+        >>> get_areascal(id=2, bkg_id=1)
 
         """
         if bkg_id is not None:
@@ -3495,12 +3692,12 @@ class Session(sherpa.ui.utils.Session):
 
         >>> x = get_indep()
         >>> y = get_dep()
-        >>> save_arrays('src.dat', [x,y])
+        >>> save_arrays('src.dat', [x, y])
 
         Use the column names "r" and "surbri" for the columns:
 
         >>> save_arrays('prof.fits', [x,y], fields=["r", "surbri"],
-                        ascii=False, clobber=True)
+        ...             ascii=False, clobber=True)
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
@@ -4741,6 +4938,9 @@ class Session(sherpa.ui.utils.Session):
     def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
                    name='test-arf'):
         """Create an ARF.
+
+        .. versionadded:: 4.10.1
+
         Parameters
         ----------
         elo, ehi : numpy.ndarray
@@ -4756,21 +4956,50 @@ class Session(sherpa.ui.utils.Session):
         ethresh : number or None, optional
             Passed through to the DataARF call. It controls whether
             zero-energy bins are replaced.
-        name : str
-            The name of the data set
+        name : str, optional
+            The name of the ARF data set
+
         Returns
         -------
         arf : DataARF instance
+
+        See Also
+        --------
+        create_rmf, get_arf, set_arf, unpack_arf
+
+        Examples
+        --------
+
+        Create a flat ARF, with a value of 1.0 cm^2 for each bin,
+        over the energy range 0.1 to 10 keV, with a bin spacing of
+        0.01 keV.
+
+        >>> egrid = np.arange(0.1, 10, 0.01)
+        >>> arf = create_arf(egrid[:-1], egrid[1:])
+
+        Create an ARF that has 10 percent more area than the ARF
+        from the default data set::
+
+        >>> arf1 = get_arf()
+        >>> elo = arf1.energ_lo
+        >>> ehi = arf1.energ_hi
+        >>> y = 1.1 * arf1.specresp
+        >>> arf2 = create_arf(elo, ehi, y, exposure=arf1.exposure)
+
         """
         return create_arf(elo, ehi, specresp, exposure, ethresh, name)
 
     @staticmethod
     def create_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None,
                    ethresh=None, fname=None, name='delta-rmf'):
-        """Create an RMF for a "perfect" delta-function response if fname is
-        None otherwise fname contains the name of the image file generated
-        from the standard RMF file with the CIAO tool rmfimg to create an
-        RMF which does not have a delta-function response.
+        """Create an RMF.
+
+        If fname is set to `None` then this creats a "perfect" RMF,
+        which has a delta-function response (so each channel uniquely
+        maps to a single energy bin), otherwise the RMF is taken from
+        the image data stored in the file pointed to by `fname`.
+
+        .. versionadded:: 4.10.1
 
         Parameters
         ----------
@@ -4789,20 +5018,29 @@ class Session(sherpa.ui.utils.Session):
             The E_MIN and E_MAX columns of the EBOUNDS block of the
             RMF.
         ethresh : number or None, optional
-            Passed through to the DataARF call. It controls whether
+            Passed through to the DataRMF call. It controls whether
             zero-energy bins are replaced.
-        fname : str, optional
-            The name of the image file generated from the standard RMF file
-            with the CIAO tool rmfimg
-        name : str
-            The name of the data set
+        fname : None or str, optional
+            If None then a "perfect" RMF is generated, otherwise it gives
+            the name of the two-dimensional image file which stores the
+            response information (the format of this file matches that
+            created by the CIAO tool rmfimg [1]_).
+        name : str, optional
+            The name of the RMF data set
+
         Returns
         -------
         rmf : DataRMF instance
-        Notes
-        -----
-        I do not think I have the startchan=0 case correct (does the
-        f_chan array have to change?).
+
+        See Also
+        --------
+        create_arf, get_rmf, set_rmf, unpack_rmf
+
+        References
+        ----------
+
+        .. [1] http://cxc.harvard.edu/ciao/ahelp/rmfimg.html
+
         """
 
         if fname is None:
@@ -4839,6 +5077,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         fake_pha : Simulate a PHA data set from a model.
+        get_response: Return the respone information applied to a PHA data set.
         load_arf : Load an ARF from a file and add it to a PHA data set.
         load_pha : Load a file as a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
@@ -4863,6 +5102,17 @@ class Session(sherpa.ui.utils.Session):
         component of the 'core' data set:
 
         >>> bgarf = get_arf('core', 'bkg.arf', bkg_id=2)
+
+        Retrieve the ARF and RMF for the default data set and
+        use them to create a model expression which includes
+        a power-law component (pbgnd) that is not convolved by the
+        response:
+
+        >>> arf = get_arf()
+        >>> rmf = get_rmf()
+        >>> src_expr = xsphabs.abs1 * powlaw1d.psrc
+        >>> set_full_model(rmf(arf(src_expr)) + powlaw1d.pbgnd)
+        >>> print(get_model())
 
         """
         data = self._get_pha_data(id)
@@ -5309,6 +5559,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         fake_pha : Simulate a PHA data set from a model.
+        get_response: Return the respone information applied to a PHA data set.
         load_pha : Load a file as a PHA data set.
         load_rmf : Load a RMF from a file and add it to a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
@@ -5328,6 +5579,17 @@ class Session(sherpa.ui.utils.Session):
         component of the 'core' data set:
 
         >>> bgrmf = get_rmf('core', 'bkg.rmf', bkg_id=2)
+
+        Retrieve the ARF and RMF for the default data set and
+        use them to create a model expression which includes
+        a power-law component (pbgnd) that is not convolved by the
+        response:
+
+        >>> arf = get_arf()
+        >>> rmf = get_rmf()
+        >>> src_expr = xsphabs.abs1 * powlaw1d.psrc
+        >>> set_full_model(rmf(arf(src_expr)) + powlaw1d.pbgnd)
+        >>> print(get_model())
 
         """
         data = self._get_pha_data(id)
@@ -5748,8 +6010,9 @@ class Session(sherpa.ui.utils.Session):
     def get_bkg(self, id=None, bkg_id=None):
         """Return the background for a PHA data set.
 
+        Function to return the background for a PHA data set.
         The object returned by the call can be used to query and
-        change properties of the background of data set.
+        change properties of the background.
 
         Parameters
         ----------
@@ -6014,7 +6277,6 @@ class Session(sherpa.ui.utils.Session):
         for id in ids:
             self._get_pha_data(id).set_analysis(quantity, type, factor)
 
-    # DOC-TODO: docs need to be added to sherpa.astro.data.get_analysis
     def get_analysis(self, id=None):
         """Return the units used when fitting spectral data.
 
@@ -6026,7 +6288,8 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        quantity : { 'channel', 'energy', 'wavelength' }
+        setting : { 'channel', 'energy', 'wavelength' }
+           The analysis setting for the data set.
 
         Raises
         ------
@@ -6039,6 +6302,18 @@ class Session(sherpa.ui.utils.Session):
         --------
         get_default_id : Return the default data set identifier.
         set_analysis : Change the analysis setting.
+
+        Examples
+        --------
+
+        Display the analysis setting for the default data set:
+
+        >>> print(get_analysis())
+
+        Check whether the data set labelled 'SgrA' is using the
+        wavelength setting:
+
+        >>> is_wave = get_analysis('SgrA') == 'wavelength'
 
         """
         return self._get_pha_data(id).get_analysis()
@@ -6939,12 +7214,16 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `val` parameters,
         respectively.
 
+        Notes
+        -----
+        The meaning of the grouping column is taken from [1]_, which says
+        that +1 indicates the start of a bin, -1 if the channel is part
+        of group, and 0 if the data grouping is undefined for all channels.
+
         References
         ----------
 
-        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
-               Format",
-               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
         --------
@@ -6952,13 +7231,13 @@ class Session(sherpa.ui.utils.Session):
         Copy the grouping array from data set 2 into the default data
         set:
 
-        >>> grp = get_data(2).grouping
+        >>> grp = get_grouping(2)
         >>> set_grouping(grp)
 
-        Copy the grouping from data set "src1" to the source and
-        background data sets of "src2":
+        Copy the grouping from data set "src1" to the source and the
+        first background data set of "src2":
 
-        >>> grp = get_data("src1").grouping
+        >>> grp = get_grouping("src1")
         >>> set_grouping("src2", grp)
         >>> set_grouping("src2", grp, bkg_id=1)
 
@@ -6982,6 +7261,9 @@ class Session(sherpa.ui.utils.Session):
     def get_grouping(self, id=None, bkg_id=None):
         """Return the grouping array for a PHA data set.
 
+        The function returns the grouping value for each channel in
+        the PHA data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -6994,9 +7276,13 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        grouping : array or ``None``
+        grouping : ndarray or ``None``
            A value of ``1`` indicates the start of a new group, and ``-1``
-           indicates that the bin is part of the group.
+           indicates that the bin is part of the group. This array is
+           not filtered - that is, there is one element for each channel
+           in the PHA data set.  Changes to the elements of this array will
+           change the values in the dataset (is is a reference to the values
+           used to define the quality, not a copy).
 
         Raises
         ------
@@ -7008,13 +7294,24 @@ class Session(sherpa.ui.utils.Session):
         fit : Fit one or more data sets.
         get_quality : Return the quality array for a PHA data set.
         ignore_bad : Exclude channels marked as bad in a PHA data set.
+        load_grouping: Load the grouping scheme from a file and add to a PHA data set.
         set_grouping : Apply a set of grouping flags to a PHA data set.
+
+        Notes
+        -----
+        The meaning of the grouping column is taken from [1]_, which says
+        that +1 indicates the start of a bin, -1 if the channel is part
+        of group, and 0 if the data grouping is undefined for all channels.
+
+        References
+        ----------
+
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
         --------
 
-        Copy the grouping array from the default data set to data set
-        2:
+        Copy the grouping array from the default data set to data set 2:
 
         >>> grp1 = get_grouping()
         >>> set_grouping(2, grp1)
@@ -7075,12 +7372,18 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `val` parameters,
         respectively.
 
+        Notes
+        -----
+        The meaning of the quality column is taken from [1]_, which says
+        that 0 indicates a "good" channel, 1 and 2 are for channels that
+        are identified as "bad" or "dubious" (respectively) by software,
+        5 indicates a "bad" channel set by the user, and values of 3 or 4
+        are not used.
+
         References
         ----------
 
-        .. [1] Arnaud., K. & George, I., "The OGIP Spectral File
-               Format",
-               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
         --------
@@ -7127,6 +7430,9 @@ class Session(sherpa.ui.utils.Session):
     def get_quality(self, id=None, bkg_id=None):
         """Return the quality flags for a PHA data set.
 
+        The function returns the quality value for each channel in
+        the PHA data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -7137,6 +7443,16 @@ class Session(sherpa.ui.utils.Session):
            Set if the quality flags should be taken from a background
            associated with the data set.
 
+        Returns
+        -------
+        qual : ndarray or ``None``
+           The quality value for each channel in the PHA data set.
+           This array is not grouped or filtered - that is, there
+           is one element for each channel in the PHA data set. Changes
+           to the elements of this array will change the values in the
+           dataset (is is a reference to the values used to define the
+           quality, not a copy).
+
         Raises
         ------
         sherpa.utils.err.ArgumentErr
@@ -7146,14 +7462,28 @@ class Session(sherpa.ui.utils.Session):
         --------
         fit : Fit one or more data sets.
         get_grouping : Return the grouping array for a PHA data set.
+        get_indep : Return the independent axes of a data set.
         ignore_bad : Exclude channels marked as bad in a PHA data set.
+        load_quality : Load the quality array from a file and add to a PHA data set.
         set_quality : Apply a set of quality flags to a PHA data set.
+
+        Notes
+        -----
+        The meaning of the quality column is taken from [1]_, which says
+        that 0 indicates a "good" channel, 1 and 2 are for channels that
+        are identified as "bad" or "dubious" (respectively) by software,
+        5 indicates a "bad" channel set by the user, and values of 3 or 4
+        are not used.
+
+        References
+        ----------
+
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
         --------
 
-        Copy the quality array from the default data set to data set
-        2:
+        Copy the quality array from the default data set to data set 2:
 
         >>> qual1 = get_quality()
         >>> set_quality(2, qual1)
@@ -7162,6 +7492,13 @@ class Session(sherpa.ui.utils.Session):
         2 for the 'histate' data set:
 
         >>> qual = get_quality('histate', bkg_id=2)
+
+        Change the quality setting for all channels below 30 in the
+        default data set to 5 (considered bad by the user):
+
+        >>> chans, = get_indep()
+        >>> qual = get_quality()
+        >>> qual[chans < 30] = 5
 
         """
 
@@ -8064,12 +8401,10 @@ class Session(sherpa.ui.utils.Session):
                  grouping=None, grouped=False, quality=None, bkg=None):
         """Simulate a PHA data set from a model.
 
-        Take a PHA data set, evaluate the model for each bin, and then
-        use this value to create a data value from each bin, where the
-        value is used as the expectation value of the Poisson
-        distribution. A background component can be added (these
-        values are scaled to account for area extraction and exposure
-        time, but are not themselves simulated).
+        The function creates a simulated PHA data set based on a source
+        model, instrument response (given as an ARF and RMF), and exposure
+        time, along with a Poisson noise term. A background component can
+        be included.
 
         Parameters
         ----------
@@ -8103,6 +8438,12 @@ class Session(sherpa.ui.utils.Session):
            set are scaled appropriately and added to the simulated
            source signal.
 
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set already exists and does not contain PHA
+           data.
+
         See Also
         --------
         fake : Simulate a data set.
@@ -8112,11 +8453,17 @@ class Session(sherpa.ui.utils.Session):
         load_arrays : Create a data set from array values.
         set_model : Set the source model expression for a data set.
 
-        Raises
-        ------
-        sherpa.utils.err.ArgumentErr
-           If the data set already exists and does not contain PHA
-           data.
+        Notes
+        -----
+        A model expression is created by using the supplied ARF and RMF
+        to convolve the source expression for the dataset (the return
+        value of `get_source` for the supplied `id` parameter). This
+        expresion is evaluated for each channel to create the expectation
+        values, which is then passed to a Poisson random number generator
+        to determine the observed number of counts per channel. Any
+        background component is scaled by appropriate terms (exsposure
+        time, area scaling, and the backscal value) before adding to the
+        simulated date. That is, the background component is not simulated.
 
         Examples
         --------
@@ -8135,8 +8482,8 @@ class Session(sherpa.ui.utils.Session):
         estimated background component based on scaling the existing
         background observations for the source. The simulated data
         set, which has the same grouping as the default set, for
-        easier comparison, is created with the 'sim' label
-        and then written out to the file 'sim.pi':
+        easier comparison, is created with the 'sim' label and then
+        written out to the file 'sim.pi':
 
         >>> arf = get_arf()
         >>> rmf = get_rmf()
@@ -8145,9 +8492,9 @@ class Session(sherpa.ui.utils.Session):
         >>> grp = get_grouping()
         >>> qual = get_quality()
         >>> texp = 1e6
-        >>> set_source('sim', get_model())
-        >>> fake_pha('sim', arf, rmf, backscal=bscal, bkg=bkg,
-                     grouping=grp, quality=qual, grouped=True)
+        >>> set_source('sim', get_source())
+        >>> fake_pha('sim', arf, rmf, texp, backscal=bscal, bkg=bkg,
+        ...          grouping=grp, quality=qual, grouped=True)
         >>> save_pha('sim', 'sim.pi')
 
         """
@@ -8421,13 +8768,14 @@ class Session(sherpa.ui.utils.Session):
         return model
 
     def get_response(self, id=None, bkg_id=None):
-        """Return the respone information applied to a PHA data set.
+        """Return the response information applied to a PHA data set.
 
         For a PHA data set, the source model - created by `set_model`
         - is modified by a model representing the instrumental effects
         - such as the effective area of the mirror, the energy
         resolution of the detector, and any model of pile up - which
-        is collectively known as the instrument response.
+        is collectively known as the instrument response. The
+        `get_response` function returns the instrument response model.
 
         Parameters
         ----------
@@ -8463,13 +8811,15 @@ class Session(sherpa.ui.utils.Session):
 
         Create an empty PHA data set, load in an ARF and RMF, and then
         retrieve the response. The response is then used to model the
-        instrument response applied to a `powlaw1d` model component:
+        instrument response applied to a `powlaw1d` model component,
+        along with a constant component (`bgnd`) that does not
+        "pass through" the instrument response:
 
         >>> dataspace1d(1, 1024, 1, dstype=DataPHA)
         >>> load_arf('src.arf')
         >>> load_rmf('src.rmf')
         >>> rsp = get_response()
-        >>> mdl = rsp(powlaw1d.pl)
+        >>> set_full_model(rsp(powlaw1d.pl) + const1d.bgnd)
 
         """
         pha = self._get_pha_data(id)
@@ -9369,7 +9719,7 @@ class Session(sherpa.ui.utils.Session):
         """Fit a model to one or more data sets.
 
         Use forward fitting to find the best-fit model to one or more
-        data sets, given the chosen statisitic and optimization
+        data sets, given the chosen statistic and optimization
         method. The fit proceeds until the results converge or the
         number of iterations exceeds the maximum value (these values
         can be changed with `set_method_opt`). An iterative scheme can
@@ -9422,7 +9772,9 @@ class Session(sherpa.ui.utils.Session):
         -----
         For PHA data sets with background components, the function
         will fit any background components for which a background
-        model has been created (rather than being subtracted).
+        model has been created (rather than being subtracted). The
+        `fit_bkg` function can be used to fit models to just the
+        background data.
 
         Examples
         --------
@@ -9614,7 +9966,8 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
-    # also in sherpa.utils
+    # also in sherpa.utils; it does not seem worthwhile creating a new
+    # docstring here
     def get_model_plot(self, id=None, **kwargs):
         if isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
             self._prepare_plotobj(id, self._modelhisto, **kwargs)
@@ -9655,10 +10008,25 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
+        Retrieve the source plot information for the default data
+        set and then display it:
+
         >>> splot = get_source_plot()
+        >>> print(splot)
+
+        Return the plot data for data set 2, and then use it to create
+        a plot:
+
+        >>> s2 = get_source_plot(2)
+        >>> s2.plot()
+
+        Retrive the source plots for the 0.5 to 7 range of the
+        'jet' and 'core' data sets and display them on the same plot:
 
         >>> splot1 = get_source_plot(id='jet', lo=0.5, hi=7)
         >>> splot2 = get_source_plot(id='core', lo=0.5, hi=7)
+        >>> splot1.plot()
+        >>> splot2.overplot()
 
         For a PHA data set, the units on both the X and Y axes of the
         plot are controlled by the `set_analysis` command. In this
@@ -9667,6 +10035,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> set_analysis('energy', factor=1)
         >>> splot = get_source_plot()
+        >>> print(splot)
 
         """
         # srcplot obj is possibly reinstantiated depending on data type
@@ -9734,6 +10103,22 @@ class Session(sherpa.ui.utils.Session):
         get_default_id : Return the default data set identifier.
         plot_order : Plot the model for a data set convolved by the given response.
 
+        Examples
+        --------
+
+        Retrieve the plot information for order 1 of the default data set
+        and then display it:
+
+        >>> oplot = get_order_plot(orders=1)
+        >>> print(oplot)
+
+        Return the plot data for orders 1 and 2 of data set 'jet', plot the
+        first and then overplot the second:
+
+        >>> plots = get_order_plot('jet', orders=[1, 2])
+        >>> plots[0].plot()
+        >>> plots[1].overplot()
+
         """
         self._prepare_plotobj(id, self._orderplot, orders=orders)
         return self._orderplot
@@ -9775,9 +10160,10 @@ class Session(sherpa.ui.utils.Session):
         676.95794677734375
 
         Return the ARF data for the second response of the
-        data set labelled 'histate':
+        data set labelled 'histate', and then plot it:
 
         >>> aplot = get_arf_plot('histate', 2)
+        >>> aplot.plot()
 
         """
         self._prepare_plotobj(id, self._arfplot, resp_id)
@@ -9817,6 +10203,39 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_model_plot : Return the data used by plot_bkg_model.
         plot_bkg_fit : Plot the fit results (data, model) for the background of a PHA data set.
 
+        Examples
+        --------
+
+        Create the data needed to create the "fit plot" for the background
+        of the default data set and display it:
+
+        >>> bplot = get_bkg_fit_plot()
+        >>> print(bplot)
+
+        Return the plot data for data set 2, and then use it to create
+        a plot:
+
+        >>> b2 = get_bkg_fit_plot(2)
+        >>> b2.plot()
+
+        The fit plot consists of a combination of a data plot and a
+        model plot, which are captured in the `dataplot` and `modelplot`
+        attributes of the return value. These can be used to display
+        the plots individually, such as:
+
+        >>> b2.dataplot.plot()
+        >>> b2.modelplot.plot()
+
+        or, to combine the two:
+
+        >>> b2.dataplot.plot()
+        >>> b2.modelplot.overplot()
+
+        Return the plot data for the second background component to the
+        "jet" data set:
+
+        >>> bplot = get_bkg_fit_plot('jet', bkg_id=2)
+
         """
         self._prepare_plotobj(id, self._bkgfitplot, bkg_id=bkg_id)
         return self._bkgfitplot
@@ -9855,6 +10274,15 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_source : Plot the model expression for the background of a PHA data set.
 
+        Examples
+        --------
+
+        >>> bplot = get_bkg_model_plot()
+        >>> print(bplot)
+
+        >>> get_bkg_model_plot('jet', bkg_id=1).plot()
+        >>> get_bkg_model_plot('jet', bkg_id=2).overplot()
+
         """
         self._prepare_plotobj(id, self._bkgmodelhisto, bkg_id=bkg_id)
         return self._bkgmodelhisto
@@ -9890,6 +10318,26 @@ class Session(sherpa.ui.utils.Session):
         --------
         get_default_id : Return the default data set identifier.
         plot_bkg : Plot the background values for a PHA data set.
+
+        Examples
+        --------
+
+        Create the data needed to create the "data plot" for the background
+        of the default data set and display it:
+
+        >>> bplot = get_bkg_plot()
+        >>> print(bplot)
+
+        Return the plot data for data set 2, and then use it to create
+        a plot:
+
+        >>> b2 = get_bkg_plot(2)
+        >>> b2.plot()
+
+        Return the plot data for the second background component to the
+        "jet" data set:
+
+        >>> bplot = get_bkg_plot('jet', bkg_id=2)
 
         """
         self._prepare_plotobj(id, self._bkgdataplot, bkg_id=bkg_id)
@@ -9933,6 +10381,46 @@ class Session(sherpa.ui.utils.Session):
         plot_bkg_model : Plot the model for the background of a PHA data set.
         plot_bkg_source : Plot the model expression for the background of a PHA data set.
 
+        Examples
+        --------
+
+        Retrieve the source plot information for the background of
+        the default data set and display it:
+
+        >>> splot = get_bkg_source_plot()
+        >>> print(splot)
+
+        Return the background plot data for data set 2, and then use it
+        to create a plot:
+
+        >>> s2 = get_bkg_source_plot(2)
+        >>> s2.plot()
+
+        Create a plot of the first two background components of the
+        'histate' data set, overplotting the second on the first:
+
+        >>> b1 = get_bkg_source_plot('histate', bkg_id=1)
+        >>> b2 = get_bkg_source_plot('histate', bkg_id=2)
+        >>> b1.plot()
+        >>> b2.overplot()
+
+        Retrive the background source plots for the 0.5 to 7 range of the
+        'jet' and 'core' data sets and display them on the same plot:
+
+        >>> splot1 = get_bkg_source_plot(id='jet', lo=0.5, hi=7)
+        >>> splot2 = get_bkg_source_plot(id='core', lo=0.5, hi=7)
+        >>> splot1.plot()
+        >>> splot2.overplot()
+
+        For a PHA data set, the units on both the X and Y axes of the
+        plot are controlled by the `set_analysis` command. In this
+        case the Y axis will be in units of photons/s/cm^2 and the X
+        axis in keV:
+
+        >>> set_analysis('energy', factor=1)
+        >>> splot = get_bkg_source_plot()
+        >>> print(splot)
+
         """
         self._prepare_plotobj(id, self._bkgsourceplot, bkg_id=bkg_id,
                               lo=lo, hi=hi)
@@ -9973,6 +10461,15 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_ratio_plot : Return the data used by plot_bkg_ratio.
         plot_bkg_resid : Plot the residual (data-model) values for the background of a PHA data set.
 
+        Examples
+        --------
+
+        >>> bplot = get_bkg_resid_plot()
+        >>> print(bplot)
+
+        >>> get_bkg_resid_plot('jet', bkg_id=1).plot()
+        >>> get_bkg_resid_plot('jet', bkg_id=2).overplot()
+
         """
         self._prepare_plotobj(id, self._bkgresidplot, bkg_id=bkg_id)
         return self._bkgresidplot
@@ -10011,6 +10508,15 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_delchi_plot : Return the data used by plot_bkg_delchi.
         get_bkg_resid_plot : Return the data used by plot_bkg_resid.
         plot_bkg_ratio : Plot the ratio of data to model values for the background of a PHA data set.
+
+        Examples
+        --------
+
+        >>> bplot = get_bkg_ratio_plot()
+        >>> print(bplot)
+
+        >>> get_bkg_ratio_plot('jet', bkg_id=1).plot()
+        >>> get_bkg_ratio_plot('jet', bkg_id=2).overplot()
 
         """
         self._prepare_plotobj(id, self._bkgratioplot, bkg_id=bkg_id)
@@ -10051,6 +10557,16 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_resid_plot : Return the data used by plot_bkg_resid.
         plot_bkg_delchi : Plot the ratio of residuals to error for the background of a PHA data set.
 
+        Examples
+        --------
+
+        >>> bplot = get_bkg_delchi_plot()
+        >>> print(bplot)
+
+        >>> get_bkg_delchi_plot('jet', bkg_id=1).plot()
+        >>> get_bkg_delchi_plot('jet', bkg_id=2).overplot()
+
+
         """
         self._prepare_plotobj(id, self._bkgdelchiplot, bkg_id=bkg_id)
         return self._bkgdelchiplot
@@ -10090,6 +10606,16 @@ class Session(sherpa.ui.utils.Session):
         get_bkg_resid_plot : Return the data used by plot_bkg_resid.
         plot_bkg_chisqr : Plot the chi-squared value for each point of the background of a PHA data set.
 
+        Examples
+        --------
+
+        >>> bplot = get_bkg_chisqr_plot()
+        >>> print(bplot)
+
+        >>> get_bkg_chisqr_plot('jet', bkg_id=1).plot()
+        >>> get_bkg_chisqr_plot('jet', bkg_id=2).overplot()
+
+
         """
         self._prepare_plotobj(id, self._bkgchisqrplot, bkg_id=bkg_id)
         return self._bkgchisqrplot
@@ -10110,6 +10636,11 @@ class Session(sherpa.ui.utils.Session):
     def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None, **kwargs):
         """Return the data displayed by plot_energy_flux.
+
+        The get_energy_flux_hist() function calculates a histogram of
+        simulated energy flux values representing the energy flux probability
+        distribution for a model component, accounting for the errors on the
+        model parameters.
 
         Parameters
         ----------
@@ -10168,10 +10699,17 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        >>> ehist = get_energy_flux_hist(0.5, 7, num=1000)
+        Get the energy flux distribution for the range 0.5 to 7 for
+        the default data set:
 
-        >>> ehist1 = get_energy_flux_hist(0.5, 2, id="jet", num=1000)
-        >>> ehist2 = get_energy_flux_hist(0.5, 2, id="core", num=1000)
+        >>> ehist = get_energy_flux_hist(0.5, 7, num=1000)
+        >>> print(ehist)
+
+        Compare the 0.5 to 2 energy flux distribution from the "core"
+        data set to the values from the "jet" data set:
+
+        >>> ehist1 = get_energy_flux_hist(0.5, 2, id='jet', num=1000)
+        >>> ehist2 = get_energy_flux_hist(0.5, 2, id='core', num=1000)
 
         """
         if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
@@ -10183,6 +10721,11 @@ class Session(sherpa.ui.utils.Session):
     def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
                              correlated=False, numcores=None, bkg_id=None, **kwargs):
         """Return the data displayed by plot_photon_flux.
+
+        The get_photon_flux_hist() function calculates a histogram of
+        simulated photon flux values representing the photon flux probability
+        distribution for a model component, accounting for the errors on the
+        model parameters.
 
         Parameters
         ----------
@@ -10241,10 +10784,17 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        >>> phist = get_photon_flux_hist(0.5, 7, num=1000)
+        Get the photon flux distribution for the range 0.5 to 7 for
+        the default data set:
 
-        >>> phist1 = get_photon_flux_hist(0.5, 2, id="jet", num=1000)
-        >>> phist2 = get_photon_flux_hist(0.5, 2, id="core", num=1000)
+        >>> phist = get_photon_flux_hist(0.5, 7, num=1000)
+        >>> print(phist)
+
+        Compare the 0.5 to 2 photon flux distribution from the "core"
+        data set to the values from the "jet" data set:
+
+        >>> phist1 = get_photon_flux_hist(0.5, 2, id='jet', num=1000)
+        >>> phist2 = get_photon_flux_hist(0.5, 2, id='core', num=1000)
 
         """
         if sherpa.utils.bool_cast(kwargs.pop('recalc', True)):
@@ -10563,12 +11113,12 @@ class Session(sherpa.ui.utils.Session):
         responses for the second data set (separate curves for
         each response):
 
-        >>> plot_order(2, orders=[1,2])
+        >>> plot_order(2, orders=[1, 2])
 
         Add the orders plot to a model plot:
 
         >>> plot_model()
-        >>> plot_order(orders=[2,3], overplot=True)
+        >>> plot_order(orders=[2, 3], overplot=True)
 
         """
         self._plot(
@@ -11053,8 +11603,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the source model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
         get_energy_flux_hist : Return the data displayed by plot_energy_flux.
         get_photon_flux_hist : Return the data displayed by plot_photon_flux.
@@ -11069,7 +11619,7 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Plot the energy energy distribution for the range 0.5 to 7 for
+        Plot the energy flux distribution for the range 0.5 to 7 for
         the default data set:
 
         >>> plot_energy_flux(0.5, 7, num=1000)
@@ -11154,8 +11704,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the source model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
         get_energy_flux_hist : Return the data displayed by plot_energy_flux.
         get_photon_flux_hist : Return the data displayed by plot_photon_flux.
@@ -11424,8 +11974,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the source model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
         plot_cdf : Plot the cumulative density function of an array.
         plot_pdf : Plot the probability density function of an array.
@@ -11526,8 +12076,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the source model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
         plot_cdf : Plot the cumulative density function of an array.
         plot_pdf : Plot the probability density function of an array.
@@ -11644,8 +12194,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the source model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         covar : Estimate the confidence intervals using the confidence method.
         plot_energy_flux : Display the energy flux distribution.
         plot_photon_flux : Display the photon flux distribution.
@@ -11662,10 +12212,10 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source(xsphabs.gal * xsapec.src)
         >>> fit()
         >>> covar()
-        >>> (fflux,cflux,vals) = sample_flux(src, 0.5, 2, num=1000)
+        >>> fflux, cflux, vals = sample_flux(src, 0.5, 2, num=1000)
         original model flux = 2.88993e-14, + 1.92575e-15, - 1.81963e-15
         model component flux = 7.96865e-14, + 4.65144e-15, - 4.41222e-15
-        >>> (f0, fhi, flo) = cflux
+        >>> f0, fhi, flo = cflux
         >>> print("Flux: {:.2e} {:.2e} {:.2e}".format(f0, fhi-f0, flo-f0))
         Flux: 7.97e-14 4.65e-15 -4.41e-15
 
@@ -11719,7 +12269,13 @@ class Session(sherpa.ui.utils.Session):
         """Calculate the equivalent width of an emission or absorption line.
 
         The equivalent width [1]_ is calculated in the selected units
-        for the data set (whcih can be retrieved with `get_analysis`).
+        for the data set (which can be retrieved with `get_analysis`).
+
+        .. versionchanged:: 4.10.1
+           The `error` parameter was added which controls whether the
+           return value is a scalar (the calculated equivalent width),
+           when set to `False`, or the median value, error limits, and
+           ancillary values.
 
         Parameters
         ----------
@@ -11764,8 +12320,9 @@ class Session(sherpa.ui.utils.Session):
         -------
         retval
            If ``error`` is ``False``, then returns the equivalent width,
-           otherwise the median, 1 sigma lower, upper bounds, the
-           parameters and eqwidth.
+           otherwise the median, 1 sigma lower bound, 1 sigma upper
+           bound, the parameters array, and the array of the equivalent
+           width values used to determine the errors.
 
         See Also
         --------
@@ -11807,6 +12364,23 @@ class Session(sherpa.ui.utils.Session):
         >>> set_bkg_source(2, const1d.flat + gauss1d.bline)
         >>> eqwidth(flat, flat+bline, id=2, bkg_id=1, lo=0.5, hi=2)
         0.45494599793003426
+
+        With the `error` flag set to `True`, the return value is
+        enhanced with extra information, such as the median and
+        one-sigma ranges on the equivalent width::
+
+        >>> res = eqwidth(p1, p1 + g1, error=True)
+        >>> ewidth = res[0]  # the median equivalent width
+        >>> errlo = res[1]   # the one-sigma lower limit
+        >>> errhi = res[2]   # the one-sigma upper limit
+        >>> pars = res[3]    # the parameter values used
+        >>> ews = res[4]     # array of eq. width values
+
+        which can be used to display the probability density or
+        cumulative distribution function of the equivalent widths::
+
+        >>> plot_pdf(ews)
+        >>> plot_cdf(ews)
 
         """
         data = self.get_data(id)
@@ -11886,7 +12460,7 @@ class Session(sherpa.ui.utils.Session):
             return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
     def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None):
-        """Integrate the source model over a pass band.
+        """Integrate the unconvolved source model over a pass band.
 
         Calculate the integral of S(E) over a pass band, where S(E) is
         the spectral model evaluated for each bin (that is, the model
@@ -11911,7 +12485,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        number
+        flux : number
            The flux from the source model integrated over the given
            band. This represents the flux from the model without any
            instrument response (i.e. the intrinsic flux of the
@@ -11925,7 +12499,7 @@ class Session(sherpa.ui.utils.Session):
         --------
         calc_data_sum : Sum up the observed counts over a pass band.
         calc_model_sum : Sum up the fitted model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
         set_analysis : Set the units used when fitting and displaying spectral data
         set_model : Set the source model expression for a data set.
@@ -11950,6 +12524,15 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
+        Calculate the integral of the unconvolved model over the
+        full range of the default data set:
+
+        >>> calc_photon_flux()
+
+        Return the flux for the data set labelled "core":
+
+        >>> calc_photon_flux(id='core')
+
         Calculate the photon flux over the ranges 0.5 to 2 and 0.5 to
         7 keV, and compared to the energy fluxes for the same bands:
 
@@ -11969,6 +12552,13 @@ class Session(sherpa.ui.utils.Session):
         >>> calc_photon_flux(0.5, id="core")
         0.64978176
 
+        Calculate the flux for the model applied to the second background
+        component of the 'jet' data set, for the wavelength range 20 to 22
+        Angstroms:
+
+        >>> set_analysis('jet', 'wave')
+        >>> calc_photon_flux(20, 22, id='jet', bkg_id=2)
+
         """
 
         data = self.get_data(id)
@@ -11983,7 +12573,7 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
 
     def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None):
-        """Integrate the source model over a pass band.
+        """Integrate the unconvolved source model over a pass band.
 
         Calculate the integral of E * S(E) over a pass band, where E
         is the energy of the bin and S(E) the spectral model evaluated
@@ -12009,7 +12599,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        number
+        flux : number
            The flux from the source model integrated over the given
            band. This represents the flux from the model without any
            instrument response (i.e. the intrinsic flux of the
@@ -12023,7 +12613,7 @@ class Session(sherpa.ui.utils.Session):
         calc_data_sum : Sum up the data values over a pass band.
         calc_model_sum : Sum up the fitted model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
-        calc_photon_flux : Integrate the source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
         set_analysis : Set the units used when fitting and displaying spectral data
         set_model : Set the source model expression for a data set.
 
@@ -12047,6 +12637,15 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
+        Calculate the integral of the unconvolved model over the
+        full range of the default data set:
+
+        >>> calc_energy_flux()
+
+        Return the flux for the data set labelled "core":
+
+        >>> calc_energy_flux(id='core')
+
         Calculate the energy flux over the ranges 0.5 to 2 and 0.5 to
         7 keV:
 
@@ -12061,6 +12660,13 @@ class Session(sherpa.ui.utils.Session):
 
         >>> calc_energy_flux(0.5, id="core")
         5.2573786652855304e-10
+
+        Calculate the flux for the model applied to the second background
+        component of the 'jet' data set, for the wavelength range 20 to 22
+        Angstroms:
+
+        >>> set_analysis('jet', 'wave')
+        >>> calc_energy_flux(20, 22, id='jet', bkg_id=2)
 
         """
         data = self.get_data(id)
@@ -12077,6 +12683,9 @@ class Session(sherpa.ui.utils.Session):
     # is it all in or partially in or ...
     def calc_data_sum(self, lo=None, hi=None, id=None, bkg_id=None):
         """Sum up the data values over a pass band.
+
+        This function is for one-dimensional data sets: use
+        `calc_model_sum` for two-dimensional data sets.
 
         Parameters
         ----------
@@ -12109,15 +12718,17 @@ class Session(sherpa.ui.utils.Session):
         --------
         calc_data_sum2d : Sum up the data values of a 2D data set.
         calc_model_sum : Sum up the fitted model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
-        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
+        calc_photon_flux : Integrate the unconcolved source model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
         set_model : Set the source model expression for a data set.
 
         Notes
         -----
         The units of ``lo`` and ``hi`` are determined by the analysis
-        setting for the data set (e.g. `get_analysis`).
+        setting for the data set (e.g. `get_analysis`). The summation
+        occurs over those points in the data set that lie within this
+        range, not the range itself.
 
         Any existing filter on the data set - e.g. as created by
         `ignore` or `notice` - is ignored by this function.
@@ -12129,6 +12740,11 @@ class Session(sherpa.ui.utils.Session):
 
         Examples
         --------
+
+        Sum up the data values (the dependent axis) for all points or
+        bins in the default data set:
+
+        >>> dsum = calc_data_sum()
 
         Calculate the number of counts over the ranges 0.5 to 2 and 0.5 to
         7 keV for the default data set, first using the observed signal
@@ -12150,23 +12766,33 @@ class Session(sherpa.ui.utils.Session):
         >>> calc_data_sum(0.5, id="core")
         0.0
 
+        Calculate the sum of the second background component for data
+        set 3 over the independent axis range 12 to 45:
+
+        >>> calc_data_sum(12, 45, id=3, bkg_id=2)
+
         """
         data = self.get_data(id)
         if bkg_id is not None:
             data = self.get_bkg(id, bkg_id)
         return sherpa.astro.utils.calc_data_sum(data, lo, hi)
 
-    # DOC-TODO: does lo!=None,hi=None make sense here,
-    # since this is not an integration but a sum.
-    # For now I have just not documented this capability.
     # DOC-TODO: better comparison of calc_source_sum and calc_model_sum
     # needed (e.g. integration or results in PHA case?)
+    #
+    # DOC-TODO: add some form of convolution to the last example
+    #           to show the difference between calc_model_sum and
+    #           calc_source_sum
+    #
     def calc_model_sum(self, lo=None, hi=None, id=None, bkg_id=None):
         """Sum up the fitted model over a pass band.
 
-        Sum up S(E) over a pass band, where S(E) is the model
-        evaluated for each bin (that is, the model that is fit to the
-        data, so that it includes instrumental responses).
+        Sum up M(E) over a range of bins, where M(E) is the per-bin model
+        value after it has been convolved with any instrumental response
+        (e.g. RMF and ARF or PSF). This is intended for one-dimensional
+        data sets: use `calc_model_sum2d` for two-dimensional data sets.
+        The `calc_source_sum` function is used to calculate the sum of the
+        model before any instrumental response is applied.
 
         Parameters
         ----------
@@ -12188,30 +12814,38 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         signal : number
-           The sum of the model values used to fit the data.
+           The sum of the model values over the requested axis range.
 
         See Also
         --------
         calc_data_sum : Sum up the observed counts over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
-        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
         calc_source_sum: Sum up the source model over a pass band.
         set_model : Set the source model expression for a data set.
 
         Notes
         -----
         The units of ``lo`` and ``hi`` are determined by the analysis
-        setting for the data set (e.g. `get_analysis`).
+        setting for the data set (e.g. `get_analysis`). The summation
+        occurs over those points in the data set that lie within this
+        range, not the range itself.
 
         Any existing filter on the data set - e.g. as created by
         `ignore` or `notice` - is ignored by this function.
 
         The units of the answer depend on the model components used in
         the source expression and the axis or axes of the data set.
-        It is unlikely to give sensible results for 2D data sets.
 
         Examples
         --------
+
+        Calculate the model evaluated over the full data set (all points
+        or pixels of the independent axis) for the default data set,
+        and compare it to the sum for th first background component:
+
+        >>> tsrc = calc_model_sum()
+        >>> tbkg = calc_model_sum(bkg_id=1)
 
         Sum up the model over the data range 0.5 to 2 for the default
         data set, and compared to the data over the same range:
@@ -12220,6 +12854,33 @@ class Session(sherpa.ui.utils.Session):
         404.97796489631639
         >>> calc_data_sum(0.5, 2)
         745.0
+
+        Calculate the model sum, evaluated over the range 20 to 22
+        Angstroms, for the first background component of the "histate"
+        data set:
+
+        >>> set_analysis("histate", "wavelength")
+        >>> calc_model_sum(20, 22, "histate", bkg_id=1)
+
+        In the following example, a small data set is created, covering
+        the axis range of -5 to 5, and an off-center gaussian model
+        created (centered at 1). The model is evaluated over the full
+        data grid and then a subset of pixels. As the summation is done
+        over those points in the data set that lie within the requested
+        range, the sum for lo=-2 to hi=1 is the same as that for
+        lo=-1.5 to hi=1.5:
+
+        >>> load_arrays('test', [-5, -2.5, 0, 2.5, 5], [2, 5, 12, 7, 3])
+        >>> set_source('test', gauss1d.gmdl)
+        >>> gmdl.pos = 1
+        >>> gmdl.fwhm = 2.4
+        >>> gmdl.ampl = 10
+        >>> calc_model_sum(id='test')
+        9.597121089731253
+        >>> calc_model_sum(-2, 1, id='test')
+        6.179472329646446
+        >>> calc_model_sum(-1.5, 1.5, id='test')
+        6.179472329646446
 
         """
         data = self.get_data(id)
@@ -12233,6 +12894,9 @@ class Session(sherpa.ui.utils.Session):
 
     def calc_data_sum2d(self, reg=None, id=None):
         """Sum up the data values of a 2D data set.
+
+        This function is for two-dimensional data sets: use
+        `calc_model_sum` for one-dimensional data sets.
 
         Parameters
         ----------
@@ -12253,8 +12917,8 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         calc_data_sum : Sum up the data values of a data set.
-        calc_model_sum2d : Sum up the fitted model for a 2D data set.
-        calc_source_sum2d: Sum up the source model for a 2D data set.
+        calc_model_sum2d : Sum up the convolved model for a 2D data set.
+        calc_source_sum2d: Sum up the unconvolved model for a 2D data set.
         set_model : Set the source model expression for a data set.
 
         Notes
@@ -12273,33 +12937,43 @@ class Session(sherpa.ui.utils.Session):
         values to be 0 to 11 in a 3 row by 4 column image:
 
         >>> ivals = np.arange(12)
-        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y, x = np.mgrid[10:13, 20:24]
         >>> y = y.flatten()
         >>> x = x.flatten()
-        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+        >>> load_arrays(1, x, y, ivals, (3, 4), DataIMG)
 
-        With no argument, the full data set is used:
+        with no argument, the full data set is used:
 
         >>> calc_data_sum2d()
         66
         >>> ivals.sum()
         66
 
-        Only use pixels that fall within the given spatial filters:
+        and a spatial filter can be used to restrict the region
+        used for the summation:
 
-        >>> calc_data_sum2d('circle(2,2,1)')
+        >>> calc_data_sum2d('circle(22,12,1)')
         36
         >>> calc_data_sum2d('field()-circle(2,2,1)')
         30
+
+        Apply the spatial filter to the data set labelled "a2142":
+
+        >>> calc_data_sum2d('rotbox(4232.3,3876,300,200,43)', 'a2142')
 
         """
         data = self.get_data(id)
         return sherpa.astro.utils.calc_data_sum2d(data, reg)
 
     # DOC-TODO: show an example with psf
+    #           and change the model (to a non-flat distribution, otherwise
+    #           the PSF doesn't really help)
     # DOC-TODO: this needs testing as doesn't seem to be working for me
     def calc_model_sum2d(self, reg=None, id=None):
-        """Sum up the fitted model for a 2D data set.
+        """Sum up the convolved model for a 2D data set.
+
+        This function is for two-dimensional data sets: use
+        `calc_model_sum` for one-dimensional data sets.
 
         Parameters
         ----------
@@ -12321,8 +12995,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         calc_model_sum : Sum up the fitted model over a pass band.
-        calc_model_sum2d : Sum up the fitted model for a 2D data set.
-        calc_source_sum2d: Sum up the source model for a 2D data set.
+        calc_source_sum2d: Sum up the unconvolved model for a 2D data set.
         set_psf : Add a PSF model to a data set.
         set_model : Set the source model expression for a data set.
 
@@ -12342,26 +13015,32 @@ class Session(sherpa.ui.utils.Session):
         values to be 0 to 11 in a 3 row by 4 column image:
 
         >>> ivals = np.arange(12)
-        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y, x = np.mgrid[10:13, 20:24]
         >>> y = y.flatten()
         >>> x = x.flatten()
-        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+        >>> load_arrays(1, x, y, ivals, (3, 4), DataIMG)
         >>> set_source(const2d.bgnd)
         >>> bgnd.c0 = 2
 
-        With no argument, the full data set is used. Since the model
+        with no argument, the full data set is used. Since the model
         evaluates to 2 per pixel, and there are 12 pixels in the
         data set, the result is 24:
 
         >>> calc_model_sum2d()
         24.0
 
-        Only use pixels that fall within the given spatial filters:
+        and a spatial filter can be used to restrict the region
+        used for the summation:
 
-        >>> calc_model_sum2d('circle(2,2,1)')
+        >>> calc_model_sum2d('circle(22,12,1)')
         8.0
-        >>> calc_model_sum2d('field()-circle(2,2,1)')
+        >>> calc_model_sum2d('field()-circle(22,12,1)')
         16.0
+
+        Apply the spatial filter to the model for the data set
+        labelled "a2142":
+
+        >>> calc_model_sum2d('rotbox(4232.3,3876,300,200,43)', 'a2142')
 
         """
         data = self.get_data(id)
@@ -12369,7 +13048,10 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_model_sum2d(data, model, reg)
 
     def calc_source_sum2d(self, reg=None, id=None):
-        """Sum up the fitted model for a 2D data set.
+        """Sum up the unconvolved model for a 2D data set.
+
+        This function is for two-dimensional data sets: use
+        `calc_source_sum` for one-dimensional data sets.
 
         Parameters
         ----------
@@ -12390,7 +13072,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_model_sum2d : Sum up the fitted model for a 2D data set.
+        calc_model_sum2d : Sum up the convolved model for a 2D data set.
         calc_source_sum : Sum up the model over a pass band.
         set_psf : Add a PSF model to a data set.
         set_model : Set the source model expression for a data set.
@@ -12411,41 +13093,47 @@ class Session(sherpa.ui.utils.Session):
         values to be 0 to 11 in a 3 row by 4 column image:
 
         >>> ivals = np.arange(12)
-        >>> (y,x) = np.mgrid[0:3, 0:4]
+        >>> y, x = np.mgrid[10:13, 20:24]
         >>> y = y.flatten()
         >>> x = x.flatten()
-        >>> load_arrays(1, x, y, ivals, (3,4), DataIMG)
+        >>> load_arrays(1, x, y, ivals, (3, 4), DataIMG)
         >>> set_source(const2d.bgnd)
         >>> bgnd.c0 = 2
 
-        With no argument, the full data set is used. Since the model
+        with no argument, the full data set is used. Since the model
         evaluates to 2 per pixel, and there are 12 pixels in the
         data set, the result is 24:
 
         >>> calc_source_sum2d()
         24.0
 
-        Only use pixels that fall within the given spatial filters:
+        and a spatial filter can be used to restrict the region
+        used for the summation:
 
-        >>> calc_source_sum2d('circle(2,2,1)')
+        >>> calc_source_sum2d('circle(22,12,1)')
         8.0
-        >>> calc_source_sum2d('field()-circle(2,2,1)')
+        >>> calc_source_sum2d('field()-circle(22,12,1)')
         16.0
+
+        Apply the spatial filter to the model for the data set
+        labelled "a2142":
+
+        >>> calc_source_sum2d('rotbox(4232.3,3876,300,200,43)', 'a2142')
 
         """
         data = self.get_data(id)
         src = self.get_source(id)
         return sherpa.astro.utils.calc_model_sum2d(data, src, reg)
 
-    # DOC-TODO: does lo!=None,hi=None make sense here,
-    # since this is not an integration but a sum.
-    # For now I have just not documented this capability.
     def calc_source_sum(self, lo=None, hi=None, id=None, bkg_id=None):
         """Sum up the source model over a pass band.
 
-        Sum up S(E) over a pass band, where S(E) is the spectral model
-        evaluated for each bin (that is, the model without any
-        instrumental responses applied to it).
+        Sum up S(E) over a range of bins, where S(E) is the per-bin model
+        value before it has been convolved with any instrumental response
+        (e.g. RMF and ARF or PSF). This is intended for one-dimensional
+        data sets: use `calc_source_sum2d` for two-dimensional data sets.
+        The `calc_model_sum` function is used to calculate the sum of the
+        model after any instrumental response is applied.
 
         Parameters
         ----------
@@ -12476,24 +13164,32 @@ class Session(sherpa.ui.utils.Session):
         --------
         calc_data_sum : Sum up the observed counts over a pass band.
         calc_model_sum : Sum up the fitted model over a pass band.
-        calc_energy_flux : Integrate the source model over a pass band.
-        calc_photon_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
+        calc_photon_flux : Integrate the unconvolved source model over a pass band.
         set_model : Set the source model expression for a data set.
 
         Notes
         -----
         The units of ``lo`` and ``hi`` are determined by the analysis
-        setting for the data set (e.g. `get_analysis`).
+        setting for the data set (e.g. `get_analysis`). The summation
+        occurs over those points in the data set that lie within this
+        range, not the range itself.
 
         Any existing filter on the data set - e.g. as created by
         `ignore` or `notice` - is ignored by this function.
 
         The units of the answer depend on the model components used in
         the source expression and the axis or axes of the data set.
-        It is unlikely to give sensible results for 2D data sets.
 
         Examples
         --------
+
+        Calculate the model evaluated over the full data set (all points
+        or pixels of the independent axis) for the default data set,
+        and compare it to the sum for th first background component:
+
+        >>> tsrc = calc_source_sum()
+        >>> tbkg = calc_source_sum(bkg_id=1)
 
         Sum up the model over the data range 0.5 to 2 for the default
         data set:
@@ -12501,12 +13197,11 @@ class Session(sherpa.ui.utils.Session):
         >>> calc_source_sum(0.5, 2)
         139.12819041922018
 
-        Compare the output of the `calc_source_sum` and
-        `calc_photon_flux` routines. A 1099-bin data space is created,
-        with a model which has a value of 1 for each bin. As the bin
-        width is constant, at 0.01, the integrated value, calculated
-        by `calc_photon_flux`, is one hundredth the value from
-        `calc_data_sum`:
+        Compare the output of the `calc_source_sum` and `calc_photon_flux`
+        routines. A 1099-bin data space is created, with a model which has
+        a value of 1 for each bin. As the bin width is constant, at 0.01,
+        the integrated value, calculated by `calc_photon_flux`, is one
+        hundredth the value returned by `calc_data_sum`:
 
         >>> dataspace1d(0.01, 11, 0.01, id="test")
         >>> set_source("test", const1d.bflat)
@@ -12515,6 +13210,26 @@ class Session(sherpa.ui.utils.Session):
         1099.0
         >>> calc_photon_flux(id="test")
         10.99
+
+        In the following example, a small data set is created, covering
+        the axis range of -5 to 5, and an off-center gaussian model
+        created (centered at 1). The model is evaluated over the full
+        data grid and then a subset of pixels. As the summation is done
+        over those points in the data set that lie within the requested
+        range, the sum for lo=-2 to hi=1 is the same as that for
+        lo=-1.5 to hi=1.5:
+
+        >>> load_arrays('test', [-5, -2.5, 0, 2.5, 5], [2, 5, 12, 7, 3])
+        >>> set_source('test', gauss1d.gmdl)
+        >>> gmdl.pos = 1
+        >>> gmdl.fwhm = 2.4
+        >>> gmdl.ampl = 10
+        >>> calc_source_sum(id='test')
+        9.597121089731253
+        >>> calc_source_sum(-2, 1, id='test')
+        6.179472329646446
+        >>> calc_source_sum(-1.5, 1.5, id='test')
+        6.179472329646446
 
         """
         data = self.get_data(id)
@@ -12533,10 +13248,11 @@ class Session(sherpa.ui.utils.Session):
         """Calculate the K correction for a model.
 
         The K correction ([1]_, [2]_, [3]_, [4]_) is the numeric
-        factor applied to measured energy fluxes to convert values in
-        an observed energy band to that they are in a rest-frame
-        energy band (that is, correct for the change in spectral shape
-        between the rest-frame and observed-frame bands). This is
+        factor applied to measured energy fluxes in an observed
+        energy band to estimate the flux in a given rest-frame
+        energy band. It accounts for the change in spectral energy
+        distribution between the desired rest-frame band and the
+        rest-frame band corresponding to the observed band. This is
         often used when converting a flux into a luminosity.
 
         Parameters
@@ -12551,7 +13267,7 @@ class Session(sherpa.ui.utils.Session):
         restlo : number or ``None``
            The minimum energy of the rest-frame band. If ``None`` then
            use ``obslo``.
-        restlo : number or ``None``
+        resthi : number or ``None``
            The maximum energy of the rest-frame band. It must be
            larger than ``restlo``. If ``None`` then use ``obshi``.
         id : int or str, optional
@@ -12568,7 +13284,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_energy_flux : Integrate the source model over a pass band.
+        calc_energy_flux : Integrate the unconvolved source model over a pass band.
         dataspace1d : Create the independent axis for a 1D data set.
 
         Notes
@@ -12635,6 +13351,12 @@ class Session(sherpa.ui.utils.Session):
         >>> dataspace1d(0.01, 11, 0.01)
         >>> zs = np.linspace(0, 2, 21)
         >>> ks = calc_kcorr(zs, 0.5, 2, restlo=0.1, resthi=10)
+
+        Calculate the k correction for the background dataset
+        bkg_id=2 for a redshift of 0.5 over the energy range
+        0.5 to 2 keV with rest-frame energy limits of 2 to 10 keV.
+
+        >>> calc_kcorr(0.5, 0.5, 2, 2, 10, bkg_id=2)
 
         """
         data = self.get_data(id)

@@ -1159,13 +1159,15 @@ class PSFModel(_PSFModel):
 def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-arf'):
     """Create an ARF.
 
+    .. versionadded:: 4.10.1
+
     Parameters
     ----------
     elo, ehi : numpy.ndarray
-        The energy bins (low and high, in keV) for the ARF.
-        The ehi values must be greater than the
-        elo values for each bin, and the energy arrays must be
-        in increasing or decreasing order.
+        The energy bins (low and high, in keV) for the ARF. It is
+        assumed that ehi_i > elo_i, elo_j > 0, the energy bins are
+        either ascending - so elo_i+1 > elo_i - or descending
+        (elo_i+1 < elo_i), and that there are no overlaps.
     specresp : None or array, optional
         The spectral response (in cm^2) for the ARF. It is assumed
         to be >= 0. If not given a flat response of 1.0 is used.
@@ -1174,12 +1176,16 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
     ethresh : number or None, optional
         Passed through to the DataARF call. It controls whether
         zero-energy bins are replaced.
-    name : str
-        The name of the data set
+    name : str, optional
+        The name of the ARF data set
 
     Returns
     -------
     arf : sherpa.astro.data.DataARF instance
+
+    See Also
+    --------
+    create_delta_rmf, create_non_delta_rmf
     """
 
     if specresp is None:
@@ -1188,9 +1194,52 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None, name='user-
     return DataARF(name, energ_lo=elo, energ_hi=ehi, specresp=specresp, exposure=exposure, ethresh=ethresh)
 
 
+# Notes for create*rmf:
+#  - I do not think I have the startchan=0 case correct. Does the
+#    f_chan array have to change?
+#
+
 def create_delta_rmf(rmflo, rmfhi, offset=1,
                      e_min=None, e_max=None, ethresh=None,
                      name='delta-rmf'):
+    """Create an ideal RMF.
+
+    The RMF has a unique mapping from channel to energy, in
+    that each channel maps exactly to one energy bin, the
+    mapping is monotonic, and there are no gaps.
+
+    .. versionadded:: 4.10.1
+
+    Parameters
+    ----------
+    rmflo, rmfhi : array
+        The energy bins (low and high, in keV) for the RMF.
+        It is assumed that emfhi_i > rmflo_i, rmflo_j > 0, that the energy
+        bins are either ascending, so rmflo_i+1 > rmflo_i or descending
+        (rmflo_i+1 < rmflo_i), and that there are no overlaps.
+        These correspond to the Elow and Ehigh columns (represented
+        by the ENERG_LO and ENERG_HI columns of the MATRIX block) of
+        the OGIP standard.
+    offset : int, optional
+        The starting channel number: expected to be 0 or 1 but this is
+        not enforced.
+    e_min, e_max : None or array, optional
+        The E_MIN and E_MAX columns of the EBOUNDS block of the
+        RMF.
+    ethresh : number or None, optional
+        Passed through to the DataRMF call. It controls whether
+        zero-energy bins are replaced.
+    name : str, optional
+        The name of the RMF data set
+
+    Returns
+    -------
+    rmf : DataRMF instance
+
+    See Also
+    --------
+    create_arf, create_non_delta_rmf
+    """
 
     # Set up the delta-function response.
     # TODO: should f_chan start at startchan?
@@ -1212,6 +1261,54 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
 def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
                          e_min=None, e_max=None, ethresh=None,
                          name='delta-rmf'):
+    """
+    Create a RMF using a matrix from a file.
+
+    The RMF matrix (the mapping from channel to energy bin) is
+    read in from a file.
+
+    .. versionadded:: 4.10.1
+
+    Parameters
+    ----------
+    rmflo, rmfhi : array
+        The energy bins (low and high, in keV) for the RMF.
+        It is assumed that emfhi_i > rmflo_i, rmflo_j > 0, that the energy
+        bins are either ascending, so rmflo_i+1 > rmflo_i or descending
+        (rmflo_i+1 < rmflo_i), and that there are no overlaps.
+        These correspond to the Elow and Ehigh columns (represented
+        by the ENERG_LO and ENERG_HI columns of the MATRIX block) of
+        the OGIP standard.
+    fname : str
+        The name of the two-dimensional image file which stores the
+        response information (the format of this file matches that
+        created by the CIAO tool rmfimg [1]_).
+    offset : int, optional
+        The starting channel number: expected to be 0 or 1 but this is
+        not enforced.
+    e_min, e_max : None or array, optional
+        The E_MIN and E_MAX columns of the EBOUNDS block of the
+        RMF.
+    ethresh : number or None, optional
+        Passed through to the DataRMF call. It controls whether
+        zero-energy bins are replaced.
+    name : str
+        The name of the RMF data set
+
+    Returns
+    -------
+    rmf : DataRMF instance
+
+    See Also
+    --------
+    create_arf, create_delta_rmf
+
+    References
+    ----------
+
+    .. [1] http://cxc.harvard.edu/ciao/ahelp/rmfimg.html
+
+    """
 
     if fname is not None and not os.path.isfile(fname):
         raise ValueError("{} is not a file".format(fname))

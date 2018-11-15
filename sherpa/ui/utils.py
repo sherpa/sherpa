@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2010, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -1135,7 +1135,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         show_all : Report the current state of the Sherpa session.
 
         Notes
@@ -1176,7 +1176,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        proj : Estimate confidence intervals using the projection method.
+        proj : Estimate parameter confidence intervals using the projection method.
         show_all : Report the current state of the Sherpa session.
 
         Notes
@@ -1217,7 +1217,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        covar : Estimate confidence intervals using the covariance method.
+        covar : Estimate parameter confidence intervals using the covariance method.
         show_all : Report the current state of the Sherpa session.
 
         Notes
@@ -1413,6 +1413,19 @@ class Session(NoNewAttributesAfterInit):
         Notes
         -----
         The default Sherpa data set identifier is the integer 1.
+
+        Examples
+        --------
+
+        Display the default identifier:
+
+        >>> print(get_default_id())
+
+        Store the default identifier and use it as an argument to
+        call another Sherpa routine:
+
+        >>> defid = get_default_id()
+        >>> load_arrays(defid, x, y)
 
         """
         return self._default_id
@@ -1751,7 +1764,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        name : str
+        name : {'none', 'primini', 'sigmarej'}
            The name of the iterative fitting scheme set by
            `set_iter_method`.
 
@@ -1760,11 +1773,19 @@ class Session(NoNewAttributesAfterInit):
         list_iter_methods : List the iterative fitting schemes.
         set_iter_method : Set the iterative-fitting scheme used in the fit.
 
+        Examples
+        --------
+
+        >>> print(get_iter_method_name())
+
         """
         return self._current_itermethod['name']
 
     def get_iter_method_opt(self, optname=None):
         """Return one or all options for the iterative-fitting scheme.
+
+        The options available for the iterative-fitting methods are
+        described in `set_iter_method_opt`.
 
         Parameters
         ----------
@@ -1789,6 +1810,22 @@ class Session(NoNewAttributesAfterInit):
         set_iter_method_opt : Set an option for the iterative-fitting scheme.
         set_iter_method : Set the iterative-fitting scheme used in the fit.
 
+        Examples
+        --------
+
+        Display the settings of the current iterative-fitting method:
+
+        >>> print(get_iter_method_opt())
+
+        Switch to the sigmarej scheme and find out the current settings:
+
+        >>> set_iter_method('sigmarej')
+        >>> opts = get_iter_method_opt()
+
+        Return the 'maxiters' setting (if applicable):
+
+        >>> get_iter_method_opt('maxiters')
+
         """
         itermethod_opts = dict(self._current_itermethod)
         del itermethod_opts['name']
@@ -1808,8 +1845,7 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         schemes : list of str
-           A list of the names that can be used with
-           `set_iter_method`.
+           A list of the names that can be used with `set_iter_method`.
 
         See Also
         --------
@@ -1909,6 +1945,21 @@ class Session(NoNewAttributesAfterInit):
                http://adsabs.harvard.edu/abs/1995ASPC...77..331K
 
         .. [3] http://iraf.net/irafhelp.php?val=sfit
+
+        Examples
+        --------
+
+        Switch to the 'sigmarej' scheme for iterative fitting and
+        change the low and hige rejection limits to 4 and 3
+        respectively:
+
+        >>> set_iter_method('sigmarej')
+        >>> set_iter_method_opt('lrej') = 4
+        >>> set_iter_method_opt('hrej') = 3
+
+        Remove any iterative-fitting method:
+
+        >>> set_iter_method('none')
 
         """
         if isinstance(meth, string_types):
@@ -2040,7 +2091,7 @@ class Session(NoNewAttributesAfterInit):
         return stat
 
     def get_stat(self, name=None):
-        """Return a fit statisic.
+        """Return the fit statisic.
 
         Parameters
         ----------
@@ -2068,11 +2119,17 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> stat = ui.stat()
-        >>> stat
-        Chi Squared with Gehrels variance
+        Return the currently-selected statistic, display its name, and
+        read the help documentation for it:
+
+        >>> stat = get_stat()
         >>> stat.name
         'chi2gehrels'
+        >>> help(stat)
+
+        Read the help for the "wstat" statistic:
+
+        >>> help(get_stat('wstat'))
 
         """
         if name is None:
@@ -2097,7 +2154,7 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> get_method_name()
+        >>> get_stat_name()
         'chi2gehrels'
 
         >>> set_stat('cash')
@@ -2590,8 +2647,7 @@ class Session(NoNewAttributesAfterInit):
         Ignore those bins with a value less 20.
 
         >>> d = get_dep()
-        >>> f = d >= 20
-        >>> set_filter(f)
+        >>> set_filter(d >= 20)
 
         """
         if val is None:
@@ -2805,6 +2861,12 @@ class Session(NoNewAttributesAfterInit):
     def get_staterror(self, id=None, filter=False):
         """Return the statistical error on the dependent axis of a data set.
 
+        The function returns the statistical errors on the values
+        (dependenent axis) of a data set. These may have been set
+        explicitly - either when the data set was created or with
+        a call to `set_staterror` - or as defined by the chosen
+        fit statistic (such as "chi2gehrels").
+
         Parameters
         ----------
         id : int or str, optional
@@ -2817,10 +2879,11 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        axis : array
+        staterrors : array
            The statistical error for each data point. This may be
            estimated from the data (e.g. with the ``chi2gehrels``
            statistic) or have been set explicitly (`set_staterror`).
+           The size of this array depends on the `filter` argument.
 
         Raises
         ------
@@ -2835,6 +2898,13 @@ class Session(NoNewAttributesAfterInit):
         list_data_ids : List the identifiers for the loaded data sets.
         set_staterror : Set the statistical errors on the dependent axis of a data set.
 
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
         Examples
         --------
 
@@ -2842,7 +2912,7 @@ class Session(NoNewAttributesAfterInit):
         may be calculated from the data values (the independent axis),
         depending on the chosen statistic:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
         >>> set_stat('chi2datavar')
         >>> get_staterror()
         array([ 2.        ,  2.23606798,  3.        ])
@@ -2854,7 +2924,7 @@ class Session(NoNewAttributesAfterInit):
         is created or with a call to `set_staterror` - then these values
         will be used, no matter the statistic:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9], [2,3,5])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], [2, 3, 5])
         >>> set_stat('chi2datavar')
         >>> get_staterror()
         array([2, 3, 5])
@@ -2870,6 +2940,11 @@ class Session(NoNewAttributesAfterInit):
     def get_syserror(self, id=None, filter=False):
         """Return the systematic error on the dependent axis of a data set.
 
+        The function returns the systematic errors on the values
+        (dependenent axis) of a data set. It is an error if called
+        on a data set with no systematic errors (which are set
+        with `set_syserror`).
+
         Parameters
         ----------
         id : int or str, optional
@@ -2882,8 +2957,9 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        axis : array
-           The systematic error for each data point.
+        syserrors : array
+           The systematic error for each data point. The size of this
+           array depends on the `filter` argument.
 
         Raises
         ------
@@ -2900,6 +2976,28 @@ class Session(NoNewAttributesAfterInit):
         list_data_ids : List the identifiers for the loaded data sets.
         set_syserror : Set the systematic errors on the dependent axis of a data set.
 
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
+        Examples
+        --------
+
+        Return the systematic error for the default data set:
+
+        >>> yerr = get_syserror()
+
+        Return an array that has been filtered to match the data:
+
+        >>> yerr = get_syserror(filter=True)
+
+        Return the filtered errors for data set "core":
+
+        >>> yerr = get_syserror("core", filter=True)
+
         """
         d = self.get_data(id)
         id = self._fix_id(id)
@@ -2911,6 +3009,12 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def get_error(self, id=None, filter=False):
         """Return the errors on the dependent axis of a data set.
+
+        The function returns the total errors (a quadrature addition
+        of the statistical and systematic errors) on the values
+        (dependent acis) of a data set. The individual components
+        can be retrieved with the `get_staterror` and `get_syserror`
+        functions.
 
         Parameters
         ----------
@@ -2924,9 +3028,10 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        axis : array
+        errors : array
            The error for each data point, formed by adding the
            statistical and systematic errors in quadrature.
+           The size of this array depends on the `filter` argument.
 
         Raises
         ------
@@ -2941,6 +3046,31 @@ class Session(NoNewAttributesAfterInit):
         get_syserror : Return the systematic errors on the dependent axis of a data set.
         list_data_ids : List the identifiers for the loaded data sets.
 
+        Notes
+        -----
+        The default behavior is to not apply any filter defined on the
+        independent axes to the results, so that the return value is for
+        all points (or bins) in the data set. Set the `filter` argument
+        to `True` to apply this filter.
+
+        Examples
+        --------
+
+        Return the error values for the default data set, ignoring any
+        filter applied to it:
+
+        >>> err = get_error()
+
+        Ensure that the return values are for the selected (filtered)
+        points in the default data set (the return array may be smaller
+        than in the previous example):
+
+        >>> err = get_error(filter=True)
+
+        Find the errors for the "core" data set:
+
+        >>> err = get_error('core', filter=True)
+
         """
         return self.get_data(id).get_error(filter,
                                            self.get_stat().calc_staterror)
@@ -2949,6 +3079,9 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: shouldn't this expose a filter parameter?
     def get_indep(self, id=None):
         """Return the independent axes of a data set.
+
+        This function returns the coordinates of each point, or pixel,
+        in the data set.
 
         Parameters
         ----------
@@ -2978,13 +3111,16 @@ class Session(NoNewAttributesAfterInit):
 
         For a one-dimensional data set, the X values are returned:
 
-        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
         >>> get_indep()
         (array([10, 15, 19]),)
 
         For a 2D data set the X0 and X1 values are returned:
 
-        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
+        >>> x0 = [10, 15, 12, 19]
+        >>> x1 = [12, 14, 10, 17]
+        >>> y = [4, 5, 9, -2]
+        >>> load_arrays(2, x0, x1, y, Data2D)
         >>> get_indep(2)
         (array([10, 15, 12, 19]), array([12, 14, 10, 17]))
 
@@ -2994,6 +3130,9 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def get_dep(self, id=None, filter=False):
         """Return the dependent axis of a data set.
+
+        This function returns the data values (the dependent axis)
+        for each point or pixel in the data set.
 
         Parameters
         ----------
@@ -3025,16 +3164,26 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> load_arrays(1, [10,15,19], [4,5,9])
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
+        >>> get_dep()
+        array([4, 5, 9])
+
+        >>> x0 = [10, 15, 12, 19]
+        >>> x1 = [12, 14, 10, 17]
+        >>> y = [4, 5, 9, -2]
+        >>> load_arrays(2, x0, x1, y, Data2D)
+        >>> get_dep(2)
+        array([ 4,  5,  9, -2])
+
+        If the ``filter`` flag is set then the return will be limited to
+        the data that is used in the fit:
+
+        >>> load_arrays(1, [10, 15, 19], [4, 5, 9])
         >>> ignore_id(1, 17, None)
         >>> get_dep()
         array([4, 5, 9])
         >>> get_dep(filter=True)
         array([4, 5])
-
-        >>> load_arrays(2, [10,15,12,19], [12,14,10,17], [4,5,9,-2], Data2D)
-        >>> get_dep(2)
-        array([ 4,  5,  9, -2])
 
         """
         return self.get_data(id).get_y(filter)
@@ -3061,6 +3210,19 @@ class Session(NoNewAttributesAfterInit):
         sherpa.astro.ui.ignore2d : Exclude a spatial region from an image.
         notice : Include data in the fit.
         sherpa.astro.ui.notice2d : Include a spatial region of an image.
+
+        Examples
+        --------
+
+        Display the dimensions for the default data set:
+
+        >>> print(get_dims())
+
+        Find the number of bins in dataset 'a2543' without and with
+        any filters applied to it:
+
+        >>> nall = get_dims('a2543')
+        >>> nfilt = get_dims('a2543', filter=True)
 
         """
         return self.get_data(id).get_dims(filter)
@@ -3107,7 +3269,7 @@ class Session(NoNewAttributesAfterInit):
         The default filter is the full dataset, given in the
         format ``lowval:hival`` (both are inclusive limits):
 
-        >>> load_arrays(1, [10,15,20,25], [5,7,4,2])
+        >>> load_arrays(1, [10, 15, 20, 25], [5, 7, 4, 2])
         >>> get_filter()
         '10.0000:25.0000'
 
@@ -3115,32 +3277,37 @@ class Session(NoNewAttributesAfterInit):
         14 and 30. The resulting filter is the combination of this
         range and the data:
 
-        >>> notice(14,30)
+        >>> notice(14, 30)
         >>> get_filter()
         '15.0000:25.0000'
 
         Ignoring the point at ``x=20`` means that only the points at
         ``x=15`` and ``x=25`` remain, so a comma-separated list is used:
 
-        >>> ignore(19,22)
+        >>> ignore(19, 22)
         >>> get_filter()
         '15.0000,25.0000'
 
         The filter equivalent to the per-bin array of filter values:
 
-        >>> set_filter([1,1,0,1])
+        >>> set_filter([1, 1, 0, 1])
         >>> get_filter()
         '10.0000,15.0000,25.0000'
+
+        Return the filter for data set 3:
+
+        >>> get_filter(3)
 
         """
         return self.get_data(id).get_filter()
 
     def copy_data(self, fromid, toid):
-        """Copy a data set to a new identifier.
+        """Copy a data set, creating a new identifier.
 
-        This is a "deep" copy, so that once it has been
-        made, changes to one of the data sets will not
-        be made to the other data set.
+        After copying the data set, any changes made to the
+        original data set (that is, the `fromid` identifier)
+        will not be reflected in the new (the `toid`
+        identifier) data set.
 
         Parameters
         ----------
@@ -3159,7 +3326,11 @@ class Session(NoNewAttributesAfterInit):
 
         >>> copy_data(1, 2)
 
+        Rename the data set with identifier 2 to "orig", and
+        then delete the old data set:
+
         >>> copy_data(2, "orig")
+        >>> delete_data(2)
 
         """
         data = self.get_data(fromid)
@@ -3326,7 +3497,7 @@ class Session(NoNewAttributesAfterInit):
         Create a 200 pixel by 150 pixel grid (number of columns by
         number of rows) and display it (each pixel has a value of 0):
 
-        >>> dataspace2d([200,150])
+        >>> dataspace2d([200, 150])
         >>> image_data()
 
         Create a data space called "fakeimg":
@@ -3401,7 +3572,7 @@ class Session(NoNewAttributesAfterInit):
         For a 2D data set, display the simulated data, model, and
         residuals:
 
-        >>> dataspace2d([150,80], id='fakeimg')
+        >>> dataspace2d([150, 80], id='fakeimg')
         >>> set_source('fakeimg', beta2d.src + polynom2d.bg)
         >>> src.xpos, src.ypos = 75, 40
         >>> src.r0, src.alpha = 15, 2.3
@@ -3459,8 +3630,8 @@ class Session(NoNewAttributesAfterInit):
         the x and y arrays. Use the returned object to create
         a data set labelled "oned":
 
-        >>> x = [1,3,7,12]
-        >>> y = [2.3,3.2,-5.4,12.1]
+        >>> x = [1, 3, 7, 12]
+        >>> y = [2.3, 3.2, -5.4, 12.1]
         >>> dat = unpack_arrays(x, y)
         >>> set_data("oned", dat)
 
@@ -3581,7 +3752,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> cols = ['XLO', 'XHI', 'Y']
         >>> idat = unpack_data('hist.dat', colkeys=cols,
-                               dstype=ui.Data1DInt)
+        ...                    dstype=ui.Data1DInt)
 
         """
         return self._read_data(sherpa.io.read_data, filename, ncols, colkeys,
@@ -3730,7 +3901,7 @@ class Session(NoNewAttributesAfterInit):
         Data set 1 is a histogram, where the bins cover the range
         1-3, 3-5, and 5-7 with values 4, 5, and 9 respectively.
 
-        >>> load_arrays(1, [1,3,5], [3,5,7], [4,5,9], Data1DInt)
+        >>> load_arrays(1, [1, 3, 5], [3, 5, 7], [4, 5, 9], Data1DInt)
 
         """
         self.set_data(id, self.unpack_arrays(*args))
@@ -3828,7 +3999,7 @@ class Session(NoNewAttributesAfterInit):
         Use the column names "r" and "surbri" for the columns:
 
         >>> save_arrays('prof.txt', [x, y], fields=["r", "surbri"],
-                        clobber=True)
+        ...             clobber=True)
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
@@ -4202,7 +4373,7 @@ class Session(NoNewAttributesAfterInit):
         exists:
 
         >>> save_data('rprof', 'prof.out', clobber=True,
-                      fields=['x', 'y', 'staterror'])
+        ...           fields=['x', 'y', 'staterror'])
 
         """
         clobber = sherpa.utils.bool_cast(clobber)
@@ -4586,7 +4757,7 @@ class Session(NoNewAttributesAfterInit):
         data set, the filter choses only those points that lie
         within the range 12 <= X <= 18.
 
-        >>> load_arrays(1, [10,15,20,30], [5,10,7,13])
+        >>> load_arrays(1, [10, 15, 20, 30], [5, 10, 7, 13])
         >>> notice(12, 28)
         >>> get_dep(filter=True)
         array([10,  7])
@@ -4667,7 +4838,7 @@ class Session(NoNewAttributesAfterInit):
         between 12 and 18. For this one-dimensional data set, this
         means that the second bin is ignored:
 
-        >>> load_arrays(1, [10,15,20,30], [5,10,7,13])
+        >>> load_arrays(1, [10, 15, 20, 30], [5, 10, 7, 13])
         >>> ignore(12, 18)
         >>> get_dep(filter=True)
         array([ 5,  7, 13])
@@ -5227,16 +5398,17 @@ class Session(NoNewAttributesAfterInit):
 
         When a model component is created, a variable is created that
         contains the model instance. The instance can also be returned
-        with `get_model_component`, as shown here:
+        with `get_model_component`, which can then be queried or used
+        to change the model settings:
 
         >>> create_model_component('gauss1d', 'gline')
         >>> gmodel = get_model_component('gline')
         >>> gmodel.name
         'gauss1d.gline'
-        >>> gmodel.pars
-        (<Parameter 'fwhm' of model 'gline'>,
-         <Parameter 'pos' of model 'gline'>,
-         <Parameter 'ampl' of model 'gline'>)
+        >>> print([p.name for p in gmodel.pars])
+        ['fwhm', 'pos', 'ampl']
+        >>> gmodel.fwhm.val = 12.2
+        >>> gmodel.fwhm.freeze()
 
         """
         # If user mistakenly passes an actual model reference,
@@ -5252,9 +5424,9 @@ class Session(NoNewAttributesAfterInit):
 
         Model components created by this function are set to their
         default values. Components can also be created directly using
-        the syntax ``typename.name``, such as in calls to `set_model`,
-        when using the default model auto assignment setting (see
-        `set_model_autoassign_func`).
+        the syntax ``typename.name``, such as in calls to `set_model`
+        and `set_source` (unless you have called `set_model_autoassign_func`
+        to change the default model auto-assignment setting).
 
         Parameters
         ----------
@@ -5301,6 +5473,14 @@ class Session(NoNewAttributesAfterInit):
         >>> create_model_component("powlaw1d", "pl")
         >>> pl.gamma = 2.6
         >>> freeze(pl.gamma)
+
+        Create a blackbody model called bb, check that it is
+        reconized as a component, and display its parameters:
+
+        >>> create_model_component("bbody", "bb")
+        >>> list_model_components()
+        >>> print(bb)
+        >>> print(bb.ampl)
 
         """
 
@@ -5549,9 +5729,11 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Return the source expression for the default data set:
+        Return the source expression for the default data set,
+        display it, and then find the number of parameters in it:
 
         >>> src = get_source()
+        >>> print(src)
         >>> len(src.pars)
         5
 
@@ -5990,6 +6172,9 @@ class Session(NoNewAttributesAfterInit):
     def get_num_par(self, id=None):
         """Return the number of parameters in a model expression.
 
+        The `get_num_par` function returns the number of parameters,
+        both frozen and thawed, in the model assigned to a data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -6000,6 +6185,9 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         npar : int
+           The number of parameters in the model expression. This
+           sums up all the parameters of the components in the
+           expression, and includes both frozen and thawed components.
 
         Raises
         ------
@@ -6012,6 +6200,18 @@ class Session(NoNewAttributesAfterInit):
         get_num_par_frozen : Return the number of frozen parameters.
         get_num_par_thawed : Return the number of thawed parameters.
         set_model : Set the source model expression for a data set.
+
+        Examples
+        --------
+
+        Return the total number of parameters for the default data set:
+
+        >>> print(get_num_par())
+
+        Find the number of parameters for the model associated with
+        the data set called "jet":
+
+        >>> njet = get_num_par('jet')
 
         """
         return len(self._get_source(id).pars)
@@ -6019,6 +6219,9 @@ class Session(NoNewAttributesAfterInit):
     def get_num_par_thawed(self, id=None):
         """Return the number of thawed parameters in a model expression.
 
+        The `get_num_par_thawed` function returns the number of
+        thawed parameters in the model assigned to a data set.
+
         Parameters
         ----------
         id : int or str, optional
@@ -6029,6 +6232,9 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         npar : int
+           The number of parameters in the model expression. This
+           sums up all the thawed parameters of the components in the
+           expression.
 
         Raises
         ------
@@ -6042,11 +6248,26 @@ class Session(NoNewAttributesAfterInit):
         get_num_par_frozen : Return the number of frozen parameters.
         set_model : Set the source model expression for a data set.
 
+        Examples
+        --------
+
+        Return the number of thawed parameters for the default data set:
+
+        >>> print(get_num_par_thawed())
+
+        Find the number of thawed parameters for the model associated
+        with the data set called "jet":
+
+        >>> njet = get_num_par_thawed('jet')
+
         """
         return len(self._get_source(id).thawedpars)
 
     def get_num_par_frozen(self, id=None):
         """Return the number of frozen parameters in a model expression.
+
+        The `get_num_par_frozen` function returns the number of
+        frozen parameters in the model assigned to a data set.
 
         Parameters
         ----------
@@ -6058,6 +6279,9 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         npar : int
+           The number of parameters in the model expression. This
+           sums up all the frozen parameters of the components in the
+           expression.
 
         Raises
         ------
@@ -6070,6 +6294,18 @@ class Session(NoNewAttributesAfterInit):
         get_num_par : Return the number of parameters.
         get_num_par_thawed : Return the number of thawed parameters.
         set_model : Set the source model expression for a data set.
+
+        Examples
+        --------
+
+        Return the number of frozen parameters for the default data set:
+
+        >>> print(get_num_par_frozen())
+
+        Find the number of frozen parameters for the model associated
+        with the data set called "jet":
+
+        >>> njet = get_num_par_frozen('jet')
 
         """
         model = self._get_source(id)
@@ -6195,7 +6431,7 @@ class Session(NoNewAttributesAfterInit):
         Monte-Carlo based optimiser is used.
 
         >>> load_template_model('tbl', 'table.lis',
-                                sherpa.utils.neville)
+        ...                     sherpa.utils.neville)
         >>> set_source(tbl + const1d.bgnd)
         >>> set_method('moncar')
 
@@ -6478,12 +6714,12 @@ class Session(NoNewAttributesAfterInit):
         use it in a source expression::
 
             >>> def func1d(pars, x, xhi=None):
-                    if xhi is not None:
-                        x = (x + xhi)/2
-                    return x * pars[1] + pars[0]
-
+            ...     if xhi is not None:
+            ...         x = (x + xhi) / 2
+            ...     return x * pars[1] + pars[0]
+            ...
             >>> load_user_model(func1d, "myfunc")
-            >>> add_user_pars(myfunc, ["c","m"], [0,1])
+            >>> add_user_pars(myfunc, ["c", "m"], [0, 1])
             >>> set_source(myfunc + gauss1d.gline)
 
         """
@@ -6531,6 +6767,14 @@ class Session(NoNewAttributesAfterInit):
         load_user_model : Create a user-defined model.
         set_par : Set the value, limits, or behavior of a model parameter.
 
+        Notes
+        -----
+
+        The parameters must be specified in the order that the function
+        expects. That is, if the function has two parameters,
+        pars[0]='slope' and pars[1]='y_intercept', then the call to
+        add_user_pars must use the order ["slope", "y_intercept"].
+
         Examples
         --------
 
@@ -6549,7 +6793,7 @@ class Session(NoNewAttributesAfterInit):
         >>> pmins = [0.01, 0, 0]
         >>> pfreeze = [False, False, True]
         >>> add_user_pars("prof", pnames, pvals,
-                          parmins=pmins, parfrozen=pfreeze)
+        ...               parmins=pmins, parfrozen=pfreeze)
 
         """
         pars = []
@@ -6618,7 +6862,7 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         statname : str
-           The name to use for the new statisitic when calling
+           The name to use for the new statistic when calling
            `set_stat`.
         calc_stat_func : func
            The function that calculates the statistic.
@@ -6657,11 +6901,11 @@ class Session(NoNewAttributesAfterInit):
         Define a chi-square statistic with the label "qstat":
 
             >>> def qstat(d, m, staterr=None, syserr=None, w=None):
-                    if staterr is None:
-                        staterr = 1
-                    c = ((d-m) / staterr)
-                    return ((c*c).sum(), c)
-
+            ...     if staterr is None:
+            ...         staterr = 1
+            ...     c = ((d-m) / staterr)
+            ...     return ((c*c).sum(), c)
+            ...
             >>> load_user_stat("qstat", qstat)
             >>> set_stat("qstat")
 
@@ -7013,8 +7257,8 @@ class Session(NoNewAttributesAfterInit):
         Change the size and center of the PSF for the default data set:
 
         >>> psf = get_psf()
-        >>> psf.size = (21,21)
-        >>> psf.center = (10,10)
+        >>> psf.size = (21, 21)
+        >>> psf.center = (10, 10)
 
         """
         return self._get_item(id, self._psf, 'psf model', 'has not been set')
@@ -7202,6 +7446,12 @@ class Session(NoNewAttributesAfterInit):
         thaw : Allow model parameters to be varied during a fit.
         unlink : Unlink a parameter value.
 
+        Notes
+        -----
+
+        The `thaw` function can be used to reverse this setting,
+        so that parameters can be varied in a fit.
+
         Examples
         --------
 
@@ -7244,6 +7494,13 @@ class Session(NoNewAttributesAfterInit):
         link : Link a parameter value to an associated value.
         set_par : Set the value, limits, or behavior of a model parameter.
         unlink : Unlink a parameter value.
+
+        Notes
+        -----
+
+        The `freeze` function can be used to reverse this setting,
+        so that parameters are "frozen" and so remain constant during
+        a fit.
 
         Examples
         --------
@@ -7506,8 +7763,9 @@ class Session(NoNewAttributesAfterInit):
         Displays the statistic value for each data set, and the
         combined fit, using the current set of models, parameters, and
         ranges. The output is printed to stdout, and so is intended
-        for use in interactive analysis. The `get_stat_info` function
-        returns the values as a list of objects.
+        for use in interactive analysis. The `get_stat_info`
+        function returns the same information but as an array of
+        Python structures.
 
         See Also
         --------
@@ -7521,6 +7779,40 @@ class Session(NoNewAttributesAfterInit):
         choice of statistic - have been changed since the last fit,
         then the results for that data set may not be meaningful and
         will therefore bias the results for the simultaneous results.
+
+        The information returned by `calc_stat_info` includes:
+
+        Dataset
+           The dataset identifier (or identifiers).
+
+        Statistic
+           The name of the statistic used to calculate the results.
+
+        Fit statistic value
+           The current fit statistic value.
+
+        Data points
+           The number of bins used in the fit.
+
+        Degrees of freedom
+            The number of bins minus the number of thawed parameters.
+
+        Some fields are only returned for a subset of statistics:
+
+        Probability (Q-value)
+            A measure of the probability that one would observe the
+            reduced statistic value, or a larger value, if the assumed
+            model is true and the best-fit model parameters are the true
+            parameter values.
+
+        Reduced statistic
+            The fit statistic value divided by the number of degrees of
+            freedom.
+
+        Examples
+        --------
+
+        >>> calc_stat_info()
 
         """
         output = self._get_stat_info()
@@ -7560,6 +7852,10 @@ class Session(NoNewAttributesAfterInit):
         choice of statistic - have been changed since the last fit,
         then the results for that data set may not be meaningful and
         will therefore bias the results for the simultaneous results.
+
+        The return value of `get_stat_info` differs to `get_fit_results`
+        since it includes values for each data set, individually, rather
+        than just the combined results.
 
         The fields of the object include:
 
@@ -7613,6 +7909,10 @@ class Session(NoNewAttributesAfterInit):
 
     def get_fit_results(self):
         """Return the results of the last fit.
+
+        This function returns the results from the most-recent fit.
+        The returned value includes information on the parameter values
+        and fit statistic.
 
         Returns
         -------
@@ -7692,6 +7992,12 @@ class Session(NoNewAttributesAfterInit):
 
         Examples
         --------
+
+        Display the fit results:
+
+        >>> print(get_fit_results())
+
+        Inspect the fit results:
 
         >>> res = get_fit_results()
         >>> res.statval
@@ -7783,6 +8089,14 @@ class Session(NoNewAttributesAfterInit):
         >>> guess("src", src)
         >>> guess("bgnd", bgnd)
 
+        Set the source model for the default dataset. Guess is run to
+        determine the values of the model component "p1" and the limits
+        of the model component "g1":
+
+        >>> set_source(powlaw1d.p1 + gauss1d.g1)
+        >>> guess(p1, limits=False)
+        >>> guess(g1, values=False)
+
         """
         if model is None:
             id, model = model, id
@@ -7841,7 +8155,14 @@ class Session(NoNewAttributesAfterInit):
 
         >>> stat = calc_stat()
 
-        Use the data sets labelled "core" and "jet":
+        Find the statistic for data set 3:
+
+        >>> stat = calc_stat(3)
+
+        When fitting to multiple data sets, you can get the contribution
+        to the total fit statistic from only one data set, or from
+        several by listing the datasets explicitly. The following finds
+        the contribution from the data sets labelled "core" and "jet":
 
         >>> stat = calc_stat("core", "jet")
 
@@ -7859,16 +8180,16 @@ class Session(NoNewAttributesAfterInit):
     def calc_chisqr(self, id=None, *otherids):
         """Calculate the per-bin chi-squared statistic.
 
-        Evaluate the model for one or more data sets, compare it to
-        the data using the current statistic, and return the value for
-        each bin.  No fitting is done, as the current model parameter,
-        and any filters, are used.
+        Evaluate the model for one or more data sets, compare it to the
+        data using the current statistic, and return an array of
+        chi-squared values for each bin. No fitting is done, as the
+        current model parameter, and any filters, are used.
 
         Parameters
         ----------
         id : int or str, optional
-           The data set to use. If not given then the default
-           identifier is used, as returned by `get_default_id`.
+           The data set to use. If not given then all data sets
+           are used.
         *otherids : int or str, optional
            Include multiple data sets in the calculation.
 
@@ -7886,6 +8207,31 @@ class Session(NoNewAttributesAfterInit):
         calc_stat_info : Display the statistic values for the current models.
         set_stat : Set the statistical method.
 
+        Notes
+        -----
+
+        The output array length equals the sum of the arrays lengths
+        of the requested data sets.
+
+        Examples
+        --------
+
+        When called with no arguments, the return value is the chi-squared
+        statistic for each bin in the data sets which have a defined model.
+
+        >>> calc_chisqr()
+
+        Supplying a specific data set ID to calc_chisqr - such as "1" or
+        "src" - will return the chi-squared statistic array for only that
+        data set.
+
+        >>> calc_chisqr(1)
+        >>> calc_chisqr("src")
+
+        Restrict the calculation to just datasets 1 and 3:
+
+        >>> calc_chisqr(1, 3)
+
         """
         ids, f = self._get_fit(id, otherids)
         return f.calc_chisqr()
@@ -7895,7 +8241,7 @@ class Session(NoNewAttributesAfterInit):
         """Fit a model to one or more data sets.
 
         Use forward fitting to find the best-fit model to one or more
-        data sets, given the chosen statisitic and optimization
+        data sets, given the chosen statistic and optimization
         method. The fit proceeds until the results converge or the
         number of iterations exceeds the maximum value (these values
         can be changed with `set_method_opt`). An iterative scheme can
@@ -7925,7 +8271,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         contour_fit : Contour the fit to a data set.
         covar : Estimate the confidence intervals using the confidence method.
         freeze : Fix model parameters so they are not changed by a fit.
@@ -7995,23 +8341,68 @@ class Session(NoNewAttributesAfterInit):
     def get_pvalue_results(self):
         """Return the data calculated by the last plot_pvalue call.
 
+        The `get_pvalue_results` function returns the likelihood ratio test
+        results computed by the `plot_pvalue` command, which compares fits
+        of the null model to fits of the alternative model using faked data
+        with Poisson noise. The likelihood ratio based on the observed data is
+        returned, along with the p-value, used to reject or accept the null
+        model.
+
         Returns
         -------
-        plot : a `sherpa.sim.simulate.LikelihoodRatioResults` instance
-           None is returned if neither `plot_pvalue` or
-           `get_pvalue_pvalue` have been run.
+        plot : None or a `sherpa.sim.simulate.LikelihoodRatioResults` instance
+           If `plot_pvalue` or `get_pvalue_plot` have been called then
+           the return value is a `sherpa.sim.simulate.LikelihoodRatioResults`
+           instance, otherwise `None` is returned.
 
         See Also
         --------
         plot_value : Compute and plot a histogram of likelihood ratios by simulating data.
         get_pvalue_plot : Return the data used by plot_pvalue.
 
+        Notes
+        -----
+        The fields of the returned (`LikelihoodRatioResults`) object are:
+
+        ratios
+           The calculated likelihood ratio for each iteration.
+
+        stats
+           The calculated fit statistics for each iteration, stored
+           as the null model and then the alt model in a nsim by 2
+           array.
+
+        samples
+           The parameter samples array for each simulation, stored in
+           a nsim by npar array.
+
+        lr
+           The likelihood ratio of the observed data for the null and
+           alternate models.
+
+        ppp
+           The p value of the observed data for the null and alternate
+           models.
+
+        null
+           The fit statistic of the null model on the observed data.
+
+        alt
+           The fit statistic of the alternate model on the observed data.
+
         Examples
         --------
 
+        Return the results of the last pvalue analysis and display the
+        results - first using the `format` method, which provides a
+        summary of the data, and then a look at the individual fields
+        in the returned object. The last call displays the contents
+        of one of the fields (`ppp`).
+
         >>> res = get_pvalue_results()
-        >>> res.ppp
-        0.472
+        >>> print(res.format())
+        >>> print(res)
+        >>> print(res.ppp)
 
         """
         return self._pvalue_results
@@ -8060,20 +8451,20 @@ class Session(NoNewAttributesAfterInit):
            When using ChIPS for plotting, should the existing frame
            be cleared before creating the plot?
 
-        See Also
-        --------
-        get_pvalue_plot : Return the data used by plot_pvalue.
-        get_pvalue_results : Return the data calculated by the last plot_pvalue call.
-
         Raises
         ------
         TypeError
            An invalid statistic.
 
+        See Also
+        --------
+        get_pvalue_plot : Return the data used by plot_pvalue.
+        get_pvalue_results : Return the data calculated by the last plot_pvalue call.
+
         Notes
         -----
-        Each simulation involves creating a data set using the
-        observed data simulated with Poisson noise.
+        Each simulation involves creating a data set using the observed
+        data simulated with Poisson noise.
 
         For the likelihood ratio test to be valid, the following
         conditions must hold:
@@ -8092,15 +8483,15 @@ class Session(NoNewAttributesAfterInit):
 
         >>> create_model_component('powlaw1d', 'pl')
         >>> create_model_component('gauss1d', 'gline')
-        >>> plot_pvalue(pl, pl+gline)
+        >>> plot_pvalue(pl, pl + gline)
 
         Use 1000 simulations and use the data from data sets
-        1, 2, and 3:
+        'core', 'jet1', and 'jet2':
 
         >>> mdl1 = pl
         >>> mdl2 = pl + gline
-        >>> plot_pvalue(mdl1, mdl2, id=1, otherids=(2,3),
-                        num=1000)
+        >>> plot_pvalue(mdl1, mdl2, id='core', otherids=('jet1', 'jet2'),
+        ...             num=1000)
 
         Apply a convolution to the models before fitting:
 
@@ -8131,6 +8522,13 @@ class Session(NoNewAttributesAfterInit):
                         id=1, otherids=(), num=500, bins=25, numcores=None,
                         recalc=False):
         """Return the data used by plot_pvalue.
+
+        Access the data arrays and preferences defining the histogram plot
+        produced by the `plot_pvalue` function, a histogram of the likelihood
+        ratios comparing fits of the null model to fits of the alternative
+        model using faked data with Poisson noise. Data returned includes the
+        likelihood ratio computed using the observed data, and the p-value,
+        used to reject or accept the null model.
 
         Parameters
         ----------
@@ -8176,9 +8574,11 @@ class Session(NoNewAttributesAfterInit):
         >>> pvals.ppp
         0.472
 
-        Run 500 simulations for the two models:
+        Run 500 simulations for the two models and print the
+        results:
 
         >>> pvals = get_pvalue_plot(mdl1, mdl2, recalc=True, num=500)
+        >>> print(pvals)
 
         """
         lrplot = self._lrplot
@@ -8408,7 +8808,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        covar : Estimate confidence intervals using the covariance method.
+        covar : Estimate parameter confidence intervals using the covariance method.
         get_covar_opt : Return one or all of the options for the covariance method.
         set_covar_opt : Set an option of the covar estimation object.
 
@@ -8465,7 +8865,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         get_conf_opt : Return one or all of the options for the confidence interval method.
         set_conf_opt : Set an option of the conf estimation object.
 
@@ -8572,7 +8972,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals for fit parameters.
+        conf : Estimate parameter confidence intervals using the confidence method.
         get_proj_opt : Return one or all of the options for the confidence interval method.
         proj : Estimate confidence intervals for fit parameters.
         set_proj_opt : Set an option of the proj estimation object.
@@ -8701,7 +9101,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        covar : Estimate confidence intervals using the covariance method.
+        covar : Estimate parameter confidence intervals using the covariance method.
         get_covar : Return the covariance estimation object.
         set_covar_opt : Set an option of the covar estimation object.
 
@@ -8742,7 +9142,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         get_conf : Return the confidence-interval estimation object.
         set_conf_opt : Set an option of the conf estimation object.
 
@@ -8785,7 +9185,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals for fit parameters.
+        conf : Estimate parameter confidence intervals using the confidence method.
         proj : Estimate confidence intervals for fit parameters.
         get_proj : Return the confidence-interval estimation object.
         set_proj_opt : Set an option of the proj estimation object.
@@ -8825,7 +9225,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        covar : Estimate confidence intervals using the covariance method.
+        covar : Estimate parameter confidence intervals using the covariance method.
         get_covar : Return the covar estimation object.
         get_covar_opt : Return one or all options of the covar estimation object.
 
@@ -8859,7 +9259,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         get_conf : Return the conf estimation object.
         get_conf_opt : Return one or all options of the conf estimation object.
 
@@ -8895,8 +9295,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals using the confidence method.
-        proj : Estimate confidence intervals using the projection method.
+        conf : Estimate parameter confidence intervals using the confidence method.
+        proj : Estimate parameter confidence intervals using the projection method.
         get_proj : Return the proj estimation object.
         get_proj_opt : Return one or all options of the proj estimation object.
 
@@ -9090,7 +9490,7 @@ class Session(NoNewAttributesAfterInit):
         (best-fit value, lower-limit, upper-limit):
 
         >>> pvals1 = zip(res.parvals, res.parmins, res.parmaxes)
-        >>> pvals2 = [(v, v+l, v+h) for (v,l,h) in pvals1]
+        >>> pvals2 = [(v, v+l, v+h) for (v, l, h) in pvals1]
         >>> dres = dict(zip(res.parnames, pvals2))
         >>> dres['p1.gamma']
         (2.1585155113403327, 2.07572994399221, 2.241926145484433)
@@ -9117,7 +9517,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate confidence intervals for fit parameters.
+        conf : Estimate parameter confidence intervals using the confidence method.
         proj : Estimate confidence intervals for fit parameters.
         get_proj_opt : Return one or all of the options for the projection method.
         set_proj_opt : Set an option of the proj estimation object.
@@ -9220,8 +9620,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: include screen output of covar() ?
     def covar(self, *args):
-        """Estimate the confidence intervals for parameters using the
-        covariance method.
+        """Estimate parameter confidence intervals using the covariance method.
 
         The `covar` command computes confidence interval bounds for
         the specified model parameters in the dataset, using the
@@ -9252,8 +9651,8 @@ class Session(NoNewAttributesAfterInit):
         covar : Estimate the confidence intervals using the confidence method.
         get_covar : Return the covariance estimation object.
         get_covar_results : Return the results of the last `covar` run.
-        int_proj : Plot the statisitic value as a single parameter is varied.
-        int_unc : Plot the statisitic value as a single parameter is varied.
+        int_proj : Plot the statistic value as a single parameter is varied.
+        int_unc : Plot the statistic value as a single parameter is varied.
         reg_proj : Plot the statistic value as two parameters are varied.
         reg_unc : Plot the statistic value as two parameters are varied.
         set_covar_opt : Set an option of the `covar` estimation object.
@@ -9319,7 +9718,7 @@ class Session(NoNewAttributesAfterInit):
         >>> covar()
         >>> res = get_covar_results()
 
-        Only evaluate the parametes associated with data set 2.
+        Only evaluate the parameters associated with data set 2.
 
         >>> covar(2)
 
@@ -9331,22 +9730,21 @@ class Session(NoNewAttributesAfterInit):
         Change the limits to be 1.6 sigma (90%) rather than the default
         1 sigma.
 
-        >>> get_covar().sigma = 1.6
+        >>> set_covar_ope('sigma', 1.6)
         >>> covar()
 
         Only evaluate the ``clus.kt`` parameter for the data sets with
         identifiers "obs1", "obs5", and "obs6". This will still use
         the 1.6 sigma setting from the previous run.
 
-        >>> covar("obs1", ["obs5","obs6"], clus.kt)
+        >>> covar("obs1", ["obs5", "obs6"], clus.kt)
 
         """
         self._covariance_results = self._est_errors(args, 'covariance')
 
     # DOC-TODO: include screen output of conf() ?
     def conf(self, *args):
-        """Estimate the confidence intervals for parameters using the
-        confidence method.
+        """Estimate parameter confidence intervals using the confidence method.
 
         The `conf` command computes confidence interval bounds for the
         specified model parameters in the dataset.  A given
@@ -9379,8 +9777,8 @@ class Session(NoNewAttributesAfterInit):
         covar : Estimate the confidence intervals using the covariance method.
         get_conf : Return the confidence-interval estimation object.
         get_conf_results : Return the results of the last `conf` run.
-        int_proj : Plot the statisitic value as a single parameter is varied.
-        int_unc : Plot the statisitic value as a single parameter is varied.
+        int_proj : Plot the statistic value as a single parameter is varied.
+        int_unc : Plot the statistic value as a single parameter is varied.
         reg_proj : Plot the statistic value as two parameters are varied.
         reg_unc : Plot the statistic value as two parameters are varied.
         set_conf_opt : Set an option of the `conf` estimation object.
@@ -9393,7 +9791,7 @@ class Session(NoNewAttributesAfterInit):
         order is unimportant, since any argument that is not defined
         as a model parameter is assumed to be a data id.
 
-        The `conf` command is different to `covar`, in that in that
+        The `conf` function is different to `covar`, in that in that
         all other thawed parameters are allowed to float to new
         best-fit values, instead of being fixed to the initial
         best-fit values as they are in `covar`.  While `conf` is more
@@ -9401,6 +9799,10 @@ class Session(NoNewAttributesAfterInit):
         away from the best-fit point), it is in the strictest sense no
         more accurate than `covar` for determining confidence
         intervals.
+
+        The `conf` function is a replacement for the `proj` function,
+        which uses a different algorithm to estimate parameter
+        confidence limits.
 
         An estimated confidence interval is accurate if and only if:
 
@@ -9511,7 +9913,7 @@ class Session(NoNewAttributesAfterInit):
         >>> conf()
         >>> res = get_conf_results()
 
-        Only evaluate the parametes associated with data set 2.
+        Only evaluate the parameters associated with data set 2:
 
         >>> conf(2)
 
@@ -9523,22 +9925,27 @@ class Session(NoNewAttributesAfterInit):
         Change the limits to be 1.6 sigma (90%) rather than the default
         1 sigma.
 
-        >>> get_conf().sigma = 1.6
+        >>> set_conf_opt('sigma', 1.6)
         >>> conf()
 
         Only evaluate the ``clus.kt`` parameter for the data sets with
         identifiers "obs1", "obs5", and "obs6". This will still use
         the 1.6 sigma setting from the previous run.
 
-        >>> conf("obs1", ["obs5","obs6"], clus.kt)
+        >>> conf("obs1", ["obs5", "obs6"], clus.kt)
+
+        Only use two cores when evaluating the errors for the parameters
+        used in the model for data set 3:
+
+        >>> set_conf_opt('numcores', 2)
+        >>> conf(3)
 
         """
         self._confidence_results = self._est_errors(args, 'confidence')
 
     # DOC-TODO: add a deprecation note?
     def proj(self, *args):
-        """Estimate the confidence intervals for parameters using the
-        projection method.
+        """Estimate parameter confidence intervals using the projection method.
 
         .. note:: The `conf` function should be used instead of `proj`.
 
@@ -9570,11 +9977,11 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         get_proj : Return the confidence-interval estimation object.
         get_proj_results : Return the results of the last `proj` run.
-        int_proj : Plot the statisitic value as a single parameter is varied.
+        int_proj : Plot the statistic value as a single parameter is varied.
         reg_proj : Plot the statistic value as two parameters are varied.
         set_proj_opt : Set an option of the `proj` estimation object.
 
@@ -9817,6 +10224,9 @@ class Session(NoNewAttributesAfterInit):
     def get_sampler(self):
         """Return the current MCMC sampler options.
 
+        Returns the options for the current pyBLoCXS MCMC sampling
+        method (jumping rules).
+
         Returns
         -------
         options : dict
@@ -9831,6 +10241,11 @@ class Session(NoNewAttributesAfterInit):
         set_sampler : Set the MCMC sampler.
         set_sampler_opt : Set an option for the current MCMC sampler.
 
+        Examples
+        --------
+
+        >>> print(get_sampler())
+
         """
         return self._pyblocxs.get_sampler()
 
@@ -9838,12 +10253,13 @@ class Session(NoNewAttributesAfterInit):
     def set_prior(self, par, prior):
         """Set the prior function to use with a parameter.
 
-        The default prior used by ``get_draws`` for each parameter
+        The default prior used by `get_draws` for each parameter
         is flat, varying between the soft minimum and maximum
-        values of the parameter (as given by the ``min`` and
-        ``max`` attributes of the parameter object). The ``set_prior``
+        values of the parameter (as given by the `min` and
+        `max` attributes of the parameter object). The `set_prior`
         function is used to change the form of the prior for a
-        parameter.
+        parameter, and `get_prior` returns the current prior for
+        a parameter.
 
         Parameters
         ----------
@@ -9857,7 +10273,7 @@ class Session(NoNewAttributesAfterInit):
         See Also
         --------
         get_draws : Run the pyBLoCXS MCMC algorithm.
-        get_prior : Set the prior function to use with a parameter.
+        get_prior : Return the prior function for a parameter (MCMC).
         set_sampler : Set the MCMC sampler.
 
         Examples
@@ -9865,34 +10281,44 @@ class Session(NoNewAttributesAfterInit):
 
         Set the prior for the ``kT`` parameter of the ``therm`` component
         to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
-        keV::
+        keV:
 
-            >>> create_model_component('xsapec', 'therm')
-            >>> create_model_component('gauss1d', 'p_temp')
-            >>> p_temp.pos = 1.7
-            >>> p_temp.fwhm = 0.35
-            >>> set_prior(therm.kT, p_temp)
+        >>> create_model_component('xsapec', 'therm')
+        >>> create_model_component('gauss1d', 'p_temp')
+        >>> p_temp.pos = 1.7
+        >>> p_temp.fwhm = 0.35
+        >>> set_prior(therm.kT, p_temp)
 
-        Create a function (``lognorm``) and use it as the prior the the
+        Create a function (``lognorm``) and use it as the prior of the
         ``nH`` parameter of the ``abs1`` model component::
 
-            >>> create_model_component('xsphabs', 'abs1')
             >>> def lognorm(x):
-               # center on 10^20 cm^2 with a sigma of 0.5
-               sigma = 0.5
-               x0 = 20
-               # nH is in units of 10^-22 so convert
-               dx = np.log10(x) + 22 - x0
-               norm = sigma / np.sqrt(2 * np.pi)
-               return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
-
+            ...     nh = 20
+            ...     sigma = 0.5  # use a sigma of 0.5
+            ...     # nH is in units of 10^-22 so convert
+            ...     dx = np.log10(x) + 22 - nh
+            ...     norm = sigma / np.sqrt(2 * np.pi)
+            ...     return norm * np.exp(-0.5 * dx * dx / (sigma * sigma))
+            ...
+            >>> create_model_component('xsphabs', 'abs1')
             >>> set_prior(abs1.nH, lognorm)
 
         """
+
+        # NOTE: the second piece of code is indented in the example
+        #       above because otherwise sphinx seems to think that the
+        #       colon at the end of the "def lognorm" line ends the
+        #       code block.
+
         self._pyblocxs.set_prior(par, prior)
 
     def get_prior(self, par):
-        """Return the prior function for a parameter.
+        """Return the prior function for a parameter (MCMC).
+
+        The default behavior of the pyBLoCXS MCMC sampler (run by the
+        `get_draws` function) is to use a flat prior for each parameter.
+        The `get_prior` routine finds the current prior assigned to
+        a parameter, and `set_prior` is used to change it.
 
         Parameters
         ----------
@@ -9902,8 +10328,8 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         prior
-           The function or parameter instance set by
-           a previous call to `set_prior`.
+           The parameter prior set by a previous call to `set_prior`.
+           This may be a function or model instance.
 
         Raises
         ------
@@ -9917,7 +10343,8 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> pfunc = get_prior(bgnd.c0)
+        >>> prior = get_prior(bgnd.c0)
+        >>> print(prior)
 
         """
         return self._pyblocxs.get_prior(par)
@@ -9933,7 +10360,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_prior : Return the prior function for a parameter.
+        get_prior : Return the prior function for a parameter (MCMC).
         set_prior : Set the prior function to use with a parameter.
 
         Examples
@@ -10053,11 +10480,14 @@ class Session(NoNewAttributesAfterInit):
         are displayed. The first one as a cumulative distribution
         using `plot_cdf` and the second one as a probability
         distribution using `plot_pdf`. Finally the acceptance fraction
-        (number of draws where the chain moved) is displayed:
+        (number of draws where the chain moved) is displayed.
+        Note that in a full analysis session a burn-in period would
+        normally be removed from the chain before using the
+        results.
 
         >>> fit()
         >>> covar()
-        >>> (stats, accept, params) = get_draws(1, niter=1e4)
+        >>> stats, accept, params = get_draws(1, niter=1e4)
         >>> plot_trace(stats, name='stat')
         >>> names = [p.fullname for p in get_source().pars if not p.frozen]
         >>> plot_cdf(params[0,:], name=names[0], xlabel=names[0])
@@ -10065,8 +10495,10 @@ class Session(NoNewAttributesAfterInit):
         >>> accept[:-1].sum() * 1.0 / len(accept - 1)
         0.4287
 
-        In a full analysis a burn-in period would normally be removed
-        from the chain before using it.
+        The following runs the chain on multiple data sets, with
+        identifiers 'core', 'jet1', and 'jet2':
+
+        >>> stats, accept, params = get_draws('core', ['jet1', 'jet2'], niter=1e4)
 
         """
 
@@ -10244,7 +10676,7 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self, id=None):
-        """Return the data used by plot_model.
+        """Return the data used to create the model plot.
 
         Parameters
         ----------
@@ -10268,6 +10700,7 @@ class Session(NoNewAttributesAfterInit):
         --------
 
         >>> mplot = get_model_plot()
+        >>> print(mplot)
 
         """
         self._prepare_plotobj(id, self._modelplot)
@@ -10275,7 +10708,7 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils (does not copy this docstring)
     def get_source_plot(self, id=None):
-        """Return the data used by plot_source.
+        """Return the data used to create the source plot.
 
         Parameters
         ----------
@@ -10292,17 +10725,32 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_plot : Return the data used by plot_model.
+        get_model_plot : Return the data used to create the model plot.
         plot_model : Plot the model for a data set.
         plot_source : Plot the source expression for a data set.
 
         Examples
         --------
 
+        Retrieve the source plot information for the default data
+        set and then display it:
+
         >>> splot = get_source_plot()
+        >>> print(splot)
+
+        Return the plot data for data set 2, and then use it to create
+        a plot:
+
+        >>> s2 = get_source_plot(2)
+        >>> s2.plot()
+
+        Display the two source plots for the 'jet' and 'core' datasets
+        on the same plot:
 
         >>> splot1 = get_source_plot(id='jet')
         >>> splot2 = get_source_plot(id='core')
+        >>> splot1.plot()
+        >>> splot2.overplot()
 
         """
         self._prepare_plotobj(id, self._sourceplot)
@@ -10310,7 +10758,7 @@ class Session(NoNewAttributesAfterInit):
 
     # sherpa.astro.utils version copies this docstring
     def get_model_component_plot(self, id, model=None):
-        """Return the data used by plot_model_component.
+        """Return the data used to create the model-component plot.
 
         Parameters
         ----------
@@ -10329,7 +10777,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_plot : Return the data used by plot_model.
+        get_model_plot : Return the data used to create the model plot.
         plot_model : Plot the model for a data set.
         plot_model_component : Plot a component of the model for a data set.
 
@@ -10392,7 +10840,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_source_plot : Return the data used by plot_source.
+        get_source_plot : Return the data used to create the source plot.
         plot_source : Plot the source expression for a data set.
         plot_source_component : Plot a component of the source expression for a data set.
 
@@ -10539,7 +10987,7 @@ class Session(NoNewAttributesAfterInit):
         return self._modelplot.plot_prefs
 
     def get_fit_plot(self, id=None):
-        """Return the data used by plot_fit.
+        """Return the data used to create the fit plot.
 
         Parameters
         ----------
@@ -10566,7 +11014,30 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
+        Create the data needed to create the "fit plot" for the default
+        data set and display it:
+
         >>> fplot = get_fit_plot()
+        >>> print(fplot)
+
+        Return the plot data for data set 2, and then use it to create
+        a plot:
+
+        >>> f2 = get_fit_plot(2)
+        >>> f2.plot()
+
+        The fit plot consists of a combination of a data plot and a
+        model plot, which are captured in the `dataplot` and `modelplot`
+        attributes of the return value. These can be used to display
+        the plots individually, such as:
+
+        >>> f2.dataplot.plot()
+        >>> f2.modelplot.plot()
+
+        or, to combine the two:
+
+        >>> f2.dataplot.plot()
+        >>> f2.modelplot.overplot()
 
         """
         self._prepare_plotobj(id, self._fitplot)
@@ -10608,6 +11079,18 @@ class Session(NoNewAttributesAfterInit):
         -2.9102595936209896
         >>> np.max(rplot.y)
         4.0897404063790104
+
+        Display the contents of the residuals plot for data set 2:
+
+        >>> print(get_resid_plot(2))
+
+        Overplot the residuals plot from the 'core' data set on the 'jet'
+        data set:
+
+        >>> r1 = get_resid_plot('jet')
+        >>> r2 = get_resid_plot('core')
+        >>> r1.plot()
+        >>> r2.overplot()
 
         """
         self._prepare_plotobj(id, self._residplot)
@@ -10651,6 +11134,18 @@ class Session(NoNewAttributesAfterInit):
         >>> np.max(rplot.y)
         2.89477053577520982
 
+        Display the contents of the residuals plot for data set 2:
+
+        >>> print(get_delchi_plot(2))
+
+        Overplot the residuals plot from the 'core' data set on the 'jet'
+        data set:
+
+        >>> r1 = get_delchi_plot('jet')
+        >>> r2 = get_delchi_plot('core')
+        >>> r1.plot()
+        >>> r2.overplot()
+
         """
         self._prepare_plotobj(id, self._delchiplot)
         return self._delchiplot
@@ -10693,6 +11188,18 @@ class Session(NoNewAttributesAfterInit):
         >>> np.max(rplot.y)
         8.379696454792295
 
+        Display the contents of the residuals plot for data set 2:
+
+        >>> print(get_chisqr_plot(2))
+
+        Overplot the residuals plot from the 'core' data set on the 'jet'
+        data set:
+
+        >>> r1 = get_chisqr_plot('jet')
+        >>> r2 = get_chisqr_plot('core')
+        >>> r1.plot()
+        >>> r2.overplot()
+
         """
         self._prepare_plotobj(id, self._chisqrplot)
         return self._chisqrplot
@@ -10734,6 +11241,18 @@ class Session(NoNewAttributesAfterInit):
         0.6320905073750186
         >>> np.max(rplot.y)
         1.5170172177000447
+
+        Display the contents of the ratio plot for data set 2:
+
+        >>> print(get_ratio_plot(2))
+
+        Overplot the ratio plot from the 'core' data set on the 'jet'
+        data set:
+
+        >>> r1 = get_ratio_plot('jet')
+        >>> r2 = get_ratio_plot('core')
+        >>> r1.plot()
+        >>> r2.overplot()
 
         """
         self._prepare_plotobj(id, self._ratioplot)
@@ -11728,7 +12247,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_plot : Return the data used by plot_model.
+        get_model_plot : Return the data used to create the model plot.
         get_model_plot_prefs : Return the preferences for plot_model.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
@@ -11851,7 +12370,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_model_component_plot : Return the data used by plot_model_component.
+        get_model_component_plot : Return the data used to create the model-component plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_source_component : Plot a component of the source expression for a data set.
@@ -11922,7 +12441,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_source_plot : Return the data used by plot_source.
+        get_source_plot : Return the data used to create the source plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_model : Plot the model for a data set.
@@ -11978,7 +12497,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_fit_plot : Return the data used by plot_fit.
+        get_fit_plot : Return the data used to create the fit plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_fit_delchi : Plot the fit results, and the residuals, for a data set.
@@ -12362,7 +12881,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_fit_plot : Return the data used by plot_fit.
+        get_fit_plot : Return the data used to create the fit plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_fit : Plot the fit results for a data set.
@@ -12446,7 +12965,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_fit_plot : Return the data used by plot_fit.
+        get_fit_plot : Return the data used to create the fit plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_fit : Plot the fit results for a data set.
@@ -12926,6 +13445,8 @@ class Session(NoNewAttributesAfterInit):
 
         >>> contour('data', 'model')
 
+        >>> contour('data', 'model', 'fit', 'resid')
+
         """
         self._multi_plot(args, 'contour')
 
@@ -12969,7 +13490,11 @@ class Session(NoNewAttributesAfterInit):
         self._contour(id, self._datacontour, **kwargs)
 
     def contour_model(self, id=None, **kwargs):
-        """Contour the values of the model, including any PSF.
+        """Create a contour plot of the model.
+
+        Displays a contour plot of the values of the model,
+        evaluated on the data, including any PSF kernel convolution
+        (if set).
 
         Parameters
         ----------
@@ -12989,6 +13514,7 @@ class Session(NoNewAttributesAfterInit):
         get_model_contour_prefs : Return the preferences for contour_model.
         get_default_id : Return the default data set identifier.
         contour : Create one or more plot types.
+        contour_source : Create a contour plot of the unconvolved spatial model.
         sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
         set_psf : Add a PSF model to a data set.
 
@@ -13009,9 +13535,11 @@ class Session(NoNewAttributesAfterInit):
         self._contour(id, self._modelcontour, **kwargs)
 
     def contour_source(self, id=None, **kwargs):
-        """Contour the values of the model, without any PSF.
+        """Create a contour plot of the unconvolved spatial model.
 
-        The preferences are the same as `contour_model`.
+        Displays a contour plot of the values of the model,
+        evaluated on the data, without any PSF kernel convolution
+        applied. The preferences are the same as `contour_model`.
 
         Parameters
         ----------
@@ -13030,6 +13558,7 @@ class Session(NoNewAttributesAfterInit):
         get_source_contour : Return the data used by contour_source.
         get_default_id : Return the default data set identifier.
         contour : Create one or more plot types.
+        contour_model : Create a contour plot of the model.
         sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
         set_psf : Add a PSF model to a data set.
 
@@ -13301,12 +13830,16 @@ class Session(NoNewAttributesAfterInit):
         """Return the interval-projection object.
 
         This returns (and optionally calculates) the data used to
-        display the `int_proj` plot.
+        display the `int_proj` plot. Note that if the the `recalc`
+        parameter is `False` (the default value) then all other parameters
+        are ignored and the results of the last `int_proj` call are
+        returned.
 
         Parameters
         ----------
         par
-           The parameter to plot.
+           The parameter to plot. This argument is only used if `recalc` is
+           set to `True`.
         id : str or int, optional
         otherids : list of str or int, optional
            The `id` and `otherids` arguments determine which data set
@@ -13315,7 +13848,7 @@ class Session(NoNewAttributesAfterInit):
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `int_proj` (or `get_int_proj`) are returned,
-           ignoring the other parameter values. Otherwise, the
+           ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         min : number, optional
            The minimum parameter value for the calcutation. The
@@ -13351,7 +13884,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -13367,14 +13900,21 @@ class Session(NoNewAttributesAfterInit):
         >>> min(iproj.y)
         119.55942437129544
 
+        Since the `recalc` parameter has not been changed to `True`, the
+        following will return the results for the last call to `int_proj`,
+        which may not have been for the src.ypos parameter:
+
+        >>> iproj = get_int_proj(src.ypos)
+
         Create the data without creating a plot:
 
         >>> iproj = get_int_proj(pl.gamma, recalc=True)
 
-        Control how the data is created
+        Specify the range and step size for the parameter, in this
+        case varying linearly between 12 and 14 with 51 values:
 
-        >>> iproj = get_int_proj(pl.gamma, id="src", min=12, max=14,
-                                 nloop=51, recalc=True)
+        >>> iproj = get_int_proj(src.r0, id="src", min=12, max=14,
+        ...                      nloop=51, recalc=True)
 
         """
         if sherpa.utils.bool_cast(recalc):
@@ -13395,12 +13935,16 @@ class Session(NoNewAttributesAfterInit):
         """Return the interval-uncertainty object.
 
         This returns (and optionally calculates) the data used to
-        display the `int_unc` plot.
+        display the `int_unc` plot. Note that if the the `recalc`
+        parameter is `False` (the default value) then all other parameters
+        are ignored and the results of the last `int_unc` call are
+        returned.
 
         Parameters
         ----------
         par
-           The parameter to plot.
+           The parameter to plot. This argument is only used if `recalc` is
+           set to `True`.
         id : str or int, optional
         otherids : list of str or int, optional
            The `id` and `otherids` arguments determine which data set
@@ -13409,7 +13953,7 @@ class Session(NoNewAttributesAfterInit):
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `int_proj` (or `get_int_proj`) are returned,
-           ignoring the other parameter values. Otherwise, the
+           ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         min : number, optional
            The minimum parameter value for the calcutation. The
@@ -13445,7 +13989,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate parameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -13461,14 +14005,21 @@ class Session(NoNewAttributesAfterInit):
         >>> min(iunc.y)
         119.55942437129544
 
+        Since the `recalc` parameter has not been changed to `True`, the
+        following will return the results for the last call to `int_unc`,
+        which may not have been for the src.ypos parameter:
+
+        >>> iunc = get_int_unc(src.ypos)
+
         Create the data without creating a plot:
 
         >>> iunc = get_int_unc(pl.gamma, recalc=True)
 
-        Control how the data is created
+        Specify the range and step size for the parameter, in this
+        case varying linearly between 12 and 14 with 51 values:
 
-        >>> iunc = get_int_unc(pl.gamma, id="src", min=12, max=14,
-                               nloop=51, recalc=True)
+        >>> iunc = get_int_unc(src.r0, id="src", min=12, max=14,
+        ...                    nloop=51, recalc=True)
 
         """
         if sherpa.utils.bool_cast(recalc):
@@ -13488,12 +14039,16 @@ class Session(NoNewAttributesAfterInit):
         """Return the region-projection object.
 
         This returns (and optionally calculates) the data used to
-        display the `reg_proj` contour plot.
+        display the `reg_proj` contour plot. Note that if the the `recalc`
+        parameter is `False` (the default value) then all other parameters
+        are ignored and the results of the last `reg_proj` call are
+        returned.
 
         Parameters
         ----------
         par0, par1
            The parameters to plot on the X and Y axes, respectively.
+           These arguments are only used if recalc is set to `True`.
         id : str or int, optional
         otherids : list of str or int, optional
            The `id` and `otherids` arguments determine which data set
@@ -13502,7 +14057,7 @@ class Session(NoNewAttributesAfterInit):
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `reg_proj` (or `get_reg_proj`) are returned,
-           ignoring the other parameter values. Otherwise, the
+           ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         fast : bool, optional
            If ``True`` then the fit optimization used may be changed from
@@ -13550,7 +14105,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -13560,21 +14115,31 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Return the results for the `reg_proj` run:
+        Return the results for the `reg_proj` run for the `xpos` and `ypos`
+        parameters of the `src` component, for the default data set:
 
         >>> reg_proj(src.xpos, src.ypos)
         >>> rproj = get_reg_proj()
+
+        Since the `recalc` parameter has not been changed to `True`, the
+        following will return the results for the last call to `reg_proj`,
+        which may not have been for the r0 and alpha parameters:
+
+        >>> rprog = get_reg_proj(src.r0, src.alpha)
 
         Create the data without creating a plot:
 
         >>> rproj = get_reg_proj(pl.gamma, gal.nh, recalc=True)
 
-        Control how the data is created:
+        Specify the range and step size for both the parameters,
+        in this case pl.gamma should vary between 0.5 and 2.5, with
+        gal.nh between 0.01 and 1, both with 51 values and the
+        nH range done over a log scale:
 
         >>> rproj = get_reg_proj(pl.gamma, gal.nh, id="src",
-                                 min=(0.5,0.01), max=(2.5,1),
-                                 nloop=(51,51), log=(False,True),
-                                 recalc=True)
+        ...                      min=(0.5, 0.01), max=(2.5, 1),
+        ...                      nloop=(51, 51), log=(False, True),
+        ...                      recalc=True)
 
         """
         if sherpa.utils.bool_cast(recalc):
@@ -13596,12 +14161,16 @@ class Session(NoNewAttributesAfterInit):
         """Return the region-uncertainty object.
 
         This returns (and optionally calculates) the data used to
-        display the `reg_unc` contour plot.
+        display the `reg_unc` contour plot.  Note that if the the `recalc`
+        parameter is `False` (the default value) then all other parameters
+        are ignored and the results of the last `reg_unc` call are
+        returned.
 
         Parameters
         ----------
         par0, par1
            The parameters to plot on the X and Y axes, respectively.
+           These arguments are only used if `recalc` is set to `True`.
         id : str or int, optional
         otherids : list of str or int, optional
            The `id` and `otherids` arguments determine which data set
@@ -13610,7 +14179,7 @@ class Session(NoNewAttributesAfterInit):
         recalc : bool, optional
            The default value (``False``) means that the results from the
            last call to `reg_unc` (or `get_reg_unc`) are returned,
-           ignoring the other parameter values. Otherwise, the
+           ignoring *all other* parameter values. Otherwise, the
            statistic curve is re-calculated, but not plotted.
         fast : bool, optional
            If ``True`` then the fit optimization used may be changed from
@@ -13658,7 +14227,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -13668,21 +14237,31 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        Return the results for the `reg_unc` run:
+        Return the results for the `reg_unc` run for the `xpos` and `ypos`
+        parameters of the `src` component, for the default data set:
 
         >>> reg_unc(src.xpos, src.ypos)
         >>> runc = get_reg_unc()
+
+        Since the `recalc` parameter has not been changed to `True`, the
+        following will return the results for the last call to `reg_unc`,
+        which may not have been for the r0 and alpha parameters:
+
+        >>> runc = get_reg_unc(src.r0, src.alpha)
 
         Create the data without creating a plot:
 
         >>> runc = get_reg_unc(pl.gamma, gal.nh, recalc=True)
 
-        Control how the data is created:
+        Specify the range and step size for both the parameters,
+        in this case pl.gamma should vary between 0.5 and 2.5, with
+        gal.nh between 0.01 and 1, both with 51 values and the
+        nH range done over a log scale:
 
         >>> runc = get_reg_unc(pl.gamma, gal.nh, id="src",
-                               min=(0.5,0.01), max=(2.5,1),
-                               nloop=(51,51), log=(False,True),
-                               recalc=True)
+        ...                    min=(0.5, 0.01), max=(2.5, 1),
+        ...                    nloop=(51, 51), log=(False, True),
+        ...                    recalc=True)
 
         """
         if sherpa.utils.bool_cast(recalc):
@@ -13733,7 +14312,7 @@ class Session(NoNewAttributesAfterInit):
         current statistic value and the parameter value at this
         point. The parameter value is varied over a grid of points and
         the free parameters re-fit. It is expected that this is run
-        after a successful fit, so that the parameter values are at
+        after a successful fit, so that the parameter values identify
         the best-fit location.
 
         Parameters
@@ -13783,7 +14362,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         get_int_proj : Return the interval-projection object.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -13851,7 +14430,7 @@ class Session(NoNewAttributesAfterInit):
         point. The parameter value is varied over a grid of points and
         the statistic evaluated while holding the other parameters
         fixed. It is expected that this is run after a successful fit,
-        so that the parameter values are at the best-fit location.
+        so that the parameter values identify the best-fit location.
 
         Parameters
         ----------
@@ -13896,7 +14475,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         get_int_unc : Return the interval-uncertainty object.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
@@ -14048,7 +14627,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         get_reg_proj : Return the interval-projection object.
         int_proj : Calculate and plot the fit statistic versus fit parameter value.
@@ -14079,7 +14658,7 @@ class Session(NoNewAttributesAfterInit):
 
         Only display the one- and three-sigma contours:
 
-        >>> reg_proj(gsrc.xpos, gsrc.ypos, sigma=(1,3))
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, sigma=(1, 3))
 
         Display contours at values of 5, 10, and 20 more than the
         statistic value of the source model for data set 1:
@@ -14091,14 +14670,14 @@ class Session(NoNewAttributesAfterInit):
         Increase the limits of the plot and the number of steps along
         each axis:
 
-        >>> reg_proj(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41,41))
+        >>> reg_proj(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41, 41))
 
         Compare the ``ampl`` parameters of the ``g`` and ``b`` model
         components, for data sets 'core' and 'jet', over the given
         ranges:
 
-        >>> reg_proj(g.ampl, b.ampl, min=(0,1e-4), max=(0.2,5e-4),
-                     nloop=(51,51), id='core', otherids=['jet'])
+        >>> reg_proj(g.ampl, b.ampl, min=(0, 1e-4), max=(0.2, 5e-4),
+        ...          nloop=(51, 51), id='core', otherids=['jet'])
 
         """
         self._reg_plot(self._regproj, par0, par1, id=id, otherids=otherids,
@@ -14172,7 +14751,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
+        conf : Estimate patameter confidence intervals using the confidence method.
         covar : Estimate the confidence intervals using the covariance method.
         get_reg_unc : Return the interval-uncertainty object.
         int_unc : Calculate and plot the fit statistic versus fit parameter value.
@@ -14205,7 +14784,7 @@ class Session(NoNewAttributesAfterInit):
 
         Only display the one- and three-sigma contours:
 
-        >>> reg_unc(gsrc.xpos, gsrc.ypos, sigma=(1,3))
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, sigma=(1, 3))
 
         Display contours at values of 5, 10, and 20 more than the
         statistic value of the source model for data set 1:
@@ -14217,14 +14796,14 @@ class Session(NoNewAttributesAfterInit):
         Increase the limits of the plot and the number of steps along
         each axis:
 
-        >>> reg_unc(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41,41))
+        >>> reg_unc(gsrc.xpos, gsrc.ypos, id=1, fac=6, nloop=(41, 41))
 
         Compare the ``ampl`` parameters of the ``g`` and ``b`` model
         components, for data sets 'core' and 'jet', over the given
         ranges:
 
-        >>> reg_unc(g.ampl, b.ampl, min=(0,1e-4), max=(0.2,5e-4),
-                    nloop=(51,51), id='core', otherids=['jet'])
+        >>> reg_unc(g.ampl, b.ampl, min=(0, 1e-4), max=(0.2, 5e-4),
+        ...         nloop=(51, 51), id='core', otherids=['jet'])
 
         Overplot the results on the `reg_proj` plot:
 
@@ -14887,7 +15466,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> image_source_component('img', 'clus')
         >>> image_source_component('img', 'bgnd', newframe=True,
-                                   tile=True)
+        ...                        tile=True)
 
         """
         if model is None:
@@ -14970,7 +15549,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> image_source_component('img', 'clus')
         >>> image_model_component('img', 'clus', newframe=True,
-                                  tile=True)
+        ...                       tile=True)
 
         """
         if model is None:

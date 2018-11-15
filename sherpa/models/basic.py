@@ -59,9 +59,9 @@ class Box1D(RegriddableModel1D):
     Attributes
     ----------
     xlow
-        The lower edge of the box.
+        Coordinate of the lower cut-off.
     xhi
-        The upper edge of the box.
+        Coordinate of the upper cut-off.
     ampl
         The amplitude of the box.
 
@@ -205,8 +205,8 @@ class Cos(RegriddableModel1D):
 class Delta1D(RegriddableModel1D):
     """One-dimensional delta function.
 
-    The model is only defined at a single point (or bin for integrated
-    grids).
+    The delta function model is only non-zero at a single point
+    (or bin for integrated grids).
 
     Attributes
     ----------
@@ -1341,8 +1341,8 @@ class Scale2D(Const2D):
 class Delta2D(RegriddableModel2D):
     """Two-dimensional delta function.
 
-    The model is only defined at a single point (or bin for integrated
-    grids).
+    The delta function model is only non-zero at a single point
+    (or pixel for integrated grids).
 
     Attributes
     ----------

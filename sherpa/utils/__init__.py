@@ -1814,7 +1814,7 @@ def histogram1d(x, x_lo, x_hi):
     --------
 
     A simple example, calculating the histogram of 1000 values
-    randomly distributed over [0,1).
+    randomly distributed over [0, 1).
 
     >>> x = np.random.random(1000)
     >>> edges = np.arange(0, 1.1, 0.1)
@@ -1843,7 +1843,7 @@ def histogram1d(x, x_lo, x_hi):
 
 
 def histogram2d(x, y, x_grid, y_grid):
-    """Create 21D histogram from a sequence of samples.
+    """Create 2D histogram from a sequence of samples.
 
     See the `numpy.histogram2d` routine for a version with more options.
 
@@ -1870,8 +1870,8 @@ def histogram2d(x, y, x_grid, y_grid):
 
     Given a list of coordinates (``xvals``, ``yvals``), bin
     them up so that they match the 5 by 10 pixel image
-    data space. In this case the X grid is [1,2,...,5]
-    and the Y grid is [1,2,..,10].
+    data space. In this case the X grid is [1, 2, ..., 5]
+    and the Y grid is [1, 2, .., 10].
 
     >>> dataspace2d([5, 10])
     >>> (xgrid, ygrid) = get_axes()
