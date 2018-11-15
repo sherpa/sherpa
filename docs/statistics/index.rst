@@ -66,7 +66,7 @@ the statistic increases:
 The statistic classes provided in Sherpa are given below, and cover
 a range of possibilities, such as: least-square for when there is
 no knowledge about the errors on each point, a variety of chi-square
-statisitics for when the errors are assumed to be gaussian, and a
+statistics for when the errors are assumed to be gaussian, and a
 variety of maximum-likelihood estimators for Poisson-distributed
 data. It is also possible to add your own statistic class.
 

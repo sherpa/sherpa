@@ -822,6 +822,30 @@ class DataPHA(Data1DInt):
         self.units = quantity
 
     def get_analysis(self):
+        """Return the units used when fitting spectral data.
+
+        Returns
+        -------
+        setting : { 'channel', 'energy', 'wavelength' }
+            The analysis setting.
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+        sherpa.utils.err.IdentifierErr
+           If the `id` argument is not recognized.
+
+        See Also
+        --------
+        set_analysis
+
+        Examples
+        --------
+
+        >>> is_wave = pha.get_analysis() == 'wavelength'
+
+        """
         return self.units
 
     def _fix_response_id(self, id):
@@ -1102,12 +1126,94 @@ class DataPHA(Data1DInt):
         return scale
 
     def get_backscal(self, group=True, filter=False):
+        """Return the area scaling of the PHA data set.
+
+        Return the BACKSCAL setting [1]_ for the PHA data set.
+
+        Parameters
+        ----------
+        group : bool, optional
+            Should the values be grouped to match the data?
+        filter : bool, optional
+            Should the values be filtered to match the data?
+
+        Returns
+        -------
+        backscal : number or ndarray
+           The BACKSCAL value, which can be a scalar or a 1D array.
+
+        See Also
+        --------
+        get_areascal, get_background_scale
+
+        Notes
+        -----
+        The BACKSCAL value can be defined as the ratio of the area of
+        the source (or background) extraction region in image pixels
+        to the total number of image pixels. The fact that there is no
+        ironclad definition for this quantity does not matter so long
+        as the value for a source dataset and its associated
+        background dataset are defined in the similar manner, because
+        only the ratio of source and background BACKSCAL values is
+        used. It can be a scalar or an array.
+
+        References
+        ----------
+
+        .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+        Examples
+        --------
+
+        >>> pha.get_backscal()
+        7.8504301607718007e-06
+
+        """
         backscal = self.backscal
         if backscal is not None:
             backscal = self._check_scale(backscal, group, filter)
         return backscal
 
     def get_areascal(self, group=True, filter=False):
+        """Return the fractional area factor of the PHA data set.
+
+        Return the AREASCAL setting [1]_ for the PHA data set.
+
+        Parameters
+        ----------
+        group : bool, optional
+            Should the values be grouped to match the data?
+        filter : bool, optional
+            Should the values be filtered to match the data?
+
+        Returns
+        -------
+        areascal : number or ndarray
+           The AREASCAL value, which can be a scalar or a 1D array.
+
+        See Also
+        --------
+        get_backscal, get_background_scale
+
+        Notes
+        -----
+        The fractional area scale is normally set to 1, with the ARF used
+        to scale the model.
+
+        References
+        ----------
+
+        .. [1] "The OGIP Spectral File Format", Arnaud, K. & George, I.
+               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+        Examples
+        --------
+
+        >>> pha.get_areascal()
+        1.0
+
+        """
         areascal = self.areascal
         if areascal is not None:
             areascal = self._check_scale(areascal, group, filter)

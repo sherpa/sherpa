@@ -53,7 +53,7 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
        The parameter samples array for each simulation.
     stats : numpy array
        The fit statistic for the null and alternative models
-       for each simulation. The shape is (nsim,2).
+       for each simulation. The shape is (nsim, 2).
     ratios : numpy array
        The likelihood ratio for each simulation.
     null : number

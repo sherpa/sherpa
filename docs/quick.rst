@@ -430,7 +430,7 @@ the error value per bin when calculating the statistic value)::
     >>> if not geres.succeeded: print(geres.message)
 
 Since the error value is independent of bin, then the fit results
-should be the same here (that is, the parametes in ``g`` are the
+should be the same here (that is, the parameters in ``g`` are the
 same as ``ge``)::
 
     >>> print(g)
@@ -452,7 +452,7 @@ The difference is that more of the fields
 in the result structure are populated: in particular the
 :py:attr:`~sherpa.fit.FitResults.rstat` and
 :py:attr:`~sherpa.fit.FitResults.qval` fields, which give the
-reduced statistic and the probability of obtaining this statisitic value
+reduced statistic and the probability of obtaining this statistic value
 respectively.::
 
     >>> print(geres)

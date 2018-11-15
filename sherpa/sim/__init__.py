@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -130,21 +130,21 @@ References
 .. [5] Chapter 11 of Gelman, Carlin, Stern, and Rubin
        (Bayesian Data Analysis, 2nd Edition, 2004, Chapman & Hall/CRC).
 
-Example
--------
+Examples
+--------
 
 Analysis proceeds as normal, up to the point that a good fit has
 been determined, as shown below (note that a Poisson likelihood,
 such as the ``cash`` statistic, must be used)::
 
-    from sherpa.astro import ui
-    ui.load_pha('src.pi')
-    ui.notice(0.5, 7)
-    ui.set_source(ui.xsphabs.gal * ui.xspowerlaw.pl)
-    ui.set_stat('cash')
-    ui.set_method('simplex')
-    ui.fit()
-    ui.covar()
+    >>> from sherpa.astro import ui
+    >>> ui.load_pha('src.pi')
+    >>> ui.notice(0.5, 7)
+    >>> ui.set_source(ui.xsphabs.gal * ui.xspowerlaw.pl)
+    >>> ui.set_stat('cash')
+    >>> ui.set_method('simplex')
+    >>> ui.fit()
+    >>> ui.covar()
 
 Once the best-fit location has been determined (which may require
 multiple calls to ``fit``), the chain can be run. In this example
@@ -152,14 +152,14 @@ the default sampler (``MetropolisMH``) and default parameter priors
 (flat, varying between the minimum and maximum values) are used,
 as well as the default number of iterations (1000)::
 
-    stats, accept, params = ui.get_draws()
+    >>> stats, accept, params = ui.get_draws()
 
 The ``stats`` array contains the fit statistic for each iteration
 (the first element of these arrays is the starting point of the chain,
 so there will be 1001 elements in this case). The "trace" - i.e.
 statistic versus iteration - can be plotted using::
 
-    ui.plot_trace(stats, name='stat')
+    >>> ui.plot_trace(stats, name='stat')
 
 The ``accept`` array indicates whether, at each iteration, the proposed
 jump was accepted, (``True``) or if the previous iterations parameter
@@ -167,30 +167,31 @@ values are used. This can be used to look at the acceptance rate for
 the chain (dropping the last element and a burn-in period, which
 here is arbitrarily taken to be 100)::
 
-    nburn = 100
-    arate = accept[nburn:-1].sum() * 1.0 / (len(accept) - nburn - 1)
-    print("acceptance rate = {}".format(arate))
+    >>> nburn = 100
+    >>> arate = accept[nburn:-1].sum() * 1.0 / (len(accept) - nburn - 1)
+    >>> print("acceptance rate = {}".format(arate))
 
 The trace of the parameter values can also be displayed; in this
 example a burn-in period has not been removed)::
 
-    par1 = params[:, 0]
-    par2 = params[:, 1]
-    ui.plot_trace(par1, name='par1')
-    ui.plot_trace(par2, name='par2')
+    >>> par1 = params[:, 0]
+    >>> par2 = params[:, 1]
+    >>> ui.plot_trace(par1, name='par1')
+    >>> ui.plot_trace(par2, name='par2')
 
 The cumulative distribution can also be viewed::
 
-    ui.plot_cdf(par1[nburn:], name='par1')
+    >>> ui.plot_cdf(par1[nburn:], name='par1')
 
 as well as the probability density::
 
-    ui.plot_[pdf(par2[nburn:], name='par2')
+    >>> ui.plot_[pdf(par2[nburn:], name='par2')
 
 The traces can be used to estimate the credible interval for a
 parameter::
 
-    pval, plo, phi = sherpa.utils.get_error_estimates(par1[nburn:])
+    >>> from sherpa.utils import get_error_estimates
+    >>> pval, plo, phi = get_error_estimates(par1[nburn:])
 
 """
 
@@ -218,17 +219,24 @@ _tol = numpy.finfo(numpy.float).eps
 
 
 def flat(x):
+    """The flat prior (returns 1 everywhere)."""
+
     return 1.0
 
 
 def inverse(x):
+    """Returns the inverse of x."""
+
     prior = 1.0 / x
     return prior
 
 
 def inverse2(x):
+    """Returns the invers of x^2."""
+
     prior = 1.0 / (x * x)
     return prior
+
 
 _samplers = dict(metropolismh=MetropolisMH, mh=MH)
 _walkers = dict(metropolismh=Walk, mh=Walk)
@@ -376,28 +384,33 @@ class MCMC(NoNewAttributesAfterInit):
         to be a gaussian, centered on 1.7 keV and with a FWHM of 0.35
         keV::
 
-            >>> create_model_component('xsapec', 'therm')
-            >>> create_model_component('gauss1d', 'p_temp')
-            >>> p_temp.pos = 1.7
-            >>> p_temp.fwhm = 0.35
-            >>> set_prior(therm.kT, p_temp)
+        >>> create_model_component('xsapec', 'therm')
+        >>> create_model_component('gauss1d', 'p_temp')
+        >>> p_temp.pos = 1.7
+        >>> p_temp.fwhm = 0.35
+        >>> set_prior(therm.kT, p_temp)
 
-        Create a function (``lognorm``) and use it as the prior the the
+        Create a function (``lognorm``) and use it as the prior of the
         ``nH`` parameter of the ``abs1`` instance::
 
-            >>> create_model_component('xsphabs', 'abs1')
             >>> def lognorm(x):
-               # center on 10^20 cm^2 with a sigma of 0.5
-               sigma = 0.5
-               x0 = 20
-               # nH is in units of 10^-22 so convert
-               dx = np.log10(x) + 22 - x0
-               norm = sigma / np.sqrt(2 * np.pi)
-               return norm * np.exp(-0.5*dx*dx/(sigma*sigma))
-
+            ...     nh = 20
+            ...     sigma = 0.5  # use a sigma of 0.5
+            ...     # nH is in units of 10^-22 so convert
+            ...     dx = np.log10(x) + 22 - nh
+            ...     norm = sigma / np.sqrt(2 * np.pi)
+            ...     return norm * np.exp(-0.5 * dx * dx / (sigma * sigma))
+            ...
+            >>> create_model_component('xsphabs', 'abs1')
             >>> set_prior(abs1.nH, lognorm)
 
         """
+
+        # NOTE: the second piece of code is indented in the example
+        #       above because otherwise sphinx seems to think that the
+        #       colon at the end of the "def lognorm" line ends the
+        #       code block.
+
         self.priors[par.fullname] = prior
 
     def list_samplers(self):

@@ -454,7 +454,7 @@ def get_xsxset(name):
     -------
     val : str
        Returns the value set by a previous call to `set_xsxset` or the
-       empty string, if not set.
+       empty string, if the value has not been previously set.
 
     See Also
     --------
@@ -466,6 +466,14 @@ def get_xsxset(name):
     return a value if it has previously been set with a call to
     `set_xsxset`. There is no way to retrive the default value of a
     setting.
+
+    Examples
+    --------
+
+    >>> set_xsxset("POW_EMIN", "0.5")
+    >>> get_xsxset("pow_emin")
+    '0.5'
+
     """
     name = name.upper()
     return _xspec.get_xsxset(name)
