@@ -715,20 +715,21 @@ class PSFModel(Model):
         return dataset
 
     def _check_pixel_size(self, data):
-        try:
+        if hasattr(self.kernel, "sky"):
             # This corresponds to the case when the kernel is actually a psf image, not just a model.
-            psf_pixel_size = self.kernel.sky.cdelt
-        except AttributeError:
-            warnings.warn("No PSF pixel size info available. Skipping check against data pixel size.")
-            return
+            try:
+                psf_pixel_size = self.kernel.sky.cdelt
+            except AttributeError:
+                warnings.warn("No PSF pixel size info available. Skipping check against data pixel size.")
+                return
 
-        try:
-            data_pixel_size = data.sky.cdelt
-        except AttributeError:
-            warnings.warn("No data pixel size info available. Skipping check against PSF pixel size.")
-            return
+            try:
+                data_pixel_size = data.sky.cdelt
+            except AttributeError:
+                warnings.warn("No data pixel size info available. Skipping check against PSF pixel size.")
+                return
 
-        if not numpy.allclose(psf_pixel_size, data_pixel_size):
-            warnings.warn("NOTE: The PSF pixel size ({}) does not correspond to the Image Pixel Size ({})".format(
-                psf_pixel_size, data_pixel_size
-            ))
+            if not numpy.allclose(psf_pixel_size, data_pixel_size):
+                warnings.warn("NOTE: The PSF pixel size ({}) does not correspond to the Image Pixel Size ({})".format(
+                    psf_pixel_size, data_pixel_size
+                ))
