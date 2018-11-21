@@ -13,7 +13,8 @@ namespace sherpa {
 
   public:
 
-    Minim( Func func, Data xdata ) : usr_func(func), usr_data(xdata) { }
+    Minim( Func func, Data xdata ) : usr_func(func), usr_data(xdata),
+                                     num_outside_limits(0) { }
 
     int operator( )( int iprint, int maxfev, real tol, int npar,
                      int initsimplex, const std::vector<int>& finalsimplex,
@@ -26,29 +27,34 @@ namespace sherpa {
       double simp=1.0e-8;
       MINIM(x, step, npar, func, maxfev, iprint, tol, iquad, simp, vc, ifault,
             neval, bounds);
+      neval -= num_outside_limits;
       return ifault;
     }
-
 
     void minim( std::vector<real>& P, const std::vector<real>& STEP,
                 int NOP, real& FUNC, int MAXNFEV, int IPRINT, real STOPCR,
                 int IQUAD, real SIMP, std::vector<real>& VC, int& IFAULT,
                 int& NEVAL, const sherpa::Bounds<real>& LIMITS ) {
-      return MINIM( P, STEP, NOP, FUNC, MAXNFEV, IPRINT, STOPCR, IQUAD, SIMP,
-                    VC, IFAULT, NEVAL, LIMITS);
+      MINIM( P, STEP, NOP, FUNC, MAXNFEV, IPRINT, STOPCR, IQUAD,
+             SIMP, VC, IFAULT, NEVAL, LIMITS );
+      NEVAL -= num_outside_limits;
+      return;
     }
 
   private:
 
     Func usr_func;
     Data usr_data;
+    size_t num_outside_limits;
 
     void eval_usr_func( int npar, std::vector<real>& par, real& fval,
                         const sherpa::Bounds<real>& limits ) {
 
       if ( sherpa::Opt<Data, real>::are_pars_outside_limits( npar, par,
-                                                             limits ) )
+                                                             limits ) ) {
         fval = std::numeric_limits< real >::max( );
+        ++num_outside_limits;
+      }
       int ierr = EXIT_SUCCESS;
       usr_func( npar, &par[0], fval, ierr, usr_data );
       if ( EXIT_SUCCESS != ierr )
