@@ -144,9 +144,8 @@ int main( int argc, char* argv[] ) {
   return 0;
 }
 #endif
-/*
-g++ -o minim -DtestMinim -Wall -ansi -pedantic -O3 -I../../include -I.. minim.cc
-*/
+// g++ -o minim -DtestMinim -Wall -ansi -pedantic -O3 -I../../include -I.. minim.cc
+//
 /*
 (sherpa3) [dtn@devel12 src]$ valgrind minim
 ==2581== Memcheck, a memory error detector
