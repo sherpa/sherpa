@@ -21,6 +21,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 
+from sherpa.models import Const2D
 from sherpa.astro.ui.utils import Session
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -54,3 +55,23 @@ def test_psf_rebin_no_warning(setup):
     ui.load_image(image)
     ui.load_psf('psf', psf_bin05)
     ui.set_psf('psf')
+
+
+# https://github.com/gammapy/gammapy/issues/1905
+@requires_fits
+@requires_data
+def test_psf_sky_none(setup):
+    ui, image, psf_bin05, _ = setup
+
+    ui.load_image(image)
+    ui.load_psf('psf', psf_bin05)
+
+    ui.set_psf('psf')
+
+    ui.set_model(Const2D("m"))
+
+    ui.get_psf().kernel.sky = None
+
+    # In https://github.com/gammapy/gammapy/issues/1905 this would fail because of a call to kernel.sky.cdelt
+    with pytest.warns(UserWarning):
+        ui.fit()
