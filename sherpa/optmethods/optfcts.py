@@ -410,13 +410,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
     status, msg = key.get(ifault, (False, 'unknown status flag (%d)' % ifault))
 
     rv = (status, x, fval)
-    print_covar_err = False
-    if print_covar_err and 0 == ifault and numpy.any( var > 0.0 ):
-        var = map( lambda x: x * numpy.sqrt(2.0), var )
-        rv += (msg, {'covarerr': numpy.sqrt(var), 'info': ifault,
-                     'nfev': neval})
-    else:
-        rv += (msg, {'info': ifault, 'nfev': neval})
+    rv += (msg, {'info': ifault, 'nfev': neval})
     return rv
 
 
