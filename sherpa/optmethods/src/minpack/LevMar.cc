@@ -288,7 +288,7 @@ int main( int argc, char* argv[] ) {
   std::cout << "# A negative value for the nfev signifies that the "
     "optimization method did not converge\n#\n";
   std::cout << "name\tnfev\tanswer\tfval\tpar\terr\nS\tN\tN\tN\tN\tN\n";
-  tst_unc_opt( npar, tol, tstlm, npop, maxfev, xprob, sfactor );
+  tst_unc_opt<tstFctVec, double>( npar, tol, tstlm, npop, maxfev, xprob, sfactor );
 
   tstlmder();
 
