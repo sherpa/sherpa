@@ -2471,7 +2471,7 @@ class XSdiskir(XSAdditiveModel):
 
 
 class XSdiskbb(XSAdditiveModel):
-    """The XSPEC disk model: accretion disk, multi-black body components.
+    """The XSPEC diskbb model: accretion disk, multi-black body components.
 
     The model is described at [1]_.
 
@@ -5085,7 +5085,7 @@ class XSvequil(XSAdditiveModel):
 
 
 class XSvgnei(XSAdditiveModel):
-    """The XSPEC gnei model: collisional plasma, non-equilibrium, temperature evolution.
+    """The XSPEC vgnei model: collisional plasma, non-equilibrium, temperature evolution.
 
     The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
     functions are used to set and query the XSPEC XSET parameters, in
@@ -5153,7 +5153,7 @@ class XSvgnei(XSAdditiveModel):
 
 
 class XSvvgnei(XSAdditiveModel):
-    """The XSPEC gnei model: collisional plasma, non-equilibrium, temperature evolution.
+    """The XSPEC vvgnei model: collisional plasma, non-equilibrium, temperature evolution.
 
     The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
     functions are used to set and query the XSPEC XSET parameters, in
@@ -6150,7 +6150,7 @@ class XSzcutoffpl(XSAdditiveModel):
 
 
 class XSzgauss(XSAdditiveModel):
-    """The XSPEC gaussian model: gaussian line profile.
+    """The XSPEC zgauss model: gaussian line profile.
 
     The model is described at [1]_.
 
@@ -7475,7 +7475,7 @@ class XSzdust(XSMultiplicativeModel):
 
 
 class XSzedge(XSMultiplicativeModel):
-    """The XSPEC edge model: absorption edge.
+    """The XSPEC zedge model: absorption edge.
 
     The model is described at [1]_.
 
@@ -7509,7 +7509,7 @@ class XSzedge(XSMultiplicativeModel):
 
 
 class XSzhighect(XSMultiplicativeModel):
-    """The XSPEC highecut model: high-energy cutoff.
+    """The XSPEC zhighect model: high-energy cutoff.
 
     The model is described at [1]_.
 
@@ -7862,7 +7862,7 @@ class XSzvfeabs(XSMultiplicativeModel):
 
 
 class XSzvphabs(XSMultiplicativeModel):
-    """The XSPEC vphabs model: photoelectric absorption.
+    """The XSPEC zvphabs model: photoelectric absorption.
 
     The model is described at [1]_.
 
@@ -8711,7 +8711,7 @@ class XSgadem(XSAdditiveModel):
 
 
 class XSvgadem(XSAdditiveModel):
-    """The XSPEC gadem model: plasma emission, multi-temperature with gaussian distribution of emission measure.
+    """The XSPEC vgadem model: plasma emission, multi-temperature with gaussian distribution of emission measure.
 
     The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
     functions change and return the current settings for the relative
@@ -8936,7 +8936,7 @@ class XSoptxagn(XSAdditiveModel):
 
 
 class XSoptxagnf(XSAdditiveModel):
-    """The XSPEC optxagn model: Colour temperature corrected disc and energetically coupled Comptonisation model for AGN.
+    """The XSPEC optxagnf model: Colour temperature corrected disc and energetically coupled Comptonisation model for AGN.
 
     The model is described at [1]_.
 
@@ -9335,7 +9335,7 @@ class XSlyman(XSMultiplicativeModel):
 
 
 class XSzbabs(XSMultiplicativeModel):
-    """The XSPEC lyman model: Voigt absorption profiles for H I or He II Lyman series.
+    """The XSPEC zbabs model: EUV ISM attenuation.
 
     The model is described at [1]_.
 
