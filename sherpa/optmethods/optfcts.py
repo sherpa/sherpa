@@ -409,8 +409,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
         }
     status, msg = key.get(ifault, (False, 'unknown status flag (%d)' % ifault))
 
-    rv = (status, x, fval)
-    rv += (msg, {'info': ifault, 'nfev': neval})
+    rv = (status, x, fval, msg, {'info': ifault, 'nfev': neval})
     return rv
 
 
