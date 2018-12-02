@@ -2598,16 +2598,26 @@ def test_563_still_exists():
 
 
 # These values were found by running the code (so are regression tests)
-# rather than being calculated from first principles.
+# rather than being calculated from first principles. It does not seem
+# worth running all statistics, so I have chosen those with different
+# behaviors:
+#  cash  - likelihood-based, which doesn't have rstat/dof
+#  cstat - likelihood-based but with a measure of goodness of fit
+#  chi2  - our good old friendly chi-square statistic
 #
 dof1_cash = -18.2772161919084
+
+dof1_cstat = 0.40863145212838614
+dof1_cstat_qval = 0.522664944712
+
 dof1_chi2 = 2.03
-dof1_qval = 0.154220607327
+dof1_chi2_qval = 0.154220607327
 
 
 @pytest.mark.parametrize("method", [LevMar, NelderMead, MonCar])
 @pytest.mark.parametrize("stat,statargs", [(Cash, (dof1_cash, None, None)),
-                                           (Chi2, (dof1_chi2, dof1_qval, dof1_chi2))])
+                                           (CStat, (dof1_cstat, dof1_cstat_qval, dof1_cstat)),
+                                           (Chi2, (dof1_chi2, dof1_chi2_qval, dof1_chi2))])
 def test_dof_1(method, stat, statargs):
     """DOF is 1"""
 
@@ -2623,6 +2633,7 @@ def test_dof_1(method, stat, statargs):
 
 @pytest.mark.parametrize("method", [LevMar, NelderMead, MonCar])
 @pytest.mark.parametrize("stat,statargs", [(Cash, (dof1_cash, None, None)),
+                                           (CStat, (dof1_cstat, 1.0, np.nan)),
                                            (Chi2, (dof1_chi2, 1.0, np.nan))])
 def test_dof_0(method, stat, statargs):
     """DOF is 0"""
@@ -2638,15 +2649,17 @@ def test_dof_0(method, stat, statargs):
     assert_stat_info(statinfo, 3, 0, statargs[0], statargs[1], statargs[2])
 
 
-# The Chi-square runs fail with
+# The CStat and Chi-square runs fail with
 #     TypeError: igamc domain error, a and x must be positive
 # This error should either be caught earlier (in which case we may want
-# to remove chi-square values from this test and add a separate
+# to remove these statistics from this test and add a separate
 # regression test for those), or handled in a "better" way.
 #
 @pytest.mark.parametrize("method", [LevMar, NelderMead, MonCar])
 @pytest.mark.parametrize("stat,statargs",
                          [(Cash, (dof1_cash, None, None)),
+                          pytest.param(CStat, (dof1_chi2, 1.0, np.nan),
+                                       marks=pytest.mark.xfail),
                           pytest.param(Chi2, (dof1_chi2, 1.0, np.nan),
                                        marks=pytest.mark.xfail)])
 def test_dof_neg1(method, stat, statargs):
