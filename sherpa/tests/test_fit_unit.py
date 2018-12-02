@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -104,7 +104,7 @@ from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
     Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Likelihood, \
     Cash, CStat, WStat, UserStat
 
-from sherpa.optmethods import LevMar, NelderMead
+from sherpa.optmethods import LevMar, NelderMead, MonCar
 from sherpa.estmethods import Covariance, Confidence
 
 
@@ -2534,3 +2534,115 @@ def test_wstat_rstat_qval_fields_not_none():
     assert s2.qval is not None
     assert s2.rstat < s1.rstat
     assert s2.qval > s1.qval
+
+
+# Add some basic tests to see how fits where the number of degrees-of-freedom
+# is 0 or negative are handled.
+#
+# A number of earlier routines could be updated to use this, but
+# leave that for a later update.
+#
+def assert_stat_info(statinfo, npoints, dof, statval, qval, rstat):
+    """Ensure that the stat info matches the expected values.
+
+    Parameters
+    ----------
+    statinfo : sherpa.stats.StatInfo instance
+    npoints : int
+        The expected number of data points.
+    dof : float
+        The expected number of degrees of freedom.
+    statval : float
+        The expected statistic value.
+    qval : float or None
+        The expected qval value
+    rstat : float or None or np.nan
+        The expected rstat value.
+
+    """
+
+    assert statinfo.numpoints == npoints
+    assert statinfo.dof == dof
+    assert statinfo.statval == pytest.approx(statval)
+
+    if qval is None:
+        assert statinfo.qval is None
+    else:
+        assert statinfo.qval == pytest.approx(qval)
+
+    if rstat is None:
+        assert statinfo.rstat is None
+    elif np.isfinite(rstat):
+        assert statinfo.rstat == pytest.approx(rstat)
+    else:
+        assert np.isnan(statinfo.rstat)
+
+
+# These values were found by running the code (so are regression tests)
+# rather than being calculated from first principles.
+#
+dof1_cash = -18.2772161919084
+dof1_chi2 = 2.03
+dof1_qval = 0.154220607327
+
+
+@pytest.mark.parametrize("method", [LevMar, NelderMead, MonCar])
+@pytest.mark.parametrize("stat,statargs", [(Cash, (dof1_cash, None, None)),
+                                           (Chi2, (dof1_chi2, dof1_qval, dof1_chi2))])
+def test_dof_1(method, stat, statargs):
+    """DOF is 1"""
+
+    d = Data1D('test', [1, 2, 3], [4, 5, 6], [1, 1, 1])
+    mdl = Polynom1D()
+    mdl.c1.thaw()
+    mdl.c0 = 5.1
+
+    fit = Fit(d, mdl, stat=stat(), method=method())
+    statinfo = fit.calc_stat_info()
+    assert_stat_info(statinfo, 3, 1, statargs[0], statargs[1], statargs[2])
+
+
+@pytest.mark.parametrize("method", [LevMar, NelderMead, MonCar])
+@pytest.mark.parametrize("stat,statargs", [(Cash, (dof1_cash, None, None)),
+                                           (Chi2, (dof1_chi2, 1.0, np.nan))])
+def test_dof_0(method, stat, statargs):
+    """DOF is 0"""
+
+    d = Data1D('test', [1, 2, 3], [4, 5, 6], [1, 1, 1])
+    mdl = Polynom1D()
+    mdl.c1.thaw()
+    mdl.c2.thaw()
+    mdl.c0 = 5.1
+
+    fit = Fit(d, mdl, stat=stat(), method=method())
+    statinfo = fit.calc_stat_info()
+    assert_stat_info(statinfo, 3, 0, statargs[0], statargs[1], statargs[2])
+
+
+# The Chi-square runs fail with
+#     TypeError: igamc domain error, a and x must be positive
+# This error should either be caught earlier (in which case we may want
+# to remove chi-square values from this test and add a separate
+# regression test for those), or handled in a "better" way.
+#
+@pytest.mark.parametrize("method", [LevMar, NelderMead, MonCar])
+@pytest.mark.parametrize("stat,statargs",
+                         [(Cash, (dof1_cash, None, None)),
+                          pytest.param(Chi2, (dof1_chi2, 1.0, np.nan),
+                                       marks=pytest.mark.xfail)])
+def test_dof_neg1(method, stat, statargs):
+    """DOF is -1"""
+
+    d = Data1D('test', [1, 2, 3], [4, 5, 6], [1, 1, 1])
+    mdl = Polynom1D()
+    mdl.c1.thaw()
+    mdl.c2.thaw()
+    mdl.c3.thaw()
+    mdl.c0 = 5.1
+
+    fit = Fit(d, mdl, stat=stat(), method=method())
+    statinfo = fit.calc_stat_info()
+    assert_stat_info(statinfo, 3, -1, statargs[0], statargs[1], statargs[2])
+
+# TODO: call fit rather than calc_stat_info just to check to see what
+#       happens
