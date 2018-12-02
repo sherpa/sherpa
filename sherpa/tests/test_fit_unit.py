@@ -2578,6 +2578,25 @@ def assert_stat_info(statinfo, npoints, dof, statval, qval, rstat):
         assert np.isnan(statinfo.rstat)
 
 
+# A "canary" to note when issue #563 (WStat assumes arrays are ndarrays
+# but we do not ensure this, so how should this be fixed) is addressed
+#
+# Note that once #563 is fixed the call is expected to raise a
+# sherpa.utils.err.StatErr error with the message
+#   "No background data has been supplied. Use cstat"
+#
+def test_563_still_exists():
+    d = Data1D('test', [1, 2, 3], [4, 5, 6])
+    mdl = Polynom1D()
+    mdl.c0 = 5.1
+
+    fit = Fit(d, mdl, stat=WStat())
+    with pytest.raises(AttributeError) as excinfo:
+        fit.calc_stat_info()
+
+    assert "'list' object has no attribute 'size'" in str(excinfo.value)
+
+
 # These values were found by running the code (so are regression tests)
 # rather than being calculated from first principles.
 #
