@@ -2578,6 +2578,32 @@ def assert_stat_info(statinfo, npoints, dof, statval, qval, rstat):
         assert np.isnan(statinfo.rstat)
 
 
+def assert_fit_results(fitres, rstat):
+    """Ensure that the fit results match the expected values.
+
+    Limited checks.
+
+    Parameters
+    ----------
+    fitres : sherpa.fit.FitResults instance
+        This must have fitres.succeeded be True.
+    rstat : None or np.nan or float or pytest.approx instance
+        The expected rstat value.
+    """
+
+    # This is messy but makes the tests a bit easier to write
+    if rstat is None:
+        assert fitres.rstat is None
+    elif hasattr(rstat, 'expected'):
+        assert fitres.rstat == rstat
+    elif np.isfinite(rstat):
+        assert fitres.rstat == pytest.approx(rstat)
+    else:
+        assert np.isnan(fitres.rstat)
+
+    assert fitres.succeeded
+
+
 # A "canary" to note when issue #563 (WStat assumes arrays are ndarrays
 # but we do not ensure this, so how should this be fixed) is addressed
 #
@@ -2596,6 +2622,11 @@ def test_563_still_exists():
 
     assert "'list' object has no attribute 'size'" in str(excinfo.value)
 
+
+# Note that the dof=1 tests don't really add any coverage to other
+# tests, since they are no different than dof>>1, but are included so that
+# we have some "documentation" of the behavior for dof > 0, dof=0, dof < 0.
+#
 
 # These values were found by running the code (so are regression tests)
 # rather than being calculated from first principles. It does not seem
@@ -2676,5 +2707,94 @@ def test_dof_neg1(method, stat, statargs):
     statinfo = fit.calc_stat_info()
     assert_stat_info(statinfo, 3, -1, statargs[0], statargs[1], statargs[2])
 
-# TODO: call fit rather than calc_stat_info just to check to see what
-#       happens
+
+# Results from CIAO 4.10 on Linux Ubuntu. Expect to end up with
+# c0 = 3.0, c1 = 1.0 to about 3dp and the rstat values, when not
+# None, are ~ e-14 to e-30 - i.e. 0 to within 13 dp.
+#
+@pytest.mark.parametrize("method,stat,rstat",
+                         [(LevMar, Cash, None),
+                          (LevMar, CStat, pytest.approx(0.0, abs=1e-7)),
+                          (LevMar, Chi2, 0.0),
+                          (NelderMead, Cash, None),
+                          (NelderMead, CStat, 0.0),
+                          (NelderMead, Chi2, 0.0),
+                          (MonCar, Cash, None),
+                          (MonCar, CStat, 0.0),
+                          (MonCar, Chi2, 0.0)])
+def test_fit_dof_1(method, stat, rstat):
+    """DOF is 1"""
+
+    d = Data1D('test', [1, 2, 3], [4, 5, 6], [1, 1, 1])
+    mdl = Polynom1D()
+    mdl.c1.thaw()
+    mdl.c0 = 5.1
+
+    fit = Fit(d, mdl, stat=stat(), method=method())
+    fres = fit.fit()
+
+    assert mdl.c0.val == pytest.approx(3.0, abs=0.001)
+    assert mdl.c1.val == pytest.approx(1.0, abs=0.001)
+
+    assert_fit_results(fres, rstat)
+
+
+# Results from CIAO 4.10 on Linux Ubuntu. Expect to end up with
+# c0 = 3.0, c1 = 1.0, both to about 3dp, and c2 = 0 to within
+# about 1e-6, the rstat values are NaN
+#
+@pytest.mark.parametrize("method,stat,rstat",
+                         [(LevMar, Cash, None),
+                          (LevMar, CStat, np.nan),
+                          (LevMar, Chi2, np.nan),
+                          (NelderMead, Cash, None),
+                          (NelderMead, CStat, np.nan),
+                          (NelderMead, Chi2, np.nan),
+                          (MonCar, Cash, None),
+                          (MonCar, CStat, np.nan),
+                          (MonCar, Chi2, np.nan)])
+def test_fit_dof_0(method, stat, rstat):
+    """DOF is 0"""
+
+    d = Data1D('test', [1, 2, 3], [4, 5, 6], [1, 1, 1])
+    mdl = Polynom1D()
+    mdl.c1.thaw()
+    mdl.c2.thaw()
+    mdl.c0 = 5.1
+
+    fit = Fit(d, mdl, stat=stat(), method=method())
+    fres = fit.fit()
+
+    assert mdl.c0.val == pytest.approx(3.0, abs=0.001)
+    assert mdl.c1.val == pytest.approx(1.0, abs=0.001)
+    assert mdl.c2.val == pytest.approx(0.0, abs=1e-6)
+
+    assert_fit_results(fres, rstat)
+
+
+# Results from CIAO 4.10 on Linux Ubuntu. The fit results are
+# not consistent between different options (e.g. method and statistic),
+# which is not surprising given that the fit is not-well constrained.
+#
+# The only check here is whether the fit succeeds or not, since this
+# depends on the method.
+#
+@pytest.mark.parametrize("stat", [Cash, CStat, Chi2])
+@pytest.mark.parametrize("method,success",
+                         [pytest.param(LevMar, False,
+                                       marks=pytest.mark.skip(reason='LevMar crashes if dof<0')),
+                          (NelderMead, True),
+                          (MonCar, True)])
+def test_fit_dof_neg1(stat, method, success):
+    """DOF is -1"""
+
+    d = Data1D('test', [1, 2, 3], [4, 5, 6], [1, 1, 1])
+    mdl = Polynom1D()
+    mdl.c1.thaw()
+    mdl.c2.thaw()
+    mdl.c3.thaw()
+    mdl.c0 = 5.1
+
+    fit = Fit(d, mdl, stat=stat(), method=method())
+    fres = fit.fit()
+    assert fres.succeeded == success
