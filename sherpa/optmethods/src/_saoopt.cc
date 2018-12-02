@@ -133,8 +133,9 @@ static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func ) {
     std::vector<double> mypar( &par[0], &par[0] + npar );
     info = levmar( npar, ftol, xtol, gtol, maxnfev, epsfcn, factor, verbose,
 		   mypar, nfev, fval, bounds, jacobian, covarerr );
-    for ( int ii = 0; ii < npar; ++ii )
-      par[ ii ] = mypar[ ii ];
+    if ( info > 0 )
+      for ( int ii = 0; ii < npar; ++ii )
+        par[ ii ] = mypar[ ii ];
 
   } catch( sherpa::OptErr& oe ) {
     if ( NULL == PyErr_Occurred() )

@@ -721,18 +721,19 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
     x, fval, nfev, info, fjac = _saoopt.cpp_lmdif( stat_cb1, m, x, ftol, xtol, gtol, maxfev, epsfcn, factor, verbose, xmin, xmax, fjac )
 
-    fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
+    if info > 0:
+        fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
 
-    if m != n:
-        covar = fjac[:n, :n]
-    else:
-        covar = fjac
+        if m != n:
+            covar = fjac[:n, :n]
+        else:
+            covar = fjac
 
-    if _par_at_boundary( xmin, x, xmax, xtol ):
-        nm_result = neldermead( fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol), maxfev=maxfev-nfev, finalsimplex=2, iquad=0, verbose=0 )
-        nfev += nm_result[ 4 ][ 'nfev' ]
-        x = nm_result[ 1 ]
-        fval = nm_result[ 2 ]
+        if _par_at_boundary( xmin, x, xmax, xtol ):
+            nm_result = neldermead( fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol), maxfev=maxfev-nfev, finalsimplex=2, iquad=0, verbose=0 )
+            nfev += nm_result[ 4 ][ 'nfev' ]
+            x = nm_result[ 1 ]
+            fval = nm_result[ 2 ]
 ##        if nm_result[ 2 ] < fval:
 ##            x = nm_result[ 1 ]
 ##            fval = nm_result[ 2 ]
@@ -780,7 +781,10 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     #     rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
     #                                  'njev': njev, 'covar': covar})
     # else:
-    rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                 'covar': covar})
+    if info != 1:
+        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
+                                     'covar': covar})
+    else:
+        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev})
 
     return rv
