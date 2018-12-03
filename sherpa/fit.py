@@ -27,7 +27,7 @@ import signal
 from functools import wraps
 
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, float, float32, finfo, nan, any, int, sqrt
+    ones_like, isnan, isinf, float, float32, finfo, nan, any, int
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
