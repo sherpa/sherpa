@@ -778,10 +778,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         info = 3
     status, msg = _get_saofit_msg( maxfev, info )
 
-    #     rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-    #                                  'njev': njev, 'covar': covar})
-    # else:
-    if info != 1:
+    if info == 0:
         rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
                                      'covar': covar})
     else:
