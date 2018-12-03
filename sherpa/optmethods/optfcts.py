@@ -721,18 +721,19 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
     x, fval, nfev, info, fjac = _saoopt.cpp_lmdif( stat_cb1, m, x, ftol, xtol, gtol, maxfev, epsfcn, factor, verbose, xmin, xmax, fjac )
 
-    fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
+    if info > 0:
+        fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
 
-    if m != n:
-        covar = fjac[:n, :n]
-    else:
-        covar = fjac
+        if m != n:
+            covar = fjac[:n, :n]
+        else:
+            covar = fjac
 
-    if _par_at_boundary( xmin, x, xmax, xtol ):
-        nm_result = neldermead( fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol), maxfev=maxfev-nfev, finalsimplex=2, iquad=0, verbose=0 )
-        nfev += nm_result[ 4 ][ 'nfev' ]
-        x = nm_result[ 1 ]
-        fval = nm_result[ 2 ]
+        if _par_at_boundary( xmin, x, xmax, xtol ):
+            nm_result = neldermead( fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol), maxfev=maxfev-nfev, finalsimplex=2, iquad=0, verbose=0 )
+            nfev += nm_result[ 4 ][ 'nfev' ]
+            x = nm_result[ 1 ]
+            fval = nm_result[ 2 ]
 ##        if nm_result[ 2 ] < fval:
 ##            x = nm_result[ 1 ]
 ##            fval = nm_result[ 2 ]
@@ -742,6 +743,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     if error:
         raise error.pop()
 
+    # This dictionary and the calls below it are unused and should be removed.
     key = {
         0: (False, 'improper input parameters'),
         1: (True,
@@ -769,18 +771,24 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     key[3] = (True, key[1][1] + ' and ' + key[2][1])
     status, msg = key.get(info, (False, 'unknown status flag (%d)' % info))
 
+    # lmdif used to return info as an integer in the range: [0, 8].  The
+    # explanations for the info values were taken verbatim from lmdif code and
+    # are reproduced in the lines above. However, SDS at
+    # one point complained that they do not understand the wording of the
+    # explanations and wanted a uniform error wording, hence the _get_sao_fit_msg.
+
     if 0 == info:
         info = 1
     elif info >= 1 or info <= 4:
         info = 0
     else:
         info = 3
-    status, msg = _get_saofit_msg( maxfev, info )
+    status, msg = _get_saofit_msg(maxfev, info)
 
-    #     rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-    #                                  'njev': njev, 'covar': covar})
-    # else:
-    rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                 'covar': covar})
+    if info == 0:
+        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
+                                     'covar': covar})
+    else:
+        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev})
 
     return rv
