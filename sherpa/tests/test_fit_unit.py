@@ -2678,8 +2678,8 @@ def test_dof_1(method, stat, statargs):
 
 @pytest.mark.parametrize("method", [LevMar, NelderMead, MonCar])
 @pytest.mark.parametrize("stat,statargs", [(Cash, (dof1_cash, None, None)),
-                                           (CStat, (dof1_cstat, 1.0, np.nan)),
-                                           (Chi2, (dof1_chi2, 1.0, np.nan))])
+                                           (CStat, (dof1_cstat, np.nan, np.nan)),
+                                           (Chi2, (dof1_chi2, np.nan, np.nan))])
 def test_dof_0(method, stat, statargs):
     """DOF is 0"""
 
@@ -2694,19 +2694,11 @@ def test_dof_0(method, stat, statargs):
     assert_stat_info(statinfo, 3, 0, statargs[0], statargs[1], statargs[2])
 
 
-# The CStat and Chi-square runs fail with
-#     TypeError: igamc domain error, a and x must be positive
-# This error should either be caught earlier (in which case we may want
-# to remove these statistics from this test and add a separate
-# regression test for those), or handled in a "better" way.
-#
 @pytest.mark.parametrize("method", [LevMar, NelderMead, MonCar])
 @pytest.mark.parametrize("stat,statargs",
                          [(Cash, (dof1_cash, None, None)),
-                          pytest.param(CStat, (dof1_chi2, 1.0, np.nan),
-                                       marks=pytest.mark.xfail),
-                          pytest.param(Chi2, (dof1_chi2, 1.0, np.nan),
-                                       marks=pytest.mark.xfail)])
+                          (CStat, (dof1_cstat, np.nan, np.nan)),
+                          (Chi2, (dof1_chi2, np.nan, np.nan))])
 def test_dof_neg1(method, stat, statargs):
     """DOF is -1"""
 
