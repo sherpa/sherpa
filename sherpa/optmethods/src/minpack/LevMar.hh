@@ -1441,13 +1441,16 @@ namespace minpack {
                       nprint, nfev, &fjac[0], ldfjac, &ipvt[0], &qtf[0],
                       &wa1[ 0 ], &wa2[0], &wa3[0], &wa4[0], bounds );
 
-	this->covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
+        if ( info > 0 ) {
+          // The covariance matrix does not need to be calculated if there was no fit.
+          this->covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
 
-	for ( int ii = 0; ii < n; ++ii )
-	  if ( fjac[ ii + ldfjac * ii ] > 0.0 )
-	    covarerr[ ii ] = sqrt( fjac[ ii + ldfjac * ii ] );
-	  else
-	    covarerr[ ii ] = 0.0;
+          for ( int ii = 0; ii < n; ++ii )
+            if ( fjac[ ii + ldfjac * ii ] > 0.0 )
+              covarerr[ ii ] = sqrt( fjac[ ii + ldfjac * ii ] );
+            else
+              covarerr[ ii ] = 0.0;
+        }
 
       } catch( sherpa::OptErr& oe ) {
 
