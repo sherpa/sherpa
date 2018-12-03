@@ -133,6 +133,8 @@ static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func ) {
     std::vector<double> mypar( &par[0], &par[0] + npar );
     info = levmar( npar, ftol, xtol, gtol, maxnfev, epsfcn, factor, verbose,
 		   mypar, nfev, fval, bounds, jacobian, covarerr );
+
+    // info > 0 means par needs to be updated
     if ( info > 0 )
       for ( int ii = 0; ii < npar; ++ii )
         par[ ii ] = mypar[ ii ];
@@ -152,6 +154,8 @@ static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func ) {
       PyErr_SetString( PyExc_RuntimeError, (char*) "Unknown exception caught" );
     return NULL;
   }
+
+  // info == 0 is a no-op.
 
   if ( info < 0 ) {
     // Make sure an exception is set

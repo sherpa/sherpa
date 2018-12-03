@@ -1442,6 +1442,7 @@ namespace minpack {
                       &wa1[ 0 ], &wa2[0], &wa3[0], &wa4[0], bounds );
 
         if ( info > 0 ) {
+          // The covariance matrix does not need to be calculated if there was no fit.
           this->covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
 
           for ( int ii = 0; ii < n; ++ii )
