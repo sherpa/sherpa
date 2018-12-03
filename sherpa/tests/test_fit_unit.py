@@ -2781,8 +2781,7 @@ def test_fit_dof_0(method, stat, rstat):
 #
 @pytest.mark.parametrize("stat", [Cash, CStat, Chi2])
 @pytest.mark.parametrize("method,success",
-                         [pytest.param(LevMar, False,
-                                       marks=pytest.mark.skip(reason='LevMar crashes if dof<0')),
+                         [(LevMar, False),
                           (NelderMead, True),
                           (MonCar, True)])
 def test_fit_dof_neg1(stat, method, success):
