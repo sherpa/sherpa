@@ -200,6 +200,46 @@ def _can_calculate_rstat(stat):
         not isinstance(stat, LeastSq)
 
 
+def goodness_of_fit(statobj, statval, dof):
+    """Return the reduced statistic and q value.
+
+    The reduced statisitc is conceptually simple, as it is just
+    statistic / degrees-of-freedom, but it is not meaningful for
+    all statistics, and it is only valid if there are any degrees
+    of freedom.
+
+    Parameters
+    ----------
+    statobj : sherpa.stats.Stat instance
+    statval : float
+        The statistic value. It is assumed to be finite.
+    dof : int
+        The number of degrees of freedom, which may be 0 or negative.
+
+    Returns
+    -------
+    rstat, qval : float or NaN or None, float or NaN or None
+        The reduced statistic and q value. If the statistic does not support
+        a goodness of fit then the return values are None. If it does then
+        NaN is returned if either the number of degrees of freedom is 0
+        (or less), or the statistic value is less than 0.
+
+    """
+
+    rstat = None
+    qval = None
+
+    if _can_calculate_rstat(statobj):
+        if dof > 0 and statval >= 0.0:
+            qval = igamc(dof / 2.0, statval / 2.0)
+            rstat = statval / dof
+        else:
+            qval = nan
+            rstat = nan
+
+    return rstat, qval
+
+
 class FitResults(NoNewAttributesAfterInit):
     """The results of a fit.
 
@@ -275,15 +315,9 @@ class FitResults(NoNewAttributesAfterInit):
     def __init__(self, fit, results, init_stat, param_warnings):
         _vals = fit.data.eval_model_to_fit(fit.model)
         _dof = len(_vals) - len(tuple(results[1]))
-        _qval = None
-        _rstat = None
         _covar = results[4].get('covar')
-        if _can_calculate_rstat(fit.stat):
-            if _dof > 0 and results[2] >= 0.0:
-                _qval = igamc(_dof / 2., results[2] / 2.)
-                _rstat = results[2] / _dof
-            else:
-                _rstat = nan
+
+        _rstat, _qval = goodness_of_fit(fit.stat, results[2], _dof)
 
         self.succeeded = results[0]
         self.parnames = tuple(p.fullname for p in fit.model.pars
@@ -1197,17 +1231,10 @@ class Fit(NoNewAttributesAfterInit):
         stat, fvec = self._calc_stat()
         model = self.data.eval_model_to_fit(self.model)
 
-        qval = None
-        rstat = None
         numpoints = len(model)
         dof = numpoints - len(self.model.thawedpars)
-        if _can_calculate_rstat(self.stat):
-            if stat >= 0.0:
-                qval = igamc(dof / 2., stat / 2.)
-            try:
-                rstat = stat / dof
-            except ZeroDivisionError:
-                rstat = nan
+
+        rstat, qval = goodness_of_fit(self.stat, stat, dof)
 
         name = _cleanup_chi2_name(self.stat, self.data)
 
