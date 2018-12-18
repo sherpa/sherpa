@@ -64,6 +64,9 @@
 // }
 //
 
+#ifdef USE_ADEPT
+#include "adept.h"
+#endif
 #include <cmath>
 #include "../Opt.hh"
 namespace minpack {
@@ -3167,6 +3170,1229 @@ namespace minpack {
           // iflag = fcn(m, n, wa2, wa4, fjac, ldfjac, 1, xptr);
           iflag = 1;
           fcn(m, n, wa2, wa4, iflag, xptr);
+          ++nfev;
+          if (iflag < 0) {
+            goto TERMINATE;
+          }
+          fnorm1 = this->enorm(m, wa4);
+
+          /*           compute the scaled actual reduction. */
+
+          actred = -1.;
+          if (p1 * fnorm1 < fnorm) {
+            /* Computing 2nd power */
+            d1 = fnorm1 / fnorm;
+            actred = 1. - d1 * d1;
+          }
+
+          /*           compute the scaled predicted reduction and */
+          /*           the scaled directional derivative. */
+
+          for (j = 0; j < n; ++j) {
+            wa3[j] = 0.;
+            l = ipvt[j]-1;
+            temp = wa1[l];
+            for (i = 0; i <= j; ++i) {
+              wa3[i] += fjac[i + j * ldfjac] * temp;
+            }
+          }
+          temp1 = this->enorm(n, wa3) / fnorm;
+          temp2 = (sqrt(par) * pnorm) / fnorm;
+          prered = temp1 * temp1 + temp2 * temp2 / p5;
+          dirder = -(temp1 * temp1 + temp2 * temp2);
+
+          /*           compute the ratio of the actual to the predicted */
+          /*           reduction. */
+
+          ratio = 0.;
+          if (prered != 0.) {
+            ratio = actred / prered;
+          }
+
+          /*           update the step bound. */
+
+          if (ratio <= p25) {
+            if (actred >= 0.) {
+              temp = p5;
+            } else {
+              temp = p5 * dirder / (dirder + p5 * actred);
+            }
+            if (p1 * fnorm1 >= fnorm || temp < p1) {
+              temp = p1;
+            }
+            /* Computing MIN */
+            d1 = pnorm / p1;
+            delta = temp * std::min(delta,d1);
+            par /= temp;
+          } else {
+            if (par == 0. || ratio >= p75) {
+              delta = pnorm / p5;
+              par = p5 * par;
+            }
+          }
+
+          /*           test for successful iteration. */
+
+          if (ratio >= p0001) {
+
+            /*           successful iteration. update x, fvec, and their norms. */
+
+            for (j = 0; j < n; ++j) {
+              x[j] = wa2[j];
+              wa2[j] = diag[j] * x[j];
+            }
+            for (i = 0; i < m; ++i) {
+              fvec[i] = wa4[i];
+            }
+            xnorm = this->enorm(n, wa2);
+            fnorm = fnorm1;
+            ++iter;
+          }
+
+          /*           tests for convergence. */
+
+          if (fabs(actred) <= ftol && prered <= ftol && p5 * ratio <= 1.) {
+            info = 1;
+          }
+          if (delta <= xtol * xnorm) {
+            info = 2;
+          }
+          if (fabs(actred) <= ftol && prered <= ftol && p5 * ratio <= 1. && info == 2) {
+            info = 3;
+          }
+          if (info != 0) {
+            goto TERMINATE;
+          }
+
+          /*           tests for termination and stringent tolerances. */
+
+          if (nfev >= maxfev) {
+            info = 5;
+          }
+          if (fabs(actred) <= epsmch && prered <= epsmch && p5 * ratio <= 1.) {
+            info = 6;
+          }
+          if (delta <= epsmch * xnorm) {
+            info = 7;
+          }
+          if (gnorm <= epsmch) {
+            info = 8;
+          }
+          if (info != 0) {
+            goto TERMINATE;
+          }
+
+          /*           end of the inner loop. repeat if iteration unsuccessful. */
+
+        } while (ratio < p0001);
+
+        /*        end of the outer loop. */
+
+      }
+    TERMINATE:
+
+      /*     termination, either normal or user imposed. */
+
+      if (iflag < 0) {
+	info = iflag;
+      }
+      if (nprint > 0) {
+	// fcn(m, n, x, fvec, fjac, ldfjac, 0, xptr);
+        this->print_progress(m, n, x, fvec);
+      }
+      return info;
+
+      /*     last card of subroutine lmder. */
+
+    }
+
+  };
+
+  #ifdef USE_ADEPT
+  template< typename Func, typename Data >
+  class AdeptFuncJacobian {
+  public:
+    AdeptFuncJacobian( Func fct, Data xptr, int m, int n ) :
+      usr_func(fct), usr_data(xptr), npar(n), mfct(m), x(n), y(m) {}
+
+    int calc_fvec( const double* xx, double* yy ) {
+      adept::set_values( &x[0], npar, xx );                            // Initialize adouble inputs
+      stack.new_recording( );                                                // Start recording
+      int ierr = 0;
+      usr_func( mfct, npar, &x[0], &y[0], ierr, usr_data );     // Run algorithm
+      if ( ierr < 0 )
+        return ierr;
+      stack.independent( &x[0], npar );                                // Identify independent variables
+      stack.dependent( &y[0], mfct );                                   // Identify dependent variables
+      for ( int ii = 0; ii < mfct; ++ii  )
+        yy[ ii ] = y[ ii ].value();
+      return 0;
+    }
+
+    int calc_fvec_jac( const double* xx, double* yy, double* jac ) {
+      int iflag = calc_fvec( xx, yy );
+      if ( iflag >= 0 )
+        stack.jacobian(jac);                 // Compute & store Jacobian in jac
+      return iflag;
+    }
+
+    int print( const double* xx, double* yy, double* jac ) {
+      int iflag = calc_fvec_jac( xx, yy, jac );
+      if ( iflag >= 0 ) {
+        print_fvec( yy );
+        print_jacobian( jac );
+      }
+      return iflag;
+    }
+
+  private:
+    Func usr_func;
+    Data usr_data;
+    int npar, mfct;
+    adept::Stack stack;           // Where the derivative information is stored
+    std::vector<adept::adouble> x, y;
+
+    void print_fvec(const double* y) {
+      std::cout << "y =" << y[0];
+      for (int ii = 1; ii < npar; ++ii)
+        std::cout << ", " << y[ii];
+      std::cout << '\n';
+    }
+    void print_jacobian(const double* jac) {
+      std::cout << "jac = " << jac[0];
+      for ( int ii = 1; ii < npar * mfct; ++ii )
+        std::cout << ", " << jac[ii];
+      std::cout << '\n';
+    }
+  };                                                                                                        // AdeptFuncJacobian
+#endif
+
+  template < typename Func, typename Data, typename real >
+  class LevMarDerAdept: public LevMar<Func, Data, real> {
+
+  public:
+
+   LevMarDerAdept( Func func, Data xdata, int mfct, int n )
+      : LevMar<Func, Data, real>( func, xdata ),
+#ifdef USE_ADEPT
+        adept_func_jac( func, xdata, mfct, n ),
+#endif
+        usr_fcn( func ), myfvec( mfct ) { }
+
+    int operator( )( int n, real ftol, real xtol, real gtol, int maxfev,
+                     real factor, int nprint, std::vector<real>& x,
+                     int& nfev, int& njev, real& fmin,
+                     const sherpa::Bounds<real>& bounds,
+                     std::vector<real>& fjac,
+                     std::vector<real>& covarerr ) {
+
+      int m = static_cast<int>( myfvec.size( ) );
+
+      std::vector<real> diag( n ), qtf( n ), wa1( n ), wa2( n ), wa3( n );
+      std::vector<real> wa4( m );
+      std::vector<int> ipvt( n );
+
+      const int mode = 1;
+      const int ldfjac = m;
+
+      Data usrdata = sherpa::Opt<Data, real>::get_usr_data();
+      const std::vector<real>& low = bounds.get_lb();
+      const std::vector<real>& high = bounds.get_ub();
+      int info = lmder_2( usr_fcn, usrdata, m, n, &x[0],
+                          &myfvec[0], &fjac[0], ldfjac, ftol, xtol, gtol,
+                          maxfev, &diag[0], mode, factor, nprint,
+                          nfev, njev, &ipvt[0], &qtf[0], &wa1[0], &wa2[0],
+                          &wa3[0], &wa4[0], low, high);
+
+        if ( info > 0 ) {
+          this->covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
+
+          for ( int ii = 0; ii < n; ++ii )
+            if ( fjac[ ii + ldfjac * ii ] > 0.0 )
+              covarerr[ ii ] = sqrt( fjac[ ii + ldfjac * ii ] );
+            else
+              covarerr[ ii ] = 0.0;
+        }
+
+        fmin = std::pow( this->enorm( myfvec.size( ), &myfvec[0] ), 2.0 );
+        return info;
+
+    }
+
+
+    LevMarDerAdept( Func fcn, Data xdata, int mfct )
+      : LevMar<Func, Data, real>( fcn, xdata ), usr_fcn( fcn ),
+        myfvec( mfct ) { }
+
+    int fitme( int n, real ftol, real xtol,
+               real gtol, int maxfev, real epsfcn,
+               real factor, int nprint, std::vector<real>& x,
+               int& nfev, int& njev, real& fmin, std::vector<real>& fjac,
+               const sherpa::Bounds<real>& bounds, int& rank ) {
+
+      int info = 0;
+
+      try {
+
+        if ( sherpa::Opt<Data, real>::are_pars_outside_limits( n, x,
+                                                               bounds ) )
+          throw sherpa::OptErr( sherpa::OptErr::OutOfBound );
+
+	int m = static_cast<int>( myfvec.size( ) );
+
+	std::vector<real> diag( n ), qtf( n ), wa1( n ), wa2( n ), wa3( n );
+	std::vector<real> wa4( m );
+	std::vector<int> ipvt( n );
+
+	const int mode = 1;
+	const int ldfjac = m;
+
+        Data usrdata = sherpa::Opt<Data, real>::get_usr_data();
+        const std::vector<real>& low = bounds.get_lb();
+        const std::vector<real>& high = bounds.get_ub();
+	info = lmder( usr_fcn, usrdata, m, n, &x[0], &myfvec[0], &fjac[0],
+                      ldfjac, ftol, xtol, gtol, maxfev, &diag[0], mode, factor,
+                      nprint, nfev, njev, &ipvt[0], &qtf[0], &wa1[ 0 ],
+                      &wa2[0], &wa3[0], &wa4[0], low, high);
+
+        real fnorm = this->enorm(m, &myfvec[0]);
+        rank = covar1( m, n, fnorm * fnorm, &fjac[0], ldfjac, &ipvt[0],
+                       ftol, &wa1[0] );
+        fmin = std::pow( fnorm, 2.0 );
+
+        return info;
+
+      } catch( sherpa::OptErr& oe ) {
+
+	if ( nprint )
+	  std::cerr << oe << '\n';
+	info = oe.err;
+
+      } catch( std::runtime_error& re ) {
+
+	if ( nprint )
+	  std::cerr << re.what( ) << '\n';
+	info = sherpa::OptErr::Unknown;
+
+      } catch( std::exception& e ) {
+
+	if ( nprint )
+	  std::cerr << e.what( ) << '\n';
+	info = sherpa::OptErr::Unknown;
+
+      }
+
+      // fmin = std::pow( this->enorm( myfvec.size( ), &myfvec[0] ), 2.0 );
+      return info;
+
+    }
+
+    // real eval_func( int maxnfev, const sherpa::Bounds<real>& limits,
+    //                 int npar, std::vector<real>& par, int& nfev ) {
+
+    //   if ( sherpa::Opt<Data, real>::are_pars_outside_limits( npar, par,
+    //                                                          limits ) ) {
+    //     return std::numeric_limits< real >::max( );
+    //   }
+
+    //   ++nfev;
+    //   int ierr=EXIT_SUCCESS;
+
+    //   const int m = static_cast<int>( myfvec.size( ) );
+
+    //   Data usrdata = sherpa::Opt<Data, real>::get_usr_data();
+    //   usr_func( m, npar, &par[0], &myfvec[0], &myfjac[0], m, ierr, usrdata );
+
+    //   real fval = pow( this->enorm( m, &myfvec[0] ), 2.0 );
+    //   if ( EXIT_SUCCESS != ierr )
+    //     throw sherpa::OptErr( sherpa::OptErr::UsrFunc );
+    //   if ( nfev >= maxnfev )
+    //     throw sherpa::OptErr( sherpa::OptErr::MaxFev );
+
+    //   return fval;
+
+    // }
+
+  private:
+
+ #ifdef USE_ADEPT
+    AdeptFuncJacobian<Func, Data> adept_func_jac;
+#endif
+    Func usr_fcn;
+    std::vector< real > myfvec;
+
+    int covar1(int m, int n, real fsumsq, real *r, int ldr,
+               const int *ipvt, real tol, real *wa) {
+
+      /* Local variables */
+      int i, j, k, l, ii, jj;
+      int sing;
+      real temp, tolr;
+      tolr = tol * fabs(r[0]);
+
+      /*     form the inverse of r in the full upper triangle of r. */
+
+      l = -1;
+      for (k = 0; k < n; ++k) {
+	if (fabs(r[k + k * ldr]) <= tolr) {
+          break;
+	}
+	r[k + k * ldr] = 1. / r[k + k * ldr];
+	if (k > 0) {
+          for (j = 0; j < k; ++j) {
+            // coverity[copy_paste_error]
+            temp = r[k + k * ldr] * r[j + k * ldr];
+            r[j + k * ldr] = 0.;
+            for (i = 0; i <= j; ++i) {
+              r[i + k * ldr] -= temp * r[i + j * ldr];
+            }
+          }
+        }
+	l = k;
+      }
+
+      /*     form the full upper triangle of the inverse of (r transpose)*r */
+      /*     in the full upper triangle of r. */
+
+      if (l >= 0) {
+        for (k = 0; k <= l; ++k) {
+          if (k > 0) {
+            for (j = 0; j < k; ++j) {
+              temp = r[j + k * ldr];
+              for (i = 0; i <= j; ++i) {
+                r[i + j * ldr] += temp * r[i + k * ldr];
+              }
+            }
+          }
+          temp = r[k + k * ldr];
+          for (i = 0; i <= k; ++i) {
+            r[i + k * ldr] *= temp;
+          }
+        }
+      }
+
+      /*     form the full lower triangle of the covariance matrix */
+      /*     in the strict lower triangle of r and in wa. */
+
+      for (j = 0; j < n; ++j) {
+	jj = ipvt[j]-1;
+	sing = j > l;
+	for (i = 0; i <= j; ++i) {
+          if (sing) {
+            r[i + j * ldr] = 0.;
+          }
+          ii = ipvt[i]-1;
+          if (ii > jj) {
+            r[ii + jj * ldr] = r[i + j * ldr];
+          }
+          else if (ii < jj) {
+            r[jj + ii * ldr] = r[i + j * ldr];
+          }
+	}
+	wa[jj] = r[j + j * ldr];
+      }
+
+      /*     symmetrize the covariance matrix in r. */
+
+      temp = fsumsq / (m - (l + 1));
+      for (j = 0; j < n; ++j) {
+	for (i = 0; i < j; ++i) {
+          r[j + i * ldr] *= temp;
+          r[i + j * ldr] = r[j + i * ldr];
+	}
+	r[j + j * ldr] = temp * wa[j];
+      }
+
+      /*     last card of subroutine covar. */
+      if (l == (n - 1)) {
+        return 0;
+      }
+      return l + 1;
+
+    }
+
+    // c     **********
+    // c
+    // c     subroutine lmder
+    // c
+    // c     the purpose of lmder is to minimize the sum of the squares of
+    // c     m nonlinear functions in n variables by a modification of
+    // c     the levenberg-marquardt algorithm. the user must provide a
+    // c     subroutine which calculates the functions and the jacobian.
+    // c
+    // c     the subroutine statement is
+    // c
+    // c       subroutine lmder(fcn,m,n,x,fvec,fjac,ldfjac,ftol,xtol,gtol,
+    // c                        maxfev,diag,mode,factor,nprint,info,nfev,
+    // c                        njev,ipvt,qtf,wa1,wa2,wa3,wa4)
+    // c
+    // c     where
+    // c
+    // c       fcn is the name of the user-supplied subroutine which
+    // c         calculates the functions and the jacobian. fcn must
+    // c         be declared in an external statement in the user
+    // c         calling program, and should be written as follows.
+    // c
+    // c         subroutine fcn(m,n,x,fvec,fjac,ldfjac,iflag)
+    // c         integer m,n,ldfjac,iflag
+    // c         double precision x(n),fvec(m),fjac(ldfjac,n)
+    // c         ----------
+    // c         if iflag = 1 calculate the functions at x and
+    // c         return this vector in fvec. do not alter fjac.
+    // c         if iflag = 2 calculate the jacobian at x and
+    // c         return this matrix in fjac. do not alter fvec.
+    // c         ----------
+    // c         return
+    // c         end
+    // c
+    // c         the value of iflag should not be changed by fcn unless
+    // c         the user wants to terminate execution of lmder.
+    // c         in this case set iflag to a negative integer.
+    // c
+    // c       m is a positive integer input variable set to the number
+    // c         of functions.
+    // c
+    // c       n is a positive integer input variable set to the number
+    // c         of variables. n must not exceed m.
+    // c
+    // c       x is an array of length n. on input x must contain
+    // c         an initial estimate of the solution vector. on output x
+    // c         contains the final estimate of the solution vector.
+    // c
+    // c       fvec is an output array of length m which contains
+    // c         the functions evaluated at the output x.
+    // c
+    // c       fjac is an output m by n array. the upper n by n submatrix
+    // c         of fjac contains an upper triangular matrix r with
+    // c         diagonal elements of nonincreasing magnitude such that
+    // c
+    // c                t     t           t
+    // c               p *(jac *jac)*p = r *r,
+    // c
+    // c         where p is a permutation matrix and jac is the final
+    // c         calculated jacobian. column j of p is column ipvt(j)
+    // c         (see below) of the identity matrix. the lower trapezoidal
+    // c         part of fjac contains information generated during
+    // c         the computation of r.
+    // c
+    // c       ldfjac is a positive integer input variable not less than m
+    // c         which specifies the leading dimension of the array fjac.
+    // c
+    // c       ftol is a nonnegative input variable. termination
+    // c         occurs when both the actual and predicted relative
+    // c         reductions in the sum of squares are at most ftol.
+    // c         therefore, ftol measures the relative error desired
+    // c         in the sum of squares.
+    // c
+    // c       xtol is a nonnegative input variable. termination
+    // c         occurs when the relative error between two consecutive
+    // c         iterates is at most xtol. therefore, xtol measures the
+    // c         relative error desired in the approximate solution.
+    // c
+    // c       gtol is a nonnegative input variable. termination
+    // c         occurs when the cosine of the angle between fvec and
+    // c         any column of the jacobian is at most gtol in absolute
+    // c         value. therefore, gtol measures the orthogonality
+    // c         desired between the function vector and the columns
+    // c         of the jacobian.
+    // c
+    // c       maxfev is a positive integer input variable. termination
+    // c         occurs when the number of calls to fcn with iflag = 1
+    // c         has reached maxfev.
+    // c
+    // c       diag is an array of length n. if mode = 1 (see
+    // c         below), diag is internally set. if mode = 2, diag
+    // c         must contain positive entries that serve as
+    // c         multiplicative scale factors for the variables.
+    // c
+    // c       mode is an integer input variable. if mode = 1, the
+    // c         variables will be scaled internally. if mode = 2,
+    // c         the scaling is specified by the input diag. other
+    // c         values of mode are equivalent to mode = 1.
+    // c
+    // c       factor is a positive input variable used in determining the
+    // c         initial step bound. this bound is set to the product of
+    // c         factor and the euclidean norm of diag*x if nonzero, or else
+    // c         to factor itself. in most cases factor should lie in the
+    // c         interval (.1,100.).100. is a generally recommended value.
+    // c
+    // c       nprint is an integer input variable that enables controlled
+    // c         printing of iterates if it is positive. in this case,
+    // c         fcn is called with iflag = 0 at the beginning of the first
+    // c         iteration and every nprint iterations thereafter and
+    // c         immediately prior to return, with x, fvec, and fjac
+    // c         available for printing. fvec and fjac should not be
+    // c         altered. if nprint is not positive, no special calls
+    // c         of fcn with iflag = 0 are made.
+    // c
+    // c       info is an integer output variable. if the user has
+    // c         terminated execution, info is set to the (negative)
+    // c         value of iflag. see description of fcn. otherwise,
+    // c         info is set as follows.
+    // c
+    // c         info = 0  improper input parameters.
+    // c
+    // c         info = 1  both actual and predicted relative reductions
+    // c                   in the sum of squares are at most ftol.
+    // c
+    // c         info = 2  relative error between two consecutive iterates
+    // c                   is at most xtol.
+    // c
+    // c         info = 3  conditions for info = 1 and info = 2 both hold.
+    // c
+    // c         info = 4  the cosine of the angle between fvec and any
+    // c                   column of the jacobian is at most gtol in
+    // c                   absolute value.
+    // c
+    // c         info = 5  number of calls to fcn with iflag = 1 has
+    // c                   reached maxfev.
+    // c
+    // c         info = 6  ftol is too small. no further reduction in
+    // c                   the sum of squares is possible.
+    // c
+    // c         info = 7  xtol is too small. no further improvement in
+    // c                   the approximate solution x is possible.
+    // c
+    // c         info = 8  gtol is too small. fvec is orthogonal to the
+    // c                   columns of the jacobian to machine precision.
+    // c
+    // c       nfev is an integer output variable set to the number of
+    // c         calls to fcn with iflag = 1.
+    // c
+    // c       njev is an integer output variable set to the number of
+    // c         calls to fcn with iflag = 2.
+    // c
+    // c       ipvt is an integer output array of length n. ipvt
+    // c         defines a permutation matrix p such that jac*p = q*r,
+    // c         where jac is the final calculated jacobian, q is
+    // c         orthogonal (not stored), and r is upper triangular
+    // c         with diagonal elements of nonincreasing magnitude.
+    // c         column j of p is column ipvt(j) of the identity matrix.
+    // c
+    // c       qtf is an output array of length n which contains
+    // c         the first n elements of the vector (q transpose)*fvec.
+    // c
+    // c       wa1, wa2, and wa3 are work arrays of length n.
+    // c
+    // c       wa4 is a work array of length m.
+    // c
+    // c     subprograms called
+    // c
+    // c       user-supplied ...... fcn
+    // c
+    // c       minpack-supplied ... dpmpar,enorm,lmpar,qrfac
+    // c
+    // c       fortran-supplied ... dabs,dmax1,dmin1,dsqrt,mod
+    // c
+    // c     argonne national laboratory. minpack project. march 1980.
+    // c     burton s. garbow, kenneth e. hillstrom, jorge j. more
+    // c
+    // c     **********
+
+    int lmder( Func fcn, Data xptr, int m, int n, real *x,
+               real *fvec, real *fjac, int ldfjac, real ftol,
+               real xtol, real gtol, int maxfev, real *diag,
+               int mode, real factor, int nprint,
+               int& nfev, int& njev, int *ipvt, real *qtf,
+               real *wa1, real *wa2, real *wa3, real *wa4,
+               const std::vector<real>& low,
+	       const std::vector<real>& high ) {
+
+      // Initialized data
+
+      const real p1=0.1;
+      const real p5=0.5;
+      const real p25=0.25;
+      const real p75=0.75;
+      const real p0001=1.0e-4;
+      /* System generated locals */
+      real d1, d2;
+
+      /* Local variables */
+      int i, j, l;
+      real par, sum;
+      int iter;
+      real temp, temp1, temp2;
+      int iflag;
+      real delta = 0.;
+      real ratio;
+      real fnorm, gnorm, pnorm, xnorm = 0., fnorm1, actred, dirder,
+        epsmch, prered;
+      int info;
+
+
+      /*     epsmch is the machine precision. */
+
+      epsmch = std::numeric_limits< real >::epsilon( );
+
+      info = 0;
+      iflag = 0;
+      nfev = 0;
+      njev = 0;
+
+      /*     check the input parameters for errors. */
+
+      if (n <= 0 || m < n || ldfjac < m || ftol < 0. || xtol < 0. ||
+          gtol < 0. || maxfev <= 0 || factor <= 0.) {
+	goto TERMINATE;
+      }
+      if (mode == 2) {
+        for (j = 0; j < n; ++j) {
+          if (diag[j] <= 0.) {
+            goto TERMINATE;
+          }
+        }
+      }
+
+      /*     evaluate the function at the starting point */
+      /*     and calculate its norm. */
+
+ #ifdef USE_ADEPT
+      iflag = adept_func_jac.calc_fvec( x, fvec );
+#else
+      iflag = fcn(m, n, x, fvec, fjac, ldfjac, 1, xptr);
+#endif
+      nfev = 1;
+      if (iflag < 0) {
+	goto TERMINATE;
+      }
+      fnorm = this->enorm(m, fvec);
+
+      /*     initialize levenberg-marquardt parameter and iteration counter. */
+
+      par = 0.;
+      iter = 1;
+
+      /*     beginning of the outer loop. */
+
+      for (;;) {
+
+        /*        calculate the jacobian matrix. */
+
+ #ifdef USE_ADEPT
+        iflag = adept_func_jac.calc_fvec_jac( x, fvec, fjac );
+#else
+        iflag = fcn(m, n, x, fvec, fjac, ldfjac, 2, xptr);
+#endif
+        ++njev;
+        if (iflag < 0) {
+          goto TERMINATE;
+        }
+
+        /*        if requested, call fcn to enable printing of iterates. */
+
+        if (nprint > 0) {
+          iflag = 0;
+          if ((iter - 1) % nprint == 0) {
+ #ifdef USE_ADEPT
+            iflag = adept_func_jac.print(x, fvec, fjac);
+#else
+             iflag = fcn(m, n, x, fvec, fjac, ldfjac, 0, xptr);
+#endif
+           // iflag = fcn(m, n, x, fvec, fjac, ldfjac, 0, xptr);
+            // this->print_progress(m, n, x, fvec);
+          }
+          if (iflag < 0) {
+            goto TERMINATE;
+          }
+        }
+
+        /*        compute the qr factorization of the jacobian. */
+
+        this->qrfac(m, n, fjac, ldfjac, 1, ipvt, n, wa1, wa2, wa3);
+
+        /*        on the first iteration and if mode is 1, scale according */
+        /*        to the norms of the columns of the initial jacobian. */
+
+        if (iter == 1) {
+          if (mode != 2) {
+            for (j = 0; j < n; ++j) {
+              diag[j] = wa2[j];
+              if (wa2[j] == 0.) {
+                diag[j] = 1.;
+              }
+            }
+          }
+
+          /*        on the first iteration, calculate the norm of the scaled x */
+          /*        and initialize the step bound delta. */
+
+          for (j = 0; j < n; ++j) {
+            wa3[j] = diag[j] * x[j];
+          }
+          xnorm = this->enorm(n, wa3);
+          delta = factor * xnorm;
+          if (delta == 0.) {
+            delta = factor;
+          }
+        }
+
+        /*        form (q transpose)*fvec and store the first n components in */
+        /*        qtf. */
+
+        for (i = 0; i < m; ++i) {
+          wa4[i] = fvec[i];
+        }
+        for (j = 0; j < n; ++j) {
+          if (fjac[j + j * ldfjac] != 0.) {
+            sum = 0.;
+            for (i = j; i < m; ++i) {
+              sum += fjac[i + j * ldfjac] * wa4[i];
+            }
+            temp = -sum / fjac[j + j * ldfjac];
+            for (i = j; i < m; ++i) {
+              wa4[i] += fjac[i + j * ldfjac] * temp;
+            }
+          }
+          fjac[j + j * ldfjac] = wa1[j];
+          qtf[j] = wa4[j];
+        }
+
+        /*        compute the norm of the scaled gradient. */
+
+        gnorm = 0.;
+        if (fnorm != 0.) {
+          for (j = 0; j < n; ++j) {
+            l = ipvt[j]-1;
+            if (wa2[l] != 0.) {
+              sum = 0.;
+              for (i = 0; i <= j; ++i) {
+                sum += fjac[i + j * ldfjac] * (qtf[i] / fnorm);
+              }
+              /* Computing MAX */
+              d1 = fabs(sum / wa2[l]);
+              gnorm = std::max(gnorm,d1);
+            }
+          }
+        }
+
+        /*        test for convergence of the gradient norm. */
+
+        if (gnorm <= gtol) {
+          info = 4;
+        }
+        if (info != 0) {
+          goto TERMINATE;
+        }
+
+        /*        rescale if necessary. */
+
+        if (mode != 2) {
+          for (j = 0; j < n; ++j) {
+            /* Computing MAX */
+            d1 = diag[j], d2 = wa2[j];
+            diag[j] = std::max(d1,d2);
+          }
+        }
+
+        /*        beginning of the inner loop. */
+
+        do {
+
+          /*           determine the levenberg-marquardt parameter. */
+
+          this->lmpar(n, fjac, ldfjac, ipvt, diag, qtf, delta,
+                &par, wa1, wa2, wa3, wa4);
+
+          /*           store the direction p and x + p. calculate the norm of p. */
+
+          for (j = 0; j < n; ++j) {
+            wa1[j] = -wa1[j];
+            wa2[j] = x[j] + wa1[j];
+            wa3[j] = diag[j] * wa1[j];
+          }
+          pnorm = this->enorm(n, wa3);
+
+          /*           on the first iteration, adjust the initial step bound. */
+
+          // dtn
+          // If any of the parameter, wa2,
+          // is outside the open interval deal with it
+          for ( j = 0; j < n; ++j)
+            wa2[ j ] = std::max( low[ j ], std::min( wa2[ j ], high[ j ] ) );
+          // dtn
+
+          if (iter == 1) {
+            delta = std::min(delta,pnorm);
+          }
+
+          /*           evaluate the function at x + p and calculate its norm. */
+
+ #ifdef USE_ADEPT
+          iflag = adept_func_jac.calc_fvec( wa2, wa4 );
+#else
+           iflag = fcn(m, n, wa2, wa4, fjac, ldfjac, 1, xptr);
+#endif
+          ++nfev;
+          if (iflag < 0) {
+            goto TERMINATE;
+          }
+          fnorm1 = this->enorm(m, wa4);
+
+          /*           compute the scaled actual reduction. */
+
+          actred = -1.;
+          if (p1 * fnorm1 < fnorm) {
+            /* Computing 2nd power */
+            d1 = fnorm1 / fnorm;
+            actred = 1. - d1 * d1;
+          }
+
+          /*           compute the scaled predicted reduction and */
+          /*           the scaled directional derivative. */
+
+          for (j = 0; j < n; ++j) {
+            wa3[j] = 0.;
+            l = ipvt[j]-1;
+            temp = wa1[l];
+            for (i = 0; i <= j; ++i) {
+              wa3[i] += fjac[i + j * ldfjac] * temp;
+            }
+          }
+          temp1 = this->enorm(n, wa3) / fnorm;
+          temp2 = (sqrt(par) * pnorm) / fnorm;
+          prered = temp1 * temp1 + temp2 * temp2 / p5;
+          dirder = -(temp1 * temp1 + temp2 * temp2);
+
+          /*           compute the ratio of the actual to the predicted */
+          /*           reduction. */
+
+          ratio = 0.;
+          if (prered != 0.) {
+            ratio = actred / prered;
+          }
+
+          /*           update the step bound. */
+
+          if (ratio <= p25) {
+            if (actred >= 0.) {
+              temp = p5;
+            } else {
+              temp = p5 * dirder / (dirder + p5 * actred);
+            }
+            if (p1 * fnorm1 >= fnorm || temp < p1) {
+              temp = p1;
+            }
+            /* Computing MIN */
+            d1 = pnorm / p1;
+            delta = temp * std::min(delta,d1);
+            par /= temp;
+          } else {
+            if (par == 0. || ratio >= p75) {
+              delta = pnorm / p5;
+              par = p5 * par;
+            }
+          }
+
+          /*           test for successful iteration. */
+
+          if (ratio >= p0001) {
+
+            /*           successful iteration. update x, fvec, and their norms. */
+
+            for (j = 0; j < n; ++j) {
+              x[j] = wa2[j];
+              wa2[j] = diag[j] * x[j];
+            }
+            for (i = 0; i < m; ++i) {
+              fvec[i] = wa4[i];
+            }
+            xnorm = this->enorm(n, wa2);
+            fnorm = fnorm1;
+            ++iter;
+          }
+
+          /*           tests for convergence. */
+
+          if (fabs(actred) <= ftol && prered <= ftol && p5 * ratio <= 1.) {
+            info = 1;
+          }
+          if (delta <= xtol * xnorm) {
+            info = 2;
+          }
+          if (fabs(actred) <= ftol && prered <= ftol && p5 * ratio <= 1. && info == 2) {
+            info = 3;
+          }
+          if (info != 0) {
+            goto TERMINATE;
+          }
+
+          /*           tests for termination and stringent tolerances. */
+
+          if (nfev >= maxfev) {
+            info = 5;
+          }
+          if (fabs(actred) <= epsmch && prered <= epsmch && p5 * ratio <= 1.) {
+            info = 6;
+          }
+          if (delta <= epsmch * xnorm) {
+            info = 7;
+          }
+          if (gnorm <= epsmch) {
+            info = 8;
+          }
+          if (info != 0) {
+            goto TERMINATE;
+          }
+
+          /*           end of the inner loop. repeat if iteration unsuccessful. */
+
+        } while (ratio < p0001);
+
+        /*        end of the outer loop. */
+
+      }
+    TERMINATE:
+
+      /*     termination, either normal or user imposed. */
+
+      if (iflag < 0) {
+	info = iflag;
+      }
+      if (nprint > 0) {
+#ifdef USE_ADEPT
+        iflag = adept_func_jac.print( x, fvec, fjac );
+#else
+ 	fcn(m, n, x, fvec, fjac, ldfjac, 0, xptr);
+#endif
+	// fcn(m, n, x, fvec, fjac, ldfjac, 0, xptr);
+        // this->print_progress(m, n, x, fvec);
+      }
+      return info;
+
+      /*     last card of subroutine lmder. */
+
+    }
+
+    int lmder_2( Func fcn, Data xptr, int m, int n, real *x, real *fvec,
+                 real *fjac, int ldfjac, real ftol, real xtol, real gtol,
+                 int maxfev, real *diag, int mode, real factor, int nprint,
+                 int& nfev, int& njev, int *ipvt, real *qtf,
+                 real *wa1, real *wa2, real *wa3, real *wa4,
+                 const std::vector<real>& low,
+                 const std::vector<real>& high ) {
+
+      // Initialized data
+
+      const real p1=0.1;
+      const real p5=0.5;
+      const real p25=0.25;
+      const real p75=0.75;
+      const real p0001=1.0e-4;
+      /* System generated locals */
+      real d1, d2;
+
+      /* Local variables */
+      int i, j, l;
+      real par, sum;
+      int iter;
+      real temp, temp1, temp2;
+      int iflag;
+      real delta = 0.;
+      real ratio;
+      real fnorm, gnorm, pnorm, xnorm = 0., fnorm1, actred, dirder,
+        epsmch, prered;
+      int info;
+
+
+      /*     epsmch is the machine precision. */
+
+      epsmch = std::numeric_limits< real >::epsilon( );
+
+      info = 0;
+      iflag = 0;
+      nfev = 0;
+      njev = 0;
+
+      /*     check the input parameters for errors. */
+
+      if (n <= 0 || m < n || ldfjac < m || ftol < 0. || xtol < 0. ||
+          gtol < 0. || maxfev <= 0 || factor <= 0.) {
+	goto TERMINATE;
+      }
+      if (mode == 2) {
+        for (j = 0; j < n; ++j) {
+          if (diag[j] <= 0.) {
+            goto TERMINATE;
+          }
+        }
+      }
+
+      /*     evaluate the function at the starting point */
+      /*     and calculate its norm. */
+
+      // iflag = fcn(m, n, x, fvec, fjac, ldfjac, 1, xptr);
+#ifdef USE_ADEPT
+      iflag = adept_func_jac.calc_fvec( x, fvec );
+#else
+      iflag = fcn(m, n, x, fvec, fjac, ldfjac, 1, xptr);
+#endif
+      nfev = 1;
+      if (iflag < 0) {
+	goto TERMINATE;
+      }
+      fnorm = this->enorm(m, fvec);
+
+      /*     initialize levenberg-marquardt parameter and iteration counter. */
+
+      par = 0.;
+      iter = 1;
+
+      /*     beginning of the outer loop. */
+
+      for (;;) {
+
+        /*        calculate the jacobian matrix. */
+
+#ifdef USE_ADEPT
+        iflag = adept_func_jac.calc_fvec_jac( x, fvec, fjac );
+#else
+        iflag = fcn(m, n, x, fvec, fjac, ldfjac, 2, xptr);
+#endif
+        ++njev;
+        if (iflag < 0) {
+          goto TERMINATE;
+        }
+
+        /*        if requested, call fcn to enable printing of iterates. */
+
+        if (nprint > 0) {
+          iflag = 0;
+          if ((iter - 1) % nprint == 0) {
+            // iflag = fcn(m, n, x, fvec, fjac, ldfjac, 0, xptr);
+            this->print_progress(m, n, x, fvec);
+          }
+          if (iflag < 0) {
+            goto TERMINATE;
+          }
+        }
+
+        /*        compute the qr factorization of the jacobian. */
+
+        this->qrfac(m, n, fjac, ldfjac, 1, ipvt, n, wa1, wa2, wa3);
+
+        /*        on the first iteration and if mode is 1, scale according */
+        /*        to the norms of the columns of the initial jacobian. */
+
+        if (iter == 1) {
+          if (mode != 2) {
+            for (j = 0; j < n; ++j) {
+              diag[j] = wa2[j];
+              if (wa2[j] == 0.) {
+                diag[j] = 1.;
+              }
+            }
+          }
+
+          /*        on the first iteration, calculate the norm of the scaled x */
+          /*        and initialize the step bound delta. */
+
+          for (j = 0; j < n; ++j) {
+            wa3[j] = diag[j] * x[j];
+          }
+          xnorm = this->enorm(n, wa3);
+          delta = factor * xnorm;
+          if (delta == 0.) {
+            delta = factor;
+          }
+        }
+
+        /*        form (q transpose)*fvec and store the first n components in */
+        /*        qtf. */
+
+        for (i = 0; i < m; ++i) {
+          wa4[i] = fvec[i];
+        }
+        for (j = 0; j < n; ++j) {
+          if (fjac[j + j * ldfjac] != 0.) {
+            sum = 0.;
+            for (i = j; i < m; ++i) {
+              sum += fjac[i + j * ldfjac] * wa4[i];
+            }
+            temp = -sum / fjac[j + j * ldfjac];
+            for (i = j; i < m; ++i) {
+              wa4[i] += fjac[i + j * ldfjac] * temp;
+            }
+          }
+          fjac[j + j * ldfjac] = wa1[j];
+          qtf[j] = wa4[j];
+        }
+
+        /*        compute the norm of the scaled gradient. */
+
+        gnorm = 0.;
+        if (fnorm != 0.) {
+          for (j = 0; j < n; ++j) {
+            l = ipvt[j]-1;
+            if (wa2[l] != 0.) {
+              sum = 0.;
+              for (i = 0; i <= j; ++i) {
+                sum += fjac[i + j * ldfjac] * (qtf[i] / fnorm);
+              }
+              /* Computing MAX */
+              d1 = fabs(sum / wa2[l]);
+              gnorm = std::max(gnorm,d1);
+            }
+          }
+        }
+
+        /*        test for convergence of the gradient norm. */
+
+        if (gnorm <= gtol) {
+          info = 4;
+        }
+        if (info != 0) {
+          goto TERMINATE;
+        }
+
+        /*        rescale if necessary. */
+
+        if (mode != 2) {
+          for (j = 0; j < n; ++j) {
+            /* Computing MAX */
+            d1 = diag[j], d2 = wa2[j];
+            diag[j] = std::max(d1,d2);
+          }
+        }
+
+        /*        beginning of the inner loop. */
+
+        do {
+
+          /*           determine the levenberg-marquardt parameter. */
+
+          this->lmpar(n, fjac, ldfjac, ipvt, diag, qtf, delta,
+                &par, wa1, wa2, wa3, wa4);
+
+          /*           store the direction p and x + p. calculate the norm of p. */
+
+          for (j = 0; j < n; ++j) {
+            wa1[j] = -wa1[j];
+            wa2[j] = x[j] + wa1[j];
+            wa3[j] = diag[j] * wa1[j];
+          }
+          pnorm = this->enorm(n, wa3);
+
+          /*           on the first iteration, adjust the initial step bound. */
+
+          // dtn
+          // If any of the parameter, wa2,
+          // is outside the open interval deal with it
+          for ( j = 0; j < n; ++j)
+            wa2[ j ] = std::max( low[ j ], std::min( wa2[ j ], high[ j ] ) );
+          // dtn
+
+          if (iter == 1) {
+            delta = std::min(delta,pnorm);
+          }
+
+          /*           evaluate the function at x + p and calculate its norm. */
+
+#ifdef USE_ADEPT
+          iflag = adept_func_jac.calc_fvec( wa2, wa4 );
+#else
+           iflag = fcn(m, n, wa2, wa4, fjac, ldfjac, 1, xptr);
+#endif
           ++nfev;
           if (iflag < 0) {
             goto TERMINATE;
