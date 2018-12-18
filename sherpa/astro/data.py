@@ -29,6 +29,7 @@ import numpy
 import hashlib
 
 from sherpa.data import BaseData, Data1DInt, Data2D, DataND, Data
+from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, parse_expr, bool_cast, rebin, filter_bins
@@ -250,6 +251,9 @@ class DataOgipResponse(Data1DInt):
 
         return elo, ehi
 
+    def _get_data_space(self, filter=False):
+        return EvaluationSpace1D(self._lo, self._hi)
+
 
 class DataARF(DataOgipResponse):
     """ARF data set.
@@ -363,11 +367,9 @@ class DataARF(DataOgipResponse):
             self._hi = self.energ_hi[bin_mask]
 
     def get_indep(self, filter=False):
-        filter = bool_cast(filter)  # QUS: is this to validate filter?
         return (self._lo, self._hi)
 
     def get_dep(self, filter=False):
-        filter = bool_cast(filter)  # QUS: is this to validate filter?
         return self._rsp
 
     def get_xlabel(self):
@@ -517,11 +519,9 @@ class DataRMF(DataOgipResponse):
         return bin_mask
 
     def get_indep(self, filter=False):
-        filter = bool_cast(filter)  # QUS: is this to validate filter?
         return (self._lo, self._hi)
 
     def get_dep(self, filter=False):
-        filter = bool_cast(filter)  # QUS: is this to validate filter?
         return self.apply_rmf(numpy.ones(self.energ_lo.shape, SherpaFloat))
 
     def get_xlabel(self):
