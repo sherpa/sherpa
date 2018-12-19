@@ -635,6 +635,26 @@ class Data1D(DataND):
             return evaluation_space.grid,
 
     def _get_data_space(self, filter):
+        """
+        Return the data space for this object. The method is called by the get_x and get_indep methods, which need
+        an EvaluationSpace1D representation of the data space to return the appropriate data to the client.
+
+        This is a hook method providing the default implementation for subclasses. Subclasses should override this
+        method to provide alternative callback when the default implementation does not apply to the new class.
+        At this point, this means that if you develop a subclass you should be aware of the default implementation and
+        override it if it does not apply to your subclass. Future versions of Sherpa may implement a cleaner and more
+        extensible API.
+
+        Parameters
+        ----------
+        filter : bool or string to be parsed as bool
+            Whether the data returned should be filtered or not.
+
+        Returns
+        -------
+        data_space : EvaluationSpace1D
+            An instance of the EvaluationSpace1D representing the data space for this object.
+        """
         filter = bool_cast(filter)
         if filter:
             data_x = self._x
