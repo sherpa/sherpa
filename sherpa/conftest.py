@@ -39,6 +39,12 @@ try:
 except ImportError:
     have_astropy = False
 
+try:
+    from sherpa.astro import xspec
+    has_xspec = True
+except ImportError:
+    has_xspec = False
+
 
 TEST_DATA_OPTION = "--test-data"
 
@@ -189,7 +195,26 @@ def pytest_configure(config):
 
 
 @pytest.fixture(scope="session")
-def make_data_path():
+def test_data_path():
+    """
+    Fixture for getting the path to the test data
+
+    Returns
+    -------
+
+    path : basestring
+        The string with the path to the main test data folder.
+    """
+    path = SherpaTestCase.datadir
+
+    if path is None:
+        raise RuntimeError("Test needs the requires_data decorator")
+
+    return path
+
+
+@pytest.fixture(scope="session")
+def make_data_path(test_data_path):
     """
     Fixture for tests requiring the test data dir. It returns a function that can be used to make paths by using
     path elements relative to the test data folder (which is flat, so in principle only the first element is required)
@@ -202,12 +227,9 @@ def make_data_path():
         if the data directory is None, pointing out the requires_data
         decorator is needed.
     """
-    path = SherpaTestCase.datadir
 
     def wrapped(arg):
-        if path is None:
-            raise RuntimeError("Test needs the requires_data decorator")
-        return os.path.join(path, arg)
+        return os.path.join(test_data_path, arg)
 
     return wrapped
 
@@ -269,3 +291,114 @@ io_pkg : {}
     request.addfinalizer(fin)
 
     return chips_backend, chips
+
+
+def run_thread_function(name, scriptname, test_data_path):
+    """Run a regression test from the sherpa-test-data submodule.
+
+    Parameters
+    ----------
+    name : string
+       The name of the science thread to run (e.g., pha_read,
+       radpro). The name should match the corresponding thread
+       name in the sherpa-test-data submodule. See examples below.
+    scriptname : string
+       The suffix of the test script file name, usually "fit.py."
+    test_data_path : string
+       The path to the test data folder
+
+    Returns
+    -------
+    localsyms : dict
+        Any model parameters created by the script.
+
+    Examples
+    --------
+    Regression test script file names have the structure
+    "name-scriptname.py." By default, scriptname is set to "fit.py."
+    For example, if one wants to run the regression test
+    "pha_read-fit.py," they would write
+
+    >>> run_thread("pha_read")
+
+    If the regression test name is "lev3fft-bar.py," they would do
+
+    >>> run_thread("lev3fft", scriptname="bar.py")
+
+    """
+    from sherpa.astro import ui
+
+    scriptname = name + "-" + scriptname
+    cwd = os.getcwd()
+    os.chdir(test_data_path)
+
+    # Need to add to localsyms so that the scripts can work, but we
+    # do not need (for now) to return all the local symbols, so
+    # also have a version just for model parameters.
+    #
+    localsyms = {}
+    modelsyms = {}
+
+    def assign_model(name, val):
+        localsyms[name] = val
+        modelsyms[name] = val
+
+    old_assign_model = ui.get_model_autoassign_func()
+
+    try:
+        with open(scriptname, "rb") as fh:
+            cts = fh.read()
+        ui.set_model_autoassign_func(assign_model)
+        exec(compile(cts, scriptname, 'exec'), {}, localsyms)
+    finally:
+        ui.set_model_autoassign_func(old_assign_model)
+        os.chdir(cwd)
+
+    return modelsyms
+
+
+@pytest.fixture
+def run_thread(test_data_path):
+    """
+    Fixture that returns a function that can be used to run a thread.
+
+    Returns
+    -------
+    run_thread : function
+        The returned function is basically the run_thread_function function, using the test data path found at runtime
+    """
+    def run_thread_wrapper(name, scriptname='fit.py'):
+        return run_thread_function(name, scriptname, test_data_path)
+
+    return run_thread_wrapper
+
+
+@pytest.fixture
+def clean_astro_ui():
+    """Ensure sherpa.astro.ui.clean is called before AND after the test.
+
+    This also resets the XSPEC settings (if XSPEC support is provided).
+
+    Notes
+    -----
+    It does NOT change the logging level; perhaps it should, but the
+    screen output is useful for debugging at this time.
+    """
+    from sherpa.astro import ui
+
+    # old_lgr_level = logger.getEffectiveLevel()
+    # logger.setLevel(logging.CRITICAL)
+
+    if has_xspec:
+        old_xspec = xspec.get_xsstate()
+    else:
+        old_xspec = None
+
+    ui.clean()
+    yield
+
+    ui.clean()
+    if old_xspec is not None:
+        xspec.set_xsstate(old_xspec)
+
+    # logger.setLevel(old_lgr_level)
