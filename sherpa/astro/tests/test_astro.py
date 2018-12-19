@@ -546,8 +546,7 @@ class test_threads(SherpaTestCase):
         
         # Fit -- Results from reminimize
         assert self.locals['mek1'].kt.val == approx(17.8849, rel=1e-2)
-        self.assertEqualWithinTol(self.locals['mek1'].norm.val, 4.15418e-06,
-                                  1e-2)
+        assert self.locals['mek1'].norm.val == approx(4.15418e-06, rel=1e-2)
 
         # Fit -- Results from reminimize
 
@@ -573,10 +572,6 @@ class test_threads(SherpaTestCase):
         #
         # atol = 1e-2 used prior to XSPEC 12.10.0
         atol = 0.057
-
-        mek1 = self.locals['mek1']
-        assert_allclose(mek1.kt.val, kt, atol=atol, rtol=0)
-        assert_allclose(mek1.norm.val, norm, atol=atol, rtol=0)
 
         # Covar
         #
