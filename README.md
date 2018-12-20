@@ -62,8 +62,7 @@ What can you do with Sherpa?
 - choose a robust optimization method for the fit: Levenberg-Marquardt, Nelder-Mead Simplex or Monte Carlo/Differential Evolution.
 
 Documentation for Sherpa is available at
-[Read The Docs](https://sherpa.readthedocs.io/) (at present only for
-the `master` branch)
+[Read The Docs](https://sherpa.readthedocs.io/)
 and also for [Sherpa in CIAO](http://cxc.harvard.edu/sherpa/).
 
 A [Quick Start Tutorial](http://nbviewer.ipython.org/github/sherpa/sherpa/tree/master/notebooks/SherpaQuickStart.ipynb)
