@@ -859,3 +859,23 @@ def test_arf_rmf_get_x(make_data_path):
 
     np.testing.assert_array_almost_equal(expected_array_10, actual_arf_10)
     np.testing.assert_array_almost_equal(expected_array_10, actual_rmf_10)
+
+
+def test_arf_rmf_get_x_unit():
+
+    session = Session()
+
+    arf_x_lo, arf_x_hi = np.array([12.0, 12.1, 12.2]), np.array([12.1, 12.2, 12.3])
+    rmf_x_lo, rmf_x_hi = np.array([21.0, 21.1, 21.2]), np.array([21.1, 21.2, 21.3])
+
+    arf = session.create_arf(arf_x_lo, arf_x_hi)
+    rmf = session.create_rmf(rmf_x_lo, rmf_x_hi)
+
+    expected_arf_x = (arf_x_hi + arf_x_lo)/2
+    expected_rmf_x = (rmf_x_hi + rmf_x_lo)/2
+
+    actual_arf_x = arf.get_x()
+    actual_rmf_x = rmf.get_x()
+
+    np.testing.assert_array_almost_equal(expected_arf_x, actual_arf_x)
+    np.testing.assert_array_almost_equal(expected_rmf_x, actual_rmf_x)
