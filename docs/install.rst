@@ -314,6 +314,27 @@ Tests can then be run with the ``test`` option::
 
     python setup.py test
 
+The ``test`` command is a wrapper that calls ``pytest`` under the hood,
+and includes the ``develop`` command.
+
+You can pass additional arguments to ``pytest`` with the ``-a`` or
+``--pytest-args`` arguments.  As an example, a single test can be run
+using the syntax:
+
+    python setup.py test -a sherpa/astro/datastack/tests/test_datastack.py::test_load::test_case3
+
+.. note::
+
+   If you run both ``install`` and ``develop`` or ``test`` in the same
+   Python environment you end up with two competing installations of
+   Sherpa which result in unexpected behavior. If this happens, simply
+   run ``pip uninstall sherpa`` as many times as necessary, until you
+   get an error message that no more Sherpa installations are
+   available. At this point you can re-install Sherpa.
+
+   The same issue may occur if you install a Sherpa binary release and
+   then try to build Sherpa from source in the same environment.
+
 The
 `Sherpa test data suite <https://github.com/sherpa/sherpa-test-data>`_
 can be installed to reduce the number of tests
@@ -322,6 +343,14 @@ which used ``git`` to access the source code)::
 
     git submodule init
     git submodule update
+
+When both the `DS9 image viewer <http://ds9.si.edu/site/Home.html>`_ and
+`XPA toolset <http://hea-www.harvard.edu/RD/xpa/>`_ are installed, the
+test suite will include tests that check that DS9 can be used from
+Sherpa. This causes several copies of the DS9 viewer to be created,
+which can be distracting, as it can cause loss of mouse focus (depending
+on how X-windows is set up). This can be avoided by installing the 
+`X virtual-frame buffer (Xvfb) <https://en.wikipedia.org/wiki/Xvfb>`_.
 
 .. note::
 
@@ -361,7 +390,7 @@ directory::
     make html
 
 This places the documentation in ``_build/html/index.html``.
-    
+
 Testing the Sherpa installation
 ===============================
 
@@ -403,3 +432,13 @@ provides a number of data files in ASCII and :term:`FITS` formats. This is
 only useful when developing Sherpa, since the package is large. It
 will automatically be picked up by the ``sherpa_test`` script
 once it is installed.
+
+Testing the documentation with Travis
+-------------------------------------
+
+There is a documentation build included as part of the Travis-CI test suite,
+but it is not set up to do much validation. That is, you need to do something
+quite severe to break this build. Please see
+`issue 491 <https://github.com/sherpa/sherpa/issues/491>`_
+for more information.
+    
