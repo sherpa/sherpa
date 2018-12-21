@@ -839,3 +839,41 @@ def test_rmf_with_grid_below_thresh_zero():
     emsg = "The RMF 'delta-rmf' has an ENERG_HI value <= " + \
            "the replacement value of 1e-05"
     assert str(exc.value) == emsg
+
+
+# Bug https://github.com/sherpa/sherpa/issues/572
+@requires_data
+@requires_fits
+def test_arf_rmf_get_x(make_data_path):
+    arf_name = make_data_path('3c120_heg_-1.arf')
+    rmf_name = make_data_path('3c120_heg_-1.rmf')
+
+    session = Session()
+    arf = session.unpack_arf(arf_name)
+    rmf = session.unpack_rmf(rmf_name)
+
+    expected_array_10 = [0.57724115, 0.57730836, 0.57737556, 0.5774428, 0.57751006,
+                         0.57757729, 0.57764456, 0.57771185, 0.57777914, 0.57784647]
+    actual_arf_10 = arf.get_x()[0:10]
+    actual_rmf_10 = rmf.get_x()[0:10]
+
+    np.testing.assert_array_almost_equal(expected_array_10, actual_arf_10)
+    np.testing.assert_array_almost_equal(expected_array_10, actual_rmf_10)
+
+
+def test_arf_get_x_unit():
+    session = Session()
+    arf_x_lo, arf_x_hi = np.array([12.0, 12.1, 12.2]), np.array([12.1, 12.2, 12.3])
+    arf = session.create_arf(arf_x_lo, arf_x_hi)
+    expected_arf_x = (arf_x_hi + arf_x_lo)/2
+    actual_arf_x = arf.get_x()
+    np.testing.assert_array_almost_equal(expected_arf_x, actual_arf_x)
+
+
+def test_rmf_get_x_unit():
+    session = Session()
+    rmf_x_lo, rmf_x_hi = np.array([21.0, 21.1, 21.2]), np.array([21.1, 21.2, 21.3])
+    rmf = session.create_rmf(rmf_x_lo, rmf_x_hi)
+    expected_rmf_x = (rmf_x_hi + rmf_x_lo)/2
+    actual_rmf_x = rmf.get_x()
+    np.testing.assert_array_almost_equal(expected_rmf_x, actual_rmf_x)
