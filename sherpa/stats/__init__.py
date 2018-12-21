@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import warnings
 
 import numpy
-from sherpa.utils import NoNewAttributesAfterInit
+from sherpa.utils import NoNewAttributesAfterInit, igamc
 from sherpa.utils.err import FitErr, StatErr
 from sherpa.data import DataSimulFit
 from sherpa.models import SimulFitModel
@@ -59,6 +59,10 @@ class Stat(NoNewAttributesAfterInit):
     # Used by calc_stat
     #
     _calc = None
+
+    # This should be overridden by derived classes and set to True if the rstat and qvalue
+    # figures can be calculated for that class of statistics.
+    _can_calculate_rstat = None
 
     def __init__(self, name):
         self.name = name
@@ -245,6 +249,41 @@ class Stat(NoNewAttributesAfterInit):
         """
 
         raise NotImplementedError
+
+    def goodness_of_fit(self, statval, dof):
+        """Return the reduced statistic and q value.
+
+        The reduced statisitc is conceptually simple, as it is just
+        statistic / degrees-of-freedom, but it is not meaningful for
+        all statistics, and it is only valid if there are any degrees
+        of freedom.
+
+        Parameters
+        ----------
+        statval : float
+            The statistic value. It is assumed to be finite.
+        dof : int
+            The number of degrees of freedom, which may be 0 or negative.
+
+        Returns
+        -------
+        rstat, qval : float or NaN or None, float or NaN or None
+            The reduced statistic and q value. If the statistic does not support
+            a goodness of fit then the return values are None. If it does then
+            NaN is returned if either the number of degrees of freedom is 0
+            (or less), or the statistic value is less than 0.
+
+        """
+
+        if not self._can_calculate_rstat:
+            return None, None
+
+        if dof > 0 and statval >= 0.0:
+            qval = igamc(dof / 2.0, statval / 2.0)
+            rstat = statval / dof
+            return rstat, qval
+
+        return numpy.nan, numpy.nan
 
 
 class Likelihood(Stat):
@@ -439,6 +478,7 @@ class CStat(Likelihood):
     """
 
     _calc = _statfcts.calc_cstat_stat
+    _can_calculate_rstat = True
 
     def __init__(self, name='cstat'):
         Likelihood.__init__(self, name)
@@ -491,6 +531,7 @@ class Chi2(Stat):
     """
 
     _calc = _statfcts.calc_chi2_stat
+    _can_calculate_rstat = True
 
     def __init__(self, name='chi2'):
         Stat.__init__(self, name)
@@ -539,6 +580,7 @@ class LeastSq(Chi2):
     """
 
     _calc = _statfcts.calc_lsq_stat
+    _can_calculate_rstat = False
 
     def __init__(self, name='leastsq'):
         Stat.__init__(self, name)
@@ -849,6 +891,7 @@ class WStat(Likelihood):
     """
 
     _calc = _statfcts.calc_wstat_stat
+    _can_calculate_rstat = True
 
     def __init__(self, name='wstat'):
         Likelihood.__init__(self, name)

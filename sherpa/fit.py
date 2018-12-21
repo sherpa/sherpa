@@ -27,16 +27,16 @@ import signal
 from functools import wraps
 
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, float, float32, finfo, nan, any, int
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
+    ones_like, isnan, isinf, float, float32, finfo, any, int
+from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
-from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, \
-    LeastSq, Likelihood, WStat
+from sherpa.stats import Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
+    LeastSq, Likelihood
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -175,71 +175,6 @@ def _cleanup_chi2_name(stat, data):
     return stat.name
 
 
-def _can_calculate_rstat(stat):
-    """Can we calculate reduced statistic and qval?
-
-    Parameters
-    ----------
-    stat : sherpa.stats.Stat instance
-
-    Returns
-    -------
-    flag : bool
-        True if the reduced statistic and qval can be calculated.
-
-    Notes
-    -----
-    This really should be left to the statistic object to determine
-    (by actually caculating the value or not), but for now leave as
-    a separate routine.
-    """
-
-    # Note that LeastSq is currently a subclass of Chi2, which
-    # requires an extra test.
-    return isinstance(stat, (CStat, WStat, Chi2)) and \
-        not isinstance(stat, LeastSq)
-
-
-def goodness_of_fit(statobj, statval, dof):
-    """Return the reduced statistic and q value.
-
-    The reduced statisitc is conceptually simple, as it is just
-    statistic / degrees-of-freedom, but it is not meaningful for
-    all statistics, and it is only valid if there are any degrees
-    of freedom.
-
-    Parameters
-    ----------
-    statobj : sherpa.stats.Stat instance
-    statval : float
-        The statistic value. It is assumed to be finite.
-    dof : int
-        The number of degrees of freedom, which may be 0 or negative.
-
-    Returns
-    -------
-    rstat, qval : float or NaN or None, float or NaN or None
-        The reduced statistic and q value. If the statistic does not support
-        a goodness of fit then the return values are None. If it does then
-        NaN is returned if either the number of degrees of freedom is 0
-        (or less), or the statistic value is less than 0.
-
-    """
-
-    rstat = None
-    qval = None
-
-    if _can_calculate_rstat(statobj):
-        if dof > 0 and statval >= 0.0:
-            qval = igamc(dof / 2.0, statval / 2.0)
-            rstat = statval / dof
-        else:
-            qval = nan
-            rstat = nan
-
-    return rstat, qval
-
-
 class FitResults(NoNewAttributesAfterInit):
     """The results of a fit.
 
@@ -316,8 +251,7 @@ class FitResults(NoNewAttributesAfterInit):
         _vals = fit.data.eval_model_to_fit(fit.model)
         _dof = len(_vals) - len(tuple(results[1]))
         _covar = results[4].get('covar')
-
-        _rstat, _qval = goodness_of_fit(fit.stat, results[2], _dof)
+        _rstat, _qval = fit.stat.goodness_of_fit(results[2], _dof)
 
         self.succeeded = results[0]
         self.parnames = tuple(p.fullname for p in fit.model.pars
@@ -1228,17 +1162,17 @@ class Fit(NoNewAttributesAfterInit):
 
         # TODO: This logic would be better in the stat class than here
         #
-        stat, fvec = self._calc_stat()
+        statval, fvec = self._calc_stat()
         model = self.data.eval_model_to_fit(self.model)
 
         numpoints = len(model)
         dof = numpoints - len(self.model.thawedpars)
 
-        rstat, qval = goodness_of_fit(self.stat, stat, dof)
+        rstat, qval = self.stat.goodness_of_fit(statval, dof)
 
         name = _cleanup_chi2_name(self.stat, self.data)
 
-        return StatInfoResults(name, stat, numpoints, model,
+        return StatInfoResults(name, statval, numpoints, model,
                                dof, qval, rstat)
 
     @evaluates_model
