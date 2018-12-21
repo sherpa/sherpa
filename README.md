@@ -73,8 +73,9 @@ used with Sherpa.
 Using Anaconda
 --------------
 
-Sherpa is provided for both Linux and Mac OSX operating systems running
-Python 2.7, 3.5, 3.6, and 3.7. It can be installed with by saying
+Sherpa is provided for both Linux and macOS operating systems running
+Python 2.7, 3.5, 3.6, and 3.7. It can be installed with the `conda`
+package manager by saying
 
     $ conda install -c sherpa sherpa
 
@@ -110,6 +111,12 @@ extend (whether to other areas of Astronomy or in other domains).
 
 Release History
 ---------------
+
+4.10.2: 14 December 2018 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2275738.svg)](https://doi.org/10.5281/zenodo.2275738)
+
+4.10.1: 16 October 2018 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1463962.svg)](https://doi.org/10.5281/zenodo.1463962)
+
+4.10.0: 11 May 2018 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1245678.svg)](https://doi.org/10.5281/zenodo.1245678)
 
 4.9.1: 01 August 2017 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.838686.svg)](https://doi.org/10.5281/zenodo.838686)
 
