@@ -54,6 +54,7 @@ namespace sherpa {
                                                              limits ) ) {
         fval = std::numeric_limits< real >::max( );
         ++num_outside_limits;
+        return;
       }
       int ierr = EXIT_SUCCESS;
       usr_func( npar, &par[0], fval, ierr, usr_data );
