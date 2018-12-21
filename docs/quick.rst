@@ -153,7 +153,7 @@ A full description of the model language and capabilities is provided in
 It is also possible to
 :ref:`restrict the range of a parameter <params-limits>`,
 :ref:`toggle parameters so that they are fixed or fitted <params-freeze>`,
-and :ref:`link parameters togetger <params-link>`.
+and :ref:`link parameters together <params-link>`.
 
 The :py:class:`sherpa.plot.ModelPlot` class can be used to visualize
 the model. The :py:meth:`~sherpa.plot.ModelPlot.prepare` method
