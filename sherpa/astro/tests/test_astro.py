@@ -18,9 +18,11 @@
 #
 
 import logging
+import os
 import warnings
 from numpy import sqrt
 from pytest import approx
+import pytest
 
 from numpy.testing import assert_allclose
 
@@ -208,59 +210,6 @@ class test_threads(SherpaTestCase):
         # self.assertEqual(ui.get_fit_results().nfev, 371)
         self.assertEqual(ui.get_fit_results().numpoints, 4881)
         self.assertEqual(ui.get_fit_results().dof, 4877)
-
-    @requires_fits
-    @requires_xspec
-    def test_pileup(self):
-        self.run_thread('pileup')
-
-        fr = ui.get_fit_results()
-        covarerr = sqrt(fr.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(684.056 , rel=1e-4)
-        assert covarerr[1] == approx(191.055, rel=1e-3)
-        assert covarerr[2] == approx(0.632061, rel=1e-3)
-        assert covarerr[3] == approx(0.290159, rel=1e-3)
-        assert covarerr[4] == approx(1.62529, rel=1e-3)
-        assert fr.statval == approx(53.6112, rel=1e-4)
-        assert fr.rstat == approx(1.44895, rel=1e-4)
-        assert fr.qval == approx(0.0379417, rel=1e-4)
-        self.assertEqual(fr.numpoints, 42)
-        self.assertEqual(fr.dof, 37)
-
-        jdp = self.locals['jdp']
-        assert jdp.alpha.val == approx(0.522593, rel=1e-1)
-        assert jdp.f.val == approx(0.913458, rel=1e-2)
-
-        abs1 = self.locals['abs1']
-        assert abs1.nh.val == approx(6.12101, rel=1e-2)
-
-        power = self.locals['power']
-        assert power.gamma.val == approx(1.41887, rel=1e-2)
-        assert power.ampl.val == approx(0.00199457, rel=1e-2)
-
-        # Issue #294 was a problem with serializing the pileup model
-        # after a fit in Python 3 (but not Python 2). Add some basic
-        # validation that the conversion to a string works. For the
-        # pileup model we expect the standard model layout - e.g.
-        #
-        #   jdp
-        #   paramter headers
-        #   ---- ----- ...
-        #   jdp.alpha ...
-        #   ...
-        #   jdp.nterms ...
-        #   <blank line>
-        #   1: ...
-        #   ...
-        #   7: ...
-        #   *** pileup fraction: value
-        #
-        lines = str(jdp).split('\n')
-        self.assertEqual(len(lines), 19)
-        self.assertEqual(lines[10].strip(), '')
-        self.assertTrue(lines[11].startswith('   1: '))
-        self.assertTrue(lines[17].startswith('   7: '))
-        self.assertTrue(lines[18].startswith('   *** pileup fraction: '))
 
     @requires_fits
     def test_radpro(self):
@@ -722,3 +671,68 @@ def test_missmatch_arf(make_data_path):
     assert parvals[0] == approx(1.47969, rel=1.0e-3)
     assert parvals[1] == approx(0.0019491, rel=1.0e-3)
     assert parvals[2] == approx(2.35452, rel=1.0e-3)
+
+
+# This was test_threads.test_pileup
+#
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.usefixtures("clean_astro_ui")
+def test_thread_pileup(run_thread):
+
+    models = run_thread('pileup')
+
+    fr = ui.get_fit_results()
+    covarerr = sqrt(fr.extra_output['covar'].diagonal())
+
+    assert fr.statval == approx(53.6112, rel=1e-4)
+    assert fr.rstat == approx(1.44895, rel=1e-4)
+    assert fr.qval == approx(0.0379417, rel=1e-4)
+    assert fr.numpoints == 42
+    assert fr.dof == 37
+
+    jdp = models['jdp']
+    assert jdp.alpha.val == approx(0.522593, rel=1e-1)
+    assert jdp.f.val == approx(0.913458, rel=1e-2)
+
+    abs1 = models['abs1']
+    assert abs1.nh.val == approx(6.12101, rel=1e-2)
+
+    power = models['power']
+    assert power.gamma.val == approx(1.41887, rel=1e-2)
+    assert power.ampl.val == approx(0.00199457, rel=1e-2)
+
+    # Move covariance checks to the end of the parameters
+    # to check whether the fit is the same, even if the
+    # covariance is different.
+    #
+    assert covarerr[0] == approx(684.056, rel=1e-4)
+    assert covarerr[1] == approx(191.055, rel=1e-3)
+    assert covarerr[2] == approx(0.632061, rel=1e-3)
+    assert covarerr[3] == approx(0.290159, rel=1e-3)
+    assert covarerr[4] == approx(1.62529, rel=1e-3)
+
+    # Issue #294 was a problem with serializing the pileup model
+    # after a fit in Python 3 (but not Python 2). Add some basic
+    # validation that the conversion to a string works. For the
+    # pileup model we expect the standard model layout - e.g.
+    #
+    #   jdp
+    #   paramter headers
+    #   ---- ----- ...
+    #   jdp.alpha ...
+    #   ...
+    #   jdp.nterms ...
+    #   <blank line>
+    #   1: ...
+    #   ...
+    #   7: ...
+    #   *** pileup fraction: value
+    #
+    lines = str(jdp).split('\n')
+    assert len(lines) == 19
+    assert lines[10].strip() == ''
+    assert lines[11].startswith('   1: ')
+    assert lines[17].startswith('   7: ')
+    assert lines[18].startswith('   *** pileup fraction: ')
