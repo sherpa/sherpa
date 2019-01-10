@@ -2,6 +2,26 @@
 Installation
 ************
 
+Quick overview
+==============
+
+For those users who have already read this page, and need a quick
+refresher (or prefer to act first, and read documentation later),
+the following commands can be used to install Sherpa, depending on
+your environment and set up.
+
+::
+
+    conda install -c sherpa sherpa
+
+::
+
+    pip install sherpa
+
+::
+
+    python setup.py install
+
 Requirements
 ============
 
