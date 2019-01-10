@@ -487,47 +487,6 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['proj_res2'].parmaxes[2],
                                   0.0981627, 1e-2)
 
-    @requires_fits
-    @requires_xspec
-    def test_proj_bubble(self):
-        xspec.set_xsxsect('bcmc')
-
-        self.run_thread('proj_bubble')
-
-        fit_results = ui.get_fit_results()
-        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0, rel=1e-4)
-        assert covarerr[1] == approx(8.74608e-07, rel=1e-2)
-
-        # Fit -- Results from reminimize
-        assert self.locals['mek1'].kt.val == approx(17.8849, rel=1e-2)
-        assert self.locals['mek1'].norm.val == approx(4.15418e-06, rel=1e-2)
-
-        # Fit -- Results from reminimize
-
-        # The fit results change in XSPEC 12.10.0 since the mekal model
-        # was changed (FORTRAN to C++). A 1% difference is used for the
-        # parameter ranges from covar and proj (matches the tolerance for
-        # the fit results).
-
-        # Covar
-        #
-        # TODO: should this check that parmaxes is -1 * parmins instead?
-        covar = ui.get_covar_results()
-        assert covar.parmins[0] == approx(-0.328832, rel=0.1)
-        assert covar.parmins[1] == approx(-8.847916e-7, rel=0.01)
-        assert covar.parmaxes[0] == approx(0.328832, rel=0.1)
-        assert covar.parmaxes[1] == approx(8.847916e-7, rel=0.01)
-
-        # Proj -- Upper bound of kT can't be found
-        #
-        proj = ui.get_proj_results()
-        assert proj.parmins[0] == approx(-12.048069, rel=0.01)
-        assert proj.parmins[1] == approx(-9.510913e-07, rel=0.01)
-        assert proj.parmaxes[1] == approx(2.403640e-06, rel=0.01)
-
-        assert proj.parmaxes[0] is None
-
     # New tests based on SDS threads -- we should catch these errors
     # (if any occur) so SDS doesn't waste time tripping over them.
     @requires_fits
@@ -731,3 +690,57 @@ def test_thread_pileup(run_thread):
     assert lines[11].startswith('   1: ')
     assert lines[17].startswith('   7: ')
     assert lines[18].startswith('   *** pileup fraction: ')
+
+
+# This was test_threads.test_proj_bubble
+#
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.usefixtures("clean_astro_ui")
+def test_proj_bubble(run_thread):
+
+    # How sensitive are the results to the change from bcmc to vern
+    # made in XSPEC 12.10.1? It looks like the mekal best-fit
+    # temperature can jump from ~17.9 to 18.6, so require bcmc
+    # in this test.
+    #
+    xspec.set_xsxsect('bcmc')
+    models = run_thread('proj_bubble')
+
+    fit_results = ui.get_fit_results()
+    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+    assert covarerr[0] == approx(0, rel=1e-4)
+    assert covarerr[1] == approx(8.74608e-07, rel=1e-2)
+
+    # Fit -- Results from reminimize
+    assert models['mek1'].kt.val == approx(17.8849, rel=1e-2)
+    assert models['mek1'].norm.val == approx(4.15418e-06, rel=1e-2)
+
+    # Fit -- Results from reminimize
+
+    # The fit results change in XSPEC 12.10.0 since the mekal model
+    # was changed (FORTRAN to C++). A 1% difference is used for the
+    # parameter ranges from covar and proj (matches the tolerance for
+    # the fit results). Note that this tolerance has been relaced to
+    # 10% for the kT errors, as there is a significant change seen
+    # with different XSPEC versions for the covariance results.
+    #
+
+    # Covar
+    #
+    # TODO: should this check that parmaxes is -1 * parmins instead?
+    covar = ui.get_covar_results()
+    assert covar.parmins[0] == approx(-0.328832, rel=0.1)
+    assert covar.parmins[1] == approx(-8.847916e-7, rel=0.01)
+    assert covar.parmaxes[0] == approx(0.328832, rel=0.1)
+    assert covar.parmaxes[1] == approx(8.847916e-7, rel=0.01)
+
+    # Proj -- Upper bound of kT can't be found
+    #
+    proj = ui.get_proj_results()
+    assert proj.parmins[0] == approx(-12.048069, rel=0.01)
+    assert proj.parmins[1] == approx(-9.510913e-07, rel=0.01)
+    assert proj.parmaxes[1] == approx(2.403640e-06, rel=0.01)
+
+    assert proj.parmaxes[0] is None
