@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019
+#     Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -488,51 +489,39 @@ class test_threads(SherpaTestCase):
     def test_proj_bubble(self):
         self.run_thread('proj_bubble')
 
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        assert covarerr[0] == approx(0, rel=1e-4)
+        assert covarerr[1] == approx(8.74608e-07, rel=1e-3)
+
+        # Fit -- Results from reminimize
+        assert self.locals['mek1'].kt.val == approx(17.8849, rel=1e-2)
+        assert self.locals['mek1'].norm.val == approx(4.15418e-06, rel=1e-2)
+
         # Fit -- Results from reminimize
 
-        # TODO: given that some valurs << 1e-2 using atol=1e-2 is not
-        # likely to be very useful here.
-        #
         # The fit results change in XSPEC 12.10.0 since the mekal model
-        # was changed (FORTRAN to C++). The following are from prior
-        # to XSPEC 12.10.0:
-        #
-        kt = 17.8849
-        norm = 4.15418e-6
-        kt_min_covar = -0.328832
-        norm_min_covar = -8.847916e-7
-        kt_max_covar = 0.328832
-        norm_max_covar = 8.847916e-7
-        kt_min_proj = -12.048069
-        norm_min_proj = -9.510913e-07
-        norm_max_proj = 2.403640e-06
-
-        # Given that the tolerance is now quite large, and not much
-        # use for the normalization, should the test be updated?
-        #
-        # atol = 1e-2 used prior to XSPEC 12.10.0
-        atol = 0.057
-
-        mek1 = self.locals['mek1']
-        assert_allclose(mek1.kt.val, kt, atol=atol, rtol=0)
-        assert_allclose(mek1.norm.val, norm, atol=atol, rtol=0)
+        # was changed (FORTRAN to C++). A 1% difference is used for the
+        # parameter ranges from covar and proj (matches the tolerance for
+        # the fit results).
 
         # Covar
         #
         # TODO: should this check that parmaxes is -1 * parmins instead?
         covar = ui.get_covar_results()
-        assert_allclose(covar.parmins[0], kt_min_covar, atol=atol, rtol=0)
-        assert_allclose(covar.parmins[1], norm_min_covar, atol=atol, rtol=0)
-        assert_allclose(covar.parmaxes[0], kt_max_covar, atol=atol, rtol=0)
-        assert_allclose(covar.parmaxes[1], norm_max_covar, atol=atol, rtol=0)
+        assert covar.parmins[0] == approx(-0.328832, rel=0.01)
+        assert covar.parmins[1] == approx(-8.847916e-7, rel=0.01)
+        assert covar.parmaxes[0] == approx(0.328832, rel=0.01)
+        assert covar.parmaxes[1] == approx(8.847916e-7, rel=0.01)
 
         # Proj -- Upper bound of kT can't be found
         #
         proj = ui.get_proj_results()
-        assert_allclose(proj.parmins[0], kt_min_proj, atol)
-        assert_allclose(proj.parmins[1], norm_min_proj, atol)
-        self.assertTrue(proj.parmaxes[0] is None, msg=str(proj.parmaxes[0]))
-        assert_allclose(proj.parmaxes[1], norm_max_proj, atol)
+        assert proj.parmins[0] == approx(-12.048069, rel=0.01)
+        assert proj.parmins[1] == approx(-9.510913e-07, rel=0.01)
+        assert proj.parmaxes[1] == approx(2.403640e-06, rel=0.01)
+
+        assert proj.parmaxes[0] is None
 
     # New tests based on SDS threads -- we should catch these errors
     # (if any occur) so SDS doesn't waste time tripping over them.

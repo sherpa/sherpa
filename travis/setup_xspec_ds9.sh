@@ -34,14 +34,21 @@ else  # osx
     sudo Xvfb :99 -ac -screen 0 1024x768x8 &
 fi
 
+download () {
+  wget --quiet $1
+  if [[ $? -ne 0 ]]; then
+    echo "\n*** Unable to download $1\n"
+  fi
+}
+
 ### DS9 and XPA
 # Tarballs to fetch
-ds9_tar=ds9.${ds9_os}.7.6.tar.gz
-xpa_tar=xpa.${ds9_os}.2.1.17.tar.gz
+ds9_tar=ds9.${ds9_os}.8.0.tar.gz
+xpa_tar=xpa.${ds9_os}.2.1.18.tar.gz
 
 # Fetch them
-wget --quiet $ds9_base_url/$ds9_os/$ds9_tar
-wget --quiet $ds9_base_url/$ds9_os/$xpa_tar
+download $ds9_base_url/$ds9_os/$ds9_tar
+download  $ds9_base_url/$ds9_os/$xpa_tar
 
 # untar them
 start_dir=$(pwd)
