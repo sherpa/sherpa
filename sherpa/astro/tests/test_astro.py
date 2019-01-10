@@ -19,13 +19,10 @@
 #
 
 import logging
-import os
 import warnings
 from numpy import sqrt
 from pytest import approx
 import pytest
-
-from numpy.testing import assert_allclose
 
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
     requires_fits, requires_xspec, requires_group
