@@ -243,7 +243,7 @@ match the contents of the XSPEC installation.
        xspec_version = 12.10.0
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFuynctions XSModel XSUtil XS hdsp_3.0
+       xspec_libraries = XSFunctions XSModel XSUtil XS hdsp_3.0
        ccfits_libraries = CCfits_2.5
        wcslib_libraries = wcs-5.16
 
@@ -253,7 +253,7 @@ match the contents of the XSPEC installation.
        xspec_version = 12.9.1
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFuynctions XSModel XSUtil XS
+       xspec_libraries = XSFunctions XSModel XSUtil XS
        ccfits_libraries = CCfits_2.5
        wcslib_libraries = wcs-5.16
 
@@ -283,11 +283,22 @@ In order for the XSPEC module to be used from Python, the
 :py:mod:`sherpa.astro.xspec` module is imported.
 
 The Sherpa test suite includes an extensive set of tests of this
-module, but a quick check of an installed version can be done with
-the following::
+module, but a quick check of an installed version can be made with
+the following command::
 
     % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
     12.10.0e
+
+.. warning::
+
+   The ``--enable-xs-models-only`` flag with XSPEC 12.10.0 is known
+   to cause problems for Sherpa. It is **strongly recommended** that
+   either that the full XSPEC distribution is built, or that the
+   XSPEC installation from CIAO 4.11 is used.
+
+   There is currently no support for XSPEC 12.10.1 (see `Sherpa
+   issue 533 <https://github.com/sherpa/sherpa/issues/533>`_ for
+   more information).
 
 Other options
 ^^^^^^^^^^^^^
