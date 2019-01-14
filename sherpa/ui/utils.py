@@ -28,6 +28,7 @@ import logging
 import sys
 import os
 import inspect
+import pydoc
 import numpy
 import sherpa.all
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, export_method
@@ -92,40 +93,43 @@ def _is_subclass(t1, t2):
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
 
-def _send_to_pager(all, filename=None, clobber=False):
-    pager = None
+def _send_to_pager(txt, filename=None, clobber=False):
+    """Write out the given string, using pagination if supported.
+
+    This used to call out to using less/more but now is handled
+    by pydoc.pager
+
+    Parameters
+    ----------
+    txt : str
+        The text to display
+    filename : str or StringIO or None, optional
+        If not None, write the output to the given file or filelike
+        object.
+    clobber : bool, optional
+        If filename is a string, then - when clobber is set - refuse
+        to overwrite the file if it already exists.
+
+    """
+
+    if filename is None:
+        pydoc.pager(txt)
+        return
+
+    # Have we been sent a StringIO-like object?
+    #
+    if hasattr(filename, 'write'):
+        print(txt, file=filename)
+        return
+
+    # Assume a filename
     clobber = sherpa.utils.bool_cast(clobber)
-    try:
-        if filename is None:
-            if 'PAGER' in os.environ:
-                pager = os.popen(os.environ['PAGER'], 'w')
-            else:
-                if (os.access('/bin/more', os.X_OK) == 1):
-                    pager = os.popen('/bin/more', 'w')
-                elif (os.access('/usr/bin/more', os.X_OK) == 1):
-                    pager = os.popen('/usr/bin/more', 'w')
-                else:
-                    raise IOErr('nopager')
+    _check_type(filename, string_types, 'filename', 'a string')
+    if os.path.isfile(filename) and not clobber:
+        raise IOErr('filefound', filename)
 
-        # check if filename is StringIO obj
-        elif hasattr(filename, 'write'):
-            pager = filename
-            print(all, file=pager)
-            return
-
-        else:
-            _check_type(filename, string_types, 'filename', 'a string')
-            if os.path.isfile(filename) and not clobber:
-                raise IOErr('filefound', filename)
-            pager = open(filename, 'w')
-        print(all, file=pager)
-    except:
-        if (pager is not None):
-            pager.close()
-        raise
-    else:
-        if (pager is not None):
-            pager.close()
+    with open(filename, 'w') as fh:
+        print(txt, file=fh)
 
 
 ###############################################################################
@@ -679,13 +683,6 @@ class Session(NoNewAttributesAfterInit):
         get_stat : Return a fit-statistic method.
         show_all : Report the current state of the Sherpa session.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         Examples
         --------
 
@@ -695,9 +692,8 @@ class Session(NoNewAttributesAfterInit):
         Maximum likelihood function
 
         """
-        all = ''
-        all += self._get_show_stat()
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_stat()
+        _send_to_pager(txt, outfile, clobber)
 
     def show_method(self, outfile=None, clobber=False):
         """Display the current optimization method and options.
@@ -725,13 +721,6 @@ class Session(NoNewAttributesAfterInit):
         get_method_opt : Return one or all options of the current optimization method.
         show_all : Report the current state of the Sherpa session.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         Examples
         --------
 
@@ -748,9 +737,8 @@ class Session(NoNewAttributesAfterInit):
         verbose = 0
 
         """
-        all = ''
-        all += self._get_show_method()
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_method()
+        _send_to_pager(txt, outfile, clobber)
 
     def show_fit(self, outfile=None, clobber=False):
         """Summarize the fit results.
@@ -785,17 +773,9 @@ class Session(NoNewAttributesAfterInit):
         list_model_ids : List of all the data sets with a source expression.
         show_all : Report the current state of the Sherpa session.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_fit()
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_fit()
+        _send_to_pager(txt, outfile, clobber)
 
     def show_data(self, id=None, outfile=None, clobber=False):
         """Summarize the available data sets.
@@ -829,17 +809,9 @@ class Session(NoNewAttributesAfterInit):
         list_data_ids : List the identifiers for the loaded data sets.
         show_all : Report the current state of the Sherpa session.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_data(id)
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_data(id)
+        _send_to_pager(txt, outfile, clobber)
 
     def show_filter(self, id=None, outfile=None, clobber=False):
         """Show any filters applied to a data set.
@@ -876,17 +848,9 @@ class Session(NoNewAttributesAfterInit):
         sherpa.astro.ui.notice2d : Include a spatial region of an image.
         show_all : Report the current state of the Sherpa session.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_filter(id)
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_filter(id)
+        _send_to_pager(txt, outfile, clobber)
 
     def show_model(self, id=None, outfile=None, clobber=False):
         """Display the model expression used to fit a data set.
@@ -925,19 +889,10 @@ class Session(NoNewAttributesAfterInit):
         show_all : Report the current state of the Sherpa session.
         show_source : Display the source model expression for a data set.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        # all += self._get_show_kernel(id)
-        all += self._get_show_psf(id)
-        all += self._get_show_model(id)
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_psf(id)
+        txt += self._get_show_model(id)
+        _send_to_pager(txt, outfile, clobber)
 
     def show_source(self, id=None, outfile=None, clobber=False):
         """Display the source model expression for a data set.
@@ -975,17 +930,9 @@ class Session(NoNewAttributesAfterInit):
         show_all : Report the current state of the Sherpa session.
         show_model : Display the model expression used to fit a data set.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_source(id)
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_source(id)
+        _send_to_pager(txt, outfile, clobber)
 
     # DOC-TODO: how and where to describe the PSF/kernel difference
     # as the Notes section below is inadequate
@@ -1028,11 +975,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         The point spread function (PSF) is defined by the full
         (unfiltered) PSF image or model expression evaluated over the
         full range of the dataset; both types of PSFs are established
@@ -1044,9 +986,8 @@ class Session(NoNewAttributesAfterInit):
         the PSF that must be evaluated.
 
         """
-        all = ''
-        all += self._get_show_kernel(id)
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_kernel(id)
+        _send_to_pager(txt, outfile, clobber)
 
     # DOC-TODO: how and where to describe the PSF/kernel difference
     # as the Notes section below is inadequate
@@ -1089,11 +1030,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         The point spread function (PSF) is defined by the full
         (unfiltered) PSF image or model expression evaluated over the
         full range of the dataset; both types of PSFs are established
@@ -1105,10 +1041,8 @@ class Session(NoNewAttributesAfterInit):
         the PSF that must be evaluated.
 
         """
-        all = ''
-        # all += self._get_show_kernel(id)
-        all += self._get_show_psf(id)
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_psf(id)
+        _send_to_pager(txt, outfile, clobber)
 
     def show_conf(self, outfile=None, clobber=False):
         """Display the results of the last conf evaluation.
@@ -1139,17 +1073,9 @@ class Session(NoNewAttributesAfterInit):
         conf : Estimate parameter confidence intervals using the confidence method.
         show_all : Report the current state of the Sherpa session.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_conf()
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_conf()
+        _send_to_pager(txt, outfile, clobber)
 
     def show_proj(self, outfile=None, clobber=False):
         """Display the results of the last proj evaluation.
@@ -1180,17 +1106,9 @@ class Session(NoNewAttributesAfterInit):
         proj : Estimate parameter confidence intervals using the projection method.
         show_all : Report the current state of the Sherpa session.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_proj()
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_proj()
+        _send_to_pager(txt, outfile, clobber)
 
     def show_covar(self, outfile=None, clobber=False):
         """Display the results of the last covar evaluation.
@@ -1221,17 +1139,9 @@ class Session(NoNewAttributesAfterInit):
         covar : Estimate parameter confidence intervals using the covariance method.
         show_all : Report the current state of the Sherpa session.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_covar()
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_covar()
+        _send_to_pager(txt, outfile, clobber)
 
     def show_all(self, id=None, outfile=None, clobber=False):
         """Report the current state of the Sherpa session.
@@ -1283,22 +1193,14 @@ class Session(NoNewAttributesAfterInit):
         show_source : Display the source model expression for a data set.
         show_stat : Display the current fit statistic.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_data(id)
-        all += self._get_show_model(id)
-        all += self._get_show_fit()
-        all += self._get_show_conf()
-        all += self._get_show_proj()
-        all += self._get_show_covar()
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_data(id)
+        txt += self._get_show_model(id)
+        txt += self._get_show_fit()
+        txt += self._get_show_conf()
+        txt += self._get_show_proj()
+        txt += self._get_show_covar()
+        _send_to_pager(txt, outfile, clobber)
 
     def get_functions(self):
         """Return the functions provided by Sherpa.
@@ -1346,13 +1248,6 @@ class Session(NoNewAttributesAfterInit):
         --------
         get_functions : Return the functions provided by Sherpa.
         show_all : Report the current state of the Sherpa session.
-
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
 
         """
         funcs_list = self.get_functions()
