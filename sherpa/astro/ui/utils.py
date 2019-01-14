@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,7 +27,6 @@ import warnings
 import numpy
 
 import sherpa.ui.utils
-from sherpa.astro.data import DataARF
 from sherpa.astro.instrument import create_arf, create_delta_rmf, create_non_delta_rmf
 from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
@@ -37,7 +37,7 @@ import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
-from sherpa.stats import Cash, Chi2, CStat, WStat
+from sherpa.stats import Cash, CStat, WStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info

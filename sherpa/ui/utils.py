@@ -1,6 +1,7 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019
+#       Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -6996,11 +6997,8 @@ class Session(NoNewAttributesAfterInit):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
             except:
-                try:
-                    kernel = self.unpack_data(filename_or_model,
-                                              *args, **kwargs)
-                except:
-                    raise
+                kernel = self.unpack_data(filename_or_model,
+                                          *args, **kwargs)
 
         conv = sherpa.instrument.ConvolutionKernel(kernel, modelname)
         self._add_model_component(conv)
@@ -7063,11 +7061,8 @@ class Session(NoNewAttributesAfterInit):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
             except:
-                try:
-                    kernel = self.unpack_data(filename_or_model,
-                                              *args, **kwargs)
-                except:
-                    raise
+                kernel = self.unpack_data(filename_or_model,
+                                          *args, **kwargs)
 
         psf = sherpa.instrument.PSFModel(modelname, kernel)
         self._add_model_component(psf)
