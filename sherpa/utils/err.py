@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2016, 2017, 2019
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -288,7 +289,6 @@ class IOErr(SherpaErr):
             'writenoimg': "writing images in ASCII is not supported",
             'badext': "file '%s' does not contain a binary table extension",
             'notrsp': "file '%s' does not appear to be %s",
-            'nopager': 'No pager available',
             'bad': 'unknown %s: %s',
             'npconv1d': "numpy_convolution for 1D only",
             'start<stop': "start < stop, where start=%s stop=%s",
