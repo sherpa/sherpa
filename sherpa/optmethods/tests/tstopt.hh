@@ -206,175 +206,275 @@ void tst_global( int npar, double tol, Opt opt, int npop, int maxfev,
 
 template <typename Opt, typename Real>
 void tst_unc_opt( int npar, double tol, Opt opt, int npop, int maxfev,
-		  double c1, double c2 ) {
+                  double c1, double c2 ) {
 
   const int dim=npar*32;
   std::vector< double > par( dim, 0 ), lo( dim, -1.0e2 ), hi( dim, 1.0e2 );
 
   {
     opt( tstoptfct::RosenbrockInit<double>,
+#ifdef USE_ADEPT
+         tstoptfct::Rosenbrock<double, mybounds>,
+#endif
 	 tstoptfct::Rosenbrock<Real, mybounds>, npar, par, lo, hi, tol,
 	 "Rosenbrock", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::FreudensteinRothInit<double>,
+#ifdef USE_ADEPT
+         tstoptfct::FreudensteinRoth<double, mybounds>,
+#endif
 	 tstoptfct::FreudensteinRoth<Real, mybounds>, npar, par, lo, hi, tol,
 	 "FreudensteinRoth", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::PowellBadlyScaledInit<double>,
+#ifdef USE_ADEPT
+         tstoptfct::PowellBadlyScaled<double, mybounds>,
+#endif
 	 tstoptfct::PowellBadlyScaled<Real, mybounds>, npar, par, lo, hi, tol,
 	 "PowellBadlyScaled", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::BrownBadlyScaledInit<double>,
+#ifdef USE_ADEPT
+         tstoptfct::BrownBadlyScaled<double, mybounds>,
+#endif
 	 tstoptfct::BrownBadlyScaled<Real, mybounds>, npar, par, lo, hi, tol,
 	 "BrownBadlyScaled", npop, maxfev, c1, c2 );
   }
   {
-    opt( tstoptfct::BealeInit<double>, tstoptfct::Beale<Real, mybounds>,
+    opt( tstoptfct::BealeInit<double>,
+#ifdef USE_ADEPT
+         tstoptfct::Beale<double, mybounds>,
+#endif
+         tstoptfct::Beale<Real, mybounds>,
 	 npar, par, lo, hi, tol, "Beale", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::JennrichSampsonInit<double>,
-	 tstoptfct::JennrichSampson<Real, mybounds>, npar, par, lo, hi, tol,
-	 "JennrichSampson", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::JennrichSampson<double, mybounds>,
+#endif
+         tstoptfct::JennrichSampson<Real, mybounds>, npar, par, lo, hi, tol,
+         "JennrichSampson", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::HelicalValleyInit<double>,
-	 tstoptfct::HelicalValley<Real, mybounds>, 3, par, lo, hi, tol,
-	 "HelicalValley", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::HelicalValley<double, mybounds>,
+#endif
+         tstoptfct::HelicalValley<Real, mybounds>, 3, par, lo, hi, tol,
+         "HelicalValley", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::BardInit<double>,
-	 tstoptfct::Bard<Real, mybounds>, 3, par, lo, hi, tol,
-	 "Bard", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Bard<double, mybounds>,
+#endif
+         tstoptfct::Bard<Real, mybounds>, 3, par, lo, hi, tol,
+         "Bard", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::GaussianInit<double>,
-	 tstoptfct::Gaussian<Real, mybounds>, 3, par, lo, hi, tol,
-	 "Gaussian", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Gaussian<double, mybounds>,
+#endif
+         tstoptfct::Gaussian<Real, mybounds>, 3, par, lo, hi, tol,
+         "Gaussian", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::MeyerInit<double>,
-	 tstoptfct::Meyer<Real, mybounds>, 3, par, lo, hi, tol,
-	 "Meyer", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Meyer<double, mybounds>,
+#endif
+         tstoptfct::Meyer<Real, mybounds>, 3, par, lo, hi, tol,
+         "Meyer", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::GulfResearchDevelopmentInit<double>,
-	 tstoptfct::GulfResearchDevelopment<Real, mybounds>, 3, par, lo, hi,
+#ifdef USE_ADEPT
+         tstoptfct::GulfResearchDevelopment<double, mybounds>,
+#endif
+         tstoptfct::GulfResearchDevelopment<Real, mybounds>, 3, par, lo, hi,
          tol, "GulfResearchDevelopment", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::Box3dInit<double>,
-	 tstoptfct::Box3d<Real, mybounds>, 3, par, lo, hi, tol,
-	 "Box3d", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Box3d<double, mybounds>,
+#endif
+         tstoptfct::Box3d<Real, mybounds>, 3, par, lo, hi, tol,
+         "Box3d", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::PowellSingularInit<double>,
-	 tstoptfct::PowellSingular<Real, mybounds>, 4, par, lo, hi, tol,
-	 "PowellSingular", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::PowellSingular<double, mybounds>,
+#endif
+         tstoptfct::PowellSingular<Real, mybounds>, 4, par, lo, hi, tol,
+         "PowellSingular", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::WoodInit<double>,
-	 tstoptfct::Wood<Real, mybounds>, 4, par, lo, hi, tol,
-	 "Wood", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Wood<double, mybounds>,
+#endif
+         tstoptfct::Wood<Real, mybounds>, 4, par, lo, hi, tol,
+         "Wood", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::KowalikOsborneInit<double>,
-	 tstoptfct::KowalikOsborne<Real, mybounds>, 4, par, lo, hi, tol,
-	 "KowalikOsborne", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::KowalikOsborne<double, mybounds>,
+#endif
+         tstoptfct::KowalikOsborne<Real, mybounds>, 4, par, lo, hi, tol,
+         "KowalikOsborne", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::BrownDennisInit<double>,
-	 tstoptfct::BrownDennis<Real, mybounds>, 4, par, lo, hi, tol,
-	 "BrownDennis", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::BrownDennis<double, mybounds>,
+#endif
+         tstoptfct::BrownDennis<Real, mybounds>, 4, par, lo, hi, tol,
+         "BrownDennis", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::Osborne1Init<double>,
-	 tstoptfct::Osborne1<Real, mybounds>, 5, par, lo, hi, tol,
-	 "Osborne1", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Osborne1<double, mybounds>,
+#endif
+         tstoptfct::Osborne1<Real, mybounds>, 5, par, lo, hi, tol,
+         "Osborne1", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::BiggsInit<double>,
-	 tstoptfct::Biggs<Real, mybounds>, 6, par, lo, hi, tol,
-	 "Biggs", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Biggs<double, mybounds>,
+#endif
+         tstoptfct::Biggs<Real, mybounds>, 6, par, lo, hi, tol,
+         "Biggs", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::Osborne2Init<double>,
-	 tstoptfct::Osborne2<Real, mybounds>, 11, par, lo, hi, tol,
-	 "Osborne2", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Osborne2<double, mybounds>,
+#endif
+         tstoptfct::Osborne2<Real, mybounds>, 11, par, lo, hi, tol,
+         "Osborne2", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::WatsonInit<double>,
-	 tstoptfct::Watson<Real, mybounds>, 6, par, lo, hi, tol,
-	 "Watson", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Watson<double, mybounds>,
+#endif
+         tstoptfct::Watson<Real, mybounds>, 6, par, lo, hi, tol,
+         "Watson", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::PenaltyIInit<double>,
-	 tstoptfct::PenaltyI<Real, mybounds>, 4, par, lo, hi, tol,
-	 "PenaltyI", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::PenaltyI<double, mybounds>,
+#endif
+         tstoptfct::PenaltyI<Real, mybounds>, 4, par, lo, hi, tol,
+         "PenaltyI", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::PenaltyIIInit<double>,
-	 tstoptfct::PenaltyII<Real, mybounds>, 4, par, lo, hi, tol,
-	 "PenaltyII", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::PenaltyII<double, mybounds>,
+#endif
+         tstoptfct::PenaltyII<Real, mybounds>, 4, par, lo, hi, tol,
+         "PenaltyII", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::VariablyDimensionedInit<double>,
-	 tstoptfct::VariablyDimensioned<Real, mybounds>, npar, par, lo, hi,
+#ifdef USE_ADEPT
+         tstoptfct::VariablyDimensioned<double, mybounds>,
+#endif
+         tstoptfct::VariablyDimensioned<Real, mybounds>, npar, par, lo, hi,
          tol, "VariablyDimensioned", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::TrigonometricInit<double>,
-	 tstoptfct::Trigonometric<Real, mybounds>, npar, par, lo, hi, tol,
-	 "Trigonometric", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Trigonometric<double, mybounds>,
+#endif
+         tstoptfct::Trigonometric<Real, mybounds>, npar, par, lo, hi, tol,
+         "Trigonometric", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::BrownAlmostLinearInit<double>,
-	 tstoptfct::BrownAlmostLinear<Real, mybounds>, npar, par, lo, hi, tol,
-	 "BrownAlmostLinear", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::BrownAlmostLinear<double, mybounds>,
+#endif
+         tstoptfct::BrownAlmostLinear<Real, mybounds>, npar, par, lo, hi, tol,
+         "BrownAlmostLinear", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::DiscreteBoundaryInit<double>,
-	 tstoptfct::DiscreteBoundary<Real, mybounds>, npar, par, lo, hi, tol,
-	 "DiscreteBoundary", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::DiscreteBoundary<double, mybounds>,
+#endif
+         tstoptfct::DiscreteBoundary<Real, mybounds>, npar, par, lo, hi, tol,
+         "DiscreteBoundary", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::DiscreteIntegralInit<double>,
-	 tstoptfct::DiscreteIntegral<Real, mybounds>, npar, par, lo, hi, tol,
-	 "DiscreteIntegral", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::DiscreteIntegral<double, mybounds>,
+#endif
+         tstoptfct::DiscreteIntegral<Real, mybounds>, npar, par, lo, hi, tol,
+         "DiscreteIntegral", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::BroydenTridiagonalInit<double>,
-	 tstoptfct::BroydenTridiagonal<Real, mybounds>, npar, par, lo, hi, tol,
-	 "BroydenTridiagonal", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::BroydenTridiagonal<double, mybounds>,
+#endif
+         tstoptfct::BroydenTridiagonal<Real, mybounds>, npar, par, lo, hi, tol,
+         "BroydenTridiagonal", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::BroydenBandedInit<double>,
-	 tstoptfct::BroydenBanded<Real, mybounds>, npar, par, lo, hi, tol,
-	 "BroydenBanded", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::BroydenBanded<double, mybounds>,
+#endif
+         tstoptfct::BroydenBanded<Real, mybounds>, npar, par, lo, hi, tol,
+         "BroydenBanded", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::LinearFullRankInit<double>,
-	 tstoptfct::LinearFullRank<Real, mybounds>, npar, par, lo, hi, tol,
-	 "LinearFullRank", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::LinearFullRank<double, mybounds>,
+#endif
+         tstoptfct::LinearFullRank<Real, mybounds>, npar, par, lo, hi, tol,
+         "LinearFullRank", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::LinearFullRank1Init<double>,
-	 tstoptfct::LinearFullRank1<Real, mybounds>, npar, par, lo, hi, tol,
-	 "LinearFullRank1", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::LinearFullRank1<double, mybounds>,
+#endif
+         tstoptfct::LinearFullRank1<Real, mybounds>, npar, par, lo, hi, tol,
+         "LinearFullRank1", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::LinearFullRank0cols0rowsInit<double>,
-	 tstoptfct::LinearFullRank0cols0rows<Real, mybounds>, npar, par, lo,
+#ifdef USE_ADEPT
+         tstoptfct::LinearFullRank0cols0rows<double, mybounds>,
+#endif
+         tstoptfct::LinearFullRank0cols0rows<Real, mybounds>, npar, par, lo,
          hi, tol, "LinearFullRank0cols0rows", npop, maxfev, c1, c2 );
   }
   {
     opt( tstoptfct::ChebyquadInit<double>,
-	 tstoptfct::Chebyquad<Real, mybounds>, 9, par, lo, hi, tol,
-	 "Chebyquad", npop, maxfev, c1, c2 );
+#ifdef USE_ADEPT
+         tstoptfct::Chebyquad<double, mybounds>,
+#endif
+         tstoptfct::Chebyquad<Real, mybounds>, 9, par, lo, hi, tol,
+         "Chebyquad", npop, maxfev, c1, c2 );
   }
-
 } // tst_unc_opt
+
 #endif
