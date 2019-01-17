@@ -5,47 +5,47 @@ sudo: false
 matrix:
   fast_finish: true
   include:
-    # macOS build
-    - env: INSTALL_TYPE=develop FITS="astropy" TEST=submodule MATPLOTLIBVER=2.0 XSPECVER="12.9.1" TRAVIS_PYTHON_VERSION="3.6"
-      os: osx
-    # Barebone build to check tests pass when most of the tests must be skipped.
-    # We need to use TEST=none to remove the test-data submodule.
-    - env: INSTALL_TYPE=develop TEST=none NUMPYVER=1.11 TRAVIS_PYTHON_VERSION="2.7"
-    # Full build (including ds9 and xspec), Python 2.7, setup.py develop, astropy, matplotlib 1.5
-    - env: XSPECVER="12.9.1" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="2.7"
-      sudo: required
-      dist: trusty
-    # As above, Python 3.5
-    - env: XSPECVER="12.9.1" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.5"
-      sudo: required
-      dist: trusty
-    # As above, Python 3.6, setup.py install
-    - env: XSPECVER="12.9.1" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.6"
-      sudo: required
-      dist: trusty
     # As above, xspec 12.10.0e
     - env: XSPECVER="12.10.0e" NUMPYVER="1.14" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="3.6"
       sudo: required
       dist: trusty
+#    # macOS build
+#    - env: INSTALL_TYPE=develop FITS="astropy" TEST=submodule MATPLOTLIBVER=2.0 XSPECVER="12.9.1" TRAVIS_PYTHON_VERSION="3.6"
+#      os: osx
+    # Barebone build to check tests pass when most of the tests must be skipped.
+    # We need to use TEST=none to remove the test-data submodule.
+#    - env: INSTALL_TYPE=develop TEST=none NUMPYVER=1.11 TRAVIS_PYTHON_VERSION="2.7"
+    # Full build (including ds9 and xspec), Python 2.7, setup.py develop, astropy, matplotlib 1.5
+#    - env: XSPECVER="12.9.1" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="2.7"
+#      sudo: required
+#      dist: trusty
+    # As above, Python 3.5
+#    - env: XSPECVER="12.9.1" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.5"
+#      sudo: required
+#      dist: trusty
+    # As above, Python 3.6, setup.py install
+#    - env: XSPECVER="12.9.1" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="3.6"
+#      sudo: required
+#      dist: trusty
     # Experimental support for using Sphinx to build the documentation
     # should we not run tests with this build (to save time); i.e. have
     # a specific build just for the documentation and nothing else?
-    - env: DOCS=true INSTALL_TYPE=build_sphinx TEST=none TRAVIS_PYTHON_VERSION="3.6"
-      sudo: required
-      dist: trusty
+#    - env: DOCS=true INSTALL_TYPE=build_sphinx TEST=none TRAVIS_PYTHON_VERSION="3.6"
+#      sudo: required
+#      dist: trusty
     # Install sherpatest package rather than relying on relative location of the submodule
     # Also, install matplotlib 2.0 and do not install astropy (checks tests are properly skipped)
-    - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="2.7"
+#    - env: INSTALL_TYPE=install TEST=package MATPLOTLIBVER=2.0 TRAVIS_PYTHON_VERSION="2.7"
     # Install astropy without matplotlib (checks tests are properly skipped)
-    - env: INSTALL_TYPE=develop TEST=submodule FITS="astropy" TRAVIS_PYTHON_VERSION="3.5"
+   # - env: INSTALL_TYPE=develop TEST=submodule FITS="astropy" TRAVIS_PYTHON_VERSION="3.5"
     # A relatively basic installation - NumPy and AstroPy - with no test data; this is similar to the preceeding
     # test, so perhaps could be combined?
-    - env: INSTALL_TYPE=develop TEST=none FITS="astropy" TRAVIS_PYTHON_VERSION="3.5"
+#    - env: INSTALL_TYPE=develop TEST=none FITS="astropy" TRAVIS_PYTHON_VERSION="3.5"
 
   # This job started failing in December 2018. We'll need to figure out what's wrong, but in the meantime we are just
   # allowing it to fail. Note it's the only one with python 2.7.
-  allow_failures:
-    - env: XSPECVER="12.9.1" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="2.7"
+#  allow_failures:
+#    - env: XSPECVER="12.9.1" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.5 TRAVIS_PYTHON_VERSION="2.7"
 
 before_install:
   - source travis/setup_conda.sh
