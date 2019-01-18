@@ -8389,7 +8389,8 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_pvalue(mdl1, mdl2, conv_model=rsp)
 
         """
-        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA) and conv_model is None:
+        if isinstance(self.get_data(id), sherpa.astro.data.DataPHA) and \
+           conv_model is None:
             conv_model = self.get_response(id)
         if not sherpa.utils.bool_cast(replot) or self._pvalue_results is None:
             self._run_pvalue(null_model, alt_model, conv_model,
