@@ -2,7 +2,7 @@
 #define tstoptfct_hh
 
 // 
-//  Copyright (C) 2007, 2017  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 017, 2019  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -2120,6 +2120,59 @@ namespace tstoptfct {
   }
 
   template< typename Real, typename Type >
+  void McCormick( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
+
+    Real a = x[ 0 ] + x[ 1 ], b = x[ 0 ] - x[ 1 ];
+    fval = sin( a ) + b * b - 1.5 * x[ 0 ] + 2.5 * x[ 1 ] + 1.0;
+
+  }
+  template< typename Real >
+  void McCormickInit( int npar, int& mfct, Real& answer, Real* x,
+		      Real* lo, Real* hi ) {
+
+    if ( 2 != npar )
+      throw std::runtime_error( "npar for the McCormick func must be 2\n" );
+
+    x[ 0 ] = 0.0; x[ 1 ] = 0.0;
+    lo[ 0 ] = -1.5; lo[ 1 ] = -3.0;
+    hi[ 0 ] =  4.0; hi[ 1 ] =  4.0;
+    answer = -1.91;
+
+  }
+  //
+  // f ( -0.547197553, -1.54719756 ) = -1.91
+  //
+
+  template< typename Real, typename Type >
+  void McKinnon( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
+
+    const Real tau = 3.0, theta = 6.0, phi = 400.0;
+    const Real tmp = 1.0 + x[ 1 ];
+    if ( x[ 0 ] <= 0.0 )
+        fval = theta * phi * pow( std::fabs( x[ 0 ] ), tau ) * tmp;
+    else
+	fval = theta * pow( x[ 0 ], tau ) + tmp;
+  }
+  template< typename Real >
+  void McKinnonInit( int npar, int& mfct, Real& answer, Real* x,
+		      Real* lo, Real* hi ) {
+
+    if ( 2 != npar )
+      throw std::runtime_error( "npar for the McKinnon func must be 2\n" );
+
+    for ( int ii = 0; ii < npar; ++ii ) {
+      x[ ii ] = 1.0;
+      lo[ ii ] = -1.0e2;
+      hi[ ii ] = 1.0e2;
+    }
+    answer = - 0.25;
+
+  }
+  //
+  // f ( 0.0, -0.5 ) = - 0.25
+  //
+
+  template< typename Real, typename Type >
   void Meyer( int mfct, int npar, Real* x, Real* fvec, int& ierr,
 	      Type xptr ) {
 
@@ -2166,32 +2219,6 @@ namespace tstoptfct {
 
     answer = 87.9458;
   }
-
-
-  template< typename Real, typename Type >
-  void McCormick( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
-
-    Real a = x[ 0 ] + x[ 1 ], b = x[ 0 ] - x[ 1 ];
-    fval = sin( a ) + b * b - 1.5 * x[ 0 ] + 2.5 * x[ 1 ] + 1.0;
-
-  }
-  template< typename Real >
-  void McCormickInit( int npar, int& mfct, Real& answer, Real* x,
-		      Real* lo, Real* hi ) {
-
-    if ( 2 != npar )
-      throw std::runtime_error( "npar for the McCormick func must be 2\n" );
-
-    x[ 0 ] = 0.0; x[ 1 ] = 0.0;
-    lo[ 0 ] = -1.5; lo[ 1 ] = -3.0;
-    hi[ 0 ] =  4.0; hi[ 1 ] =  4.0;
-    answer = -1.91;
-
-  }
-  //
-  // f ( -0.547197553, -1.54719756 ) = -1.91
-  //
-
   template< typename Real, typename Type >
   void Michalewicz( int npar, Real* x, Real& fval, int& ierr, Type xptr ) {
 
