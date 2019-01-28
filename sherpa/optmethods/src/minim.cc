@@ -65,7 +65,7 @@ void tstminim( Init init, Fct fct, int npar, std::vector<double>& par,
     sherpa::Minim< Fct, const sherpa::Bounds<double>&, double > nm( fct,
                                                                     bounds );
 
-    int verbose=0, maxnfev=npar*npar*maxfev, nfev;
+    int verbose=0, maxnfev=npar*npar*maxfev, nfev=0;
     double fmin;
     int initsimplex=1;
     nm( verbose, maxnfev, tol, npar, initsimplex, finalsimplex, lo, hi,
