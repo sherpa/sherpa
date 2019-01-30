@@ -125,8 +125,8 @@ int main( int argc, char* argv[] ) {
   double xprob=0.9, sfactor=1.0;
 
   if ( uncopt ) {
-    tst_unc_opt( npar, tol, tstde, npop, maxfev, xprob, sfactor );
-    tst_unc_opt( npar, tol, tstde_lm, npop, maxfev, xprob, sfactor );
+    tst_unc_opt<tstFct, double>( npar, tol, tstde, npop, maxfev, xprob, sfactor );
+    tst_unc_opt<tstFctVec, double>( npar, tol, tstde_lm, npop, maxfev, xprob, sfactor );
   }
   if ( globalopt )
     tst_global( npar, tol, tstde, npop, maxfev, xprob, sfactor );

@@ -29,7 +29,7 @@ typedef void (*Init)( int, int&, double&, double*, double*, double* );
 typedef void (*Fct)( int, double*, double&, int&, mybounds );
 typedef void (*FctVec)( int, int, double*, double*, int&, mybounds );
 typedef void (*tstFct)( Init init, Fct fct, int npar, std::vector<double>& par, std::vector<double>& lo, std::vector<double>& hi, double tol, const char* fct_name, int npop, int maxfev, double xprob, double sfactor );
-
+typedef void (*tstFctVec)( Init init, FctVec fct, int npar, std::vector<double>& par, std::vector<double>& lo, std::vector<double>& hi, double tol, const char* fct_name, int npop, int maxfev, double xprob, double sfactor );
 
 template <typename Real>
 void print_pars( const char* prefix, const char* name, int nfev, Real stat,
