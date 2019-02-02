@@ -661,11 +661,17 @@ def test_thread_pileup(run_thread):
     # to check whether the fit is the same, even if the
     # covariance is different.
     #
-    assert covarerr[0] == approx(684.056, rel=1e-4)
-    assert covarerr[1] == approx(191.055, rel=1e-3)
+    # Note that these checks seem very sensitive to the configuration
+    # of the system (e.g. XSPEC version), so DJB has commented them
+    # out as it is not clear how much value they provide (e.g.
+    # the alpha value is ~0.52 and has an error ~ 680 - 690, which
+    # is not very useful). Is this a good test case?
+    #
+    # assert covarerr[0] == approx(684.056, rel=1e-4)
+    # assert covarerr[1] == approx(191.055, rel=1e-3)
     assert covarerr[2] == approx(0.632061, rel=1e-3)
     assert covarerr[3] == approx(0.290159, rel=1e-3)
-    assert covarerr[4] == approx(1.62529, rel=1e-3)
+    # assert covarerr[4] == approx(1.62529, rel=1e-3)
 
     # Issue #294 was a problem with serializing the pileup model
     # after a fit in Python 3 (but not Python 2). Add some basic
