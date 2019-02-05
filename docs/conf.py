@@ -25,6 +25,8 @@
 # The minimum requirements are:
 #    numpy  - since setup.py enforces this
 #    six    - this could probably be mocked
+#    sphinx_rtd_theme
+#    sphinx_astropy
 #
 # The documentation can be built
 #   a) from the top level with 'python setup.py build_sphinx'
@@ -175,7 +177,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Sherpa'
-copyright = '2018, Chandra X-ray Center, Smithsonian Astrophysical Observatory.'
+copyright = '2019, Chandra X-ray Center, Smithsonian Astrophysical Observatory.'
 author = 'Chandra X-ray Center, Smithsonian Astrophysical Observatory'
 
 # The version info for the project you're documenting, acts as replacement for

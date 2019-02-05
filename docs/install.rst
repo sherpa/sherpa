@@ -2,6 +2,26 @@
 Installation
 ************
 
+Quick overview
+==============
+
+For those users who have already read this page, and need a quick
+refresher (or prefer to act first, and read documentation later),
+the following commands can be used to install Sherpa, depending on
+your environment and set up.
+
+::
+
+    conda install -c sherpa sherpa
+
+::
+
+    pip install sherpa
+
+::
+
+    python setup.py install
+
 Requirements
 ============
 
@@ -223,7 +243,7 @@ match the contents of the XSPEC installation.
        xspec_version = 12.10.0
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFuynctions XSModel XSUtil XS hdsp_3.0
+       xspec_libraries = XSFunctions XSModel XSUtil XS hdsp_3.0
        ccfits_libraries = CCfits_2.5
        wcslib_libraries = wcs-5.16
 
@@ -233,7 +253,7 @@ match the contents of the XSPEC installation.
        xspec_version = 12.9.1
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFuynctions XSModel XSUtil XS
+       xspec_libraries = XSFunctions XSModel XSUtil XS
        ccfits_libraries = CCfits_2.5
        wcslib_libraries = wcs-5.16
 
@@ -263,11 +283,22 @@ In order for the XSPEC module to be used from Python, the
 :py:mod:`sherpa.astro.xspec` module is imported.
 
 The Sherpa test suite includes an extensive set of tests of this
-module, but a quick check of an installed version can be done with
-the following::
+module, but a quick check of an installed version can be made with
+the following command::
 
     % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
     12.10.0e
+
+.. warning::
+
+   The ``--enable-xs-models-only`` flag with XSPEC 12.10.0 is known
+   to cause problems for Sherpa. It is **strongly recommended** that
+   either that the full XSPEC distribution is built, or that the
+   XSPEC installation from CIAO 4.11 is used.
+
+   There is currently no support for XSPEC 12.10.1 (see `Sherpa
+   issue 533 <https://github.com/sherpa/sherpa/issues/533>`_ for
+   more information).
 
 Other options
 ^^^^^^^^^^^^^
@@ -314,6 +345,27 @@ Tests can then be run with the ``test`` option::
 
     python setup.py test
 
+The ``test`` command is a wrapper that calls ``pytest`` under the hood,
+and includes the ``develop`` command.
+
+You can pass additional arguments to ``pytest`` with the ``-a`` or
+``--pytest-args`` arguments.  As an example, a single test can be run
+using the syntax:
+
+    python setup.py test -a sherpa/astro/datastack/tests/test_datastack.py::test_load::test_case3
+
+.. note::
+
+   If you run both ``install`` and ``develop`` or ``test`` in the same
+   Python environment you end up with two competing installations of
+   Sherpa which result in unexpected behavior. If this happens, simply
+   run ``pip uninstall sherpa`` as many times as necessary, until you
+   get an error message that no more Sherpa installations are
+   available. At this point you can re-install Sherpa.
+
+   The same issue may occur if you install a Sherpa binary release and
+   then try to build Sherpa from source in the same environment.
+
 The
 `Sherpa test data suite <https://github.com/sherpa/sherpa-test-data>`_
 can be installed to reduce the number of tests
@@ -322,6 +374,14 @@ which used ``git`` to access the source code)::
 
     git submodule init
     git submodule update
+
+When both the `DS9 image viewer <http://ds9.si.edu/site/Home.html>`_ and
+`XPA toolset <http://hea-www.harvard.edu/RD/xpa/>`_ are installed, the
+test suite will include tests that check that DS9 can be used from
+Sherpa. This causes several copies of the DS9 viewer to be created,
+which can be distracting, as it can cause loss of mouse focus (depending
+on how X-windows is set up). This can be avoided by installing the 
+`X virtual-frame buffer (Xvfb) <https://en.wikipedia.org/wiki/Xvfb>`_.
 
 .. note::
 
@@ -361,7 +421,7 @@ directory::
     make html
 
 This places the documentation in ``_build/html/index.html``.
-    
+
 Testing the Sherpa installation
 ===============================
 
@@ -403,3 +463,13 @@ provides a number of data files in ASCII and :term:`FITS` formats. This is
 only useful when developing Sherpa, since the package is large. It
 will automatically be picked up by the ``sherpa_test`` script
 once it is installed.
+
+Testing the documentation with Travis
+-------------------------------------
+
+There is a documentation build included as part of the Travis-CI test suite,
+but it is not set up to do much validation. That is, you need to do something
+quite severe to break this build. Please see
+`issue 491 <https://github.com/sherpa/sherpa/issues/491>`_
+for more information.
+    
