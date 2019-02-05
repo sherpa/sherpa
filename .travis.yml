@@ -19,7 +19,7 @@ matrix:
     - env: XSPECVER="12.10.1b" NUMPYVER="1.11" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=2 TRAVIS_PYTHON_VERSION="3.6"
       sudo: required
       dist: trusty
-    # As above, python 3.7, numpy 1.14, matplotlib 2.0
+    # As above, python 3.7, numpy 1.14, matplotlib 3
     - env: XSPECVER="12.10.1b" NUMPYVER="1.14" FITS="astropy" INSTALL_TYPE=install TEST=submodule MATPLOTLIBVER=3 TRAVIS_PYTHON_VERSION="3.7"
       sudo: required
       dist: trusty
