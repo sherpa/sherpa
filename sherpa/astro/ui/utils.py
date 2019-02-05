@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019
+#      Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,7 +27,6 @@ import warnings
 import numpy
 
 import sherpa.ui.utils
-from sherpa.astro.data import DataARF
 from sherpa.astro.instrument import create_arf, create_delta_rmf, create_non_delta_rmf
 from sherpa.ui.utils import _argument_type_error, _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
@@ -37,7 +37,7 @@ import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
-from sherpa.stats import Cash, Chi2, CStat, WStat
+from sherpa.stats import Cash, CStat, WStat
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -432,17 +432,9 @@ class Session(sherpa.ui.utils.Session):
         load_bkg : Load the background from a file and add it to a PHA data set.
         show_all : Report the current state of the Sherpa session.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_bkg(id, bkg_id)
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_bkg(id, bkg_id)
+        _send_to_pager(txt, outfile, clobber)
 
     def show_bkg_source(self, id=None, bkg_id=None, outfile=None, clobber=False):
         """Display the background model expression for a data set.
@@ -484,17 +476,9 @@ class Session(sherpa.ui.utils.Session):
         show_model : Display the model expression used to fit a data set.
         show_bkg_model : Display the background model expression used to fit a data set.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_bkg_source(id, bkg_id)
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_bkg_source(id, bkg_id)
+        _send_to_pager(txt, outfile, clobber)
 
     def show_bkg_model(self, id=None, bkg_id=None, outfile=None, clobber=False):
         """Display the background model expression used to fit a data set.
@@ -537,17 +521,9 @@ class Session(sherpa.ui.utils.Session):
         show_model : Display the model expression used to fit a data set.
         show_bkg_source : Display the background model expression for a data set.
 
-        Notes
-        -----
-        When `outfile` is ``None``, the text is displayed via an external
-        program to support paging of the information. The program
-        used is determined by the ``PAGER`` environment variable. If
-        ``PAGER`` is not found then '/usr/bin/more' is used.
-
         """
-        all = ''
-        all += self._get_show_bkg_model(id, bkg_id)
-        _send_to_pager(all, outfile, clobber)
+        txt = self._get_show_bkg_model(id, bkg_id)
+        _send_to_pager(txt, outfile, clobber)
 
     ###########################################################################
     # Data
