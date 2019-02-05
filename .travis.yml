@@ -6,7 +6,7 @@ matrix:
   fast_finish: true
   include:
     # macOS build
-    - env: INSTALL_TYPE=develop FITS="astropy" TEST=submodule MATPLOTLIBVER=3 XSPECVER="12.10.0e" TRAVIS_PYTHON_VERSION="3.7"
+    - env: INSTALL_TYPE=develop FITS="astropy" TEST=submodule MATPLOTLIBVER=2 XSPECVER="12.10.0e" TRAVIS_PYTHON_VERSION="3.7"
       os: osx
     # Barebone build to check tests pass when most of the tests must be skipped.
     # We need to use TEST=none to remove the test-data submodule.
