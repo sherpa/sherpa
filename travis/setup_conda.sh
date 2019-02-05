@@ -3,7 +3,7 @@
 # Environment
 libgfortranver="3.0"
 sherpa_channel=sherpa
-xspec_channel=cxc/channel/dev
+xspec_channel=xspec/channel/dev
 miniconda=$HOME/miniconda
 
 if [[ ${TRAVIS_OS_NAME} == linux ]];
