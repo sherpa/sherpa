@@ -63,8 +63,8 @@ xspec_library_path=${xspec_root}/lib/
 xspec_include_path=${xspec_root}/include/
 
 case "${XSPECVER}" in
-  12.10.0e)  
-      xspec_version_string="12.10.0"
+  12.10.1b)
+      xspec_version_string="12.10.1"
       xspec_include_path="$miniconda/envs/build/include"
       xspec_library_path="$miniconda/envs/build/lib"
       ;;
