@@ -32,7 +32,7 @@ from sherpa.utils.testing import SherpaTestCase, requires_data, \
 # '(XSAdditiveModel)' and adding it to the number of occurrences of the
 # string '(XSMultiplicativeModel)' in `xspec/__init__.py`
 #
-XSPEC_MODELS_COUNT = 189
+XSPEC_MODELS_COUNT = 199
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh

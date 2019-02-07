@@ -19,13 +19,10 @@
 #
 
 import logging
-import os
 import warnings
 from numpy import sqrt
 from pytest import approx
 import pytest
-
-from numpy.testing import assert_allclose
 
 from sherpa.utils.testing import SherpaTestCase, requires_data, \
     requires_fits, requires_xspec, requires_group
@@ -57,11 +54,11 @@ class test_threads(SherpaTestCase):
         self.is_crates_io = False
         try:
             import sherpa.astro.io
-            if ("sherpa.astro.io.crates_backend" ==
-                sherpa.astro.io.backend.__name__):
+            if "sherpa.astro.io.crates_backend" == sherpa.astro.io.backend.__name__:
                 self.is_crates_io = True
-        except:
+        except ImportError:
             self.is_crates_io = False
+
         self.old_state = ui._session.__dict__.copy()
         self.old_level = logger.getEffectiveLevel()
         logger.setLevel(logging.CRITICAL)
@@ -69,6 +66,12 @@ class test_threads(SherpaTestCase):
         # Store XSPEC settings, if applicable
         if has_xspec:
             self.old_xspec = xspec.get_xsstate()
+            # As of XSPEC 12.10.1, it is safest to explicitly set
+            # the state to a known value. For now just pick the
+            # "easy" settings.
+            #
+            xspec.set_xsabund('angr')
+            xspec.set_xsxsect('bcmc')
 
     def tearDown(self):
         ui._session.__dict__.update(self.old_state)
@@ -484,47 +487,6 @@ class test_threads(SherpaTestCase):
         self.assertEqualWithinTol(self.locals['proj_res2'].parmaxes[2],
                                   0.0981627, 1e-2)
 
-    @requires_fits
-    @requires_xspec
-    def test_proj_bubble(self):
-        xspec.set_xsxsect('bcmc')
-
-        self.run_thread('proj_bubble')
-
-        fit_results = ui.get_fit_results()
-        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0, rel=1e-4)
-        assert covarerr[1] == approx(8.74608e-07, rel=1e-2)
-
-        # Fit -- Results from reminimize
-        assert self.locals['mek1'].kt.val == approx(17.8849, rel=1e-2)
-        assert self.locals['mek1'].norm.val == approx(4.15418e-06, rel=1e-2)
-
-        # Fit -- Results from reminimize
-
-        # The fit results change in XSPEC 12.10.0 since the mekal model
-        # was changed (FORTRAN to C++). A 1% difference is used for the
-        # parameter ranges from covar and proj (matches the tolerance for
-        # the fit results).
-
-        # Covar
-        #
-        # TODO: should this check that parmaxes is -1 * parmins instead?
-        covar = ui.get_covar_results()
-        assert covar.parmins[0] == approx(-0.328832, rel=0.1)
-        assert covar.parmins[1] == approx(-8.847916e-7, rel=0.01)
-        assert covar.parmaxes[0] == approx(0.328832, rel=0.1)
-        assert covar.parmaxes[1] == approx(8.847916e-7, rel=0.01)
-
-        # Proj -- Upper bound of kT can't be found
-        #
-        proj = ui.get_proj_results()
-        assert proj.parmins[0] == approx(-12.048069, rel=0.01)
-        assert proj.parmins[1] == approx(-9.510913e-07, rel=0.01)
-        assert proj.parmaxes[1] == approx(2.403640e-06, rel=0.01)
-
-        assert proj.parmaxes[0] is None
-
     # New tests based on SDS threads -- we should catch these errors
     # (if any occur) so SDS doesn't waste time tripping over them.
     @requires_fits
@@ -645,6 +607,7 @@ class test_threads(SherpaTestCase):
         assert rmf.energ_lo[0] == approx(EMIN, rel=etol)
         assert arf.energ_lo[0] == approx(EMIN, rel=etol)
 
+
 @requires_data
 @requires_fits
 @requires_xspec
@@ -698,11 +661,17 @@ def test_thread_pileup(run_thread):
     # to check whether the fit is the same, even if the
     # covariance is different.
     #
-    assert covarerr[0] == approx(684.056, rel=1e-4)
-    assert covarerr[1] == approx(191.055, rel=1e-3)
+    # Note that these checks seem very sensitive to the configuration
+    # of the system (e.g. XSPEC version), so DJB has commented them
+    # out as it is not clear how much value they provide (e.g.
+    # the alpha value is ~0.52 and has an error ~ 680 - 690, which
+    # is not very useful). Is this a good test case?
+    #
+    # assert covarerr[0] == approx(684.056, rel=1e-4)
+    # assert covarerr[1] == approx(191.055, rel=1e-3)
     assert covarerr[2] == approx(0.632061, rel=1e-3)
     assert covarerr[3] == approx(0.290159, rel=1e-3)
-    assert covarerr[4] == approx(1.62529, rel=1e-3)
+    # assert covarerr[4] == approx(1.62529, rel=1e-3)
 
     # Issue #294 was a problem with serializing the pileup model
     # after a fit in Python 3 (but not Python 2). Add some basic
@@ -727,3 +696,57 @@ def test_thread_pileup(run_thread):
     assert lines[11].startswith('   1: ')
     assert lines[17].startswith('   7: ')
     assert lines[18].startswith('   *** pileup fraction: ')
+
+
+# This was test_threads.test_proj_bubble
+#
+@requires_data
+@requires_fits
+@requires_xspec
+@pytest.mark.usefixtures("clean_astro_ui")
+def test_proj_bubble(run_thread):
+
+    # How sensitive are the results to the change from bcmc to vern
+    # made in XSPEC 12.10.1? It looks like the mekal best-fit
+    # temperature can jump from ~17.9 to 18.6, so require bcmc
+    # in this test.
+    #
+    xspec.set_xsxsect('bcmc')
+    models = run_thread('proj_bubble')
+
+    fit_results = ui.get_fit_results()
+    covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+    assert covarerr[0] == approx(0, rel=1e-4)
+    assert covarerr[1] == approx(8.74608e-07, rel=1e-2)
+
+    # Fit -- Results from reminimize
+    assert models['mek1'].kt.val == approx(17.8849, rel=1e-2)
+    assert models['mek1'].norm.val == approx(4.15418e-06, rel=1e-2)
+
+    # Fit -- Results from reminimize
+
+    # The fit results change in XSPEC 12.10.0 since the mekal model
+    # was changed (FORTRAN to C++). A 1% difference is used for the
+    # parameter ranges from covar and proj (matches the tolerance for
+    # the fit results). Note that this tolerance has been relaced to
+    # 10% for the kT errors, as there is a significant change seen
+    # with different XSPEC versions for the covariance results.
+    #
+
+    # Covar
+    #
+    # TODO: should this check that parmaxes is -1 * parmins instead?
+    covar = ui.get_covar_results()
+    assert covar.parmins[0] == approx(-0.328832, rel=0.1)
+    assert covar.parmins[1] == approx(-8.847916e-7, rel=0.01)
+    assert covar.parmaxes[0] == approx(0.328832, rel=0.1)
+    assert covar.parmaxes[1] == approx(8.847916e-7, rel=0.01)
+
+    # Proj -- Upper bound of kT can't be found
+    #
+    proj = ui.get_proj_results()
+    assert proj.parmins[0] == approx(-12.048069, rel=0.01)
+    assert proj.parmins[1] == approx(-9.510913e-07, rel=0.01)
+    assert proj.parmaxes[1] == approx(2.403640e-06, rel=0.01)
+
+    assert proj.parmaxes[0] is None
