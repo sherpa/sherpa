@@ -2536,6 +2536,38 @@ def test_wstat_rstat_qval_fields_not_none():
     assert s2.qval > s1.qval
 
 
+def validate(expected, val):
+    """Compare numeric values which may also be NaN/None/pytest.approx values
+
+    Try and make it easier for the test writer.
+
+    Parameters
+    ----------
+    expected : float, None, NaN, or pytest.approx instance
+        The expected value. If a float then the standard pytest.approx
+        settings are used, but you can send in an instance with its own
+        values.
+    value : float, None, or NaN
+        The value to test.
+
+    Notes
+    -----
+    The test for whether we have a pytest.approx instance relies on
+    internals of pytest.approx, so could be unreliable long term.
+
+    """
+
+    if expected is None:
+        assert val is None
+    elif hasattr(expected, 'expected'):
+        # Assyme a pytest.approx value
+        assert val == expected
+    elif np.isfinite(expected):
+        assert val == pytest.approx(expected)
+    else:
+        assert np.isnan(val)
+
+
 # Add some basic tests to see how fits where the number of degrees-of-freedom
 # is 0 or negative are handled.
 #
@@ -2554,7 +2586,7 @@ def assert_stat_info(statinfo, npoints, dof, statval, qval, rstat):
         The expected number of degrees of freedom.
     statval : float
         The expected statistic value.
-    qval : float or None
+    qval : float or None or np.nan
         The expected qval value
     rstat : float or None or np.nan
         The expected rstat value.
@@ -2565,17 +2597,8 @@ def assert_stat_info(statinfo, npoints, dof, statval, qval, rstat):
     assert statinfo.dof == dof
     assert statinfo.statval == pytest.approx(statval)
 
-    if qval is None:
-        assert statinfo.qval is None
-    else:
-        assert statinfo.qval == pytest.approx(qval)
-
-    if rstat is None:
-        assert statinfo.rstat is None
-    elif np.isfinite(rstat):
-        assert statinfo.rstat == pytest.approx(rstat)
-    else:
-        assert np.isnan(statinfo.rstat)
+    validate(qval, statinfo.qval)
+    validate(rstat, statinfo.rstat)
 
 
 def assert_fit_results(fitres, rstat):
@@ -2591,16 +2614,7 @@ def assert_fit_results(fitres, rstat):
         The expected rstat value.
     """
 
-    # This is messy but makes the tests a bit easier to write
-    if rstat is None:
-        assert fitres.rstat is None
-    elif hasattr(rstat, 'expected'):
-        assert fitres.rstat == rstat
-    elif np.isfinite(rstat):
-        assert fitres.rstat == pytest.approx(rstat)
-    else:
-        assert np.isnan(fitres.rstat)
-
+    validate(rstat, fitres.rstat)
     assert fitres.succeeded
 
 
@@ -2664,8 +2678,8 @@ def test_dof_1(method, stat, statargs):
 
 @pytest.mark.parametrize("method", [LevMar, NelderMead, MonCar])
 @pytest.mark.parametrize("stat,statargs", [(Cash, (dof1_cash, None, None)),
-                                           (CStat, (dof1_cstat, 1.0, np.nan)),
-                                           (Chi2, (dof1_chi2, 1.0, np.nan))])
+                                           (CStat, (dof1_cstat, np.nan, np.nan)),
+                                           (Chi2, (dof1_chi2, np.nan, np.nan))])
 def test_dof_0(method, stat, statargs):
     """DOF is 0"""
 
@@ -2680,19 +2694,11 @@ def test_dof_0(method, stat, statargs):
     assert_stat_info(statinfo, 3, 0, statargs[0], statargs[1], statargs[2])
 
 
-# The CStat and Chi-square runs fail with
-#     TypeError: igamc domain error, a and x must be positive
-# This error should either be caught earlier (in which case we may want
-# to remove these statistics from this test and add a separate
-# regression test for those), or handled in a "better" way.
-#
 @pytest.mark.parametrize("method", [LevMar, NelderMead, MonCar])
 @pytest.mark.parametrize("stat,statargs",
                          [(Cash, (dof1_cash, None, None)),
-                          pytest.param(CStat, (dof1_chi2, 1.0, np.nan),
-                                       marks=pytest.mark.xfail),
-                          pytest.param(Chi2, (dof1_chi2, 1.0, np.nan),
-                                       marks=pytest.mark.xfail)])
+                          (CStat, (dof1_cstat, np.nan, np.nan)),
+                          (Chi2, (dof1_chi2, np.nan, np.nan))])
 def test_dof_neg1(method, stat, statargs):
     """DOF is -1"""
 

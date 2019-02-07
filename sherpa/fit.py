@@ -27,16 +27,16 @@ import signal
 from functools import wraps
 
 from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, float, float32, finfo, nan, any, int, sqrt
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, igamc, \
+    ones_like, isnan, isinf, float, float32, finfo, any, int
+from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import FitErr, EstErr, SherpaErr
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
-from sherpa.stats import Chi2, Chi2Gehrels, Cash, CStat, Chi2ModVar, \
-    LeastSq, Likelihood, WStat
+from sherpa.stats import Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
+    LeastSq, Likelihood
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -175,31 +175,6 @@ def _cleanup_chi2_name(stat, data):
     return stat.name
 
 
-def _can_calculate_rstat(stat):
-    """Can we calculate reduced statistic and qval?
-
-    Parameters
-    ----------
-    stat : sherpa.stats.Stat instance
-
-    Returns
-    -------
-    flag : bool
-        True if the reduced statistic and qval can be calculated.
-
-    Notes
-    -----
-    This really should be left to the statistic object to determine
-    (by actually caculating the value or not), but for now leave as
-    a separate routine.
-    """
-
-    # Note that LeastSq is currently a subclass of Chi2, which
-    # requires an extra test.
-    return isinstance(stat, (CStat, WStat, Chi2)) and \
-        not isinstance(stat, LeastSq)
-
-
 class FitResults(NoNewAttributesAfterInit):
     """The results of a fit.
 
@@ -275,15 +250,8 @@ class FitResults(NoNewAttributesAfterInit):
     def __init__(self, fit, results, init_stat, param_warnings):
         _vals = fit.data.eval_model_to_fit(fit.model)
         _dof = len(_vals) - len(tuple(results[1]))
-        _qval = None
-        _rstat = None
         _covar = results[4].get('covar')
-        if _can_calculate_rstat(fit.stat):
-            if _dof > 0 and results[2] >= 0.0:
-                _qval = igamc(_dof / 2., results[2] / 2.)
-                _rstat = results[2] / _dof
-            else:
-                _rstat = nan
+        _rstat, _qval = fit.stat.goodness_of_fit(results[2], _dof)
 
         self.succeeded = results[0]
         self.parnames = tuple(p.fullname for p in fit.model.pars
@@ -1194,24 +1162,17 @@ class Fit(NoNewAttributesAfterInit):
 
         # TODO: This logic would be better in the stat class than here
         #
-        stat, fvec = self._calc_stat()
+        statval, fvec = self._calc_stat()
         model = self.data.eval_model_to_fit(self.model)
 
-        qval = None
-        rstat = None
         numpoints = len(model)
         dof = numpoints - len(self.model.thawedpars)
-        if _can_calculate_rstat(self.stat):
-            if stat >= 0.0:
-                qval = igamc(dof / 2., stat / 2.)
-            try:
-                rstat = stat / dof
-            except ZeroDivisionError:
-                rstat = nan
+
+        rstat, qval = self.stat.goodness_of_fit(statval, dof)
 
         name = _cleanup_chi2_name(self.stat, self.data)
 
-        return StatInfoResults(name, stat, numpoints, model,
+        return StatInfoResults(name, statval, numpoints, model,
                                dof, qval, rstat)
 
     @evaluates_model
