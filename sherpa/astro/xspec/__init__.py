@@ -29,7 +29,24 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.10.1'
+   '12.10.1b'
+
+Initializing XSPEC
+------------------
+
+The XSPEC model library is initalized so that the cosmology parameters
+are set to H_0=70, q_0=0.0, and lambda_0=0.73 (they can be changed with
+`set_xscosmo`).
+
+The other settings - for example for the abundance and cross-section
+tables - follow the standard rules for XSPEC. For XSPEC versions prior
+to 12.10.1, this means that the abundance table uses the ``angr``
+setting and the cross sections the ``bcmc`` setting (see `set_xsabund`
+and `set_xsxsect` for full details). As of XSPEC 12.10.1, the values
+are now taken from the user's XSPEC configuration file - either
+``~/.xspec/Xspec.init`` or ``$HEADAS/../spectral/manager/Xspec.init`` -
+for these settings. The default value for the photo-ionization table
+in this case is now ``vern`` rather than ``bcmc``.
 
 References
 ----------
