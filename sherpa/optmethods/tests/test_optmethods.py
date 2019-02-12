@@ -1,6 +1,6 @@
 from __future__ import print_function
 #
-#  Copyright (C) 2007, 2015, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -41,12 +41,21 @@ class test_optmethods(SherpaTestCase):
                   x0, xmin, xmax, iprint=iprint )
         self.tst( optfcts.montecarlo,  name + self.mc , fct, fmin,
                   x0, xmin, xmax, iprint=iprint, maxfev=8192*len(x0) )
+        self.tst( optfcts.montecarlo,  name + self.mc , fct, fmin,
+                  x0, xmin, xmax, iprint=iprint, maxfev=8192*len(x0),
+                  numcores='all' )
         self.tst( optfcts.lmdif, name + self.lm, fct, fmin,
                   x0, xmin, xmax, iprint=iprint )
 
     def tst( self, optmethod, name, fct, fmin, x0, xmin, xmax,
-             maxfev=4096, iprint=False ):
-        status, x, fval, msg, stuff = optmethod( fct, x0, xmin, xmax, maxfev=maxfev*len(x0))
+             maxfev=4096, iprint=False, numcores=1 ):
+        if 1 == numcores:
+            status, x, fval, msg, stuff = optmethod( fct, x0, xmin, xmax,
+                                                     maxfev=maxfev*len(x0))
+        else:
+            status, x, fval, msg, stuff = optmethod( fct, x0, xmin, xmax,
+                                                     maxfev=maxfev*len(x0),
+                                                     numcores=numcores)
         nfev = stuff.get('nfev')
         if iprint:
             print('fmin = %g vs fval = %g' % ( fmin, fval ))
@@ -60,14 +69,6 @@ class test_optmethods(SherpaTestCase):
         npar = 4
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.rosenbrock, fmin, x0, xmin, xmax )
-
-##     def test_freudenstein_roth(self):
-##         name = 'freudenstein_roth'
-##         npar = 8
-##         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-##         #self.tst_all( name, _tstoptfct.freudenstein_roth_fct,
-##         #              _tstoptfct.freudenstein_roth,
-##         #              fmin, x0, xmin, xmax )
 
     def test_powell_badly_scaled(self):
         name = 'powell_badly_scaled'
@@ -137,13 +138,6 @@ class test_optmethods(SherpaTestCase):
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.box3d, fmin, x0, xmin, xmax )
 
-##     def test_powell_singular(self):
-##         name = 'powell_singular'
-##         npar = 4
-##         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-##         self.tst_all( name, _tstoptfct.powell_singular_fct,
-##                       _tstoptfct.powell_singular, fmin, x0, xmin, xmax )
-
     def test_wood(self):
         name = 'wood'
         npar = 4
@@ -164,14 +158,6 @@ class test_optmethods(SherpaTestCase):
         npar = 4
         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
         self.tst_all( name, _tstoptfct.brown_dennis, fmin, x0, xmin, xmax )
-
-##     # NelderMead actually finds a lower minimum then the published result!
-##     def test_osborne1(self):
-##         name = 'osborne1'
-##         npar = 5
-##         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-##         self.tst( optfcts.lmdif, name + self.lm, _tstoptfct.osborne1,
-##                   fmin, x0, xmin, xmax )
 
 ##     # look at why it fails for monte carlo
     def test_biggs(self):
@@ -198,25 +184,6 @@ class test_optmethods(SherpaTestCase):
         self.tst( optfcts.montecarlo, name + self.mc, _tstoptfct.watson,
                   fmin, x0, xmin, xmax )
 
-##     # This test actually passed, there is a bug with assertEqualWithinTol
-##     def test_penaltyI(self):
-##         name = 'penaltyI'
-##         npar = 4
-##         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-##         self.tst_all( name, _tstoptfct.penaltyI_fct,
-##                       _tstoptfct.penaltyI, fmin, x0, xmin, xmax )
-
-##     def test_penaltyII(self):
-##         name = 'penaltyII'
-##         npar = 4
-##         x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-## ##         mac(ppc only) has issue with this problem, by pass it for now.
-## ##         The problem is probably due to the compiler, will re-visit later.
-##         self.tst( optfcts.neldermead, name + self.nm, _tstoptfct.penaltyII,
-##                   fmin, x0, xmin, xmax )
-##         self.tst( optfcts.montecarlo, name + self.mc, _tstoptfct.penaltyII,
-##                   fmin, x0, xmin, xmax )
-
     def test_variably_dimensioned(self):
         name = 'variably_dimensioned'
         npar = 5
@@ -232,14 +199,6 @@ class test_optmethods(SherpaTestCase):
                   _tstoptfct.trigonometric, fmin, x0, xmin, xmax )
         self.tst( optfcts.montecarlo, name + self.mc,
                   _tstoptfct.trigonometric, fmin, x0, xmin, xmax )
-
-    # lmdif gets a smaller min then published result
-    #def test_brown_almost_linear(self):
-    #    name = 'brown_almost_linear'
-    #    npar = 7
-    #    x0, xmin, xmax, fmin = _tstoptfct.init( name, npar )
-    #    self.tst( optfcts.lmdif, name + self.lm,
-    #              _tstoptfct.brown_almost_linear, fmin, x0, xmin, xmax )
 
     def test_discrete_boundary(self):
         name = 'discrete_boundary'

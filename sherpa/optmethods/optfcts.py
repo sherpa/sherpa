@@ -27,6 +27,8 @@ from six.moves import zip as izip
 from six.moves import xrange
 
 from . import _saoopt
+from sherpa.optmethods.ncoresde import ncoresDifEvo
+from sherpa.optmethods.ncoresnm import ncoresNelderMead
 
 from sherpa.utils import parallel_map
 from sherpa.utils._utils import sao_fcmp
@@ -246,9 +248,8 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
     return rv
 
-def difevo_nm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
-               seed=741985, population_size=None, xprob=0.9,
-               weighting_factor=0.8):
+def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed, population_size, xprob,
+              weighting_factor):
 
     def stat_cb0( pars ):
         return fcn( pars )[ 0 ]
@@ -418,22 +419,26 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 #
 def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                seed=74815, population_size=None, xprob=0.9,
-               weighting_factor=0.8):
+               weighting_factor=0.8, numcores=1):
 
-    def stat_cb0( pars ):
-        return fcn( pars )[ 0 ]
+    def stat_cb0(pars):
+        return fcn(pars)[0]
+
+    if isinstance(numcores, str):
+        if numcores.lower() == 'all':
+            numcores = None
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     # make sure that the cross over prob is within [0.1,1.0]
-    xprob = max( 0.1, xprob )
-    xprob = min( xprob, 1.0 )
+    xprob = max(0.1, xprob)
+    xprob = min(xprob, 1.0)
 
     # make sure that weighting_factor is within [0.1,1.0]
-    weighting_factor = max( 0.1, weighting_factor )
-    weighting_factor = min( weighting_factor, 1.0 )
+    weighting_factor = max(0.1, weighting_factor)
+    weighting_factor = min(weighting_factor, 1.0)
 
-    random.seed( seed  )
+    random.seed(seed )
     if seed is None:
         seed = random.randint(0, 2147483648) # pow(2,31) == 2147483648L
     if population_size is None:
@@ -442,111 +447,137 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     if maxfev is None:
         maxfev = 8192 * population_size
 
-    def myopt( myfcn, xxx, ftol, maxfev, seed, pop, xprob,
-               weight, factor=4.0, debug=False ):
+    def myopt(myfcn, xxx, ftol, maxfev, seed, pop, xprob,
+               weight, factor=4.0, debug=False):
 
-        x = xxx[ 0 ]
-        xmin = xxx[ 1 ]
-        xmax = xxx[ 2 ]
+        x = xxx[0]
+        xmin = xxx[1]
+        xmax = xxx[2]
         maxfev_per_iter = 512 * x.size
 
-        def random_start( xmin, xmax ):
+        def random_start(xmin, xmax):
             xx = []
-            for ii in range( len(xmin ) ):
-                xx.append( random.uniform( xmin[ ii ], xmax[ ii ] ) )
-            return numpy.asarray( xx )
+            for ii in range(len(xmin)):
+                xx.append(random.uniform(xmin[ii], xmax[ii]))
+            return numpy.asarray(xx)
 
         ############################# NelderMead #############################
-        mymaxfev = min( maxfev_per_iter, maxfev )
-        if all( x == 0.0 ):
+        mymaxfev = min(maxfev_per_iter, maxfev)
+        if all(x == 0.0):
             mystep = list(map(lambda fubar: 1.2 + fubar, x))
         else:
             mystep = list(map(lambda fubar: 1.2 * fubar, x))
-        result = neldermead( myfcn, x, xmin, xmax, maxfev=mymaxfev, ftol=ftol,
-                             finalsimplex=9, step=mystep )
-        x = numpy.asarray( result[ 1 ], numpy.float_ )
-        nfval = result[2]
-        nfev = result[4].get( 'nfev' )
+        if 1 == numcores:
+            result = neldermead(myfcn, x, xmin, xmax, maxfev=mymaxfev,
+                                ftol=ftol,finalsimplex=9, step=mystep)
+            x = numpy.asarray(result[1], numpy.float_)
+            nfval = result[2]
+            nfev = result[4].get('nfev')
+        else:
+            ncores_nm = ncoresNelderMead()
+            nfev, nfval, x = \
+                ncores_nm(stat_cb0, x, xmin, xmax, ftol, mymaxfev, numcores)
         if verbose or False != debug:
-            print('f_nm%s=%.14e in %d nfev' % ( x, nfval, nfev ))
+            print('f_nm%s=%.14e in %d nfev' % (x, nfval, nfev))
         ############################# NelderMead #############################
 
-        ############################## nmDifEvo ##############################
-        xmin, xmax = _narrow_limits( 4 * factor, [x,xmin,xmax], debug=False )
-        mymaxfev = min( maxfev_per_iter, maxfev - nfev )
-        result = difevo_nm( myfcn, x, xmin, xmax, ftol=ftol, maxfev=mymaxfev,
-                            seed=seed, population_size=pop, xprob=xprob,
-                            weighting_factor=weight )
-        nfev += result[4].get( 'nfev' )
-        x = numpy.asarray( result[1], numpy.float_ )
-        nfval = result[2]
+        ############################## nmDifEvo #############################
+        xmin, xmax = _narrow_limits(4 * factor, [x,xmin,xmax], debug=False)
+        mymaxfev = min(maxfev_per_iter, maxfev - nfev)
+        if 1 == numcores:
+            result = difevo_nm(myfcn, x, xmin, xmax, ftol, mymaxfev, verbose,
+                                seed, pop, xprob, weight)
+            nfev += result[4].get('nfev')
+            x = numpy.asarray(result[1], numpy.float_)
+            nfval = result[2]
+        else:
+            ncores_de = ncoresDifEvo()
+            mystep = None
+            tmp_nfev, tmp_fmin, tmp_par = \
+                ncores_de(stat_cb0, x, xmin, xmax, ftol, mymaxfev, mystep,
+                          numcores, pop, seed, weight, xprob, verbose)
+            nfev += tmp_nfev
+            if tmp_fmin < nfval:
+                nfval = tmp_fmin
+                x     = tmp_par
         if verbose or False != debug:
-            print('f_de_nm%s=%.14e in %d nfev' % ( x, result[2],
-                                                   result[4].get('nfev')))
-        ############################## nmDifEvo ##############################
+            print('f_de_nm%s=%.14e in %d nfev' % (x, fval, nfev))
+        ############################## nmDifEvo #############################
 
         ofval = FUNC_MAX
         while nfev < maxfev:
 
-            xmin, xmax = _narrow_limits( factor, [x,xmin,xmax], debug=False )
+            xmin, xmax = _narrow_limits(factor, [x,xmin,xmax], debug=False)
 
             ############################ nmDifEvo #############################
-            y = random_start( xmin, xmax )
-            mymaxfev = min( maxfev_per_iter, maxfev - nfev )
-            result = difevo_nm( myfcn, y, xmin, xmax, ftol=ftol,
-                                maxfev=mymaxfev, seed=seed,
-                                population_size=pop, xprob=xprob,
-                                weighting_factor=weight )
-            nfev += result[4].get( 'nfev' )
-            if result[2] < nfval:
-                nfval = result[2]
-                x = numpy.asarray( result[1], numpy.float_ )
+            y = random_start(xmin, xmax)
+            mymaxfev = min(maxfev_per_iter, maxfev - nfev)
+            if 1 == numcores:
+                result = difevo_nm(myfcn, y, xmin, xmax, ftol, mymaxfev,
+                                   verbose, seed, pop, xprob, weight)
+                nfev += result[4].get('nfev')
+                if result[2] < nfval:
+                    nfval = result[2]
+                    x = numpy.asarray(result[1], numpy.float_)
+            # else:
+            #     ncores_de = ncoresDifEvo()
+            #     mystep = None
+            #     tmp_nfev, tmp_fmin, tmp_par = \
+            #         ncores_de(stat_cb0, y, xmin, xmax, ftol, mymaxfev, mystep,
+            #                   numcores, pop, seed, weight, xprob, verbose)
+            #     nfev += tmp_nfev
+            #     if tmp_fmin < nfval:
+            #         nfval = tmp_fmin
+            #         x       = tmp_par
             if verbose or False != debug:
-                print('f_de_nm%s=%.14e in %d nfev' % \
-                      ( x, result[2], result[4].get('nfev')))
+                print('f_de_nm%s=%.14e in %d nfev' % (x, result[2],
+                                                      result[4].get('nfev')))
+                    
             ############################ nmDifEvo #############################
 
 
             if False != debug:
                 print('ofval=%.14e\tnfval=%.14e\n' % (ofval, nfval))
 
-            if sao_fcmp( ofval, nfval, ftol ) <= 0:
+            if sao_fcmp(ofval, nfval, ftol) <= 0:
                 return x, nfval, nfev
             ofval = nfval
             factor *= 2
 
         return x, nfval, nfev
 
-    x, fval, nfev = myopt( fcn, [x, xmin, xmax], numpy.sqrt(ftol), maxfev,
+    x, fval, nfev = myopt(fcn, [x, xmin, xmax], numpy.sqrt(ftol), maxfev,
                            seed, population_size, xprob, weighting_factor,
-                           factor=2.0, debug=False )
-
-    covarerr = None
+                           factor=2.0, debug=False)
+    
     if nfev < maxfev:
-        if all( x == 0.0 ):
+        if all(x == 0.0):
             mystep = list(map(lambda fubar: 1.2 + fubar, x))
         else:
             mystep = list(map(lambda fubar: 1.2 * fubar, x))
-        result = neldermead(fcn, x, xmin, xmax,
-                            maxfev=min(512*len(x), maxfev - nfev),
-                            ftol=ftol, finalsimplex=9, step=mystep)
-        covarerr = result[4].get( 'covarerr' )
+        if 1 == numcores:
+            result = neldermead(fcn, x, xmin, xmax,
+                                maxfev=min(512*len(x), maxfev - nfev),
+                                ftol=ftol, finalsimplex=9, step=mystep)
 
-        x = numpy.asarray( result[ 1 ], numpy.float_ )
-        fval = result[2]
-        nfev += result[4].get( 'nfev' )
-
+            x = numpy.asarray(result[1], numpy.float_)
+            fval = result[2]
+            nfev += result[4].get('nfev')
+        else:
+            ncores_nm = ncoresNelderMead()
+            tmp_nfev, tmp_fmin, tmp_par = \
+                ncores_nm(stat_cb0, x, xmin, xmax, ftol, maxfev - nfev, numcores)
+            nfev += tmp_nfev
+            # There is a bug here somewhere using broyden_tridiagonal
+            if tmp_fmin < fval:
+                fval = tmp_fmin
+                x = tmp_par
     ierr = 0
     if nfev >= maxfev:
         ierr = 3
-    status, msg = _get_saofit_msg( maxfev, ierr )
+    status, msg = _get_saofit_msg(maxfev, ierr)
 
-    rv = (status, x, fval)
-    print_covar_err = False
-    if print_covar_err and None != covarerr:
-        rv += (msg, {'covarerr': covarerr, 'info': status, 'nfev': nfev})
-    else:
-        rv += (msg, {'info': status, 'nfev': nfev})
+    rv = (status, x, fval,msg, {'info': status, 'nfev': nfev})
     return rv
 
 
@@ -647,11 +678,10 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         else:
             return xx,ff,nf,er
 
-
     x, fval, nfev, ier = simplex( verbose, maxfev, initsimplex, finalsimplex,
                                   ftol, step, xmin, xmax, x, stat_cb0, debug )
     if debug:
-        print('f%s=%f in %d nfev' % ( x, fval, nfev ))
+        print('f%s=%e in %d nfev' % ( x, fval, nfev ))
 
     info=1
     covarerr=None
@@ -668,7 +698,7 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             fval = minim_fval
         if debug:
             print('minim: f%s=%e %d nfev, info=%d' % (x,fval,nelmea_nfev,info))
-
+    
     if nfev >= maxfev:
         ier = 3
     key = {
