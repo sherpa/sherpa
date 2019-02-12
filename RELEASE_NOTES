@@ -1,9 +1,9 @@
 Release Notes
 
 Sherpa 4.11.0
-=============
 
-Fortran optimization routines have been completely replaced with C++ analogues.
+This release of Sherpa is based on the CIAO 4.11 release and includes
+additional bug fixes and improvements.
 
 Optimization routines and statistic methods were made more robust with several
 bug fixes and improvements.
@@ -26,14 +26,6 @@ model evaluations to improve performance.
 
 #465 Support XSPEC 12.10.0 (fix #436)
     XSPEC 12.10.0e is now supported
-
-#481 Remove Fortran code and provide LevMar errors
-    Sherpa does not rely on any Fortran routines anymore, except those compiled
-in XSPEC. The existing Fortran code, which was used mainly in some of the
-optimization routines, has been replaced by equivalent C++ code. This means
-that gfortran is no longer required for building Sherpa, although a version of
-libgfortran compatible with the one used to link the XSPEC libraries would
-still be needed at runtime if the XSPEC extension is built.
 
 #508 Ensure fields are initialized before use (pileup code)
     Resolved an issue where some fields in the C++ extension could have been
