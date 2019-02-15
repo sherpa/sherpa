@@ -1,8 +1,8 @@
 /*** File libwcs/wcsinit.c
- *** October 19, 2012
+ *** July 24, 2016
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
- *** Copyright (C) 1998-2012
+ *** Copyright (C) 1998-2016
  *** Smithsonian Astrophysical Observatory, Cambridge, MA, USA
 
     This library is free software; you can redistribute it and/or
@@ -100,7 +100,7 @@ const char *hstring;	/* character string containing FITS header information
 const char *name;		/* Name of WCS conversion to be matched
 			   (case-independent) */
 {
-    char *upname, *uppercase();
+    char *upname;
     char cwcs, charwcs;
     int iwcs;
     char keyword[12];
@@ -143,7 +143,7 @@ const char *name;		/* Name of WCS conversion to be matched
 
 char *
 uppercase (string)
-char *string;
+const char *string;
 {
     int lstring, i;
     char *upstring;
@@ -584,7 +584,7 @@ char *wchar;		/* Suffix character for one of multiple WCS */
 	if (wcs->wcsproj != WCS_OLD &&
 	    (hcoeff = ksearch (hstring,"CO1_1")) != NULL) {
 	    wcs->prjcode = WCS_PLT;
-	    (void)strcpy (wcs->ptype, "PLATE");
+	    (void)strcpy (wcs->ptype, "PLA");
 	    for (i = 0; i < 20; i++) {
 		sprintf (keyword,"CO1_%d", i+1);
 		wcs->x_coeff[i] = 0.0;
@@ -758,7 +758,7 @@ char *wchar;		/* Suffix character for one of multiple WCS */
 
 	/* SCAMP convention */
 	if (wcs->prjcode == WCS_TAN && wcs->naxis == 2) { 
-	    int n;
+	    int n = 0;
 	    if (wcs->inv_x) {
 		poly_end(wcs->inv_x);
 		wcs->inv_x = NULL;
@@ -783,8 +783,8 @@ char *wchar;		/* Suffix character for one of multiple WCS */
 		    }
 		}
 
-	    /* If any PVi_j are set, add them to the structure */
-	    if (n > 0) {
+	    /* If any PVi_j are set, add them in the structure if no SIRTF distortion*/
+	    if (n > 0 && wcs->distcode != DISTORT_SIRTF) {
 		n = 0;
 
 		for (k = MAXPV; k >= 0; k--) {
@@ -803,8 +803,8 @@ char *wchar;		/* Suffix character for one of multiple WCS */
 	    }
 
 	/* If linear or pixel WCS, print "degrees" */
-	if (!strncmp (wcs->ptype,"LINEAR",6) ||
-	    !strncmp (wcs->ptype,"PIXEL",5)) {
+	if (!strncmp (wcs->ptype,"LIN",3) ||
+	    !strncmp (wcs->ptype,"PIX",3)) {
 	    wcs->degout = -1;
 	    wcs->ndec = 5;
 	    }
@@ -1608,4 +1608,10 @@ char	*mchar;		/* Suffix character for one of multiple WCS */
  * Sep  1 2011	Add TPV as TAN with SCAMP PVs
  *
  * Oct 19 2012	Drop unused variable iszpx; fix bug in latmin assignment
+ *
+ * Feb  1 2013	Externalize uppercase()
+ * Feb 07 2013	Avoid SWARP distortion if SIRTF distortion is present
+ * Jul 25 2013	Initialize n=0 when checking for SCAMP distortion terms (fix from Martin Kuemmel)
+ *
+ * Jun 24 2016	wcs->ptype contains only 3-letter projection code
  */

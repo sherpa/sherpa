@@ -1,8 +1,8 @@
 /*** File fitsfile.h  FITS and IRAF file access subroutines
- *** September 25, 2009
+ *** June 20, 2014
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
- *** Copyright (C) 1996-2009
+ *** Copyright (C) 1996-2014
  *** Smithsonian Astrophysical Observatory, Cambridge, MA, USA
 
     This library is free software; you can redistribute it and/or
@@ -412,6 +412,10 @@ float ftgetr4(		/* Extract column for keyword from FITS table line
 	char *filename); /* Name of file to check */
     int isgif(		/* Return 1 if GIF image file, else 0 */
 	char *filename); /* Name of file to check */
+    int next_line (	/* Return the next line of an ASCII file */
+	FILE *diskfile,	/* File descriptor for ASCII file */
+	int ncmax,	/* Maximum number of characters returned */
+	char *line);	/* Next line (returned) */
     int first_token(	/* Return first token from the next line of an ASCII file */
 	FILE *diskfile,	/* File descriptor for ASCII file */
 	int ncmax,	/* Maximum number of characters returned */
@@ -1028,6 +1032,7 @@ extern int isfile();
 extern int istiff();
 extern int isjpeg();
 extern int isgif();
+extern int next_line();
 extern int first_token();
 
 /* Subroutines for access to tokens within a string from fileutil.c */
@@ -1283,4 +1288,6 @@ void compnut();	/* Compute nutation in longitude and obliquity and mean obliquit
  * Sep  8 2008	Add ag2hr(), ang2deg(), deg2ang(), and hr2ang()
  *
  * Sep 25 2009	Add moveb()
+ *
+ * Jun 20 2014	Add next_line()
  */

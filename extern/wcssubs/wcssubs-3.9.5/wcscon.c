@@ -1,8 +1,8 @@
 /*** File wcscon.c
- *** March 30, 2010
+ *** June 9, 2016
  *** Doug Mink, Harvard-Smithsonian Center for Astrophysics
  *** Some subroutines are based on Starlink subroutines by Patrick Wallace
- *** Copyright (C) 1995-2010
+ *** Copyright (C) 1995-2016
  *** Smithsonian Astrophysical Observatory, Cambridge, MA, USA
 
     This library is free software; you can redistribute it and/or
@@ -694,7 +694,7 @@ char *wcstring;		/* Name of coordinate system */
     else if (wcstring[0] == 'P' || wcstring[0] == 'p' )
 	return WCS_PLANET;
 
-    else if (isnum (wcstring)) {
+    else if (isnum (wcstring) == 1 || isnum (wcstring) == 2) {
 	equinox = atof (wcstring);
 	if (equinox > 1980.0)
 	    return WCS_J2000;
@@ -2325,4 +2325,6 @@ double *r;	/* Distance to object in same units as pos (returned) */
  *
  * Mar 29 2010	Fix bug in computing the magnitude of the e-terms in fk524()
  * Mar 30 2010	Drop ep1 assignment after line 178 in wcsconp()
+ *
+ * Jun  9 2016	Fix isnum() tests for added coloned times and dashed dates
  */

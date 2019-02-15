@@ -1,8 +1,8 @@
 /*** File libwcs/hget.c
- *** May 19, 2011
+ *** November 6, 2015
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
- *** Copyright (C) 1994-2011
+ *** Copyright (C) 1994-2015
  *** Smithsonian Astrophysical Observatory, Cambridge, MA, USA
 
     This library is free software; you can redistribute it and/or
@@ -51,7 +51,8 @@
  * Subroutine:	strsrch (s1, s2) finds string s2 in null-terminated string s1
  * Subroutine:	strnsrch (s1, s2, ls1) finds string s2 in ls1-byte string s1
  * Subroutine:	hlength (header,lhead) sets length of FITS header for searching
- * Subroutine:  isnum (string) returns 1 if integer, 2 if fp number, else 0
+ * Subroutine:  isnum (string) returns 1 if integer, 2 if fp number,
+ *              3 if hh:mm:dd.ss time, 4 if yyyy-mm-dd date, else 0
  * Subroutine:  notnum (string) returns 0 if number, else 1
  * Subroutine:  numdec (string) returns number of decimal places in numeric string
  * Subroutine:	strfix (string,blankfill,zerodrop) removes extraneous characters
@@ -1004,7 +1005,7 @@ const char *keyword0;	/* character string containing the name of the keyword
 	brack2 = strsrch (brack1,rbracket);
 	if (brack2 != NULL)
 	    *brack2 = '\0';
-	if (isnum (brack1)) {
+	if (isnum (brack1) == 1) {
 	    ipar = atoi (brack1);
 	    cwhite[0] = ' ';
 	    cwhite[1] = '\0';
@@ -1589,6 +1590,7 @@ const char *string;	/* Character string */
 /* ISNUM-- Return 1 if string is an integer number,
 		  2 if floating point,
 		  3 if sexigesimal, with or without decimal point
+		  4 if yyyy-mm-dd date
 		  else 0
  */
 
@@ -1598,7 +1600,7 @@ isnum (string)
 const char *string;	/* Character string */
 {
     int lstr, i, nd, cl;
-    char cstr, cstr1;
+    char cstr, cstr1, cstr2;
     int fpcode;
 
     /* Return 0 if string is NULL */
@@ -1642,7 +1644,11 @@ const char *string;	/* Character string */
 		return (0);
 	    else if (i > 0) {
 		cstr1 = string[i-1];
-		if (cstr1 != 'D' && cstr1 != 'd' &&
+		cstr2 = string[i+1];
+		if (cstr == '-' && cstr1 > 47 && cstr1 < 58 &&
+		    cstr2 > 47 && cstr2 < 58)
+		    return (4);
+		else if (cstr1 != 'D' && cstr1 != 'd' &&
 		    cstr1 != 'E' && cstr1 != 'e' &&
 		    cstr1 != ':' && cstr1 != ' ')
 		    return (0);
@@ -1910,4 +1916,8 @@ int	dropzero;	/* If nonzero, drop trailing zeroes */
  *
  * Apr 19 2011	In str2dec(), change comma to space
  * May 19 2011	In strncsrch() always free allocated memory before returning
+ *
+ * Nov  6 2015	In isnum(), add return of 4 for yyyy-mm-dd dates
+ *
+ * Jun  9 2016	Fix isnum() tests for added coloned times and dashed dates
  */

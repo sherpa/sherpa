@@ -1,5 +1,23 @@
 WCSTools WCS subroutine library release history
 
+Version 3.9.5 (May 2, 2017)
+dateutil.c:  Allocate new output string for fd2ofd() and fd2oft()
+
+Version 3.9.4 (August 2, 2016) (after Ole Streicher)
+wcs.c: Clean up use of ptype so it is always 3 characters long
+
+Version 3.9.3 (June 23, 2016)
+wcs.h, wcs.c: Increase ctype string length to 15 (+null=16) for distortion
+wcslib.h, wcslib.c: Increase ctype string length to 15 (+null=16) for distortion
+hget.c, fitsfile.c: Fix isnum() tests for added coloned times and dashed date
+
+Version 3.9.2 (December 10, 2015)
+hget.c: Add return of 4 for yyyy-mm-dd dates to isnum() (2015-11-06)
+
+Version 3.9.0 (December 19, 2014)
+fileutil.c: Add next_line() to return one line of file
+fitfile.c: fix buffer reallocation bug in fitsrhead()
+
 Version 3.8.7 (October 31, 2012)
 dateutil.c:  Unused l0 dropped from jd2lst(); ts2ss from jd2mst()
 imio.c:  Fix errors with short and character images in minvec(), maxvec()

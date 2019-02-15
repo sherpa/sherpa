@@ -55,7 +55,7 @@
 *   Given:
 *      naxis    const int
 *                        Number of image axes.
-*      ctype[][9]
+*      ctype[][16]
 *               const char
 *                        Coordinate axis types corresponding to the FITS
 *                        CTYPEn header cards.
@@ -76,7 +76,7 @@
 *   Compute the pixel coordinate for given world coordinates.
 *
 *   Given:
-*      ctype[][9]
+*      ctype[][16]
 *               const char
 *                        Coordinate axis types corresponding to the FITS
 *                        CTYPEn header cards.
@@ -136,7 +136,7 @@
 *   Compute world coordinates for a given pixel coordinate.
 *
 *   Given:
-*      ctype[][9]
+*      ctype[][16]
 *               const char
 *                        Coordinate axis types corresponding to the FITS
 *                        CTYPEn header cards.
@@ -196,7 +196,7 @@
 *   unknown celestial coordinate element using wcsfwd().
 *
 *   Given:
-*      ctype[][9]
+*      ctype[][16]
 *               const char
 *                        Coordinate axis types corresponding to the FITS
 *                        CTYPEn header cards.
@@ -285,7 +285,7 @@
 *   Notes
 *   -----
 *    1) The CTYPEn must in be upper case and there must be 0 or 1 pair of
-*       matched celestial axis types.  The ctype[][9] should be padded with
+*       matched celestial axis types.  The ctype[][16] should be padded with
 *       blanks on the right and null-terminated.
 *
 *    2) Elements of the crval[] array which correspond to celestial axes are
@@ -424,7 +424,7 @@ int
 wcsset (naxis, ctype, wcs)
 
 const int naxis;
-const char ctype[][9];
+const char ctype[][16];
 struct wcsprm *wcs;
 
 {
@@ -433,7 +433,7 @@ struct wcsprm *wcs;
 
    int j, k;
    int *ndx = NULL;
-   char requir[9];
+   char requir[16];
 
    strcpy(wcs->pcode, "");
    strcpy(requir, "");
@@ -553,7 +553,7 @@ struct wcsprm *wcs;
 int
 wcsfwd(ctype, wcs, world, crval, cel, phi, theta, prj, imgcrd, lin, pixcrd)
 
-const char ctype[][9];
+const char ctype[][16];
 struct wcsprm* wcs;
 const double world[];
 const double crval[];
@@ -643,7 +643,7 @@ double pixcrd[];
 int
 wcsrev(ctype, wcs, pixcrd, lin, imgcrd, prj, phi, theta, crval, cel, world)
 
-const char ctype[][9];
+const char ctype[][16];
 struct wcsprm *wcs;
 const double pixcrd[];
 struct linprm *lin;
@@ -743,7 +743,7 @@ int
 wcsmix(ctype, wcs, mixpix, mixcel, vspan, vstep, viter, world, crval, cel,
            phi, theta, prj, imgcrd, lin, pixcrd)
 
-const char ctype[][9];
+const char ctype[][16];
 struct wcsprm *wcs;
 const int mixpix, mixcel;
 const double vspan[2], vstep;
@@ -1331,4 +1331,6 @@ double pixcrd[];
  * Apr  3 2002	Mark Calabretta - Fix bug in code checking section
  *
  * Jun 20 2006	Doug Mink - Initialized uninitialized variables
+ *
+ * Jun 22 2016	Jessica Mink - Increase CTYPE length to 16
  */

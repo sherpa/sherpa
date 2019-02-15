@@ -23,9 +23,9 @@ in the file COPYING.  Projection code in wcslib.c,
 cel.c, lin.c, proj.c, wcstrig.c, and sph.c is by Mark Calabretta
 of CSIRO and is also protected by the Gnu Lesser General Public
 License.  Code in slasubs.c is by Pat Wallace of the Starlink
-project at Cambridge University.  Doug Mink is responsible for
+project at Cambridge University.  Jessica Mink is responsible for
 the rest of the code, unless otherwise noted in the source file.
-Unless otherwise noted, this code is Copyright 2003 by the
+Unless otherwise noted, this code is Copyright 2017 by the
 Smithsonian Astrophysical Observatory and protected by the Gnu
 Lesser General Public License.
 

@@ -1,8 +1,8 @@
 /*** File libwcs/wcs.h
- *** September 9, 2011
+ *** June 23, 2016
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
- *** Copyright (C) 1994-2011
+ *** Copyright (C) 1994-2016
  *** Smithsonian Astrophysical Observatory, Cambridge, MA, USA
 
     This library is free software; you can redistribute it and/or
@@ -32,6 +32,8 @@
 
 #include "wcslib.h"
 #include "fitshead.h"
+
+#define MAXNKWD	500
 
 /* SIRTF distortion matrix coefficients */
 #define DISTMAX 10
@@ -119,12 +121,12 @@ struct WorldCoor {
   int		linmode;	/* 0=system only, 1=units, 2=system+units */
   int		detector;	/* Instrument detector number */
   char		instrument[32];	/* Instrument name */
-  char		ctype[9][9];	/* Values of CTYPEn keywords */
-  char		c1type[9];	/*  1st coordinate type code:
+  char		ctype[9][16];	/* Values of CTYPEn keywords */
+  char		c1type[8];	/*  1st coordinate type code:
 					RA--, GLON, ELON */
-  char		c2type[9];	/*  2nd coordinate type code:
+  char		c2type[8];	/*  2nd coordinate type code:
 					DEC-, GLAT, ELAT */
-  char		ptype[9];	/*  projection type code:
+  char		ptype[8];	/*  projection type code:
 				    SIN, TAN, ARC, NCP, GLS, MER, AIT, etc */
   char		units[9][32];	/* Units if LINEAR */
   char		radecsys[32];	/* Reference frame: FK4, FK4-NO-E, FK5, GAPPT*/
@@ -190,13 +192,13 @@ struct WorldCoor {
 #define WCS_CSC 24	/* COBE quadrilateralized Spherical Cube */
 #define WCS_QSC 25	/* Quadrilateralized Spherical Cube */
 #define WCS_TSC 26	/* Tangential Spherical Cube */
-#define WCS_NCP 27	/* Special case of SIN */
-#define WCS_GLS 28	/* Same as SFL */
+#define WCS_NCP 27	/* Special case of SIN from AIPS*/
+#define WCS_GLS 28	/* Same as SFL from AIPS*/
 #define WCS_DSS 29	/* Digitized Sky Survey plate solution */
 #define WCS_PLT 30	/* Plate fit polynomials (SAO) */
-#define WCS_TNX 31	/* Gnomonic = Tangent Plane (NOAO with corrections) */
-#define WCS_ZPX 32	/* Gnomonic = Tangent Plane (NOAO with corrections) */
-#define WCS_TPV 33	/* Gnomonic = Tangent Plane (NOAO with corrections) */
+#define WCS_TNX 31	/* Tangent Plane (NOAO corrections) */
+#define WCS_ZPX 32	/* Zenithal Azimuthal Polynomial (NOAO corrections) */
+#define WCS_TPV 33	/* Tangent Plane (SCAMP corrections) */
 #define NWCSTYPE 34	/* Number of WCS types (-1 really means no WCS) */
 
 /* Coordinate systems */
@@ -295,6 +297,8 @@ extern "C" {
 	const char* hstring,	/* FITS header */
 	int len,		/* Length of FITS header */
 	char *wcschar);		/* WCS character (A-Z) */
+    char *uppercase (		/* Convert string of any case to uppercase */
+	const char *string);		/* String to convert */
 
     /* WCS subroutines in wcs.c */
     void wcsfree (		/* Free a WCS structure and its contents */
@@ -735,7 +739,8 @@ struct WorldCoor *wcsinitc(); /* set up a WCS structure from a FITS image header
 struct WorldCoor *wcsninitc(); /* set up a WCS structure from a FITS image header */
 struct WorldCoor *wcsxinit(); /* set up a WCS structure from arguments */
 struct WorldCoor *wcskinit(); /* set up a WCS structure from keyword values */
-void wcsfree(void);		/* Free a WCS structure and its contents */
+char *uppercase();	/* Convert string of any case to uppercase */
+void wcsfree(void);	/* Free a WCS structure and its contents */
 int wcstype();		/* Set projection type from header CTYPEs */
 void wcscdset();	/* Set scaling and rotation from CD matrix */
 void wcsdeltset();	/* set scaling and rotation from CDELTs and CROTA2 */
@@ -960,4 +965,10 @@ extern int zpxpix();	/* Inverse transform (world to physical) gnomonic projectio
  * Mar 14 2011	Add SCAMP polynomial projection coefficients
  * Sep  1 2011	Add TPV TAN projectioin with SCAT PV terms
  * Sep  9 2011	Fix comment on TPV declaration
+ *
+ * Feb  1 2013	Add uppercase() from wcsinit()
+ * Feb 25 2013	Pass const string to uppercase()
+ *
+ * Jun  8 2016	Increase projection code from 9 to 16 characters for SIP distortion
+ * Jun 23 2016	Set MAXNKWD here; used for copying keywords in cpwcs()
  */

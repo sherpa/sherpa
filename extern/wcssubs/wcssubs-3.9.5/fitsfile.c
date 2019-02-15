@@ -1,8 +1,8 @@
 /*** File libwcs/fitsfile.c
- *** September 15, 2011
+ *** June 24, 2016
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
- *** Copyright (C) 1996-2011
+ *** Copyright (C) 1996-2016
  *** Smithsonian Astrophysical Observatory, Cambridge, MA, USA
 
     This library is free software; you can redistribute it and/or
@@ -174,7 +174,7 @@ int	*nbhead;	/* Number of bytes before start of data (returned) */
 #endif
 
     if (ext != NULL) {
-	if (isnum (ext+1))
+	if (isnum (ext+1) == 1)
 	    extnum = atoi (ext+1);
 	else {
 	    extnum = -2;
@@ -211,11 +211,13 @@ int	*nbhead;	/* Number of bytes before start of data (returned) */
     /* Read FITS header from input file one FITS block at a time */
     irec = 0;
     ibhead = 0;
-    while (irec < 200) {
+    while (irec < 500) {
 	nbytes = FITSBLOCK;
 	for (ntry = 0; ntry < 10; ntry++) {
 	    for (i = 0; i < 2884; i++) fitsbuf[i] = 0;
 	    nbr = read (fd, fitsbuf, nbytes);
+	    if (verbose)
+		fprintf (stderr,"FITSRHEAD: %d header bytes read\n",nbr);
 
 	    /* Short records allowed only if they have the last header line */
 	    if (nbr < nbytes) {
@@ -275,34 +277,46 @@ int	*nbhead;	/* Number of bytes before start of data (returned) */
 		break;
 	    }
 
-	/* Move current FITS record into header string */
+	/* Replace control characters and nulls with spaces */
 	for (i = 0; i < 2880; i++)
 	    if (fitsbuf[i] < 32 || i > nbr) fitsbuf[i] = 32;
 	if (nbr < 2880)
 	    nbr = 2880;
+
+	/* Move current FITS record into header string */
 	strncpy (headnext, fitsbuf, nbr);
 	*nbhead = *nbhead + nbr;
 	nrec = nrec + 1;
-	*(headnext+nbr) = 0;
+	*(headnext+nbr+1) = 0;
 	ibhead = ibhead + 2880;
+	if (verbose)
+	    fprintf (stderr,"FITSRHEAD: %d bytes in header\n",ibhead);
 
 	/* Check to see if this is the final record in this header */
 	headend = ksearch (fitsbuf,"END");
 	if (headend == NULL) {
 
-	    /* Increase size of header buffer by 4 blocks if too small */
+	    /* Double size of header buffer if too small */
 	    if (nrec * FITSBLOCK > nbh) {
-		nbh0 = nbh;
-		nbh = (nrec + 4) * FITSBLOCK + 4;
+		nbh0 = nbh - 4;
+		nbh = (nrec * 2 * FITSBLOCK) + 4;
 		newhead = (char *) calloc (1,(unsigned int) nbh);
-		for (i = 0; i < nbh0; i++)
-		    newhead[i] = header[i];
-		free (header);
-		header = newhead;
-		(void) hlength (header, nbh);
-		headnext = header + *nbhead - FITSBLOCK;
+		if (newhead) {
+		    for (i = 0; i < nbh0; i++)
+			newhead[i] = header[i];
+		    free (header);
+		    newhead[nbh-3] = (char) 0;
+		    header = newhead;
+		    (void) hlength (header, nbh);
+		    headnext = header + ((nrec-1) * FITSBLOCK);
+		    }
+		else {
+		    fprintf (stderr,"FITSRHEAD: %d bytes cannot be allocated for header\n",nbh);
+		    exit (1);
+		    }
 		}
-	    headnext = headnext + FITSBLOCK;
+	    else
+		headnext = headnext + FITSBLOCK;
 	    }
 
 	else {
@@ -314,10 +328,11 @@ int	*nbhead;	/* Number of bytes before start of data (returned) */
 		nbprim = nrec * FITSBLOCK;
 		headend = ksearch (header,"END");
 		lprim = headend + 80 - header;
-		pheader = (char *) calloc ((unsigned int) nbprim, 1);
+		pheader = (char *) calloc ((unsigned int) (nbprim + 1), 1);
 		for (i = 0; i < lprim; i++)
 		    pheader[i] = header[i];
-		strncpy (pheader, header, lprim);
+		for (i = lprim; i < nbprim; i++)
+		    pheader[i] = ' ';
 		}
 
 	    /* If header has no data, start with the next record */
@@ -2305,4 +2320,9 @@ char *from, *last, *to;
  * Sep 15 2011	In fitsrsect() declare impos and nblin off_t
  * Sep 15 2011	In fitsrtail() declare offset off_t
  * Sep 15 2011	Declare global variable ibhead off_t
+ *
+ * Jul 25 2014	Fix bug when reallocating buffer for long headers
+ *
+ * Jun  9 2016	Fix isnum() tests for added coloned times and dashed dates
+ * Jun 24 2016	Add 1 to allocation of pheader for trailing null, fix by Ole Streicher
  */

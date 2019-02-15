@@ -327,10 +327,10 @@ struct wcsprm {
 
 #if __STDC__ || defined(__cplusplus)
    int wcsset(const int,
-              const char[][9],
+              const char[][16],
               struct wcsprm *);
 
-   int wcsfwd(const char[][9],
+   int wcsfwd(const char[][16],
               struct wcsprm *,
               const double[],
               const double[],
@@ -342,7 +342,7 @@ struct wcsprm {
               struct linprm *,
               double[]);
 
-   int wcsrev(const char[][9],
+   int wcsrev(const char[][16],
               struct wcsprm *,
               const double[], 
               struct linprm *,
@@ -354,7 +354,7 @@ struct wcsprm {
               struct celprm *, 
               double[]);
 
-   int wcsmix(const char[][9],
+   int wcsmix(const char[][16],
               struct wcsprm *,
               const int,
               const int,
@@ -473,4 +473,6 @@ extern const char *wcsmix_errmsg[];
  * Jan  4 2007	Doug Mink - Drop extra declarations of SZP subroutines
  *
  * Mar 30 2011	Doug Mink - Add raw_to_pv() subroutine for SCAMP from Ed Los
- */
+ *
+ * Jun 22 2016	Jessica Mink - Increase length of ctype to 16 to handle distortion
+*/

@@ -43,7 +43,7 @@ I hope it will never be used!
 void	qerror(char *msg1, char *msg2)
   {
   fprintf(stderr, "\n> %s%s\n\n",msg1,msg2);
-  exit(-1);
+  abort();
   }
 
 
@@ -912,3 +912,6 @@ int	*poly_powers(polystruct *poly)
   return powers;
   }
 
+/*
+ * Jun 24 2016	qerror() abort rather than exit (from Ole Streicher)
+ */

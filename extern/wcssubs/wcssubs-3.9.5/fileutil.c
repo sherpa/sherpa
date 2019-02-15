@@ -1,8 +1,8 @@
 /*** File libwcs/fileutil.c
- *** January 11, 2007
+ *** August 28, 2014
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
- *** Copyright (C) 1999-2007
+ *** Copyright (C) 1999-2014
  *** Smithsonian Astrophysical Observatory, Cambridge, MA, USA
 
     This library is free software; you can redistribute it and/or
@@ -43,7 +43,9 @@
  * Subroutine:	isfile (filename)
  *		Return 1 if file is a readable file, else 0
  * Subroutine:	first_token (diskfile, ncmax, token)
- *		Return first token from the next line of an ASCII file
+ *		Return the first token from the next line of an ASCII file
+ * Subroutine:	next_line (diskfile, ncmax, line)
+ *		Read the next line of an ASCII file and return its length
  * Subroutine:  stc2s (spchar, string)
  *		Replace character in string with space
  * Subroutine:  sts2c (spchar, string)
@@ -320,16 +322,61 @@ isfile (filename)
 
 char    *filename;      /* Name of file to check */
 {
+    struct stat statbuff;
+
     if (!strcasecmp (filename, "stdin"))
 	return (1);
     else if (access (filename, R_OK))
 	return (0);
+    else if (stat (filename, &statbuff))
+        return (0);
+    else {
+        if (S_ISDIR(statbuff.st_mode) && S_IFDIR)
+	    return (2);
+	else
+	    return (1);
+	}
+}
+
+
+/* NEXT_LINE -- Read the next line of an ASCII file, returning length */
+/*              Lines beginning with # are ignored*/
+
+int
+next_line (diskfile, ncmax, line)
+
+FILE	*diskfile;		/* File descriptor for ASCII file */
+int	ncmax;			/* Maximum number of characters returned */
+char	*line;			/* Next line (returned) */
+{
+    char *lastchar;
+
+    /* If line can be read, add null at the end of the first token */
+    if (fgets (line, ncmax, diskfile) != NULL) {
+	while (line[0] == '#') {
+	    (void) fgets (line, ncmax, diskfile);
+	    }
+
+	/* If only character is a control character, return a NULL string */
+	if ((strlen(line)==1) && (line[0]<32)){
+	    line[0] = (char)0;
+	    return (1);
+	    }
+	lastchar = line + strlen (line) - 1;
+
+	/* Remove trailing spaces or control characters */
+	while (*lastchar <= 32)
+	    *lastchar-- = 0;
+
+	return (strlen (line));
+	}
     else
-	return (1);
+	return (0);
 }
 
 
 /* FIRST_TOKEN -- Return first token from the next line of an ASCII file */
+/*                Lines beginning with # are ignored */
 
 int
 first_token (diskfile, ncmax, token)
@@ -342,7 +389,7 @@ char	*token;			/* First token on next line (returned) */
 
     /* If line can be read, add null at the end of the first token */
     if (fgets (token, ncmax, diskfile) != NULL) {
-	if (token[0] == '#') {
+	while (token[0] == '#') {
 	    (void) fgets (token, ncmax, diskfile);
 	    }
 
@@ -815,4 +862,6 @@ int	maxchars;	/* Maximum length of token */
  *
  * Jan  5 2007	Change stc2s() and sts2c() to pass single character as pointer
  * Jan 11 2007	Move token access subroutines from catutil.c
+ *
+ * Aug 28 2014	Return length from  next_line(): 0=unsuccessful
  */
