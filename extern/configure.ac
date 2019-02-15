@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.63])
 
-AC_INIT(sherpa-dependencies, 4.9, cxchelp@head.cfa.harvard.edu)
+AC_INIT(sherpa-dependencies, 4.11, cxchelp@head.cfa.harvard.edu)
 AM_INIT_AUTOMAKE([foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -16,9 +16,9 @@ AC_ARG_ENABLE([fftw],
   AS_HELP_STRING([--enable-fftw], [Build fftw library shipped with Sherpa]))
 
 AS_IF([test "x$enable_fftw" = "xyes"], [
-  AC_CONFIG_SUBDIRS([fftw-3.3.4])
-  AC_SUBST(fftw, fftw-3.3.4)
-  touch fftw-3.3.4/doc/fftw3.info
+  AC_CONFIG_SUBDIRS([fftw-3.3.8])
+  AC_SUBST(fftw, fftw-3.3.8)
+  touch fftw-3.3.8/doc/fftw3.info
 ])
 
 AC_ARG_ENABLE([region],
