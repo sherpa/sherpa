@@ -789,10 +789,10 @@ CPPFLAGS
 LT_SYS_LIBRARY_PATH
 CPP'
 ac_subdirs_all='fftw-3.3.8
-region-4.9
+region-4.11
 grplib-4.9
 wcssubs
-stklib-4.9'
+stklib-4.11'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -11816,9 +11816,9 @@ fi
 
 if test "x$enable_region" = "xyes"; then :
 
-  subdirs="$subdirs region-4.9"
+  subdirs="$subdirs region-4.11"
 
-  region=region-4.9
+  region=region-4.11
 
 
 fi
@@ -11861,9 +11861,9 @@ fi
 
 if test "x$enable_stk" = "xyes"; then :
 
-  subdirs="$subdirs stklib-4.9"
+  subdirs="$subdirs stklib-4.11"
 
-  stklib=stklib-4.9
+  stklib=stklib-4.11
 
 
 fi

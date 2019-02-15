@@ -43,6 +43,7 @@ regShape* regCreateMask( regFlavor include, int wcoord, int wsize )
     newShape->isEqual = regIsEqualMask;
     newShape->isInside = regInsideMask;
     newShape->toString = regToStringMask;
+    newShape->free     = NULL;
     */
     return newShape;
 }

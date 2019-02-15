@@ -75,6 +75,10 @@ regShape* regCreateBox(regFlavor include,
   newShape->isEqual    = regIsEqualBox;
   newShape->isInside   = regInsideBox;
   newShape->toString   = regToStringBox;
+  newShape->free       = NULL;
+
+  newShape->region = NULL;
+  newShape->next   = NULL;
 
   return newShape;
 

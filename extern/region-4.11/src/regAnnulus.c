@@ -58,6 +58,8 @@ regShape* regCreateAnnulus(regFlavor include,
     
     // Fill in values
     newShape->angle = NULL;
+    newShape->sin_theta = NULL;
+    newShape->cos_theta = NULL;
 
     newShape->xpos[0] = xpos[0];
     newShape->ypos[0] = ypos[0];
@@ -72,6 +74,10 @@ regShape* regCreateAnnulus(regFlavor include,
     newShape->isEqual = regIsEqualAnnulus;
     newShape->isInside = regInsideAnnulus;
     newShape->toString = regToStringAnnulus;
+    newShape->free     = NULL;
+
+    newShape->region = NULL;
+    newShape->next   = NULL;
     
     // return the shape
     return newShape;

@@ -61,6 +61,10 @@ regShape* regCreateCircle(regFlavor include,
   newShape->isEqual    = regIsEqualCircle;
   newShape->isInside   = regInsideCircle;
   newShape->toString   = regToStringCircle;
+  newShape->free       = NULL;
+
+  newShape->region = NULL;
+  newShape->next   = NULL;
 
   return newShape;
 }

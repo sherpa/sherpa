@@ -71,6 +71,10 @@ regShape* regCreateEllipse(regFlavor include,
   newShape->isEqual    = regIsEqualEllipse;
   newShape->isInside   = regInsideEllipse;
   newShape->toString   = regToStringEllipse;
+  newShape->free       = NULL;
+
+  newShape->region = NULL;
+  newShape->next   = NULL;
 
   return newShape;
   

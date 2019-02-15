@@ -102,9 +102,30 @@ MOD_INIT(stk)
 static PyObject* _stk_build(PyObject *self, PyObject *args)
 {
   char *buff; 
+  int  status = 0;
 
-  /* Check if the arguments */
+  /* Parse arguments, allow str, unicode or bytes input string.  */
+#if PY_MAJOR_VERSION >= 3
   if (!PyArg_ParseTuple(args, "s", &buff))
+  {
+    /* attempt using bytes type before giving up. */
+    PyObject *type, *value, *traceback;
+    PyErr_Fetch(&type, &value, &traceback);
+    PyErr_Clear();
+    if (!PyArg_ParseTuple(args, "y", &buff))
+    {
+      /* did not work either.. restore original error */
+      PyErr_Restore(type, value, traceback);
+      status = 1;
+    }
+  } 
+#else
+  if (!PyArg_ParseTuple(args, "s", &buff))
+    status = 1;
+#endif
+
+  /* handle argument parsing error */
+  if ( status == 1 )
   {
     PyErr_SetString(PyExc_Exception, "Could not parse arguments.");
     return NULL;

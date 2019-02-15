@@ -68,6 +68,10 @@ regShape* regCreateSector(regFlavor include,
     newShape->isEqual = regIsEqualSector;
     newShape->isInside = regInsideSector;
     newShape->toString = regToStringSector;
+    newShape->free     = NULL;
+
+    newShape->region = NULL;
+    newShape->next   = NULL;
 
     return newShape;
 }

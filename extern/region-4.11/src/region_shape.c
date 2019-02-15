@@ -1,5 +1,5 @@
 /*                                                                
-**  Copyright (C) 2007,2013  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2007,2013,2017  Smithsonian Astrophysical Observatory 
 */                                                                
 
 /*                                                                          */
@@ -90,13 +90,23 @@ regShape* regCopyShape( regShape* inShape )
     return shape;
 }
 
-
-
 /* -----------------------------------------------------------------------
+   Function: regCompareShape
+   
+   Description:
+     Returns whether or not the shapes are equal. 
+     The 'raw' flag controls whether or not the shape include flags
+     are relevant to the comparison.
 
- * Returns whether or not the shapes are equal. Inclusion can be ignored
- * in the equality check by including the raw flag. 
+   Input parameters:
+     Shape1      -  First regShape to compare
+     region      -  Second regShape to compare
+     raw         -  comparison flag 
+                      0 = include flag is compared
+                     !0 = include flag is ignored
 
+   Returns:
+     result      0 = Shapes differ; 1 = Shapes are equivalent
    ----------------------------------------------------------------------- */
 int regCompareShape( regShape* Shape1, regShape* Shape2, short raw)
 {
@@ -116,6 +126,11 @@ int regCompareShape( regShape* Shape1, regShape* Shape2, short raw)
     // If one of them matches then the shapes are the same "shape".
     ret = Shape1->isEqual(Shape1, Shape2) || 
           copyShape->isEqual(copyShape, Shape2); 
+
+    // Free copy of first shape
+    if (copyShape)
+      regFreeShape( NULL, copyShape );
+
     return ret;
 }
 
@@ -498,17 +513,25 @@ long regAddShape( regRegion *region,
 
 }
 
-
 /* -----------------------------------------------------------------------
+   Function: regFreeShape
+   
+   Description:
+     Free memory associated with the Shape, and the Shape itself.
 
-  
+   Input parameters:
+     region      -  regRegion pointer.. currently unused
+     atShape     -  Shape to free
+
+   Returns:
+     none
    ----------------------------------------------------------------------- */
-
 void regFreeShape( regRegion* region, regShape* atShape )
 {
   if( !atShape )
     return;
 
+  /* Free generic Shape attributes */
   if ( atShape->xpos ) free( atShape->xpos );
   if ( atShape->ypos ) free( atShape->ypos );
   if ( atShape->angle ) free( atShape->angle );
@@ -516,6 +539,11 @@ void regFreeShape( regRegion* region, regShape* atShape )
   if ( atShape->sin_theta) free( atShape->sin_theta);
   if ( atShape->cos_theta) free( atShape->cos_theta);
 
+  /* Free specialized (user) Shape content */
+  if ( atShape->free )
+    atShape->free( atShape );
+
+  /* Free the Shape itself */
   free( atShape );    
   atShape=NULL;
 

@@ -1,5 +1,5 @@
 /*                                                                
-**  Copyright (C) 2007  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2007,2017  Smithsonian Astrophysical Observatory 
 */                                                                
 
 /*                                                                          */
@@ -70,7 +70,6 @@ typedef enum
 
 typedef struct regSHAPE
 {
-
   regGeometry  type;
   char        *name;
   regFlavor    include;
@@ -82,11 +81,10 @@ typedef struct regSHAPE
   double      *sin_theta;
   double      *cos_theta;
   long         component;
-  void*        spec;        /* Object containing shape specifications */
-                            /*    for Pixel Mask == dmBlock           */
+  void*        spec;          /* Object containing shape specifications */
 
   /* Coordinate flags take the values RC_PHYSICAL, RC_LOGICAL, RC_WORLD, RC_UNK  */
-  int          flag_coord;  /* Coordinate system for x,y positions (center of circle, etc.) */
+  int          flag_coord;    /* Coordinate system for x,y positions (center of circle, etc.) */
   int          flag_radius;   /* Coordinate system for radial sizes (circle radius, etc.) */
 
   /* Operations */
@@ -99,6 +97,7 @@ typedef struct regSHAPE
   int       (*isEqual)    ( shapeP thisShape, shapeP otherShape );
   int       (*isInside)   ( shapeP shape, double x, double y );
   void      (*toString)   ( shapeP shape, char * str, long maxlength );
+  void      (*free)       ( shapeP shape );
 
   struct regREGION *region;
   struct regSHAPE  *next;

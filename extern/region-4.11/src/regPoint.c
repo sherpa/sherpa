@@ -38,6 +38,8 @@ regShape* regCreatePoint(regFlavor include,
 
   newShape->angle = NULL;
   newShape->radius = NULL;
+  newShape->sin_theta = NULL;
+  newShape->cos_theta = NULL;
 
   newShape->calcArea   = regCalcAreaPoint;
   newShape->calcExtent = regCalcExtentPoint;
@@ -45,6 +47,10 @@ regShape* regCreatePoint(regFlavor include,
   newShape->isEqual    = regIsEqualPoint;
   newShape->isInside   = regInsidePoint;
   newShape->toString   = regToStringPoint;
+  newShape->free       = NULL;
+
+  newShape->region = NULL;
+  newShape->next   = NULL;
   
   return newShape;
 }

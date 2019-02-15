@@ -62,6 +62,10 @@ regShape* regCreateRectangle(regFlavor include,
   newShape->isEqual    = regIsEqualRectangle;
   newShape->isInside   = regInsideRectangle;
   newShape->toString   = regToStringRectangle;
+  newShape->free       = NULL;
+
+  newShape->region = NULL;
+  newShape->next   = NULL;
 
   return newShape;
 

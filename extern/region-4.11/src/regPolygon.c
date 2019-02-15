@@ -77,6 +77,8 @@ regShape* regCreatePolygon(regFlavor include,
 
     newShape->angle = NULL;
     newShape->radius = NULL;
+    newShape->sin_theta = NULL;
+    newShape->cos_theta = NULL;
     
     // Add relevant methods
     newShape->calcArea = regCalcAreaPolygon;
@@ -85,36 +87,42 @@ regShape* regCreatePolygon(regFlavor include,
     newShape->isEqual = regIsEqualPolygon;
     newShape->isInside = regInsidePolygon;
     newShape->toString = regToStringPolygon;
+    newShape->free     = NULL;
+
+    newShape->region = NULL;
+    newShape->next   = NULL;    
 
     // Verify that the polygon's lines don't just go out and back (i.e. that there is
     // no line segment causing 0 width on the polygon. 
-    for (ii=0;ii<nPoints-2;ii++) {
-	    if ((newShape->xpos[ii] == newShape->xpos[ii+2]) &&
-	        (newShape->ypos[ii] == newShape->ypos[ii+2]) &&
-	        (ii+2 != (nPoints-1))) 
-        {
-	        fprintf(stderr, "WARNING: Polgyon must have finite width; adjacent line segments with"
-		            " ends at (%g,%g) overlap completely (index = %lu)\n",
-		            newShape->xpos[ii],newShape->ypos[ii], ii );
-	        // TODO:
-            //  Disallow malformed polygons?
-            // return(NULL);
-	    }
+    for (ii=0;ii<nPoints-2;ii++) 
+    {
+      if ((newShape->xpos[ii] == newShape->xpos[ii+2]) &&
+	  (newShape->ypos[ii] == newShape->ypos[ii+2]) &&
+	  (ii+2 != (nPoints-1))) 
+      {
+	fprintf(stderr, "WARNING: Polgyon must have finite width; adjacent line segments with"
+		" ends at (%g,%g) overlap completely (index = %lu)\n",
+		newShape->xpos[ii],newShape->ypos[ii], ii );
+	// TODO:
+	//  Disallow malformed polygons?
+	// return(NULL);
+      }
     }
     
     // Verify that the polygon does not have duplicate points in a row.
-    for (ii=0;ii<nPoints-2;ii++) {
-	    if ((newShape->xpos[ii] == newShape->xpos[ii+1]) &&
-	        (newShape->ypos[ii] == newShape->ypos[ii+1]) ) 
-        {
-	        fprintf(stderr, "WARNING: Zero length polygon line segment at (%g,%g) (index = %lu).\n",
-		            newShape->xpos[ii], newShape->ypos[ii], ii);
-	        // TODO:
-            //  Disallow malformed polygons?
-            // return (NULL);
-	    }
+    for (ii=0;ii<nPoints-2;ii++) 
+    {
+      if ((newShape->xpos[ii] == newShape->xpos[ii+1]) &&
+	  (newShape->ypos[ii] == newShape->ypos[ii+1]) ) 
+      {
+	fprintf(stderr, "WARNING: Zero length polygon line segment at (%g,%g) (index = %lu).\n",
+		newShape->xpos[ii], newShape->ypos[ii], ii);
+	// TODO:
+	//  Disallow malformed polygons?
+	// return (NULL);
+      }
     }
-    
+
     return newShape;
 } // end regCreatePolygon
 

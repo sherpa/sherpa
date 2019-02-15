@@ -83,6 +83,10 @@ regShape* regCreatePie(regFlavor include,
   newShape->isEqual    = regIsEqualPie;
   newShape->isInside   = regInsidePie;
   newShape->toString   = regToStringPie;
+  newShape->free       = NULL;
+
+  newShape->region = NULL;
+  newShape->next   = NULL;
 
   return newShape;
 }

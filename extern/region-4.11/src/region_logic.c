@@ -81,7 +81,7 @@ regRegion* regUnionRegion( regRegion* Region1, regRegion* Region2 )
     long lastComponent;
     int  haveMore;
   
-    /* Copy shapes */
+    /* Check for NULL region inputs */
     if ( !Region1 )
     {
         if ( !Region2 ) {
@@ -90,6 +90,16 @@ regRegion* regUnionRegion( regRegion* Region1, regRegion* Region2 )
         return regCopyRegion( Region2 );
     }
   
+    /* Check for empty region input */
+    if ( !Region1->shape )
+      if ( !Region2->shape )
+	return regCreateEmptyRegion();
+      else
+	return regCopyRegion( Region2 );
+    else if ( !Region2->shape )
+      return regCopyRegion( Region1 );
+
+
     /* If regions are equal just return copy of one */
     if ( regCompareRegion( Region1, Region2 )) {
          return regCopyRegion( Region1 );

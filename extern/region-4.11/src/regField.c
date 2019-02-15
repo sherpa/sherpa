@@ -31,6 +31,8 @@ regShape* regCreateField( regFlavor include, int wcoord, int wsize )
     newShape->ypos = NULL;
     newShape->angle = NULL;
     newShape->radius = NULL;
+    newShape->sin_theta = NULL;
+    newShape->cos_theta = NULL;
     
     // Add relevant methods
     newShape->calcArea = regCalcAreaField;
@@ -39,6 +41,10 @@ regShape* regCreateField( regFlavor include, int wcoord, int wsize )
     newShape->isEqual = regIsEqualField;
     newShape->isInside = regInsideField;
     newShape->toString = regToStringField;
+    newShape->free     = NULL;
+
+    newShape->region = NULL;
+    newShape->next   = NULL;
 
     return newShape;
 }

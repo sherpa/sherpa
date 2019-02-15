@@ -51,7 +51,7 @@ regRegion* regReadAsciiRegion( char* filename, int verbose )
     regRegion *region = NULL;
     FILE *fp = NULL;
 
-    char buf[SZ_LARGE];
+    char buf[SZ_LARGE+1];
     long maxlen = SZ_LARGE;
     char *ptr;
     long sys = RC_UNK;
@@ -103,7 +103,7 @@ regRegion* regReadAsciiRegion( char* filename, int verbose )
  * are the specified name.
  *
  * TODO:
- *  I believe that names and ll refer to names for the individual shapes, though
+ *  I believe that names and nn refer to names for the individual shapes, though
  *  need to confirm that.
  */
 int regWriteAsciiRegion( char* name, regRegion* region, char** names, long nn )
@@ -111,7 +111,7 @@ int regWriteAsciiRegion( char* name, regRegion* region, char** names, long nn )
     int world = 0;
     char color[] = "blue";
     FILE *out;
-    char shapeName[20];
+    char shapeName[21];
     long maxlen = 20;
     long nradii, nangles;
     char text[256];
@@ -140,7 +140,6 @@ int regWriteAsciiRegion( char* name, regRegion* region, char** names, long nn )
 
     // File header
     reg_areg_hdr(out, color);
-    
     Shape = region->shape;
     shapeNo = 0;
     while (Shape) {
@@ -677,6 +676,7 @@ void reg_areg_line(FILE * out, regShape * shape, char *shapeName, long nr, long 
     double *angles = shape->angle;
 
     buf = calloc(maxlen + (20 * np), sizeof(char));
+    ptr = buf;
 
     if (!strcmp(shapeName, "Rectangle") || !strcmp(shapeName, "-Rectangle")) {
         double xcen, ycen, xlen, ylen;
@@ -687,20 +687,18 @@ void reg_areg_line(FILE * out, regShape * shape, char *shapeName, long nr, long 
         xlen = fabs(xpos[0]-xpos[1]);
         ylen = fabs(ypos[0]-ypos[1]);
       
-        sprintf(buf, "physical;%s(%g,%g,%g,%g,%g) # %s", shp, xcen,
-	            ycen, xlen, ylen, ang, text);
+        ptr += sprintf(buf, "%s(%g,%g,%g,%g,%g) # %s", shp, xcen,
+		       ycen, xlen, ylen, ang, text);
       
     }
     else {
-        sprintf(buf, "physical;%s(", shapeName);
-        ptr = buf;
-	    ptr += sprintf(ptr, "physical;%s(", shapeName);
+        ptr += sprintf(ptr, "%s(", shapeName);
 
         // Add Points
-	    for (i = 0; i < np; i++) {
-	        ptr += sprintf(ptr, "%g,%g,", xpos[i], ypos[i]);
-	    }
-
+	for (i = 0; i < np; i++) {
+	  ptr += sprintf(ptr, "%g,%g,", xpos[i], ypos[i]);
+	}
+	
         // Add Radii
         for (i = 0; i < nr; i++) {
             ptr += sprintf(ptr, "%g,", radii[i]);
@@ -710,8 +708,9 @@ void reg_areg_line(FILE * out, regShape * shape, char *shapeName, long nr, long 
         for (i = 0; i < nangles; i++) {
             ptr += sprintf(ptr, "%g,", angles[i]);
         }
-	    ptr--;
-	    sprintf(ptr, ") # %s", text);
+
+	ptr--;
+	sprintf(ptr, ") # %s", text);
     }
 
     fprintf(out, "%s\n", buf);
@@ -782,11 +781,11 @@ char *reg_tokens_advance(char *ptr, char *colname, char *seps)
 void reg_areg_hdr(FILE * out, char *color)
 {
     char buf[512];
-    fprintf(out, "%s\n", "# Region file format: DS9 version 3.0");
+    fprintf(out, "%s\n", "# Region file format: DS9 version 4.1");
     sprintf(buf,
-	    "global color=%s font=\"helvetica 10 normal\" select=1 edit=1 move=1 delete=1 include=1 fixed=0",
-	    color);
+	    "global color=%s dashlist=8 3 width=1 font=\"helvetica 10 normal roman\" select=1 highlite=1 dash=0 fixed=0 edit=1 move=1 delete=1 include=1 source=1", color);
     fprintf(out, "%s\n", buf);
+    fprintf(out, "physical\n");   // now a global property in ds9 v4
 }
 
 void reg_print_pos_pair(double x, double y, int world, char *xbuf, char *ybuf)
