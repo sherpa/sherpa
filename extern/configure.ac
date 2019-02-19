@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.63])
 
-AC_INIT(sherpa-dependencies, 4.9, cxchelp@head.cfa.harvard.edu)
+AC_INIT(sherpa-dependencies, 4.11, cxchelp@head.cfa.harvard.edu)
 AM_INIT_AUTOMAKE([foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -16,17 +16,17 @@ AC_ARG_ENABLE([fftw],
   AS_HELP_STRING([--enable-fftw], [Build fftw library shipped with Sherpa]))
 
 AS_IF([test "x$enable_fftw" = "xyes"], [
-  AC_CONFIG_SUBDIRS([fftw-3.3.4])
-  AC_SUBST(fftw, fftw-3.3.4)
-  touch fftw-3.3.4/doc/fftw3.info
+  AC_CONFIG_SUBDIRS([fftw-3.3.8])
+  AC_SUBST(fftw, fftw-3.3.8)
+  touch fftw-3.3.8/doc/fftw3.info
 ])
 
 AC_ARG_ENABLE([region],
   AS_HELP_STRING([--enable-region], [Build region library shipped with Sherpa]))
 
 AS_IF([test "x$enable_region" = "xyes"], [
-  AC_CONFIG_SUBDIRS([region-4.9])
-  AC_SUBST(region, region-4.9)
+  AC_CONFIG_SUBDIRS([region-4.11])
+  AC_SUBST(region, region-4.11)
 ])
 
 AC_ARG_ENABLE([group],
@@ -49,8 +49,8 @@ AC_ARG_ENABLE([stk],
   AS_HELP_STRING([--enable-stk], [Build stack library shipped with Sherpa]))
 
 AS_IF([test "x$enable_stk" = "xyes"], [
-  AC_CONFIG_SUBDIRS([stklib-4.9])
-  AC_SUBST(stklib, stklib-4.9)
+  AC_CONFIG_SUBDIRS([stklib-4.11])
+  AC_SUBST(stklib, stklib-4.11)
 ])
 
 

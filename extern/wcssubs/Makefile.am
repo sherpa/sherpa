@@ -1,6 +1,6 @@
 
 
-WCS = wcssubs-3.8.7
+WCS = wcssubs-3.9.5
 
 ACLOCAL_AMFLAGS = -I m4
 
