@@ -1,5 +1,95 @@
 Release Notes
 
+Sherpa 4.11.0
+
+This release of Sherpa is based on the CIAO 4.11 release and includes
+additional bug fixes and improvements.
+
+Optimization routines and statistic methods were made more robust with several
+bug fixes and improvements.
+
+This version of Sherpa has been tested with Python 2.7, 3.5, 3.6, and 3.7.
+Support for Python 2.7 is being deprecated and may be dropped in future
+releases.
+
+This release also provides support for XSPEC 12.10.1 (patch 'a' or later) in
+addition to versions 12.10.0 (included in CIAO) and version 12.9.1.
+
+Details
+-------
+
+Documentation and infrastructure fixes are not shown.
+
+#444 Improve caching
+    When fitting multiple datasets simultaneously Sherpa now tries to cache
+model evaluations to improve performance.
+
+#465 Support XSPEC 12.10.0 (fix #436)
+    XSPEC 12.10.0e is now supported
+
+#508 Ensure fields are initialized before use (pileup code)
+    Resolved an issue where some fields in the C++ extension could have been
+uninitialized in a corner case.
+
+#523 Ensure the ui modules have a unique list of exported symbols (fix #502)
+    Remove the `sherpa.utils.erf` symbol from the two `ui` modules as it is
+"over-written" by the ModelWrapper-created symbol when applied to
+`sherpa.models.basic.Erf`.
+
+#524 Be explicit about 'invalid escape characters' in strings
+    Convert strings that contain "invalid" escape characters, which newer
+versions of Python complain about, to raw strings by preceding them with a 'r'
+character.
+
+#525 Fixed based line radpro_dm test and changed double --> real (template)
+
+#530 Ensure XSPEC 12.10.0 uses ATOMDB 3.0.9 by default
+    Ensure that the default AtomDB version is 3.0.9 when using XSPEC 12.10.0.
+This is to fix an issue with the models-only XSPEC installation in XSPEC
+12.10.0 which uses a default version of 3.0.7 but only provides data files for
+3.0.9. Without this change models such as XSapec would return all 0's (unless
+the AtomDB version was set manually by the user).
+
+#534 XSPEC 12.10.1 support and mtable fix
+    Sherpa now supports XSPEC 12.10.1. Several issues were fixed to ensure
+compatibility with this release. Note that there are known issues with version
+12.10.1 (no patches), so at least v12.10.1a must be used.
+
+#537 / #552 sherpa.rc changes
+    Sherpa does not read the verbosity.level setting from sherpa.rc anymore but
+the option is still in the file for backward compatibility
+
+#539 Fix XSPEC models: mtable table models and ismabs (fix #535, #538, #540)
+    Fix to address issues with XSpec- #535 XSPEC multiplicative table models
+(mtable models loaded with load_xstable_model); #538 incorrect evaluation of
+the ismabs model; #540 the kerrd model evaluated to 0 for XSPEC 12.10.0 and
+later.
+
+#546 Small code cleanup in LevMar
+    small code cleanup in the LevMar class to match the other classes in that
+file.
+
+#564 / #567 Harmonise the handling of dof is zero or negative in fit and calc_stat_info (fix #565)
+    The `fit` and `calc_stat_info` methods now use the same code to calculate
+the reduced statistic (`rstat`) and "quality of fit" (`qval`) values. This
+avoids a `TypeError` when the number of degrees of freedom is negative in
+`calc_stat_info` and ensures that `NaN` is returned for both values when the
+goodness-of-fit calculation has failed (e.g. the reduced statistic is zero or
+less or the statistic is negative), whereas in previous versions the `qval`
+value could be `None` or `1` depending on the code path.
+
+#576 Fix regression with responses `get_x` method
+    Version 4.10.1 introduced a regression which made the `get_x()` method fail
+when called on RMF and ARF objects. This has been resolved.
+
+#583 Update pager code (fix #445 #561)
+    Replace the use of an external pager (such as `more` or `less`) with a
+Python one. This means that Sherpa no-longer uses the PAGER environment
+variable, and that the screen output from the `show_*` series of commands
+should now appear in the correct location when using a Jupyter notebook or the
+spyder application.
+
+
 Sherpa 4.10.2
 ==========
 
