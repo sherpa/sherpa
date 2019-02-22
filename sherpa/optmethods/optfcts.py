@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 #
-#  Copyright (C) 2007, 2016, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -30,7 +30,7 @@ from . import _saoopt
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 
-from sherpa.utils import parallel_map
+from sherpa.utils import parallel_map, func_counter
 from sherpa.utils._utils import sao_fcmp
 
 import numpy as np
@@ -424,10 +424,6 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     def stat_cb0(pars):
         return fcn(pars)[0]
 
-    if isinstance(numcores, str):
-        if numcores.lower() == 'all':
-            numcores = None
-
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     # make sure that the cross over prob is within [0.1,1.0]
@@ -721,28 +717,73 @@ def neldermead( fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
 
 def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
-          maxfev=None, epsfcn=EPSILON, factor=100.0, verbose=0):
+          maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0):
 
+    class fdJac:
+        
+        def __init__(self, func, fvec, pars):
+            self.func = func
+            self.fvec = fvec
+            epsmch = numpy.float_(numpy.finfo(numpy.float).eps)
+            self.eps = numpy.sqrt(max(epsmch, epsfcn))
+            self.h = self.calc_h(pars)
+            self.pars = numpy.copy(pars)
+            return
 
+        def __call__(self, param):
+            wa = self.func(param[1:])
+            return (wa - self.fvec) / self.h[int(param[0])]
+
+        def calc_h(self, pars):
+            nn = len(pars)
+            h = numpy.empty((nn,))
+            for ii in range(nn):
+                h[ii] = self.eps * pars[ii]
+                if h[ii] == 0.0:
+                    h[ii] = self.eps
+                if pars[ii] + h[ii] > xmax[ii]:
+                    h[ii] = - h[ii]
+            return h
+
+        def calc_params(self):
+            h = self.calc_h(self.pars)
+            params = []
+            for ii in range(len(h)):
+                tmp_pars = numpy.copy(self.pars)
+                tmp_pars[ii] += h[ii]
+                tmp_pars = numpy.append(ii, tmp_pars)
+                params.append(tmp_pars)
+            return tuple(params)
+
+        
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if maxfev is None:
         maxfev = 256 * len(x)
 
-    def stat_cb0( pars ):
-        return fcn( pars )[ 0 ]
-    def stat_cb1( pars ):
-        return fcn( pars )[ 1 ]
-
+    def stat_cb0(pars):
+        return fcn(pars)[0]
+    def stat_cb1(pars):
+        return fcn(pars)[1]
+    def fcn_parallel(pars, fvec):
+        fd_jac = fdJac(stat_cb1, fvec, pars)
+        params = fd_jac.calc_params()
+        fjac = parallel_map(fd_jac, params, numcores)
+        return numpy.concatenate(fjac)
+    num_parallel_map, fcn_parallel_counter = func_counter(fcn_parallel)
+    
+    # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif
     m = numpy.asanyarray(stat_cb1(x)).size
 
-    orig_fcn = stat_cb1
     error = []
 
     n = len(x)
     fjac = numpy.empty((m*n,))
 
-    x, fval, nfev, info, fjac = _saoopt.cpp_lmdif( stat_cb1, m, x, ftol, xtol, gtol, maxfev, epsfcn, factor, verbose, xmin, xmax, fjac )
+    x, fval, nfev, info, fjac = \
+        _saoopt.cpp_lmdif(stat_cb1, fcn_parallel_counter, numcores, m, x, ftol,
+                          xtol, gtol, maxfev, epsfcn, factor, verbose, xmin,
+                          xmax, fjac)
 
     if info > 0:
         fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
@@ -752,53 +793,16 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         else:
             covar = fjac
 
-        if _par_at_boundary( xmin, x, xmax, xtol ):
-            nm_result = neldermead( fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol), maxfev=maxfev-nfev, finalsimplex=2, iquad=0, verbose=0 )
-            nfev += nm_result[ 4 ][ 'nfev' ]
-            x = nm_result[ 1 ]
-            fval = nm_result[ 2 ]
-##        if nm_result[ 2 ] < fval:
-##            x = nm_result[ 1 ]
-##            fval = nm_result[ 2 ]
-##            info, mynfev, fval, covarerr = _minpack.mylmdif(stat_cb1, m, x, ftol, xtol, gtol, maxfev-nfev, epsfcn, factor, verbose, xmin, xmax)
- ##           nfev += mynfev
+        if _par_at_boundary(xmin, x, xmax, xtol):
+            nm_result = neldermead(fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol),
+                                    maxfev=maxfev-nfev, finalsimplex=2, iquad=0,
+                                    verbose=0)
+            nfev += nm_result[4]['nfev']
+            x = nm_result[1]
+            fval = nm_result[2]
 
     if error:
         raise error.pop()
-
-    # This dictionary and the calls below it are unused and should be removed.
-    key = {
-        0: (False, 'improper input parameters'),
-        1: (True,
-            ('both actual and predicted relative reductions in the sum ' +
-             'of squares are at most ftol=%g') % ftol),
-        2: (True,
-            ('relative error between two consecutive iterates is at ' +
-             'most xtol=%g') % xtol),
-        4: (True,
-            ('the cosine of the angle between fvec and any column of ' +
-             'the jacobian is at most gtol=%g in absolute value') % gtol),
-        5: (False,
-            ('number of calls to function has reached or exceeded '+
-             'maxfev=%d') % maxfev),
-        6: (False,
-            ('ftol=%g is too small; no further reduction in the sum of ' +
-             'squares is possible') % ftol),
-        7: (False,
-            ('xtol=%g is too small; no further improvement in the ' +
-             'approximate solution is possible') % xtol),
-        8: (False,
-            ('gtol=%g is too small; fvec is orthogonal to the columns ' +
-             'of the jacobian to machine precision') % gtol),
-        }
-    key[3] = (True, key[1][1] + ' and ' + key[2][1])
-    status, msg = key.get(info, (False, 'unknown status flag (%d)' % info))
-
-    # lmdif used to return info as an integer in the range: [0, 8].  The
-    # explanations for the info values were taken verbatim from lmdif code and
-    # are reproduced in the lines above. However, SDS at
-    # one point complained that they do not understand the wording of the
-    # explanations and wanted a uniform error wording, hence the _get_sao_fit_msg.
 
     if 0 == info:
         info = 1
@@ -813,5 +817,8 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
                                      'covar': covar})
     else:
         rv = (status, x, fval, msg, {'info': info, 'nfev': nfev})
+    if numcores > 1:
+        tmp = rv[4]
+        tmp['num_parallel_map'] = num_parallel_map[0]
 
     return rv

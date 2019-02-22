@@ -18,6 +18,7 @@ from __future__ import print_function
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from sherpa.utils import _ncpus
 from sherpa.utils.testing import SherpaTestCase
 from sherpa.optmethods import optfcts
 from sherpa.optmethods import _tstoptfct
@@ -43,7 +44,7 @@ class test_optmethods(SherpaTestCase):
                   x0, xmin, xmax, iprint=iprint, maxfev=8192*len(x0) )
         self.tst( optfcts.montecarlo,  name + self.mc , fct, fmin,
                   x0, xmin, xmax, iprint=iprint, maxfev=8192*len(x0),
-                  numcores='all' )
+                  numcores=_ncpus )
         self.tst( optfcts.lmdif, name + self.lm, fct, fmin,
                   x0, xmin, xmax, iprint=iprint )
 

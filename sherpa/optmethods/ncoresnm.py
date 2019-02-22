@@ -298,10 +298,7 @@ class ncoresNelderMead:
         return
     
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 numcores=None):
-
-        if numcores is None:
-            numcores = _ncpus
+                 numcores=_ncpus):
 
         try:
             num_algo = min(numcores, len(self.algo))

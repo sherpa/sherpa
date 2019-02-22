@@ -91,37 +91,46 @@ class test_threads(SherpaTestCase):
     @requires_fits
     @requires_xspec
     def test_pha_intro(self):
+
+        def cmp_pha_intro(fit_result, p1, covarerr):
+            assert fit_result.statval == approx(37.9079, rel=1e-4)
+            assert fit_result.rstat == approx(0.902569, rel=1e-4)
+            assert fit_result.qval == approx(0.651155, rel=1e-4)
+            self.assertEqual(fit_result.nfev, 22)
+            self.assertEqual(fit_result.numpoints, 44)
+            self.assertEqual(fit_result.dof, 42)
+            p1.gamma.val == approx(2.15852, rel=1e-4)
+            p1.ampl.val == approx(0.00022484, rel=1e-4)
+
+            assert ui.calc_photon_flux() == approx(0.000469964, rel=1e-4)
+            assert ui.calc_energy_flux() == approx(9.614847e-13, rel=1e-4)
+            assert ui.calc_data_sum() == approx(706.85714092, rel=1e-4)
+            assert ui.calc_model_sum() == approx(638.45693377, rel=1e-4)
+            assert ui.calc_source_sum() == approx(0.046996409, rel=1e-4)
+
+            calc = ui.eqwidth(self.locals['p1'], ui.get_source())
+            assert calc == approx(-0.57731725, rel=1e-4)
+
+            calc = ui.calc_kcorr([1, 1.2, 1.4, 1.6, 1.8, 2], 0.5, 2)
+            expected = [0.93341286, 0.93752836, 0.94325233,
+                        0.94990140, 0.95678054, 0.96393515]
+            assert calc == approx(expected, rel=1e-4)
+            
         self.run_thread('pha_intro')
         # astro.ui imported as ui, instead of
         # being in global namespace
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0.0790393, rel=1e-4)
-        assert covarerr[1] == approx(1.4564e-05, rel=1e-4)
-        assert fit_results.statval == approx(37.9079, rel=1e-4)
-        assert fit_results.rstat == approx(0.902569, rel=1e-4)
-        assert fit_results.qval == approx(0.651155, rel=1e-4)
-        assert self.locals['p1'].gamma.val == approx(2.15852, rel=1e-4)
-        assert self.locals['p1'].ampl.val == approx(0.00022484, rel=1e-4)
+        cmp_pha_intro(fit_results, self.locals['p1'], covarerr)
 
-        assert ui.calc_photon_flux() == approx(0.000469964, rel=1e-4)
-        assert ui.calc_energy_flux() == approx(9.614847e-13, rel=1e-4)
-        assert ui.calc_data_sum() == approx(706.85714092, rel=1e-4)
-        assert ui.calc_model_sum() == approx(638.45693377, rel=1e-4)
-        assert ui.calc_source_sum() == approx(0.046996409, rel=1e-4)
-
-        calc = ui.eqwidth(self.locals['p1'], ui.get_source())
-        assert calc == approx(-0.57731725, rel=1e-4)
-
-        calc = ui.calc_kcorr([1, 1.2, 1.4, 1.6, 1.8, 2], 0.5, 2)
-        expected = [0.93341286, 0.93752836, 0.94325233,
-                    0.94990140, 0.95678054, 0.96393515]
-        assert calc == approx(expected, rel=1e-4)
-
-        self.assertEqual(ui.get_fit_results().nfev, 22)
-        self.assertEqual(ui.get_fit_results().numpoints, 44)
-        self.assertEqual(ui.get_fit_results().dof, 42)
-
+        self.run_thread('pha_intro_ncpus')
+        # astro.ui imported as ui, instead of
+        # being in global namespace
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        cmp_pha_intro(fit_results, self.locals['p1'], covarerr)
+        self.assertEqual(7, fit_results.extra_output['num_parallel_map'])
+        
     @requires_fits
     def test_pha_read(self):
         self.run_thread('pha_read')
@@ -129,75 +138,109 @@ class test_threads(SherpaTestCase):
 
     @requires_fits
     def test_basic(self):
+
+        def cmp_test_basic(fit_results, mylocals, covarerr):
+            m1 = mylocals['m1']
+            m2 = mylocals['m2']
+            assert covarerr[0] == approx(0.0192539, rel=1e-4)
+            assert covarerr[1] == approx(0.00392255, rel=1e-4)
+            assert fit_results.statval == approx(151.827, rel=1e-4)
+            assert fit_results.rstat == approx(16.8697, rel=1e-4)
+            assert fit_results.qval == approx(3.68798e-28, rel=1e-4)
+            assert m1.c0.val == approx(1.49843, rel=1e-4)
+            assert m1.c1.val == approx(0.1447, rel=1e-4)
+            assert m1.c2.val == approx(0.0322936, rel=1e-4)
+            assert m1.c3.val == approx(-0.00277729, rel=1e-4)
+            assert m2.c0.val == approx(1.75548, rel=1e-4)
+            assert m2.c1.val == approx(0.198455, rel=1e-4)
+            self.assertEqual(fit_results.nfev, 9)
+            self.assertEqual(fit_results.numpoints, 11)
+            self.assertEqual(fit_results.dof, 9)
+          
+            
         # In data1.dat for this test, there is a comment with one
         # word at the beginning -- deliberately would break when reading
         # with DM ASCII kernel, but passes because we have Sherpa code
-        # to bypass that.
+        # to bypass that.q
         self.run_thread('basic')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0.0192539, rel=1e-4)
-        assert covarerr[1] == approx(0.00392255, rel=1e-4)
-        assert fit_results.statval == approx(151.827, rel=1e-4)
-        assert fit_results.rstat == approx(16.8697, rel=1e-4)
-        assert fit_results.qval == approx(3.68798e-28, rel=1e-4)
-        assert self.locals['m1'].c0.val == approx(1.49843, rel=1e-4)
-        assert self.locals['m1'].c1.val == approx(0.1447, rel=1e-4)
-        assert self.locals['m1'].c2.val == approx(0.0322936, rel=1e-4)
-        assert self.locals['m1'].c3.val == approx(-0.00277729, rel=1e-4)
-        assert self.locals['m2'].c0.val == approx(1.75548, rel=1e-4)
-        assert self.locals['m2'].c1.val == approx(0.198455, rel=1e-4)
-        self.assertEqual(fit_results.nfev, 9)
-        self.assertEqual(fit_results.numpoints, 11)
-        self.assertEqual(fit_results.dof, 9)
-
+        cmp_test_basic(fit_results, self.locals, covarerr)
+        
+        self.run_thread('basic_ncpus')
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        cmp_test_basic(fit_results, self.locals, covarerr)
+        self.assertEqual(3, fit_results.extra_output['num_parallel_map'])
+        
     @requires_fits
     @requires_xspec
     def test_simultaneous(self):
+
+        def cmp_simultaneous(fit_results, mylocals, covarerr):
+            abs1 = mylocals['abs1']
+            pl1 = mylocals['pl1']
+            pl2 = mylocals['pl2']            
+            assert covarerr[0] == approx(0.397769, rel=1e-3)
+            assert covarerr[1] == approx(0.486058, rel=1e-3)
+            assert covarerr[2] == approx(1.48213e-05, rel=1e-3)
+            assert covarerr[3] == approx(1.54245e-05, rel=1e-3)
+            assert fit_results.statval == approx(7.4429, rel=1e-4)
+            assert fit_results.rstat == approx(0.531636, rel=1e-4)
+            assert fit_results.qval == approx(0.916288, rel=1e-4)
+            assert abs1.nh.val == approx(0.898162, rel=1e-2)
+            assert pl1.gamma.val == approx(1.645, rel=1e-4)
+            self.assertEqualWithinTol(pl1.ampl.val, 2.28323e-05, 1e-3)
+            self.assertEqualWithinTol(pl2.ampl.val, 2.44585e-05, 1e-3)
+            self.assertEqual(fit_results.numpoints, 18)
+            self.assertEqual(fit_results.dof, 14)
+           
         self.run_thread('simultaneous')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0.397769, rel=1e-3)
-        assert covarerr[1] == approx(0.486058, rel=1e-3)
-        assert covarerr[2] == approx(1.48213e-05, rel=1e-3)
-        assert covarerr[3] == approx(1.54245e-05, rel=1e-3)
-        assert fit_results.statval == approx(7.4429, rel=1e-4)
-        assert fit_results.rstat == approx(0.531636, rel=1e-4)
-        assert fit_results.qval == approx(0.916288, rel=1e-4)
-        assert self.locals['abs1'].nh.val == approx(0.898162, rel=1e-2)
-        assert self.locals['pl1'].gamma.val == approx(1.645, rel=1e-4)
-        self.assertEqualWithinTol(self.locals['pl1'].ampl.val,
-                                  2.28323e-05, 1e-3)
-        self.assertEqualWithinTol(self.locals['pl2'].ampl.val,
-                                  2.44585e-05, 1e-3)
-        self.assertEqual(fit_results.numpoints, 18)
-        self.assertEqual(fit_results.dof, 14)
+        cmp_simultaneous(fit_results, self.locals, covarerr)
 
+        self.run_thread('simultaneous_ncpus')
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        cmp_simultaneous(fit_results, self.locals, covarerr)
+        self.assertEqual(8, fit_results.extra_output['num_parallel_map'])
+        
     @requires_fits
     @requires_xspec
     def test_sourceandbg(self):
+
+        def cmp_sourceanddbg(fit_results, mylocals, covarerr):
+            a1 = mylocals['a1']
+            b1 = mylocals['b1']
+            b2 = mylocals['b2']
+            assert covarerr[0] == approx(0.012097, rel=1e-3)
+            assert covarerr[1] == approx(0, rel=1e-3)
+            assert covarerr[2] == approx(0.000280678, rel=1e-3)
+            assert covarerr[3] == approx(0.00990783, rel=1e-3)
+            assert covarerr[4] == approx(2.25746e-07, rel=1e-3)
+            assert fit_results.statval == approx(947.5, rel=1e-4)
+            assert fit_results.rstat == approx(0.715094, rel=1e-4)
+            assert fit_results.qval == approx(1, rel=1e-4)
+            assert a1.nh.val == approx(0.0342266, rel=1e-2)
+            assert b1.kt.val == approx(20, rel=1e-2)
+            self.assertEqualWithinTol(b1.norm.val, 0.00953809, 1e-2)
+            self.assertEqualWithinTol(b2.kt.val, 0.563109, 1e-2)
+            self.assertEqualWithinTol(b2.norm.val, 1.16118e-05, 1e-2)
+            self.assertEqual(fit_results.numpoints, 1330)
+            self.assertEqual(fit_results.dof, 1325)
+            
         self.run_thread('sourceandbg')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0.012097, rel=1e-3)
-        assert covarerr[1] == approx(0, rel=1e-3)
-        assert covarerr[2] == approx(0.000280678, rel=1e-3)
-        assert covarerr[3] == approx(0.00990783, rel=1e-3)
-        assert covarerr[4] == approx(2.25746e-07, rel=1e-3)
-        assert fit_results.statval == approx(947.5, rel=1e-4)
-        assert fit_results.rstat == approx(0.715094, rel=1e-4)
-        assert fit_results.qval == approx(1, rel=1e-4)
-        assert self.locals['a1'].nh.val == approx(0.0342266, rel=1e-2)
-        assert self.locals['b1'].kt.val == approx(20, rel=1e-2)
-        self.assertEqualWithinTol(self.locals['b1'].norm.val,
-                                  0.00953809, 1e-2)
-        self.assertEqualWithinTol(self.locals['b2'].kt.val,
-                                  0.563109, 1e-2)
-        self.assertEqualWithinTol(self.locals['b2'].norm.val,
-                                  1.16118e-05, 1e-2)
-        self.assertEqual(fit_results.numpoints, 1330)
-        self.assertEqual(fit_results.dof, 1325)
-
+        cmp_sourceanddbg(fit_results, self.locals, covarerr)
+        
+        self.run_thread('sourceandbg_ncpus')
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        cmp_sourceanddbg(fit_results, self.locals, covarerr)
+        self.assertEqual(23, fit_results.extra_output['num_parallel_map'])
+        
     @requires_fits
     def test_spatial(self):
         self.run_thread('spatial')
@@ -217,22 +260,33 @@ class test_threads(SherpaTestCase):
 
     @requires_fits
     def test_radpro(self):
+
+        def cmp_radpro(fit_results, mylocals, covarerr):
+            src = mylocals['src']
+            assert covarerr[0] == approx(9.37345, rel=1e-4)
+            assert covarerr[1] == approx(0.512596, rel=1e-4)
+            assert covarerr[2] == approx(0.0691102, rel=1e-4)
+            assert fit_results.statval == approx(217.450, rel=1e-4)
+            assert fit_results.rstat == approx(6.21287, rel=1e-4)
+            assert fit_results.qval == approx(0.0, rel=1e-4)
+            assert src.r0.val == approx(125.829, rel=1e-4)
+            assert src.beta.val == approx(4.1633, rel=1e-4)
+            assert src.xpos.val == approx(0.0, rel=1e-4)
+            assert src.ampl.val == approx(4.42821, rel=1e-4)
+            self.assertEqual(fit_results.nfev, 92)
+            self.assertEqual(fit_results.numpoints, 38)
+            self.assertEqual(fit_results.dof, 35)
+            
         self.run_thread('radpro')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(9.37345, rel=1e-4)
-        assert covarerr[1] == approx(0.512596, rel=1e-4)
-        assert covarerr[2] == approx(0.0691102, rel=1e-4)
-        assert fit_results.statval == approx(217.450, rel=1e-4)
-        assert fit_results.rstat == approx(6.21287, rel=1e-4)
-        assert fit_results.qval == approx(0.0, rel=1e-4)
-        assert self.locals['src'].r0.val == approx(125.829, rel=1e-4)
-        assert self.locals['src'].beta.val == approx(4.1633, rel=1e-4)
-        assert self.locals['src'].xpos.val == approx(0.0, rel=1e-4)
-        assert self.locals['src'].ampl.val == approx(4.42821, rel=1e-4)
-        self.assertEqual(fit_results.nfev, 92)
-        self.assertEqual(fit_results.numpoints, 38)
-        self.assertEqual(fit_results.dof, 35)
+        cmp_radpro(fit_results, self.locals, covarerr)
+
+        self.run_thread('radpro_ncpus')
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        cmp_radpro(fit_results, self.locals, covarerr)
+        self.assertEqual(22, fit_results.extra_output['num_parallel_map'])
 
     def test_radpro_dm(self):
         # This test is completely redundant to test_radpro above.
@@ -311,57 +365,91 @@ class test_threads(SherpaTestCase):
 
     @requires_fits
     def test_linepro(self):
+        
+        def cmp_linepro(fit_results, mylocals, covarerr):
+            b1 = mylocals['b1']
+            assert covarerr[0] == approx(0.176282, rel=1e-4)
+            assert covarerr[1] == approx(0.0019578, rel=1e-4)
+            assert covarerr[2] == approx(0.495889, rel=1e-4)
+            assert fit_results.statval == approx(203.34, rel=1e-4)
+            assert b1.r0.val == approx(4.25557, rel=1e-4)
+            assert b1.beta.val == approx(0.492232, rel=1e-4)
+            assert b1.ampl.val == approx(11.8129, rel=1e-4)
+            self.assertEqual(fit_results.nfev, 17)
+            self.assertEqual(fit_results.numpoints, 75)
+            self.assertEqual(fit_results.dof, 72)
+            
         self.run_thread('linepro')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0.176282, rel=1e-4)
-        assert covarerr[1] == approx(0.0019578, rel=1e-4)
-        assert covarerr[2] == approx(0.495889, rel=1e-4)
-        assert fit_results.statval == approx(203.34, rel=1e-4)
-        assert self.locals['b1'].r0.val == approx(4.25557, rel=1e-4)
-        assert self.locals['b1'].beta.val == approx(0.492232, rel=1e-4)
-        assert self.locals['b1'].ampl.val == approx(11.8129, rel=1e-4)
-        self.assertEqual(fit_results.nfev, 17)
-        self.assertEqual(fit_results.numpoints, 75)
-        self.assertEqual(fit_results.dof, 72)
+        cmp_linepro(fit_results, self.locals, covarerr)
 
+        self.run_thread('linepro_ncpus')
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        cmp_linepro(fit_results, self.locals, covarerr)
+        self.assertEqual(4, fit_results.extra_output['num_parallel_map'])
+        
     @requires_fits
     def test_kernel(self):
+
+        def cmp_kernel(fit_results, mylocals, covarerr):
+            b1 = mylocals['b1']
+            assert covarerr[0] == approx(0.210895, rel=1e-4)
+            assert covarerr[1] == approx(0.00154839, rel=1e-4)
+            assert covarerr[2] == approx(0.0223859, rel=1e-4)
+            assert fit_results.statval == approx(98.5793, rel=1e-4)
+            assert b1.r0.val == approx(19.2278, rel=1e-4)
+            assert b1.beta.val == approx(0.555464, rel=1e-4)
+            assert b1.ampl.val == approx(1.93706, rel=1e-4)
+            self.assertEqual(fit_results.nfev, 21)
+            self.assertEqual(fit_results.numpoints, 75)
+            self.assertEqual(fit_results.dof, 72)
+            
         self.run_thread('kernel')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0.210895, rel=1e-4)
-        assert covarerr[1] == approx(0.00154839, rel=1e-4)
-        assert covarerr[2] == approx(0.0223859, rel=1e-4)
-        assert fit_results.statval == approx(98.5793, rel=1e-4)
-        assert self.locals['b1'].r0.val == approx(19.2278, rel=1e-4)
-        assert self.locals['b1'].beta.val == approx(0.555464, rel=1e-4)
-        assert self.locals['b1'].ampl.val == approx(1.93706, rel=1e-4)
-        self.assertEqual(fit_results.nfev, 21)
-        self.assertEqual(fit_results.numpoints, 75)
-        self.assertEqual(fit_results.dof, 72)
+        cmp_kernel(fit_results, self.locals, covarerr)
 
+        self.run_thread('kernel_ncpus')
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        cmp_kernel(fit_results, self.locals, covarerr)
+        self.assertEqual(5, fit_results.extra_output['num_parallel_map'])
+        
     @requires_fits
     @requires_xspec
     def test_spectrum(self):
-        self.run_thread('spectrum')
 
+        def cmp_spectrum(fres, mylocals, covarerr):
+            abs2 = mylocals['abs2']
+            mek1 = mylocals['mek1']
+            mek2 = mylocals['mek2']
+            assert covarerr[0] == approx(0.00148391, rel=1e-3)
+            assert covarerr[1] == approx(0.0011518, rel=1e-3)
+            assert covarerr[2] == approx(0.00377755, rel=1e-3)
+            assert covarerr[3] == approx(0.00370543, rel=1e-3)
+            assert covarerr[4] == approx(0.0016608, rel=1e-3)
+            assert fres.statval == approx(0.0496819, rel=1e-4)
+            assert abs2.nh.val == approx(1.1015, rel=1e-4)
+            assert mek1.kt.val == approx(0.841025, rel=1e-4)
+            assert mek1.norm.val == approx(0.699761, rel=1e-4)
+            assert mek2.kt.val == approx(2.35845, rel=1e-4)
+            assert mek2.norm.val == approx(1.03724, rel=1e-4)
+            self.assertEqual(fres.numpoints, 446)
+            self.assertEqual(fres.dof, 441)
+            
+        self.run_thread('spectrum')
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0.00148391, rel=1e-3)
-        assert covarerr[1] == approx(0.0011518, rel=1e-3)
-        assert covarerr[2] == approx(0.00377755, rel=1e-3)
-        assert covarerr[3] == approx(0.00370543, rel=1e-3)
-        assert covarerr[4] == approx(0.0016608, rel=1e-3)
-        assert fres.statval == approx(0.0496819, rel=1e-4)
-        assert self.locals['abs2'].nh.val == approx(1.1015, rel=1e-4)
-        assert self.locals['mek1'].kt.val == approx(0.841025, rel=1e-4)
-        assert self.locals['mek1'].norm.val == approx(0.699761, rel=1e-4)
-        assert self.locals['mek2'].kt.val == approx(2.35845, rel=1e-4)
-        assert self.locals['mek2'].norm.val == approx(1.03724, rel=1e-4)
-        self.assertEqual(fres.numpoints, 446)
-        self.assertEqual(fres.dof, 441)
+        cmp_spectrum(fres, self.locals, covarerr)
 
+        self.run_thread('spectrum_ncpus')
+        fres = ui.get_fit_results()
+        covarerr = sqrt(fres.extra_output['covar'].diagonal())
+        cmp_spectrum(fres, self.locals, covarerr)
+        self.assertEqual(3, fres.extra_output['num_parallel_map'])
+        
     @requires_fits
     def test_histo(self):
         self.run_thread('histo')
@@ -376,43 +464,57 @@ class test_threads(SherpaTestCase):
     @requires_fits
     @requires_xspec
     def test_xmm(self):
+        def cmp_xmm(fres, mylocals, covarerr):
+            intrin = mylocals['intrin']
+            phard = mylocals['phard']
+            assert covarerr[0] == approx(0.954993, rel=1e-3)
+            assert covarerr[1] == approx(0.142357, rel=1e-3)
+            assert covarerr[2] == approx(0.00038775, rel=1e-3)
+            assert fres.statval == approx(118.085, rel=1e-4)
+            self.assertEqualWithinTol(intrin.nh.val, 11.0769, 1e-2)
+            self.assertEqualWithinTol(phard.phoindex.val, 1.49055, 1e-2)
+            self.assertEqualWithinTol(phard.norm.val, 0.00140301, 1e-2)
+            self.assertEqual(fres.nfev, 95)
+            self.assertEqual(fres.numpoints, 162)
+            self.assertEqual(fres.dof, 159)
+            
         self.run_thread('xmm')
-
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0.954993, rel=1e-3)
-        assert covarerr[1] == approx(0.142357, rel=1e-3)
-        assert covarerr[2] == approx(0.00038775, rel=1e-3)
-        assert fres.statval == approx(118.085, rel=1e-4)
-        self.assertEqualWithinTol(self.locals['intrin'].nh.val,
-                                  11.0769, 1e-2)
-        self.assertEqualWithinTol(self.locals['phard'].phoindex.val,
-                                  1.49055, 1e-2)
-        self.assertEqualWithinTol(self.locals['phard'].norm.val,
-                                  0.00140301, 1e-2)
+        cmp_xmm(fres, self.locals, covarerr)
 
-        self.assertEqual(fres.nfev, 95)
-        self.assertEqual(fres.numpoints, 162)
-        self.assertEqual(fres.dof, 159)
+        self.run_thread('xmm_ncpus')
+        fres = ui.get_fit_results()
+        covarerr = sqrt(fres.extra_output['covar'].diagonal())
+        cmp_xmm(fres, self.locals, covarerr)
+        self.assertEqual(23, fres.extra_output['num_parallel_map'])
 
     @requires_fits
     # As of CIAO 4.5, can filter on channel number, even when
     # data are grouped! Test results should exactly match CIAO 4.4
     # fit results in grouped/fit.py
     def test_grouped_ciao4_5(self):
-        self.run_thread('grouped_ciao4.5')
 
+        def cmp_grouped_ciao4_5(fres, mylocals, covarerr):
+            assert covarerr[0] == approx(0.104838, rel=1e-4)
+            assert covarerr[1] == approx(2.43937e-05, rel=1e-4)
+            assert fres.statval == approx(18.8316, rel=1e-4)
+            self.assertEqual(fres.numpoints, 46)
+            aamdl = mylocals['aa']
+            assert aamdl.gamma.val == approx(1.83906, rel=1e-4)
+            assert aamdl.ampl.val == approx(0.000301258, rel=1e-4)
+
+        self.run_thread('grouped_ciao4.5')
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
-        assert covarerr[0] == approx(0.104838, rel=1e-4)
-        assert covarerr[1] == approx(2.43937e-05, rel=1e-4)
-        assert fres.statval == approx(18.8316, rel=1e-4)
-        self.assertEqual(fres.numpoints, 46)
+        cmp_grouped_ciao4_5(fres, self.locals, covarerr)
 
-        aamdl = self.locals['aa']
-        assert aamdl.gamma.val == approx(1.83906, rel=1e-4)
-        assert aamdl.ampl.val == approx(0.000301258, rel=1e-4)
-
+        self.run_thread('grouped_ciao4.5_ncpus')
+        fres = ui.get_fit_results()
+        covarerr = sqrt(fres.extra_output['covar'].diagonal())
+        cmp_grouped_ciao4_5(fres, self.locals, covarerr)
+        self.assertEqual(8, fres.extra_output['num_parallel_map'])
+        
     @requires_fits
     @requires_xspec
     def test_proj(self):
@@ -486,6 +588,59 @@ class test_threads(SherpaTestCase):
                                   0.0896566, 1e-2)
         self.assertEqualWithinTol(self.locals['proj_res2'].parmaxes[2],
                                   0.0981627, 1e-2)
+
+    @requires_fits
+    @requires_xspec
+    def test_proj_bubble(self):
+
+        def cmp_proj_bubble(mylocals, convarerr, proj, conf):
+            mek1 = mylocals['mek1']
+            assert covarerr[0] == approx(0, rel=1e-4)
+            assert covarerr[1] == approx(8.74608e-07, rel=1e-3)
+            assert mek1.kt.val == approx(17.8849, rel=1e-2)
+            assert mek1.norm.val == approx(4.15418e-06, rel=1e-2)
+            # Proj -- Upper bound of kT can't be found
+            #
+            assert proj.parmins[0] == approx(-12.048069, rel=0.01)
+            assert proj.parmins[1] == approx(-9.510913e-07, rel=0.01)
+            assert proj.parmaxes[1] == approx(2.403640e-06, rel=0.01)
+            assert proj.parmaxes[0] is None
+            assert conf.parmins[0] == approx(-12.1073, rel=0.01)
+            assert conf.parmaxes[0] == approx(62.0585, rel=0.01)
+            assert conf.parmins[1] == approx(-9.5568e-07, rel=0.01)
+            assert conf.parmaxes[1] == approx(2.39937e-06, rel=0.01)
+            
+        self.run_thread('proj_bubble')
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        proj = ui.get_proj_results()
+        conf = ui.get_conf_results()
+        cmp_proj_bubble(self.locals, covarerr, proj, conf)
+
+        self.run_thread('proj_bubble_ncpus')
+        fit_results = ui.get_fit_results()
+        covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
+        proj = ui.get_proj_results()
+        conf = ui.get_conf_results()        
+        cmp_proj_bubble(self.locals, covarerr, proj, conf)
+        
+        
+        # # Fit -- Results from reminimize
+
+        # # The fit results change in XSPEC 12.10.0 since the mekal model
+        # # was changed (FORTRAN to C++). A 1% difference is used for the
+        # # parameter ranges from covar and proj (matches the tolerance for
+        # # the fit results).
+
+        # # Covar
+        # #
+        # # TODO: should this check that parmaxes is -1 * parmins instead?
+        # covar = ui.get_covar_results()
+        # assert covar.parmins[0] == approx(-0.328832, rel=0.01)
+        # assert covar.parmins[1] == approx(-8.847916e-7, rel=0.01)
+        # assert covar.parmaxes[0] == approx(0.328832, rel=0.01)
+        # assert covar.parmaxes[1] == approx(8.847916e-7, rel=0.01)
+
 
     # New tests based on SDS threads -- we should catch these errors
     # (if any occur) so SDS doesn't waste time tripping over them.
@@ -636,7 +791,6 @@ def test_missmatch_arf(make_data_path):
 def test_thread_pileup(run_thread):
 
     models = run_thread('pileup')
-
     fr = ui.get_fit_results()
     covarerr = sqrt(fr.extra_output['covar'].diagonal())
 

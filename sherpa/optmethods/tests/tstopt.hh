@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2011  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2011, 2019  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -200,6 +200,12 @@ void tst_global( int npar, double tol, Opt opt, int npop, int maxfev,
     opt( tstoptfct::MichalewiczInit<double>,
 	 tstoptfct::Michalewicz<double,mybounds>, 10, par, lo, hi, tol,
 	 "Michalewicz10", npop, maxfev, c1, c2 );
+  }
+
+  {
+    opt( tstoptfct::McKinnonInit<double>,
+	 tstoptfct::McKinnon<double,mybounds>, 2, par, lo, hi, tol,
+	 "McKinnon", npop, maxfev, c1, c2 );
   }
 
 }

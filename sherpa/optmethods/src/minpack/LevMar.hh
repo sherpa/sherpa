@@ -1409,14 +1409,10 @@ namespace minpack {
     LevMarDif( Func func, Data xdata, int mfct )
       : LevMar<Func, Data, real>( func, xdata ), myfvec( mfct ) { }
 
-    int operator( )( int n, real ftol, real xtol,
-                     real gtol, int maxfev, real epsfcn,
-                     real factor, int nprint,
-                     std::vector<real>& x,
-                     int& nfev, real& fmin,
-                     const sherpa::Bounds<real>& bounds,
-                     std::vector<real>& fjac,
-                     std::vector<real>& covarerr ) {
+    int operator( )( int n, real ftol, real xtol, real gtol, int maxfev,
+                     real epsfcn, real factor, int nprint, std::vector<real>& x,
+                     int& nfev, real& fmin, const sherpa::Bounds<real>& bounds,
+                     std::vector<real>& fjac ) {
 
       int info = 0;
 
@@ -1427,8 +1423,7 @@ namespace minpack {
 
 	int m = static_cast<int>( myfvec.size( ) );
 
-	std::vector<real> diag( n ), qtf( n ), wa1( n ), wa2( n ), wa3( n );
-	std::vector<real> wa4( m );
+	std::vector<real> diag( n ), qtf( n ), wa1( n ), wa2( n ), wa3( n ), wa4( m );
 	std::vector<int> ipvt( n );
 
 	const int mode = 1;
@@ -1442,14 +1437,7 @@ namespace minpack {
                       &wa1[ 0 ], &wa2[0], &wa3[0], &wa4[0], bounds );
 
         if ( info > 0 ) {
-          // The covariance matrix does not need to be calculated if there was no fit.
           this->covar( n, &fjac[ 0 ], ldfjac, &ipvt[0], ftol, &wa1[0] );
-
-          for ( int ii = 0; ii < n; ++ii )
-            if ( fjac[ ii + ldfjac * ii ] > 0.0 )
-              covarerr[ ii ] = sqrt( fjac[ ii + ldfjac * ii ] );
-            else
-              covarerr[ ii ] = 0.0;
         }
 
       } catch( sherpa::OptErr& oe ) {
@@ -1513,18 +1501,15 @@ namespace minpack {
       real factor = 100.0;
 
       std::vector<real> diag( npar );
-      std::vector<real> covarerr( npar );
       std::vector<real> fjac( myfvec.size() * npar );
       return this->operator( )( npar, tol, tol, tol, maxnfev, epsfcn, factor,
-				nprint, par, nfev, fmin, limits, fjac,
-                                covarerr );
+				nprint, par, nfev, fmin, limits, fjac );
     }
     // de
 
   protected:
 
     std::vector< real > myfvec;
-    // std::vector<real>& get_myfec( ) { return myfvec; }
 
 
     //
@@ -1604,10 +1589,9 @@ namespace minpack {
     // c
     // c     **********
     //
-    int fdjac2( Func fcn, int m, int n, real *x,
-		const real *fvec, real *fjac, int ldfjac,
-		real epsfcn, real *wa, Data xptr,
-		const std::vector<real>& high ) {
+    virtual int fdjac2( Func fcn, int m, int n, real *x,  /* dtn const dtn */ real *fvec,
+                        real *fjac, int ldfjac, real epsfcn, real *wa, Data xptr,
+                        const std::vector<real>& high ) {
 
       /* Local variables */
       real h;
@@ -2185,9 +2169,33 @@ namespace minpack {
 
     } // lmdif
 
-  }; // class
+  }; // class LevMarDif
 
 
+  template < typename Func, typename Jac, typename Data, typename real >
+  class LevMarDifJac: public LevMarDif<Func, Data, real> {
+
+  public:
+
+    LevMarDifJac( Func func, Data xfunc, int mfct, Jac jac, Data xjac )
+      : LevMarDif<Func, Data, real>( func, xfunc, mfct ), jacobian( jac ),
+        xjacobian( xjac ) { }
+
+  private:
+
+    Jac jacobian;
+    Data xjacobian;
+
+    int fdjac2( Func fcn, int m, int n, real *x, real *fvec, real *fjac,
+                int ldfjac, real epsfcn, real *wa, Data xptr,
+                const std::vector<real>& high ) {
+      int iflag = 2;
+      jacobian(m, n, x, fvec, fjac, iflag, xjacobian);
+      return iflag;
+    }
+    
+  }; // class LevMarDifJac
+  
   template < typename Func, typename Data, typename real >
   class LevMarDer : public LevMar<Func, Data, real> {
 

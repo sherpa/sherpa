@@ -23,7 +23,7 @@ import multiprocessing
 import numpy
 import random
 
-from sherpa.utils import Knuth_close, _multi, _ncpus, run_tasks
+from sherpa.utils import Knuth_close, _multi, _ncpus, run_tasks, func_counter
 
 __all__ = ('TraceCalls', 'Opt', 'Polytope', 'Simplex', 'MyNcores', 'tst_opt')
 
@@ -156,19 +156,9 @@ class Opt:
 
         return func_bounds_wrapper
 
-    def func_counter(self, func):
-        """A function wrapper to count the number of times being called"""
-        nfev = [0]
-        def func_counter_wrapper(x, *args):
-            nfev[0] += 1
-            tmp = func(x, *args)
-            # print(func.__name__, x, '=', tmp, 'at', nfev[0])
-            return tmp
-        return nfev, func_counter_wrapper
-
     def func_counter_bounds_wrappers(self, func, npar, xmin, xmax):
         """Wraps the calls to func_counter then func_bounds"""
-        nfev, afunc = self.func_counter(func)
+        nfev, afunc = func_counter(func)
         myfunc = self.func_bounds(afunc, npar, xmin, xmax)
         return nfev, myfunc
 

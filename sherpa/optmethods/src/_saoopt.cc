@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2018  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2018, 2019  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -34,7 +34,7 @@
 
 //lmdif//lmdif//lmdif//lmdif//lmdif//lmdif//lmdif//lmdif//lmdif//lmdif//lmdif//
 static void lmdif_callback_fcn( int mfct, int npar, double* xpars,
-                             double* fvec, int& ierr, PyObject* py_fcn ) {
+                                double* fvec, int& ierr, PyObject* py_fcn ) {
 
   DoubleArray pars_array;
   npy_intp dims[1];
@@ -73,22 +73,71 @@ static void lmdif_callback_fcn( int mfct, int npar, double* xpars,
 
 }
 
+static void lmdif_callback_fdjac( int mfct, int npar, double* xpars,
+                                  double* fvec, double* fjac, int& ierr, PyObject* py_fcn ) {
+
+  DoubleArray pars_array;
+  npy_intp dims[1];
+
+  dims[0] = npar;
+  if ( EXIT_SUCCESS != pars_array.create( 1, dims, xpars ) ) {
+    ierr = EXIT_FAILURE;
+    return;
+  }
+
+  DoubleArray fvec_array;
+  dims[0] = mfct;
+  if ( EXIT_SUCCESS != fvec_array.create( 1, dims, fvec ) ) {
+    ierr = EXIT_FAILURE;
+    return;
+  }
+  
+  PyObject* rv = PyObject_CallFunction( py_fcn, (char*)"NN",
+                                        pars_array.new_ref(), fvec_array.new_ref() );
+  if ( NULL == rv ) {
+    ierr = EXIT_FAILURE;
+    return;
+  }
+
+  DoubleArray vals_array;
+  int stat = vals_array.from_obj( rv );
+  Py_DECREF( rv );
+  if ( EXIT_SUCCESS != stat ) {
+    ierr = EXIT_FAILURE;
+    return;
+  }
+
+  const int num = npar * mfct;
+  if ( vals_array.get_size() != num ) {
+    PyErr_SetString( PyExc_TypeError,
+                     "callback function returned wrong number of values" );
+    ierr = EXIT_FAILURE;
+    return;
+  }
+
+  std::copy( &vals_array[0], &vals_array[0] + num, fjac );
+
+  return;
+
+}
+
 //*****************************************************************************
 //
 // py_cpp_lmdif:  Python wrapper function for C++ function lmdif
 //
 //*****************************************************************************
-template< typename Func >
-static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func ) {
+template< typename Func, typename Jac >
+static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func, Jac fdjac ) {
 
   PyObject* py_function=NULL;
+  PyObject* py_jacobian=NULL;
   DoubleArray par, lb, ub, fjac;
-  int mfct, maxnfev, nfev, info, verbose;
+  int mfct, maxnfev, nfev, info, verbose, numcores;
   double fval, ftol, xtol, gtol, epsfcn, factor;
 
-  if ( !PyArg_ParseTuple( args, (char*) "OiO&dddiddiO&O&O&",
-			  &py_function,
-			  &mfct,
+  if ( !PyArg_ParseTuple( args, (char*) "OOiiO&dddiddiO&O&O&",
+			  &py_function, &py_jacobian,
+			  &numcores, &mfct,
 			  CONVERTME(DoubleArray), &par,
 			  &ftol, &xtol, &gtol, &maxnfev,
 			  &epsfcn, &factor, &verbose,
@@ -125,14 +174,24 @@ static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func ) {
 
   try {
 
-    minpack::LevMarDif< Func, PyObject*, double > levmar( func, py_function,
-                                                          mfct );
     std::vector<double> mylb( &lb[0], &lb[0] + npar );
     std::vector<double> myub( &ub[0], &ub[0] + npar );
     sherpa::Bounds<double> bounds( mylb, myub );
     std::vector<double> mypar( &par[0], &par[0] + npar );
-    info = levmar( npar, ftol, xtol, gtol, maxnfev, epsfcn, factor, verbose,
-		   mypar, nfev, fval, bounds, jacobian, covarerr );
+
+    if ( 1 == numcores ) {
+      minpack::LevMarDif< Func, PyObject*, double >
+        levmar( func, py_function, mfct );
+
+      info = levmar( npar, ftol, xtol, gtol, maxnfev, epsfcn, factor, verbose,
+                     mypar, nfev, fval, bounds, jacobian );
+    } else {
+      
+       minpack::LevMarDifJac< Func, Jac, PyObject*, double >
+         levmar( func, py_function, mfct, fdjac, py_jacobian );      
+       info = levmar( npar, ftol, xtol, gtol, maxnfev, epsfcn, factor, verbose,
+                      mypar, nfev, fval, bounds, jacobian );
+    }
 
     // info > 0 means par needs to be updated
     if ( info > 0 )
@@ -170,11 +229,8 @@ static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func ) {
 }
 static PyObject* py_lmdif( PyObject* self, PyObject* args ) {
 
-  //
-  // it looks like an extra indirection but fct_ptr does the nasty
-  // work so I do not have to worry about the function prototype.
-  //
-  return py_cpp_lmdif( self, args, sherpa::fct_ptr( lmdif_callback_fcn ) );
+  return py_cpp_lmdif( self, args, sherpa::fct_ptr( lmdif_callback_fcn ),
+                       sherpa::fct_ptr( lmdif_callback_fdjac ) );
 
 }
 //*****************************************************************************
@@ -256,7 +312,6 @@ static PyObject* py_cpp_lmder( PyObject* self, PyObject* args, Func func ) {
 
   const int npar = par.get_size( );
   const int mn = mfct * npar;
-  std::vector<double> covarerr( npar );
   std::vector<double> jacobian( mn );
 
   if ( npar != lb.get_size( ) ) {

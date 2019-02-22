@@ -361,10 +361,8 @@ class ncoresMyDifEvo(MyDifEvo):
                           step, seed)
         return
 
-    def __call__(self, tol, maxnfev, numcores=None):
+    def __call__(self, tol, maxnfev, numcores=_ncpus):
         nfev = 0
-        if numcores is None:
-            ncores = _ncpus
         random.seed(self.seed)
         mypop = self.polytope
         old_fval = numpy.inf
