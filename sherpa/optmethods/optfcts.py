@@ -814,11 +814,9 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
     if info == 0:
         rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                     'covar': covar})
+                                     'covar': covar,
+                                     'num_parallel_map': num_parallel_map[0]})
     else:
-        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev})
-    if numcores > 1:
-        tmp = rv[4]
-        tmp['num_parallel_map'] = num_parallel_map[0]
-
+        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
+                                     'num_parallel_map': num_parallel_map[0]})
     return rv

@@ -122,7 +122,8 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_pha_intro(fit_results, self.locals['p1'], covarerr)
-
+        self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
+        
         self.run_thread('pha_intro_ncpus')
         # astro.ui imported as ui, instead of
         # being in global namespace
@@ -166,6 +167,7 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_test_basic(fit_results, self.locals, covarerr)
+        self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
         
         self.run_thread('basic_ncpus')
         fit_results = ui.get_fit_results()
@@ -199,7 +201,8 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_simultaneous(fit_results, self.locals, covarerr)
-
+        self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
+        
         self.run_thread('simultaneous_ncpus')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -234,6 +237,7 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_sourceanddbg(fit_results, self.locals, covarerr)
+        self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
         
         self.run_thread('sourceandbg_ncpus')
         fit_results = ui.get_fit_results()
@@ -281,7 +285,8 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_radpro(fit_results, self.locals, covarerr)
-
+        self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
+        
         self.run_thread('radpro_ncpus')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -383,7 +388,8 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_linepro(fit_results, self.locals, covarerr)
-
+        self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
+        
         self.run_thread('linepro_ncpus')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -410,7 +416,8 @@ class test_threads(SherpaTestCase):
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
         cmp_kernel(fit_results, self.locals, covarerr)
-
+        self.assertEqual(0, fit_results.extra_output['num_parallel_map'])
+        
         self.run_thread('kernel_ncpus')
         fit_results = ui.get_fit_results()
         covarerr = sqrt(fit_results.extra_output['covar'].diagonal())
@@ -443,7 +450,8 @@ class test_threads(SherpaTestCase):
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
         cmp_spectrum(fres, self.locals, covarerr)
-
+        self.assertEqual(0, fres.extra_output['num_parallel_map'])
+        
         self.run_thread('spectrum_ncpus')
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
@@ -482,7 +490,8 @@ class test_threads(SherpaTestCase):
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
         cmp_xmm(fres, self.locals, covarerr)
-
+        self.assertEqual(0, fres.extra_output['num_parallel_map'])
+        
         self.run_thread('xmm_ncpus')
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
@@ -508,7 +517,8 @@ class test_threads(SherpaTestCase):
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
         cmp_grouped_ciao4_5(fres, self.locals, covarerr)
-
+        self.assertEqual(0, fres.extra_output['num_parallel_map'])
+        
         self.run_thread('grouped_ciao4.5_ncpus')
         fres = ui.get_fit_results()
         covarerr = sqrt(fres.extra_output['covar'].diagonal())
