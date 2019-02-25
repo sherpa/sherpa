@@ -26,7 +26,7 @@
 #include <iostream>
 #include <limits>
 
-#define TOL (std::numeric_limits< double >::epsilon());
+#define TOL (std::numeric_limits< float >::epsilon());
 
 template <typename ArrayType>
 class FunctionWithParams {
