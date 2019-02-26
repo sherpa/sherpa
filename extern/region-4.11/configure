@@ -4755,10 +4755,17 @@ test -z "$GREP" && GREP=grep
 
 
 
+# Check whether --with-opt was given.
+defopt="-O3"
+oflags=""
+if test "${with_opt+set}" = set; then :
+  withval=$with_opt; oflags="$withval"
+fi
 
-
-
-
+if test "$oflags" = "yes"
+then
+  oflags="$defopt"
+fi
 
 # Check whether --with-gnu-ld was given.
 if test "${with_gnu_ld+set}" = set; then :
